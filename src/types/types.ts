@@ -1,40 +1,57 @@
 // src/lib/types.ts
 
-// Basierend auf dem Bedarf von AnbieterDetailsFetcher, OrderSummary und dem globalen Company-Typ
+/**
+ * Basis-Typ für Anbieterinformationen
+ * Wird z. B. in AnbieterDetailsFetcher, OrderSummary etc. verwendet
+ */
 export interface AnbieterDetails {
   id: string;
   companyName?: string;
-  profilePictureURL?: string; // In deiner global.d.ts war es profileImageUrl, aber Komponenten nutzten profilePictureURL
-  hourlyRate?: number | string; // string für "Preis k.A." oder numerisch für Kalkulationen
+  profilePictureURL?: string; // Wird bevorzugt verwendet in Komponenten
+  hourlyRate?: number | string; // Zahl oder "Preis k.A."
   subCategory?: string;
-  location?: string;            // z.B. Stadt
+  location?: string;
   taskRequiresCar?: boolean;
-  estimatedDuration?: string;   // z.B. "2 Stunden"
+  estimatedDuration?: string;
 
-  // Felder aus deinem global.d.ts Company-Beispiel, falls relevant
+  // Erweiterte Adressinformationen – optional
   address?: string;
   postalCode?: string;
   city?: string;
   country?: string;
-  state?: string; // Bundesland
+  state?: string;
 }
 
+/**
+ * Details zu einem Auftrag / einer Buchung
+ */
 export interface TaskDetails {
   description: string;
-  // Weitere auftragsspezifische Felder könnten hierhin
+  // Füge hier bei Bedarf weitere Felder hinzu, z. B. Kategorie, Tags etc.
 }
 
-// Die Props für deine Checkout-Komponenten könnten auch hier zentralisiert werden,
-// falls sie von mehreren Stellen benötigt oder referenziert werden.
-// export interface OrderSummaryProps {
-//   anbieterDetails: AnbieterDetails | null;
-//   AngebotDetails: AngebotDetails | null;
-//   dateFrom: string | null;
-//   dateTo: string | null;
-//   time: string | null;
-// }
+/**
+ * Props für Order-Zusammenfassung im Checkout-Prozess
+ */
+export interface OrderSummaryProps {
+  anbieterDetails: AnbieterDetails | null;
+  angebotDetails: AngebotDetails | null; // Hinweis: AngebotDetails muss definiert werden
+  dateFrom: string | null;
+  dateTo: string | null;
+  time: string | null;
+}
 
-// export interface PaymentDetailsFormProps {
-//   checkoutData?: Record<string, any>;
-//   onCheckoutAttempted?: (error?: string) => void;
-// }
+/**
+ * Props für Zahlungsformular-Komponente (Stripe Checkout)
+ */
+export interface PaymentDetailsFormProps {
+  checkoutData?: Record<string, any>;
+  onCheckoutAttempted?: (error?: string) => void;
+}
+
+// Beispiel-Typ zur Vervollständigung, falls du ihn noch brauchst
+export interface AngebotDetails {
+  price: number;
+  description?: string;
+  // etc.
+}
