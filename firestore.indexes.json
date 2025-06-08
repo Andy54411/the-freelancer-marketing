@@ -1,0 +1,59 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "companies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "postalCode",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "selectedSubcategory",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hourlyRate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "companies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "postalCode",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "selectedSubcategory",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "user_type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hourlyRate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "anbieterId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "erstellungsdatum",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,253 @@
+'use client'
+
+import React from "react";
+import { GoogleMap, Circle, useJsApiLoader } from "@react-google-maps/api";
+import { UserDataForSettings } from "@/components/SettingsPage";
+
+// ANPASSUNG: 'export' wurde hinzugefügt, um das Interface verfügbar zu machen
+export interface GeneralFormProps {
+  formData: UserDataForSettings;
+  handleChange: (path: string, value: string | number) => void;
+  onOpenManagingDirectorPersonalModal: () => void;
+}
+
+const mapContainerStyle = {
+  width: "100%",
+  height: "300px",
+};
+
+const GoogleMapComponent: React.FC<{
+  lat: number | null;
+  lng: number | null;
+  radiusKm: number;
+  onRadiusChange: (radius: number) => void;
+}> = ({ lat, lng, radiusKm, onRadiusChange }) => {
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
+  });
+
+  if (!isLoaded) return <p>Lade Karte...</p>;
+
+  const center = lat && lng ? { lat, lng } : { lat: 48.1351, lng: 11.5820 };
+
+  return (
+    <div>
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={center}
+        zoom={10}
+        options={{
+          fullscreenControl: false,
+          mapTypeControl: false,
+          streetViewControl: false,
+          clickableIcons: false,
+          zoomControl: true,
+        }}
+      >
+        <Circle
+          center={center}
+          radius={radiusKm * 1000}
+          options={{
+            fillColor: "#14ad9f80",
+            strokeColor: "#14ad9f",
+            strokeWeight: 2,
+            clickable: false,
+            draggable: false,
+            editable: false,
+            visible: true,
+          }}
+        />
+      </GoogleMap>
+      <div className="mt-4 flex gap-4 items-center">
+        <label className="font-medium text-gray-900 dark:text-gray-200">Radius anpassen:</label>
+        <input
+          type="range"
+          min={1}
+          max={100}
+          value={radiusKm}
+          onChange={(e) => onRadiusChange(Number(e.target.value))}
+          className="w-full"
+        />
+        <span className="min-w-[3rem]">{radiusKm} km</span>
+      </div>
+    </div>
+  );
+};
+
+const GeneralForm: React.FC<GeneralFormProps> = ({
+  formData,
+  handleChange,
+  onOpenManagingDirectorPersonalModal
+}) => {
+  const { step1, step2, lat, lng, radiusKm } = formData;
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Firma</label>
+          <input
+            value={step2.companyName || ""}
+            onChange={(e) => handleChange("step2.companyName", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Firmenzusatz</label>
+          <input
+            value={step2.companySuffix || ""}
+            onChange={(e) => handleChange("step2.companySuffix", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <button
+            type="button"
+            onClick={onOpenManagingDirectorPersonalModal}
+            className="text-sm text-teal-600 hover:underline"
+          >
+            Persönliche Daten des Geschäftsführers bearbeiten
+          </button>
+        </div>
+
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Rechtsform</label>
+          <input
+            value={step2.legalForm || ""}
+            onChange={(e) => handleChange("step2.legalForm", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Straße</label>
+          <input
+            value={step2.address || ""}
+            onChange={(e) => handleChange("step2.address", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col">
+            <label className="block mb-1 font-medium">PLZ</label>
+            <input
+              value={step2.postalCode || ""}
+              onChange={(e) => handleChange("step2.postalCode", e.target.value)}
+              className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="block mb-1 font-medium">Stadt</label>
+            <input
+              value={step2.city || ""}
+              onChange={(e) => handleChange("step2.city", e.target.value)}
+              className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Land</label>
+          <input
+            value="Deutschland"
+            disabled
+            className="input bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 cursor-not-allowed"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Telefon</label>
+          <input
+            value={step2.companyPhoneNumber || ""}
+            onChange={(e) => handleChange("step2.companyPhoneNumber", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">FAX</label>
+          <input
+            value={step2.fax || ""}
+            onChange={(e) => handleChange("step2.fax", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">E-Mail-Adresse</label>
+          <input
+            value={step1.email || ""}
+            onChange={(e) => handleChange("step1.email", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Webseite</label>
+          <input
+            value={step2.website || ""}
+            onChange={(e) => handleChange("step2.website", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Gesprochene Sprachen</label>
+          <input
+            value={step2.languages || ""}
+            onChange={(e) => handleChange("step2.languages", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            placeholder="z. B. Deutsch, Englisch, Türkisch"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block mb-1 font-medium">Branche</label>
+          <select
+            value={step2.industry || ""}
+            onChange={(e) => handleChange("step2.industry", e.target.value)}
+            className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+          >
+            <option value="">Bitte wählen</option>
+            {/* ... deine Optionen */}
+          </select>
+        </div>
+        <div className="flex flex-col col-span-2">
+          <label className="block mb-1 font-medium">Beschreibung des Unternehmens</label>
+          <textarea
+            value={step2.description || ""}
+            onChange={(e) => handleChange("step2.description", e.target.value)}
+            className="input min-h-[120px] dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            placeholder="Beschreiben Sie Ihr Unternehmen..."
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4 col-span-2">
+          <div className="flex flex-col">
+            <label className="block mb-1 font-medium">Mitarbeiterzahl</label>
+            <input
+              value={step2.employees || ""}
+              onChange={(e) => handleChange("step2.employees", e.target.value)}
+              className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="block mb-1 font-medium">Einzugsgebiet Radius (km)</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={radiusKm ?? 30}
+              onChange={(e) => handleChange("radiusKm", Number(e.target.value))}
+              className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col col-span-2 mt-4">
+          <label className="block mb-2 font-medium">Einzugsgebiet auf der Karte</label>
+          {typeof window !== "undefined" && (
+            <GoogleMapComponent
+              lat={lat}
+              lng={lng}
+              radiusKm={radiusKm ?? 30}
+              onRadiusChange={(newRadius) => handleChange("radiusKm", newRadius)}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GeneralForm;

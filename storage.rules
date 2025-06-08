@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
+    match /profilePictures/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
+    match /logos/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
+    match /businessLicenses/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
+    match /masterCraftsmanCertificates/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
+    // Wenn diese öffentlich lesbar sein sollen, muss 'allow read;' hinzugefügt/geändert werden.
+    match /projectImages/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Standardregel für alle anderen Pfade (falls nicht spezifisch abgedeckt)
+    // ACHTUNG: Diese Regel ist sehr breit und sollte an Ihre Sicherheitsanforderungen angepasst werden!
+    // Im aktuellen Zustand ist sie nicht vorhanden, was bedeutet, dass alles, was nicht explizit erlaubt ist, verboten ist.
+    // match /{allPaths=**} {
+    //   allow read, write: if request.auth != null;
+    // }
+  }
+}

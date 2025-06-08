@@ -1,0 +1,49 @@
+import './globals.css';
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider } from '@/app/contexts/AuthContext';
+import { RegistrationProvider } from '@/app/contexts/registrationContext'; // Importiere den RegistrationProvider
+
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+});
+
+export const metadata: Metadata = {
+  title: 'TASKO',
+  description:
+    'TASKO bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="de" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <RegistrationProvider>
+              {children}
+            </RegistrationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
