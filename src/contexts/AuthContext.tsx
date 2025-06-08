@@ -1,9 +1,8 @@
-// src/contexts/AuthContext.tsx
 "use client";
 
 import { User, onAuthStateChanged } from "firebase/auth";
 import { createContext, useState, useEffect, useContext } from "react";
-import { auth } from '../../firebase/clients'; // Stelle sicher, dass der Pfad korrekt ist
+import { auth } from '../firebase/clients'; // Stelle sicher, dass der Pfad korrekt ist
 
 type AuthContextType = {
   currentUser: User | null;

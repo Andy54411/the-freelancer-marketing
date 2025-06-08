@@ -1,4 +1,3 @@
-// src/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters.tsx
 'use client';
 
 import { Label } from '@/components/ui/label';
@@ -8,7 +7,6 @@ import { DateRange } from 'react-day-picker';
 import { format, addDays, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { generalTimeOptionsForSidebar, PRICE_STEP } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
-
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface PriceDistributionData {
@@ -24,11 +22,9 @@ const renderPriceHistogram = (data: PriceDistributionData[], loading: boolean) =
       </div>
     );
   }
-
   if (!data || data.length === 0) {
     return <div className="h-24 bg-gray-100 my-2 rounded flex items-center justify-center text-xs text-gray-400">Keine Preisdaten verfügbar.</div>;
   }
-
   return (
     <div className="h-24 my-2">
       <ResponsiveContainer width="100%" height="100%">
@@ -38,7 +34,7 @@ const renderPriceHistogram = (data: PriceDistributionData[], loading: boolean) =
           <YAxis axisLine={false} tickLine={false} hide />
           <Tooltip
             cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-            formatter={(value: number, name: string, props: { payload?: { range?: string; }; }) => [`${value} Anbieter`, props.payload?.range || '']} // Typ von props korrigiert
+            formatter={(value: number, name: string, props: { payload?: { range?: string; }; }) => [`${value} Anbieter`, props.payload?.range || '']}
           />
           <Bar dataKey="count" fill="#14ad9f" radius={[4, 4, 0, 0]} />
         </BarChart>
@@ -52,14 +48,13 @@ interface SidebarFiltersProps {
   setCity: (city: string) => void;
   postalCode: string;
   setPostalCode: (postalCode: string) => void;
-  onAutocompleteLoad: (autocomplete: google.maps.places.Autocomplete | null) => void;
-  isMapsLoaded: boolean;
-
+  isLoaded: boolean;
+  onLoad: (autocomplete: google.maps.places.Autocomplete) => void;
+  onPlaceChanged: () => void;
   finalSelectedDateRange: DateRange | undefined;
   finalSelectedTime: string;
   onDateTimeConfirm: (selection?: Date | DateRange, time?: string, duration?: string) => void;
   onOpenDatePicker: () => void;
-
   currentMaxPrice: number;
   dynamicSliderMin: number;
   dynamicSliderMax: number;
@@ -68,7 +63,6 @@ interface SidebarFiltersProps {
   loadingSubcategoryData: boolean;
   averagePriceForSubcategory: number | null;
   priceDistribution: PriceDistributionData[] | null;
-
   selectedSubcategory: string | null;
   setFinalSelectedTime: (time: string) => void;
 }
@@ -78,8 +72,9 @@ export default function SidebarFilters({
   setCity,
   postalCode,
   setPostalCode,
-  onAutocompleteLoad,
-  isMapsLoaded,
+  isLoaded,
+  onLoad,
+  onPlaceChanged,
   finalSelectedDateRange,
   finalSelectedTime,
   onDateTimeConfirm,
@@ -100,7 +95,6 @@ export default function SidebarFilters({
     const today = new Date();
     const isRangeMode = selectedSubcategory?.toLowerCase() === 'mietkoch';
     let dateSelection: Date | DateRange;
-
     if (type === 'today') {
       dateSelection = isRangeMode ? { from: today, to: today } : today;
     } else if (type === '3days') {
@@ -117,14 +111,18 @@ export default function SidebarFilters({
     <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 flex-shrink-0 self-start">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Filter & Standort</h2>
       <div>
-        <Label className="text-base font-medium text-gray-800 dark:text-white">Stadt</Label>
-        {isMapsLoaded ? (
-          <Autocomplete onLoad={onAutocompleteLoad} onUnmount={() => onAutocompleteLoad(null)}>
+        <Label className="text-base font-medium text-gray-800 dark:text-white">Ort oder Adresse</Label>
+        {isLoaded ? (
+          <Autocomplete
+            onLoad={onLoad}
+            onPlaceChanged={onPlaceChanged}
+          // ✅ KORREKTUR: options-Prop entfernt für eine globale, uneingeschränkte Suche
+          >
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Stadt eingeben"
+              placeholder="Adresse, Stadt oder Land"
               className="w-full rounded-md border p-2 mt-2"
             />
           </Autocomplete>
@@ -133,7 +131,7 @@ export default function SidebarFilters({
             type="text"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            placeholder="Stadt wird geladen..."
+            placeholder="Kartenkomponente wird geladen..."
             className="w-full rounded-md border p-2 mt-2 bg-gray-100"
             disabled
           />

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiX, FiArrowLeft } from 'react-icons/fi';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 
 import { CategorySelectionStep } from './CategorySelectionStep'; // Oder './QuickJobCreationSteps/CategorySelectionStep' je nach tatsächlichem Pfad
 

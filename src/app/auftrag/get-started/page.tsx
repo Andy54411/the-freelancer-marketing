@@ -12,7 +12,7 @@ import ProgressBar from '@/components/ProgressBar';
 import { FiInfo, FiX, FiCheck } from 'react-icons/fi';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/firebase/clients';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 
 const auth = getAuth(app);
 

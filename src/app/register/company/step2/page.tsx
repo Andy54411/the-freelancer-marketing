@@ -1,5 +1,4 @@
-// /Users/andystaudinger/tasko/src/app/register/company/step2/page.tsx
-'use client';
+"use client";
 
 import React, { useState, useEffect, useRef, useCallback, AnimationEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,7 +6,7 @@ import { useJsApiLoader, GoogleMap, Marker, Circle, Autocomplete } from '@react-
 import ProgressBar from '@/components/ProgressBar';
 import PopupModal from '@/app/register/company/step4/components/PopupModal';
 import { FiX, FiInfo } from 'react-icons/fi';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 // import { PAGE_LOG, PAGE_WARN } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
 
 const STEP2_PAGE_LOG = "[Register Company Step2 LOG]";

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 import { FiChevronRight } from 'react-icons/fi';
 
 interface CategorySelectionStepProps {

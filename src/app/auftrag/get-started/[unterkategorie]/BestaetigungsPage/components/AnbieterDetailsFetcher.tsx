@@ -31,7 +31,7 @@ import {
 } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 
 function parseDurationStringToHours(durationStr?: string): number | null {
   if (!durationStr || typeof durationStr !== 'string') return null;

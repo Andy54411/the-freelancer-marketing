@@ -1,5 +1,5 @@
 // Beispiel: /Users/andystaudinger/Tasko/src/app/auftrag/layout.tsx
-import { RegistrationProvider } from '@/components/Registration-Context';
+import { RegistrationProvider } from '@/contexts/Registration-Context';
 import React from 'react';
 
 export default function AuftragLayout({ children }: { children: React.ReactNode }) {

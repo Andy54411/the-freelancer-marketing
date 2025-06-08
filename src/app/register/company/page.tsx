@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiInfo, FiCheck } from 'react-icons/fi';
 import { useState } from 'react';
-import { useRegistration } from '@/components/Registration-Context'; // Korrigierter Pfad zum Context
+import { useRegistration } from '@/contexts/Registration-Context'; // Korrigierter Pfad zum Context
 
 const steps = [
   "Über Sie",

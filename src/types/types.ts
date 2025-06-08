@@ -1,5 +1,3 @@
-// src/lib/types.ts
-
 /**
  * Basis-Typ für Anbieterinformationen
  * Wird z. B. in AnbieterDetailsFetcher, OrderSummary etc. verwendet

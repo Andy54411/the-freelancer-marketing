@@ -6,7 +6,7 @@ import React, { ChangeEvent, Dispatch, SetStateAction, useState, useEffect, useC
 import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiCheckCircle, FiAlertCircle, FiLoader } from 'react-icons/fi';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 import { getAuth, createUserWithEmailAndPassword, UserCredential, User as AuthUser } from 'firebase/auth';
 // WICHTIG: getDoc hinzugefügt
 import { doc, setDoc, serverTimestamp, deleteField, updateDoc, FieldValue, getDoc } from 'firebase/firestore';

@@ -2,7 +2,7 @@
 import Image from 'next/image';
 
 import { ReactNode } from 'react';
-import { RegistrationProvider } from '@/components/Registration-Context';
+import { RegistrationProvider } from '@/contexts/Registration-Context';
 
 interface LayoutProps {
   children: ReactNode;

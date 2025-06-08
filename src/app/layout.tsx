@@ -1,9 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/app/contexts/AuthContext';
-import { RegistrationProvider } from '@/app/contexts/registrationContext'; // Importiere den RegistrationProvider
+import { Providers } from './providers'; // Importiere deine neue Provider-Komponente
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -15,6 +13,7 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 });
 
+// "use client" ist jetzt entfernt, daher ist dieser Export wieder gültig.
 export const metadata: Metadata = {
   title: 'TASKO',
   description:
@@ -31,18 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <RegistrationProvider>
-              {children}
-            </RegistrationProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        {/* Wickle die children einfach in deine neue Providers-Komponente */}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

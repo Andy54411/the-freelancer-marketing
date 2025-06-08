@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiInfo, FiCheck } from 'react-icons/fi';
 import PopupModal from '@/app/register/company/step4/components/PopupModal';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 
 // --- Daten für die Kategorien und Unterkategorien ---
 interface CardData {

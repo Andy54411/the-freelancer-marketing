@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
-import { useRegistration } from '@/components/Registration-Context'; // Pfad anpassen
+import { useRegistration } from '@/contexts/Registration-Context'; // Pfad anpassen
 
 interface RepresentativePersonalDataModalProps {
     isOpen: boolean;

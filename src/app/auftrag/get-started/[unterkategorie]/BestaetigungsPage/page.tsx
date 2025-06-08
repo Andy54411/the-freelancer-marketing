@@ -1,5 +1,5 @@
-// src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/page.tsx
 'use client';
+
 
 import React, { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
@@ -9,7 +9,7 @@ import { StripeCardCheckout } from '@/components/CheckoutForm';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { getFunctions, httpsCallable, Functions, FunctionsError } from 'firebase/functions';
 import { app } from '@/firebase/clients';
-import { useRegistration } from '@/components/Registration-Context';
+import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
 
 import { Elements } from '@stripe/react-stripe-js';
