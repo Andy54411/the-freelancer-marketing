@@ -37,6 +37,7 @@
     "@tabler/icons-react": "^3.33.0",
     "@tanstack/react-table": "^8.21.3",
     "@types/stripe": "^8.0.417",
+    "@vis.gl/react-google-maps": "^1.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
