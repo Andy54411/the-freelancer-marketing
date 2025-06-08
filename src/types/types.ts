@@ -45,7 +45,7 @@ export interface OrderSummaryProps {
  * Props für Zahlungsformular-Komponente (Stripe Checkout)
  */
 export interface PaymentDetailsFormProps {
-  checkoutData?: Record<string, any>;
+  checkoutData?: Record<string, unknown>;
   onCheckoutAttempted?: (error?: string) => void;
 }
 
