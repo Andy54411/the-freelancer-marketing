@@ -1,0 +1,10 @@
+# Ignoriere Cache und große native Builds
+.next/
+node_modules/
+firebase-debug.log
+firebase-debug.*.log
+.DS_Store
+*.pack
+*.pack.old
+*.node
+
