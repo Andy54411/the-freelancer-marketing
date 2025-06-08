@@ -1,11 +1,10 @@
-// src/app/_app.tsx
 import '@/styles/globals.css';
 import { useEffect } from 'react';
-import { auth } from './firebase/clients';
 import type { AppProps } from 'next/app';
+import { auth } from './firebase/clients';
 import { AuthProvider } from '@/app/contexts/AuthContext';
 import { RegistrationProvider } from '@/app/contexts/registrationContext';
-import { GoogleMapsApiLoaderProvider } from '@/components/GoogleMapsApiLoaderContext'; // Pfad anpassen
+import { GoogleMapsApiLoaderProvider } from './components/GoogleMapsApiLoaderContext'; // richtiger Pfad!
 
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
@@ -16,13 +15,10 @@ function MyApp({ Component, pageProps }: AppProps) {
     return () => unsubscribe();
   }, []);
 
-
   return (
     <AuthProvider>
       <RegistrationProvider>
-        {/* Der GoogleMapsApiLoaderProvider kapselt jetzt den useJsApiLoader */}
         <GoogleMapsApiLoaderProvider>
-          {/* isMapsLoaded wird NICHT mehr als Prop übergeben, da es über den Context abgerufen wird */}
           <Component {...pageProps} />
         </GoogleMapsApiLoaderProvider>
       </RegistrationProvider>
