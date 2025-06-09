@@ -1,6 +1,5 @@
 'use client';
 
-
 import React, { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
@@ -20,7 +19,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 const auth = getAuth(app);
 const functionsInstance: Functions = getFunctions(app);
 
-// --- INTERFACE DEFINITIONEN (unverändert) ---
+// --- INTERFACE DEFINITIONEN ---
 interface TemporaryJobDraftData {
   customerType: 'private' | 'business' | null;
   selectedCategory: string | null;
@@ -46,6 +45,16 @@ interface TemporaryJobDraftResult {
 
 interface GetOrCreateStripeCustomerResult {
   stripeCustomerId: string;
+}
+
+// NEU: Interface für die Kundenadresse, um Typsicherheit zu gewährleisten
+interface CustomerAddress {
+  line1?: string;
+  line2?: string; // Optional, falls du eine zweite Adresszeile hast
+  city?: string;
+  postal_code?: string;
+  state?: string; // Optional, für Bundesland/Staat
+  country?: string; // ISO 3166-1 alpha-2 code (z.B. "DE")
 }
 
 interface BestaetigungsContentPropsForPage {
@@ -99,18 +108,17 @@ export default function BestaetigungsPage() {
   const isInitializing = useRef(false);
 
   // =================================================================================================
-  // ANGEPASSTER useEffect-HOOK
+  // ERSTER useEffect-HOOK: Authentifizierung, Draft-Erstellung, Stripe Customer ID
   // =================================================================================================
   useEffect(() => {
-    console.log(PAGE_LOG, "BestaetigungsPage: useEffect WIRD AUSGEFÜHRT.");
+    console.log(PAGE_LOG, "BestaetigungsPage: Erster useEffect WIRD AUSGEFÜHRT.");
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log(PAGE_LOG, "BestaetigungsPage: onAuthStateChanged-Callback, User:", user?.uid);
       if (user) {
         setCurrentUser(user);
 
-        // --- KORREKTUR: Robuste Guard Clause ---
-        // Wenn der Initialisierungsprozess bereits läuft oder abgeschlossen ist, sofort abbrechen.
+        // Robuste Guard Clause: Wenn der Initialisierungsprozess bereits läuft oder abgeschlossen ist, sofort abbrechen.
         if (isInitializing.current) {
           console.log(PAGE_LOG, "BestaetigungsPage: Initialisierung bereits im Gange oder abgeschlossen. Überspringe.");
           setIsLoadingPageData(false); // Ladeanzeige ausblenden, falls sie noch aktiv war
@@ -218,19 +226,20 @@ export default function BestaetigungsPage() {
       console.log(PAGE_LOG, "BestaetigungsPage: Cleanup von useEffect und onAuthStateChanged.");
       unsubscribe();
     };
-    // --- KORREKTUR: Bereinigtes Dependency Array ---
-    // Die States, die im Hook gesetzt werden, sind keine Abhängigkeiten mehr.
+    // Bereinigtes Dependency Array: Die States, die im Hook gesetzt werden, sind keine Abhängigkeiten mehr.
   }, [
     router,
-    registration,
+    registration, // Der gesamte registration-Kontext ist eine Abhängigkeit, da seine Daten hier gelesen werden
     anbieterIdFromUrl,
     unterkategorieAusPfad,
     postalCodeFromUrl,
-    finalTaskAmountInCents, // Hinzugefügt aufgrund von Linter-Warnung (wahrscheinlich für diesen Hook gemeint)
-    platformFeeForStripe,   // Hinzugefügt aufgrund von Linter-Warnung (wahrscheinlich für diesen Hook gemeint)
+    finalTaskAmountInCents,
+    platformFeeForStripe,
   ]);
 
-  // Der zweite useEffect bleibt unverändert
+  // =================================================================================================
+  // ZWEITER useEffect-HOOK: Abrufen des clientSecret für Stripe Payments
+  // =================================================================================================
   useEffect(() => {
     const fetchStripeClientSecret = async () => {
       if (
@@ -245,6 +254,36 @@ export default function BestaetigungsPage() {
       setPaymentIntentError(null);
 
       try {
+        // Kundenadresse aus dem registration Kontext extrahieren
+        // Prüfe, ob es sich um einen privaten oder geschäftlichen Kunden handelt,
+        // und nimm die entsprechende Adresse.
+        let customerAddressToUse: CustomerAddress | undefined;
+
+        if (registration.customerType === 'private' && registration.personalStreet && registration.personalPostalCode && registration.personalCity && registration.personalCountry) {
+          customerAddressToUse = {
+            line1: registration.personalStreet + (registration.personalHouseNumber ? ` ${registration.personalHouseNumber}` : ''), // Straße + Hausnummer
+            postal_code: registration.personalPostalCode,
+            city: registration.personalCity,
+            country: registration.personalCountry, // ISO-Code wie "DE"
+            // line2, state/province könnten hier auch hinzugefügt werden, wenn vorhanden
+          };
+        } else if (registration.customerType === 'business' && registration.companyStreet && registration.companyPostalCode && registration.companyCity && registration.companyCountry) {
+          customerAddressToUse = {
+            line1: registration.companyStreet + (registration.companyHouseNumber ? ` ${registration.companyHouseNumber}` : ''), // Straße + Hausnummer
+            postal_code: registration.companyPostalCode,
+            city: registration.companyCity,
+            country: registration.companyCountry, // ISO-Code wie "DE"
+            // line2, state/province könnten hier auch hinzugefügt werden, wenn vorhanden
+          };
+        }
+
+        // Optional: Überprüfe, ob die Adresse gültig ist, bevor du sie sendest
+        if (customerAddressToUse && (!customerAddressToUse.line1 || !customerAddressToUse.postal_code || !customerAddressToUse.city || !customerAddressToUse.country)) {
+          console.warn(PAGE_WARN, "BestaetigungsPage: Unvollständige Kundenadresse für Steuerberechnung. Wird nicht gesendet.");
+          customerAddressToUse = undefined; // Sende keine unvollständige Adresse
+        }
+
+
         const payload = {
           amount: finalTaskAmountInCents,
           currency: 'eur',
@@ -255,7 +294,12 @@ export default function BestaetigungsPage() {
           stripeCustomerId: kundeStripeCustomerId,
           customerName: currentUser.displayName || `${registration.firstName || ''} ${registration.lastName || ''}`,
           customerEmail: currentUser.email || registration.email,
+          // =======================================================
+          // HINZUGEFÜGT: KUNDENADRESSE FÜR STEUERBERECHNUNG
+          // =======================================================
+          customerAddress: customerAddressToUse, // Sende die ermittelte Adresse
         };
+
         const idToken = await currentUser.getIdToken();
         const headers: HeadersInit = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` };
         const serverResponse = await fetch('/api/create-payment-intent', {
@@ -285,8 +329,22 @@ export default function BestaetigungsPage() {
     fetchStripeClientSecret();
   }, [
     kundeStripeCustomerId, tempJobDraftId, currentUser, anbieterStripeConnectId,
-    finalTaskAmountInCents, platformFeeForStripe, registration.firstName,
-    registration.lastName, registration.email, clientSecret, loadingPaymentIntent
+    finalTaskAmountInCents, platformFeeForStripe, clientSecret, loadingPaymentIntent,
+    registration.firstName, registration.lastName, registration.email, // Diese waren schon da
+    // =======================================================
+    // ABHÄNGIGKEITEN HINZUFÜGEN, DA customerAddressData aus `registration` stammt
+    // =======================================================
+    registration.customerType,
+    registration.personalStreet,
+    registration.personalHouseNumber,
+    registration.personalPostalCode,
+    registration.personalCity,
+    registration.personalCountry,
+    registration.companyStreet,
+    registration.companyHouseNumber,
+    registration.companyPostalCode,
+    registration.companyCity,
+    registration.companyCountry,
   ]);
 
   const handlePriceCalculatedFromChild = (priceInCents: number) => {

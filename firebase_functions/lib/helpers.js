@@ -1,5 +1,5 @@
 "use strict";
-// /Users/andystaudinger/Tilvo/functions/src/helpers.ts
+// /Users/andystaudinger/Tasko/firebase_functions/src/helpers.ts
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -48,7 +48,7 @@ const firestore_1 = require("firebase-admin/firestore");
 Object.defineProperty(exports, "FieldValue", { enumerable: true, get: function () { return firestore_1.FieldValue; } });
 Object.defineProperty(exports, "Timestamp", { enumerable: true, get: function () { return firestore_1.Timestamp; } });
 const storage_1 = require("firebase-admin/storage");
-const admin = __importStar(require("firebase-admin"));
+const admin = __importStar(require("firebase-admin")); // Beibehalten, da es für admin.firestore.FieldValue verwendet wird
 exports.admin = admin;
 const stripe_1 = __importDefault(require("stripe"));
 const mail_1 = __importDefault(require("@sendgrid/mail"));
@@ -60,6 +60,33 @@ try {
     if ((0, app_1.getApps)().length === 0) {
         _adminApp = (0, app_1.initializeApp)();
         v2_1.logger.info("Firebase Admin SDK (Default App) erfolgreich initialisiert.");
+        // =========================================================================
+        // ANGEPASSTE ANPASSUNG FÜR DEN EMULATOR-BETRIEB
+        // Hier wird nur Firestore explizit über .settings() verbunden.
+        // Für Auth und Storage verlassen wir uns auf Umgebungsvariablen.
+        // =========================================================================
+        if (process.env.FUNCTIONS_EMULATOR === 'true') {
+            v2_1.logger.info("FUNCTIONS_EMULATOR ist 'true'. Versuche, Emulatoren zu verbinden.");
+            // Firestore Emulator verbinden (DIESER TEIL FUNKTIONIERT UND BLEIBT SO)
+            try {
+                (0, firestore_1.getFirestore)(_adminApp).settings({
+                    host: 'localhost:8080', // Standard-Firestore-Emulator-Host
+                    ssl: false, // Wichtig: Für lokale Emulatoren ist SSL auf false zu setzen
+                });
+                v2_1.logger.info("Firestore Admin SDK auf Emulator umgeleitet (localhost:8080).");
+            }
+            catch (e) {
+                v2_1.logger.error("Fehler beim Umleiten des Firestore Admin SDK auf Emulator:", e);
+            }
+            // HINWEIS: Für Auth und Storage sind hier KEINE expliziten .useEmulator-Aufrufe mehr.
+            // Diese Dienste verbinden sich automatisch mit den Emulatoren,
+            // WENN die Umgebungsvariablen (z.B. FIREBASE_AUTH_EMULATOR_HOST, FIREBASE_STORAGE_EMULATOR_HOST)
+            // beim Start der Emulatoren gesetzt sind.
+            // Die zuvor aufgetretenen TypeErrors werden so umgangen.
+        }
+        // =========================================================================
+        // ENDE DER ANPASSUNG
+        // =========================================================================
     }
     else {
         _adminApp = (0, app_1.getApps)()[0];
@@ -75,19 +102,22 @@ exports.adminAppInstance = _adminApp;
 let stripeClientInstance;
 let sendgridClientConfigured = false;
 let storageInstanceCache;
+// Deine Parameter-Definitionen sind korrekt und bleiben so
 const STRIPE_SECRET_KEY_PARAM = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET_PARAM = (0, params_1.defineSecret)("STRIPE_WEBHOOK_SECRET");
 const SENDGRID_API_KEY_PARAM = (0, params_1.defineSecret)("SENDGRID_API_KEY");
 const FRONTEND_URL_PARAM = (0, params_1.defineString)("FRONTEND_URL");
 const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = (0, params_1.defineString)("EMULATOR_PUBLIC_FRONTEND_URL", {
     description: 'Publicly accessible URL for the frontend when testing with emulators, e.g., for Stripe webhooks or business profile URL. Should be set in .env.local for functions.',
-    default: "" // Wird in .env.local gesetzt, z.B. auf https://dev.tilvo.de
+    default: "" // Wird in .env.local gesetzt, z.B. auf http://localhost:3000
 });
 function getStorageInstance() {
     if (!storageInstanceCache) {
         v2_1.logger.debug("[getStorageInstance] Versuche, Storage-Instanz zu initialisieren.");
         try {
             storageInstanceCache = (0, storage_1.getStorage)(_adminApp);
+            // HINWEIS: Hier ist KEIN expliziter .useEmulator-Aufruf.
+            // Der Storage-Emulator wird über die Umgebungsvariable FIREBASE_STORAGE_EMULATOR_HOST verbunden.
             v2_1.logger.info("Firebase Storage-Client bei Bedarf initialisiert.");
         }
         catch (e) {
@@ -103,7 +133,7 @@ function getStorageInstance() {
 }
 function getStripeInstance() {
     if (!stripeClientInstance) {
-        const stripeKey = STRIPE_SECRET_KEY_PARAM.value();
+        const stripeKey = STRIPE_SECRET_KEY_PARAM.value(); // Liest den Wert vom Parameter-Service
         if (stripeKey) {
             stripeClientInstance = new stripe_1.default(stripeKey, {
                 typescript: true,
@@ -120,7 +150,7 @@ function getStripeInstance() {
 }
 function getSendGridClient() {
     if (!sendgridClientConfigured) {
-        const sendgridKey = SENDGRID_API_KEY_PARAM.value();
+        const sendgridKey = SENDGRID_API_KEY_PARAM.value(); // Liest den Wert vom Parameter-Service
         if (sendgridKey) {
             if (mail_1.default && typeof mail_1.default.setApiKey === "function") {
                 mail_1.default.setApiKey(sendgridKey);
@@ -146,11 +176,12 @@ function getFrontendURL() {
             v2_1.logger.info(`[getFrontendURL] Emulator-Modus: Verwende EMULATOR_PUBLIC_FRONTEND_URL: ${emulatorPublicUrl}`);
             return emulatorPublicUrl;
         }
-        // Fallback zur normalen FRONTEND_URL (http://localhost:3000) für den Emulator, wenn keine spezielle öffentliche URL gesetzt ist.
-        const localUrl = FRONTEND_URL_PARAM.value();
-        v2_1.logger.warn(`[getFrontendURL] Emulator-Modus: EMULATOR_PUBLIC_FRONTEND_URL nicht (korrekt) gesetzt. Fallback auf lokale FRONTEND_URL: ${localUrl}. Dies kann für Stripe's business_profile.url ungültig sein.`);
-        // Stelle sicher, dass auch hier ein gültiger Default zurückgegeben wird, falls FRONTEND_URL_PARAM leer ist.
-        return localUrl || 'http://localhost:3000'; // Fallback, falls FRONTEND_URL nicht in .env.local gesetzt ist
+        // Fallback zur normalen FRONTEND_URL für den Emulator, wenn keine spezielle öffentliche URL gesetzt ist.
+        const localUrl = FRONTEND_URL_PARAM.value(); // Dies wäre die Produktions-URL
+        v2_1.logger.warn(`[getFrontendURL] Emulator-Modus: EMULATOR_PUBLIC_FRONTEND_URL nicht (korrekt) gesetzt. Fallback auf Standard-Localhost. Dies kann für Stripe's business_profile.url ungültig sein.`);
+        // Expliziter Fallback, da FRONTEND_URL_PARAM.value() im Emulator die Produktiv-URL liefern würde,
+        // oder einen leeren String, wenn sie nicht in .env.local ist.
+        return 'http://localhost:3000'; // Hardcoded Fallback für lokale Entwicklung
     }
     // Für den Live-Betrieb
     const liveUrl = FRONTEND_URL_PARAM.value();

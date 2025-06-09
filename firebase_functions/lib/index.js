@@ -1,4 +1,5 @@
 "use strict";
+//functions/src/index.ts
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -14,10 +15,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-//functions/src/index.ts
 __exportStar(require("./callable_stripe"), exports);
 __exportStar(require("./callable_general"), exports);
 __exportStar(require("./http_general"), exports);
 __exportStar(require("./http_webhooks"), exports);
 __exportStar(require("./http_file_uploads"), exports);
+__exportStar(require("./triggers_firestore"), exports);
 //# sourceMappingURL=index.js.map

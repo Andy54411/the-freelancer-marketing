@@ -1,23 +1,39 @@
 import type { NextConfig } from 'next';
+import path from 'path'; // <- DIESE ZEILE IST JETZT WIEDER HINZUGEFÜGT UND KORREKT
+
+// Der manuelle dotenvConfig-Aufruf wird entfernt, da Next.js .env.local Dateien
+// automatisch lädt und dieser Aufruf Konflikte verursachen kann.
+// (Alle Code-Zeilen, die diesen Aufruf betrafen, bleiben entfernt)
 
 const nextConfig: NextConfig = {
   // WICHTIG: Firebase Hosting Adapter erkennt automatisch das Framework
   // Sie müssen hier keine 'output: "export"' setzen, da Sie API-Routen verwenden.
 
-  // NEU: Webpack-Konfiguration, um den functions-Ordner zu ignorieren
+  // Webpack-Konfiguration, um den functions-Ordner zu ignorieren
   webpack: (config, { isServer }) => {
     // Schließt den 'functions'-Ordner von der Kompilierung durch Next.js aus
-    // Dies verhindert, dass Next.js versucht, Backend-Code als Frontend-Code zu behandeln
     config.externals = config.externals || [];
-    config.externals.push({
-      // Passt Imports an, die aus dem 'functions/' Verzeichnis kommen
-      './functions': './functions', // Verhindert das Bundling des Ordners selbst
-      './functions/*': './functions/*', // Verhindert das Bundling aller Dateien im Ordner
-    });
+    config.externals.push(
+      {
+        './functions': './functions',
+        './functions/*': './functions/*',
+        // Wenn du auch den firebase_functions Ordner direkt referenzierst:
+        './firebase_functions': './firebase_functions',
+        './firebase_functions/*': './firebase_functions/*', // <- DIESER PUNKT AM ENDE IST JETZT KORRIGIERT
+      }
+    );
+
+    // Optional: Alias für saubere Imports, z. B. @/components/...
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(__dirname, 'src'), // <- 'path' wird hier korrekt verwendet
+    };
 
     return config;
   },
 
+  // Ermöglicht externe Bilder z. B. aus Firebase oder GitHub
   images: {
     remotePatterns: [
       {
@@ -27,15 +43,15 @@ const nextConfig: NextConfig = {
         pathname: '/v0/b/tilvo-f142f.firebasestorage.app/o/**',
       },
       {
-        protocol: 'http', // Für den Firebase Storage Emulator
-        hostname: '127.0.0.1',
-        port: '9199',
+        protocol: 'http', // Für den lokalen Emulator
+        hostname: '127.0.0.1', // Für den lokalen Emulator
+        port: '9199', // Port des Storage Emulators
         pathname: '/tilvo-f142f.firebasestorage.app/**',
       },
       {
-        protocol: 'http', // Für den Firebase Storage Emulator (localhost als Alternative)
-        hostname: 'localhost',
-        port: '9199',
+        protocol: 'http', // Für den lokalen Emulator
+        hostname: 'localhost', // Für den lokalen Emulator
+        port: '9199', // Port des Storage Emulators
         pathname: '/tilvo-f142f.firebasestorage.app/**',
       },
       {
@@ -58,6 +74,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // Aktiviert .env-Variablen mit NEXT_PUBLIC_* im Frontend
+  // Next.js lädt diese automatisch aus .env.local, .env.development etc.
+  env: {
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_Maps_API_KEY: process.env.NEXT_PUBLIC_Maps_API_KEY,
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    FRONTEND_URL: process.env.FRONTEND_URL,
+    EMULATOR_PUBLIC_FRONTEND_URL: process.env.EMULATOR_PUBLIC_FRONTEND_URL,
+  }
 };
 
 export default nextConfig;
