@@ -5,52 +5,62 @@ name: Deploy to Firebase
 on:
   push:
     branches:
-      - main 
+      - main # Der Workflow wird bei jedem Push auf den 'main'-Branch ausgelöst
 
 jobs:
   deploy_functions:
     name: Deploy Firebase Functions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Der Job läuft auf einem Ubuntu-Linux-System
 
     steps:
       # Schritt 1: Code auschecken
+      # Holt den Code deines Repositories in den Runner.
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       # Schritt 2: pnpm einrichten
+      # Konfiguriert pnpm als Paketmanager für den Workflow.
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8 # Stellt sicher, dass pnpm Version 8 verwendet wird
 
       # Schritt 3: Node.js einrichten
+      # Richtet die Node.js-Umgebung ein.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: '20' # Verwendet Node.js Version 20
+          cache: 'pnpm' # Aktiviert Caching für pnpm-Abhängigkeiten
 
       # Schritt 4: Abhängigkeiten installieren
+      # Installiert alle benötigten Node.js-Pakete für dein Projekt.
       - name: Install root dependencies
         run: pnpm install
 
       # Schritt 5: Functions kompilieren
+      # Startet den Build-Prozess für deine Firebase Functions.
       - name: Build Firebase Functions
         run: pnpm --dir ./firebase_functions run build
 
       # Schritt 6: Bei Google Cloud authentifizieren
+      # Authentifiziert den GitHub Actions Runner mit Google Cloud (und somit Firebase).
+      # Nutzt ein Service-Konto, das als GitHub Secret gespeichert ist.
       - name: Authenticate with Google Cloud
         uses: 'google-github-actions/auth@v2'
         with:
-          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}'
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}' # Dein Firebase Service Account Secret
 
-      # Schritt 7: Deployment zu Firebase (ANGEPASST)
+      # Schritt 7: Deployment zu Firebase
+      # Führt den eigentlichen Deployment-Befehl für deine Firebase Functions aus.
+      # Der Schlüssel ist die Hinzufügung von '--project tilvo-f142f'.
       - name: Deploy to Firebase
         uses: 'w9jds/firebase-action@master'
         with:
-          args: 'deploy --only functions'
+          # Führt den Firebase Deploy-Befehl aus und gibt explizit deine Projekt-ID an.
+          args: 'deploy --only functions --project tilvo-f142f'
         env:
-          # HIER WERDEN DIE SECRETS AN FIREBASE WEITERGEGEBEN
+          # Diese Umgebungsvariablen werden an deine Firebase Functions während des Deployments übergeben.
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
