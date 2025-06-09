@@ -223,9 +223,9 @@ export default function SidebarFilters({
       </div>
 
       <div className="pt-4 border-t border-gray-200">
-        <Label className="text-sm font-medium text-gray-700">Tilver-Kategorie</Label>
+        <Label className="text-sm font-medium text-gray-700">Kategorien</Label>
         <div className="mt-2 text-sm text-gray-600">
-          <div><input type="checkbox" className="mr-2 accent-[#14ad9f]" />Pro-Tilver</div>
+          <div><input type="checkbox" className="mr-2 accent-[#14ad9f]" />Pro-Tasker</div>
         </div>
       </div>
     </div>
