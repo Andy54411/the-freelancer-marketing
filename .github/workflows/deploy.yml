@@ -51,6 +51,20 @@ jobs:
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}' # Dein Firebase Service Account Secret
 
+      ---
+      # NEUER SCHRITT: Problematische Firebase Functions löschen (TEMPORÄR)
+      # Dieser Schritt löscht die alten Versionen von 'createUserProfile' und 'updateUserProfile'.
+      # FÜHRE DIESEN SCHRITT NUR EINMAL AUS, UM DIE FUNKTIONEN ZU LÖSCHEN,
+      # UND ENTFERNE DANN DIESEN BLOCK AUS DEINEM WORKFLOW!
+      - name: Delete problematic Firebase Functions
+        run: |
+          firebase functions:delete createUserProfile --project tilvo-f142f --force
+          firebase functions:delete updateUserProfile --project tilvo-f142f --force
+        # 'continue-on-error: true' stellt sicher, dass der Workflow weiterläuft,
+        # auch wenn eine Funktion nicht gefunden oder bereits gelöscht wurde.
+        continue-on-error: true
+      ---
+
       # Schritt 7: Deployment zu Firebase
       # Führt den eigentlichen Deployment-Befehl für deine Firebase Functions aus.
       # Der Schlüssel ist die Hinzufügung von '--project tilvo-f142f'.
@@ -59,10 +73,12 @@ jobs:
         with:
           # Führt den Firebase Deploy-Befehl aus und gibt explizit deine Projekt-ID an.
           args: 'deploy --only functions --project tilvo-f142f'
-        env:
-          # Diese Umgebungsvariablen werden an deine Firebase Functions während des Deployments übergeben.
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-          EMULATOR_PUBLIC_FRONTEND_URL: ${{ secrets.EMULATOR_PUBLIC_FRONTEND_URL }}
+          # Diese Umgebungsvariablen werden nun als Laufzeit-Umgebungsvariablen für deine Firebase Functions gesetzt.
+          env_vars: |
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+            SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            EMULATOR_PUBLIC_FRONTEND_URL=${{ secrets.EMULATOR_PUBLIC_FRONTEND_URL }}
+        # Der 'env'-Block hier ist nicht mehr zwingend notwendig für die Functions-Konfiguration,
+        # da env_vars dies direkt erledigt. Ich habe ihn entfernt, um Redundanz zu vermeiden.
