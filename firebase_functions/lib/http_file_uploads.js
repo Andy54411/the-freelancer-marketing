@@ -1,4 +1,5 @@
 "use strict";
+// /Users/andystaudinger/Tasko/firebase_functions/src/http_file_uploads.ts
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -39,163 +40,151 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadStripeFile = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
+const admin = __importStar(require("firebase-admin"));
 const busboy_1 = __importDefault(require("busboy"));
 const helpers_1 = require("./helpers");
-const admin = __importStar(require("firebase-admin"));
 const path_1 = __importDefault(require("path"));
-exports.uploadStripeFile = (0, https_1.onRequest)({ cors: true, region: "us-central1", memory: "512MiB" }, async (req, res) => {
-    v2_1.logger.info("[uploadStripeFile] Request erhalten", {
-        method: req.method,
-        headers: req.headers,
-        rawBodyLength: req.rawBody?.length
-    });
-    if (req.method !== "POST") {
-        v2_1.logger.warn("[uploadStripeFile] Ungültige Methode:", req.method);
-        res.status(405).send("Method Not Allowed. Please use POST.");
-        return;
+const os_1 = __importDefault(require("os"));
+const fs_1 = __importDefault(require("fs"));
+// KORREKTUR 1: "UploadResponse" entfernt, da es nicht existiert.
+const storage_1 = require("firebase-admin/storage");
+const uuid_1 = require("uuid");
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
+// --- 1. Helper für Authentifizierung ---
+const authenticateRequest = async (req) => {
+    if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+        throw { status: 401, message: 'Unauthorized: Missing or invalid Authorization header.' };
     }
-    const localStripe = (0, helpers_1.getStripeInstance)();
-    const contentType = req.headers['content-type'];
-    if (!contentType?.startsWith('multipart/form-data')) {
-        v2_1.logger.warn("[uploadStripeFile] Ungültiger Content-Type:", contentType);
-        res.status(400).json({ success: false, message: "Content-Type muss multipart/form-data sein." });
-        return;
+    const idToken = req.headers.authorization.split('Bearer ')[1];
+    try {
+        return await admin.auth().verifyIdToken(idToken);
     }
-    if (!req.rawBody) {
-        v2_1.logger.error("[uploadStripeFile] req.rawBody ist nicht verfügbar.");
-        res.status(400).json({ success: false, message: "Request-Body fehlt oder ist nicht lesbar." });
-        return;
+    catch (error) {
+        v2_1.logger.warn("Token-Verifizierung fehlgeschlagen:", error);
+        throw { status: 401, message: 'Unauthorized: Invalid token.' };
     }
-    await new Promise((resolve, reject) => {
-        const busboy = (0, busboy_1.default)({ headers: req.headers });
-        let fileChunks = [];
-        let fileNameHolder = null;
-        let mimeTypeHolder = null;
-        let purposeHolder = null;
-        let userIdHolder = null;
-        busboy.on('file', (fieldname, file, filenameInfo) => {
-            const { filename, mimeType } = filenameInfo;
-            const safeFilename = path_1.default.basename(filename || `unknown_file_${Date.now()}`);
-            v2_1.logger.info(`[uploadStripeFile] Empfange Datei-Stream: ${safeFilename}, Busboy-MIME-Typ: ${mimeType}, Feld: ${fieldname}`);
-            fileNameHolder = safeFilename;
-            mimeTypeHolder = mimeType;
-            file.on('data', (chunk) => {
-                v2_1.logger.debug(`[uploadStripeFile] Empfange Chunk für ${fileNameHolder}, Größe: ${chunk.length}`);
-                fileChunks.push(chunk);
-            });
-            file.on('end', () => {
-                v2_1.logger.info(`[uploadStripeFile] Datei-Stream ${fileNameHolder} beendet. Gesamt-Chunks: ${fileChunks.length}, Gesamtgröße aus Chunks: ${fileChunks.reduce((acc, cur) => acc + cur.length, 0)} bytes`);
-            });
-            file.on('error', (err) => {
-                v2_1.logger.error(`[uploadStripeFile] Fehler im Datei-Stream ${fileNameHolder}.`, err);
-                fileChunks = [];
-                reject(new https_1.HttpsError("internal", `Fehler beim Streamen der Datei ${fileNameHolder}.`));
-            });
-        });
-        busboy.on('field', (fieldname, val) => {
-            v2_1.logger.info(`[uploadStripeFile] Feld empfangen [${fieldname}]: value: ${val}`);
-            if (fieldname === 'purpose')
-                purposeHolder = val;
-            if (fieldname === 'userId')
-                userIdHolder = val;
-        });
-        busboy.on('finish', async () => {
-            v2_1.logger.info('[uploadStripeFile] Busboy-Verarbeitung abgeschlossen.');
-            if (fileChunks.length === 0 || !fileNameHolder || !purposeHolder || !userIdHolder) {
-                v2_1.logger.warn("[uploadStripeFile] Fehlende Daten nach Busboy-Finish.", { chunks: fileChunks.length, fileNameHolder, purposeHolder, userIdHolder });
-                if (!res.headersSent) {
-                    res.status(400).json({ success: false, message: "Keine Datei, userId oder Purpose empfangen." });
-                }
-                resolve();
+};
+// --- 2. Helper für Multipart-Parsing ---
+const parseMultipartFormData = (req) => {
+    return new Promise((resolve, reject) => {
+        const bb = (0, busboy_1.default)({ headers: req.headers });
+        const tmpdir = os_1.default.tmpdir();
+        const fields = {};
+        const files = {};
+        const fileWrites = [];
+        bb.on('field', (fieldname, val) => { fields[fieldname] = val; });
+        bb.on('file', (fieldname, file, GCSUploadMetadata) => {
+            const { filename, mimeType } = GCSUploadMetadata;
+            if (!filename) {
+                file.resume();
                 return;
             }
-            const fileBuffer = Buffer.concat(fileChunks);
-            v2_1.logger.info(`[uploadStripeFile] Datei ${fileNameHolder} zu Buffer zusammengefügt, Länge: ${fileBuffer.length} bytes.`);
-            if (fileBuffer.length === 0) {
-                if (!res.headersSent) {
-                    res.status(400).json({ success: false, message: "Die zu verarbeitende Datei ist leer." });
-                }
-                resolve();
-                return;
-            }
-            let stripeFileId = undefined;
-            let firebaseStorageUrl = undefined;
-            let firebaseStoragePath = undefined;
+            const filepath = path_1.default.join(tmpdir, (0, uuid_1.v4)() + '-' + path_1.default.basename(filename));
+            files[fieldname] = { filepath, mimeType, filename };
+            const writeStream = fs_1.default.createWriteStream(filepath);
+            file.pipe(writeStream);
+            const promise = new Promise((res, rej) => {
+                file.on('end', () => writeStream.end());
+                writeStream.on('finish', res);
+                writeStream.on('error', rej);
+            });
+            fileWrites.push(promise);
+        });
+        bb.on('finish', async () => {
             try {
-                const stripeFileUploadPromise = localStripe.files.create({
-                    file: { data: fileBuffer, name: fileNameHolder, type: mimeTypeHolder || undefined },
-                    purpose: purposeHolder,
-                });
-                const storage = admin.storage(); // Firebase Storage Instanz erhalten
-                const bucket = storage.bucket();
-                const storageFileName = `user_uploads/${userIdHolder}/${purposeHolder}_${Date.now()}_${fileNameHolder}`;
-                const storageFile = bucket.file(storageFileName);
-                const firebaseStorageUploadPromise = storageFile.save(fileBuffer, {
-                    metadata: { contentType: mimeTypeHolder || 'application/octet-stream' },
-                    public: true,
-                }).then(() => {
-                    firebaseStorageUrl = storageFile.publicUrl();
-                    firebaseStoragePath = storageFileName;
-                    v2_1.logger.info(`[uploadStripeFile] Datei zu Firebase Storage hochgeladen: ${firebaseStorageUrl} (Pfad: ${firebaseStoragePath})`);
-                });
-                const [stripeResult] = await Promise.all([
-                    stripeFileUploadPromise,
-                    firebaseStorageUploadPromise
-                ]);
-                stripeFileId = stripeResult.id;
-                v2_1.logger.info("[uploadStripeFile] Datei zu Stripe hochgeladen:", stripeFileId);
-                if (!res.headersSent) {
-                    res.status(200).json({
-                        success: true,
-                        stripeFileId: stripeFileId,
-                        firebaseStorageUrl: firebaseStorageUrl,
-                        firebaseStoragePath: firebaseStoragePath,
-                        message: "Datei erfolgreich zu Stripe und Firebase Storage hochgeladen."
-                    });
-                }
+                await Promise.all(fileWrites);
+                resolve({ fields, files });
             }
-            catch (err) {
-                v2_1.logger.error("[uploadStripeFile] Fehler beim Upload (Stripe oder Firebase Storage):", { message: err.message, type: err.type, code: err.code, detail: err.raw?.message || err.stack });
-                if (!res.headersSent) {
-                    res.status(err.statusCode || 500).json({ success: false, message: err.message || "Upload-Fehler.", type: err.type, code: err.code });
-                }
-            }
-            finally {
-                resolve();
+            catch (error) {
+                reject({ status: 500, message: 'Failed to process file streams.', raw: error });
             }
         });
-        busboy.on('error', (err) => {
-            v2_1.logger.error('[uploadStripeFile] Busboy Fehler (generisch):', err);
-            reject(err);
-        });
+        bb.on('error', (err) => reject({ status: 400, message: 'Error parsing form data.', raw: err }));
         if (req.rawBody) {
-            busboy.end(req.rawBody);
+            bb.end(req.rawBody);
         }
         else {
-            v2_1.logger.warn("[uploadStripeFile] req.rawBody ist nicht verfügbar. Versuche req.pipe.");
-            if (typeof req.pipe === 'function') {
-                req.pipe(busboy);
-            }
-            else {
-                v2_1.logger.error("[uploadStripeFile] Weder req.rawBody noch req.pipe als Stream verfügbar.");
-                reject(new https_1.HttpsError("internal", "Request-Body konnte nicht verarbeitet werden für Multipart-Upload."));
-            }
-        }
-    }).catch(error => {
-        if (!res.headersSent) {
-            v2_1.logger.error("[uploadStripeFile] Unbehandelter Fehler im Haupt-Promise:", { message: error.message, code: error.code, details: error.details });
-            const statusCode = error.httpErrorCode?.status || 500;
-            const message = error.message || "Interner Serverfehler beim Dateiupload.";
-            const errorCode = error.code;
-            res.status(statusCode).json({
-                success: false,
-                message: message,
-                code: errorCode,
-            });
-        }
-        else {
-            v2_1.logger.info("[uploadStripeFile] Fehler im Haupt-Promise, aber Antwort wurde bereits gesendet.", { message: error.message });
+            req.pipe(bb);
         }
     });
+};
+// --- Hauptfunktion: uploadStripeFile ---
+exports.uploadStripeFile = (0, https_1.onRequest)({ cors: true }, async (req, res) => {
+    // KORREKTUR 2: "return" aus dem res.send() entfernt.
+    if (req.method !== 'POST') {
+        res.status(405).send({ success: false, message: 'Method Not Allowed' });
+        return;
+    }
+    const tmpFilepaths = [];
+    try {
+        // Schritt 1: Authentifizieren über Authorization-Header
+        const decodedToken = await authenticateRequest(req);
+        const userId = decodedToken.uid;
+        // Schritt 2: Request parsen mit dem neuen Helper
+        const { fields, files } = await parseMultipartFormData(req);
+        Object.values(files).forEach(f => tmpFilepaths.push(f.filepath));
+        // Schritt 3: Eingaben validieren
+        if (userId !== fields.userId) {
+            throw { status: 403, message: 'Forbidden: UID does not match token.' };
+        }
+        const purpose = fields.purpose;
+        if (!purpose) {
+            throw { status: 400, message: "Bad Request: Missing 'purpose' field." };
+        }
+        const uploadedFile = files.file;
+        if (!uploadedFile) {
+            throw { status: 400, message: "Bad Request: No file uploaded in 'file' field." };
+        }
+        const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
+        const stripe = (0, helpers_1.getStripeInstance)();
+        const bucket = (0, storage_1.getStorage)().bucket();
+        // Schritt 4: Parallel zu Stripe und Firebase Storage hochladen
+        const stripePromise = stripe.files.create({
+            purpose: purpose,
+            file: { data: fs_1.default.readFileSync(uploadedFilePath), name: filename, type: mimeType },
+        });
+        const storagePath = `user_uploads/${userId}/${purpose}_${(0, uuid_1.v4)()}_${filename}`;
+        const storagePromise = bucket.upload(uploadedFilePath, {
+            destination: storagePath,
+            metadata: { contentType: mimeType },
+        });
+        const [stripeFile, storageResponse] = await Promise.all([stripePromise, storagePromise]);
+        // KORREKTUR 1: Direkt auf das erste Element des Arrays zugreifen.
+        const gcsFile = storageResponse[0];
+        // Schritt 5: URL generieren (SICHERHEITSUPDATE)
+        let fileUrl;
+        if (purpose === 'business_icon') {
+            await gcsFile.makePublic();
+            fileUrl = gcsFile.publicUrl();
+        }
+        else {
+            const [signedUrl] = await gcsFile.getSignedUrl({ action: 'read', expires: Date.now() + 24 * 60 * 60 * 1000 });
+            fileUrl = signedUrl;
+            v2_1.logger.warn(`[uploadStripeFile] Für ${storagePath} wurde eine signierte URL erstellt, die 24h gültig ist.`);
+        }
+        // Schritt 6: Erfolgreiche Antwort senden
+        res.status(200).send({
+            success: true,
+            stripeFileId: stripeFile.id,
+            firebaseStorageUrl: fileUrl,
+            firebaseStoragePath: storagePath,
+        });
+    }
+    catch (error) {
+        v2_1.logger.error("[uploadStripeFile] Fehler bei der Verarbeitung:", error);
+        const status = error.status || 500;
+        const message = error.message || "Interner Serverfehler beim Upload.";
+        res.status(status).send({ success: false, message: message });
+    }
+    finally {
+        // Schritt 7: Temporäre Dateien immer löschen
+        tmpFilepaths.forEach(filepath => {
+            if (fs_1.default.existsSync(filepath)) {
+                fs_1.default.unlinkSync(filepath);
+            }
+        });
+    }
 });
 //# sourceMappingURL=http_file_uploads.js.map

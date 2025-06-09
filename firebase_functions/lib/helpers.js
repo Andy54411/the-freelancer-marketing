@@ -38,7 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.admin = exports.Timestamp = exports.FieldValue = exports.EMULATOR_PUBLIC_FRONTEND_URL_PARAM = exports.FRONTEND_URL_PARAM = exports.SENDGRID_API_KEY_PARAM = exports.STRIPE_WEBHOOK_SECRET_PARAM = exports.STRIPE_SECRET_KEY_PARAM = exports.adminAppInstance = exports.db = void 0;
-exports.getStorageInstance = getStorageInstance;
+exports.getFirebaseAdminStorage = getFirebaseAdminStorage;
 exports.getStripeInstance = getStripeInstance;
 exports.getSendGridClient = getSendGridClient;
 exports.getFrontendURL = getFrontendURL;
@@ -54,22 +54,15 @@ const stripe_1 = __importDefault(require("stripe"));
 const mail_1 = __importDefault(require("@sendgrid/mail"));
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const params_1 = require("firebase-functions/params"); // <-- DIESE ZEILE BLEIBT/HINZUGEFÜGT
-// Stelle sicher, dass *nicht* import * as functions from 'firebase-functions'; hier steht,
-// da wir functions.config() nicht direkt in diesen Funktionen verwenden, sondern defineSecret/defineString.
+const params_1 = require("firebase-functions/params");
 let _adminApp;
 try {
     if ((0, app_1.getApps)().length === 0) {
         _adminApp = (0, app_1.initializeApp)();
         v2_1.logger.info("Firebase Admin SDK (Default App) erfolgreich initialisiert.");
-        // =========================================================================
-        // ANGEPASSTE ANPASSUNG FÜR DEN EMULATOR-BETRIEB
-        // Hier wird nur Firestore explizit über .settings() verbunden.
-        // Für Auth und Storage verlassen wir uns auf Umgebungsvariablen.
-        // =========================================================================
         if (process.env.FUNCTIONS_EMULATOR === 'true') {
             v2_1.logger.info("FUNCTIONS_EMULATOR ist 'true'. Versuche, Emulatoren zu verbinden.");
-            // Firestore Emulator verbinden (DIESER TEIL FUNKTIONIERT UND BLEIBT SO)
+            // Firestore Emulator verbinden
             try {
                 (0, firestore_1.getFirestore)(_adminApp).settings({
                     host: 'localhost:8080', // Standard-Firestore-Emulator-Host
@@ -78,17 +71,13 @@ try {
                 v2_1.logger.info("Firestore Admin SDK auf Emulator umgeleitet (localhost:8080).");
             }
             catch (e) {
-                v2_1.logger.error("Fehler beim Umleiten des Firestore Admin SDK auf Emulator:", e);
+                // Dieser Fehler wird in der Regel bei Hot-Reloading auftreten, wenn settings bereits gesetzt sind.
+                // Er ist dann harmlos, aber wir loggen ihn trotzdem, wenn er nicht der bekannte Typ ist.
+                if (!e.message.includes("Firestore has already been started")) {
+                    v2_1.logger.error("Fehler beim Umleiten des Firestore Admin SDK auf Emulator:", e);
+                }
             }
-            // HINWEIS: Für Auth und Storage sind hier KEINE expliziten .useEmulator-Aufrufe mehr.
-            // Diese Dienste verbinden sich automatisch mit den Emulatoren,
-            // WENN die Umgebungsvariablen (z.B. FIREBASE_AUTH_EMULATOR_HOST, FIREBASE_STORAGE_EMULATOR_HOST)
-            // beim Start der Emulatoren gesetzt sind.
-            // Die zuvor aufgetretenen TypeErrors werden so umgangen.
         }
-        // =========================================================================
-        // ENDE DER ANPASSUNG
-        // =========================================================================
     }
     else {
         _adminApp = (0, app_1.getApps)()[0];
@@ -101,46 +90,30 @@ catch (e) {
 }
 exports.db = (0, firestore_1.getFirestore)(_adminApp);
 exports.adminAppInstance = _adminApp;
+// KORRIGIERT: Expliziter Export für getFirebaseAdminStorage
+function getFirebaseAdminStorage() {
+    return (0, storage_1.getStorage)(_adminApp);
+}
 let stripeClientInstance;
 let sendgridClientConfigured = false;
-let storageInstanceCache;
-// ========================================================================
-// KORRIGIERT: 'export' vor allen defineSecret/defineString hinzufügen
-// ========================================================================
+// Umgebungsvariablen-Parameter für Firebase Functions (defineSecret/defineString)
+// Diese werden über `firebase functions:config:set` oder `firebase deploy --env-vars` konfiguriert.
+// Im Emulator-Modus werden sie DIREKT aus process.env gelesen.
 exports.STRIPE_SECRET_KEY_PARAM = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 exports.STRIPE_WEBHOOK_SECRET_PARAM = (0, params_1.defineSecret)("STRIPE_WEBHOOK_SECRET");
 exports.SENDGRID_API_KEY_PARAM = (0, params_1.defineSecret)("SENDGRID_API_KEY");
 exports.FRONTEND_URL_PARAM = (0, params_1.defineString)("FRONTEND_URL");
 exports.EMULATOR_PUBLIC_FRONTEND_URL_PARAM = (0, params_1.defineString)("EMULATOR_PUBLIC_FRONTEND_URL", {
-    description: 'Publicly accessible URL for the frontend when testing with emulators, e.g., for Stripe webhooks or business profile URL. Should be set in .env.local for functions.',
-    default: "" // Wird in .env.local gesetzt, z.B. auf http://localhost:3000
+    description: 'Publicly accessible URL for the frontend when testing with emulators, e.g., for Stripe webhooks or business profile URL. Should be set in .env for functions (e.g., http://localhost:3000).',
+    default: "" // Dieser Defaultwert wird in der Cloud nicht verwendet, im Emulator aber als Fallback, wenn process.env nicht gesetzt ist.
 });
-function getStorageInstance() {
-    if (!storageInstanceCache) {
-        v2_1.logger.debug("[getStorageInstance] Versuche, Storage-Instanz zu initialisieren.");
-        try {
-            storageInstanceCache = (0, storage_1.getStorage)(_adminApp);
-            v2_1.logger.info("Firebase Storage-Client bei Bedarf initialisiert.");
-        }
-        catch (e) {
-            v2_1.logger.error("CRITICAL: Fehler bei getAdminStorage(_adminApp) Aufruf.", { error: e.message, stack: e.stack });
-            throw new https_1.HttpsError("internal", "Firebase Admin Storage Service konnte nicht initialisiert werden.");
-        }
-    }
-    if (!storageInstanceCache) {
-        v2_1.logger.error("CRITICAL: storageInstanceCache ist nach Initialisierungsversuch immer noch undefined.");
-        throw new https_1.HttpsError("internal", "Firebase Admin Storage Service Initialisierung ergab undefined.");
-    }
-    return storageInstanceCache;
-}
 function getStripeInstance() {
     if (!stripeClientInstance) {
-        // KORRIGIERT: Abruf über defineSecret().value()
-        const stripeKey = exports.STRIPE_SECRET_KEY_PARAM.value();
+        const stripeKey = process.env.FUNCTIONS_EMULATOR === 'true' ? process.env.STRIPE_SECRET_KEY : exports.STRIPE_SECRET_KEY_PARAM.value();
         if (stripeKey) {
             stripeClientInstance = new stripe_1.default(stripeKey, {
                 typescript: true,
-                apiVersion: "2025-05-28.basil",
+                apiVersion: "2025-05-28.basil", // Sicherstellen, dass die API-Version korrekt ist. "2025-05-28.basil" ist kein Standardformat.
             });
             v2_1.logger.info("Stripe-Client bei Bedarf initialisiert.");
         }
@@ -153,8 +126,7 @@ function getStripeInstance() {
 }
 function getSendGridClient() {
     if (!sendgridClientConfigured) {
-        // KORRIGIERT: Abruf über defineString().value()
-        const sendgridKey = exports.SENDGRID_API_KEY_PARAM.value();
+        const sendgridKey = process.env.FUNCTIONS_EMULATOR === 'true' ? process.env.SENDGRID_API_KEY : exports.SENDGRID_API_KEY_PARAM.value();
         if (sendgridKey) {
             if (mail_1.default && typeof mail_1.default.setApiKey === "function") {
                 mail_1.default.setApiKey(sendgridKey);
@@ -174,31 +146,26 @@ function getSendGridClient() {
     return sendgridClientConfigured ? mail_1.default : undefined;
 }
 function getFrontendURL() {
-    // ========================================================================
-    // KORRIGIERT: Emulator-Modus liest DIREKT von process.env
-    // ========================================================================
-    if (process.env.FUNCTIONS_EMULATOR === 'true') {
-        // Diese Environment-Variablen werden direkt über die Shell gesetzt
-        // (z.B. FUNCTIONS_EMULATOR=true FRONTEND_URL=... EMULATOR_PUBLIC_FRONTEND_URL=... firebase emulators:start)
+    // Im Emulator-Modus (FUNCTIONS_EMULATOR='true' oder FIREBASE_EMULATOR_HOST gesetzt)
+    if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_EMULATOR_HOST) {
+        // Versuche zuerst die Emulator-spezifische öffentliche URL (von .env für Functions)
         const emulatorPublicUrl = process.env.EMULATOR_PUBLIC_FRONTEND_URL;
-        const prodFrontendUrlInEmulator = process.env.FRONTEND_URL; // Dies ist die Produktions-URL
         if (emulatorPublicUrl && typeof emulatorPublicUrl === 'string' && emulatorPublicUrl.startsWith('http')) {
             v2_1.logger.info(`[getFrontendURL] Emulator-Modus: Verwende EMULATOR_PUBLIC_FRONTEND_URL aus process.env: ${emulatorPublicUrl}`);
             return emulatorPublicUrl;
         }
-        // Fallback auf die Produktions-URL, falls die Emulator-spezifische nicht gesetzt ist oder ungültig ist.
-        if (prodFrontendUrlInEmulator && typeof prodFrontendUrlInEmulator === 'string' && prodFrontendUrlInEmulator.startsWith('http')) {
-            v2_1.logger.warn(`[getFrontendURL] Emulator-Modus: EMULATOR_PUBLIC_FRONTEND_URL nicht (korrekt) in process.env gesetzt. Fallback auf process.env.FRONTEND_URL: ${prodFrontendUrlInEmulator}.`);
-            return prodFrontendUrlInEmulator;
+        // Fallback auf die allgemeinere Frontend URL, falls die Emulator-spezifische nicht gesetzt ist
+        // (Diese könnte auch von `firebase functions:config:set frontend_url="..."` kommen)
+        const generalFrontendUrl = process.env.FRONTEND_URL;
+        if (generalFrontendUrl && typeof generalFrontendUrl === 'string' && generalFrontendUrl.startsWith('http')) {
+            v2_1.logger.warn(`[getFrontendURL] Emulator-Modus: EMULATOR_PUBLIC_FRONTEND_URL nicht (korrekt) in process.env gesetzt. Fallback auf process.env.FRONTEND_URL: ${generalFrontendUrl}.`);
+            return generalFrontendUrl;
         }
-        v2_1.logger.error("KRITISCH: Im Emulator-Modus konnte weder EMULATOR_PUBLIC_FRONTEND_URL noch FRONTEND_URL aus process.env gelesen werden.");
-        // Letzter Fallback, sollte niemals erreicht werden, wenn Env Vars gesetzt sind
-        return 'http://localhost:3000';
+        v2_1.logger.error("KRITISCH: Im Emulator-Modus konnte weder EMULATOR_PUBLIC_FRONTEND_URL noch FRONTEND_URL aus process.env gelesen werden. Fallback auf localhost:3000.");
+        return 'http://localhost:3000'; // Letzter Fallback
     }
-    // ========================================================================
     // Live-Betrieb: Liest von defineString().value() (Dies ist der korrekte Weg für die Cloud)
-    // ========================================================================
-    const liveUrl = exports.FRONTEND_URL_PARAM.value(); // Liest den Wert von defineString in der Cloud
+    const liveUrl = exports.FRONTEND_URL_PARAM.value();
     if (liveUrl && typeof liveUrl === 'string' && liveUrl.startsWith('http')) {
         return liveUrl;
     }
@@ -206,7 +173,16 @@ function getFrontendURL() {
     throw new https_1.HttpsError("internal", "Frontend URL ist auf dem Server nicht korrekt konfiguriert.");
 }
 function getStripeWebhookSecret() {
-    // KORRIGIERT: Abruf über defineSecret().value()
+    // Im Emulator-Modus liest man direkt aus process.env
+    if (process.env.FUNCTIONS_EMULATOR === 'true') {
+        const secret = process.env.STRIPE_WEBHOOK_SECRET;
+        if (secret) {
+            return secret;
+        }
+        v2_1.logger.error("KRITISCH: Im Emulator-Modus ist STRIPE_WEBHOOK_SECRET in process.env nicht gesetzt.");
+        throw new https_1.HttpsError("internal", "Stripe Webhook Secret ist im Emulator nicht konfiguriert.");
+    }
+    // Live-Betrieb: Liest von defineSecret().value()
     const secret = exports.STRIPE_WEBHOOK_SECRET_PARAM.value();
     if (secret) {
         return secret;

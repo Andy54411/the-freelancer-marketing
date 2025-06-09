@@ -1,8 +1,11 @@
+// src/app/layout.tsx - Temporär zum Testen
+
 import './globals.css';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import { Providers } from './providers'; // Importiere deine neue Provider-Komponente
+// import { Geist, Geist_Mono } from 'next/font/google'; // AUSKOMMENTIERT
+import { Providers } from './providers';
 
+/*
 const geistSans = Geist({
   subsets: ['latin'],
   variable: '--font-geist-sans',
@@ -12,8 +15,8 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
 });
+*/
 
-// "use client" ist jetzt entfernt, daher ist dieser Export wieder gültig.
 export const metadata: Metadata = {
   title: 'TASKO',
   description:
@@ -27,10 +30,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {/* Wickle die children einfach in deine neue Providers-Komponente */}
+      {/* Temporär ohne die Font-Klassen */}
+      <body>
         <Providers>
           {children}
         </Providers>
