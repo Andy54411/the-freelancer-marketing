@@ -8,7 +8,7 @@ import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiCheckCircle, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { getAuth, createUserWithEmailAndPassword, UserCredential, User as AuthUser } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, deleteField, updateDoc, FieldValue, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, deleteField, updateDoc, FieldValue } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
 import { httpsCallable, FunctionsError } from 'firebase/functions';
