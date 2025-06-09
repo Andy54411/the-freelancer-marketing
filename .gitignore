@@ -1,9 +1,1 @@
-.firebase/
-.next/
-node_modules/
-Tasko.git/
-*.pack
-*.zip
-*.tar
-*.log
-
+node_modules
