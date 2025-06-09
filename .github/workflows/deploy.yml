@@ -1,4 +1,4 @@
-# .github/workflows/deploy.yml - FINALE KORREKTE VERSION
+# .github/workflows/deploy.yml
 
 name: Deploy to Firebase
 
@@ -17,12 +17,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Schritt 2: pnpm einrichten
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 8
 
-      # Schritt 3: DANN Node.js einrichten
+      # Schritt 3: Node.js einrichten
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,10 +44,15 @@ jobs:
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}'
 
-      # Schritt 7: Deployment zu Firebase
+      # Schritt 7: Deployment zu Firebase (ANGEPASST)
       - name: Deploy to Firebase
         uses: 'w9jds/firebase-action@master'
         with:
           args: 'deploy --only functions'
         env:
-          PROJECT_ID: 'tilvo-f142f'
+          # HIER WERDEN DIE SECRETS AN FIREBASE WEITERGEGEBEN
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          EMULATOR_PUBLIC_FRONTEND_URL: ${{ secrets.EMULATOR_PUBLIC_FRONTEND_URL }}
