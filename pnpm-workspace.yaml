@@ -1,2 +1,7 @@
-overrides:
-  '@firebasegen/default-connector': link:dataconnect-generated/js/default-connector
+# pnpm-workspace.yaml
+
+packages:
+  # Das '.' steht für das Haupt-Projekt (deine Next.js App)
+  - '.'
+  # Das hier ist dein Unter-Projekt für die Firebase Functions
+  - 'firebase_functions'
