@@ -1,8 +1,7 @@
-# .github/workflows/deploy.yml
+# .github/workflows/deploy.yml - FINALE KORREKTE VERSION
 
 name: Deploy to Firebase
 
-# Löst den Workflow bei jedem Push auf den "main"-Branch aus
 on:
   push:
     branches:
@@ -11,45 +10,44 @@ on:
 jobs:
   deploy_functions:
     name: Deploy Firebase Functions
-    # Verwendet eine virtuelle Linux-Maschine von GitHub
     runs-on: ubuntu-latest
 
     steps:
-      # Schritt 1: Code aus dem Repository auschecken
+      # Schritt 1: Code auschecken
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Schritt 2: PNPM ZUERST einrichten, damit der Befehl existiert
+      # Schritt 2: PNPM ZUERST einrichten
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 8
 
-      # Schritt 3: DANN Node.js einrichten, das jetzt pnpm für den Cache finden kann
+      # Schritt 3: DANN Node.js einrichten
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Wie in deinen Logs gewünscht
+          node-version: '20'
           cache: 'pnpm'
 
-      # Schritt 4: Abhängigkeiten für das Hauptprojekt installieren
+      # Schritt 4: Abhängigkeiten installieren
       - name: Install root dependencies
         run: pnpm install
 
-      # Schritt 5: TypeScript-Code der Functions kompilieren (erstellt den 'lib'-Ordner)
+      # Schritt 5: Functions kompilieren
       - name: Build Firebase Functions
         run: pnpm --dir ./firebase_functions run build
 
-      # Schritt 6: Bei Google Cloud mit dem Service Account authentifizieren
+      # Schritt 6: Bei Google Cloud authentifizieren
       - name: Authenticate with Google Cloud
         uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY_TASKOTILVO }}'
 
-      # Schritt 7: Nur die Functions bei Firebase deployen
+      # Schritt 7: Deployment zu Firebase
       - name: Deploy to Firebase
         uses: 'w9jds/firebase-action@master'
         with:
           args: 'deploy --only functions'
         env:
-          PROJECT_ID: 'tilvo-f142f' # Deine Firebase Projekt-ID
+          PROJECT_ID: 'tilvo-f142f'
