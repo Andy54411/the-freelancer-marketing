@@ -109,7 +109,7 @@ export default function Step1() {
 
       {/* Formular-Container */}
       <div className="max-w-xl w-full bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-200"> {/* Verbesserter Schatten und Rundung */}
-        <h2 className="text-2xl sm:text-3xl font-bold text-teal-600 mb-6 text-center">Registrierung als Tilver</h2> {/* Neuer Titel */}
+        <h2 className="text-2xl sm:text-3xl font-bold text-teal-600 mb-6 text-center">Registrierung als Tasker</h2> {/* Neuer Titel */}
         <p className="text-gray-600 text-center mb-8">Erzählen Sie uns etwas über sich.</p> {/* Zusätzlicher Untertitel */}
 
         <form onSubmit={(e) => { e.preventDefault(); handleNext(); }}>

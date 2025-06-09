@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -45,7 +45,6 @@
     "default-connector": "file:dataconnect-generated/js/default-connector",
     "dotenv": "^16.5.0",
     "firebase": "^11.8.1",
-    "firebase-admin": "^13.4.0",
     "framer-motion": "^12.12.1",
     "lucide-react": "^0.511.0",
     "micro": "^10.0.1",
@@ -63,7 +62,6 @@
     "react-world-flags": "^1.6.0",
     "recharts": "^2.15.3",
     "sonner": "^2.0.3",
-    "stripe": "^18.1.1",
     "swiper": "^11.2.7",
     "tailwind-merge": "^3.3.0",
     "tsconfig-paths": "^4.2.0",
@@ -75,7 +73,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/google.maps": "^3.58.1",
-    "@types/node": "^20.17.50",
+    "@types/node": "^20.19.0",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
     "eslint": "^9",

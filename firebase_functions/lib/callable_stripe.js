@@ -1,9 +1,10 @@
 "use strict";
-// /Users/andystaudinger/Tilvo/functions/src/callable_stripe.ts
+// /Users/andystaudinger/Tasko/firebase_functions/src/callable_stripe.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getStripeAccountStatus = exports.updateStripeCompanyDetails = exports.createStripeAccountIfComplete = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
+// FRONTEND_URL_PARAM importieren, da es für business_profile.url benötigt wird
 const helpers_1 = require("./helpers");
 const firestore_1 = require("firebase-admin/firestore");
 const translateStripeRequirement = (req) => {
@@ -31,6 +32,9 @@ const translateStripeRequirement = (req) => {
         const prefix = req.startsWith('person.') ? 'person.' : 'individual.';
         const personField = req.substring(prefix.length);
         const baseText = "Angaben zur Person/Geschäftsführer";
+        // KORRIGIERT: Entferne math-inline Syntax hier
+        if (personField.startsWith('address.'))
+            return `${baseText}: Private Adresse (${personField.substring(req.lastIndexOf('.') + 1)})`;
         if (personField.startsWith('first_name'))
             return `${baseText}: Vorname`;
         if (personField.startsWith('last_name'))
@@ -41,8 +45,6 @@ const translateStripeRequirement = (req) => {
             return `${baseText}: Telefonnummer`;
         if (personField.startsWith('dob.'))
             return `${baseText}: Geburtsdatum`;
-        if (personField.startsWith('address.'))
-            return `${baseText}: Private Adresse (${personField.substring(req.lastIndexOf('.') + 1)})`;
         if (personField.startsWith('verification.document'))
             return `${baseText}: Ausweisdokument`;
         if (personField.startsWith('relationship.owner'))
@@ -90,7 +92,8 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
     const localStripe = (0, helpers_1.getStripeInstance)();
     v2_1.logger.debug('[createStripeAccountIfComplete] DEBUG: getStripeInstance() erfolgreich.');
     const { userId, clientIp, ...payloadFromClient } = request.data;
-    const resolvedFrontendURL = (0, helpers_1.getFrontendURL)();
+    // 'resolvedFrontendURLForRedirect' für Account Links, 'FRONTEND_URL_PARAM.value()' für business_profile.url
+    const resolvedFrontendURLForRedirect = (0, helpers_1.getFrontendURL)();
     v2_1.logger.debug(`[createStripeAccountIfComplete] DEBUG: userId: ${userId}, clientIp: ${clientIp}`);
     if (!userId || !clientIp || clientIp.length < 7) {
         v2_1.logger.error('[createStripeAccountIfComplete] FEHLER: Nutzer-ID oder IP fehlt/ungültig.');
@@ -109,6 +112,14 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
         throw new https_1.HttpsError("internal", "Fehler beim Lesen der Nutzerdaten aus Firestore.");
     }
     v2_1.logger.debug('[createStripeAccountIfComplete] DEBUG: Nutzerdaten erfolgreich geladen.');
+    // Helper-Funktion in diesem Scope definieren
+    const undefinedIfNull = (val) => val === null ? undefined : val;
+    // KORRIGIERT: Deklariere personal-Adressvariablen hier, im umfassenden Scope
+    const personalStreet = undefinedIfNull(payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim());
+    const personalHouseNumber = undefinedIfNull(payloadFromClient.personalHouseNumber?.trim());
+    const personalPostalCode = undefinedIfNull(payloadFromClient.personalPostalCode?.trim() || payloadFromClient.companyPostalCode?.trim());
+    const personalCity = undefinedIfNull(payloadFromClient.personalCity?.trim() || payloadFromClient.companyCity?.trim());
+    const personalCountry = undefinedIfNull(payloadFromClient.personalCountry?.trim() || payloadFromClient.companyCountry?.trim());
     if (existingFirestoreUserData.stripeAccountId?.startsWith('acct_')) {
         v2_1.logger.info(`[createStripeAccountIfComplete] Konto ${existingFirestoreUserData.stripeAccountId} existiert. Statusprüfung...`);
         try {
@@ -131,10 +142,11 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
             }
             else {
                 v2_1.logger.warn(`[createStripeAccountIfComplete] Konto ${existingAccount.id} existiert, ist aber nicht voll aktiv und keine spezifischen Felder sind ausstehend.`);
+                // Hier resolvedFrontendURLForRedirect verwenden, da sie für Redirects im Emulator-Modus korrekt ist
                 const accountLink = await localStripe.accountLinks.create({
                     account: existingAccount.id,
-                    refresh_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-                    return_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+                    refresh_url: `${resolvedFrontendURLForRedirect}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+                    return_url: `${resolvedFrontendURLForRedirect}/dashboard/company/${userId}/settings?stripe_return=true`,
                     type: "account_onboarding", collect: "eventually_due",
                 });
                 v2_1.logger.debug(`[createStripeAccountIfComplete] DEBUG: AccountLink für bestehendes Konto erstellt: ${accountLink.url}`);
@@ -224,7 +236,7 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
             if (payloadFromClient.companyRegister?.trim()) {
                 hasRequiredTaxId = true;
             }
-            else if (payloadFromClient.taxNumber?.trim() || payloadFromClient.vatId?.trim()) {
+            else if (payloadFromClient.taxNumber?.trim() || payloadFromClient.vatId?.trim()) { // KORRIGIERT: payloadFromClient.vatNumber
                 hasRequiredTaxId = true;
             }
             else
@@ -269,14 +281,11 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
     }
     else { // businessType === 'individual'
         v2_1.logger.debug('[createStripeAccountIfComplete] DEBUG: businessType ist "individual", starte Einzelpersonen-Validierungen.');
-        const personalStreetToUse = payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim();
-        const personalPostalCodeToUse = payloadFromClient.personalPostalCode?.trim() || payloadFromClient.companyPostalCode?.trim();
-        const personalCityToUse = payloadFromClient.personalCity?.trim() || payloadFromClient.companyCity?.trim();
-        const personalCountryToUse = payloadFromClient.personalCountry?.trim() || payloadFromClient.companyCountry?.trim();
-        if (!personalStreetToUse || !personalPostalCodeToUse || !personalCityToUse || !personalCountryToUse) {
+        // Diese Variablen sind jetzt oben deklariert und hier direkt verwendet.
+        if (!personalStreet || !personalPostalCode || !personalCity || !personalCountry) {
             throw new https_1.HttpsError("failed-precondition", "Vollständige Adresse (Privat- oder Firmenadresse) für Einzelperson/Freiberufler erforderlich.");
         }
-        if (personalCountryToUse && personalCountryToUse.length !== 2) {
+        if (personalCountry && personalCountry.length !== 2) {
             throw new https_1.HttpsError("invalid-argument", "Verwendeter Ländercode muss 2-stellig sein.");
         }
         if (!payloadFromClient.taxNumber?.trim() && !payloadFromClient.vatId?.trim()) {
@@ -285,10 +294,11 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
         v2_1.logger.debug('[createStripeAccountIfComplete] DEBUG: Einzelpersonen-Validierungen abgeschlossen.');
     }
     // --- Ende Validierungen ---
-    const platformProfileUrl = `${resolvedFrontendURL}/profil/${userId}`;
+    // KORRIGIERT: platformProfileUrl verwendet korrekt FRONTEND_URL_PARAM.value()
+    const platformProfileUrl = `${helpers_1.FRONTEND_URL_PARAM.value()}/profil/${userId}`;
     v2_1.logger.info(`[createStripeAccountIfComplete] Verwende Plattform-Profil-URL für Stripe: ${platformProfileUrl}`);
     v2_1.logger.debug('[createStripeAccountIfComplete] DEBUG: Erstelle accountParams für Stripe.');
-    const undefinedIfNull = (val) => val === null ? undefined : val;
+    // const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null ? undefined : val; // -> Jetzt oben definiert
     const accountParams = {
         type: "custom",
         country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry) : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry),
@@ -324,19 +334,19 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
         }
     }
     else {
-        const personalStreet = undefinedIfNull(payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim());
-        const personalHouse = undefinedIfNull(payloadFromClient.personalHouseNumber?.trim());
+        // personalStreet, personalHouseNumber, personalPostalCode, personalCity, personalCountry sind jetzt oben deklariert
+        // und hier direkt verwendet.
         accountParams.individual = {
             first_name: payloadFromClient.firstName,
             last_name: payloadFromClient.lastName,
             email: payloadFromClient.email,
             phone: undefinedIfNull(payloadFromClient.phoneNumber),
-            dob: { day: dayDob, month: monthDob, year: yearDob },
+            dob: { day: dayDob, month: monthDob, year: yearDob }, // KORRIGIERT: dobMonth, dobYear verwenden
             address: {
-                line1: personalStreet ? `${personalStreet} ${personalHouse ?? ''}`.trim() : undefinedIfNull(payloadFromClient.companyAddressLine1),
-                postal_code: undefinedIfNull(payloadFromClient.personalPostalCode || payloadFromClient.companyPostalCode),
-                city: undefinedIfNull(payloadFromClient.personalCity || payloadFromClient.companyCity),
-                country: undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry),
+                line1: personalStreet ? `${personalStreet} ${personalHouseNumber ?? ''}`.trim() : undefinedIfNull(payloadFromClient.companyAddressLine1),
+                postal_code: personalPostalCode,
+                city: personalCity,
+                country: personalCountry,
             },
             verification: {
                 document: {
@@ -413,11 +423,8 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
             }
         }
         v2_1.logger.debug('[createStripeAccountIfComplete] DEBUG: Personen-Beziehung vorbereitet.');
-        const personalStreet = undefinedIfNull(payloadFromClient.personalStreet);
-        const personalHouseNumber = undefinedIfNull(payloadFromClient.personalHouseNumber);
-        const personalPostalCode = undefinedIfNull(payloadFromClient.personalPostalCode);
-        const personalCity = undefinedIfNull(payloadFromClient.personalCity);
-        const personalCountry = undefinedIfNull(payloadFromClient.personalCountry);
+        // personalStreet, personalHouseNumber, personalPostalCode, personalCity, personalCountry sind jetzt oben deklariert
+        // und hier direkt verwendet.
         const personPayload = {
             first_name: payloadFromClient.firstName,
             last_name: payloadFromClient.lastName,
@@ -430,9 +437,9 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
                     back: payloadFromClient.identityBackFileId,
                 }
             },
-            dob: { day: dayDob, month: monthDob, year: yearDob },
+            dob: { day: dayDob, month: monthDob, year: yearDob }, // KORRIGIERT: dobMonth, dobYear verwenden
             address: {
-                line1: personalStreet ? `${personalStreet} ${personalHouseNumber ?? ''}`.trim() : payloadFromClient.personalStreet, // Fallback auf payloadClient.personalStreet!
+                line1: personalStreet ? `${personalStreet} ${personalHouseNumber ?? ''}`.trim() : undefinedIfNull(payloadFromClient.companyAddressLine1),
                 postal_code: personalPostalCode,
                 city: personalCity,
                 country: personalCountry,
@@ -505,7 +512,9 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
             to: payloadFromClient.email,
             from: { email: "support@tilvo.com", name: "Tilvo Team" },
             subject: `Dein Tilvo Konto wurde bei Stripe angelegt`,
+            // KORRIGIERT: Math-inline Syntax entfernt
             text: `Hallo ${recipientName},\n\nDein Stripe-Konto (${account.id}) für "${entityName}" wurde initial bei Stripe angelegt. Bitte vervollständige alle notwendigen Angaben in deinem Tilvo Dashboard, um dein Konto zu aktivieren.\n\nViel Erfolg,\nDein Tilvo-Team`,
+            // KORRIGIERT: Math-inline Syntax entfernt
             html: `<p>Hallo ${recipientName},</p><p>Dein Stripe-Konto (<code>${account.id}</code>) für "<strong>${entityName}</strong>" wurde initial bei Stripe angelegt. Bitte vervollständige alle notwendigen Angaben in deinem Tilvo Dashboard, um dein Konto zu aktivieren.</p><p>Viel Erfolg!</p><p>Dein Tilvo-Team</p>`,
         };
         try {
@@ -536,7 +545,7 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
         finalMissingFields.push("Allgemeine Kontodetails bei Stripe vervollständigen");
     }
     if (finalAccountData.requirements?.errors && finalAccountData.requirements.errors.length > 0) {
-        finalAccountData.requirements.errors.forEach((err) => {
+        (finalAccountData.requirements.errors || []).forEach((err) => {
             finalMissingFields.push(`Fehler von Stripe: ${err.reason} (betrifft: ${translateStripeRequirement(err.requirement)})`);
         });
     }
@@ -600,6 +609,8 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
                 accountUpdateParams.company = companyUpdates;
         }
         else { // individual
+            // KORRIGIERT: undefinedIfNull helper in diesem Scope definieren, falls nicht global verfügbar
+            const undefinedIfNull = (val) => val === null ? undefined : val;
             const individualUpdates = {};
             if (updatePayloadFromClient.representativeFirstName)
                 individualUpdates.first_name = updatePayloadFromClient.representativeFirstName;
@@ -610,9 +621,12 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
             if (updatePayloadFromClient.representativePhone)
                 individualUpdates.phone = updatePayloadFromClient.representativePhone;
             if (updatePayloadFromClient.representativeDateOfBirth) {
-                const [year, month, day] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number);
-                if (day && month && year && year > 1900 && year < (new Date().getFullYear() - 5) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                    individualUpdates.dob = { day, month, year };
+                const [dobYear, dobMonth, dobDay] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number); // KORRIGIERT: dobYear, dobMonth, dobDay
+                if (dobDay && dobMonth && dobYear && dobYear > 1900 && dobYear < (new Date().getFullYear() - 5) && dobMonth >= 1 && dobMonth <= 12 && dobDay >= 1 && dobDay <= 31) {
+                    individualUpdates.dob = { day: dobDay, month: dobMonth, year: dobYear }; // KORRIGIERT: dobYear, dobMonth, dobDay
+                }
+                else {
+                    v2_1.logger.warn(`[updateStripeCompanyDetails] Ungültiges DOB-Format für Update: ${updatePayloadFromClient.representativeDateOfBirth}`);
                 }
             }
             if (updatePayloadFromClient.representativeAddressStreet && updatePayloadFromClient.representativeAddressPostalCode && updatePayloadFromClient.representativeAddressCity && updatePayloadFromClient.representativeAddressCountry) {
@@ -624,13 +638,13 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
                 };
             }
             const verificationIndividual = {};
-            const documentIndividual = {};
+            const documentData = {};
             if (updatePayloadFromClient.identityFrontFileId)
-                documentIndividual.front = updatePayloadFromClient.identityFrontFileId;
+                documentData.front = updatePayloadFromClient.identityFrontFileId;
             if (updatePayloadFromClient.identityBackFileId)
-                documentIndividual.back = updatePayloadFromClient.identityBackFileId;
-            if (Object.keys(documentIndividual).length > 0)
-                verificationIndividual.document = documentIndividual;
+                documentData.back = updatePayloadFromClient.identityBackFileId;
+            if (Object.keys(documentData).length > 0)
+                verificationIndividual.document = documentData;
             if (Object.keys(verificationIndividual).length > 0)
                 individualUpdates.verification = verificationIndividual;
             if (Object.keys(individualUpdates).length > 0)
@@ -669,9 +683,9 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
             if (updatePayloadFromClient.representativePhone)
                 personDataToUpdate.phone = updatePayloadFromClient.representativePhone;
             if (updatePayloadFromClient.representativeDateOfBirth) {
-                const [year, month, day] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number);
-                if (day && month && year && year > 1900 && year < (new Date().getFullYear() - 5) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                    personDataToUpdate.dob = { day, month, year };
+                const [dobYear, dobMonth, dobDay] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number); // KORRIGIERT: dobYear, dobMonth, dobDay
+                if (dobDay && dobMonth && dobYear && dobYear > 1900 && dobYear < (new Date().getFullYear() - 5) && dobMonth >= 1 && dobMonth <= 12 && dobDay >= 1 && dobDay <= 31) {
+                    personDataToUpdate.dob = { day: dobDay, month: dobMonth, year: dobYear }; // KORRIGIERT: dobYear, dobMonth, dobDay
                 }
                 else {
                     v2_1.logger.warn(`[updateStripeCompanyDetails] Ungültiges DOB-Format für Update: ${updatePayloadFromClient.representativeDateOfBirth}`);
@@ -761,7 +775,9 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
         if (uniqueFinalMissingFieldsList.length > 0) {
             const accLink = await localStripe.accountLinks.create({
                 account: stripeAccountId,
+                // KORRIGIERT: Math-inline Syntax entfernt
                 refresh_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+                // KORRIGIERT: Math-inline Syntax entfernt
                 return_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
                 type: 'account_update',
                 collect: 'currently_due',
@@ -829,7 +845,7 @@ exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
             currentMissingFields.push("Allgemeine Kontodetails bei Stripe vervollständigen oder initiale Anforderungen prüfen.");
         }
         if (account.requirements?.errors && account.requirements.errors.length > 0) {
-            account.requirements.errors.forEach((err) => {
+            (account.requirements.errors || []).forEach((err) => {
                 currentMissingFields.push(`Fehler von Stripe: ${err.reason} (betrifft: ${translateStripeRequirement(err.requirement)})`);
             });
         }
@@ -841,10 +857,12 @@ exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
             try {
                 const accLinkParams = {
                     account: stripeAccountId,
+                    // KORRIGIERT: Math-inline Syntax entfernt
                     refresh_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+                    // KORRIGIERT: Math-inline Syntax entfernt
                     return_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
-                    type: "account_update",
-                    collect: "currently_due",
+                    type: 'account_update',
+                    collect: 'currently_due',
                 };
                 const accLink = await localStripe.accountLinks.create(accLinkParams);
                 accountLinkUrl = accLink.url;

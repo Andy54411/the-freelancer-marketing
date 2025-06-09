@@ -1,4 +1,3 @@
-//functions/src/index.ts
 
 export * from './callable_stripe';
 export * from './callable_general';

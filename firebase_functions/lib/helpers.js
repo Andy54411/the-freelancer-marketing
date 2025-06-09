@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.admin = exports.Timestamp = exports.FieldValue = exports.adminAppInstance = exports.db = void 0;
+exports.admin = exports.Timestamp = exports.FieldValue = exports.EMULATOR_PUBLIC_FRONTEND_URL_PARAM = exports.FRONTEND_URL_PARAM = exports.SENDGRID_API_KEY_PARAM = exports.STRIPE_WEBHOOK_SECRET_PARAM = exports.STRIPE_SECRET_KEY_PARAM = exports.adminAppInstance = exports.db = void 0;
 exports.getStorageInstance = getStorageInstance;
 exports.getStripeInstance = getStripeInstance;
 exports.getSendGridClient = getSendGridClient;
@@ -48,13 +48,15 @@ const firestore_1 = require("firebase-admin/firestore");
 Object.defineProperty(exports, "FieldValue", { enumerable: true, get: function () { return firestore_1.FieldValue; } });
 Object.defineProperty(exports, "Timestamp", { enumerable: true, get: function () { return firestore_1.Timestamp; } });
 const storage_1 = require("firebase-admin/storage");
-const admin = __importStar(require("firebase-admin")); // Beibehalten, da es für admin.firestore.FieldValue verwendet wird
+const admin = __importStar(require("firebase-admin"));
 exports.admin = admin;
 const stripe_1 = __importDefault(require("stripe"));
 const mail_1 = __importDefault(require("@sendgrid/mail"));
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const params_1 = require("firebase-functions/params");
+const params_1 = require("firebase-functions/params"); // <-- DIESE ZEILE BLEIBT/HINZUGEFÜGT
+// Stelle sicher, dass *nicht* import * as functions from 'firebase-functions'; hier steht,
+// da wir functions.config() nicht direkt in diesen Funktionen verwenden, sondern defineSecret/defineString.
 let _adminApp;
 try {
     if ((0, app_1.getApps)().length === 0) {
@@ -102,12 +104,14 @@ exports.adminAppInstance = _adminApp;
 let stripeClientInstance;
 let sendgridClientConfigured = false;
 let storageInstanceCache;
-// Deine Parameter-Definitionen sind korrekt und bleiben so
-const STRIPE_SECRET_KEY_PARAM = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
-const STRIPE_WEBHOOK_SECRET_PARAM = (0, params_1.defineSecret)("STRIPE_WEBHOOK_SECRET");
-const SENDGRID_API_KEY_PARAM = (0, params_1.defineSecret)("SENDGRID_API_KEY");
-const FRONTEND_URL_PARAM = (0, params_1.defineString)("FRONTEND_URL");
-const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = (0, params_1.defineString)("EMULATOR_PUBLIC_FRONTEND_URL", {
+// ========================================================================
+// KORRIGIERT: 'export' vor allen defineSecret/defineString hinzufügen
+// ========================================================================
+exports.STRIPE_SECRET_KEY_PARAM = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
+exports.STRIPE_WEBHOOK_SECRET_PARAM = (0, params_1.defineSecret)("STRIPE_WEBHOOK_SECRET");
+exports.SENDGRID_API_KEY_PARAM = (0, params_1.defineSecret)("SENDGRID_API_KEY");
+exports.FRONTEND_URL_PARAM = (0, params_1.defineString)("FRONTEND_URL");
+exports.EMULATOR_PUBLIC_FRONTEND_URL_PARAM = (0, params_1.defineString)("EMULATOR_PUBLIC_FRONTEND_URL", {
     description: 'Publicly accessible URL for the frontend when testing with emulators, e.g., for Stripe webhooks or business profile URL. Should be set in .env.local for functions.',
     default: "" // Wird in .env.local gesetzt, z.B. auf http://localhost:3000
 });
@@ -116,8 +120,6 @@ function getStorageInstance() {
         v2_1.logger.debug("[getStorageInstance] Versuche, Storage-Instanz zu initialisieren.");
         try {
             storageInstanceCache = (0, storage_1.getStorage)(_adminApp);
-            // HINWEIS: Hier ist KEIN expliziter .useEmulator-Aufruf.
-            // Der Storage-Emulator wird über die Umgebungsvariable FIREBASE_STORAGE_EMULATOR_HOST verbunden.
             v2_1.logger.info("Firebase Storage-Client bei Bedarf initialisiert.");
         }
         catch (e) {
@@ -133,7 +135,8 @@ function getStorageInstance() {
 }
 function getStripeInstance() {
     if (!stripeClientInstance) {
-        const stripeKey = STRIPE_SECRET_KEY_PARAM.value(); // Liest den Wert vom Parameter-Service
+        // KORRIGIERT: Abruf über defineSecret().value()
+        const stripeKey = exports.STRIPE_SECRET_KEY_PARAM.value();
         if (stripeKey) {
             stripeClientInstance = new stripe_1.default(stripeKey, {
                 typescript: true,
@@ -150,7 +153,8 @@ function getStripeInstance() {
 }
 function getSendGridClient() {
     if (!sendgridClientConfigured) {
-        const sendgridKey = SENDGRID_API_KEY_PARAM.value(); // Liest den Wert vom Parameter-Service
+        // KORRIGIERT: Abruf über defineString().value()
+        const sendgridKey = exports.SENDGRID_API_KEY_PARAM.value();
         if (sendgridKey) {
             if (mail_1.default && typeof mail_1.default.setApiKey === "function") {
                 mail_1.default.setApiKey(sendgridKey);
@@ -170,33 +174,44 @@ function getSendGridClient() {
     return sendgridClientConfigured ? mail_1.default : undefined;
 }
 function getFrontendURL() {
+    // ========================================================================
+    // KORRIGIERT: Emulator-Modus liest DIREKT von process.env
+    // ========================================================================
     if (process.env.FUNCTIONS_EMULATOR === 'true') {
-        const emulatorPublicUrl = EMULATOR_PUBLIC_FRONTEND_URL_PARAM.value();
-        if (emulatorPublicUrl && emulatorPublicUrl.startsWith('http')) {
-            v2_1.logger.info(`[getFrontendURL] Emulator-Modus: Verwende EMULATOR_PUBLIC_FRONTEND_URL: ${emulatorPublicUrl}`);
+        // Diese Environment-Variablen werden direkt über die Shell gesetzt
+        // (z.B. FUNCTIONS_EMULATOR=true FRONTEND_URL=... EMULATOR_PUBLIC_FRONTEND_URL=... firebase emulators:start)
+        const emulatorPublicUrl = process.env.EMULATOR_PUBLIC_FRONTEND_URL;
+        const prodFrontendUrlInEmulator = process.env.FRONTEND_URL; // Dies ist die Produktions-URL
+        if (emulatorPublicUrl && typeof emulatorPublicUrl === 'string' && emulatorPublicUrl.startsWith('http')) {
+            v2_1.logger.info(`[getFrontendURL] Emulator-Modus: Verwende EMULATOR_PUBLIC_FRONTEND_URL aus process.env: ${emulatorPublicUrl}`);
             return emulatorPublicUrl;
         }
-        // Fallback zur normalen FRONTEND_URL für den Emulator, wenn keine spezielle öffentliche URL gesetzt ist.
-        const localUrl = FRONTEND_URL_PARAM.value(); // Dies wäre die Produktions-URL
-        v2_1.logger.warn(`[getFrontendURL] Emulator-Modus: EMULATOR_PUBLIC_FRONTEND_URL nicht (korrekt) gesetzt. Fallback auf Standard-Localhost. Dies kann für Stripe's business_profile.url ungültig sein.`);
-        // Expliziter Fallback, da FRONTEND_URL_PARAM.value() im Emulator die Produktiv-URL liefern würde,
-        // oder einen leeren String, wenn sie nicht in .env.local ist.
-        return 'http://localhost:3000'; // Hardcoded Fallback für lokale Entwicklung
+        // Fallback auf die Produktions-URL, falls die Emulator-spezifische nicht gesetzt ist oder ungültig ist.
+        if (prodFrontendUrlInEmulator && typeof prodFrontendUrlInEmulator === 'string' && prodFrontendUrlInEmulator.startsWith('http')) {
+            v2_1.logger.warn(`[getFrontendURL] Emulator-Modus: EMULATOR_PUBLIC_FRONTEND_URL nicht (korrekt) in process.env gesetzt. Fallback auf process.env.FRONTEND_URL: ${prodFrontendUrlInEmulator}.`);
+            return prodFrontendUrlInEmulator;
+        }
+        v2_1.logger.error("KRITISCH: Im Emulator-Modus konnte weder EMULATOR_PUBLIC_FRONTEND_URL noch FRONTEND_URL aus process.env gelesen werden.");
+        // Letzter Fallback, sollte niemals erreicht werden, wenn Env Vars gesetzt sind
+        return 'http://localhost:3000';
     }
-    // Für den Live-Betrieb
-    const liveUrl = FRONTEND_URL_PARAM.value();
-    if (liveUrl && liveUrl.startsWith('http')) {
+    // ========================================================================
+    // Live-Betrieb: Liest von defineString().value() (Dies ist der korrekte Weg für die Cloud)
+    // ========================================================================
+    const liveUrl = exports.FRONTEND_URL_PARAM.value(); // Liest den Wert von defineString in der Cloud
+    if (liveUrl && typeof liveUrl === 'string' && liveUrl.startsWith('http')) {
         return liveUrl;
     }
-    v2_1.logger.error("KRITISCH: FRONTEND_URL Parameterwert nicht verfügbar oder ungültig für Live-Betrieb.");
+    v2_1.logger.error("KRITISCH: FRONTEND_URL in Konfiguration nicht verfügbar oder ungültig für Live-Betrieb.");
     throw new https_1.HttpsError("internal", "Frontend URL ist auf dem Server nicht korrekt konfiguriert.");
 }
 function getStripeWebhookSecret() {
-    const secret = STRIPE_WEBHOOK_SECRET_PARAM.value();
+    // KORRIGIERT: Abruf über defineSecret().value()
+    const secret = exports.STRIPE_WEBHOOK_SECRET_PARAM.value();
     if (secret) {
         return secret;
     }
-    v2_1.logger.error("KRITISCH: Stripe Webhook Secret Parameterwert nicht verfügbar.");
+    v2_1.logger.error("KRITISCH: Stripe Webhook Secret in Konfiguration nicht verfügbar.");
     throw new https_1.HttpsError("internal", "Stripe Webhook Secret ist nicht konfiguriert.");
 }
 //# sourceMappingURL=helpers.js.map

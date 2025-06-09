@@ -10,36 +10,14 @@
       "region": "europe-west1"
     }
   },
-  "functions": [
-    {
-      "source": "firebase_functions",
-      "codebase": "other_functions",
-      "runtime": "nodejs20",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" install",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
-      ]
-    },
-    {
-      "source": "tasko",
-      "codebase": "tasko",
-      "runtime": "nodejs20",
-      "environmentVariables": {},
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ],
-      "predeploy": []
-    }
-  ],
+  "functions": {
+    "source": "firebase_functions",
+    "runtime": "nodejs20",
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" install",
+      "npm --prefix \"$RESOURCE_DIR\" run build"
+    ]
+  },
   "firestore": {
     "database": "(default)",
     "location": "eur3",
@@ -51,7 +29,8 @@
   },
   "emulators": {
     "auth": {
-      "port": 9099
+      "port": 9099,
+      "host": "0.0.0.0" 
     },
     "functions": {
       "port": 5001

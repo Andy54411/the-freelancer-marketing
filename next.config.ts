@@ -1,9 +1,8 @@
 import type { NextConfig } from 'next';
-import path from 'path'; // <- DIESE ZEILE IST JETZT WIEDER HINZUGEFÜGT UND KORREKT
+import path from 'path'; // <- DIESE ZEILE BLEIBT KORREKT HIER
 
 // Der manuelle dotenvConfig-Aufruf wird entfernt, da Next.js .env.local Dateien
 // automatisch lädt und dieser Aufruf Konflikte verursachen kann.
-// (Alle Code-Zeilen, die diesen Aufruf betrafen, bleiben entfernt)
 
 const nextConfig: NextConfig = {
   // WICHTIG: Firebase Hosting Adapter erkennt automatisch das Framework
@@ -19,7 +18,7 @@ const nextConfig: NextConfig = {
         './functions/*': './functions/*',
         // Wenn du auch den firebase_functions Ordner direkt referenzierst:
         './firebase_functions': './firebase_functions',
-        './firebase_functions/*': './firebase_functions/*', // <- DIESER PUNKT AM ENDE IST JETZT KORRIGIERT
+        './firebase_functions/*': './firebase_functions/*',
       }
     );
 
@@ -27,7 +26,7 @@ const nextConfig: NextConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      '@': path.resolve(__dirname, 'src'), // <- 'path' wird hier korrekt verwendet
+      '@': path.resolve(__dirname, 'src'),
     };
 
     return config;
@@ -83,8 +82,21 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+
     FRONTEND_URL: process.env.FRONTEND_URL,
     EMULATOR_PUBLIC_FRONTEND_URL: process.env.EMULATOR_PUBLIC_FRONTEND_URL,
+
+    // ====================================================================
+    // DIESE SIND HINZUGEFÜGT/KORRIGIERT FÜR DIE EMULATOR-ERKENNUNG IM CLIENTS.TS
+    // ====================================================================
+    NEXT_PUBLIC_USE_FIREBASE_EMULATORS: process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS,
+    NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: process.env.FIREBASE_AUTH_EMULATOR_HOST,
+    NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST: process.env.FIRESTORE_EMULATOR_HOST,
+    NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST: process.env.FIREBASE_STORAGE_EMULATOR_HOST,
   }
 };
 

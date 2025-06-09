@@ -1,10 +1,14 @@
+// Pfad könnte sein: src/components/allgemein.tsx
 'use client'
 
 import React from "react";
-import { GoogleMap, Circle, useJsApiLoader } from "@react-google-maps/api";
+// KORREKTUR 1: GoogleMap und Circle bleiben, aber useJsApiLoader wird nicht mehr gebraucht.
+import { GoogleMap, Circle } from "@react-google-maps/api";
 import { UserDataForSettings } from "@/components/SettingsPage";
 
-// ANPASSUNG: 'export' wurde hinzugefügt, um das Interface verfügbar zu machen
+// KORREKTUR 2: Wir importieren unseren eigenen Hook.
+import { useGoogleMaps } from "@/contexts/GoogleMapsLoaderContext";
+
 export interface GeneralFormProps {
   formData: UserDataForSettings;
   handleChange: (path: string, value: string | number) => void;
@@ -22,10 +26,11 @@ const GoogleMapComponent: React.FC<{
   radiusKm: number;
   onRadiusChange: (radius: number) => void;
 }> = ({ lat, lng, radiusKm, onRadiusChange }) => {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
-  });
+  // KORREKTUR 3: useJsApiLoader wird durch unseren zentralen Hook ersetzt.
+  const { isLoaded } = useGoogleMaps();
 
+  // Der Rest der Komponente bleibt fast identisch.
+  // Er wartet jetzt auf den globalen Ladezustand.
   if (!isLoaded) return <p>Lade Karte...</p>;
 
   const center = lat && lng ? { lat, lng } : { lat: 48.1351, lng: 11.5820 };
@@ -74,6 +79,8 @@ const GoogleMapComponent: React.FC<{
   );
 };
 
+// Die GeneralForm Komponente muss nicht geändert werden, da sie nur die
+// korrigierte GoogleMapComponent verwendet.
 const GeneralForm: React.FC<GeneralFormProps> = ({
   formData,
   handleChange,
@@ -82,6 +89,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
   const { step1, step2, lat, lng, radiusKm } = formData;
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 space-y-6">
+      {/* ... gesamter Inhalt von GeneralForm bleibt unverändert ... */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Firma</label>
