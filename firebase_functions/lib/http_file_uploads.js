@@ -49,9 +49,6 @@ const fs_1 = __importDefault(require("fs"));
 // KORREKTUR 1: "UploadResponse" entfernt, da es nicht existiert.
 const storage_1 = require("firebase-admin/storage");
 const uuid_1 = require("uuid");
-if (admin.apps.length === 0) {
-    admin.initializeApp();
-}
 // --- 1. Helper für Authentifizierung ---
 const authenticateRequest = async (req) => {
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
