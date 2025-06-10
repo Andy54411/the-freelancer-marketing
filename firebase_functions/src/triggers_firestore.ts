@@ -3,11 +3,11 @@
 // Imports für V2-Funktionen
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-// import * as functionsV1 from 'firebase-functions/v1'; // <- Nicht mehr benötigt, da alles auf V2 umgestellt wird
+// import * as functionsV1 from 'firebase-functions/v1'; // <- Entfernt: Nicht mehr benötigt, da alles auf V2 umgestellt wird
 import Stripe from 'stripe';
 import { db, getStripeInstance } from './helpers';
-import { FieldValue } from 'firebase-admin/firestore'; // <- Korrigiert: 'from' statt '=>'
-import * as admin from 'firebase-admin'; // <- Admin-Import für Typen (falls nötig, aber nicht initialisieren!)
+import { FieldValue } from 'firebase-admin/firestore'; // <- FieldValue direkt von firebase-admin/firestore importieren
+// import * as admin from 'firebase-admin'; // <- Admin-Import für Typen nicht direkt hier nötig, da über helpers bereitgestellt
 
 
 interface FirmaUserData {
@@ -202,7 +202,7 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
 // createStripeCustomAccountOnUserUpdate ist jetzt auch V2
 export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{userId}", async (event) => {
   const userId = event.params.userId;
-  loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
+  loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`); // Korrigiert: V2-Logger
   const localStripe = getStripeInstance();
   const after = event.data?.after.data() as FirmaUserData; // <- V2 event.data.after.data()
   if (!after) {
@@ -234,12 +234,6 @@ export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{u
   const taxIdFromData = after.taxNumberForBackend || after.step3?.taxNumber;
   const vatIdFromData = after.vatIdForBackend || after.step3?.vatId;
   const companyRegisterFromData = after.companyRegisterForBackend || after.step3?.companyRegister;
-  // KORRIGIERT: companyRegisterFromData kann jetzt undefined sein, kein weiteres if nötig.
-  // const companyRegisterFromData = after.step3?.companyRegister || after.companyRegisterForBackend; 
-  // if (companyRegisterFromData === undefined) { 
-  //   companyRegisterFromData = undefined;
-  // }
-
 
   const firstNameFromData = after.firstName || after.step1?.firstName;
   const lastNameFromData = after.lastName || after.step1?.lastName;
