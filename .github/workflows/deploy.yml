@@ -51,7 +51,19 @@ jobs:
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}' # Dein Firebase Service Account Secret
 
-      # Schritt 7: Deployment zu Firebase (ANGEPASST MIT ENV_VARS)
+    
+      # NEUER SCHRITT: Spezifische Functions-Abhängigkeiten installieren (mit --force)
+      # Dies ist notwendig, um den ERESOLVE-Fehler bei der Installation der Functions-Abhängigkeiten zu umgehen.
+      # Der Firebase Deploy-Prozess führt oft selbst ein 'npm install' aus, was diesen Fehler verursachen kann.
+      # Der --force-Parameter zwingt NPM, die Pakete trotz Peer-Dependency-Konflikten zu installieren.
+      - name: Install Firebase Functions Dependencies
+        run: npm install --prefix ./firebase_functions --force # <-- NEU HINZUGEFÜGT
+        working-directory: ./firebase_functions # Sicherstellen, dass der Befehl im richtigen Verzeichnis läuft
+      
+
+      # Schritt 7: Deployment zu Firebase
+      # Führt den eigentlichen Deployment-Befehl für deine Firebase Functions aus.
+      # Der Schlüssel ist die Hinzufügung von '--project tilvo-f142f'.
       - name: Deploy to Firebase
         uses: 'w9jds/firebase-action@master'
         with:
@@ -64,5 +76,3 @@ jobs:
             SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
             FRONTEND_URL=${{ secrets.FRONTEND_URL }}
             EMULATOR_PUBLIC_FRONTEND_URL=${{ secrets.EMULATOR_PUBLIC_FRONTEND_URL }}
-        # Der 'env'-Block auf dieser Ebene ist nicht notwendig für die Functions-Konfiguration,
-        # da env_vars dies direkt erledigt. Ich habe ihn hier entfernt, um Redundanz zu vermeiden.

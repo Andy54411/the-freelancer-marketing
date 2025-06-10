@@ -16,10 +16,10 @@
     "busboy": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "firebase-admin": "^13.4.0",
-    "firebase-functions": "^5.0.0",  
+    "firebase-admin": "^13.4.0",  
+    "firebase-functions": "^5.0.0",
     "micro": "^10.0.1",
-    "stripe": "^18.2.1"            
+    "stripe": "^18.2.1"
   },
   "devDependencies": {
     "@types/busboy": "^1.5.4",

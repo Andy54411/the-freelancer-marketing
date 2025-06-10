@@ -6,3 +6,7 @@ WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
 19:50:10.838 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
 19:50:21.850 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 63ms, init: 0ms
 19:50:21.873 [NamespaceSystem-blocking-namespace-operation-dispatcher-6] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active
+05:18:59.705 [Thread-0] INFO com.firebase.server.forge.App$ - Attempting graceful shutdown.
+05:18:59.782 [NamespaceSystem-akka.actor.default-dispatcher-12] INFO com.firebase.core.namespace.Terminator$Terminator - 1 actors left to terminate: tilvo-f142f-default-rtdb
+05:18:59.820 [NamespaceSystem-akka.actor.default-dispatcher-11] INFO com.firebase.core.namespace.NamespaceActor - stopped namespace actor for tilvo-f142f-default-rtdb
+05:18:59.848 [Thread-0] INFO com.firebase.server.forge.App$ - Graceful shutdown complete.
