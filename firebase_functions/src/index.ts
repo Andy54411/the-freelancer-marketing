@@ -20,7 +20,7 @@ try {
 
 } catch (error: any) {
     logger.error("SCHWERER FEHLER BEI DER INITIALISIERUNG DES ADMIN SDK IN index.ts!", { error: error.message, stack: error.stack });
-    throw error; // Container abstürzen lassen, damit der Fehler in Cloud Run sichtbar wird
+    throw error;
 }
 
 // --- Export-Deklarationen für alle deine Funktionen (MÜSSEN auf oberster Ebene stehen) ---
