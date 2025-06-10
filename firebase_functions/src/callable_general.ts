@@ -8,7 +8,6 @@ import * as admin from "firebase-admin"; // Wird für admin.auth() und admin.sto
 import { logger } from "firebase-functions/v2";
 logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
 
-// Umgebe den Top-Level-Code mit try-catch
 try {
   // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
   // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
