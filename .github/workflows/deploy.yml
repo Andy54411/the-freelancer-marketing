@@ -57,8 +57,9 @@ jobs:
       # Der Firebase Deploy-Prozess führt oft selbst ein 'npm install' aus, was diesen Fehler verursachen kann.
       # Der --force-Parameter zwingt NPM, die Pakete trotz Peer-Dependency-Konflikten zu installieren.
       - name: Install Firebase Functions Dependencies
-        run: npm install --prefix ./firebase_functions --force # <-- NEU HINZUGEFÜGT
-        working-directory: ./firebase_functions # Sicherstellen, dass der Befehl im richtigen Verzeichnis läuft
+        # Führt 'npm install --force' DIREKT im Verzeichnis 'firebase_functions' aus
+        run: npm install --force # <-- Korrektur: '--prefix ./firebase_functions' wurde entfernt
+        working-directory: ./firebase_functions # <-- Dieses Attribut sorgt für den korrekten Kontext
       
 
       # Schritt 7: Deployment zu Firebase
