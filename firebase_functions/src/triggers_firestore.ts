@@ -7,6 +7,10 @@ import Stripe from 'stripe'; // Wichtig für createStripeCustomAccountOnUserUpda
 import { db, getStripeInstance } from './helpers'; // Wichtig für db und getStripeInstance
 import { FieldValue } from 'firebase-admin/firestore'; // Wichtig für FieldValue
 
+// WICHTIG: admin.initializeApp() MUSS HIER ENTFERNT WERDEN!
+// Die Initialisierung erfolgt zentral in index.ts.
+// Auch der Import von 'admin' hier ist nicht mehr nötig,
+// da db, getStripeInstance etc. über helpers importiert werden.
 
 interface FirmaUserData {
   uid: string;
@@ -68,9 +72,6 @@ interface FirmaUserData {
   updatedAt?: FirebaseFirestore.Timestamp | Date;
   stripeAccountId?: string;
 }
-
-// ACHTUNG: admin.initializeApp() MUSS in index.ts aufgerufen werden, NICHT hier.
-// Füge hier KEINEN admin.initializeApp() Block ein!
 
 
 export const createUserProfile = onDocumentCreated("users/{userId}", async (event) => {
@@ -207,7 +208,7 @@ export const createStripeCustomAccountOnUserUpdate = functionsV1.firestore
   .onUpdate(async (change, context) => {
     const userId = context.params.userId;
     functionsV1.logger.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' für ${userId}.`);
-    const localStripe = getStripeInstance(); // <-- getStripeInstance() wird hier verwendet
+    const localStripe = getStripeInstance();
     const after = change.after.data() as FirmaUserData;
     if (!after) {
       functionsV1.logger.warn(`Keine Daten nach Update für ${userId}.`);
