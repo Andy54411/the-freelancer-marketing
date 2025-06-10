@@ -3,6 +3,7 @@
 import * as admin from 'firebase-admin'; // Admin importieren
 import { logger } from 'firebase-functions/v2'; // logger importieren für Initialisierungs-Logs
 import { setGlobalOptions } from 'firebase-functions/v2/options'; // <- setGlobalOptions importieren
+import './server';
 
 // --- Globale Optionen für alle 2nd Gen Funktionen setzen ---
 // Diese müssen vor admin.initializeApp() gesetzt werden, wenn sie global wirken sollen
