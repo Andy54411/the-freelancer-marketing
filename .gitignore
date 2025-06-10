@@ -1,1 +1,12 @@
+#/Users/andystaudinger/Tasko/.gitignore
 node_modules
+.next/static/webpack/app/layout.3ee6df77c9a588de.hot-update.js
+.next/static/webpack/webpack.3ee6df77c9a588de.hot-update.js
+.next/static/chunks/app/layout.js
+.next/static/chunks/webpack.js
+.next/cache/webpack/client-development/index.pack.gz.old
+.next/cache/webpack/client-development/index.pack.gz
+.next/static/webpack/3ee6df77c9a588de.webpack.hot-update.json
+.next/static/chunks/webpack.js
+.next/trace
+
