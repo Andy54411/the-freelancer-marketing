@@ -52,14 +52,14 @@ jobs:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}' # Dein Firebase Service Account Secret
 
     
-      # NEUER SCHRITT: Spezifische Functions-Abhängigkeiten installieren (mit --force)
-      # Dies ist notwendig, um den ERESOLVE-Fehler bei der Installation der Functions-Abhängigkeiten zu umgehen.
-      # Der Firebase Deploy-Prozess führt oft selbst ein 'npm install' aus, was diesen Fehler verursachen kann.
-      # Der --force-Parameter zwingt NPM, die Pakete trotz Peer-Dependency-Konflikten zu installieren.
-      - name: Install Firebase Functions Dependencies
-        # Führt 'npm install --force' DIREKT im Verzeichnis 'firebase_functions' aus
-        run: npm install --force # <-- Korrektur: '--prefix ./firebase_functions' wurde entfernt
-        working-directory: ./firebase_functions # <-- Dieses Attribut sorgt für den korrekten Kontext
+      # NEUER SCHRITT: Spezifische Functions-Abhängigkeiten installieren (Workaround für Gulp-Problem)
+      # Wir installieren Firebase-Admin und Firebase-Functions hier direkt,
+      # um Probleme mit deren internen Build-Prozessen zu umgehen.
+      - name: Install Firebase Functions Dependencies (Workaround)
+        run: |
+          npm install firebase-admin@^12.0.0 firebase-functions@^5.0.0 --force # Installiert die Hauptabhängigkeiten direkt
+          npm install --force # Installiert die restlichen Abhängigkeiten aus package.json
+        working-directory: ./firebase_functions # Führt diese Befehle im Functions-Verzeichnis aus
       
 
       # Schritt 7: Deployment zu Firebase
