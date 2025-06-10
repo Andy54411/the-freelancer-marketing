@@ -1,14 +1,15 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/triggers_firestore.ts
 
 // Imports für V2-Funktionen
-import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore'; // <- NUR DIESE IMPORTS FÜR V2
 import { logger as loggerV2 } from 'firebase-functions/v2';
-// import * as functionsV1 from 'firebase-functions/v1'; // <- Entfernt: Nicht mehr benötigt, da alles auf V2 umgestellt wird
+// import * as functions from 'firebase-functions'; // <- DIESEN IMPORT ENTFERNEN ODER AUSKOMMENTIEREN!
+// import * as functionsV1 from 'firebase-functions/v1'; // <- NICHT BENÖTIGT
+
 import Stripe from 'stripe';
 import { db, getStripeInstance } from './helpers';
-import { FieldValue } from 'firebase-admin/firestore'; // <- FieldValue direkt von firebase-admin/firestore importieren
-// import * as admin from 'firebase-admin'; // <- Admin-Import für Typen nicht direkt hier nötig, da über helpers bereitgestellt
-
+import { FieldValue } from 'firebase-admin/firestore';
+// import * as admin from 'firebase-admin'; // NICHT BENÖTIGT
 
 interface FirmaUserData {
   uid: string;
@@ -194,7 +195,7 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
       loggerV2.error(`[updateUserProfile] Fehler Company-Dokument für ${userId}:`, error.message, error);
     }
   } else {
-    loggerV2.info(`[updateUserProfile] User ${userId} Typ '${userData.user_type}', kein Update für companies Dokument.`);
+    loggerV2.info(`[updateUserProfile] User <span class="math-inline">\{userId\} Typ '</span>{userData.user_type}', kein Update für companies Dokument.`);
   }
   return null;
 });
@@ -202,7 +203,7 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
 // createStripeCustomAccountOnUserUpdate ist jetzt auch V2
 export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{userId}", async (event) => {
   const userId = event.params.userId;
-  loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`); // Korrigiert: V2-Logger
+  loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
   const localStripe = getStripeInstance();
   const after = event.data?.after.data() as FirmaUserData; // <- V2 event.data.after.data()
   if (!after) {
@@ -215,14 +216,14 @@ export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{u
     return null;
   }
   if (after.stripeAccountId && after.common?.createdByCallable !== "true") {
-    loggerV2.info(`${userId} hat bereits eine Stripe-Konto ID (${after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`);
+    loggerV2.info(`<span class="math-inline">\{userId\} hat bereits eine Stripe\-Konto ID \(</span>{after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`);
     return null;
   }
 
   const userEmail = after.email || after.step1?.email;
 
   const companyCountryFromData = after.companyCountryForBackend || after.step2?.country;
-  const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode;
+  const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode; // <- KORRIGIERT: companyPostalCodeForBackend
   const companyCityFromData = after.companyCityForBackend || after.step2?.city;
   const companyAddressLine1 = after.companyAddressLine1ForBackend || `${after.step2?.street || ""} ${after.step2?.houseNumber || ""}`.trim();
   const companyNameFromData = after.companyName || after.step2?.companyName;
@@ -264,7 +265,7 @@ export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{u
     !["FALLBACK_IP_ADDRESS", "IP_NOT_DETERMINED", "NEEDS_REAL_USER_IP", "8.8.8.8", "127.0.0.1", "::1"].includes(clientIp);
 
   if (!requiredFields) {
-    loggerV2.info(`${userId} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger. Details: userEmail=${!!userEmail}, firstName=${!!firstNameFromData}, lastName=${!!lastNameFromData}, companyName=${!!companyNameFromData}, companyAddressLine1=${!!companyAddressLine1}, companyCity=${!!companyCityFromData}, companyPostalCode=${!!companyPostalCodeFromData}, companyCountry=${!!companyCountryFromData}, tax/vat/register=${!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=${!!ibanFromData}, accountHolder=${!!accountHolderFromData}, clientIp=${clientIp}`);
+    loggerV2.info(`<span class="math-inline">\{userId\} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger\. Details\: userEmail\=</span>{!!userEmail}, firstName=<span class="math-inline">\{\!\!firstNameFromData\}, lastName\=</span>{!!lastNameFromData}, companyName=<span class="math-inline">\{\!\!companyNameFromData\}, companyAddressLine1\=</span>{!!companyAddressLine1}, companyCity=<span class="math-inline">\{\!\!companyCityFromData\}, companyPostalCode\=</span>{!!companyPostalCodeFromData}, companyCountry=<span class="math-inline">\{\!\!companyCountryFromData\}, tax/vat/register\=</span>{!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=<span class="math-inline">\{\!\!ibanFromData\}, accountHolder\=</span>{!!accountHolderFromData}, clientIp=${clientIp}`);
     return null;
   }
 

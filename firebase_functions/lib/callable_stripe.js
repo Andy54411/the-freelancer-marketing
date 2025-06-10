@@ -6,18 +6,6 @@ const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
 const firestore_1 = require("firebase-admin/firestore");
-const v2_2 = require("firebase-functions/v2");
-v2_2.logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
-// Umgebe den Top-Level-Code mit try-catch
-try {
-    // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
-    // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
-    v2_2.logger.info("http_general.ts: Globale Initialisierung erfolgreich."); // <-- Füge dies hinzu
-}
-catch (error) {
-    v2_2.logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack }); // <-- Füge dies hinzu
-    throw error; // Wichtig: Den Fehler werfen, damit er im Log erscheint
-}
 // =========================================================================
 // HELPER-FUNKTIONEN
 // =========================================================================

@@ -1,5 +1,5 @@
 "use strict";
-// Angenommener Dateiname: src/http_general.ts (oder ähnlich)
+// Angenommener Dateiname: src/http_general.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getReviewsByProvider = exports.submitReview = exports.createJobPosting = exports.getDataForSubcategory = exports.searchCompanyProfiles = exports.migrateExistingUsersToCompanies = void 0;
 const https_1 = require("firebase-functions/v2/https");
@@ -35,7 +35,7 @@ exports.migrateExistingUsersToCompanies = (0, https_1.onRequest)({ cors: true },
         res.status(200).send(`Successfully migrated ${migratedCount} users to companies.`);
     }
     catch (e) {
-        v2_1.logger.error("Migration failed:", e); // Logging hinzugefügt
+        v2_1.logger.error("Migration failed:", e);
         res.status(500).send("Migration failed.");
     }
 });
@@ -75,7 +75,7 @@ exports.searchCompanyProfiles = (0, https_1.onRequest)({ cors: true }, async (re
         res.status(200).json(profiles);
     }
     catch (e) {
-        v2_1.logger.error("Error searching company profiles:", e); // Logging hinzugefügt
+        v2_1.logger.error("Error searching company profiles:", e);
         res.status(500).send("Error searching company profiles.");
     }
 });
@@ -149,7 +149,7 @@ exports.getDataForSubcategory = (0, https_1.onRequest)({ cors: true }, async (re
         });
     }
     catch (error) {
-        v2_1.logger.error("Error processing subcategory data:", error); // Logging hinzugefügt
+        v2_1.logger.error("Error processing subcategory data:", error);
         res.status(500).send("Error processing subcategory data.");
     }
 });
@@ -179,7 +179,7 @@ exports.createJobPosting = (0, https_1.onRequest)({ cors: true }, async (req, re
         res.status(201).json({ message: "Auftragsentwurf erstellt", jobId: docRef.id });
     }
     catch (error) {
-        v2_1.logger.error("Error creating job posting:", error); // Logging hinzugefügt
+        v2_1.logger.error("Error creating job posting:", error);
         res.status(500).send("Fehler.");
     }
 });
@@ -209,7 +209,7 @@ exports.submitReview = (0, https_1.onRequest)({ cors: true }, async (req, res) =
         res.status(201).json({ message: "Review submitted", reviewId: docRef.id });
     }
     catch (error) {
-        v2_1.logger.error("Error submitting review:", error); // Logging hinzugefügt
+        v2_1.logger.error("Error submitting review:", error);
         res.status(500).send("Error submitting review.");
     }
 });
@@ -236,7 +236,7 @@ exports.getReviewsByProvider = (0, https_1.onRequest)({ cors: true }, async (req
         res.status(200).json(reviews);
     }
     catch (error) {
-        v2_1.logger.error("Error fetching reviews:", error); // Logging hinzugefügt
+        v2_1.logger.error("Error fetching reviews:", error);
         res.status(500).send("Error fetching reviews.");
     }
 });

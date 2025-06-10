@@ -1,33 +1,15 @@
-// /Users/andystaudinger/Tasko/firebase_functions/src/index.ts
+import { setGlobalOptions } from 'firebase-functions/v2/options';
 
-import * as admin from 'firebase-admin'; // Admin importieren
-import { logger } from 'firebase-functions/v2'; // logger importieren für Initialisierungs-Logs
-import { setGlobalOptions } from 'firebase-functions/v2/options'; // <- setGlobalOptions importieren
-import cors from 'cors';
-const corsHandler = cors({ origin: true });
-
-
-// --- Globale Optionen für alle 2nd Gen Funktionen setzen ---
-// Diese müssen vor admin.initializeApp() gesetzt werden, wenn sie global wirken sollen
+// Globale Optionen setzen (das ist gut so).
 setGlobalOptions({
-    timeoutSeconds: 540, // Max. 9 Minuten für den Start/Initialisierung
-    memory: '512MiB',   // Mehr Speicher, könnte bei komplexer Initialisierung helfen
-    cpu: 1 // Standard ist 1. Kann auf 2 erhöht werden, wenn der Start komplex ist.
+    timeoutSeconds: 540,
+    memory: '512MiB',
+    cpu: 1
 });
 
+// KEIN admin.initializeApp() mehr hier!
 
-// --- WICHTIG: Initialisierung des Firebase Admin SDK NUR HIER EINMAL ---
-try {
-    admin.initializeApp();
-    logger.info("Firebase Admin SDK erfolgreich initialisiert in index.ts."); // Zusätzliches Log
-
-} catch (error: any) {
-    logger.error("SCHWERER FEHLER BEI DER INITIALISIERUNG DES ADMIN SDK IN index.ts!", { error: error.message, stack: error.stack });
-    throw error;
-}
-
-// --- Export-Deklarationen für alle deine Funktionen (MÜSSEN auf oberster Ebene stehen) ---
-// DIESE ZEILEN MÜSSEN AUSSERHALB des try-catch-Blocks sein.
+// Alle Funktionen werden wieder normal exportiert.
 export * from './callable_stripe';
 export * from './callable_general';
 export * from './http_general';

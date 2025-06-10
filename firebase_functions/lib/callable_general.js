@@ -37,10 +37,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCompanyAccount = exports.getOrCreateStripeCustomer = exports.createTemporaryJobDraft = exports.getClientIp = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-// Stelle sicher, dass db und getStripeInstance korrekt aus helpers.ts exportiert und hier importiert werden
 const helpers_1 = require("./helpers");
 const firestore_1 = require("firebase-admin/firestore");
 const admin = __importStar(require("firebase-admin")); // Wird für admin.auth() und admin.storage() in deleteCompanyAccount benötigt
+const v2_2 = require("firebase-functions/v2");
+v2_2.logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
+// Umgebe den Top-Level-Code mit try-catch
+try {
+    // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
+    // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
+    v2_2.logger.info("http_general.ts: Globale Initialisierung erfolgreich."); // <-- Füge dies hinzu
+}
+catch (error) {
+    v2_2.logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack }); // <-- Füge dies hinzu
+    throw error; // Wichtig: Den Fehler werfen, damit er im Log erscheint
+}
 exports.getClientIp = (0, https_1.onCall)(async (request) => {
     const rawHttpRequest = request.rawRequest;
     let clientIp = "IP_NOT_DETERMINED";

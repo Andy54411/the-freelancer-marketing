@@ -2,12 +2,14 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/triggers_firestore.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStripeCustomAccountOnUserUpdate = exports.updateUserProfile = exports.createUserProfile = void 0;
-const firestore_1 = require("firebase-functions/v2/firestore"); // <- onDocumentUpdated für V2
+// Imports für V2-Funktionen
+const firestore_1 = require("firebase-functions/v2/firestore"); // <- NUR DIESE IMPORTS FÜR V2
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
 const firestore_2 = require("firebase-admin/firestore");
+// ACHTUNG: admin.initializeApp() MUSS in index.ts aufgerufen werden, NICHT hier.
 exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}", async (event) => {
-    const snapshot = event.data;
+    const snapshot = event.data; // V2 event.data für onCreate
     const userId = event.params.userId;
     if (!snapshot || !snapshot.data) {
         v2_1.logger.warn(`[createUserProfile] User data for ${userId} is undefined. Skipping.`);
@@ -19,10 +21,9 @@ exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}",
         const companyData = {
             uid: userId,
             user_type: "firma",
-            // Lese direkt von Top-Level-Feldern im users-Dokument, basierend auf deinen Logs
             companyName: userData.companyName || "Unbenanntes Unternehmen",
-            postalCode: userData.companyPostalCodeForBackend || null, // Dein primärer Pfad
-            companyCity: userData.companyCityForBackend || null, // Dein primärer Pfad
+            postalCode: userData.companyPostalCodeForBackend || null,
+            companyCity: userData.companyCityForBackend || null,
             selectedCategory: userData.selectedCategory || null,
             selectedSubcategory: userData.selectedSubcategory || null,
             hourlyRate: Number(userData.hourlyRate) || null,
@@ -31,12 +32,11 @@ exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}",
             radiusKm: Number(userData.radiusKm) || null,
             profilePictureURL: userData.profilePictureFirebaseUrl || null,
             industryMcc: userData.industryMcc || null,
-            description: userData.description || "", // Initial leer
+            description: userData.description || "",
             createdAt: firestore_2.FieldValue.serverTimestamp(),
             updatedAt: firestore_2.FieldValue.serverTimestamp(),
             profileLastUpdatedAt: firestore_2.FieldValue.serverTimestamp(),
         };
-        // Bereinige das Objekt: undefined oder leere Strings zu null, NaN zu null
         Object.keys(companyData).forEach((key) => {
             if (companyData[key] === undefined || companyData[key] === "") {
                 companyData[key] = null;
@@ -63,12 +63,12 @@ exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}",
 });
 exports.updateUserProfile = (0, firestore_1.onDocumentUpdated)("users/{userId}", async (event) => {
     const userId = event.params.userId;
-    const snapshotAfter = event.data?.after;
+    const snapshotAfter = event.data?.after; // V2 event.data.after
     if (!snapshotAfter) {
         v2_1.logger.warn(`[updateUserProfile] Kein Daten-Snapshot nach Update für User ${userId}. Abbruch.`);
         return null;
     }
-    const userData = snapshotAfter.data();
+    const userData = snapshotAfter.data(); // .data()
     if (typeof userData !== "object" || userData === null) {
         v2_1.logger.warn(`[updateUserProfile] Userdaten für ${userId} nach Update ungültig. Abbruch.`);
         return null;
@@ -128,32 +128,31 @@ exports.updateUserProfile = (0, firestore_1.onDocumentUpdated)("users/{userId}",
         }
     }
     else {
-        v2_1.logger.info(`[updateUserProfile] User ${userId} Typ '${userData.user_type}', kein Update für companies Dokument.`);
+        v2_1.logger.info(`[updateUserProfile] User <span class="math-inline">\{userId\} Typ '</span>{userData.user_type}', kein Update für companies Dokument.`);
     }
     return null;
 });
-// NEU: createStripeCustomAccountOnUserUpdate auf V2 umgestellt
+// createStripeCustomAccountOnUserUpdate ist jetzt auch V2
 exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdated)("users/{userId}", async (event) => {
     const userId = event.params.userId;
-    // loggerV2.info() statt functionsV1.logger.info()
     v2_1.logger.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
     const localStripe = (0, helpers_1.getStripeInstance)();
-    const after = event.data?.after.data(); // V2 event.data.after.data()
+    const after = event.data?.after.data(); // <- V2 event.data.after.data()
     if (!after) {
-        v2_1.logger.warn(`Keine Daten nach Update für ${userId}.`); // loggerV2
+        v2_1.logger.warn(`Keine Daten nach Update für ${userId}.`);
         return null;
     }
     if (after.stripeAccountId && after.common?.createdByCallable === "true") {
-        v2_1.logger.info(`${userId} hat bereits Stripe-Konto via Callable erstellt. Fallback-Trigger bricht ab.`); // loggerV2
+        v2_1.logger.info(`${userId} hat bereits Stripe-Konto via Callable erstellt. Fallback-Trigger bricht ab.`);
         return null;
     }
     if (after.stripeAccountId && after.common?.createdByCallable !== "true") {
-        v2_1.logger.info(`${userId} hat bereits eine Stripe-Konto ID (${after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`); // loggerV2
+        v2_1.logger.info(`<span class="math-inline">\{userId\} hat bereits eine Stripe\-Konto ID \(</span>{after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`);
         return null;
     }
     const userEmail = after.email || after.step1?.email;
     const companyCountryFromData = after.companyCountryForBackend || after.step2?.country;
-    const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode;
+    const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode; // <- KORRIGIERT: companyPostalCodeForBackend
     const companyCityFromData = after.companyCityForBackend || after.step2?.city;
     const companyAddressLine1 = after.companyAddressLine1ForBackend || `${after.step2?.street || ""} ${after.step2?.houseNumber || ""}`.trim();
     const companyNameFromData = after.companyName || after.step2?.companyName;
@@ -189,7 +188,7 @@ exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdate
         clientIp &&
         !["FALLBACK_IP_ADDRESS", "IP_NOT_DETERMINED", "NEEDS_REAL_USER_IP", "8.8.8.8", "127.0.0.1", "::1"].includes(clientIp);
     if (!requiredFields) {
-        v2_1.logger.info(`${userId} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger. Details: userEmail=${!!userEmail}, firstName=${!!firstNameFromData}, lastName=${!!lastNameFromData}, companyName=${!!companyNameFromData}, companyAddressLine1=${!!companyAddressLine1}, companyCity=${!!companyCityFromData}, companyPostalCode=${!!companyPostalCodeFromData}, companyCountry=${!!companyCountryFromData}, tax/vat/register=${!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=${!!ibanFromData}, accountHolder=${!!accountHolderFromData}, clientIp=${clientIp}`); // loggerV2
+        v2_1.logger.info(`<span class="math-inline">\{userId\} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger\. Details\: userEmail\=</span>{!!userEmail}, firstName=<span class="math-inline">\{\!\!firstNameFromData\}, lastName\=</span>{!!lastNameFromData}, companyName=<span class="math-inline">\{\!\!companyNameFromData\}, companyAddressLine1\=</span>{!!companyAddressLine1}, companyCity=<span class="math-inline">\{\!\!companyCityFromData\}, companyPostalCode\=</span>{!!companyPostalCodeFromData}, companyCountry=<span class="math-inline">\{\!\!companyCountryFromData\}, tax/vat/register\=</span>{!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=<span class="math-inline">\{\!\!ibanFromData\}, accountHolder\=</span>{!!accountHolderFromData}, clientIp=${clientIp}`);
         return null;
     }
     try {
@@ -255,7 +254,7 @@ exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdate
             const person = await localStripe.accounts.createPerson(account.id, personPayload);
             await helpers_1.db.collection("users").doc(userId).update({ stripeRepresentativePersonId: person.id });
         }
-        v2_1.logger.info(`Stripe Custom Account (Trigger Fallback) für ${userId} erstellt: ${account.id}`); // loggerV2
+        v2_1.logger.info(`Stripe Custom Account (Trigger Fallback) für ${userId} erstellt: ${account.id}`);
         await helpers_1.db.collection("users").doc(userId).update({
             stripeAccountId: account.id,
             stripeAccountDetailsSubmitted: account.details_submitted,
@@ -265,10 +264,10 @@ exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdate
         return null;
     }
     catch (error) {
-        v2_1.logger.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, error.message, error); // loggerV2
+        v2_1.logger.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, error.message, error);
         await helpers_1.db.collection("users").doc(userId).update({
             stripeAccountError: error instanceof Error ? error.message : String(error.toString()),
-        }).catch((dbErr) => v2_1.logger.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, dbErr.message, dbErr)); // loggerV2
+        }).catch((dbErr) => v2_1.logger.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, dbErr.message, dbErr));
         return null;
     }
 });
