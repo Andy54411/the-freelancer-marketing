@@ -14,7 +14,13 @@
         "sourceMap": true,
         "types": [
             "node"
-        ]
+        ],
+        "baseUrl": "./src",
+        "paths": {
+            "@functions/*": [
+                "*"
+            ]
+        }
     },
     "include": [
         "src"
