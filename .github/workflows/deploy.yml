@@ -34,28 +34,29 @@ jobs:
       - name: Install root dependencies
         run: pnpm install
 
-      # Schritt 5: Abhängigkeiten für Firebase Functions installieren
-      - name: Install Firebase Functions Dependencies
+      # Schritt 5: Firebase Functions Abhängigkeiten installieren
+      - name: Install Firebase Functions dependencies
         run: pnpm install
         working-directory: ./firebase_functions
 
-      # Schritt 6: Functions kompilieren
+      # Schritt 6: Firebase Functions bauen
       - name: Build Firebase Functions
         run: pnpm run build
         working-directory: ./firebase_functions
 
-      # Schritt 7: Authentifizierung bei Google Cloud
+      # Schritt 7: Authentifizierung mit Google Cloud
       - name: Authenticate with Google Cloud
-        uses: 'google-github-actions/auth@v2'
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}'
 
-      # Schritt 8: Deployment zu Firebase
+      # Schritt 8: Deployment mit Firebase CLI
       - name: Deploy to Firebase
-        uses: 'w9jds/firebase-action@master'
+        uses: w9jds/firebase-action@master
         with:
-          args: 'deploy --only functions --project tilvo-f142f --force'
+          args: deploy --only functions --project tilvo-f142f --force
         env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
