@@ -69,7 +69,8 @@ jobs:
         uses: 'w9jds/firebase-action@master'
         with:
           # Führt den Firebase Deploy-Befehl aus und gibt explizit deine Projekt-ID an.
-          args: 'deploy --only functions --project tilvo-f142f'
+          # HINZUGEFÜGT: --force um das Deployment zu erzwingen
+          args: 'deploy --only functions --project tilvo-f142f --force' # <--- HIER --force HINZUGEFÜGT!
           # DIESER BLOCK ÜBERGIBT DIE UMGEBUNGSVARIABLEN KORREKT AN DIE FIREBASE FUNCTIONS
           env_vars: |
             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
