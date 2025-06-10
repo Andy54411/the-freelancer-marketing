@@ -9,4 +9,10 @@ node_modules
 .next/static/webpack/3ee6df77c9a588de.webpack.hot-update.json
 .next/static/chunks/webpack.js
 .next/trace
+# Next.js build output
+.next/
 
+# Firebase-bezogene Build-Caches und temporäre Dateien
+.firebase/
+firebase_functions/.firebase/
+firebase_functions/.next/
