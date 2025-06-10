@@ -13,10 +13,6 @@ import fs from "fs";
 import { getStorage } from "firebase-admin/storage";
 import { v4 as uuidv4 } from 'uuid';
 
-if (admin.apps.length === 0) {
-  admin.initializeApp();
-}
-
 // --- 1. Helper für Authentifizierung ---
 const authenticateRequest = async (req: any): Promise<admin.auth.DecodedIdToken> => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {

@@ -3,10 +3,7 @@
 import { getApps, initializeApp as initializeAdminApp, type App as AdminApp } from "firebase-admin/app";
 import { getFirestore as getAdminFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getStorage as getAdminStorage, type Storage } from "firebase-admin/storage";
-import { getAuth as getAdminAuth } from "firebase-admin/auth";
-
 import * as admin from "firebase-admin";
-
 import Stripe from "stripe";
 import sendgridMail from "@sendgrid/mail";
 import { HttpsError } from "firebase-functions/v2/https";

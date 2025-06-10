@@ -1,9 +1,9 @@
 // Angenommener Dateiname: src/http_general.ts (oder ähnlich)
 
 
-import { onRequest, HttpsError } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { db, getStripeInstance, getSendGridClient, getFrontendURL } from './helpers';
+import { db } from './helpers';
 
 
 export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (req, res) => {

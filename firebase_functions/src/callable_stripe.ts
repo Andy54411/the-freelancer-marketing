@@ -3,9 +3,9 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-import { db, getStripeInstance, getFrontendURL, getFirebaseAdminStorage } from './helpers';
+import { db, getStripeInstance, getFrontendURL, } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
-import { v4 as uuidv4 } from 'uuid';
+
 
 // =========================================================================
 // INTERFACE-DEFINITIONEN (VOLLSTÄNDIG)
