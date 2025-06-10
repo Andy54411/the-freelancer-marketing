@@ -1,16 +1,13 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/triggers_firestore.ts
 
-import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore'; // <- onDocumentUpdated für V2
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import * as functionsV1 from 'firebase-functions/v1'; // Wichtig für createStripeCustomAccountOnUserUpdate
-import Stripe from 'stripe'; // Wichtig für createStripeCustomAccountOnUserUpdate
-import { db, getStripeInstance } from './helpers'; // Wichtig für db und getStripeInstance
-import { FieldValue } from 'firebase-admin/firestore'; // Wichtig für FieldValue
+// import * as functionsV1 from 'firebase-functions/v1'; // <- Nicht mehr benötigt für diese Funktion
+import Stripe from 'stripe';
+import { db, getStripeInstance } from './helpers';
+import { FieldValue } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin'; // <- Admin-Import für V1-Logger (falls noch woanders verwendet) oder direkt für FieldValue etc.
 
-// WICHTIG: admin.initializeApp() MUSS HIER ENTFERNT WERDEN!
-// Die Initialisierung erfolgt zentral in index.ts.
-// Auch der Import von 'admin' hier ist nicht mehr nötig,
-// da db, getStripeInstance etc. über helpers importiert werden.
 
 interface FirmaUserData {
   uid: string;
@@ -203,154 +200,153 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
   return null;
 });
 
-export const createStripeCustomAccountOnUserUpdate = functionsV1.firestore
-  .document("users/{userId}")
-  .onUpdate(async (change, context) => {
-    const userId = context.params.userId;
-    functionsV1.logger.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' für ${userId}.`);
-    const localStripe = getStripeInstance();
-    const after = change.after.data() as FirmaUserData;
-    if (!after) {
-      functionsV1.logger.warn(`Keine Daten nach Update für ${userId}.`);
-      return null;
-    }
+// NEU: createStripeCustomAccountOnUserUpdate auf V2 umgestellt
+export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{userId}", async (event) => {
+  const userId = event.params.userId;
+  // loggerV2.info() statt functionsV1.logger.info()
+  loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
+  const localStripe = getStripeInstance();
+  const after = event.data?.after.data() as FirmaUserData; // V2 event.data.after.data()
+  if (!after) {
+    loggerV2.warn(`Keine Daten nach Update für ${userId}.`); // loggerV2
+    return null;
+  }
 
-    if (after.stripeAccountId && after.common?.createdByCallable === "true") {
-      functionsV1.logger.info(`${userId} hat bereits Stripe-Konto via Callable erstellt. Fallback-Trigger bricht ab.`);
-      return null;
-    }
-    if (after.stripeAccountId && after.common?.createdByCallable !== "true") {
-      functionsV1.logger.info(`${userId} hat bereits eine Stripe-Konto ID (${after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`);
-      return null;
-    }
+  if (after.stripeAccountId && after.common?.createdByCallable === "true") {
+    loggerV2.info(`${userId} hat bereits Stripe-Konto via Callable erstellt. Fallback-Trigger bricht ab.`); // loggerV2
+    return null;
+  }
+  if (after.stripeAccountId && after.common?.createdByCallable !== "true") {
+    loggerV2.info(`${userId} hat bereits eine Stripe-Konto ID (${after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`); // loggerV2
+    return null;
+  }
 
-    const userEmail = after.email || after.step1?.email; // Behalte step1 Fallback für E-Mail
+  const userEmail = after.email || after.step1?.email;
 
-    // Lese primär von Top-Level Feldern aus dem 'users'-Dokument (after-Objekt)
-    const companyCountryFromData = after.companyCountryForBackend || after.step2?.country;
-    const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode;
-    const companyCityFromData = after.companyCityForBackend || after.step2?.city;
-    const companyAddressLine1 = after.companyAddressLine1ForBackend || `${after.step2?.street || ""} ${after.step2?.houseNumber || ""}`.trim();
-    const companyNameFromData = after.companyName || after.step2?.companyName;
-    const companyPhoneFromData = after.companyPhoneNumberForBackend || after.step1?.phoneNumber;
-    const companyWebsiteFromData = after.companyWebsiteForBackend || after.step2?.website;
-    const industryMccFromData = after.industryMcc; // Direkter Top-Level Zugriff
-    const ibanFromData = after.iban || after.step4?.iban; // Direkter Top-Level Zugriff
-    const accountHolderFromData = after.accountHolder || after.step4?.accountHolder; // Direkter Top-Level Zugriff
-    const taxIdFromData = after.taxNumberForBackend || after.step3?.taxNumber;
-    const vatIdFromData = after.vatIdForBackend || after.step3?.vatId;
-    const companyRegisterFromData = after.companyRegisterForBackend || after.step3?.companyRegister;
+  const companyCountryFromData = after.companyCountryForBackend || after.step2?.country;
+  const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode;
+  const companyCityFromData = after.companyCityForBackend || after.step2?.city;
+  const companyAddressLine1 = after.companyAddressLine1ForBackend || `${after.step2?.street || ""} ${after.step2?.houseNumber || ""}`.trim();
+  const companyNameFromData = after.companyName || after.step2?.companyName;
+  const companyPhoneFromData = after.companyPhoneNumberForBackend || after.step1?.phoneNumber;
+  const companyWebsiteFromData = after.companyWebsiteForBackend || after.step2?.website;
+  const industryMccFromData = after.industryMcc;
+  const ibanFromData = after.iban || after.step4?.iban;
+  const accountHolderFromData = after.accountHolder || after.step4?.accountHolder;
+  const taxIdFromData = after.taxNumberForBackend || after.step3?.taxNumber;
+  const vatIdFromData = after.vatIdForBackend || after.step3?.vatId;
+  const companyRegisterFromData = after.companyRegisterForBackend || after.step3?.companyRegister;
 
-    const firstNameFromData = after.firstName || after.step1?.firstName;
-    const lastNameFromData = after.lastName || after.step1?.lastName;
-    const phoneFromData = after.phoneNumber || after.step1?.phoneNumber; // Persönliche Nummer
-    const dobFromData = after.dateOfBirth || after.step1?.dateOfBirth;
-    const personalStreetFromData = after.personalStreet || after.step1?.personalStreet;
-    const personalHouseNumberFromData = after.personalHouseNumber || after.step1?.personalHouseNumber;
-    const personalPostalCodeFromData = after.personalPostalCode || after.step1?.personalPostalCode;
-    const personalCityFromData = after.personalCity || after.step1?.personalCity;
-    const personalCountryFromData = after.personalCountry || after.step1?.personalCountry;
-    const isManagingDirectorOwnerFromData = after.isManagingDirectorOwner ?? after.step1?.isManagingDirectorOwner ?? false;
+  const firstNameFromData = after.firstName || after.step1?.firstName;
+  const lastNameFromData = after.lastName || after.step1?.lastName;
+  const phoneFromData = after.phoneNumber || after.step1?.phoneNumber;
+  const dobFromData = after.dateOfBirth || after.step1?.dateOfBirth;
+  const personalStreetFromData = after.personalStreet || after.step1?.personalStreet;
+  const personalHouseNumberFromData = after.personalHouseNumber || after.step1?.personalHouseNumber;
+  const personalPostalCodeFromData = after.personalPostalCode || after.step1?.personalPostalCode;
+  const personalCityFromData = after.personalCity || after.step1?.personalCity;
+  const personalCountryFromData = after.personalCountry || after.step1?.personalCountry;
+  const isManagingDirectorOwnerFromData = after.isManagingDirectorOwner ?? after.step1?.isManagingDirectorOwner ?? false;
 
-    const identityFrontStripeId = after.identityFrontUrlStripeId || after.step3?.identityFrontUrl;
-    const identityBackStripeId = after.identityBackUrlStripeId || after.step3?.identityBackUrl;
+  const identityFrontStripeId = after.identityFrontUrlStripeId || after.step3?.identityFrontUrl;
+  const identityBackStripeId = after.identityBackUrlStripeId || after.step3?.identityBackUrl;
 
-    const clientIp = after.common?.tosAcceptanceIp;
-    const userAgent = after.common?.tosAcceptanceUserAgent || "UserAgentNotProvidedInFirestoreTrigger";
+  const clientIp = after.common?.tosAcceptanceIp;
+  const userAgent = after.common?.tosAcceptanceUserAgent || "UserAgentNotProvidedInFirestoreTrigger";
 
-    const requiredFields =
-      after.user_type === "firma" &&
-      userEmail &&
-      firstNameFromData && lastNameFromData &&
-      companyNameFromData && companyAddressLine1 &&
-      companyCityFromData && companyPostalCodeFromData && companyCountryFromData &&
-      (taxIdFromData || vatIdFromData || companyRegisterFromData) &&
-      ibanFromData && accountHolderFromData &&
-      clientIp &&
-      !["FALLBACK_IP_ADDRESS", "IP_NOT_DETERMINED", "NEEDS_REAL_USER_IP", "8.8.8.8", "127.0.0.1", "::1"].includes(clientIp);
+  const requiredFields =
+    after.user_type === "firma" &&
+    userEmail &&
+    firstNameFromData && lastNameFromData &&
+    companyNameFromData && companyAddressLine1 &&
+    companyCityFromData && companyPostalCodeFromData && companyCountryFromData &&
+    (taxIdFromData || vatIdFromData || companyRegisterFromData) &&
+    ibanFromData && accountHolderFromData &&
+    clientIp &&
+    !["FALLBACK_IP_ADDRESS", "IP_NOT_DETERMINED", "NEEDS_REAL_USER_IP", "8.8.8.8", "127.0.0.1", "::1"].includes(clientIp);
 
-    if (!requiredFields) {
-      functionsV1.logger.info(`${userId} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger. Details: userEmail=${!!userEmail}, firstName=${!!firstNameFromData}, lastName=${!!lastNameFromData}, companyName=${!!companyNameFromData}, companyAddressLine1=${!!companyAddressLine1}, companyCity=${!!companyCityFromData}, companyPostalCode=${!!companyPostalCodeFromData}, companyCountry=${!!companyCountryFromData}, tax/vat/register=${!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=${!!ibanFromData}, accountHolder=${!!accountHolderFromData}, clientIp=${clientIp}`);
-      return null;
-    }
+  if (!requiredFields) {
+    loggerV2.info(`${userId} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger. Details: userEmail=${!!userEmail}, firstName=${!!firstNameFromData}, lastName=${!!lastNameFromData}, companyName=${!!companyNameFromData}, companyAddressLine1=${!!companyAddressLine1}, companyCity=${!!companyCityFromData}, companyPostalCode=${!!companyPostalCodeFromData}, companyCountry=${!!companyCountryFromData}, tax/vat/register=${!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=${!!ibanFromData}, accountHolder=${!!accountHolderFromData}, clientIp=${clientIp}`); // loggerV2
+    return null;
+  }
 
-    try {
-      const accountParams: Stripe.AccountCreateParams = {
-        type: "custom", country: companyCountryFromData!, email: userEmail!,
-        business_type: "company",
-        company: {
-          name: companyNameFromData!,
-          tax_id: companyRegisterFromData || taxIdFromData || undefined,
-          vat_id: vatIdFromData || undefined,
-          phone: companyPhoneFromData || undefined,
-          address: {
-            line1: companyAddressLine1, city: companyCityFromData!,
-            postal_code: companyPostalCodeFromData!, country: companyCountryFromData!,
-          },
+  try {
+    const accountParams: Stripe.AccountCreateParams = {
+      type: "custom", country: companyCountryFromData!, email: userEmail!,
+      business_type: "company",
+      company: {
+        name: companyNameFromData!,
+        tax_id: companyRegisterFromData || taxIdFromData || undefined,
+        vat_id: vatIdFromData || undefined,
+        phone: companyPhoneFromData || undefined,
+        address: {
+          line1: companyAddressLine1, city: companyCityFromData!,
+          postal_code: companyPostalCodeFromData!, country: companyCountryFromData!,
         },
-        business_profile: {
-          url: companyWebsiteFromData || undefined,
-          mcc: industryMccFromData || undefined,
+      },
+      business_profile: {
+        url: companyWebsiteFromData || undefined,
+        mcc: industryMccFromData || undefined,
+      },
+      external_account: {
+        object: "bank_account", country: companyCountryFromData!, currency: "eur",
+        account_number: (ibanFromData!).replace(/\s/g, ""),
+        account_holder_name: (accountHolderFromData!),
+      },
+      tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: clientIp, user_agent: userAgent },
+      capabilities: { transfers: { requested: true }, card_payments: { requested: true } },
+      metadata: { internal_user_id: userId, created_by: "firestore_trigger_fallback" },
+    };
+
+    const account = await localStripe.accounts.create(accountParams);
+
+    if (firstNameFromData && lastNameFromData) {
+      const personPayload: Stripe.AccountCreatePersonParams = {
+        first_name: firstNameFromData,
+        last_name: lastNameFromData,
+        email: userEmail!,
+        phone: phoneFromData || undefined,
+        relationship: {
+          representative: true,
+          owner: isManagingDirectorOwnerFromData,
+          director: isManagingDirectorOwnerFromData,
         },
-        external_account: {
-          object: "bank_account", country: companyCountryFromData!, currency: "eur",
-          account_number: (ibanFromData!).replace(/\s/g, ""),
-          account_holder_name: (accountHolderFromData!),
-        },
-        tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: clientIp, user_agent: userAgent },
-        capabilities: { transfers: { requested: true }, card_payments: { requested: true } },
-        metadata: { internal_user_id: userId, created_by: "firestore_trigger_fallback" },
       };
-
-      const account = await localStripe.accounts.create(accountParams);
-
-      if (firstNameFromData && lastNameFromData) {
-        const personPayload: Stripe.AccountCreatePersonParams = {
-          first_name: firstNameFromData,
-          last_name: lastNameFromData,
-          email: userEmail!,
-          phone: phoneFromData || undefined,
-          relationship: {
-            representative: true,
-            owner: isManagingDirectorOwnerFromData,
-            director: isManagingDirectorOwnerFromData,
-          },
+      if (dobFromData) {
+        const [year, month, day] = dobFromData.split('-').map(Number);
+        if (day && month && year) personPayload.dob = { day, month, year };
+      }
+      if (personalStreetFromData && personalCityFromData && personalPostalCodeFromData && personalCountryFromData) {
+        personPayload.address = {
+          line1: `${personalStreetFromData} ${personalHouseNumberFromData || ''}`.trim(),
+          city: personalCityFromData,
+          postal_code: personalPostalCodeFromData,
+          country: personalCountryFromData ? personalCountryFromData : undefined,
         };
-        if (dobFromData) {
-          const [year, month, day] = dobFromData.split('-').map(Number);
-          if (day && month && year) personPayload.dob = { day, month, year };
-        }
-        if (personalStreetFromData && personalCityFromData && personalPostalCodeFromData && personalCountryFromData) {
-          personPayload.address = {
-            line1: `${personalStreetFromData} ${personalHouseNumberFromData || ''}`.trim(),
-            city: personalCityFromData,
-            postal_code: personalPostalCodeFromData,
-            country: personalCountryFromData ? personalCountryFromData : undefined,
-          };
-        }
-        if (identityFrontStripeId || identityBackStripeId) {
-          personPayload.verification = { document: {} };
-          if (identityFrontStripeId && personPayload.verification.document) personPayload.verification.document.front = identityFrontStripeId;
-          if (identityBackStripeId && personPayload.verification.document) personPayload.verification.document.back = identityBackStripeId;
-        }
-
-        const person = await localStripe.accounts.createPerson(account.id, personPayload);
-        await db.collection("users").doc(userId).update({ stripeRepresentativePersonId: person.id });
+      }
+      if (identityFrontStripeId || identityBackStripeId) {
+        personPayload.verification = { document: {} };
+        if (identityFrontStripeId && personPayload.verification.document) personPayload.verification.document.front = identityFrontStripeId;
+        if (identityBackStripeId && personPayload.verification.document) personPayload.verification.document.back = identityBackStripeId;
       }
 
-      functionsV1.logger.info(`Stripe Custom Account (Trigger Fallback) für ${userId} erstellt: ${account.id}`);
-      await db.collection("users").doc(userId).update({
-        stripeAccountId: account.id,
-        stripeAccountDetailsSubmitted: account.details_submitted,
-        stripeAccountCreationDate: FieldValue.serverTimestamp(),
-        stripeAccountError: FieldValue.delete(),
-      });
-      return null;
-    } catch (error: any) {
-      functionsV1.logger.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, error.message, error);
-      await db.collection("users").doc(userId).update({
-        stripeAccountError: error instanceof Error ? error.message : String(error.toString()),
-      }).catch((dbErr: any) => functionsV1.logger.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, dbErr.message, dbErr));
-      return null;
+      const person = await localStripe.accounts.createPerson(account.id, personPayload);
+      await db.collection("users").doc(userId).update({ stripeRepresentativePersonId: person.id });
     }
-  });
+
+    loggerV2.info(`Stripe Custom Account (Trigger Fallback) für ${userId} erstellt: ${account.id}`); // loggerV2
+    await db.collection("users").doc(userId).update({
+      stripeAccountId: account.id,
+      stripeAccountDetailsSubmitted: account.details_submitted,
+      stripeAccountCreationDate: FieldValue.serverTimestamp(),
+      stripeAccountError: FieldValue.delete(),
+    });
+    return null;
+  } catch (error: any) {
+    loggerV2.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, error.message, error); // loggerV2
+    await db.collection("users").doc(userId).update({
+      stripeAccountError: error instanceof Error ? error.message : String(error.toString()),
+    }).catch((dbErr: any) => loggerV2.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, dbErr.message, dbErr)); // loggerV2
+    return null;
+  }
+});
