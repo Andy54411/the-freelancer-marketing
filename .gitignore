@@ -1,18 +1,34 @@
-#/Users/andystaudinger/Tasko/.gitignore
-node_modules
-.next/static/webpack/app/layout.3ee6df77c9a588de.hot-update.js
-.next/static/webpack/webpack.3ee6df77c9a588de.hot-update.js
-.next/static/chunks/app/layout.js
-.next/static/chunks/webpack.js
-.next/cache/webpack/client-development/index.pack.gz.old
-.next/cache/webpack/client-development/index.pack.gz
-.next/static/webpack/3ee6df77c9a588de.webpack.hot-update.json
-.next/static/chunks/webpack.js
-.next/trace
+# Dependencies
+node_modules/
+/firebase_functions/node_modules/
+/firebase_functions/package-lock.json
+
 # Next.js build output
 .next/
+out/ # falls Next.js statisch exportiert wird
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
 
 # Firebase-bezogene Build-Caches und temporäre Dateien
 .firebase/
-firebase_functions/.firebase/
-firebase_functions/.next/
+firebase-debug.log
+firestore-debug.log
+*.log # Allgemeine Log-Dateien
+
+# IDE und Editor-spezifische Dateien
+.vscode/ # Visual Studio Code Konfiguration (optional, wenn nicht im Team geteilt)
+.DS_Store # macOS spezifisch
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/ # pnpm global store (falls nicht schon im home-Verzeichnis)
+.pnpm-debug.log*
+
+# Kompilierte TypeScript-Ausgabe (falls nicht im Build-Ordner)
+/lib/
+/dist/
