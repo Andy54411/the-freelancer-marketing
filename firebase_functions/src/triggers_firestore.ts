@@ -1,10 +1,11 @@
-// functions/src/triggers_firestore.ts
+// /Users/andystaudinger/Tasko/firebase_functions/src/triggers_firestore.ts
+
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import * as functionsV1 from 'firebase-functions/v1';
-import Stripe from 'stripe';
-import { db, getStripeInstance } from './helpers';
-import { FieldValue } from 'firebase-admin/firestore';
+import * as functionsV1 from 'firebase-functions/v1'; // Wichtig für createStripeCustomAccountOnUserUpdate
+import Stripe from 'stripe'; // Wichtig für createStripeCustomAccountOnUserUpdate
+import { db, getStripeInstance } from './helpers'; // Wichtig für db und getStripeInstance
+import { FieldValue } from 'firebase-admin/firestore'; // Wichtig für FieldValue
 
 
 interface FirmaUserData {
@@ -67,6 +68,9 @@ interface FirmaUserData {
   updatedAt?: FirebaseFirestore.Timestamp | Date;
   stripeAccountId?: string;
 }
+
+// ACHTUNG: admin.initializeApp() MUSS in index.ts aufgerufen werden, NICHT hier.
+// Füge hier KEINEN admin.initializeApp() Block ein!
 
 
 export const createUserProfile = onDocumentCreated("users/{userId}", async (event) => {
@@ -203,7 +207,7 @@ export const createStripeCustomAccountOnUserUpdate = functionsV1.firestore
   .onUpdate(async (change, context) => {
     const userId = context.params.userId;
     functionsV1.logger.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' für ${userId}.`);
-    const localStripe = getStripeInstance();
+    const localStripe = getStripeInstance(); // <-- getStripeInstance() wird hier verwendet
     const after = change.after.data() as FirmaUserData;
     if (!after) {
       functionsV1.logger.warn(`Keine Daten nach Update für ${userId}.`);
