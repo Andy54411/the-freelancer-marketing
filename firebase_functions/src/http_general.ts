@@ -1,10 +1,8 @@
-// Angenommener Dateiname: src/http_general.ts (oder ähnlich)
-
+// Angenommener Dateiname: src/http_general.ts
 
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import { db } from './helpers';
-
 
 export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (req, res) => {
   try {
@@ -33,7 +31,7 @@ export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (
     if (count > 0) await batch.commit();
     res.status(200).send(`Successfully migrated ${migratedCount} users to companies.`);
   } catch (e) {
-    loggerV2.error("Migration failed:", e); // Logging hinzugefügt
+    loggerV2.error("Migration failed:", e);
     res.status(500).send("Migration failed.");
   }
 });
@@ -71,7 +69,7 @@ export const searchCompanyProfiles = onRequest({ cors: true }, async (req, res) 
     const profiles = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(profiles);
   } catch (e) {
-    loggerV2.error("Error searching company profiles:", e); // Logging hinzugefügt
+    loggerV2.error("Error searching company profiles:", e);
     res.status(500).send("Error searching company profiles.");
   }
 });
@@ -142,7 +140,7 @@ export const getDataForSubcategory = onRequest({ cors: true }, async (req, res) 
       distribution: distributionData,
     });
   } catch (error) {
-    loggerV2.error("Error processing subcategory data:", error); // Logging hinzugefügt
+    loggerV2.error("Error processing subcategory data:", error);
     res.status(500).send("Error processing subcategory data.");
   }
 });
@@ -172,7 +170,7 @@ export const createJobPosting = onRequest({ cors: true }, async (req, res) => {
     const docRef = await db.collection("auftraege").add(newJobData);
     res.status(201).json({ message: "Auftragsentwurf erstellt", jobId: docRef.id });
   } catch (error) {
-    loggerV2.error("Error creating job posting:", error); // Logging hinzugefügt
+    loggerV2.error("Error creating job posting:", error);
     res.status(500).send("Fehler.");
   }
 });
@@ -202,7 +200,7 @@ export const submitReview = onRequest({ cors: true }, async (req, res) => {
     const docRef = await db.collection("reviews").add(newReviewData);
     res.status(201).json({ message: "Review submitted", reviewId: docRef.id });
   } catch (error) {
-    loggerV2.error("Error submitting review:", error); // Logging hinzugefügt
+    loggerV2.error("Error submitting review:", error);
     res.status(500).send("Error submitting review.");
   }
 });
@@ -229,7 +227,7 @@ export const getReviewsByProvider = onRequest({ cors: true }, async (req, res) =
     }));
     res.status(200).json(reviews);
   } catch (error) {
-    loggerV2.error("Error fetching reviews:", error); // Logging hinzugefügt
+    loggerV2.error("Error fetching reviews:", error);
     res.status(500).send("Error fetching reviews.");
   }
 });
