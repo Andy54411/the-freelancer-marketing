@@ -2,12 +2,21 @@
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-// Stelle sicher, dass db und getStripeInstance korrekt aus helpers.ts exportiert und hier importiert werden
 import { db, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from "firebase-admin"; // Wird für admin.auth() und admin.storage() in deleteCompanyAccount benötigt
+import { logger } from "firebase-functions/v2";
+logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
 
-// Interface-Definitionen (könnten auch in einer separaten types.ts Datei im functions-Ordner liegen und importiert werden)
+// Umgebe den Top-Level-Code mit try-catch
+try {
+  // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
+  // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
+  logger.info("http_general.ts: Globale Initialisierung erfolgreich."); // <-- Füge dies hinzu
+} catch (error: any) {
+  logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack }); // <-- Füge dies hinzu
+  throw error; // Wichtig: Den Fehler werfen, damit er im Log erscheint
+}
 interface GetClientIpData {
   // Leer, wenn keine spezifischen Eingabedaten erwartet werden
 }
