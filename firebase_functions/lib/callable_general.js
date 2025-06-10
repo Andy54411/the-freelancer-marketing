@@ -42,7 +42,6 @@ const firestore_1 = require("firebase-admin/firestore");
 const admin = __importStar(require("firebase-admin")); // Wird für admin.auth() und admin.storage() in deleteCompanyAccount benötigt
 const v2_2 = require("firebase-functions/v2");
 v2_2.logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
-// Umgebe den Top-Level-Code mit try-catch
 try {
     // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
     // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
