@@ -10,7 +10,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.10.0",
   "dependencies": {
     "@sendgrid/mail": "^8.1.5",
     "busboy": "^1.6.0",

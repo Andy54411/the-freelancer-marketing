@@ -5,16 +5,15 @@ name: Deploy to Firebase
 on:
   push:
     branches:
-      - main # Der Workflow wird bei jedem Push auf den 'main'-Branch ausgelöst
+      - main
 
 jobs:
   deploy_functions:
     name: Deploy Firebase Functions
-    runs-on: ubuntu-latest # Der Job läuft auf einem Ubuntu-Linux-System
+    runs-on: ubuntu-latest
 
     steps:
       # Schritt 1: Code auschecken
-      # Holt den Code deines Repositories in den Runner.
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -22,58 +21,43 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8 # Stellt sicher, dass pnpm Version 8 verwendet wird
+          version: 8
 
       # Schritt 3: Node.js einrichten
-      # Richtet die Node.js-Umgebung ein.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Verwendet Node.js Version 20
-          cache: 'pnpm' # Aktiviert Caching für pnpm-Abhängigkeiten
+          node-version: '20'
+          cache: 'pnpm'
 
-      # Schritt 4: Abhängigkeiten installieren
-      # Installiert alle benötigten Node.js-Pakete für dein Projekt.
+      # Schritt 4: Root-Abhängigkeiten installieren
       - name: Install root dependencies
         run: pnpm install
 
-      # Schritt 5: Functions kompilieren
-      # Startet den Build-Prozess für deine Firebase Functions.
-      - name: Build Firebase Functions
-        run: pnpm --dir ./firebase_functions run build
+      # Schritt 5: Abhängigkeiten für Firebase Functions installieren
+      - name: Install Firebase Functions Dependencies
+        run: pnpm install
+        working-directory: ./firebase_functions
 
-      # Schritt 6: Bei Google Cloud authentifizieren
-      # Authentifiziert den GitHub Actions Runner mit Google Cloud (und somit Firebase).
-      # Nutzt ein Service-Konto, das als GitHub Secret gespeichert ist.
+      # Schritt 6: Functions kompilieren
+      - name: Build Firebase Functions
+        run: pnpm run build
+        working-directory: ./firebase_functions
+
+      # Schritt 7: Authentifizierung bei Google Cloud
       - name: Authenticate with Google Cloud
         uses: 'google-github-actions/auth@v2'
         with:
-          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}' # Dein Firebase Service Account Secret
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TILVO_F142F }}'
 
-    
-      # NEUER SCHRITT: Spezifische Functions-Abhängigkeiten installieren (Workaround für Gulp-Problem)
-      # Wir installieren Firebase-Admin und Firebase-Functions hier direkt,
-      # um Probleme mit deren internen Build-Prozessen zu umgehen.
-      - name: Install Firebase Functions Dependencies (Workaround)
-        run: |
-          npm install firebase-admin@^12.0.0 firebase-functions@^5.0.0 --force # Installiert die Hauptabhängigkeiten direkt
-          npm install --force # Installiert die restlichen Abhängigkeiten aus package.json
-        working-directory: ./firebase_functions # Führt diese Befehle im Functions-Verzeichnis aus
-      
-
-      # Schritt 7: Deployment zu Firebase
-      # Führt den eigentlichen Deployment-Befehl für deine Firebase Functions aus.
-      # Der Schlüssel ist die Hinzufügung von '--project tilvo-f142f'.
+      # Schritt 8: Deployment zu Firebase
       - name: Deploy to Firebase
         uses: 'w9jds/firebase-action@master'
         with:
-          # Führt den Firebase Deploy-Befehl aus und gibt explizit deine Projekt-ID an.
-          # HINZUGEFÜGT: --force um das Deployment zu erzwingen
-          args: 'deploy --only functions --project tilvo-f142f --force' # <--- HIER --force HINZUGEFÜGT!
-          # DIESER BLOCK ÜBERGIBT DIE UMGEBUNGSVARIABLEN KORREKT AN DIE FIREBASE FUNCTIONS
-          env_vars: |
-            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
-            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-            SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-            EMULATOR_PUBLIC_FRONTEND_URL=${{ secrets.EMULATOR_PUBLIC_FRONTEND_URL }}
+          args: 'deploy --only functions --project tilvo-f142f --force'
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          EMULATOR_PUBLIC_FRONTEND_URL: ${{ secrets.EMULATOR_PUBLIC_FRONTEND_URL }}

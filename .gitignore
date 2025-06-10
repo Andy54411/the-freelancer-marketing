@@ -1,34 +1,43 @@
-# Dependencies
+# Node Modules
 node_modules/
-/firebase_functions/node_modules/
-/firebase_functions/package-lock.json
+firebase_functions/node_modules/
 
-# Next.js build output
+# pnpm
+.pnpm-debug.log*
+.pnpm-store/
+
+# Build-Output
+/lib/
+/dist/
+/firebase_functions/lib/
+/firebase_functions/dist/
+
+# Lockfiles
+# pnpm verwendet pnpm-lock.yaml – diesen NICHT ignorieren!
+# package-lock.json und yarn.lock nur ignorieren, wenn du sie nicht benutzt:
+package-lock.json
+yarn.lock
+
+# Next.js
 .next/
-out/ # falls Next.js statisch exportiert wird
+out/
 
-# Environment variables
+# Env-Dateien
 .env
-.env.local
-.env.development.local
-.env.production.local
-.env.test.local
+.env.* # schließt .env.local, .env.production etc. ein
 
-# Firebase-bezogene Build-Caches und temporäre Dateien
+# Firebase
 .firebase/
 firebase-debug.log
 firestore-debug.log
-*.log # Allgemeine Log-Dateien
+*.log
 
-# IDE und Editor-spezifische Dateien
-.vscode/ # Visual Studio Code Konfiguration (optional, wenn nicht im Team geteilt)
-.DS_Store # macOS spezifisch
+# macOS
+.DS_Store
+
+# Editor/IDE
+.vscode/
+.idea/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-store/ # pnpm global store (falls nicht schon im home-Verzeichnis)
-.pnpm-debug.log*
-
-# Kompilierte TypeScript-Ausgabe (falls nicht im Build-Ordner)
-/lib/
-/dist/
