@@ -13,7 +13,7 @@ import { format, isValid } from 'date-fns'; // parseISO entfernt
 import { de } from 'date-fns/locale';
 
 import type { Company as AnbieterDetails } from './lib/types';
-import { PAGE_LOG } from './lib/constants';
+import { PAGE_LOG } from '../../../../../../lib/constants';
 
 import { getBookingCharacteristics /*, type BookingCharacteristics // Entfernt */ } from './lib/utils';
 

@@ -1,42 +1,52 @@
-// /Users/andystaudinger/Tasko/firebase_functions/src/callable_stripe.ts
+// /Users/andystaudinger/Tilvo/functions/src/callable_stripe.ts
 
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-import { db, getStripeInstance, getFrontendURL, } from './helpers';
+// Angepasste Importe
+import { db, getStripeInstance, getSendGridClient, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
+import { type MailDataRequired } from '@sendgrid/mail';
 
-
-// =========================================================================
-// INTERFACE-DEFINITIONEN (VOLLSTÄNDIG)
-// =========================================================================
-
-interface PrepareUserProfileForStripeData {
-  clientIp: string; firstName: string; lastName: string; email: string;
-  phoneNumber?: string; dateOfBirth: string;
+interface CreateStripeAccountCallableData {
+  userId: string; clientIp: string;
+  firstName?: string; lastName?: string; email?: string; phoneNumber?: string;
+  dateOfBirth?: string;
   personalStreet?: string; personalHouseNumber?: string; personalPostalCode?: string;
   personalCity?: string; personalCountry?: string | null;
-  companyName?: string; legalForm?: string | null; companyAddressLine1?: string;
-  companyCity?: string; companyPostalCode?: string; companyCountry?: string | null;
-  companyPhoneNumber?: string; companyWebsite?: string; companyRegister?: string;
-  taxNumber?: string; vatId?: string; mcc?: string; iban: string; accountHolder: string;
-  profilePictureFileBase64: string; businessLicenseFileBase64: string;
-  masterCraftsmanCertificateFileBase64?: string;
-  identityFrontFileBase64: string; identityBackFileBase64: string;
-  selectedCategory: string; selectedSubcategory: string; hourlyRate: string;
-  lat?: number; lng?: number; radiusKm?: number; userType: string;
+
+  isManagingDirectorOwner?: boolean;
+  ownershipPercentage?: number;
+
+  isActualDirector?: boolean;
+  isActualOwner?: boolean;
+  actualOwnershipPercentage?: number;
+  isActualExecutive?: boolean;
+  actualRepresentativeTitle?: string;
+
+  identityFrontFileId?: string; identityBackFileId?: string;
+  companyName?: string;
+  legalForm?: string | null;
+  companyAddressLine1?: string; companyCity?: string;
+  companyPostalCode?: string; companyCountry?: string | null;
+  companyPhoneNumber?: string;
+  companyRegister?: string;
+  taxNumber?: string;
+  vatId?: string;
+  companyWebsite?: string;
+  mcc?: string;
+  iban?: string; accountHolder?: string;
+  profilePictureFileId?: string; businessLicenseFileId?: string;
+  masterCraftsmanCertificateFileId?: string;
 }
 
-interface PrepareUserProfileForStripeResult {
-  success: boolean; message: string; userId: string;
-}
-
-interface CreateStripeAccountData {
-  userId: string;
-}
-
-interface CreateStripeAccountResult {
-  success: boolean; accountId: string; accountLinkUrl: string; message: string;
+interface CreateStripeAccountCallableResult {
+  success: boolean;
+  accountId?: string;
+  message?: string;
+  accountLinkUrl?: string;
+  missingFields?: string[];
+  requiresStripeIntervention?: boolean;
 }
 
 interface UpdateStripeCompanyDetailsData {
@@ -46,29 +56,19 @@ interface UpdateStripeCompanyDetailsData {
   taxNumber?: string;
   vatId?: string;
   mcc?: string;
-  iban?: string;
-  accountHolder?: string;
-  bankCountry?: string | null;
-  representativeFirstName?: string;
-  representativeLastName?: string;
-  representativeEmail?: string;
-  representativePhone?: string;
+  iban?: string; accountHolder?: string; bankCountry?: string | null;
+  representativeFirstName?: string; representativeLastName?: string;
+  representativeEmail?: string; representativePhone?: string;
   representativeDateOfBirth?: string;
-  representativeAddressStreet?: string;
-  representativeAddressHouseNumber?: string;
-  representativeAddressPostalCode?: string;
-  representativeAddressCity?: string;
+  representativeAddressStreet?: string; representativeAddressHouseNumber?: string;
+  representativeAddressPostalCode?: string; representativeAddressCity?: string;
   representativeAddressCountry?: string | null;
-  isRepresentative?: boolean;
-  isDirector?: boolean;
-  isOwner?: boolean;
+  isRepresentative?: boolean; isDirector?: boolean; isOwner?: boolean;
   representativeTitle?: string;
   isExecutive?: boolean;
-  identityFrontFileId?: string;
-  identityBackFileId?: string;
+  identityFrontFileId?: string; identityBackFileId?: string;
   businessLicenseStripeFileId?: string;
 }
-
 interface UpdateStripeCompanyDetailsResult {
   success: boolean;
   message: string;
@@ -77,23 +77,13 @@ interface UpdateStripeCompanyDetailsResult {
 }
 
 interface GetStripeAccountStatusResult {
-  success: boolean;
-  message?: string;
-  accountId?: string | null;
-  detailsSubmitted?: boolean | null;
-  chargesEnabled?: boolean | null;
+  success: boolean; message?: string; accountId?: string | null;
+  detailsSubmitted?: boolean | null; chargesEnabled?: boolean | null;
   payoutsEnabled?: boolean | null;
   requirements?: Stripe.Account.Requirements | null;
   accountLinkUrl?: string;
   missingFields?: string[];
 }
-
-
-// =========================================================================
-// HELPER-FUNKTIONEN
-// =========================================================================
-
-const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null || val === "" ? undefined : val;
 
 const translateStripeRequirement = (req: string): string => {
   if (req.startsWith('company.address.')) return `Firmenadresse (${req.substring(req.lastIndexOf('.') + 1)})`;
@@ -110,12 +100,12 @@ const translateStripeRequirement = (req: string): string => {
     const prefix = req.startsWith('person.') ? 'person.' : 'individual.';
     const personField = req.substring(prefix.length);
     const baseText = "Angaben zur Person/Geschäftsführer";
-    if (personField.startsWith('address.')) return `${baseText}: Private Adresse (${personField.substring(req.lastIndexOf('.') + 1)})`;
     if (personField.startsWith('first_name')) return `${baseText}: Vorname`;
     if (personField.startsWith('last_name')) return `${baseText}: Nachname`;
     if (personField.startsWith('email')) return `${baseText}: E-Mail`;
     if (personField.startsWith('phone')) return `${baseText}: Telefonnummer`;
     if (personField.startsWith('dob.')) return `${baseText}: Geburtsdatum`;
+    if (personField.startsWith('address.')) return `${baseText}: Private Adresse (${personField.substring(personField.lastIndexOf('.') + 1)})`;
     if (personField.startsWith('verification.document')) return `${baseText}: Ausweisdokument`;
     if (personField.startsWith('relationship.owner')) return "Nachweis der Eigentümerschaft";
     if (personField.startsWith('relationship.director')) return "Nachweis der Geschäftsführertätigkeit";
@@ -129,35 +119,11 @@ const translateStripeRequirement = (req: string): string => {
   return `Benötigt: ${req.replace(/[._]/g, ' ')}`;
 };
 
-const mapCategoryToMcc = (category: string | null | undefined): string | undefined => {
-  if (!category || category.trim() === '') {
-    loggerV2.warn("[mapCategoryToMcc] Leere oder fehlende Kategorie. Verwende Fallback MCC.");
-    return "5999";
-  }
-  switch (category) {
-    case "Handwerk": return "1731";
-    case "Haushalt & Reinigung": return "7349";
-    case "Transport & Logistik": return "4215";
-    case "Hotel & Gastronomie": return "5812";
-    case "IT & Technik": return "7372";
-    case "Marketing & Vertrieb": return "7311";
-    case "Finanzen & Recht": return "8931";
-    case "Gesundheit & Wellness": return "8099";
-    case "Bildung & Nachhilfe": return "8299";
-    case "Kunst & Kultur": return "8999";
-    case "Veranstaltungen & Events": return "7999";
-    case "Tiere & Pflanzen": return "0742";
-    default:
-      loggerV2.warn(`[mapCategoryToMcc] Kein spezifischer MCC für Kategorie "${category}" gefunden. Verwende Fallback MCC.`);
-      return "5999";
-  }
-};
-
 const mapLegalFormToStripeBusinessInfo = (
   legalForm: string | null | undefined
 ): { businessType: 'individual' | 'company'; companyStructure?: Stripe.AccountCreateParams.Company.Structure } => {
   if (!legalForm) {
-    loggerV2.warn("[mapLegalFormToStripeBusinessInfo] Keine Rechtsform übergeben, Fallback auf 'company'.");
+    loggerV2.warn("[mapLegalFormToStripeBusinessInfo] Keine Rechtsform übergeben, Fallback auf business_type: 'company', company.structure: undefined.");
     return { businessType: 'company', companyStructure: undefined };
   }
   const form = legalForm.toLowerCase();
@@ -167,172 +133,623 @@ const mapLegalFormToStripeBusinessInfo = (
     }
     return { businessType: 'individual' };
   }
-  if (form.includes("gmbh") || form.includes("ug")) return { businessType: 'company', companyStructure: 'private_company' };
+  if (form.includes("gmbh") || form.includes("ug")) return { businessType: 'company', companyStructure: undefined };
   if (form.includes("ag")) return { businessType: 'company', companyStructure: "public_company" };
   if (form.includes("gbr") || form.includes("ohg") || form.includes("kg") || form.includes("partnerschaft")) return { businessType: 'company', companyStructure: "unincorporated_partnership" };
-  loggerV2.warn(`[mapLegalFormToStripeBusinessInfo] Unbekannte Rechtsform "${legalForm}", Fallback auf 'company'.`);
+  loggerV2.warn(`[mapLegalFormToStripeBusinessInfo] Unbekannte Rechtsform "${legalForm}", Fallback auf business_type: 'company', company.structure: undefined.`);
   return { businessType: 'company', companyStructure: undefined };
 };
 
-// =========================================================================
-// FUNKTION 1: DATEN VORBEREITEN & DATEIEN HOCHLADEN
-// =========================================================================
-export const prepareUserProfileForStripe = onCall<PrepareUserProfileForStripeData, Promise<PrepareUserProfileForStripeResult>>(
-  async (request: CallableRequest<PrepareUserProfileForStripeData>) => {
-    // ... Implementierung bleibt unverändert ...
-    loggerV2.info('[prepareUserProfileForStripe] Aufgerufen...');
-    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentifizierung erforderlich.');
-    return { success: true, message: "Profil vorbereitet und Dateien hochgeladen.", userId: request.auth.uid };
+export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableData, Promise<CreateStripeAccountCallableResult>>(
+  async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
+    loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
+    const localStripe = getStripeInstance();
+    const { userId, clientIp, ...payloadFromClient } = request.data;
+    // Hier die öffentliche URL verwenden
+    const publicFrontendURL = getPublicFrontendURL();
+
+    if (!userId || !clientIp || clientIp.length < 7) {
+      throw new HttpsError("invalid-argument", "Nutzer-ID und gültige IP sind erforderlich.");
+    }
+    loggerV2.info('[DEBUG] Punkt 1: Basis-Infos (userId, IP) OK.');
+
+    const userDocRef = db.collection("users").doc(userId);
+    const userDocSnapshot = await userDocRef.get();
+    if (!userDocSnapshot.exists) {
+      throw new HttpsError("not-found", `Nutzerdokument ${userId} nicht gefunden.`);
+    }
+    const existingFirestoreUserData = userDocSnapshot.data() as any;
+    if (!existingFirestoreUserData) {
+      throw new HttpsError("internal", "Fehler beim Lesen der Nutzerdaten aus Firestore.");
+    }
+    loggerV2.info('[DEBUG] Punkt 2: Nutzerdokument aus Firestore geladen OK.');
+
+    if (existingFirestoreUserData.stripeAccountId?.startsWith('acct_')) {
+      throw new HttpsError("already-exists", "Nutzer hat bereits ein Stripe-Konto.");
+    }
+    loggerV2.info('[DEBUG] Punkt 3: Kein bestehendes Stripe-Konto gefunden, fahre fort OK.');
+
+    if (existingFirestoreUserData.user_type !== "firma") {
+      throw new HttpsError("failed-precondition", "Nur Nutzer vom Typ 'Firma' können Stripe-Konten erstellen.");
+    }
+    loggerV2.info('[DEBUG] Punkt 4: Nutzer ist Typ "Firma" OK.');
+
+    const { businessType, companyStructure } = mapLegalFormToStripeBusinessInfo(payloadFromClient.legalForm);
+    loggerV2.info(`[DEBUG] Punkt 5: Rechtsform gemappt. Typ: ${businessType}, Struktur: ${companyStructure}`);
+
+    // VALIDIERUNG START
+    if (!payloadFromClient.legalForm?.trim()) throw new HttpsError("failed-precondition", "Rechtsform ist eine Pflichtangabe.");
+    loggerV2.info('[DEBUG] Validierung OK: legalForm');
+    if (!payloadFromClient.email?.trim()) throw new HttpsError("failed-precondition", "E-Mail ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: email');
+    if (!payloadFromClient.firstName?.trim()) throw new HttpsError("failed-precondition", "Vorname ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: firstName');
+    if (!payloadFromClient.lastName?.trim()) throw new HttpsError("failed-precondition", "Nachname ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: lastName');
+    if (!payloadFromClient.iban?.trim()) throw new HttpsError("failed-precondition", "IBAN ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: iban');
+    if (!payloadFromClient.accountHolder?.trim()) throw new HttpsError("failed-precondition", "Kontoinhaber ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: accountHolder');
+    if (!payloadFromClient.mcc?.trim()) throw new HttpsError("failed-precondition", "MCC (Branchencode) ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: mcc');
+    if (!payloadFromClient.identityFrontFileId || !payloadFromClient.identityBackFileId) throw new HttpsError("failed-precondition", "Ausweisdokumente (Vorder- und Rückseite) sind erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: identityFileIds');
+    if (!payloadFromClient.profilePictureFileId) throw new HttpsError("failed-precondition", "Profilbild ist erforderlich.");
+    loggerV2.info('[DEBUG] Validierung OK: profilePictureFileId');
+
+    if (!payloadFromClient.dateOfBirth) {
+      throw new HttpsError("failed-precondition", "Geburtsdatum des Ansprechpartners/Inhabers ist erforderlich.");
+    }
+    loggerV2.info('[DEBUG] Validierung OK: dateOfBirth existiert.');
+
+    const [yearDob, monthDob, dayDob] = payloadFromClient.dateOfBirth.split('-').map(Number);
+    const dobDate = new Date(Date.UTC(yearDob, monthDob - 1, dayDob));
+    if (!(dobDate.getUTCFullYear() === yearDob && dobDate.getUTCMonth() === monthDob - 1 && dobDate.getUTCDate() === dayDob && yearDob > 1900 && yearDob < (new Date().getFullYear() - 17))) {
+      loggerV2.error(`FEHLER bei DOB-Validierung: Jahr=${yearDob}, Monat=${monthDob}, Tag=${dayDob}`);
+      throw new HttpsError("invalid-argument", "Ungültiges Geburtsdatum oder Person zu jung.");
+    }
+    loggerV2.info('[DEBUG] Validierung OK: dateOfBirth ist gültiges Format und Alter.');
+
+    if (businessType === 'company') {
+      loggerV2.info('[DEBUG] Starte Validierungen für "company".');
+      if (!payloadFromClient.companyName?.trim()) throw new HttpsError("failed-precondition", "Firmenname ist erforderlich.");
+      if (!payloadFromClient.companyAddressLine1?.trim() || !payloadFromClient.companyCity?.trim() || !payloadFromClient.companyPostalCode?.trim() || !payloadFromClient.companyCountry?.trim()) {
+        throw new HttpsError("failed-precondition", "Vollständige Firmenadresse ist erforderlich.");
+      }
+      if (payloadFromClient.companyCountry && payloadFromClient.companyCountry.length !== 2) throw new HttpsError("invalid-argument", "Ländercode Firma muss 2-stellig sein.");
+      if (!payloadFromClient.businessLicenseFileId) throw new HttpsError("failed-precondition", "Gewerbeschein ist für Firmen erforderlich.");
+      loggerV2.info('[DEBUG] Company-Validierung OK: Basis-Infos.');
+    } else { // businessType === 'individual'
+      loggerV2.info('[DEBUG] Starte Validierungen für "individual".');
+      const personalStreetToUse = payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim();
+      const personalPostalCodeToUse = payloadFromClient.personalPostalCode?.trim() || payloadFromClient.companyPostalCode?.trim();
+      const personalCityToUse = payloadFromClient.personalCity?.trim() || payloadFromClient.companyCity?.trim();
+      const personalCountryToUse = payloadFromClient.personalCountry?.trim() || payloadFromClient.companyCountry?.trim();
+      if (!personalStreetToUse || !personalPostalCodeToUse || !personalCityToUse || !personalCountryToUse) {
+        throw new HttpsError("failed-precondition", "Vollständige Adresse (Privat- oder Firmenadresse) für Einzelperson/Freiberufler erforderlich.");
+      }
+      if (personalCountryToUse && personalCountryToUse.length !== 2) {
+        throw new HttpsError("invalid-argument", "Verwendeter Ländercode muss 2-stellig sein.");
+      }
+      loggerV2.info('[DEBUG] Individual-Validierung OK: Adresse.');
+
+      if (!payloadFromClient.taxNumber?.trim() && !payloadFromClient.vatId?.trim()) {
+        throw new HttpsError("failed-precondition", `Nationale Steuernummer ODER USt-IdNr. für ${payloadFromClient.legalForm} erforderlich.`);
+      }
+      loggerV2.info('[DEBUG] Individual-Validierung OK: Steuernummer.');
+    }
+    loggerV2.info('[DEBUG] Alle Validierungen bestanden. Fahre fort mit Kontoerstellung.');
+
+    const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
+    const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null ? undefined : val;
+    // Verwendung der öffentlichen URL für Stripe Business Profile
+    const platformProfileUrl = `${publicFrontendURL}/profil/${userId}`;
+
+    const accountParams: Stripe.AccountCreateParams = {
+      type: "custom",
+      country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry)! : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+      email: payloadFromClient.email!,
+      business_type: businessType,
+      capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+      metadata: { internal_user_id: userId, created_by_callable: "true", legal_form_provided: undefinedIfNull(payloadFromClient.legalForm) || 'N/A' },
+      tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: clientIp, user_agent: userAgent },
+      business_profile: {
+        mcc: payloadFromClient.mcc!,
+        url: platformProfileUrl,
+      },
+    };
+
+    if (businessType === 'company') {
+      accountParams.company = {
+        name: payloadFromClient.companyName!,
+        address: {
+          line1: payloadFromClient.companyAddressLine1!,
+          city: payloadFromClient.companyCity!,
+          postal_code: payloadFromClient.companyPostalCode!,
+          country: undefinedIfNull(payloadFromClient.companyCountry)!,
+        },
+        phone: undefinedIfNull(payloadFromClient.companyPhoneNumber || payloadFromClient.phoneNumber),
+        registration_number: undefinedIfNull(payloadFromClient.companyRegister),
+        tax_id: undefinedIfNull(payloadFromClient.taxNumber),
+        vat_id: undefinedIfNull(payloadFromClient.vatId),
+        structure: companyStructure,
+      };
+      if (payloadFromClient.businessLicenseFileId && accountParams.company) {
+        if (!accountParams.company.verification) accountParams.company.verification = { document: {} };
+        accountParams.company.verification.document = { front: payloadFromClient.businessLicenseFileId };
+      }
+    } else {
+      const personalStreet = undefinedIfNull(payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim());
+      const personalHouse = undefinedIfNull(payloadFromClient.personalHouseNumber?.trim());
+      accountParams.individual = {
+        first_name: payloadFromClient.firstName,
+        last_name: payloadFromClient.lastName,
+        email: payloadFromClient.email,
+        phone: undefinedIfNull(payloadFromClient.phoneNumber),
+        dob: { day: dayDob, month: monthDob, year: yearDob },
+        address: {
+          line1: personalStreet ? `${personalStreet} ${personalHouse ?? ''}`.trim() : undefinedIfNull(payloadFromClient.companyAddressLine1)!,
+          postal_code: undefinedIfNull(payloadFromClient.personalPostalCode || payloadFromClient.companyPostalCode)!,
+          city: undefinedIfNull(payloadFromClient.personalCity || payloadFromClient.companyCity)!,
+          country: undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+        },
+        verification: {
+          document: {
+            front: payloadFromClient.identityFrontFileId,
+            back: payloadFromClient.identityBackFileId,
+          }
+        }
+      };
+    }
+
+    if (payloadFromClient.iban && payloadFromClient.accountHolder) {
+      accountParams.external_account = {
+        object: "bank_account",
+        country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry)! : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+        currency: "eur",
+        account_number: (payloadFromClient.iban).replace(/\s/g, ""),
+        account_holder_name: payloadFromClient.accountHolder,
+      };
+    }
+
+    if (payloadFromClient.profilePictureFileId) {
+      accountParams.settings = { ...accountParams.settings, branding: { icon: payloadFromClient.profilePictureFileId } };
+    }
+
+    let account: Stripe.Account;
+    try {
+      loggerV2.info(">>>> VERSUCHE, STRIPE KONTO ZU ERSTELLEN mit Parametern:", JSON.stringify(accountParams, null, 2));
+      account = await localStripe.accounts.create(accountParams);
+      loggerV2.info(`✅✅✅ ERFOLG! Stripe Account ${account.id} wurde erstellt.`);
+
+    } catch (e: any) {
+      loggerV2.error("🔥🔥🔥 STRIPE API FEHLER 🔥🔥🔥:", {
+        message: e.message,
+        type: e.type,
+        code: e.code,
+        param: e.param,
+        raw: e.raw
+      });
+      throw new HttpsError("internal", e.raw?.message || "Fehler bei initialer Kontoerstellung durch Stripe.");
+    }
+
+    loggerV2.info(">>>> NACH dem Stripe API Call. Account-Daten:", account);
+
+
+    if (businessType === 'company') {
+      const personRelationship: Stripe.AccountCreatePersonParams['relationship'] = {
+        representative: true,
+        director: payloadFromClient.isActualDirector,
+        owner: payloadFromClient.isActualOwner,
+        executive: payloadFromClient.isActualExecutive,
+        title: payloadFromClient.actualRepresentativeTitle,
+      };
+
+      if (payloadFromClient.isManagingDirectorOwner) {
+        personRelationship.owner = true;
+        personRelationship.director = true;
+        personRelationship.executive = true;
+        personRelationship.title = "Geschäftsführender Gesellschafter";
+        personRelationship.percent_ownership = payloadFromClient.ownershipPercentage;
+      }
+
+      const personPayload: Stripe.AccountCreatePersonParams = {
+        first_name: payloadFromClient.firstName!,
+        last_name: payloadFromClient.lastName!,
+        email: payloadFromClient.email!,
+        phone: undefinedIfNull(payloadFromClient.phoneNumber),
+        relationship: personRelationship,
+        verification: { document: { front: payloadFromClient.identityFrontFileId!, back: payloadFromClient.identityBackFileId! } },
+        dob: { day: dayDob, month: monthDob, year: yearDob },
+        address: {
+          line1: `${payloadFromClient.personalStreet!} ${payloadFromClient.personalHouseNumber ?? ''}`.trim(),
+          postal_code: payloadFromClient.personalPostalCode!,
+          city: payloadFromClient.personalCity!,
+          country: payloadFromClient.personalCountry!,
+        },
+      };
+
+      try {
+        const person = await localStripe.accounts.createPerson(account.id, personPayload);
+        await userDocRef.update({ stripeRepresentativePersonId: person.id });
+      } catch (e: any) {
+        await localStripe.accounts.del(account.id);
+        throw new HttpsError("internal", e.raw?.message || "Fehler beim Erstellen der Personendaten bei Stripe.");
+      }
+    }
+
+    const firestoreUpdateData: { [key: string]: any } = {
+      stripeAccountId: account.id,
+      stripeAccountDetailsSubmitted: account.details_submitted,
+      stripeAccountPayoutsEnabled: account.payouts_enabled,
+      stripeAccountChargesEnabled: account.charges_enabled,
+      stripeAccountCreationDate: FieldValue.serverTimestamp(),
+      stripeAccountError: FieldValue.delete(),
+      "common.createdByCallable": "true",
+      "step1.dateOfBirth": payloadFromClient.dateOfBirth || null,
+      "step1.phoneNumber": payloadFromClient.phoneNumber || null,
+      "step1.personalStreet": payloadFromClient.personalStreet || null,
+      "step1.personalHouseNumber": payloadFromClient.personalHouseNumber || null,
+      "step1.personalPostalCode": payloadFromClient.personalPostalCode || null,
+      "step1.personalCity": payloadFromClient.personalCity || null,
+      "step1.personalCountry": payloadFromClient.personalCountry || null,
+      "step1.isManagingDirectorOwner": payloadFromClient.isManagingDirectorOwner ?? true,
+      "step1.ownershipPercentage": payloadFromClient.ownershipPercentage ?? null,
+      "step1.isActualDirector": payloadFromClient.isActualDirector === undefined ? null : payloadFromClient.isActualDirector,
+      "step1.isActualOwner": payloadFromClient.isActualOwner === undefined ? null : payloadFromClient.isActualOwner,
+      "step1.actualOwnershipPercentage": payloadFromClient.actualOwnershipPercentage ?? null,
+      "step1.isActualExecutive": payloadFromClient.isActualExecutive === undefined ? null : payloadFromClient.isActualExecutive,
+      "step1.actualRepresentativeTitle": payloadFromClient.actualRepresentativeTitle || null,
+      "step2.legalForm": payloadFromClient.legalForm || null,
+      "step2.companyName": payloadFromClient.companyName || null,
+      "step2.industryMcc": payloadFromClient.mcc || null,
+      "step2.website": payloadFromClient.companyWebsite || null,
+      "step3.companyRegister": payloadFromClient.companyRegister || null,
+      "step3.taxNumber": payloadFromClient.taxNumber || null,
+      "step3.vatId": payloadFromClient.vatId || null,
+      "step3.profilePictureURL": payloadFromClient.profilePictureFileId || null,
+      "step3.businessLicenseURL": payloadFromClient.businessLicenseFileId || null,
+      "step3.masterCraftsmanCertificateURL": payloadFromClient.masterCraftsmanCertificateFileId || FieldValue.delete(),
+      "step3.identityFrontUrl": payloadFromClient.identityFrontFileId || null,
+      "step3.identityBackUrl": payloadFromClient.identityBackFileId || null,
+    };
+    await userDocRef.update(firestoreUpdateData);
+
+    const sendgrid = getSendGridClient();
+    if (sendgrid && payloadFromClient.email && payloadFromClient.firstName) {
+      const recipientName = payloadFromClient.firstName;
+      const entityName = businessType === 'company' ? payloadFromClient.companyName : `${payloadFromClient.firstName} ${payloadFromClient.lastName}`;
+      const emailContent: MailDataRequired = {
+        to: payloadFromClient.email,
+        from: { email: "support@tilvo.com", name: "Tilvo Team" },
+        subject: `Dein Tilvo Konto wurde bei Stripe angelegt`,
+        html: `<p>Hallo ${recipientName},</p><p>Dein Stripe-Konto (<code>${account.id}</code>) für "<strong>${entityName}</strong>" wurde initial bei Stripe angelegt. Bitte vervollständige alle notwendigen Angaben in deinem Tilvo Dashboard, um dein Konto zu aktivieren.</p><p>Viel Erfolg!</p><p>Dein Tilvo-Team</p>`,
+        text: `Hallo ${recipientName},\n\nDein Stripe-Konto (${account.id}) für "${entityName}" wurde initial bei Stripe angelegt. Bitte vervollständige alle notwendigen Angaben in deinem Tilvo Dashboard, um dein Konto zu aktivieren.\n\nViel Erfolg,\nDein Tilvo-Team`,
+      };
+      try {
+        await sendgrid.send(emailContent);
+      } catch (e: any) {
+        loggerV2.error("Mail Senden (Firma):", e.response?.body || e.message, e);
+      }
+    }
+
+    const finalAccountData = await localStripe.accounts.retrieve(account.id);
+    const finalMissingFields: string[] = [];
+    (finalAccountData.requirements?.currently_due || []).forEach(req => finalMissingFields.push(translateStripeRequirement(req)));
+    (finalAccountData.requirements?.eventually_due || []).forEach(req => finalMissingFields.push(`Benötigt (später): ${translateStripeRequirement(req)}`));
+
+    return {
+      success: true,
+      accountId: account.id,
+      message: "Stripe Konto erfolgreich erstellt und alle Anforderungen erfüllt.",
+      missingFields: [...new Set(finalMissingFields)],
+    };
   }
 );
 
-// =========================================================================
-// FUNKTION 2: STRIPE ACCOUNT ERSTELLEN
-// =========================================================================
-export const createStripeAccount = onCall<CreateStripeAccountData, Promise<CreateStripeAccountResult>>(
-  async (request: CallableRequest<CreateStripeAccountData>): Promise<CreateStripeAccountResult> => {
-    // ... Implementierung bleibt unverändert ...
-    loggerV2.info('[createStripeAccount] Aufgerufen...');
-    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentifizierung erforderlich.');
-    return { success: true, accountId: 'acct_123', accountLinkUrl: 'https://stripe.com', message: "Stripe-Konto erfolgreich erstellt." };
-  }
-);
-
-
-// =========================================================================
-// FUNKTION 3: STRIPE ACCOUNT AKTUALISIEREN (VOLLSTÄNDIG & KORRIGIERT)
-// =========================================================================
 export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData, Promise<UpdateStripeCompanyDetailsResult>>(
-  { cors: true },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
-    loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit:", JSON.stringify(request.data));
+    loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
-
     const userId = request.auth.uid;
     const localStripe = getStripeInstance();
-    const resolvedFrontendURL = getFrontendURL();
+    // Hier die Emulator-Callback-URL für Account Links verwenden
+    const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL();
     const userDocRef = db.collection("users").doc(userId);
 
     try {
       const userDoc = await userDocRef.get();
       if (!userDoc.exists) throw new HttpsError("not-found", "Benutzerprofil nicht gefunden.");
+      const currentFirestoreUserData = userDoc.data() as any;
+      if (!currentFirestoreUserData) throw new HttpsError("internal", "Nutzerdaten nicht lesbar.");
 
-      const stripeAccountId = userDoc.data()?.stripeAccountId;
-      if (!stripeAccountId) throw new HttpsError("failed-precondition", "Kein Stripe-Konto vorhanden.");
+      const stripeAccountId = currentFirestoreUserData.stripeAccountId as string | undefined;
+      if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
+        throw new HttpsError("failed-precondition", "Stripe-Konto ID ist nicht vorhanden oder ungültig.");
+      }
 
+      const currentStripeAccount = await localStripe.accounts.retrieve(stripeAccountId);
+      const currentBusinessType = currentStripeAccount.business_type;
+
+      const updatePayloadFromClient = request.data;
       const accountUpdateParams: Stripe.AccountUpdateParams = {};
-      const clientData = request.data;
 
-      // ** HIER IST DER FIX FÜR DEINEN FEHLER **
-      if (clientData.iban && clientData.accountHolder && clientData.bankCountry) {
+      if (currentBusinessType === 'company') {
+        const companyUpdates: Partial<Stripe.AccountUpdateParams["company"]> = {};
+        if (updatePayloadFromClient.companyPhoneNumber !== undefined) companyUpdates.phone = updatePayloadFromClient.companyPhoneNumber || undefined;
+        if (updatePayloadFromClient.companyRegister !== undefined) companyUpdates.registration_number = updatePayloadFromClient.companyRegister || undefined;
+        if (updatePayloadFromClient.taxNumber !== undefined) companyUpdates.tax_id = updatePayloadFromClient.taxNumber || undefined;
+        if (updatePayloadFromClient.vatId !== undefined) companyUpdates.vat_id = updatePayloadFromClient.vatId || undefined;
+        if (Object.keys(companyUpdates).length > 0) accountUpdateParams.company = companyUpdates;
+      } else {
+        const individualUpdates: Partial<Stripe.AccountUpdateParams['individual']> = {};
+        if (updatePayloadFromClient.representativeFirstName) individualUpdates.first_name = updatePayloadFromClient.representativeFirstName;
+        if (updatePayloadFromClient.representativeLastName) individualUpdates.last_name = updatePayloadFromClient.representativeLastName;
+        if (updatePayloadFromClient.representativeEmail) individualUpdates.email = updatePayloadFromClient.representativeEmail;
+        if (updatePayloadFromClient.representativePhone) individualUpdates.phone = updatePayloadFromClient.representativePhone;
+        if (updatePayloadFromClient.representativeDateOfBirth) {
+          const [year, month, day] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number);
+          if (day && month && year && year > 1900 && year < (new Date().getFullYear() - 5) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            individualUpdates.dob = { day, month, year };
+          }
+        }
+        if (updatePayloadFromClient.representativeAddressStreet && updatePayloadFromClient.representativeAddressPostalCode && updatePayloadFromClient.representativeAddressCity && updatePayloadFromClient.representativeAddressCountry) {
+          individualUpdates.address = {
+            line1: `${updatePayloadFromClient.representativeAddressStreet} ${updatePayloadFromClient.representativeAddressHouseNumber ?? ''}`.trim(),
+            postal_code: updatePayloadFromClient.representativeAddressPostalCode,
+            city: updatePayloadFromClient.representativeAddressCity,
+            country: updatePayloadFromClient.representativeAddressCountry,
+          };
+        }
+        const verificationIndividual: Partial<Stripe.AccountUpdateParams.Individual.Verification> = {};
+        const documentIndividual: Partial<Stripe.AccountUpdateParams.Individual.Verification.Document> = {};
+        if (updatePayloadFromClient.identityFrontFileId) documentIndividual.front = updatePayloadFromClient.identityFrontFileId;
+        if (updatePayloadFromClient.identityBackFileId) documentIndividual.back = updatePayloadFromClient.identityBackFileId;
+        if (Object.keys(documentIndividual).length > 0) verificationIndividual.document = documentIndividual;
+        if (Object.keys(verificationIndividual).length > 0) individualUpdates.verification = verificationIndividual;
+
+        if (Object.keys(individualUpdates).length > 0) accountUpdateParams.individual = individualUpdates;
+      }
+
+      const businessProfileUpdates: Partial<Stripe.AccountUpdateParams["business_profile"]> = {};
+      if (updatePayloadFromClient.companyWebsite !== undefined) {
+        businessProfileUpdates.url = updatePayloadFromClient.companyWebsite || "";
+      }
+      if (updatePayloadFromClient.mcc !== undefined) businessProfileUpdates.mcc = updatePayloadFromClient.mcc || undefined;
+      if (Object.keys(businessProfileUpdates).length > 0) accountUpdateParams.business_profile = businessProfileUpdates;
+
+      if (updatePayloadFromClient.iban && updatePayloadFromClient.accountHolder && updatePayloadFromClient.bankCountry) {
         accountUpdateParams.external_account = {
           object: 'bank_account',
-          account_holder_name: clientData.accountHolder,
-          account_number: clientData.iban.replace(/\s/g, ''),
-          country: clientData.bankCountry,
-          currency: 'eur', // FIX: Währung ist für SEPA-Konten erforderlich
+          account_holder_name: updatePayloadFromClient.accountHolder,
+          account_number: updatePayloadFromClient.iban.replace(/\s/g, ''),
+          country: updatePayloadFromClient.bankCountry,
         };
       }
 
-      // Business-Profil aktualisieren
-      const businessProfileUpdates: Partial<Stripe.AccountUpdateParams["business_profile"]> = {};
-      if (clientData.companyWebsite !== undefined) businessProfileUpdates.url = undefinedIfNull(clientData.companyWebsite);
-      if (clientData.mcc !== undefined) businessProfileUpdates.mcc = undefinedIfNull(clientData.mcc);
-      if (Object.keys(businessProfileUpdates).length > 0) accountUpdateParams.business_profile = businessProfileUpdates;
-
-      // Firmendaten aktualisieren
-      const companyUpdates: Partial<Stripe.AccountUpdateParams["company"]> = {};
-      if (clientData.companyPhoneNumber !== undefined) companyUpdates.phone = undefinedIfNull(clientData.companyPhoneNumber);
-      if (clientData.companyRegister !== undefined) companyUpdates.registration_number = undefinedIfNull(clientData.companyRegister);
-      if (clientData.taxNumber !== undefined) companyUpdates.tax_id = undefinedIfNull(clientData.taxNumber);
-      if (clientData.vatId !== undefined) companyUpdates.vat_id = undefinedIfNull(clientData.vatId);
-      if (Object.keys(companyUpdates).length > 0) accountUpdateParams.company = companyUpdates;
-
-      // Führe das Haupt-Update am Account aus
       if (Object.keys(accountUpdateParams).length > 0) {
         await localStripe.accounts.update(stripeAccountId, accountUpdateParams);
-        loggerV2.info(`Stripe Account ${stripeAccountId} aktualisiert.`);
+        loggerV2.info(`Stripe Account ${stripeAccountId} (Typ: ${currentBusinessType}) aktualisiert.`);
       }
 
-      await userDocRef.update({ updatedAt: FieldValue.serverTimestamp() });
+      if (currentBusinessType === 'company') {
+        let personIdToUpdate: string | undefined = currentFirestoreUserData.stripeRepresentativePersonId;
+        const personDataToUpdate: Partial<Stripe.AccountUpdatePersonParams> = {};
+        let isCreatingNewPerson = false;
 
-      // Prüfe erneut den Status, um zu sehen, ob weitere Aktionen nötig sind
-      const refreshedAccount = await localStripe.accounts.retrieve(stripeAccountId);
-      const missingFields = (refreshedAccount.requirements?.currently_due || []).map(translateStripeRequirement);
+        if (updatePayloadFromClient.representativeFirstName) personDataToUpdate.first_name = updatePayloadFromClient.representativeFirstName;
+        if (updatePayloadFromClient.representativeLastName) personDataToUpdate.last_name = updatePayloadFromClient.representativeLastName;
+        if (updatePayloadFromClient.representativeEmail) personDataToUpdate.email = updatePayloadFromClient.representativeEmail;
+        if (updatePayloadFromClient.representativePhone) personDataToUpdate.phone = updatePayloadFromClient.representativePhone;
 
-      if (missingFields.length > 0) {
-        const accountLink = await localStripe.accountLinks.create({
+        if (updatePayloadFromClient.representativeDateOfBirth) {
+          const [year, month, day] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number);
+          if (day && month && year && year > 1900 && year < (new Date().getFullYear() - 5) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            personDataToUpdate.dob = { day, month, year };
+          } else {
+            loggerV2.warn(`[updateStripeCompanyDetails] Ungültiges DOB-Format für Update: ${updatePayloadFromClient.representativeDateOfBirth}`);
+          }
+        }
+        if (updatePayloadFromClient.representativeAddressStreet && updatePayloadFromClient.representativeAddressPostalCode && updatePayloadFromClient.representativeAddressCity && updatePayloadFromClient.representativeAddressCountry) {
+          personDataToUpdate.address = {
+            line1: `${updatePayloadFromClient.representativeAddressStreet} ${updatePayloadFromClient.representativeAddressHouseNumber ?? ''}`.trim(),
+            postal_code: updatePayloadFromClient.representativeAddressPostalCode,
+            city: updatePayloadFromClient.representativeAddressCity,
+            country: updatePayloadFromClient.representativeAddressCountry,
+          };
+        }
+
+        const relationship: Partial<Stripe.AccountUpdatePersonParams['relationship']> = {};
+        if (updatePayloadFromClient.isRepresentative !== undefined) relationship.representative = updatePayloadFromClient.isRepresentative; else relationship.representative = true;
+        if (updatePayloadFromClient.isOwner !== undefined) relationship.owner = updatePayloadFromClient.isOwner;
+        if (updatePayloadFromClient.isDirector !== undefined) relationship.director = updatePayloadFromClient.isDirector;
+        if (updatePayloadFromClient.isExecutive !== undefined) relationship.executive = updatePayloadFromClient.isExecutive;
+        if (updatePayloadFromClient.representativeTitle) relationship.title = updatePayloadFromClient.representativeTitle;
+
+        if (Object.keys(relationship).length > 0) {
+          personDataToUpdate.relationship = relationship;
+        }
+
+        const verification: Partial<Stripe.AccountUpdatePersonParams['verification']> = {};
+        const documentData: Partial<Stripe.AccountUpdatePersonParams.Verification.Document> = {};
+        if (updatePayloadFromClient.identityFrontFileId) documentData.front = updatePayloadFromClient.identityFrontFileId;
+        if (updatePayloadFromClient.identityBackFileId) documentData.back = updatePayloadFromClient.identityBackFileId;
+        if (Object.keys(documentData).length > 0) verification.document = documentData;
+
+        if (Object.keys(verification).length > 0) personDataToUpdate.verification = verification;
+
+        if (Object.keys(personDataToUpdate).length > 0) {
+          if (!personIdToUpdate) {
+            const personsList = await localStripe.accounts.listPersons(stripeAccountId, { relationship: { representative: true }, limit: 1 });
+            if (personsList.data.length > 0) {
+              personIdToUpdate = personsList.data[0].id;
+            } else {
+              if (personDataToUpdate.first_name && personDataToUpdate.last_name && personDataToUpdate.email && personDataToUpdate.dob) {
+                isCreatingNewPerson = true;
+              } else {
+                loggerV2.warn(`[updateStripeCompanyDetails] Minimale Personendaten für Neuerstellung fehlen für Account ${stripeAccountId}.`);
+              }
+            }
+          }
+
+          if (isCreatingNewPerson && personIdToUpdate === undefined) {
+            const createPersonPayload = { ...personDataToUpdate } as Stripe.AccountCreatePersonParams;
+            const createdPerson = await localStripe.accounts.createPerson(stripeAccountId, createPersonPayload);
+            personIdToUpdate = createdPerson.id;
+            await userDocRef.update({ stripeRepresentativePersonId: personIdToUpdate });
+            loggerV2.info(`Stripe Person ${personIdToUpdate} für Account ${stripeAccountId} NEU erstellt via Update-Funktion.`);
+          } else if (personIdToUpdate) {
+            await localStripe.accounts.updatePerson(stripeAccountId, personIdToUpdate, personDataToUpdate);
+            loggerV2.info(`Stripe Person ${personIdToUpdate} für Account ${stripeAccountId} aktualisiert.`);
+          }
+        }
+      }
+
+      await userDocRef.update({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() });
+      const companyDocRef = db.collection("companies").doc(userId);
+      if ((await companyDocRef.get()).exists) {
+        await companyDocRef.set({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      }
+
+      const refreshedAccountAfterUpdate = await localStripe.accounts.retrieve(stripeAccountId);
+      let accountLinkUrlResponse: string | undefined = undefined;
+      const finalMissingFieldsList: string[] = [];
+      (refreshedAccountAfterUpdate.requirements?.currently_due || []).forEach((req: string) => finalMissingFieldsList.push(translateStripeRequirement(req)));
+      (refreshedAccountAfterUpdate.requirements?.eventually_due || []).forEach((req: string) => finalMissingFieldsList.push(`Benötigt (später): ${translateStripeRequirement(req)}`));
+      if (!refreshedAccountAfterUpdate.details_submitted && finalMissingFieldsList.length === 0 && (refreshedAccountAfterUpdate.requirements?.currently_due?.length === 0)) {
+        finalMissingFieldsList.push("Allgemeine Kontodetails bei Stripe vervollständigen");
+      }
+      if ((refreshedAccountAfterUpdate.requirements?.errors?.length ?? 0) > 0) {
+        (refreshedAccountAfterUpdate.requirements!.errors || []).forEach((err: Stripe.Account.Requirements.Error) => {
+          finalMissingFieldsList.push(`Fehler von Stripe: ${err.reason} (betrifft: ${translateStripeRequirement(err.requirement)})`);
+        });
+      }
+      const uniqueFinalMissingFieldsList = [...new Set(finalMissingFieldsList)];
+
+      if (uniqueFinalMissingFieldsList.length > 0) {
+        const accLink = await localStripe.accountLinks.create({
           account: stripeAccountId,
-          refresh_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-          return_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+          // Hier die Emulator-Callback-URL für Account Links verwenden
+          refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+          return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
           type: 'account_update',
           collect: 'currently_due',
         });
-        return { success: true, message: "Einige Angaben werden noch von Stripe benötigt.", accountLinkUrl: accountLink.url, missingFields };
+        accountLinkUrlResponse = accLink.url;
+        return { success: true, message: "Profildetails aktualisiert, aber einige Angaben werden noch von Stripe benötigt oder es gibt Fehler.", accountLinkUrl: accountLinkUrlResponse, missingFields: [...new Set(uniqueFinalMissingFieldsList)] };
       }
-
-      return { success: true, message: "Profildaten erfolgreich bei Stripe aktualisiert." };
+      return { success: true, message: "Profildetails erfolgreich bei Stripe aktualisiert.", accountLinkUrl: undefined, missingFields: [] };
 
     } catch (error: any) {
-      loggerV2.error(`[updateStripeCompanyDetails] Fehler für Nutzer ${userId}:`, error);
-      throw new HttpsError("internal", error.raw?.message || error.message || "Ein Fehler beim Aktualisieren der Stripe-Daten ist aufgetreten.");
+      loggerV2.error(`[updateStripeCompanyDetails] Fehler für Nutzer ${userId}:`, { message: error.message, type: error.type, code: error.code, param: error.param, raw: error.raw });
+      let errMsg = "Interner Fehler beim Aktualisieren der Stripe-Informationen.";
+      if (error instanceof HttpsError) errMsg = error.message;
+      else if (error.type === "StripeInvalidRequestError" || error.type === "StripeCardError") errMsg = error.message;
+      else if (error.message) errMsg = error.message;
+
+      try {
+        const userDocForError = db.collection("users").doc(userId);
+        await userDocForError.update({ stripeAccountError: errMsg, updatedAt: FieldValue.serverTimestamp() });
+        const companyDocRefForError = db.collection("companies").doc(userId);
+        if ((await companyDocRefForError.get()).exists) {
+          await companyDocRefForError.set({ stripeAccountError: errMsg, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        }
+      } catch (dbError: any) {
+        loggerV2.error(`DB-Fehler beim Speichern des Stripe-Fehlers für ${userId} im Catch-Block von updateStripeCompanyDetails:`, dbError.message);
+      }
+
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError("internal", errMsg, error.raw?.code || error.code || error.type);
     }
   }
 );
 
-
-// =========================================================================
-// FUNKTION 4: STRIPE ACCOUNT STATUS ABRUFEN (VOLLSTÄNDIG)
-// =========================================================================
 export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetStripeAccountStatusResult>>(
-  { cors: true },
   async (request: CallableRequest<Record<string, never>>): Promise<GetStripeAccountStatusResult> => {
     loggerV2.info("[getStripeAccountStatus] Aufgerufen.");
-    if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
-
+    if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein."); }
     const userId = request.auth.uid;
     const localStripe = getStripeInstance();
-    const resolvedFrontendURL = getFrontendURL();
+    // Hier die Emulator-Callback-URL für Account Links verwenden
+    const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL();
+    try {
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (!userDoc.exists) throw new HttpsError("not-found", "Nutzerdokument nicht gefunden.");
+      const userData = userDoc.data() as any;
+      if (userData?.user_type !== "firma") throw new HttpsError("permission-denied", "Nur Firmen können Status abrufen.");
 
-    const userDoc = await db.collection("users").doc(userId).get();
-    if (!userDoc.exists || !userDoc.data()?.stripeAccountId) {
-      return { success: false, message: "Kein Stripe-Konto verknüpft.", accountId: null };
-    }
-    const stripeAccountId = userDoc.data()!.stripeAccountId;
-
-    const account = await localStripe.accounts.retrieve(stripeAccountId);
-    const requirements = account.requirements;
-
-    const missingFields: string[] = [];
-    (requirements?.currently_due || []).forEach(req => missingFields.push(translateStripeRequirement(req)));
-    (requirements?.eventually_due || []).forEach(req => missingFields.push(`Benötigt (später): ${translateStripeRequirement(req)}`));
-    (requirements?.errors || []).forEach(err => missingFields.push(`Fehler von Stripe: ${err.reason} (betrifft: ${translateStripeRequirement(err.requirement)})`));
-
-    let accountLinkUrl: string | undefined = undefined;
-    if (missingFields.length > 0) {
-      try {
-        const accountLink = await localStripe.accountLinks.create({
-          account: stripeAccountId,
-          refresh_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-          return_url: `${resolvedFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
-          type: 'account_update',
-          collect: 'currently_due',
-        });
-        accountLinkUrl = accountLink.url;
-      } catch (linkError: any) {
-        loggerV2.error(`Fehler beim Erstellen des Account Links für ${stripeAccountId}:`, linkError.message);
+      const stripeAccountId = userData.stripeAccountId as string | undefined;
+      if (!stripeAccountId?.startsWith("acct_")) {
+        return {
+          success: false, message: "Kein Stripe-Konto verknüpft oder ID ungültig.",
+          accountId: null, detailsSubmitted: null, chargesEnabled: null,
+          payoutsEnabled: null, requirements: null, accountLinkUrl: undefined,
+          missingFields: ["Kein Stripe-Konto vorhanden oder verknüpft."]
+        };
       }
-    }
+      const account = await localStripe.accounts.retrieve(stripeAccountId);
 
-    return {
-      success: true,
-      accountId: account.id,
-      detailsSubmitted: account.details_submitted,
-      chargesEnabled: account.charges_enabled,
-      payoutsEnabled: account.payouts_enabled,
-      requirements: requirements || null,
-      missingFields: [...new Set(missingFields)], // Duplikate entfernen
-      accountLinkUrl: accountLinkUrl,
-    };
+      const currentMissingFields: string[] = [];
+      (account.requirements?.currently_due || []).forEach((req: string) => currentMissingFields.push(translateStripeRequirement(req)));
+      (account.requirements?.eventually_due || []).forEach((req: string) => currentMissingFields.push(`Benötigt (später): ${translateStripeRequirement(req)}`));
+
+      if (!account.details_submitted && currentMissingFields.length === 0 && (account.requirements?.currently_due?.length === 0)) {
+        currentMissingFields.push("Allgemeine Kontodetails bei Stripe vervollständigen oder initiale Anforderungen prüfen.");
+      }
+      if (account.requirements?.errors && account.requirements.errors.length > 0) {
+        account.requirements.errors.forEach((err: Stripe.Account.Requirements.Error) => {
+          currentMissingFields.push(`Fehler von Stripe: ${err.reason} (betrifft: ${translateStripeRequirement(err.requirement)})`);
+        });
+      }
+      const uniqueMissingFields = [...new Set(currentMissingFields)];
+
+      let accountLinkUrl: string | undefined = undefined;
+      const needsStripeUIIntervention = (account.requirements?.errors?.length ?? 0) > 0 ||
+        ((account.requirements?.currently_due?.length ?? 0) > 0 && !account.charges_enabled);
+
+      if (needsStripeUIIntervention) {
+        try {
+          const accLinkParams: Stripe.AccountLinkCreateParams = {
+            account: stripeAccountId,
+            // Hier die Emulator-Callback-URL für Account Links verwenden
+            refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+            return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+            type: "account_update",
+            collect: "currently_due",
+          };
+          const accLink = await localStripe.accountLinks.create(accLinkParams);
+          accountLinkUrl = accLink.url;
+        } catch (linkError: any) {
+          loggerV2.error(`[getStripeAccountStatus] Fehler Account Link für ${stripeAccountId}:`, { message: linkError.message, type: linkError.type });
+        }
+      }
+      return {
+        success: true,
+        accountId: account.id,
+        detailsSubmitted: account.details_submitted,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        requirements: account.requirements || null,
+        accountLinkUrl: accountLinkUrl,
+        missingFields: uniqueMissingFields
+      };
+    } catch (e: any) {
+      loggerV2.error(`Fehler getStripeAccountStatus für ${userId}:`, { message: e.message, code: e.code, type: e.type });
+      if (e.code === "resource_missing" && e.param === "account") {
+        try { await db.collection("users").doc(userId).update({ stripeAccountId: FieldValue.delete(), stripeAccountError: "Stripe-Konto nicht gefunden." }); }
+        catch (dbErr: any) { loggerV2.error("Fehler Löschen ungültige Stripe ID:", dbErr.message); }
+        return {
+          success: false, message: "Zugehöriges Stripe-Konto nicht gefunden.",
+          accountId: null,
+          detailsSubmitted: null,
+          chargesEnabled: null,
+          payoutsEnabled: null,
+          requirements: null, accountLinkUrl: undefined,
+          missingFields: ["Stripe-Konto nicht gefunden."]
+        };
+      }
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", e.message || "Fehler Abruf Stripe-Status.", e.details);
+    }
   }
 );

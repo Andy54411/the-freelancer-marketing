@@ -13,16 +13,20 @@ var __createBinding = (this && this.__createBinding) || (Object.create ? (functi
 var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+// /Users/andystaudinger/Tasko/firebase_functions/src/index.ts
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const options_1 = require("firebase-functions/v2/options");
-// Globale Optionen setzen (das ist gut so).
 (0, options_1.setGlobalOptions)({
     timeoutSeconds: 540,
     memory: '512MiB',
     cpu: 1
 });
 // KEIN admin.initializeApp() mehr hier!
-// Alle Funktionen werden wieder normal exportiert.
 __exportStar(require("./callable_stripe"), exports);
 __exportStar(require("./callable_general"), exports);
 __exportStar(require("./http_general"), exports);

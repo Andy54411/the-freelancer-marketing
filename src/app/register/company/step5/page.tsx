@@ -1,4 +1,3 @@
-// /Users/andystaudinger/Tasko/src/app/register/company/step5/page.tsx
 'use client';
 import Image from 'next/image';
 
@@ -7,17 +6,14 @@ import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiCheckCircle, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import { useRegistration } from '@/contexts/Registration-Context';
-import { getAuth, createUserWithEmailAndPassword, UserCredential, User as AuthUser } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, UserCredential, User as AuthUser } from 'firebase/auth'; // FieldValue,
 import { doc, setDoc, serverTimestamp, deleteField, updateDoc, FieldValue } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
 import { httpsCallable, FunctionsError } from 'firebase/functions';
-import { PAGE_ERROR, PAGE_WARN } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { PAGE_ERROR, PAGE_WARN, UPLOAD_STRIPE_FILE_API_URL } from '@/lib/constants';
 import type Stripe from 'stripe';
 
-// =========================================================================
-// INTERFACE DEFINITIONEN
-// =========================================================================
 interface CreateStripeAccountCallableResult {
   success: boolean;
   accountId?: string;
@@ -69,9 +65,6 @@ interface CreateStripeAccountClientData {
 type GetClientIpData = Record<string, never>;
 type GetClientIpResult = { ip: string; };
 type FilePurpose = Stripe.FileCreateParams.Purpose;
-// =========================================================================
-// ENDE DER INTERFACE DEFINITIONEN
-// =========================================================================
 
 const MAX_ID_DOC_SIZE_BYTES = 8 * 1024 * 1024;
 const WEBP_QUALITY = 0.8;
@@ -249,13 +242,12 @@ export default function Step5CompanyPage() {
     }
   }, [convertImageToWebP]);
 
-  // KORREKTUR: Funktion um idToken-Parameter erweitert
   const uploadFileToStripeAndStorage = useCallback(async (
     file: File | object | null | undefined,
     purpose: FilePurpose,
     fileNameForLog: string,
     userId: string,
-    idToken: string // NEUER PARAMETER zur Authentifizierung
+    idToken: string
   ): Promise<FileUploadResult | null> => {
     if (!file || !(file instanceof File)) {
       setFormError(`Datei für ${fileNameForLog} fehlt oder ist ungültig.`);
@@ -263,21 +255,21 @@ export default function Step5CompanyPage() {
     }
     setCurrentStepMessage(`Lade ${fileNameForLog} hoch...`);
     const formData = new FormData();
-    formData.append('file', file); formData.append('purpose', purpose); formData.append('userId', userId);
+    formData.append('file', file);
+    formData.append('purpose', purpose);
+    formData.append('userId', userId);
 
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f';
-    const functionsEmulatorPort = 5001;
-    const functionsEmulatorHost = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST || 'localhost';
+    const region = 'us-central1';
 
-    const uploadUrl = (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === 'true') ?
-      `http://${functionsEmulatorHost}:${functionsEmulatorPort}/${projectId}/us-central1/uploadStripeFile` :
-      `https://us-central1-${projectId}.cloudfunctions.net/uploadStripeFile`;
+    const uploadUrl = process.env.NODE_ENV === 'development'
+      ? `http://127.0.0.1:5001/${projectId}/${region}/uploadStripeFile`
+      : `https://${region}-${projectId}.cloudfunctions.net/uploadStripeFile`;
 
-    if (!uploadUrl || uploadUrl.includes('undefined') || uploadUrl.includes(':undefined')) {
+    if (!uploadUrl || uploadUrl.includes('undefined')) {
       throw new Error("Upload URL ist nicht korrekt konfiguriert oder konnte nicht generiert werden.");
     }
 
-    // KORREKTUR: Authorization-Header zum fetch-Aufruf hinzugefügt
     const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
@@ -339,7 +331,6 @@ export default function Step5CompanyPage() {
     setFormError(null);
 
     if (!isFormValid()) {
-      // ... (Validierungslogik für Fehlermeldungen bleibt unverändert)
       const missingFieldsList: string[] = [];
       if (!iban?.trim()) missingFieldsList.push('IBAN');
       if (!accountHolder?.trim()) missingFieldsList.push('Kontoinhaber');
@@ -372,31 +363,34 @@ export default function Step5CompanyPage() {
       if (!authUser) throw new Error("Benutzer konnte nicht authentifiziert oder erstellt werden.");
       const currentAuthUserUID = authUser.uid;
 
-      // KORREKTUR: ID-Token des Benutzers abrufen
-      const idToken = await authUser.getIdToken();
+      const idToken = await authUser.getIdToken(true);
 
       setCurrentStepMessage('IP-Adresse wird ermittelt...');
       const getClientIpFunction = httpsCallable<GetClientIpData, GetClientIpResult>(firebaseFunctions, 'getClientIp');
       let clientIpAddress = 'FALLBACK_IP_ADDRESS';
+
       try {
         const ipResult = await getClientIpFunction({});
         if (ipResult.data?.ip && ipResult.data.ip !== 'IP_NOT_DETERMINED' && ipResult.data.ip.length >= 7) {
           clientIpAddress = ipResult.data.ip;
-        } else if (process.env.NODE_ENV === 'development') {
-          clientIpAddress = '127.0.0.1';
         }
       } catch (ipLookupError: unknown) {
         console.warn(PAGE_WARN, "[Step5] Fehler beim Ermitteln der Client IP:", ipLookupError);
-        if (process.env.NODE_ENV === 'development') {
-          clientIpAddress = '127.0.0.1';
-        }
+      }
+
+      if (clientIpAddress === 'FALLBACK_IP_ADDRESS' && process.env.NODE_ENV === 'development') {
+        console.warn("WARNUNG: Keine echte IP gefunden. Verwende eine öffentliche Placeholder-IP für den Stripe-Test.");
+        clientIpAddress = '8.8.8.8';
+      }
+
+      if (clientIpAddress === 'FALLBACK_IP_ADDRESS') {
+        throw new Error("Konnte keine gültige IP-Adresse für die Stripe-Registrierung ermitteln.");
       }
 
       if (!profilePictureFile || !businessLicenseFile || !identityFrontFile || !identityBackFile) {
         throw new Error("Kritische Dateien für den Upload fehlen.");
       }
 
-      // KORREKTUR: ID-Token an die Upload-Funktionen übergeben
       const profilePicResult = await uploadFileToStripeAndStorage(profilePictureFile, 'business_icon', 'Profilbild', currentAuthUserUID, idToken);
       const businessLicResult = await uploadFileToStripeAndStorage(businessLicenseFile, 'additional_verification', 'Gewerbeschein', currentAuthUserUID, idToken);
       const idFrontResult = await uploadFileToStripeAndStorage(identityFrontFile, 'identity_document', 'Ausweis Vorderseite', currentAuthUserUID, idToken);
@@ -421,7 +415,7 @@ export default function Step5CompanyPage() {
 
       const userPrivateData: Record<string, unknown> = {
         uid: currentAuthUserUID, email: email!, user_type: 'firma',
-        firstName: firstName || '', lastName: lastName || '',
+        firstName: firstName?.trim() || '', lastName: lastName?.trim() || '',
         phoneNumber: phoneNumber || null, dateOfBirth: dateOfBirth || null,
         personalStreet: personalStreet || null, personalHouseNumber: personalHouseNumber || null,
         personalPostalCode: personalPostalCode || null, personalCity: personalCity || null,
@@ -432,7 +426,7 @@ export default function Step5CompanyPage() {
         actualOwnershipPercentage: actualOwnershipPercentage ?? deleteField(),
         isActualExecutive: isActualExecutive ?? deleteField(),
         actualRepresentativeTitle: actualRepresentativeTitle || null,
-        iban: iban || '', accountHolder: accountHolder || '',
+        iban: iban || '', accountHolder: accountHolder?.trim() || '',
         bankCountry: companyCountry || personalCountry || 'DE',
         identityFrontUrlStripeId: idFrontResult.stripeFileId,
         identityBackUrlStripeId: idBackResult.stripeFileId,
@@ -484,9 +478,11 @@ export default function Step5CompanyPage() {
 
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
 
-      const dataForStripeCallable: CreateStripeAccountClientData = {
+      let dataForStripeCallable: CreateStripeAccountClientData = {
         userId: currentAuthUserUID, clientIp: clientIpAddress,
-        firstName, lastName, email: email!, phoneNumber, dateOfBirth,
+        firstName: firstName?.trim(),
+        lastName: lastName?.trim(),
+        email: email!, phoneNumber, dateOfBirth,
         personalStreet, personalHouseNumber, personalPostalCode, personalCity, personalCountry,
         isManagingDirectorOwner, ownershipPercentage: ownershipPercentage ?? undefined,
         isActualDirector: isActualDirector ?? undefined, isActualOwner: isActualOwner ?? undefined,
@@ -496,13 +492,22 @@ export default function Step5CompanyPage() {
         companyAddressLine1: fullCompanyAddressForFirestore,
         companyCity, companyPostalCode, companyCountry,
         companyPhoneNumber, companyWebsite, companyRegister, taxNumber, vatId, mcc: derivedMcc,
-        iban, accountHolder,
+        iban,
+        accountHolder: accountHolder?.trim(),
         profilePictureFileId: profilePicResult.stripeFileId,
         businessLicenseFileId: businessLicResult.stripeFileId,
         masterCraftsmanCertificateFileId: masterCertStripeFileId,
         identityFrontFileId: idFrontResult.stripeFileId,
         identityBackFileId: idBackResult.stripeFileId,
       };
+
+      if (dataForStripeCallable.legalForm === 'Einzelunternehmen' || dataForStripeCallable.legalForm === 'Freiberufler') {
+        dataForStripeCallable.personalStreet = fullCompanyAddressForFirestore;
+        dataForStripeCallable.personalHouseNumber = '';
+        dataForStripeCallable.personalPostalCode = dataForStripeCallable.companyPostalCode;
+        dataForStripeCallable.personalCity = dataForStripeCallable.companyCity;
+        dataForStripeCallable.personalCountry = dataForStripeCallable.companyCountry;
+      }
 
       const createStripeAccountCallable = httpsCallable<CreateStripeAccountClientData, CreateStripeAccountCallableResult>(firebaseFunctions, 'createStripeAccountIfComplete');
       const result = await createStripeAccountCallable(dataForStripeCallable);
@@ -544,7 +549,6 @@ export default function Step5CompanyPage() {
       if (error instanceof FunctionsError) {
         specificErrorMessage = `Serverfehler (${error.code}): ${error.message} ${error.details ? `(Details: ${JSON.stringify(error.details)})` : ''}`;
       } else if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
-        // Typische Firebase Auth Fehler abfangen
         specificErrorMessage = `Firebase Fehler (${(error as { code: string }).code}): ${(error as { message: string }).message}`;
       } else if (error instanceof Error) {
         specificErrorMessage = error.message;
@@ -600,13 +604,13 @@ export default function Step5CompanyPage() {
           <div className="w-full space-y-6 mb-8">
             <div>
               <label htmlFor="accountHolder" className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !accountHolder?.trim() ? 'text-red-600' : 'text-gray-700'}`}>Name des Kontoinhabers*</label>
-              <input type="text" id="accountHolder" value={accountHolder || ''} onChange={(e) => setAccountHolder(e.target.value)}
+              <input type="text" id="accountHolder" value={accountHolder || ''} onChange={(e) => setAccountHolder(e.target.value.trim())}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !accountHolder?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Max Mustermann" disabled={isLoading || isConvertingImage} />
             </div>
             <div>
               <label htmlFor="iban" className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !iban?.trim() ? 'text-red-600' : 'text-gray-700'}`}>IBAN*</label>
-              <input type="text" id="iban" value={iban || ''} onChange={(e) => setIban(e.target.value)}
+              <input type="text" id="iban" value={iban || ''} onChange={(e) => setIban(e.target.value.replace(/\s/g, ''))}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !iban?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="DE89..." disabled={isLoading || isConvertingImage} />
             </div>

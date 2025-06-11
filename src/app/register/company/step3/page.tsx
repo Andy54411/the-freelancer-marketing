@@ -7,7 +7,7 @@ import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiInfo, FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'; // FiAlertCircle hinzugefügt
 import PopupModal from '@/app/register/company/step4/components/PopupModal'; // Pfad prüfen
 import { useRegistration } from '@/contexts/Registration-Context';
-import { PAGE_LOG, PAGE_ERROR } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { PAGE_LOG, PAGE_ERROR } from '@/lib/constants';
 
 const STEP3_PAGE_LOG = "[Register Company Step3 LOG]";
 

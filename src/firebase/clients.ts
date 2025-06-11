@@ -1,12 +1,9 @@
-// /Users/andystaudinger/Tasko/src/firebase/clients.ts
-
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator, Functions } from 'firebase/functions';
 
-// Lade Umgebungsvariablen
 const NEXT_PUBLIC_FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const NEXT_PUBLIC_FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -15,7 +12,6 @@ const NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = process.env.NEXT_PUBLIC_FIREBAS
 const NEXT_PUBLIC_FIREBASE_APP_ID = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
 const NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
-// Bestimme, ob wir im Emulator-Modus sind
 const isEmulatorMode = process.env.NODE_ENV === 'development' && (
   process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST ||
   process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST ||
@@ -29,7 +25,6 @@ let dbInstance: Firestore;
 let storageInstance: FirebaseStorage;
 let functionsInstance: Functions;
 
-// Initialisiere die Firebase App und Services nur einmal
 if (!getApps().length) {
   const firebaseConfig = {
     apiKey: NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -48,62 +43,66 @@ if (!getApps().length) {
   storageInstance = getStorage(app);
   functionsInstance = getFunctions(app);
 
+  // Füge diese Debug-Logs hinzu, um die Werte der Umgebungsvariablen zu überprüfen
+  // und zu sehen, ob isEmulatorMode korrekt erkannt wird.
+  console.log("--- CLIENTS.TS DEBUG START ---");
+  console.log("DEBUG ENV: NODE_ENV =", process.env.NODE_ENV);
+  console.log("DEBUG ENV: NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST =", process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST);
+  console.log("DEBUG ENV: NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST =", process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST);
+  console.log("DEBUG ENV: NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST =", process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST);
+  console.log("DEBUG ENV: NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST =", process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST);
+  console.log("DEBUG ENV: isEmulatorMode =", isEmulatorMode);
+  console.log("--- CLIENTS.TS DEBUG END ---");
+
   if (isEmulatorMode) {
     console.log("[Firebase Client] Running in emulator mode. Connecting to local emulators.");
 
-    // Auth Emulator Verbindung
     if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST) {
       try {
         connectAuthEmulator(authInstance, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
         console.log(`[Firebase Client] Connected to Auth Emulator: http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
-      } catch (e) {
+      } catch (e: any) {
         if (!(e instanceof Error && e.message.includes('Auth emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Auth Emulator:", e);
         }
       }
     }
 
-    // Firestore Emulator Verbindung
     if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
       try {
         const firestoreHost = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST;
         const [host, port] = firestoreHost.split(':');
         connectFirestoreEmulator(dbInstance, host, parseInt(port, 10));
         console.log(`[Firebase Client] Connected to Firestore Emulator: http://${firestoreHost}`);
-      } catch (e) {
+      } catch (e: any) {
         if (!(e instanceof Error && e.message.includes('Firestore emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Firestore Emulator:", e);
         }
       }
     }
 
-    // Storage Emulator Verbindung
     if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST) {
       try {
         const storageHost = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST;
         const [host, port] = storageHost.split(':');
         connectStorageEmulator(storageInstance, host, parseInt(port, 10));
         console.log(`[Firebase Client] Connected to Storage Emulator: http://${storageHost}`);
-      } catch (e) {
+      } catch (e: any) {
         if (!(e instanceof Error && e.message.includes('Storage emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Storage Emulator:", e);
         }
       }
     }
 
-    // Functions Emulator Verbindung
     if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
       try {
-        // KORREKTUR: Wir holen den Host und setzen den Port manuell,
-        // da wir wissen, dass er 5001 ist und nicht in der Host-Variable steht.
-        const host = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST; // Das ist "localhost"
+        const host = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST;
         const port = 5001;
 
         connectFunctionsEmulator(functionsInstance, host, port);
 
-        // KORREKTUR: Auch das Log anpassen, damit es die korrekte URL anzeigt.
         console.log(`[Firebase Client] Connected to Functions Emulator: http://${host}:${port}`);
-      } catch (e) {
+      } catch (e: any) {
         if (!(e instanceof Error && e.message.includes('Functions emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Functions Emulator:", e);
         }
@@ -115,7 +114,6 @@ if (!getApps().length) {
   }
 
 } else {
-  // App ist bereits initialisiert
   app = getApps()[0];
   authInstance = getAuth(app);
   dbInstance = getFirestore(app);
@@ -123,5 +121,4 @@ if (!getApps().length) {
   functionsInstance = getFunctions(app);
 }
 
-// Exportiere die initialisierten Instanzen
 export { app, authInstance as auth, dbInstance as db, storageInstance as storage, functionsInstance as functions };

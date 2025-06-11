@@ -24,7 +24,8 @@
         }
     },
     "include": [
-        "src"
+        "src/**/*.ts", // Alle TypeScript-Dateien im src-Ordner
+        "src/**/*.d.ts" // Explizite Einbindung von .d.ts-Dateien
     ],
     "exclude": [
         "node_modules",

@@ -8,7 +8,7 @@ import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
 import LogoForm from '@/components/dashboard_setting/logo';
-import { PAGE_ERROR } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { PAGE_ERROR } from '@/lib/constants';
 import { FiLoader, FiSave, FiX } from 'react-icons/fi';
 import { toast } from 'sonner';
 import Stripe from 'stripe';

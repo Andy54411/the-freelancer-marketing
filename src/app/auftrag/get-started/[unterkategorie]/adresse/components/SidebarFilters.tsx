@@ -6,7 +6,7 @@ import { FiRefreshCcw, FiLoader } from 'react-icons/fi';
 import { DateRange } from 'react-day-picker';
 import { format, addDays, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { generalTimeOptionsForSidebar, PRICE_STEP } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { generalTimeOptionsForSidebar, PRICE_STEP } from '@/lib/constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface PriceDistributionData {

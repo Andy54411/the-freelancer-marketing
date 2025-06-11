@@ -5,7 +5,7 @@ import { useSearchParams, useParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 import AnbieterDetailsFetcher from './AnbieterDetailsFetcher';
-import { PAGE_LOG, PAGE_WARN, PAGE_ERROR } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { PAGE_LOG, PAGE_WARN, PAGE_ERROR } from '@/lib/constants';
 import { differenceInCalendarDays, parseISO, isValid as isValidDate } from 'date-fns';
 
 function parseDurationStringToHours(durationStr?: string): number | null {

@@ -1,5 +1,4 @@
 "use strict";
-// /Users/andystaudinger/Tasko/firebase_functions/src/http_file_uploads.ts
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -46,24 +45,24 @@ const helpers_1 = require("./helpers");
 const path_1 = __importDefault(require("path"));
 const os_1 = __importDefault(require("os"));
 const fs_1 = __importDefault(require("fs"));
-// KORREKTUR 1: "UploadResponse" entfernt, da es nicht existiert.
 const storage_1 = require("firebase-admin/storage");
 const uuid_1 = require("uuid");
-// --- 1. Helper für Authentifizierung ---
 const authenticateRequest = async (req) => {
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+        v2_1.logger.warn("[authenticateRequest] Unauthorized: Missing or invalid Authorization header.");
         throw { status: 401, message: 'Unauthorized: Missing or invalid Authorization header.' };
     }
     const idToken = req.headers.authorization.split('Bearer ')[1];
     try {
-        return await admin.auth().verifyIdToken(idToken);
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        v2_1.logger.info(`[authenticateRequest] Token verified for UID: ${decodedToken.uid}`);
+        return decodedToken;
     }
     catch (error) {
-        v2_1.logger.warn("Token-Verifizierung fehlgeschlagen:", error);
+        v2_1.logger.warn("[authenticateRequest] Token verification failed:", error);
         throw { status: 401, message: 'Unauthorized: Invalid token.' };
     }
 };
-// --- 2. Helper für Multipart-Parsing ---
 const parseMultipartFormData = (req) => {
     return new Promise((resolve, reject) => {
         const bb = (0, busboy_1.default)({ headers: req.headers });
@@ -71,11 +70,16 @@ const parseMultipartFormData = (req) => {
         const fields = {};
         const files = {};
         const fileWrites = [];
-        bb.on('field', (fieldname, val) => { fields[fieldname] = val; });
+        bb.on('field', (fieldname, val) => {
+            fields[fieldname] = val;
+            v2_1.logger.debug(`[parseMultipartFormData] Field received: ${fieldname} = ${val}`);
+        });
         bb.on('file', (fieldname, file, GCSUploadMetadata) => {
             const { filename, mimeType } = GCSUploadMetadata;
+            v2_1.logger.debug(`[parseMultipartFormData] File received: ${fieldname}, Filename: ${filename}, MimeType: ${mimeType}`);
             if (!filename) {
                 file.resume();
+                v2_1.logger.warn("[parseMultipartFormData] File has no filename, skipping.");
                 return;
             }
             const filepath = path_1.default.join(tmpdir, (0, uuid_1.v4)() + '-' + path_1.default.basename(filename));
@@ -84,60 +88,86 @@ const parseMultipartFormData = (req) => {
             file.pipe(writeStream);
             const promise = new Promise((res, rej) => {
                 file.on('end', () => writeStream.end());
-                writeStream.on('finish', res);
-                writeStream.on('error', rej);
+                writeStream.on('finish', () => {
+                    v2_1.logger.debug(`[parseMultipartFormData] File written to temp: ${filepath}`);
+                    res();
+                });
+                writeStream.on('error', (err) => {
+                    v2_1.logger.error(`[parseMultipartFormData] Error writing file to temp: ${filepath}`, err);
+                    rej(err);
+                });
             });
             fileWrites.push(promise);
         });
         bb.on('finish', async () => {
+            v2_1.logger.info("[parseMultipartFormData] Busboy finished parsing, waiting for file writes.");
             try {
                 await Promise.all(fileWrites);
+                v2_1.logger.info("[parseMultipartFormData] All file writes complete.");
                 resolve({ fields, files });
             }
             catch (error) {
+                v2_1.logger.error("[parseMultipartFormData] Failed to process file streams.", error);
                 reject({ status: 500, message: 'Failed to process file streams.', raw: error });
             }
         });
-        bb.on('error', (err) => reject({ status: 400, message: 'Error parsing form data.', raw: err }));
+        bb.on('error', (err) => {
+            v2_1.logger.error("[parseMultipartFormData] Error parsing form data.", err);
+            reject({ status: 400, message: 'Error parsing form data.', raw: err });
+        });
         if (req.rawBody) {
+            v2_1.logger.debug("[parseMultipartFormData] Using req.rawBody to end busboy.");
             bb.end(req.rawBody);
         }
         else {
+            v2_1.logger.debug("[parseMultipartFormData] Piping req to busboy.");
             req.pipe(bb);
         }
     });
 };
-// --- Hauptfunktion: uploadStripeFile ---
-exports.uploadStripeFile = (0, https_1.onRequest)({ cors: true }, async (req, res) => {
-    // KORREKTUR 2: "return" aus dem res.send() entfernt.
+exports.uploadStripeFile = (0, https_1.onRequest)({
+    cors: true,
+    region: 'us-central1'
+}, async (req, res) => {
+    v2_1.logger.info("[uploadStripeFile] Function execution started.");
     if (req.method !== 'POST') {
+        v2_1.logger.warn(`[uploadStripeFile] Method Not Allowed: ${req.method}`);
         res.status(405).send({ success: false, message: 'Method Not Allowed' });
         return;
     }
     const tmpFilepaths = [];
     try {
-        // Schritt 1: Authentifizieren über Authorization-Header
+        v2_1.logger.info("[uploadStripeFile] Attempting authentication.");
         const decodedToken = await authenticateRequest(req);
         const userId = decodedToken.uid;
-        // Schritt 2: Request parsen mit dem neuen Helper
+        v2_1.logger.info(`[uploadStripeFile] Authenticated user: ${userId}`);
+        v2_1.logger.info("[uploadStripeFile] Parsing multipart form data.");
         const { fields, files } = await parseMultipartFormData(req);
+        v2_1.logger.info("[uploadStripeFile] Form data parsed. Fields:", fields);
+        v2_1.logger.info("[uploadStripeFile] Files received (keys):", Object.keys(files));
         Object.values(files).forEach(f => tmpFilepaths.push(f.filepath));
-        // Schritt 3: Eingaben validieren
+        v2_1.logger.info("[uploadStripeFile] Validating inputs.");
         if (userId !== fields.userId) {
+            v2_1.logger.error(`[uploadStripeFile] Forbidden: UID mismatch. Token UID: ${userId}, Field UID: ${fields.userId}`);
             throw { status: 403, message: 'Forbidden: UID does not match token.' };
         }
         const purpose = fields.purpose;
         if (!purpose) {
+            v2_1.logger.error("[uploadStripeFile] Bad Request: Missing 'purpose' field.");
             throw { status: 400, message: "Bad Request: Missing 'purpose' field." };
         }
         const uploadedFile = files.file;
         if (!uploadedFile) {
+            v2_1.logger.error("[uploadStripeFile] Bad Request: No file uploaded in 'file' field.");
             throw { status: 400, message: "Bad Request: No file uploaded in 'file' field." };
         }
         const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
+        v2_1.logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath}`);
         const stripe = (0, helpers_1.getStripeInstance)();
+        v2_1.logger.info("[uploadStripeFile] Stripe instance obtained.");
         const bucket = (0, storage_1.getStorage)().bucket();
-        // Schritt 4: Parallel zu Stripe und Firebase Storage hochladen
+        v2_1.logger.info("[uploadStripeFile] Firebase Storage bucket obtained.");
+        v2_1.logger.info("[uploadStripeFile] Initiating parallel uploads to Stripe and Firebase Storage.");
         const stripePromise = stripe.files.create({
             purpose: purpose,
             file: { data: fs_1.default.readFileSync(uploadedFilePath), name: filename, type: mimeType },
@@ -148,20 +178,21 @@ exports.uploadStripeFile = (0, https_1.onRequest)({ cors: true }, async (req, re
             metadata: { contentType: mimeType },
         });
         const [stripeFile, storageResponse] = await Promise.all([stripePromise, storagePromise]);
-        // KORREKTUR 1: Direkt auf das erste Element des Arrays zugreifen.
+        v2_1.logger.info(`[uploadStripeFile] Uploads complete. Stripe file ID: ${stripeFile.id}, Storage path: ${storagePath}`);
         const gcsFile = storageResponse[0];
-        // Schritt 5: URL generieren (SICHERHEITSUPDATE)
+        v2_1.logger.info("[uploadStripeFile] GCS file object obtained from storage response.");
         let fileUrl;
         if (purpose === 'business_icon') {
             await gcsFile.makePublic();
             fileUrl = gcsFile.publicUrl();
+            v2_1.logger.info(`[uploadStripeFile] Business icon made public. URL: ${fileUrl}`);
         }
         else {
             const [signedUrl] = await gcsFile.getSignedUrl({ action: 'read', expires: Date.now() + 24 * 60 * 60 * 1000 });
             fileUrl = signedUrl;
-            v2_1.logger.warn(`[uploadStripeFile] Für ${storagePath} wurde eine signierte URL erstellt, die 24h gültig ist.`);
+            v2_1.logger.warn(`[uploadStripeFile] Signed URL created for ${storagePath}, valid for 24h.`);
         }
-        // Schritt 6: Erfolgreiche Antwort senden
+        v2_1.logger.info("[uploadStripeFile] Sending success response.");
         res.status(200).send({
             success: true,
             stripeFileId: stripeFile.id,
@@ -170,18 +201,20 @@ exports.uploadStripeFile = (0, https_1.onRequest)({ cors: true }, async (req, re
         });
     }
     catch (error) {
-        v2_1.logger.error("[uploadStripeFile] Fehler bei der Verarbeitung:", error);
+        v2_1.logger.error("[uploadStripeFile] Error during processing:", error);
         const status = error.status || 500;
         const message = error.message || "Interner Serverfehler beim Upload.";
         res.status(status).send({ success: false, message: message });
     }
     finally {
-        // Schritt 7: Temporäre Dateien immer löschen
+        v2_1.logger.info("[uploadStripeFile] Cleaning up temporary files.");
         tmpFilepaths.forEach(filepath => {
             if (fs_1.default.existsSync(filepath)) {
                 fs_1.default.unlinkSync(filepath);
+                v2_1.logger.debug(`[uploadStripeFile] Deleted temporary file: ${filepath}`);
             }
         });
+        v2_1.logger.info("[uploadStripeFile] Function execution finished.");
     }
 });
 //# sourceMappingURL=http_file_uploads.js.map

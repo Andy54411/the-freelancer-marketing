@@ -9,7 +9,7 @@ import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { getFunctions, httpsCallable, Functions, FunctionsError } from 'firebase/functions';
 import { app } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
-import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';

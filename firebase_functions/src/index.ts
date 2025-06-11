@@ -1,6 +1,9 @@
+// /Users/andystaudinger/Tasko/firebase_functions/src/index.ts
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { setGlobalOptions } from 'firebase-functions/v2/options';
 
-// Globale Optionen setzen (das ist gut so).
 setGlobalOptions({
     timeoutSeconds: 540,
     memory: '512MiB',
@@ -9,7 +12,6 @@ setGlobalOptions({
 
 // KEIN admin.initializeApp() mehr hier!
 
-// Alle Funktionen werden wieder normal exportiert.
 export * from './callable_stripe';
 export * from './callable_general';
 export * from './http_general';

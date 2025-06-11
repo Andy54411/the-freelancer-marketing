@@ -12,7 +12,7 @@ import type {
   Company as AnbieterDetails,
   TaskDetails,
 } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types';
-import { TRUST_AND_SUPPORT_FEE_EUR } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+import { TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
 
 export interface OrderSummaryProps {
   anbieterDetails: AnbieterDetails | null;

@@ -1,6 +1,7 @@
 # Node Modules
 node_modules/
 firebase_functions/node_modules/
+.firebase-data
 
 # pnpm
 .pnpm-debug.log*

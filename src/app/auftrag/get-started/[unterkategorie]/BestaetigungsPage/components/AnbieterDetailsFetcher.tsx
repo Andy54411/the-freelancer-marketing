@@ -21,7 +21,7 @@ import {
   // PAGE_LOG, // Nicht verwendet
   PAGE_WARN,
   PAGE_ERROR,
-} from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
+} from '@/lib/constants';
 
 import {
   differenceInCalendarDays,
