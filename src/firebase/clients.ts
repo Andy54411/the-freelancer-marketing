@@ -61,7 +61,7 @@ if (!getApps().length) {
       try {
         connectAuthEmulator(authInstance, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
         console.log(`[Firebase Client] Connected to Auth Emulator: http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!(e instanceof Error && e.message.includes('Auth emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Auth Emulator:", e);
         }
@@ -74,7 +74,7 @@ if (!getApps().length) {
         const [host, port] = firestoreHost.split(':');
         connectFirestoreEmulator(dbInstance, host, parseInt(port, 10));
         console.log(`[Firebase Client] Connected to Firestore Emulator: http://${firestoreHost}`);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!(e instanceof Error && e.message.includes('Firestore emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Firestore Emulator:", e);
         }
@@ -87,7 +87,7 @@ if (!getApps().length) {
         const [host, port] = storageHost.split(':');
         connectStorageEmulator(storageInstance, host, parseInt(port, 10));
         console.log(`[Firebase Client] Connected to Storage Emulator: http://${storageHost}`);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!(e instanceof Error && e.message.includes('Storage emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Storage Emulator:", e);
         }
@@ -102,7 +102,7 @@ if (!getApps().length) {
         connectFunctionsEmulator(functionsInstance, host, port);
 
         console.log(`[Firebase Client] Connected to Functions Emulator: http://${host}:${port}`);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!(e instanceof Error && e.message.includes('Functions emulator is already being used'))) {
           console.error("[Firebase Client] Error connecting to Functions Emulator:", e);
         }

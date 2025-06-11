@@ -11,7 +11,7 @@ import { doc, setDoc, serverTimestamp, deleteField, updateDoc, FieldValue } from
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
 import { httpsCallable, FunctionsError } from 'firebase/functions';
-import { PAGE_ERROR, PAGE_WARN, UPLOAD_STRIPE_FILE_API_URL } from '@/lib/constants';
+import { PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 import type Stripe from 'stripe';
 
 interface CreateStripeAccountCallableResult {
@@ -478,7 +478,7 @@ export default function Step5CompanyPage() {
 
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
 
-      let dataForStripeCallable: CreateStripeAccountClientData = {
+      const dataForStripeCallable: CreateStripeAccountClientData = {
         userId: currentAuthUserUID, clientIp: clientIpAddress,
         firstName: firstName?.trim(),
         lastName: lastName?.trim(),
