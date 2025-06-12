@@ -49,7 +49,7 @@ export default function CompanyResultsList({
           className="w-12 h-12"
         />
         <p>
-          Es sind derzeit leider keine Tilver verfügbar, die dir bei deinem Task helfen können.
+          Es sind derzeit leider keine Tasker verfügbar, die dir bei deinem Task helfen können.
           <br />
           Schau nach, wer an anderen Tagen verfügbar ist!
         </p>

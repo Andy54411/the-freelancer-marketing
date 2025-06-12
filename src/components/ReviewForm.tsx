@@ -1,37 +1,61 @@
+// /Users/andystaudinger/Tasko/src/components/ReviewForm.tsx
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { getAuth } from 'firebase/auth'
-// import { useRouter } from 'next/navigation' // Marked as unused
+import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions'
+import { app } from '@/firebase/clients'
 
-interface Props {
-  anbieterId: string
-  auftragId: string
-  kategorie: string
-  unterkategorie: string
+// Funktionen-Instanz initialisieren
+const functionsInstance = getFunctions(app);
+
+// Interfaces für die Callable Function (Input und Output)
+interface SubmitReviewData {
+  anbieterId: string;
+  kundeId: string;
+  auftragId: string;
+  sterne: number;
+  kommentar: string;
+  kundeProfilePictureURL?: string;
+  kategorie: string;
+  unterkategorie: string;
 }
 
-export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkategorie }: Props) {
-  const [sterne, setSterne] = useState(5)
-  const [kommentar, setKommentar] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  // const router = useRouter() // Marked as unused
+interface SubmitReviewResult {
+  message: string;
+  reviewId: string;
+}
+
+interface ReviewFormProps {
+  anbieterId: string;
+  auftragId: string;
+  kategorie: string;
+  unterkategorie: string;
+}
+
+export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkategorie }: ReviewFormProps) {
+  const [sterne, setSterne] = useState(5);
+  const [kommentar, setKommentar] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    setLoading(true)
-    setSuccess(false)
+    setLoading(true);
+    setSuccess(false);
+    setError(null);
 
-    const user = getAuth().currentUser
+    const user = getAuth().currentUser;
     if (!user) {
-      alert('Bitte zuerst einloggen.')
-      return
+      alert('Bitte zuerst einloggen.');
+      setLoading(false);
+      return;
     }
 
-    const kundeId = user.uid
-    const kundeProfilePictureURL = user.photoURL || ''
+    const kundeId = user.uid;
+    const kundeProfilePictureURL = user.photoURL || '';
 
-    const body = {
+    const body: SubmitReviewData = {
       anbieterId,
       kundeId,
       auftragId,
@@ -40,24 +64,57 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
       kundeProfilePictureURL,
       kategorie,
       unterkategorie
-    }
+    };
 
     try {
-      const res = await fetch('https://us-central1-tilvo-f142f.cloudfunctions.net/submitReview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      let resultData: SubmitReviewResult;
 
-      if (!res.ok) throw new Error('Fehler beim Absenden')
-      setSuccess(true)
-      setKommentar(''); // Added semicolon for consistency
-    } catch { // _err entfernt
-      alert('Bewertung konnte nicht gesendet werden.')
+      if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
+        // Direkter fetch-Aufruf für den Emulator-Modus
+        const emulatorHost = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST;
+        const emulatorPort = 5001; // Standard-Port für Functions Emulator
+
+        const url = `http://${emulatorHost}:${emulatorPort}/tilvo-f142f/us-central1/submitReview`;
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data: body }), // Payload wie von httpsCallable erwartet
+        });
+
+        const responseData = await res.json(); // Antwort auspacken
+        if (!res.ok || responseData.error) {
+          throw new Error(responseData.error?.message || `Serverfehler: ${res.status}`);
+        }
+        resultData = responseData.data; // Die eigentlichen Daten sind in responseData.data
+      } else {
+        // Im Produktionsmodus weiterhin httpsCallable verwenden
+        const submitReviewProdCallable = httpsCallable<SubmitReviewData, SubmitReviewResult>(functionsInstance, 'submitReview');
+        const result = await submitReviewProdCallable(body);
+        resultData = result.data;
+      }
+
+      console.log('Bewertung erfolgreich gesendet:', resultData);
+      setSuccess(true);
+      setKommentar('');
+    } catch (err: unknown) {
+      console.error('Fehler beim Senden der Bewertung:', err);
+      let errorMessage = 'Bewertung konnte nicht gesendet werden.';
+      if (err instanceof FunctionsError) {
+        errorMessage = `Fehler von Cloud Function (${err.code}): ${err.message}`;
+      } else if (err instanceof Error) {
+        errorMessage = `Netzwerkfehler: ${err.message}`;
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as any).message === 'string') {
+        errorMessage = (err as any).message;
+      }
+      setError(errorMessage);
+      alert(errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="mt-8 border-t pt-6">
@@ -83,6 +140,12 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
         className="w-full rounded-md border p-3 mb-4"
       />
 
+      {error && (
+        <p className="text-red-600 mt-3 mb-2">
+          ❌ {error}
+        </p>
+      )}
+
       <button
         onClick={handleSubmit}
         disabled={loading}
@@ -93,5 +156,5 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
 
       {success && <p className="text-green-600 mt-3">✔️ Bewertung erfolgreich gesendet</p>}
     </div>
-  )
+  );
 }

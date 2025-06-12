@@ -46,3 +46,4 @@ yarn-error.log*
 .env.local
 .env
 .env.*
+/Users/andystaudinger/Tasko/firebase-emulator-data

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rimraf lib",
-    "build": "npm run clean && tsc"
+    "build": "npm run clean && tsc",
+    "start:emulators": "GOOGLE_APPLICATION_CREDENTIALS=\"/Users/andystaudinger/Tasko/firebase_functions/service-account.json\" firebase emulators:start --import ./firebase-emulator-data --export-on-exit ./firebase-emulator-data"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +20,7 @@
     "busboy": "^1.6.0",
     "cors": "^2.8.5",
     "firebase-admin": "^12.2.0",
-    "firebase-functions": "^6.3.2",
+    "firebase-functions": "^4.9.0",
     "stripe": "^18.2.1"
   },
   "devDependencies": {

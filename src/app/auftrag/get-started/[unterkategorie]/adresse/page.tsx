@@ -1,8 +1,9 @@
+// /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/page.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { FiArrowLeft, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { FiLoader, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
 import { useJsApiLoader } from '@react-google-maps/api';
 import CompanyProfileDetail from './components/CompanyProfileDetail';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from './components/DateTimeSelectionPopup';
@@ -12,13 +13,15 @@ import { format, isValid, parseISO, differenceInCalendarDays } from 'date-fns';
 import { SEARCH_API_URL, DATA_FOR_SUBCATEGORY_API_URL, GLOBAL_FALLBACK_MIN_PRICE, GLOBAL_FALLBACK_MAX_PRICE, PAGE_ERROR, PAGE_LOG, PAGE_WARN, TRUST_AND_SUPPORT_FEE_EUR } from '../../../../../lib/constants';
 import SidebarFilters from './components/SidebarFilters';
 import CompanyResultsList from './components/CompanyResultsList';
-import { getAuth } from 'firebase/auth';
-import { app } from '@/firebase/clients';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { app, db } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { getBookingCharacteristics } from './components/lib/utils';
+import { categories } from '@/lib/categories';
+
 
 const auth = getAuth(app);
-// ✅ KORREKTUR: "as const" entfernt
 const libraries: ("places")[] = ['places'];
 
 function parseDurationStringToHours(durationStr?: string): number | null {
@@ -31,6 +34,7 @@ function parseDurationStringToHours(durationStr?: string): number | null {
 
 export default function AddressPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pathParams = useParams();
   const registration = useRegistration();
 
@@ -87,7 +91,9 @@ export default function AddressPage() {
   const [priceDistribution, setPriceDistribution] = useState<({ range: string; count: number }[] | null)>(null);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
   const [loadingSubcategoryData, setLoadingSubcategoryData] = useState(false);
+
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
   const [finalSelectedDateRange, setFinalSelectedDateRange] = useState<DateRange | undefined>(() => {
     if (registration.jobDateFrom && isValid(parseISO(registration.jobDateFrom))) {
       const from = parseISO(registration.jobDateFrom);
@@ -101,6 +107,10 @@ export default function AddressPage() {
   const [editSelection, setEditSelection] = useState<Date | DateRange | undefined>(undefined);
   const [editTime, setEditTime] = useState<string>('');
   const [editDuration, setEditDuration] = useState<string>('');
+
+  // DER VORHERIGE useEffect FÜR DIE FRÜHE WEITERLEITUNG WIRD HIER ENTFERNT.
+  // Das auth-check wird nun in handleDateTimeConfirm ausgeführt.
+
 
   useEffect(() => {
     const paramSubcategory = pathParams?.unterkategorie;
@@ -121,6 +131,21 @@ export default function AddressPage() {
     if (registration.jobCity) setCityState(registration.jobCity);
     if (registration.jobCountry) setCountryState(registration.jobCountry);
   }, [pathParams, registration]);
+
+  const selectedMainCategory = useMemo(() => {
+    if (!selectedSubcategory) return null;
+    for (const cat of categories) {
+      if (cat.subcategories.includes(selectedSubcategory)) {
+        return cat.title;
+      }
+    }
+    return null;
+  }, [selectedSubcategory]);
+
+  const shouldShowDateTimeFilters = useMemo(() => {
+    return selectedMainCategory === "Handwerk" || selectedMainCategory === "Haushalt & Reinigung";
+  }, [selectedMainCategory]);
+
 
   const currentBookingChars = useMemo(() =>
     getBookingCharacteristics(selectedSubcategory),
@@ -145,14 +170,7 @@ export default function AddressPage() {
       console.error(`${PAGE_ERROR} Critical error in fetchDataForSubcategory:`, err);
       setAveragePriceForSubcategory(null); setDynamicSliderMin(GLOBAL_FALLBACK_MIN_PRICE); setDynamicSliderMax(GLOBAL_FALLBACK_MAX_PRICE); setCurrentMaxPrice(GLOBAL_FALLBACK_MAX_PRICE); setPriceDistribution(null);
     } finally { setLoadingSubcategoryData(false); }
-  }, []);
-
-  useEffect(() => {
-    if (selectedSubcategory) { fetchDataForSubcategory(selectedSubcategory); }
-    else {
-      setDynamicSliderMin(GLOBAL_FALLBACK_MIN_PRICE); setDynamicSliderMax(GLOBAL_FALLBACK_MAX_PRICE); setCurrentMaxPrice(GLOBAL_FALLBACK_MAX_PRICE); setAveragePriceForSubcategory(null); setPriceDistribution(null);
-    }
-  }, [selectedSubcategory, fetchDataForSubcategory]);
+  }, [setAveragePriceForSubcategory, setDynamicSliderMin, setDynamicSliderMax, setCurrentMaxPrice, setPriceDistribution]);
 
   const fetchCompanyProfiles = useCallback(async () => {
     if (!postalCode || !selectedSubcategory) { setCompanyProfiles([]); return; }
@@ -165,7 +183,7 @@ export default function AddressPage() {
           apiUrl += `&dateTo=${format(finalSelectedDateRange.to, "yyyy-MM-dd")}`;
         }
       }
-      if (finalSelectedTime) { apiUrl += `&time=${encodeURIComponent(finalSelectedTime)}`; }
+      if (finalSelectedTime) { apiUrl += `&&time=${encodeURIComponent(finalSelectedTime)}`; }
       const res = await fetch(apiUrl);
       if (!res.ok) {
         const errorText = await res.text(); console.error(`${PAGE_ERROR} API searchCompanyProfiles FAILED: ${res.status} ${res.statusText}. Response: ${errorText}`); throw new Error(`Anbieter konnten nicht geladen werden (Fehler ${res.status})`);
@@ -173,7 +191,7 @@ export default function AddressPage() {
       const data: Company[] = await res.json();
       setCompanyProfiles(data);
       const newRatingMap: RatingMap = {};
-      for (const company of data) { if (company.id) { } }
+      for (const company of data) { /* ... hier logik für company.id und ratings ...*/ }
       setRatingMap(newRatingMap);
     } catch (err: unknown) {
       console.error(`${PAGE_ERROR} Critical error in fetchCompanyProfiles:`, err);
@@ -182,24 +200,34 @@ export default function AddressPage() {
       setError(message);
       setCompanyProfiles([]);
     } finally { setLoadingProfiles(false); }
-  }, [postalCode, selectedSubcategory, currentMaxPrice, dynamicSliderMin, finalSelectedDateRange, finalSelectedTime]);
+  }, [postalCode, selectedSubcategory, currentMaxPrice, dynamicSliderMin, finalSelectedDateRange, finalSelectedTime, setCompanyProfiles, setError, setRatingMap]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (postalCode && selectedSubcategory) fetchCompanyProfiles(); else setCompanyProfiles([]);
+      if (postalCode && selectedSubcategory) {
+        fetchDataForSubcategory(selectedSubcategory);
+        fetchCompanyProfiles();
+      } else {
+        setCompanyProfiles([]);
+      }
     }, 500);
     return () => clearTimeout(timer);
-  }, [fetchCompanyProfiles, postalCode, selectedSubcategory]);
+  }, [fetchDataForSubcategory, postalCode, selectedSubcategory, fetchCompanyProfiles]);
 
   const toggleDescriptionExpand = (companyId: string) => {
     setExpandedDescriptions((prev: ExpandedDescriptionsMap) => ({ ...prev, [companyId]: !prev[companyId] }));
   };
-  const handlePriceSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handlePriceSliderChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const newMax = Number(event.target.value);
     setCurrentMaxPrice(newMax >= dynamicSliderMin ? newMax : dynamicSliderMin);
-  };
-  const resetPriceFilter = () => { setCurrentMaxPrice(dynamicSliderMax); };
-  const handleOpenDatePicker = (companyContext?: Company) => {
+  }, [dynamicSliderMin, setCurrentMaxPrice]);
+
+  const resetPriceFilter = useCallback(() => {
+    setCurrentMaxPrice(dynamicSliderMax);
+  }, [dynamicSliderMax, setCurrentMaxPrice]);
+
+  const handleOpenDatePicker = useCallback((companyContext?: Company) => {
     setSelectedCompanyForPopup(companyContext || null);
     const initialDur = registration.jobDurationString || currentBookingChars.defaultDurationHours?.toString() || "";
     const initialT = finalSelectedTime || registration.jobTimePreference || "";
@@ -216,13 +244,17 @@ export default function AddressPage() {
     setEditTime(initialT);
     setEditDuration(initialDur);
     setIsDatePickerOpen(true);
-  };
-  const handleCloseDatePicker = () => { setIsDatePickerOpen(false); };
-  const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (selection?: Date | DateRange, time?: string, durationStringFromPopup?: string) => {
+  }, [registration, currentBookingChars, finalSelectedTime, finalSelectedDateRange, setSelectedCompanyForPopup, setEditSelection, setEditTime, setEditDuration, setIsDatePickerOpen]);
+
+  const handleCloseDatePicker = useCallback(() => {
+    setIsDatePickerOpen(false);
+  }, [setIsDatePickerOpen]);
+
+  const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = useCallback(async (selection?: Date | DateRange, time?: string, durationStringFromPopup?: string) => {
     setError(null);
     console.log(PAGE_LOG, "AddressPage: handleDateTimeConfirm mit:", { selection, time, durationStringFromPopup });
-    let dateFromFormatted: string | undefined = undefined;
-    let dateToFormatted: string | undefined = undefined;
+    let dateFromFormatted: string | undefined;
+    let dateToFormatted: string | undefined;
     let calculatedNumberOfDays = 1;
     if (selection) {
       if (selection instanceof Date && isValid(selection)) {
@@ -295,20 +327,43 @@ export default function AddressPage() {
       if (finalDurationStringInput) bestaetigungsPageParams.append('auftragsDauer', encodeURIComponent(finalDurationStringInput));
       if (totalPriceInCents) bestaetigungsPageParams.append('price', (totalPriceInCents / 100).toFixed(2));
       const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
-      const user = auth.currentUser;
+
+      // NEU: Redirection check hier, beim Klick auf Bestätigen von Datum/Uhrzeit
+      const user = auth.currentUser; // Holen Sie den aktuellen Benutzerstatus
       if (user) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        const userData = userDocSnap.data();
+
+        if (userData && userData.stripeCustomerId) {
+          // Benutzer ist eingeloggt UND hat bereits eine Stripe Customer ID.
+          // Das bedeutet, der erste Auftrag ist abgeschlossen. Leite zum Dashboard weiter.
+          console.log(PAGE_LOG, `AdressePage: User ${user.uid} eingeloggt & erster Auftrag fertig. Leite zu Dashboard weiter (nach Datums-Bestätigung).`);
+          router.replace(`/dashboard/user/${user.uid}`);
+          setSelectedCompanyForPopup(null); // Optional: Popup schließen
+          return; // Wichtig: Beende die Funktion hier
+        }
+        // Wenn der User eingeloggt ist, aber KEINE Stripe Customer ID hat,
+        // dann ist er im Prozess des ersten Auftrags und soll hier fortfahren zur Bestätigungsseite.
         router.push(bestaetigungsPagePath);
       } else {
+        // Nicht angemeldet, leite zur Registrierungsseite weiter
         router.push(`/register/user?redirectTo=${encodeURIComponent(bestaetigungsPagePath)}`);
       }
     } else if (dateFromFormatted) {
       console.log(`${PAGE_LOG} Nur Datum/Zeit im Filter geändert. Lade Profile neu.`); fetchCompanyProfiles();
     }
     setSelectedCompanyForPopup(null);
-  };
+  }, [selectedCompanyForPopup, setFinalSelectedDateRange, setFinalSelectedTimeState, setIsDatePickerOpen, setError, router, postalCode, selectedSubcategory, finalSelectedTime, finalSelectedDateRange, registration, currentBookingChars, fetchCompanyProfiles, street, city, country, db]); // Hinzugefügt: db zu den useCallback-Abhängigkeiten
+
+  const isLoadingOverall = loadingProfiles || loadingSubcategoryData;
 
   return (
-    <>
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen">
+        <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" /> Seite wird aufgebaut...
+      </div>
+    }>
       <div className="min-h-screen bg-gradient-to-r from-[#d2f1fd] to-[#a0f4e4] px-4 py-20 flex flex-col items-center">
         <div className="w-full max-w-3xl">
           <button onClick={() => router.back()} className="text-[#14ad9f] hover:underline flex items-center gap-2 mb-4">
@@ -333,7 +388,7 @@ export default function AddressPage() {
             finalSelectedDateRange={finalSelectedDateRange}
             finalSelectedTime={finalSelectedTime}
             onDateTimeConfirm={handleDateTimeConfirm}
-            onOpenDatePicker={() => handleOpenDatePicker()}
+            onOpenDatePicker={handleOpenDatePicker}
             currentMaxPrice={currentMaxPrice}
             dynamicSliderMin={dynamicSliderMin}
             dynamicSliderMax={dynamicSliderMax}
@@ -346,20 +401,20 @@ export default function AddressPage() {
             setFinalSelectedTime={setFinalSelectedTimeState}
           />
           <div className="w-full lg:w-2/3">
-            {loadingProfiles && (
+            {isLoadingOverall && (
               <div className="flex justify-center items-center min-h-[300px] h-full">
                 <FiLoader className="animate-spin text-3xl text-[#14ad9f]" />
                 <span className="ml-3 text-gray-700">Anbieter werden geladen...</span>
               </div>
             )}
-            {!loadingProfiles && companyProfiles.length === 0 && postalCode && selectedSubcategory && (
+            {!isLoadingOverall && companyProfiles.length === 0 && postalCode && selectedSubcategory && (
               <div className="text-center p-6 bg-white rounded-lg shadow">
                 <FiAlertCircle className="text-3xl text-gray-400 mx-auto mb-2" />
                 <p className="text-gray-600">Für Ihre Auswahl wurden leider keine passenden Anbieter gefunden.</p>
                 <p className="text-sm text-gray-500">Versuchen Sie, Ihre Filter anzupassen.</p>
               </div>
             )}
-            {!loadingProfiles && companyProfiles.length > 0 && (
+            {!isLoadingOverall && companyProfiles.length > 0 && (
               <CompanyResultsList
                 loadingProfiles={false}
                 companyProfiles={companyProfiles}
@@ -400,6 +455,6 @@ export default function AddressPage() {
           bookingSubcategory={selectedSubcategory || selectedCompanyForPopup?.selectedSubcategory}
         />
       )}
-    </>
+    </Suspense>
   );
 }

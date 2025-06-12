@@ -1,5 +1,5 @@
-// /Users/andystaudinger/tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup.tsx
-'use client'
+// /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup.tsx
+'use client';
 
 import Image from 'next/image';
 import * as React from 'react';
@@ -9,14 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FiX, FiMessageCircle } from 'react-icons/fi';
 import { DateRange, SelectSingleEventHandler, SelectRangeEventHandler } from 'react-day-picker';
-import { format, isValid } from 'date-fns'; // parseISO entfernt
+import { format, isValid, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 import type { Company as AnbieterDetails } from './lib/types';
 import { PAGE_LOG } from '../../../../../../lib/constants';
 
-import { getBookingCharacteristics /*, type BookingCharacteristics // Entfernt */ } from './lib/utils';
+import { getBookingCharacteristics } from './SidebarFilters_components/utils';
 
+// Optionen für die Uhrzeit für das Popup (00:00 bis 23:30 in 30-Minuten-Schritten)
 const generalTimeOptionsForPopup: string[] = (() => {
   const times: string[] = [];
   for (let h = 0; h < 24; h++) {
@@ -43,12 +44,13 @@ export function DateTimeSelectionPopup({
   contextCompany, bookingSubcategory,
 }: DateTimeSelectionPopupProps) {
 
+
   const characteristics = useMemo(
     () => getBookingCharacteristics(bookingSubcategory ?? null),
     [bookingSubcategory]
   );
 
-  const currentCalendarMode = characteristics.datePickerMode;
+  const currentCalendarMode = characteristics.datePickerMode; // <-- Hier wird der Modus genutzt
 
   const [selectedDateValue, setSelectedDateValue] = useState<Date | DateRange | undefined>(undefined);
   const [selectedTimeInPopup, setSelectedTimeInPopup] = useState<string>('');
@@ -57,17 +59,17 @@ export function DateTimeSelectionPopup({
   useEffect(() => {
     if (isOpen) {
       let newDateSelection: Date | DateRange | undefined;
-      const defaultFrom = new Date();
+      const defaultToday = new Date();
 
       if (currentCalendarMode === 'single') {
-        newDateSelection = initialDateRange?.from && isValid(initialDateRange.from)
+        newDateSelection = (initialDateRange?.from && isValid(initialDateRange.from))
           ? initialDateRange.from
-          : defaultFrom;
-      } else {
-        const fromDate = initialDateRange?.from && isValid(initialDateRange.from)
+          : defaultToday;
+      } else { // 'range' mode
+        const fromDate = (initialDateRange?.from && isValid(initialDateRange.from))
           ? initialDateRange.from
-          : defaultFrom;
-        const toDate = initialDateRange?.to && isValid(initialDateRange.to)
+          : defaultToday;
+        const toDate = (initialDateRange?.to && isValid(initialDateRange.to))
           ? initialDateRange.to
           : fromDate;
         newDateSelection = { from: fromDate, to: toDate };
@@ -132,7 +134,7 @@ export function DateTimeSelectionPopup({
   if (selectedDateValue && typeof selectedDateValue === 'object' && (selectedDateValue as DateRange).from && isValid((selectedDateValue as DateRange).from!)) {
     const fromDate = (selectedDateValue as DateRange).from!;
     const toDate = (selectedDateValue as DateRange).to;
-    const fromFormatted = format(fromDate, 'd. MMM yy', { locale: de }); // 'fromFormatted' ist hier lokal und const
+    const fromFormatted = format(fromDate, 'd. MMM yy', { locale: de });
     let toFormatted = '';
     if (toDate && isValid(toDate) && fromDate.getTime() !== toDate.getTime()) {
       toFormatted = ` - ${format(toDate, 'd. MMM yy', { locale: de })}`;
@@ -160,8 +162,32 @@ export function DateTimeSelectionPopup({
               </div>
             )}
             <div className="flex justify-center">
-              {currentCalendarMode === 'single' && (<Calendar mode="single" selected={selectedDateValue as Date | undefined} onSelect={handleSingleDateSelect} locale={de} fromDate={new Date()} numberOfMonths={showTwoColumnLayout ? 2 : 1} defaultMonth={calendarDefaultMonth} className="rounded-md p-0" disabled={{ before: new Date() }} />)}
-              {currentCalendarMode === 'range' && (<Calendar mode="range" selected={selectedDateValue as DateRange | undefined} onSelect={handleRangeDateSelect} locale={de} fromDate={new Date()} numberOfMonths={showTwoColumnLayout ? 2 : 1} defaultMonth={calendarDefaultMonth} className="rounded-md p-0" disabled={{ before: new Date() }} />)}
+              {currentCalendarMode === 'single' && (
+                <Calendar
+                  mode="single"
+                  selected={selectedDateValue as Date | undefined}
+                  onSelect={handleSingleDateSelect}
+                  locale={de}
+                  fromDate={new Date()}
+                  numberOfMonths={showTwoColumnLayout ? 2 : 1}
+                  defaultMonth={calendarDefaultMonth}
+                  className="rounded-md p-0"
+                  disabled={{ before: new Date() }}
+                />
+              )}
+              {currentCalendarMode === 'range' && (
+                <Calendar
+                  mode="range"
+                  selected={selectedDateValue as DateRange | undefined}
+                  onSelect={handleRangeDateSelect}
+                  locale={de}
+                  fromDate={new Date()}
+                  numberOfMonths={showTwoColumnLayout ? 2 : 1}
+                  defaultMonth={calendarDefaultMonth}
+                  className="rounded-md p-0"
+                  disabled={{ before: new Date() }}
+                />
+              )}
             </div>
             <div className="text-xs text-center text-gray-500 h-4">{footerSummaryText}</div>
             <div className="pt-2">

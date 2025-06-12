@@ -85,6 +85,20 @@ interface GetStripeAccountStatusResult {
   missingFields?: string[];
 }
 
+// UserProfile Interface für Firestore-Dokumente (für createSetupIntent)
+interface UserProfile {
+  stripeCustomerId?: string;
+  savedPaymentMethods?: {
+    id: string;
+    brand?: string;
+    last4?: string;
+    exp_month?: number;
+    exp_year?: number;
+    type: string;
+  }[];
+  // ... weitere Felder
+}
+
 const translateStripeRequirement = (req: string): string => {
   if (req.startsWith('company.address.')) return `Firmenadresse (${req.substring(req.lastIndexOf('.') + 1)})`;
   if (req.startsWith('company.verification.document')) return "Firmen-Verifizierungsdokument (z.B. Handelsregisterauszug)";
@@ -502,8 +516,9 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
           };
         }
         const verificationIndividual: Partial<Stripe.AccountUpdateParams.Individual.Verification> = {};
-        const documentIndividual: Partial<Stripe.AccountUpdateParams.Individual.Verification.Document> = {};
+        const documentIndividual: Partial<Stripe.AccountUpdatePersonParams.Verification.Document> = {};
         if (updatePayloadFromClient.identityFrontFileId) documentIndividual.front = updatePayloadFromClient.identityFrontFileId;
+        // FEHLER BEHOBEN: `updatePayload` zu `updatePayloadFromClient` geändert
         if (updatePayloadFromClient.identityBackFileId) documentIndividual.back = updatePayloadFromClient.identityBackFileId;
         if (Object.keys(documentIndividual).length > 0) verificationIndividual.document = documentIndividual;
         if (Object.keys(verificationIndividual).length > 0) individualUpdates.verification = verificationIndividual;
@@ -663,6 +678,135 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
     }
   }
 );
+
+// --- NEUE FUNKTION: createSetupIntent ---
+/**
+ * Erstellt einen Stripe SetupIntent, um eine Zahlungsmethode für einen Benutzer zu speichern.
+ * Gibt das clientSecret zurück, das vom Frontend verwendet wird, um die Payment Method zu erfassen.
+ */
+export const createSetupIntent = onCall<{ firebaseUserId?: string }, Promise<{ clientSecret: string }>>(
+  async (request): Promise<{ clientSecret: string }> => { // Der Rückgabetyp des Callables ist Promise<Result>
+    loggerV2.info("[createSetupIntent] Aufgerufen.");
+
+    // Überprüfen der Authentifizierung
+    if (!request.auth?.uid) {
+      loggerV2.warn("[createSetupIntent] Unauthentifizierter Aufruf.");
+      throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+
+    const firebaseUserId = request.auth.uid;
+    const localStripe = getStripeInstance();
+
+    try {
+      const userDocRef = db.collection("users").doc(firebaseUserId);
+      const userDoc = await userDocRef.get();
+
+      if (!userDoc.exists) {
+        loggerV2.error(`[createSetupIntent] Nutzerprofil ${firebaseUserId} nicht gefunden.`);
+        throw new HttpsError("not-found", "Nutzerprofil nicht gefunden.");
+      }
+
+      const userData = userDoc.data() as UserProfile;
+
+      // Stellen Sie sicher, dass der Benutzer bereits einen Stripe Customer hat
+      if (!userData.stripeCustomerId) {
+        loggerV2.error(`[createSetupIntent] Stripe Customer ID fehlt für Nutzer ${firebaseUserId}.`);
+        throw new HttpsError("failed-precondition", "Stripe Customer ID fehlt. Bitte erstellen Sie zuerst einen Kunden.");
+      }
+
+      // Erstellen des SetupIntent
+      const setupIntent = await localStripe.setupIntents.create({
+        customer: userData.stripeCustomerId, // Der Stripe Customer, dem die PaymentMethod zugeordnet werden soll
+        usage: 'off_session', // Ermöglicht das spätere Wiederverwenden der PaymentMethod
+        // Sie können hier weitere Parameter wie metadata hinzufügen, wenn nötig
+      });
+
+      loggerV2.info(`[createSetupIntent] SetupIntent ${setupIntent.id} für Nutzer ${firebaseUserId} erstellt.`);
+      return { clientSecret: setupIntent.client_secret! }; // client_secret ist immer vorhanden bei successful creation
+
+    } catch (e: any) {
+      loggerV2.error(`[createSetupIntent] Fehler für Nutzer ${firebaseUserId}:`, e);
+      if (e instanceof HttpsError) {
+        throw e;
+      }
+      // Generische Fehlermeldung für das Frontend
+      throw new HttpsError("internal", "Fehler beim Erstellen des SetupIntent.", e.message);
+    }
+  }
+);
+
+// --- NEUE FUNKTION: getSavedPaymentMethods ---
+/**
+ * Ruft die im Firestore-Nutzerdokument gespeicherten PaymentMethods ab.
+ * Beachten Sie: Diese Funktion holt die Daten aus Firestore. Für die aktuellsten
+ * Details einer PaymentMethod sollten Sie Stripe.paymentMethods.retrieve verwenden.
+ * Für eine Liste, die direkt von Stripe abgerufen wird (und nicht nur die Firestore-Kopie),
+ * müssten Sie stripe.customers.listPaymentMethods verwenden.
+ */
+export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }>>(
+  async (request): Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }> => {
+    loggerV2.info("[getSavedPaymentMethods] Aufgerufen.");
+
+    if (!request.auth?.uid) {
+      loggerV2.warn("[getSavedPaymentMethods] Unauthentifizierter Aufruf.");
+      throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+
+    const firebaseUserId = request.auth.uid;
+    const localStripe = getStripeInstance(); // Nur für den Fall, dass Sie hier direkt Stripe aufrufen wollen
+    // um die aktuellsten Details zu erhalten, anstatt nur Firestore
+
+    try {
+      const userDocRef = db.collection("users").doc(firebaseUserId);
+      const userDoc = await userDocRef.get();
+
+      if (!userDoc.exists) {
+        loggerV2.error(`[getSavedPaymentMethods] Nutzerprofil ${firebaseUserId} nicht gefunden.`);
+        throw new HttpsError("not-found", "Nutzerprofil nicht gefunden.");
+      }
+
+      const userData = userDoc.data() as UserProfile;
+
+      // Option A: Laden aus Firestore (empfohlen für eine schnelle Anzeige von Übersichten)
+      // Das 'savedPaymentMethods'-Array sollte durch den webhook handler (setup_intent.succeeded) befüllt werden.
+      const savedMethods = userData.savedPaymentMethods || [];
+      loggerV2.info(`[getSavedPaymentMethods] ${savedMethods.length} PaymentMethods aus Firestore für Nutzer ${firebaseUserId} geladen.`);
+      return { savedPaymentMethods: savedMethods };
+
+      // Option B: Laden direkt von Stripe (wenn Sie immer die aktuellsten Stripe-Informationen benötigen)
+      // Dies wäre performanter, wenn das Firestore-Array nicht die primäre Quelle ist.
+      /*
+      if (!userData.stripeCustomerId) {
+        loggerV2.info(`[getSavedPaymentMethods] Keine Stripe Customer ID für Nutzer ${firebaseUserId}.`);
+        return { savedPaymentMethods: [] };
+      }
+      const stripePaymentMethods = await localStripe.paymentMethods.list({
+        customer: userData.stripeCustomerId,
+        type: 'card', // Oder andere Typen, die Sie abrufen möchten
+        limit: 10, // Passen Sie das Limit an
+      });
+      loggerV2.info(`[getSavedPaymentMethods] ${stripePaymentMethods.data.length} PaymentMethods von Stripe für Nutzer ${firebaseUserId} geladen.`);
+      return { savedPaymentMethods: stripePaymentMethods.data.map(pm => ({
+        id: pm.id,
+        brand: pm.card?.brand,
+        last4: pm.card?.last4,
+        exp_month: pm.card?.exp_month,
+        exp_year: pm.card?.exp_year,
+        type: pm.type,
+        // Fügen Sie hier weitere benötigte Details hinzu
+      }))};
+      */
+
+    } catch (e: any) {
+      loggerV2.error(`[getSavedPaymentMethods] Fehler für Nutzer ${firebaseUserId}:`, e);
+      if (e instanceof HttpsError) {
+        throw e;
+      }
+      throw new HttpsError("internal", "Fehler beim Abrufen der gespeicherten Zahlungsmethoden.", e.message);
+    }
+  }
+);
+
 
 export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetStripeAccountStatusResult>>(
   async (request: CallableRequest<Record<string, never>>): Promise<GetStripeAccountStatusResult> => {

@@ -76,9 +76,22 @@ function getAdminApp() {
             });
             v2_1.logger.info("[getAdminApp] Firestore Admin SDK mit Emulator verbunden.");
         }
-        catch (e) {
-            if (!(e instanceof Error && e.message.includes("Firestore has already been started"))) {
-                v2_1.logger.error("[getAdminApp] Fehler bei der Verbindung zum Firestore Emulator:", e);
+        catch (e) { // <-- Geändert von 'any' zu 'unknown'
+            // Spezifischen Fehler abfangen, der auftritt, wenn Firestore bereits initialisiert wurde
+            if (e instanceof Error && e.message.includes("Firestore has already been started")) {
+                // Ignorieren, da dies ein erwartetes Verhalten bei mehrfacher Initialisierung sein kann
+                v2_1.logger.warn("[getAdminApp] Firestore-Instanz wurde bereits gestartet (erwartet bei erneuter Verbindung).");
+            }
+            else {
+                // Andere unerwartete Fehler bei der Firestore-Verbindung loggen
+                let errorMessage = "Unbekannter Fehler bei der Verbindung zum Firestore Emulator.";
+                if (e instanceof Error) {
+                    errorMessage = e.message;
+                }
+                else if (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string') {
+                    errorMessage = e.message;
+                }
+                v2_1.logger.error("[getAdminApp] Fehler bei der Verbindung zum Firestore Emulator:", errorMessage);
             }
         }
     }
@@ -96,11 +109,13 @@ exports.SENDGRID_API_KEY_PARAM = (0, params_1.defineSecret)("SENDGRID_API_KEY");
 exports.FRONTEND_URL_PARAM = (0, params_1.defineString)("FRONTEND_URL");
 exports.EMULATOR_PUBLIC_FRONTEND_URL_PARAM = (0, params_1.defineString)("EMULATOR_PUBLIC_FRONTEND_URL", {
     description: 'Publicly accessible URL for the frontend when testing with emulators.',
-    default: "" // Dieser Defaultwert sollte im Einsatz immer überschrieben werden
+    default: ""
 });
 function getStripeInstance() {
     if (!stripeClientInstance) {
         const env = process.env;
+        // Im Emulator muss der Stripe Secret Key direkt aus process.env gelesen werden.
+        // Für die Bereitstellung wird STRIPE_SECRET_KEY_PARAM.value() verwendet.
         const stripeKey = env.FUNCTIONS_EMULATOR === 'true' ? env.STRIPE_SECRET_KEY : exports.STRIPE_SECRET_KEY_PARAM.value();
         if (stripeKey) {
             try {
@@ -110,9 +125,16 @@ function getStripeInstance() {
                 });
                 v2_1.logger.info("[getStripeInstance] Stripe-Client erfolgreich initialisiert.");
             }
-            catch (e) {
-                v2_1.logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: e.message, at: 'getStripeInstance' });
-                throw new https_1.HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${e.message}`);
+            catch (e) { // <-- Geändert von 'any' zu 'unknown'
+                let errorMessage = "Unbekannter Fehler bei der Initialisierung des Stripe-Clients.";
+                if (e instanceof Error) {
+                    errorMessage = e.message;
+                }
+                else if (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string') {
+                    errorMessage = e.message;
+                }
+                v2_1.logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: errorMessage, at: 'getStripeInstance' });
+                throw new https_1.HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${errorMessage}`);
             }
         }
         else {
@@ -125,6 +147,7 @@ function getStripeInstance() {
 function getSendGridClient() {
     if (!sendgridClientConfigured) {
         const env = process.env;
+        // Im Emulator muss der SendGrid API Key direkt aus process.env gelesen werden.
         const sendgridKey = env.FUNCTIONS_EMULATOR === 'true' ? env.SENDGRID_API_KEY : exports.SENDGRID_API_KEY_PARAM.value();
         if (sendgridKey) {
             try {
@@ -132,8 +155,15 @@ function getSendGridClient() {
                 sendgridClientConfigured = true;
                 v2_1.logger.info("[getSendGridClient] SendGrid-Client erfolgreich initialisiert.");
             }
-            catch (e) {
-                v2_1.logger.error("KRITISCH: Fehler bei der Initialisierung des SendGrid-Clients.", { error: e.message, at: 'getSendGridClient' });
+            catch (e) { // <-- Geändert von 'any' zu 'unknown'
+                let errorMessage = "Unbekannter Fehler bei der Initialisierung des SendGrid-Clients.";
+                if (e instanceof Error) {
+                    errorMessage = e.message;
+                }
+                else if (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string') {
+                    errorMessage = e.message;
+                }
+                v2_1.logger.error("KRITISCH: Fehler bei der Initialisierung des SendGrid-Clients.", { error: errorMessage, at: 'getSendGridClient' });
                 return undefined;
             }
         }
@@ -149,26 +179,30 @@ function getSendGridClient() {
  * Diese URL ist für Dienste wie Stripe Business Profile URL gedacht.
  */
 function getPublicFrontendURL() {
-    // Für Live-Betrieb immer die übergebenen Parameter verwenden
-    if (process.env.FUNCTIONS_EMULATOR !== 'true') {
+    const env = process.env;
+    // Unterscheide zwischen Emulator und Live-Umgebung
+    if (env.FUNCTIONS_EMULATOR === 'true' || env.FIREBASE_EMULATOR_HOST) {
+        // Im Emulator: Lese den Wert direkt aus process.env
+        const emulatorLiveSimulatedUrl = env.FRONTEND_URL;
+        if (emulatorLiveSimulatedUrl?.startsWith('http')) {
+            v2_1.logger.info("[getPublicFrontendURL] Liefere Emulator (simulierte Live)-URL.");
+            return emulatorLiveSimulatedUrl;
+        }
+        // Wenn FRONTEND_URL in .env.local nicht gesetzt oder ungültig ist
+        v2_1.logger.error("[getPublicFrontendURL] FRONTEND_URL ist im Emulator nicht korrekt konfiguriert oder ungültig.", { url: emulatorLiveSimulatedUrl });
+        throw new https_1.HttpsError("internal", "Öffentliche Frontend URL ist im Emulator nicht korrekt konfiguriert (FRONTEND_URL in .env.local fehlt/ist ungültig).");
+    }
+    else {
+        // Im Live-Betrieb: Verwende den über Functions Parameter definierten Wert
         const liveUrl = exports.FRONTEND_URL_PARAM.value();
         if (liveUrl?.startsWith('http')) {
             v2_1.logger.info("[getPublicFrontendURL] Liefere Live-URL.");
             return liveUrl;
         }
+        // Wenn FRONTEND_URL Parameter nicht gesetzt oder ungültig ist
         v2_1.logger.error("[getPublicFrontendURL] FRONTEND_URL ist auf dem Server nicht korrekt konfiguriert oder ungültig.", { url: liveUrl });
         throw new https_1.HttpsError("internal", "Frontend URL ist auf dem Server nicht korrekt konfiguriert.");
     }
-    // Für Emulator-Betrieb: Wir wollen auch hier die "öffentliche" URL verwenden, die Stripe akzeptiert.
-    // Diese sollte über FRONTEND_URL_PARAM auch im Emulator verfügbar sein (z.B. in .env.local gesetzt).
-    const emulatorLiveSimulatedUrl = exports.FRONTEND_URL_PARAM.value();
-    if (emulatorLiveSimulatedUrl?.startsWith('http')) {
-        v2_1.logger.info("[getPublicFrontendURL] Liefere Emulator (simulierte Live)-URL.");
-        return emulatorLiveSimulatedUrl;
-    }
-    // Dieser Fall sollte idealerweise nicht eintreten, wenn FRONTEND_URL immer korrekt gesetzt ist.
-    v2_1.logger.error("[getPublicFrontendURL] FRONTEND_URL ist im Emulator nicht korrekt konfiguriert oder ungültig.", { url: emulatorLiveSimulatedUrl });
-    throw new https_1.HttpsError("internal", "Öffentliche Frontend URL ist im Emulator nicht korrekt konfiguriert.");
 }
 /**
  * Gibt die für den Emulator spezifische Frontend-URL zurück, die lokal erreichbar ist.
@@ -177,7 +211,8 @@ function getPublicFrontendURL() {
 function getEmulatorCallbackFrontendURL() {
     const env = process.env;
     if (env.FUNCTIONS_EMULATOR === 'true' || env.FIREBASE_EMULATOR_HOST) {
-        const emulatorLocalUrl = exports.EMULATOR_PUBLIC_FRONTEND_URL_PARAM.value();
+        // Im Emulator: Lese den Wert direkt aus process.env
+        const emulatorLocalUrl = env.EMULATOR_PUBLIC_FRONTEND_URL;
         if (emulatorLocalUrl?.startsWith('http')) {
             v2_1.logger.info("[getEmulatorCallbackFrontendURL] Liefere lokale Emulator-URL.");
             return emulatorLocalUrl;
@@ -185,37 +220,36 @@ function getEmulatorCallbackFrontendURL() {
         v2_1.logger.warn("[getEmulatorCallbackFrontendURL] EMULATOR_PUBLIC_FRONTEND_URL nicht gesetzt oder ungültig. Fallback auf localhost:3000.");
         return 'http://localhost:3000'; // Standard-Fallback für lokalen Frontend-Zugriff
     }
-    // Im Live-Betrieb ist diese Funktion nicht relevant für lokale Callbacks.
-    // Hier sollte die normale Public URL zurückgegeben werden.
+    // Im Live-Betrieb: Diese Funktion sollte idealerweise nicht für Callbacks verwendet werden,
+    // die lokal sein müssen. Hier ist es ein Fallback auf die öffentliche URL.
     v2_1.logger.info("[getEmulatorCallbackFrontendURL] Im Live-Betrieb: Liefere Live-URL (wie getPublicFrontendURL).");
     return getPublicFrontendURL();
 }
 /**
  * Allgemeine Hilfsfunktion für die Frontend-URL.
- * Standardmäßig gibt sie im Emulator die lokale URL zurück, im Live-Betrieb die öffentliche.
+ * Gibt im Emulator die lokale Callback-URL zurück, im Live-Betrieb die öffentliche.
  * Wenn Sie spezifisch die öffentliche URL für Stripe Business Profile benötigen,
  * nutzen Sie getPublicFrontendURL().
  */
 function getFrontendURL() {
     const env = process.env;
     if (env.FUNCTIONS_EMULATOR === 'true' || env.FIREBASE_EMULATOR_HOST) {
-        // Im Emulator-Modus: Geben Sie die lokale URL für allgemeine Frontend-Referenzen zurück.
-        return getEmulatorCallbackFrontendURL();
+        return getEmulatorCallbackFrontendURL(); // Für allgemeine Frontend-Referenzen im Emulator
     }
-    // Im Live-Betrieb: Geben Sie die öffentliche URL zurück.
+    // Für den Live-Betrieb ist es einfach die definierte FRONTEND_URL.
     return exports.FRONTEND_URL_PARAM.value();
 }
 function getStripeWebhookSecret() {
     const env = process.env;
+    // Im Emulator muss der Webhook Secret direkt aus process.env gelesen werden.
+    const webhookSecret = env.FUNCTIONS_EMULATOR === 'true' ? env.STRIPE_WEBHOOK_SECRET : exports.STRIPE_WEBHOOK_SECRET_PARAM.value();
+    if (webhookSecret)
+        return webhookSecret;
     if (env.FUNCTIONS_EMULATOR === 'true') {
-        const secret = env.STRIPE_WEBHOOK_SECRET;
-        if (secret)
-            return secret;
         throw new https_1.HttpsError("internal", "Stripe Webhook Secret ist im Emulator nicht konfiguriert.");
     }
-    const secret = exports.STRIPE_WEBHOOK_SECRET_PARAM.value();
-    if (secret)
-        return secret;
-    throw new https_1.HttpsError("internal", "Stripe Webhook Secret ist nicht konfiguriert.");
+    else {
+        throw new https_1.HttpsError("internal", "Stripe Webhook Secret ist nicht konfiguriert.");
+    }
 }
 //# sourceMappingURL=helpers.js.map

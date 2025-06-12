@@ -2,22 +2,67 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Regeln für die 'companies' Collection
     match /companies/{companyId} {
-      allow read: if true;
+      allow read: if true; // Dies lässt JEDEN den Firmen-Account lesen. Ist das beabsichtigt?
+                           // Wenn nicht, sollten Sie hier strengere Regeln anwenden, z.B. nur für authentifizierte Nutzer oder nur wenn companyId == request.auth.uid für private Daten.
       allow write: if request.auth != null && request.auth.uid == companyId;
     }
 
+    // Regeln für die 'users' Collection
     match /users/{userId} {
+      // Nur der authentifizierte Benutzer darf sein eigenes Profil lesen und schreiben
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // allow update: if request.auth != null && request.auth.uid == userId;
+      // Anmerkung: 'write' beinhaltet 'update', daher ist die separate 'update'-Regel redundant,
+      // es sei denn, Sie haben spezifische Feld-Einschränkungen für 'update'.
     }
 
+    // NEUE REGELN: Für die 'auftraege' Collection
+    match /auftraege/{auftragId} {
+      // Nur der Auftraggeber (kundeId) oder der Auftragnehmer (selectedAnbieterId)
+      // darf das Auftragsdokument lesen.
+      allow read: if request.auth != null
+                   && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
+                       || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid);
+
+      // KEIN 'write' für Aufträge hier, da Aufträge über Cloud Functions (z.B. nach Zahlung) erstellt/aktualisiert werden sollten.
+      // Wenn das Frontend Aufträge erstellen oder ändern darf, müssen hier spezifische Regeln hinzugefügt werden.
+      // Beispiel (falls Frontend Status ändern darf):
+      // allow update: if request.auth != null && request.auth.uid == resource.data.kundeId && request.resource.data.status != resource.data.status;
+
+      // NEUE REGELN: Für die 'nachrichten' Sub-Collection unter 'auftraege'
+      match /nachrichten/{nachrichtId} {
+        // Lesen von Nachrichten: Nur wenn der angemeldete Benutzer (request.auth.uid)
+        // entweder der Kunde (kundeId) oder der Anbieter (selectedAnbieterId) des übergeordneten Auftrags ist.
+        allow read: if request.auth != null
+                     && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
+                         || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid);
+
+        // Schreiben von Nachrichten:
+        // 1. Benutzer muss authentifiziert sein.
+        // 2. Der 'senderId' im gesendeten Nachrichtendokument muss der UID des angemeldeten Benutzers entsprechen.
+        // 3. Der angemeldete Benutzer muss entweder der Kunde oder der Anbieter des übergeordneten Auftrags sein.
+        // 4. Nur bestimmte Felder dürfen geschrieben werden (senderId, senderName, senderType, text, timestamp, optional: imageUrls).
+        //    'timestamp' sollte FieldValue.serverTimestamp() sein.
+        allow create: if request.auth != null
+                       && request.resource.data.senderId == request.auth.uid
+                       && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
+                           || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid)
+                       && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'timestamp', 'senderType']) // Erforderliche Felder
+                       && request.resource.data.timestamp == request.time; // Überprüfen, ob Timestamp von Server gesetzt wird
+
+        // Keine direkte Aktualisierung oder Löschung von Nachrichten nach dem Erstellen
+        // Nachrichten sind in der Regel unveränderlich nach dem Senden.
+        allow update, delete: if false; // Oder spezifische Regeln, wenn Nachrichten bearbeitet/gelöscht werden dürfen
+      }
+    }
+
+    // Fallback-Regel für andere Collections (wie Ihre ursprüngliche)
+    // Diese Regel sollte ZULETZT stehen, da sie sehr allgemein ist.
     match /{collection}/{document} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow write: if false; // Standardmäßig keine Schreibzugriffe für andere Collections
     }
   }
 }
-
-
-

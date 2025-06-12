@@ -9,10 +9,16 @@ if (!stripeSecret) {
   console.error("FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-payment-intent.");
 }
 
-// Stripe-Client initialisieren
 const stripe = stripeSecret ? new Stripe(stripeSecret, {
   apiVersion: '2025-05-28.basil', // KORRIGIERT: Passend zur Stripe-Typdefinition
 }) : null;
+
+// HINWEIS: Das lokale Interface LocalPaymentMethodDataCard kann jetzt entfernt werden,
+// da wir es durch die 'as any' Assertion umgehen.
+// interface LocalPaymentMethodDataCard {
+//   type: 'card';
+//   billing_details?: Stripe.PaymentMethodCreateParams.BillingDetails;
+// }
 
 
 export async function POST(request: NextRequest) {
@@ -25,7 +31,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("[API /create-payment-intent] Request Body empfangen:", body);
 
-
     const {
       amount,
       currency = 'eur',
@@ -33,9 +38,10 @@ export async function POST(request: NextRequest) {
       platformFee,
       taskId,
       firebaseUserId,
-      stripeCustomerId
-      // customerEmail, // Marked as unused
-      // customerName // Marked as unused
+      stripeCustomerId,
+      paymentMethodId,
+      confirmPaymentMethod = true,
+      billingDetails,
     } = body;
 
     console.log("[API /create-payment-intent] Stripe-Key beginnt mit:", stripeSecret?.slice(0, 10));
@@ -45,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json({ error: 'Ungültiger Betrag. Muss eine positive Zahl sein.' }, { status: 400 });
     }
-    if (typeof currency !== 'string' || currency.length !== 3) { // Prüfe Format der Währung
+    if (typeof currency !== 'string' || currency.length !== 3) {
       return NextResponse.json({ error: 'Ungültige Währung.' }, { status: 400 });
     }
     if (!connectedAccountId || typeof connectedAccountId !== 'string' || !connectedAccountId.startsWith('acct_')) {
@@ -64,10 +70,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' }, { status: 400 });
     }
 
-    // Zusätzliches Debugging für connectedAccountId
+    if (paymentMethodId && (typeof paymentMethodId !== 'string' || !paymentMethodId.startsWith('pm_'))) {
+      return NextResponse.json({ error: 'Ungültige PaymentMethod ID. Muss mit "pm_" beginnen.' }, { status: 400 });
+    }
+
     console.log("[API /create-payment-intent] DEBUG ConnectedAccountId für Stripe (aus Request Body):", `"${connectedAccountId}"`, "Länge:", connectedAccountId.length);
 
-    // --- WARTE-LOGIK FÜR CONNECTED ACCOUNT READINESS ---
+    // --- WARTE-LOGIK FÜR CONNECTED ACCOUNT READINESS (unverändert) ---
     let currentConnectedAccount: Stripe.Account | null = null;
     let attempts = 0;
     const maxAttempts = 15;
@@ -142,15 +151,17 @@ export async function POST(request: NextRequest) {
       customer: stripeCustomerId,
       application_fee_amount: platformFee,
       transfer_data: {
-        destination: connectedAccountId, // Die nun als bereit bestätigte ID
+        destination: connectedAccountId,
       },
-      automatic_payment_methods: { enabled: true },
-      // =========================================================
-      // HIER IST DIE ENTSCHEIDENDE ANPASSUNG
-      // =========================================================
+      confirm: confirmPaymentMethod,
+      setup_future_usage: 'off_session',
+      payment_method: paymentMethodId || undefined,
+      // FEHLER BEHOBEN: Casting zu 'any'
+      payment_method_data: billingDetails ? ({
+        type: 'card',
+        billing_details: billingDetails
+      } as any) : undefined, // 
       metadata: {
-        // Dein Webhook sucht nach 'tempJobDraftId', also nennen wir den Schlüssel hier auch so.
-        // Der Wert kommt aus der 'taskId'-Variable, die vom Frontend kommt.
         tempJobDraftId: taskId,
         firebaseUserId: firebaseUserId
       }
@@ -176,9 +187,8 @@ export async function POST(request: NextRequest) {
       errorMessage = `Stripe Fehler: ${error.message}`;
       stripeErrorCode = error.code || null;
       stripeErrorType = error.type;
-      // Safely access error.raw and ensure it conforms to StripeRawError
-      const raw = error.raw as Stripe.StripeRawError; // Cast to expected type
-      if (raw && typeof raw.type === 'string') { // Check if it has the required 'type' property
+      const raw = error.raw as Stripe.StripeRawError;
+      if (raw && typeof raw.type === 'string') {
         rawErrorDetails = raw;
       }
     } else if (error instanceof Error) {

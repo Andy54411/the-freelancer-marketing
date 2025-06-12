@@ -1,9 +1,17 @@
-// Angenommener Dateiname: src/http_general.ts
+// /Users/andystaudinger/Tilvo/functions/src/http_general.ts
 
-import { onRequest } from 'firebase-functions/v2/https';
+// Wichtige Imports
+import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { db } from './helpers';
+import { db } from './helpers'; // Stellen Sie sicher, dass 'db' von hier importiert wird
+import * as admin from 'firebase-admin'; // Wichtig für Firestore Timestamp Konvertierung (für erstellungsdatum)
+import cors from 'cors';
 
+// CORS Middleware einmalig initialisieren
+// 'origin: true' erlaubt Anfragen von jeder Origin (gut für lokale Entwicklung)
+const corsHandler = cors({ origin: true });
+
+// --- migrateExistingUsersToCompanies ---
 export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (req, res) => {
   try {
     const usersSnapshot = await db.collection("users").get();
@@ -36,6 +44,7 @@ export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (
   }
 });
 
+// --- searchCompanyProfiles ---
 export const searchCompanyProfiles = onRequest({ cors: true }, async (req, res) => {
   try {
     const { id, postalCode, selectedSubcategory, minPrice, maxPrice } = req.query;
@@ -74,6 +83,7 @@ export const searchCompanyProfiles = onRequest({ cors: true }, async (req, res) 
   }
 });
 
+// --- getDataForSubcategory ---
 export const getDataForSubcategory = onRequest({ cors: true }, async (req, res) => {
   if (req.method !== "GET") {
     res.status(405).send("Method Not Allowed");
@@ -145,6 +155,7 @@ export const getDataForSubcategory = onRequest({ cors: true }, async (req, res) 
   }
 });
 
+// --- createJobPosting ---
 export const createJobPosting = onRequest({ cors: true }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
@@ -175,17 +186,58 @@ export const createJobPosting = onRequest({ cors: true }, async (req, res) => {
   }
 });
 
+// --- submitReview (mit manuellem CORS-Handling) ---
+// Interfaces für die Callable Function (Input und Output, wie vom Frontend erwartet)
+interface SubmitReviewData {
+  anbieterId: string;
+  kundeId: string;
+  auftragId: string;
+  sterne: number;
+  kommentar: string;
+  kundeProfilePictureURL?: string;
+  kategorie: string;
+  unterkategorie: string;
+}
+
+// Antwort-Interface für httpsCallable
+interface SubmitReviewResult {
+  message: string;
+  reviewId: string;
+}
+
 export const submitReview = onRequest({ cors: true }, async (req, res) => {
+  // Führe CORS Middleware aus, um Preflight zu handhaben
+  await new Promise<void>((resolve) => {
+    corsHandler(req as any, res as any, () => resolve());
+  });
+
+  if (res.headersSent) { // Wenn Preflight bereits geantwortet hat, abbrechen
+    loggerV2.info("[submitReview] Preflight-Anfrage wurde von CORS-Middleware beendet.");
+    return;
+  }
+
+  // Überprüfe die HTTP-Methode. httpsCallable sendet POST.
   if (req.method !== "POST") {
+    loggerV2.error("[submitReview] Unerlaubte HTTP-Methode.", { method: req.method });
     res.status(405).send("Method Not Allowed");
     return;
   }
+
   try {
-    const { anbieterId, kundeId, auftragId, sterne, kommentar, kundeProfilePictureURL, kategorie, unterkategorie } = req.body;
+    // Die Payload von httpsCallable kommt im req.body.data-Feld.
+    // Ein Fallback zu req.body ist für den Fall, dass es kein 'data'-Feld gibt
+    // (z.B. bei einem direkten fetch-Aufruf ohne 'data'-Wrapper).
+    const { anbieterId, kundeId, auftragId, sterne, kommentar, kundeProfilePictureURL, kategorie, unterkategorie } = (req.body as { data?: SubmitReviewData }).data || req.body;
+
     if (!anbieterId || !kundeId || !auftragId || typeof sterne !== "number" || sterne < 1 || sterne > 5 || !kategorie || !unterkategorie) {
-      res.status(400).send("Missing data.");
+      loggerV2.error("[submitReview] Fehlende oder ungültige Daten.", { payload: req.body });
+      res.status(400).json({ // Antwort wie von Callable-Fehler erwartet
+        data: null,
+        error: { message: "Missing or invalid data.", code: "invalid-argument" }
+      });
       return;
     }
+
     const newReviewData = {
       anbieterId,
       kundeId,
@@ -198,36 +250,144 @@ export const submitReview = onRequest({ cors: true }, async (req, res) => {
       erstellungsdatum: new Date(),
     };
     const docRef = await db.collection("reviews").add(newReviewData);
-    res.status(201).json({ message: "Review submitted", reviewId: docRef.id });
-  } catch (error) {
-    loggerV2.error("Error submitting review:", error);
-    res.status(500).send("Error submitting review.");
+    loggerV2.info("[submitReview] Bewertung erfolgreich gespeichert.", { reviewId: docRef.id, anbieterId });
+
+    // Erfolgreiche Antwort für Callable-Funktionen (im 'data'-Feld)
+    res.status(201).json({ data: { message: "Review submitted", reviewId: docRef.id } as SubmitReviewResult });
+
+  } catch (error: unknown) {
+    loggerV2.error("[submitReview] Fehler beim Speichern der Bewertung:", error);
+
+    let errorMessage = 'Ein unbekannter Fehler ist beim Speichern der Bewertung aufgetreten.';
+    let errorCode = 'internal';
+
+    if (error instanceof HttpsError) {
+      errorMessage = error.message;
+      errorCode = error.code;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
+      errorMessage = (error as any).message;
+    }
+
+    res.status(500).json({ // Fehler-Antwort für Callable-Funktionen
+      data: null,
+      error: {
+        message: errorMessage,
+        code: errorCode,
+        details: (error instanceof HttpsError && error.details) ? error.details : undefined,
+      },
+    });
   }
 });
 
+// --- getReviewsByProvider (mit manuellem CORS-Handling) ---
+// Typ für die erwarteten Daten der Anfrage (Frontend-Payload für httpsCallable)
+interface GetReviewsByProviderData {
+  anbieterId: string;
+}
+
+// Typ für die zurückgegebenen Bewertungen
+interface ReviewData {
+  id: string;
+  kundeId: string;
+  sterne: number;
+  kommentar: string;
+  kundeProfilePictureURL?: string;
+  erstellungsdatum?: { _seconds: number, _nanoseconds: number } | Date;
+}
+
 export const getReviewsByProvider = onRequest({ cors: true }, async (req, res) => {
-  if (req.method !== "GET") {
-    res.status(405).send("Method Not Allowed");
+  // 1. NEUER DEBUG-LOG: Wird dieser HTTP-Request überhaupt erreicht?
+  loggerV2.info("[getReviewsByProvider] HTTP-Anfrage empfangen (Start).");
+
+  // Führe die CORS-Middleware aus, um Header zu setzen und Preflight zu handhaben
+  await new Promise<void>((resolve) => {
+    corsHandler(req as any, res as any, () => resolve());
+  });
+
+  // Wenn die CORS-Middleware den Request bereits beendet hat (z.B. bei OPTIONS-Preflight),
+  // müssen wir hier abbrechen, damit der Rest des Codes nicht ausgeführt wird.
+  if (res.headersSent) {
+    loggerV2.info("[getReviewsByProvider] Preflight-Anfrage wurde von CORS-Middleware beendet.");
     return;
   }
+
+  // 2. NEUER DEBUG-LOG: Wird dieser Punkt nach CORS-Handling erreicht?
+  loggerV2.info("[getReviewsByProvider] Anfrage nach CORS-Handling verarbeitet.");
+
+  // Überprüfen, ob es eine POST-Anfrage ist (wie von httpsCallable gesendet)
+  if (req.method !== 'POST') {
+    loggerV2.error("[getReviewsByProvider] Unerlaubte HTTP-Methode.", { method: req.method });
+    res.status(405).send('Method Not Allowed. Only POST is accepted for this endpoint.');
+    return;
+  }
+
+  // Daten aus dem Body der POST-Anfrage extrahieren (wie von httpsCallable gesendet)
+  const callableData = req.body.data as GetReviewsByProviderData; // httpsCallable packt Daten in ein 'data'-Feld
+
+  if (!callableData || !callableData.anbieterId) {
+    loggerV2.error("[getReviewsByProvider] Fehlende Anbieter-ID in der Payload.", { payload: req.body });
+    res.status(400).json({
+      data: null, // Antwortformat für Callable-Fehler
+      error: {
+        message: 'Die Anbieter-ID ist erforderlich.',
+        code: 'invalid-argument',
+        details: null,
+      },
+    });
+    return;
+  }
+
   try {
-    const { anbieterId } = req.query;
-    if (!anbieterId || typeof anbieterId !== "string") {
-      res.status(400).send("Missing anbieterId.");
-      return;
+    // 3. NEUER DEBUG-LOG: Wird der Try-Block erreicht?
+    loggerV2.info(`[getReviewsByProvider] Lade Bewertungen für Anbieter-ID: ${callableData.anbieterId}`);
+
+    const reviewsRef = db.collection('reviews');
+    const snapshot = await reviewsRef.where('anbieterId', '==', callableData.anbieterId).orderBy('erstellungsdatum', 'desc').get();
+
+    const reviews: ReviewData[] = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      reviews.push({
+        id: doc.id,
+        kundeId: data.kundeId,
+        sterne: data.sterne,
+        kommentar: data.kommentar,
+        kundeProfilePictureURL: data.kundeProfilePictureURL,
+        erstellungsdatum: data.erstellungsdatum instanceof admin.firestore.Timestamp ? data.erstellungsdatum.toDate() : data.erstellungsdatum,
+      });
+    });
+
+    // 4. NEUER DEBUG-LOG: Wurden Bewertungen gefunden und die Logik erfolgreich durchlaufen?
+    loggerV2.info(`[getReviewsByProvider] ${reviews.length} Bewertungen für ${callableData.anbieterId} gefunden.`);
+
+    res.status(200).json({ data: reviews });
+
+  } catch (error: unknown) {
+    // 5. NEUER DEBUG-LOG: Ist ein Fehler im Try-Block aufgetreten?
+    loggerV2.error("[getReviewsByProvider] FEHLER im Try-Block beim Abrufen der Bewertungen:", error);
+
+    // Fehler-Payload für Callable-Funktionen
+    let errorMessage = 'Ein unbekannter Fehler ist beim Abrufen der Bewertungen aufgetreten.';
+    let errorCode = 'internal';
+
+    if (error instanceof HttpsError) {
+      errorMessage = error.message;
+      errorCode = error.code;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
+      errorMessage = (error as any).message;
     }
-    const snapshot = await db
-      .collection("reviews")
-      .where("anbieterId", "==", anbieterId)
-      .orderBy("erstellungsdatum", "desc")
-      .get();
-    const reviews = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    res.status(200).json(reviews);
-  } catch (error) {
-    loggerV2.error("Error fetching reviews:", error);
-    res.status(500).send("Error fetching reviews.");
+
+    res.status(500).json({
+      data: null,
+      error: {
+        message: errorMessage,
+        code: errorCode,
+        details: (error instanceof HttpsError && error.details) ? error.details : undefined,
+      },
+    });
   }
 });
