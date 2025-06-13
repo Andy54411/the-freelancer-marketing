@@ -1,9 +1,10 @@
-///Users/andystaudinger/Tasko/src/app/providers.tsx
+// /Users/andystaudinger/Tasko/src/app/providers.tsx
 'use client';
 
 import { ReactNode } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { RegistrationProvider } from '@/contexts/registrationContext';
+// KORREKTUR: Der Import-Pfad muss exakt dem Dateinamen entsprechen (wahrscheinlich mit Bindestrich)
+import { RegistrationProvider } from '@/contexts/Registration-Context';
 import { GoogleMapsLoaderProvider } from '@/contexts/GoogleMapsLoaderContext';
 
 export function Providers({ children }: { children: ReactNode }) {

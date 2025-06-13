@@ -12,7 +12,6 @@ const stripe_1 = __importDefault(require("stripe"));
 // WICHTIG: FieldValue und Timestamp jetzt direkt aus helpers.ts importieren!
 // Der 'admin'-Import ist hier NICHT MEHR NÖTIG, da FieldValue und Timestamp von helpers kommen.
 const helpers_1 = require("./helpers");
-// KEINE globalen Initialisierungen mehr hier. Das behebt den Deployment-Fehler.
 // Die Funktion wird als Firebase onRequest-Handler exportiert
 exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) => {
     v2_1.logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}`);
@@ -66,8 +65,10 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                 try {
                     const tempJobDraftRef = helpers_1.db.collection('temporaryJobDrafts').doc(tempJobDraftId);
                     const auftragCollectionRef = helpers_1.db.collection('auftraege');
+                    const userDocRef = helpers_1.db.collection('users').doc(firebaseUserId); // Referenz zum Nutzerdokument
                     await helpers_1.db.runTransaction(async (transaction) => {
                         const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
+                        const userDocSnapshot = await transaction.get(userDocRef); // Nutzerdokument abrufen
                         if (tempJobDraftSnapshot.data()?.status === 'converted') {
                             v2_1.logger.info(`[stripeWebhookHandler] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe Verarbeitung.`);
                             return;
@@ -76,15 +77,17 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                             throw new Error(`Temporärer Job-Entwurf ${tempJobDraftId} nicht gefunden.`);
                         }
                         const tempJobDraftData = tempJobDraftSnapshot.data();
+                        // Stellen Sie sicher, dass userData korrekt als UserProfileData gehandhabt wird
+                        const userData = userDocSnapshot.data();
                         const auftragData = {
                             ...tempJobDraftData,
                             status: 'bezahlt',
-                            paidAt: helpers_1.FieldValue.serverTimestamp(), // <-- KORREKT: FieldValue direkt nutzen
+                            paidAt: helpers_1.FieldValue.serverTimestamp(),
                             customerFirebaseUid: firebaseUserId,
                             tempJobDraftRefId: tempJobDraftId,
                             totalPriceInCents: paymentIntentSucceeded.amount,
-                            createdAt: new helpers_1.Timestamp(// <-- KORREKT: Timestamp direkt nutzen
-                            tempJobDraftData.createdAt?._seconds || Math.floor(Date.now() / 1000), tempJobDraftData.createdAt?._nanoseconds || 0),
+                            createdAt: new helpers_1.Timestamp(tempJobDraftData.createdAt?._seconds || Math.floor(Date.now() / 1000), tempJobDraftData.createdAt?._nanoseconds || 0),
+                            paymentMethodId: paymentIntentSucceeded.payment_method || null,
                         };
                         const newAuftragRef = auftragCollectionRef.doc();
                         transaction.set(newAuftragRef, auftragData);
@@ -93,7 +96,50 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                             convertedToOrderId: newAuftragRef.id,
                         });
                         v2_1.logger.info(`[stripeWebhookHandler] Auftrag ${newAuftragRef.id} erstellt und Entwurf ${tempJobDraftId} aktualisiert.`);
-                    });
+                        // --- NEU: Speichern der Rechnungsadresse ---
+                        if (paymentIntentSucceeded.payment_method) {
+                            try {
+                                const paymentMethod = await localStripe.paymentMethods.retrieve(paymentIntentSucceeded.payment_method);
+                                const billingDetails = paymentMethod.billing_details;
+                                if (billingDetails && billingDetails.address && billingDetails.address.line1 && billingDetails.address.postal_code && billingDetails.address.city && billingDetails.address.country) {
+                                    const newAddress = {
+                                        id: `addr_${paymentMethod.id}`,
+                                        name: billingDetails.name || `Rechnungsadresse ${billingDetails.address.postal_code}`,
+                                        line1: billingDetails.address.line1,
+                                        line2: billingDetails.address.line2 || undefined,
+                                        city: billingDetails.address.city,
+                                        postal_code: billingDetails.address.postal_code,
+                                        country: billingDetails.address.country,
+                                        type: 'billing',
+                                        isDefault: true, // Neue Adresse ist Standard
+                                        savedAt: helpers_1.FieldValue.serverTimestamp(),
+                                    };
+                                    // FEHLER BEHOBEN: isDefault für existierende Adressen auf 'false' setzen
+                                    // und gleichzeitig sicherstellen, dass alle isDefault-Werte als boolean behandelt werden
+                                    const existingAddresses = (userData?.savedAddresses || []).map(addr => ({ ...addr, isDefault: false }));
+                                    // Überprüfen auf Duplikate anhand der Hauptfelder
+                                    const isDuplicateAddress = existingAddresses.some(existingAddr => existingAddr.line1 === newAddress.line1 &&
+                                        existingAddr.postal_code === newAddress.postal_code &&
+                                        existingAddr.city === newAddress.city &&
+                                        existingAddr.country === newAddress.country);
+                                    if (!isDuplicateAddress) {
+                                        const updatedAddresses = [...existingAddresses, newAddress];
+                                        transaction.update(userDocRef, { savedAddresses: updatedAddresses });
+                                        v2_1.logger.info(`[stripeWebhookHandler] Rechnungsadresse für Nutzer ${firebaseUserId} gespeichert: ${newAddress.id}`);
+                                    }
+                                    else {
+                                        v2_1.logger.info(`[stripeWebhookHandler] Rechnungsadresse für Nutzer ${firebaseUserId} bereits vorhanden. Überspringe Speicherung.`);
+                                    }
+                                }
+                                else {
+                                    v2_1.logger.warn(`[stripeWebhookHandler] Unvollständige Rechnungsadresse in PaymentMethod ${paymentMethod.id} für Nutzer ${firebaseUserId}. Überspringe Speicherung.`);
+                                }
+                            }
+                            catch (pmError) {
+                                v2_1.logger.error(`[stripeWebhookHandler] Fehler beim Abrufen/Speichern der Rechnungsadresse für PaymentIntent ${paymentIntentSucceeded.id}:`, pmError);
+                            }
+                        }
+                    }); // Ende db.runTransaction
                 }
                 catch (dbError) {
                     v2_1.logger.error(`[stripeWebhookHandler] Fehler bei der Job-Konvertierung (Draft ${tempJobDraftId} zu Auftrag):`, dbError);
@@ -117,20 +163,16 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                 v2_1.logger.info(`[stripeWebhookHandler] PaymentIntent ${paymentIntentProcessing.id} is processing.`);
                 break;
             }
-            // NEUER CASE FÜR setup_intent.succeeded
             case 'setup_intent.succeeded': {
                 const setupIntent = event.data.object;
                 v2_1.logger.info(`[stripeWebhookHandler] SetupIntent ${setupIntent.id} succeeded. PaymentMethod: ${setupIntent.payment_method}`);
                 if (!setupIntent.customer) {
                     v2_1.logger.error("[stripeWebhookHandler] setup_intent.succeeded ohne Customer ID. Überspringe.");
-                    break; // Wichtig: Nicht mit Fehler antworten, aber Verarbeitung abbrechen.
+                    break;
                 }
                 try {
-                    // Holen Sie die PaymentMethod Details von Stripe
                     const paymentMethod = await localStripe.paymentMethods.retrieve(setupIntent.payment_method);
                     v2_1.logger.info(`[stripeWebhookHandler] PaymentMethod Details abgerufen: ${paymentMethod.id}, Typ: ${paymentMethod.type}`);
-                    // Finden Sie den Firebase User basierend auf der Stripe Customer ID
-                    // (Annahme: Sie haben metadata.firebaseUID im Stripe Customer gesetzt, wie in getOrCreateStripeCustomer)
                     const customer = await localStripe.customers.retrieve(setupIntent.customer);
                     const firebaseUid = customer.metadata?.firebaseUID;
                     if (!firebaseUid) {
@@ -138,29 +180,25 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                         break;
                     }
                     const userDocRef = helpers_1.db.collection('users').doc(firebaseUid);
-                    // Optional: Prüfen Sie, ob die PaymentMethod bereits existiert, um Duplikate zu vermeiden
                     const userDoc = await userDocRef.get();
-                    const existingSavedPaymentMethods = userDoc.data()?.savedPaymentMethods || [];
+                    // Stelle sicher, dass die existingSavedPaymentMethods korrekt typisiert sind
+                    const existingSavedPaymentMethods = userDoc.data()?.savedPaymentMethods || []; // Use any[] oder ein spezifisches SavedPaymentMethod[] wenn Sie es haben
                     const isDuplicate = existingSavedPaymentMethods.some((pm) => pm.id === paymentMethod.id);
                     if (isDuplicate) {
                         v2_1.logger.info(`[stripeWebhookHandler] PaymentMethod ${paymentMethod.id} ist bereits für Nutzer ${firebaseUid} gespeichert. Überspringe Hinzufügen.`);
                         break;
                     }
-                    // Erstellen Sie ein Objekt mit den relevanten PaymentMethod Details für Firestore
                     const newSavedPaymentMethod = {
                         id: paymentMethod.id,
                         type: paymentMethod.type,
                         created: paymentMethod.created,
-                        // Kunden-ID von Stripe, nicht Firebase UID
                         customer: paymentMethod.customer,
-                        // Rechnungsdetails (können optional gespeichert werden)
                         billing_details: {
                             address: paymentMethod.billing_details.address,
                             email: paymentMethod.billing_details.email,
                             name: paymentMethod.billing_details.name,
                             phone: paymentMethod.billing_details.phone,
                         },
-                        // Spezifische Details für Kreditkarten
                         card: paymentMethod.card ? {
                             brand: paymentMethod.card.brand,
                             last4: paymentMethod.card.last4,
@@ -168,16 +206,14 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                             exp_year: paymentMethod.card.exp_year,
                             funding: paymentMethod.card.funding,
                         } : undefined,
-                        // Spezifische Details für SEPA-Lastschrift
                         sepa_debit: paymentMethod.sepa_debit ? {
                             bank_code: paymentMethod.sepa_debit.bank_code,
                             country: paymentMethod.sepa_debit.country,
                             last4: paymentMethod.sepa_debit.last4,
                         } : undefined,
-                        // Könnte auch ein Feld für isDefault hinzufügen, wenn gewünscht
-                        // isDefault: true, // Logik hierfür hinzufügen, wenn nur eine Standard-Methode erlaubt ist
+                        // Setze diese als Standard, wenn keine andere PM existiert
+                        isDefault: existingSavedPaymentMethods.length === 0,
                     };
-                    // Fügen Sie die neue Zahlungsmethode zum 'savedPaymentMethods'-Array des Benutzers hinzu
                     await userDocRef.update({
                         savedPaymentMethods: helpers_1.FieldValue.arrayUnion(newSavedPaymentMethod)
                     });
@@ -185,8 +221,6 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                 }
                 catch (error) {
                     v2_1.logger.error(`[stripeWebhookHandler] Fehler beim Verarbeiten von setup_intent.succeeded für ${setupIntent.id}:`, error);
-                    // Im Falle eines Fehlers hier nicht den 200 OK Status senden, damit Stripe den Webhook wiederholt.
-                    // Oder senden Sie 200, aber loggen den Fehler detailliert.
                     response.status(500).send(`Webhook Error: Failed to process setup_intent.succeeded - ${error instanceof Error ? error.message : 'Unknown error'}`);
                     return;
                 }
@@ -232,7 +266,6 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                 v2_1.logger.info(`[stripeWebhookHandler] Payout ${payoutFailed.id} to ${payoutFailed.destination} - Event: ${eventType}`);
                 break;
             }
-            // Fallback für unhandled events
             default:
                 v2_1.logger.info(`[stripeWebhookHandler] Unhandled event type ${eventType}. Data:`, JSON.stringify(event.data.object, null, 2));
         }

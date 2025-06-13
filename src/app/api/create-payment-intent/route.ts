@@ -10,7 +10,7 @@ if (!stripeSecret) {
 }
 
 const stripe = stripeSecret ? new Stripe(stripeSecret, {
-  apiVersion: '2025-05-28.basil', // KORRIGIERT: Passend zur Stripe-Typdefinition
+  apiVersion: '2024-06-20', // KORRIGIERT: Passend zur Stripe-Typdefinition
 }) : null;
 
 // HINWEIS: Das lokale Interface LocalPaymentMethodDataCard kann jetzt entfernt werden,

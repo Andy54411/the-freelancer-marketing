@@ -897,3 +897,52 @@ export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetS
     }
   }
 );
+
+export const getProviderStripeAccountId = onCall<{ providerUid: string }, Promise<{ stripeAccountId: string }>>(
+  async (request): Promise<{ stripeAccountId: string }> => {
+    loggerV2.info("[getProviderStripeAccountId] Aufgerufen.");
+
+    // Überprüfen der Authentifizierung
+    if (!request.auth?.uid) {
+      loggerV2.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");
+      throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+
+    const providerUid = request.data.providerUid;
+    if (!providerUid || typeof providerUid !== 'string') {
+      loggerV2.warn("[getProviderStripeAccountId] Ungültige providerUid bereitgestellt.");
+      throw new HttpsError("invalid-argument", "Eine gültige providerUid ist erforderlich.");
+    }
+
+    try {
+      // Anbieterprofil aus der 'users'-Sammlung abrufen
+      const providerDoc = await db.collection("users").doc(providerUid).get();
+
+      if (!providerDoc.exists) {
+        loggerV2.error(`[getProviderStripeAccountId] Anbieterprofil ${providerUid} nicht gefunden.`);
+        throw new HttpsError("not-found", "Anbieterprofil nicht gefunden.");
+      }
+
+      const providerData = providerDoc.data();
+      const stripeAccountId = providerData?.stripeAccountId;
+
+      if (!stripeAccountId || typeof stripeAccountId !== 'string' || !stripeAccountId.startsWith('acct_')) {
+        loggerV2.error(`[getProviderStripeAccountId] Stripe Connected Account ID für Anbieter ${providerUid} nicht gefunden oder ungültig:`, stripeAccountId);
+        throw new HttpsError(
+          'not-found',
+          'Stripe Connected Account ID für diesen Anbieter nicht gefunden oder ungültig.'
+        );
+      }
+
+      loggerV2.info(`[getProviderStripeAccountId] Stripe Account ID für ${providerUid} erfolgreich abgerufen: ${stripeAccountId}`);
+      return { stripeAccountId: stripeAccountId };
+
+    } catch (e: any) {
+      loggerV2.error(`[getProviderStripeAccountId] Fehler beim Abrufen der Stripe Account ID für ${request.data?.providerUid}:`, e);
+      if (e instanceof HttpsError) {
+        throw e; // Bestehenden HttpsError weiterleiten
+      }
+      throw new HttpsError("internal", "Fehler beim Abrufen der Anbieter-Stripe-ID.", e.message);
+    }
+  }
+);

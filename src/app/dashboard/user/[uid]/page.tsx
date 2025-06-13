@@ -1,4 +1,3 @@
-// src/app/dashboard/user/[uid]/page.tsx
 'use client';
 
 import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
@@ -24,8 +23,8 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 
 import CreateOrderModal from './components/CreateOrderModal';
 
-// FEHLER BEHOBEN: Interfaces aus neuer Typendatei importieren
-import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/dashboard';
+// KORREKTUR: Interfaces aus ZENTRALER Typendatei importieren
+import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
 
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_YOUR_STRIPE_PUBLISHABLE_KEY');
@@ -37,10 +36,6 @@ const functionsInstance = getFunctions(app);
 const createSetupIntentCallable = httpsCallable<{ firebaseUserId?: string }, { clientSecret: string }>(functionsInstance, 'createSetupIntent');
 const getSavedPaymentMethodsCallable = httpsCallable<Record<string, never>, { savedPaymentMethods: SavedPaymentMethod[] }>(functionsInstance, 'getSavedPaymentMethods');
 const detachPaymentMethodCallable = httpsCallable<{ paymentMethodId: string }, { success: boolean; message?: string }>(functionsInstance, 'detachPaymentMethod');
-
-
-// --- INTERFACE DEFINITIONEN --- (DIESER BLOCK WIRD HIER ENTFERNT)
-// --- ENDE INTERFACE DEFINITIONEN ---
 
 
 export default function UserDashboardPage() {
@@ -64,7 +59,7 @@ export default function UserDashboardPage() {
   const [setupIntentError, setSetupIntentError] = useState<string | null>(null);
 
   const [userOrders, setUserOrders] = useState<OrderListItem[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true); // Korrigiert
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
 
@@ -204,6 +199,7 @@ export default function UserDashboardPage() {
     if (!currentUser) return;
     try {
       const userDocRef = doc(db, 'users', currentUser.uid);
+      // Validierung auf eindeutigen Namen (außer bei der bearbeiteten Adresse selbst)
       if (userProfile?.savedAddresses?.some(addr => addr.name === newAddress.name && addr.id !== newAddress.id)) {
         alert("Eine Adresse mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen.");
         return;
@@ -235,6 +231,7 @@ export default function UserDashboardPage() {
         addr.id === updatedAddress.id ? updatedAddress : addr
       ) || [];
 
+      // Validierung auf eindeutigen Namen (außer bei der bearbeiteten Adresse selbst)
       if (updatedAddresses.some(addr => addr.name === updatedAddress.name && addr.id !== updatedAddress.id)) {
         alert("Eine andere Adresse mit diesem Namen existiert bereits. Bitte wählen Sie einen eindeutigen Namen.");
         return;
@@ -275,6 +272,7 @@ export default function UserDashboardPage() {
         alert("Adresse erfolgreich entfernt.");
       } catch (err: any) {
         console.error("Fehler beim Löschen der Adresse:", err);
+        alert(`Fehler beim Löschen: ${err.message || 'Unbekannter Fehler'}`);
         setError(`Fehler beim Löschen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
       }
     }
@@ -534,8 +532,8 @@ export default function UserDashboardPage() {
       {showAddAddressModal && (
         <Modal onClose={() => setShowAddAddressModal(false)} title={editingAddress ? "Adresse bearbeiten" : "Adresse hinzufügen"}>
           <AddressForm
-            initialData={editingAddress}
-            onSave={editingAddress ? handleUpdateAddress : handleAddAddress}
+            initialData={editingAddress ?? undefined} // KORREKTUR: Nullish Coalescing Operator verwenden
+            onChange={editingAddress ? handleUpdateAddress : handleAddAddress} // KORREKTUR: 'onSave' zu 'onChange' geändert
             onCancel={() => {
               setShowAddAddressModal(false);
               setEditingAddress(null);

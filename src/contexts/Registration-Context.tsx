@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode } from 'react';
 
+// NEU: jobId hinzugefügt
 interface RegistrationData {
   step: number;
   customerType: 'private' | 'business' | null;
@@ -15,7 +16,7 @@ interface RegistrationData {
   jobDateFrom?: string | null;
   jobDateTo?: string | null;
   jobTimePreference?: string | null;
-  tempJobDraftId?: string | null;
+  tempJobDraftId?: string | null; // Dieser ist bereits vorhanden
   selectedAnbieterId?: string | null;
   jobDurationString?: string;
   jobTotalCalculatedHours?: number | null;
@@ -71,6 +72,7 @@ interface RegistrationData {
   radiusKm: number | null;
 }
 
+// NEU: setJobId zur RegistrationContextType hinzugefügt
 interface RegistrationContextType extends RegistrationData {
   setStep: Dispatch<SetStateAction<number>>;
   setCustomerType: Dispatch<SetStateAction<'private' | 'business' | null>>;
@@ -84,7 +86,7 @@ interface RegistrationContextType extends RegistrationData {
   setJobDateFrom: Dispatch<SetStateAction<string | null>>;
   setJobDateTo: Dispatch<SetStateAction<string | null>>;
   setJobTimePreference: Dispatch<SetStateAction<string | null>>;
-  setTempJobDraftId: Dispatch<SetStateAction<string | null>>;
+  setTempJobDraftId: Dispatch<SetStateAction<string | null>>; // Setter ist bereits vorhanden
   setSelectedAnbieterId: Dispatch<SetStateAction<string | null>>;
   setJobDurationString: Dispatch<SetStateAction<string>>;
   setJobTotalCalculatedHours: Dispatch<SetStateAction<number | null>>;
@@ -94,17 +96,17 @@ interface RegistrationContextType extends RegistrationData {
   setFirstName: Dispatch<SetStateAction<string>>;
   setLastName: Dispatch<SetStateAction<string>>;
   setPhoneNumber: Dispatch<SetStateAction<string>>;
-  setCompanyPhoneNumber: Dispatch<SetStateAction<string>>; // NEU
+  setCompanyPhoneNumber: Dispatch<SetStateAction<string>>;
 
-  // NEU: Setter für persönliche Details
+  // Setter für persönliche Details
   setDateOfBirth: Dispatch<SetStateAction<string | undefined>>;
   setPersonalStreet: Dispatch<SetStateAction<string | undefined>>;
   setPersonalHouseNumber: Dispatch<SetStateAction<string | undefined>>;
   setPersonalPostalCode: Dispatch<SetStateAction<string | undefined>>;
   setPersonalCity: Dispatch<SetStateAction<string | undefined>>;
   setPersonalCountry: Dispatch<SetStateAction<string | null>>;
-  setIsManagingDirectorOwner: Dispatch<SetStateAction<boolean>>; // Geändert
-  // NEU: Setter für granulare Eigentümer- und Vertreterdetails
+  setIsManagingDirectorOwner: Dispatch<SetStateAction<boolean>>;
+  // Setter für granulare Eigentümer- und Vertreterdetails
   setOwnershipPercentage: Dispatch<SetStateAction<number | undefined>>;
   setIsActualDirector: Dispatch<SetStateAction<boolean | undefined>>;
   setIsActualOwner: Dispatch<SetStateAction<boolean | undefined>>;
@@ -130,7 +132,7 @@ interface RegistrationContextType extends RegistrationData {
   setMasterCraftsmanCertificateFile: Dispatch<SetStateAction<File | null>>;
   setIdentityFrontFile: Dispatch<SetStateAction<File | null>>;
   setIdentityBackFile: Dispatch<SetStateAction<File | null>>;
-  setCompanyRegister: Dispatch<SetStateAction<string | undefined>>; // Setter für Handelsregisternummer
+  setCompanyRegister: Dispatch<SetStateAction<string | undefined>>;
   setHourlyRate: Dispatch<SetStateAction<string>>;
   setTaxNumber: Dispatch<SetStateAction<string>>;
   setVatId: Dispatch<SetStateAction<string>>;
@@ -170,17 +172,17 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
   const [firstName, setFirstNameState] = useState<string>('');
   const [lastName, setLastNameState] = useState<string>('');
   const [phoneNumber, setPhoneNumberState] = useState<string>('');
-  const [companyPhoneNumber, setCompanyPhoneNumberState] = useState<string>(''); // NEU
+  const [companyPhoneNumber, setCompanyPhoneNumberState] = useState<string>('');
 
-  // NEU: States für persönliche Details
+  // States für persönliche Details
   const [dateOfBirth, setDateOfBirthState] = useState<string | undefined>(undefined);
   const [personalStreet, setPersonalStreetState] = useState<string | undefined>(undefined);
   const [personalHouseNumber, setPersonalHouseNumberState] = useState<string | undefined>(undefined);
   const [personalPostalCode, setPersonalPostalCodeState] = useState<string | undefined>(undefined);
   const [personalCity, setPersonalCityState] = useState<string | undefined>(undefined);
   const [personalCountry, setPersonalCountryState] = useState<string | null>(null);
-  const [isManagingDirectorOwner, setIsManagingDirectorOwnerState] = useState<boolean>(true); // Geändert: Standard auf true setzen
-  // NEU: States für granulare Eigentümer- und Vertreterdetails
+  const [isManagingDirectorOwner, setIsManagingDirectorOwnerState] = useState<boolean>(true);
+  // States für granulare Eigentümer- und Vertreterdetails
   const [ownershipPercentage, setOwnershipPercentageState] = useState<number | undefined>(undefined);
   const [isActualDirector, setIsActualDirectorState] = useState<boolean | undefined>(undefined);
   const [isActualOwner, setIsActualOwnerState] = useState<boolean | undefined>(undefined);
@@ -194,7 +196,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
   const [companyHouseNumber, setCompanyHouseNumberState] = useState<string>('');
   const [companyPostalCode, setCompanyPostalCodeState] = useState<string>('');
   const [companyCity, setCompanyCityState] = useState<string>('');
-  const [companyCountry, setCompanyCountryState] = useState<string | null>(null); // Wird als ISO Code gespeichert
+  const [companyCountry, setCompanyCountryState] = useState<string | null>(null);
   const [companyWebsite, setCompanyWebsiteState] = useState<string>('');
   const [iban, setIbanState] = useState<string>('');
   const [accountHolder, setAccountHolderState] = useState<string>('');
@@ -206,10 +208,10 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
   const [masterCraftsmanCertificateFile, setMasterCraftsmanCertificateFileState] = useState<File | null>(null);
   const [identityFrontFile, setIdentityFrontFileState] = useState<File | null>(null);
   const [identityBackFile, setIdentityBackFileState] = useState<File | null>(null);
-  const [companyRegister, setCompanyRegisterState] = useState<string | undefined>(undefined); // State für Handelsregisternummer
+  const [companyRegister, setCompanyRegisterState] = useState<string | undefined>(undefined);
   const [hourlyRate, setHourlyRateState] = useState<string>('');
-  const [taxNumber, setTaxNumberState] = useState<string>(''); // Nationale Steuernummer oder HRN
-  const [vatId, setVatIdState] = useState<string>(''); // USt-IdNr.
+  const [taxNumber, setTaxNumberState] = useState<string>('');
+  const [vatId, setVatIdState] = useState<string>('');
   const [lat, setLatState] = useState<number | null>(null);
   const [lng, setLngState] = useState<number | null>(null);
   const [latLngPolygon, setLatLngPolygonState] = useState<google.maps.LatLngLiteral[] | null>(null);
@@ -238,16 +240,16 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     setFirstNameState('');
     setLastNameState('');
     setPhoneNumberState('');
-    setCompanyPhoneNumberState(''); // NEU
-    // NEU: Resets für persönliche Details
+    setCompanyPhoneNumberState('');
+    // Resets für persönliche Details
     setDateOfBirthState(undefined);
     setPersonalStreetState(undefined);
     setPersonalHouseNumberState(undefined);
     setPersonalPostalCodeState(undefined);
     setPersonalCityState(undefined);
     setPersonalCountryState(null);
-    setIsManagingDirectorOwnerState(true); // Geändert: Reset auf true
-    // NEU: Resets für granulare Eigentümer- und Vertreterdetails
+    setIsManagingDirectorOwnerState(true);
+    // Resets für granulare Eigentümer- und Vertreterdetails
     setOwnershipPercentageState(undefined);
     setIsActualDirectorState(undefined);
     setIsActualOwnerState(undefined);
@@ -273,7 +275,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     setMasterCraftsmanCertificateFileState(null);
     setIdentityFrontFileState(null);
     setIdentityBackFileState(null);
-    setCompanyRegisterState(undefined); // Reset für Handelsregisternummer
+    setCompanyRegisterState(undefined);
     setHourlyRateState('');
     setTaxNumberState('');
     setVatIdState('');
@@ -306,17 +308,17 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     firstName, setFirstName: setFirstNameState,
     lastName, setLastName: setLastNameState,
     phoneNumber, setPhoneNumber: setPhoneNumberState,
-    companyPhoneNumber, setCompanyPhoneNumber: setCompanyPhoneNumberState, // NEU
+    companyPhoneNumber, setCompanyPhoneNumber: setCompanyPhoneNumberState,
 
-    // NEU: Context-Werte für persönliche Details
+    // Context-Werte für persönliche Details
     dateOfBirth, setDateOfBirth: setDateOfBirthState,
     personalStreet, setPersonalStreet: setPersonalStreetState,
     personalHouseNumber, setPersonalHouseNumber: setPersonalHouseNumberState,
     personalPostalCode, setPersonalPostalCode: setPersonalPostalCodeState,
     personalCity, setPersonalCity: setPersonalCityState,
     personalCountry, setPersonalCountry: setPersonalCountryState,
-    isManagingDirectorOwner, setIsManagingDirectorOwner: setIsManagingDirectorOwnerState, // NEU: Context-Wert für isManagingDirectorOwner
-    // NEU: Context-Werte für granulare Eigentümer- und Vertreterdetails
+    isManagingDirectorOwner, setIsManagingDirectorOwner: setIsManagingDirectorOwnerState,
+    // Context-Werte für granulare Eigentümer- und Vertreterdetails
     ownershipPercentage, setOwnershipPercentage: setOwnershipPercentageState,
     isActualDirector, setIsActualDirector: setIsActualDirectorState,
     isActualOwner, setIsActualOwner: setIsActualOwnerState,
@@ -342,7 +344,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     masterCraftsmanCertificateFile, setMasterCraftsmanCertificateFile: setMasterCraftsmanCertificateFileState,
     identityFrontFile, setIdentityFrontFile: setIdentityFrontFileState,
     identityBackFile, setIdentityBackFile: setIdentityBackFileState,
-    companyRegister, setCompanyRegister: setCompanyRegisterState, // Handelsregisternummer zum Context hinzufügen
+    companyRegister, setCompanyRegister: setCompanyRegisterState,
     hourlyRate, setHourlyRate: setHourlyRateState,
     taxNumber, setTaxNumber: setTaxNumberState,
     vatId, setVatId: setVatIdState,

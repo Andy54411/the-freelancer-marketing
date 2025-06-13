@@ -14,7 +14,7 @@ if (!stripeSecret) {
 
 // Stripe-Client initialisieren (verwende deine spezifische API-Version)
 const stripe = stripeSecret ? new Stripe(stripeSecret, {
-  apiVersion: '2025-05-28.basil', // Deine spezifische API-Version, die du auch in create-payment-intent verwendest
+  apiVersion: '2024-06-20', // Deine spezifische API-Version, die du auch in create-payment-intent verwendest
 }) : null;
 
 export async function GET(request: NextRequest) {

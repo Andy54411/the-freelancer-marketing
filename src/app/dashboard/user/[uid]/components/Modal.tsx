@@ -1,66 +1,48 @@
-// src/components/Modal.tsx
-import React, { FC, ReactNode, useEffect, useRef } from 'react';
+// z.B. unter src/app/dashboard/user/[uid]/components/Modal.tsx
+
+'use client';
+
+import React, { ReactNode } from 'react';
 import { FiX } from 'react-icons/fi';
 
 interface ModalProps {
-    children: ReactNode;
     onClose: () => void;
-    title?: string;
+    children: ReactNode;
+    title: string;
 }
 
-const Modal: FC<ModalProps> = ({ children, onClose, title }) => {
-    const modalRef = useRef<HTMLDivElement>(null);
-
-    // Schließen bei Klick außerhalb des Modals
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [onClose]);
-
-    // Schließen bei ESC-Taste
-    useEffect(() => {
-        const handleEscapeKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
-
-        document.addEventListener('keydown', handleEscapeKey);
-        return () => {
-            document.removeEventListener('keydown', handleEscapeKey);
-        };
-    }, [onClose]);
+const Modal: React.FC<ModalProps> = ({ onClose, children, title }) => {
+    // Verhindert, dass ein Klick im Modal das Modal schließt
+    const handleContentClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+    };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        // Der Overlay: Füllt den ganzen Bildschirm, hat einen halb-transparenten
+        // Hintergrund und den gewünschten "Blur"-Effekt.
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            {/* Der eigentliche Modal-Container: Weiße Karte mit Schatten und abgerundeten Ecken */}
             <div
-                ref={modalRef}
-                className="relative bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                className="relative w-full max-w-2xl bg-white rounded-lg shadow-xl m-4"
+                onClick={handleContentClick}
             >
-                {/* Modal Header */}
-                <div className="flex justify-between items-center p-5 border-b border-gray-200">
-                    <h3 className="text-xl font-semibold text-gray-800">
-                        {title || 'Modal'}
-                    </h3>
+                {/* Header des Modals */}
+                <div className="flex items-center justify-between p-4 border-b">
+                    <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                        aria-label="Schließen"
+                        className="p-1 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                        aria-label="Modal schließen"
                     >
-                        <FiX size={24} />
+                        <FiX size={20} />
                     </button>
                 </div>
 
-                {/* Modal Body */}
-                <div className="p-5">
+                {/* Der Inhaltsbereich, der von anderen Komponenten befüllt wird */}
+                <div className="p-1">  {/* Padding wurde von 6 auf 1 reduziert */}
                     {children}
                 </div>
             </div>

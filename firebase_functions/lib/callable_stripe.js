@@ -1,7 +1,7 @@
 "use strict";
 // /Users/andystaudinger/Tilvo/functions/src/callable_stripe.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStripeAccountStatus = exports.getSavedPaymentMethods = exports.createSetupIntent = exports.updateStripeCompanyDetails = exports.createStripeAccountIfComplete = void 0;
+exports.getProviderStripeAccountId = exports.getStripeAccountStatus = exports.getSavedPaymentMethods = exports.createSetupIntent = exports.updateStripeCompanyDetails = exports.createStripeAccountIfComplete = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 // Angepasste Importe
@@ -814,6 +814,42 @@ exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
         if (e instanceof https_1.HttpsError)
             throw e;
         throw new https_1.HttpsError("internal", e.message || "Fehler Abruf Stripe-Status.", e.details);
+    }
+});
+exports.getProviderStripeAccountId = (0, https_1.onCall)(async (request) => {
+    v2_1.logger.info("[getProviderStripeAccountId] Aufgerufen.");
+    // Überprüfen der Authentifizierung
+    if (!request.auth?.uid) {
+        v2_1.logger.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");
+        throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+    const providerUid = request.data.providerUid;
+    if (!providerUid || typeof providerUid !== 'string') {
+        v2_1.logger.warn("[getProviderStripeAccountId] Ungültige providerUid bereitgestellt.");
+        throw new https_1.HttpsError("invalid-argument", "Eine gültige providerUid ist erforderlich.");
+    }
+    try {
+        // Anbieterprofil aus der 'users'-Sammlung abrufen
+        const providerDoc = await helpers_1.db.collection("users").doc(providerUid).get();
+        if (!providerDoc.exists) {
+            v2_1.logger.error(`[getProviderStripeAccountId] Anbieterprofil ${providerUid} nicht gefunden.`);
+            throw new https_1.HttpsError("not-found", "Anbieterprofil nicht gefunden.");
+        }
+        const providerData = providerDoc.data();
+        const stripeAccountId = providerData?.stripeAccountId;
+        if (!stripeAccountId || typeof stripeAccountId !== 'string' || !stripeAccountId.startsWith('acct_')) {
+            v2_1.logger.error(`[getProviderStripeAccountId] Stripe Connected Account ID für Anbieter ${providerUid} nicht gefunden oder ungültig:`, stripeAccountId);
+            throw new https_1.HttpsError('not-found', 'Stripe Connected Account ID für diesen Anbieter nicht gefunden oder ungültig.');
+        }
+        v2_1.logger.info(`[getProviderStripeAccountId] Stripe Account ID für ${providerUid} erfolgreich abgerufen: ${stripeAccountId}`);
+        return { stripeAccountId: stripeAccountId };
+    }
+    catch (e) {
+        v2_1.logger.error(`[getProviderStripeAccountId] Fehler beim Abrufen der Stripe Account ID für ${request.data?.providerUid}:`, e);
+        if (e instanceof https_1.HttpsError) {
+            throw e; // Bestehenden HttpsError weiterleiten
+        }
+        throw new https_1.HttpsError("internal", "Fehler beim Abrufen der Anbieter-Stripe-ID.", e.message);
     }
 });
 //# sourceMappingURL=callable_stripe.js.map

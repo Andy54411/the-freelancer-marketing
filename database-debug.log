@@ -2,17 +2,17 @@ WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
 WARNING: sun.misc.Unsafe::objectFieldOffset has been called by akka.util.Unsafe (file:/Users/andystaudinger/.cache/firebase/emulators/firebase-database-emulator-v4.11.2.jar)
 WARNING: Please consider reporting this to the maintainers of class akka.util.Unsafe
 WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
-04:21:38.534 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
-04:21:38.626 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
-04:21:49.800 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 64ms, init: 0ms
-04:21:49.824 [NamespaceSystem-blocking-namespace-operation-dispatcher-6] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active
-04:40:27.781 [FirebaseWorkerPool-1-3] WARN com.firebase.core.persistence.backend.dummy.EmulatorMetadataPersistence - Multiple projectIds are not recommended in single project mode. Requested 
+16:10:53.079 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
+16:10:53.162 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
+16:10:58.804 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 64ms, init: 0ms
+16:10:58.833 [NamespaceSystem-blocking-namespace-operation-dispatcher-6] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active
+16:11:05.494 [FirebaseWorkerPool-1-3] WARN com.firebase.core.persistence.backend.dummy.EmulatorMetadataPersistence - Multiple projectIds are not recommended in single project mode. Requested 
 namespace tilvo-f142f, but the emulator is configured for tilvo-f142f-default-rtdb. To 
 opt-out of single project mode add/set the singleProjectMode: false property in 
 the firebase.json emulators config. 
-04:40:27.847 [NamespaceSystem-akka.actor.default-dispatcher-8] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f successfully activated FBKV (SurveyIdle(0)) wait: 24ms, init: 0ms
-04:40:28.086 [Thread-0] INFO com.firebase.server.forge.App$ - Attempting graceful shutdown.
-04:40:28.094 [NamespaceSystem-akka.actor.default-dispatcher-12] INFO com.firebase.core.namespace.Terminator$Terminator - 2 actors left to terminate: tilvo-f142f, tilvo-f142f-default-rtdb
-04:40:28.116 [NamespaceSystem-akka.actor.default-dispatcher-12] INFO com.firebase.core.namespace.NamespaceActor - stopped namespace actor for tilvo-f142f-default-rtdb
-04:40:28.116 [NamespaceSystem-akka.actor.default-dispatcher-10] INFO com.firebase.core.namespace.NamespaceActor - stopped namespace actor for tilvo-f142f
-04:40:28.126 [Thread-0] INFO com.firebase.server.forge.App$ - Graceful shutdown complete.
+16:11:05.498 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f successfully activated FBKV (SurveyIdle(0)) wait: 1ms, init: 0ms
+16:11:05.559 [Thread-0] INFO com.firebase.server.forge.App$ - Attempting graceful shutdown.
+16:11:05.563 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.Terminator$Terminator - 2 actors left to terminate: tilvo-f142f, tilvo-f142f-default-rtdb
+16:11:05.567 [NamespaceSystem-akka.actor.default-dispatcher-9] INFO com.firebase.core.namespace.NamespaceActor - stopped namespace actor for tilvo-f142f
+16:11:05.567 [NamespaceSystem-akka.actor.default-dispatcher-10] INFO com.firebase.core.namespace.NamespaceActor - stopped namespace actor for tilvo-f142f-default-rtdb
+16:11:05.569 [Thread-0] INFO com.firebase.server.forge.App$ - Graceful shutdown complete.

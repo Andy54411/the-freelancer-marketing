@@ -1,3 +1,4 @@
+// src/components/Combobox.tsx
 'use client'
 
 import * as React from 'react'
@@ -30,7 +31,15 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      {/*
+        FINALE ANPASSUNG: Die Tailwind-Klasse "z-50" wird hinzugefügt.
+        Dies ist die saubere Methode, um sicherzustellen, dass die Auswahlliste
+        immer über anderen Inhalten (wie z.B. Modal-Hintergründen) angezeigt wird.
+      */}
+      <PopoverContent
+        className="w-full p-0 z-50"
+        onOpenAutoFocus={e => e.preventDefault()}
+      >
         <Command>
           <CommandInput placeholder="Suchen..." className="h-9" />
           <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>

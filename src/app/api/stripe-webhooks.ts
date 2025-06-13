@@ -22,7 +22,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
-  apiVersion: '2025-05-28.basil',
+  apiVersion: '2024-06-20',
 }) : null;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

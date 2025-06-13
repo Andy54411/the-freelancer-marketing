@@ -164,11 +164,6 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
+/* Der zweite @layer base-Block wurde entfernt, da alle Regeln
+  bereits im ersten Block enthalten waren.
+*/
