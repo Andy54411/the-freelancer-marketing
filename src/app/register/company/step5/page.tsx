@@ -205,7 +205,7 @@ export default function Step5CompanyPage() {
 
   const handleFileChangeAndPreview = useCallback(async (
     e: ChangeEvent<HTMLInputElement>,
-    fileContextSetter: Dispatch<SetStateAction<File | null>>,
+    fileContextSetter: Dispatch<SetStateAction<File | null | undefined>>, // Allow undefined
     localPreviewSetter: Dispatch<SetStateAction<string | null>>,
     maxSizeBytes?: number, fileTypeForAlert?: string, attemptWebPConversion: boolean = false): Promise<void> => {
     const inputFile = e.target.files?.[0] || null;
@@ -269,6 +269,9 @@ export default function Step5CompanyPage() {
     if (!uploadUrl || uploadUrl.includes('undefined')) {
       throw new Error("Upload URL ist nicht korrekt konfiguriert oder konnte nicht generiert werden.");
     }
+
+    // WICHTIG: Logging des Tokens vor dem Senden
+    console.log(`[CLIENT] Sende ${fileNameForLog} mit ID Token (Anfang: ${idToken.substring(0, 30)}...)`);
 
     const response = await fetch(uploadUrl, {
       method: 'POST',

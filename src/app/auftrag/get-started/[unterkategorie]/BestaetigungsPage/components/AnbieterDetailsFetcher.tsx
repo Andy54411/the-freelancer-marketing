@@ -13,7 +13,7 @@ import type {
   // TaskDetails, // Nicht verwendet
   // ExpandedDescriptionsMap, // Nicht verwendet
   // RatingMap, // Nicht verwendet
-} from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types';
+} from '@/types/types';
 
 import {
   SEARCH_API_URL,

@@ -1,14 +1,19 @@
+// /Users/andystaudinger/Tasko/firebase_functions/src/http_file_uploads.ts
 import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import * as admin from "firebase-admin"; // Hier wird 'admin' importiert
 import busboy from "busboy";
 import Stripe from "stripe";
-import { getStripeInstance } from "./helpers";
+import { getStripeInstance } from "./helpers"; // Annahme: getStripeInstance ist korrekt definiert
 import path from "path";
 import os from "os";
 import fs from "fs";
 import { getStorage } from "firebase-admin/storage";
 import { v4 as uuidv4 } from 'uuid';
+
+// WICHTIG: Dies initialisiert die Firebase Admin SDK für DIESE spezielle Funktion.
+// Es muss hier stehen, da diese Datei direkt 'admin'-Dienste nutzt.
+admin.initializeApp();
 
 const authenticateRequest = async (req: any): Promise<admin.auth.DecodedIdToken> => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
@@ -21,7 +26,7 @@ const authenticateRequest = async (req: any): Promise<admin.auth.DecodedIdToken>
     logger.info(`[authenticateRequest] Token verified for UID: ${decodedToken.uid}`);
     return decodedToken;
   } catch (error) {
-    logger.warn("[authenticateRequest] Token verification failed:", error);
+    logger.warn("[authenticateRequest] Token verification failed:", error); // Dieses Log ist entscheidend!
     throw { status: 401, message: 'Unauthorized: Invalid token.' };
   }
 };

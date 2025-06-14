@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 import { FiLoader } from 'react-icons/fi';
 import CompanyCard from './CompanyCard';
-import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types';
+import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/types/types';
 
 interface CompanyResultsListProps {
   loadingProfiles: boolean;

@@ -9,7 +9,7 @@ import {
 import LanguageTags from '@/components/LanguageTags';
 import { renderStars } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/utils';
 
-import type { Company, RatingInfo, CompanyTaskCategory } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types';
+import type { Company, RatingInfo, CompanyTaskCategory } from '@/types/types';
 
 interface CompanyCardProps {
   company: Company;

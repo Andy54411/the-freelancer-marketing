@@ -12,7 +12,7 @@ import { DateRange, SelectSingleEventHandler, SelectRangeEventHandler } from 're
 import { format, isValid, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
-import type { Company as AnbieterDetails } from './lib/types';
+import type { Company as AnbieterDetails } from '@/types/types';
 import { PAGE_LOG } from '../../../../../../lib/constants';
 
 import { getBookingCharacteristics } from './SidebarFilters_components/utils';

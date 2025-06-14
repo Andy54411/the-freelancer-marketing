@@ -2,22 +2,19 @@
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { db, getStripeInstance } from './helpers';
+import { getDb, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
-import * as admin from "firebase-admin"; // Wird für admin.auth() und admin.storage() in deleteCompanyAccount benötigt
+import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
-logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
+logger.info("Lade http_general.ts...");
 
 try {
-  // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
-  // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
-  logger.info("http_general.ts: Globale Initialisierung erfolgreich."); // <-- Füge dies hinzu
+  logger.info("http_general.ts: Globale Initialisierung erfolgreich.");
 } catch (error: any) {
-  logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack }); // <-- Füge dies hinzu
-  throw error; // Wichtig: Den Fehler werfen, damit er im Log erscheint
+  logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
+  throw error;
 }
 interface GetClientIpData {
-  // Leer, wenn keine spezifischen Eingabedaten erwartet werden
 }
 
 interface GetClientIpResult {
@@ -75,7 +72,6 @@ export const getClientIp = onCall<GetClientIpData, Promise<GetClientIpResult>>(
     }
     if (isEmulated && (clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "IP_NOT_DETERMINED")) {
       clientIp = "127.0.0.1";
-      // loggerV2.warn(`[getClientIp] Emulator. IP auf "${clientIp}" gesetzt.`);
     } else if (!isEmulated && (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7 || clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "0.0.0.0")) {
       loggerV2.error(`[getClientIp] In NICHT-Emulator-Umgebung keine gültige IP. Gefunden: "${clientIp}".`);
       throw new HttpsError("unavailable", "Gültige Client-IP konnte nicht ermittelt werden.");
@@ -88,6 +84,7 @@ export const getClientIp = onCall<GetClientIpData, Promise<GetClientIpResult>>(
 export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<TemporaryJobDraftResult>>(
   async (request): Promise<TemporaryJobDraftResult> => {
     loggerV2.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+    const db = getDb();
     if (!request.auth?.uid) {
       loggerV2.error("[createTemporaryJobDraft] Nutzer nicht authentifiziert.");
       throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
@@ -108,8 +105,7 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
       throw new HttpsError("invalid-argument", "Unvollständige oder ungültige Auftragsdetails übermittelt.");
     }
 
-    // Lade die Daten des Kunden (Auftraggebers), um den Namen zu speichern
-    let customerInfo = {
+    const customerInfo = {
       firstName: 'Unbekannt',
       lastName: '',
       email: request.auth.token.email || ''
@@ -176,7 +172,6 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
         jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents,
         kundeId: kundeId,
 
-        // HINZUGEFÜGT:
         customerFirstName: customerInfo.firstName,
         customerLastName: customerInfo.lastName,
         customerEmail: customerInfo.email,
@@ -205,6 +200,7 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
 export const getOrCreateStripeCustomer = onCall<Record<string, never>, Promise<GetOrCreateStripeCustomerResult>>(
   async (request): Promise<GetOrCreateStripeCustomerResult> => {
     loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen.");
+    const db = getDb();
     const localStripe = getStripeInstance();
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
     const firebaseUserId = request.auth.uid;
@@ -235,6 +231,7 @@ export const getOrCreateStripeCustomer = onCall<Record<string, never>, Promise<G
 export const deleteCompanyAccount = onCall<Record<string, never>, Promise<DeleteCompanyAccountResult>>(
   async (request): Promise<DeleteCompanyAccountResult> => {
     loggerV2.info("[deleteCompanyAccount] Aufgerufen von User:", request.auth?.uid);
+    const db = getDb();
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     const userId = request.auth.uid;
     const localStripe = getStripeInstance();

@@ -24,7 +24,8 @@ const options_1 = require("firebase-functions/v2/options");
 (0, options_1.setGlobalOptions)({
     timeoutSeconds: 540,
     memory: '512MiB',
-    cpu: 1
+    cpu: 1,
+    concurrency: 1, // <-- NEU: Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
 });
 // KEIN admin.initializeApp() mehr hier!
 __exportStar(require("./callable_stripe"), exports);

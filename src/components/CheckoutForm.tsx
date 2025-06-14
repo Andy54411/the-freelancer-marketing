@@ -10,7 +10,6 @@ import {
 } from '@stripe/react-stripe-js';
 import {
   StripePaymentElementOptions,
-  PaymentIntent,
   StripeAddressElementChangeEvent
 } from '@stripe/stripe-js';
 import { FiLoader, FiCheckCircle, FiXCircle } from 'react-icons/fi';
@@ -34,16 +33,9 @@ interface StripeCardCheckoutProps {
 
 export const StripeCardCheckout = ({
   taskAmount,
-  taskCurrency = 'eur',
-  taskerStripeAccountId,
-  platformFeeAmount,
-  customerName,
   taskId,
   onPaymentSuccess,
   onPaymentError,
-  customerEmail,
-  firebaseUserId,
-  stripeCustomerId,
   clientSecret,
 }: StripeCardCheckoutProps) => {
   const stripe = useStripe();
@@ -51,7 +43,7 @@ export const StripeCardCheckout = ({
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [addressReady, setAddressReady] = useState(false); // State, um zu verfolgen, ob die Adresse vollständig ist
+  // const [addressReady, setAddressReady] = useState(false); // AddressElement wird nicht hier gerendert, daher ist dieser State nicht relevant für den Button-Status
 
   // Debug-Log für die Initialisierung und readiness der Stripe Elemente
   useEffect(() => {
@@ -65,23 +57,24 @@ export const StripeCardCheckout = ({
   }, [stripe, elements]);
 
   // Handler für Änderungen am Address Element
-  const handleAddressChange = (event: StripeAddressElementChangeEvent) => {
-    console.log(PAGE_LOG, "StripeCardCheckout: AddressElement onChange Event. Complete:", event.complete, "Value:", event.value);
-    if (event.complete) {
-      setAddressReady(true);
-      console.log(PAGE_LOG, "StripeCardCheckout: AddressElement ist vollständig.");
-    } else {
-      setAddressReady(false);
-      console.log(PAGE_LOG, "StripeCardCheckout: AddressElement ist UNVOLLSTÄNDIG.");
-    }
-  };
+  // const handleAddressChange = (event: StripeAddressElementChangeEvent) => {
+  //   console.log(PAGE_LOG, "StripeCardCheckout: AddressElement onChange Event. Complete:", event.complete, "Value:", event.value);
+  //   if (event.complete) {
+  //     setAddressReady(true);
+  //     console.log(PAGE_LOG, "StripeCardCheckout: AddressElement ist vollständig.");
+  //   } else {
+  //     setAddressReady(false);
+  //     console.log(PAGE_LOG, "StripeCardCheckout: AddressElement ist UNVOLLSTÄNDIG.");
+  //   }
+  // };
+  // Address validation is handled by elements.submit() when using PaymentElement
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); // Standardformular-Submit verhindern
 
     // Debug-Log: Überprüfe die Bedingungen direkt vor dem Return
     console.log(PAGE_LOG, "StripeCardCheckout: handleSubmit aufgerufen.");
-    console.log(PAGE_LOG, `Stripe: ${!!stripe}, Elements: ${!!elements}, clientSecret: ${!!clientSecret}, addressReady: ${addressReady}, isLoading: ${isLoading}`);
+    console.log(PAGE_LOG, `Stripe: ${!!stripe}, Elements: ${!!elements}, clientSecret: ${!!clientSecret}, isLoading: ${isLoading}`);
 
     if (!stripe || !elements) {
       setMessage('Stripe ist noch nicht bereit. Bitte versuchen Sie es später erneut.');
@@ -91,11 +84,6 @@ export const StripeCardCheckout = ({
     if (!clientSecret) {
       setMessage('Zahlungsdaten werden noch geladen. Bitte warten Sie einen Moment.');
       onPaymentError('Client Secret fehlt.');
-      return;
-    }
-    if (!addressReady) {
-      setMessage('Bitte vervollständigen Sie Ihre Rechnungsadresse.');
-      onPaymentError('Rechnungsadresse unvollständig.');
       return;
     }
 
@@ -175,25 +163,19 @@ export const StripeCardCheckout = ({
   };
 
   // Der Submit-Button ist nur aktiviert, wenn Stripe, Elements und das clientSecret vorhanden sind,
-  // die Adresse vollständig ist und keine Ladeoperation läuft.
-  const isButtonDisabled = !stripe || !elements || !clientSecret || !addressReady || isLoading;
+  // und keine Ladeoperation läuft. elements.submit() übernimmt die Validierung der Felder.
+  const isButtonDisabled = !stripe || !elements || !clientSecret || isLoading;
 
   // Debug-Log für den Button-Status
   useEffect(() => {
-    console.log(PAGE_LOG, `StripeCardCheckout Button-Status: Disabled=${isButtonDisabled}, Stripe=${!!stripe}, Elements=${!!elements}, clientSecret=${!!clientSecret}, addressReady=${addressReady}, isLoading=${isLoading}`);
-  }, [isButtonDisabled, stripe, elements, clientSecret, addressReady, isLoading]);
+    console.log(PAGE_LOG, `StripeCardCheckout Button-Status: Disabled=${isButtonDisabled}, Stripe=${!!stripe}, Elements=${!!elements}, clientSecret=${!!clientSecret}, isLoading=${isLoading}`);
+  }, [isButtonDisabled, stripe, elements, clientSecret, isLoading]);
 
 
   return (
     <form id="payment-form" onSubmit={handleSubmit} className="space-y-6 p-4 border rounded-lg shadow-sm bg-white">
       <h3 className="text-lg font-semibold mb-4">Zahlungsdetails</h3>
       {/* AddressElement sammelt die Rechnungsadresse */}
-      <Label htmlFor="billing-address" className="text-sm font-medium text-gray-700 mt-4 block">Rechnungsadresse</Label>
-      <AddressElement id="billing-address" options={{ mode: 'billing', allowedCountries: ['DE', 'AT', 'CH'] }} onChange={handleAddressChange} />
-
-      {/* PaymentElement sammelt Karteninformationen */}
-      <Label htmlFor="payment-element" className="text-sm font-medium text-gray-700 mt-4 block">Zahlungsinformationen</Label>
-      <PaymentElement id="payment-element" options={paymentElementOptions} />
 
       <button
         type="submit"

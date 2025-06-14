@@ -5,16 +5,19 @@ import { User } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { format, differenceInCalendarDays, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
+// Firebase Imports für Firestore
+import { getFirestore, collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { app } from '@/firebase/clients'; // Stellen Sie sicher, dass Ihre Firebase-App hier importiert wird
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { FiLoader, FiCheckCircle } from 'react-icons/fi';
+import { FiCheckCircle } from 'react-icons/fi';
 
 import { SimpleSelect } from './SimpleSelect';
 import OrderAddressSelection from './OrderAddressSelection';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
-import { PaymentSection } from '@/app/dashboard/user/[uid]/components/PaymentSection';
+import PaymentSection from '@/app/dashboard/user/[uid]/components/OrderPaymentMethodSelection';
 
 import { AnbieterDetails, UserProfileData, SavedAddress, BookingCharacteristics } from '@/types/types';
 import { categories } from '@/lib/categories';
@@ -60,6 +63,8 @@ function parseDurationStringToHours(durationStr?: string): number | null {
   return isNaN(parseFloat(durationStr)) ? null : parseFloat(durationStr);
 }
 
+const db = getFirestore(app); // Initialisiere Firestore-Datenbank
+
 const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUser, userProfile }) => {
   const router = useRouter();
 
@@ -76,6 +81,11 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
   const [finalTotalPriceInCents, setFinalTotalPriceInCents] = useState<number>(0);
   const [finalOrderData, setFinalOrderData] = useState<OrderDetailsForBackend | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null); // State für die Job-Draft-ID
+
+  // State für die Auswahl der Zahlungsmethode in diesem Modal
+  const [useSavedPaymentMethod, setUseSavedPaymentMethod] = useState<'new' | string>('new');
+
 
   useEffect(() => {
     if (userProfile?.savedAddresses && userProfile.savedAddresses.length > 0) {
@@ -98,105 +108,135 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
     setIsDatePickerOpen(true);
   };
 
-  const handlePaymentSuccess = useCallback(() => {
-    setLoading(false);
+  const handlePaymentSuccess = useCallback(async (paymentIntentId: string) => {
+    setLoading(true);
     setError(null);
+    console.log("DEBUG: Zahlung erfolgreich bestätigt. Auftragserstellung wird über Webhook gehandhabt.");
+
+    setLoading(false);
     setCurrentStep('success');
     setTimeout(() => {
       onClose();
       router.refresh();
     }, 3000);
+
   }, [onClose, router]);
 
-  const handlePaymentError = useCallback((message: string) => {
+  const handlePaymentError = useCallback((message: string | null) => {
     setLoading(false);
-    setError(`Zahlungsfehler: ${message}`);
+    setError(message ? `Zahlungsfehler: ${message}` : 'Ein unbekannter Zahlungsfehler ist aufgetreten.');
   }, []);
 
   const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (selection, time, durationString) => {
+    console.log("DEBUG: Starte handleDateTimeConfirm...");
     setError(null);
     setLoading(true);
     setIsDatePickerOpen(false);
 
-    if (!selection || !time || !durationString || !selectedProvider || !selectedSubcategory) {
-      setError("Fehler: Unvollständige Angaben für Preisberechnung.");
-      setLoading(false);
-      return;
-    }
-
-    let dateFromFormatted: string, dateToFormatted: string, calculatedNumberOfDays = 1;
-
-    if (selection instanceof Date && isValid(selection)) {
-      dateFromFormatted = format(selection, "yyyy-MM-dd");
-      dateToFormatted = dateFromFormatted;
-    } else if (selection && 'from' in selection && selection.from && isValid(selection.from)) {
-      const { from, to } = selection;
-      dateFromFormatted = format(from, "yyyy-MM-dd");
-      dateToFormatted = to && isValid(to) ? format(to, "yyyy-MM-dd") : dateFromFormatted;
-      calculatedNumberOfDays = to && isValid(to) ? differenceInCalendarDays(to, from) + 1 : 1;
-    } else {
-      setError("Ungültiges Datum ausgewählt.");
-      setLoading(false);
-      return;
-    }
-
-    const hourlyRateNum = parseFloat(String(selectedProvider.hourlyRate || '0'));
-    const hoursInput = parseDurationStringToHours(durationString);
-
-    if (isNaN(hourlyRateNum) || hourlyRateNum <= 0 || !hoursInput || hoursInput <= 0) {
-      setError("Stundensatz oder Dauer ungültig.");
-      setLoading(false);
-      return;
-    }
-
-    const totalHours = currentBookingChars.isDurationPerDay ? hoursInput * calculatedNumberOfDays : hoursInput;
-    const servicePrice = totalHours * hourlyRateNum;
-    const totalPrice = servicePrice + TRUST_AND_SUPPORT_FEE_EUR;
-    const totalPriceInCents = Math.round(totalPrice * 100);
-
-    const rawFinalAddress = useSavedAddress === 'new' ? newAddressDetails : userProfile.savedAddresses?.find(a => a.id === useSavedAddress);
-
-    if (!rawFinalAddress || !rawFinalAddress.postal_code || !rawFinalAddress.name?.trim() || !rawFinalAddress.line1?.trim() || !rawFinalAddress.city?.trim() || !rawFinalAddress.country?.trim()) {
-      setError("Adresse unvollständig. Bitte alle Adressfelder ausfüllen (inklusive Name der Adresse).");
-      setLoading(false);
-      return;
-    }
-    const finalAddress = rawFinalAddress as SavedAddress;
-
-    const orderDetailsForBackend: OrderDetailsForBackend = {
-      customerEmail: currentUser.email || userProfile.email || '',
-      customerFirebaseUid: currentUser.uid,
-      customerFirstName: userProfile.firstname,
-      customerLastName: userProfile.lastname || '',
-      customerType: userProfile.user_type || 'private',
-      description,
-      jobCalculatedPriceInCents: totalPriceInCents,
-      jobCity: finalAddress.city,
-      jobCountry: finalAddress.country,
-      jobDateFrom: dateFromFormatted,
-      jobDateTo: dateToFormatted,
-      jobDurationString: durationString,
-      jobPostalCode: finalAddress.postal_code,
-      jobStreet: finalAddress.line1,
-      jobTimePreference: time,
-      jobTotalCalculatedHours: totalHours,
-      kundeId: currentUser.uid,
-      selectedAnbieterId: selectedProvider.id,
-      selectedCategory: selectedCategory,
-      selectedSubcategory: selectedSubcategory,
-      totalPriceInCents: totalPriceInCents,
-      addressName: finalAddress.name,
-    };
-
     try {
+      console.log("DEBUG: Validierung der Eingangsdaten...");
+      if (!selection || !time || !durationString || !selectedProvider || !selectedSubcategory) {
+        throw new Error("Fehler: Unvollständige Angaben. Bitte versuchen Sie es erneut.");
+      }
+
+      console.log("DEBUG: Überprüfung der Stripe-IDs...");
       if (!selectedProvider.stripeAccountId) {
-        throw new Error("Anbieter hat kein verknüpftes Stripe-Konto.");
+        throw new Error("Der ausgewählte Anbieter kann derzeit keine Zahlungen empfangen. Bitte wählen Sie einen anderen Anbieter.");
       }
       if (!userProfile.stripeCustomerId) {
-        throw new Error("Sie haben kein Zahlungsprofil.");
+        throw new Error("Ihr Zahlungsprofil ist nicht vollständig. Bitte fügen Sie unter 'Einstellungen' eine Zahlungsmethode hinzu, bevor Sie buchen.");
       }
 
-      const taskId = crypto.randomUUID();
+      console.log("DEBUG: Datum formatieren und Dauer berechnen...");
+      let dateFromFormatted: string, dateToFormatted: string, calculatedNumberOfDays = 1;
+
+      if (selection instanceof Date && isValid(selection)) {
+        dateFromFormatted = format(selection, "yyyy-MM-dd");
+        dateToFormatted = dateFromFormatted;
+      } else if (selection && 'from' in selection && selection.from && isValid(selection.from)) {
+        const { from, to } = selection;
+        dateFromFormatted = format(from, "yyyy-MM-dd");
+        dateToFormatted = to && isValid(to) ? format(to, "yyyy-MM-dd") : dateFromFormatted;
+        calculatedNumberOfDays = to && isValid(to) ? differenceInCalendarDays(to, from) + 1 : 1;
+      } else {
+        throw new Error("Ungültiges Datum ausgewählt. Bitte versuchen Sie es erneut.");
+      }
+
+      const hourlyRateNum = parseFloat(String(selectedProvider.hourlyRate || '0'));
+      const hoursInput = parseDurationStringToHours(durationString);
+
+      if (isNaN(hourlyRateNum) || hourlyRateNum <= 0 || !hoursInput || hoursInput <= 0) {
+        throw new Error("Stundensatz oder Dauer sind ungültig.");
+      }
+
+      // NEUES DEBUGGING FÜR BERECHNUNG
+      console.log("DEBUG: Buchungscharakteristiken - isDurationPerDay:", currentBookingChars.isDurationPerDay);
+      console.log("DEBUG: Stunden Eingabe (hoursInput):", hoursInput);
+      console.log("DEBUG: Berechnete Anzahl der Tage (calculatedNumberOfDays):", calculatedNumberOfDays);
+
+      const totalHours = currentBookingChars.isDurationPerDay ? hoursInput * calculatedNumberOfDays : hoursInput;
+      console.log("DEBUG: Gesamtstunden (totalHours) für Preisberechnung:", totalHours);
+      // ENDE DEBUGGING FÜR BERECHNUNG
+
+
+      const servicePrice = totalHours * hourlyRateNum;
+      const totalPrice = servicePrice + TRUST_AND_SUPPORT_FEE_EUR;
+      const totalPriceInCents = Math.round(totalPrice * 100);
+
+      console.log("DEBUG: Adresse finalisieren...");
+      const rawFinalAddress = useSavedAddress === 'new' ? newAddressDetails : userProfile.savedAddresses?.find(a => a.id === useSavedAddress);
+
+      if (!rawFinalAddress || !rawFinalAddress.postal_code || !rawFinalAddress.name?.trim() || !rawFinalAddress.line1?.trim() || !rawFinalAddress.city?.trim() || !rawFinalAddress.country?.trim()) {
+        throw new Error("Adresse unvollständig. Bitte alle Adressfelder ausfüllen.");
+      }
+      const finalAddress = rawFinalAddress as SavedAddress;
+
+      const orderDetailsForBackend: OrderDetailsForBackend = {
+        customerEmail: currentUser.email || userProfile.email || '', // Fallback
+        customerFirebaseUid: currentUser.uid,
+        customerFirstName: userProfile.firstname || '', // FIX: Fallback auf leeren String
+        customerLastName: userProfile.lastname || '',
+        customerType: userProfile.user_type || 'private',
+        description,
+        jobCalculatedPriceInCents: totalPriceInCents,
+        jobCity: finalAddress.city,
+        jobCountry: finalAddress.country,
+        jobDateFrom: dateFromFormatted,
+        jobDateTo: dateToFormatted,
+        jobDurationString: durationString,
+        jobPostalCode: finalAddress.postal_code,
+        jobStreet: finalAddress.line1,
+        jobTimePreference: time,
+        jobTotalCalculatedHours: totalHours, // Dies ist der Wert, der gespeichert wird
+        kundeId: currentUser.uid,
+        selectedAnbieterId: selectedProvider.id,
+        selectedCategory: selectedCategory,
+        selectedSubcategory: selectedSubcategory,
+        totalPriceInCents: totalPriceInCents,
+        addressName: finalAddress.name,
+      };
+
+      console.log("DEBUG: Generiere temporäre Job-Entwurf-ID...");
+      const newTempJobDraftId = crypto.randomUUID();
+      setTempJobDraftId(newTempJobDraftId); // Speichere im State
+      setFinalOrderData(orderDetailsForBackend); // FinalOrderData hier aktualisieren
+
+      console.log("DEBUG: Speichere temporären Job-Entwurf in Firestore (temporaryJobDrafts)...", newTempJobDraftId);
+      const tempDraftToSave = {
+        ...orderDetailsForBackend,
+        providerName: selectedProvider.companyName,
+        providerId: selectedProvider.id,
+        status: 'initial_draft',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      console.log("DEBUG: tempDraftToSave.customerFirebaseUid vor setDoc:", tempDraftToSave.customerFirebaseUid);
+
+      await setDoc(doc(db, "temporaryJobDrafts", newTempJobDraftId), tempDraftToSave);
+      console.log(`DEBUG: Temporärer Job-Entwurf ${newTempJobDraftId} erfolgreich in Firestore gespeichert.`);
+
+
+      console.log("DEBUG: Rufe /api/create-payment-intent auf...");
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,22 +245,35 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
           currency: 'eur',
           connectedAccountId: selectedProvider.stripeAccountId,
           platformFee: TRUST_AND_SUPPORT_FEE_EUR,
-          taskId,
+          taskId: newTempJobDraftId, // Verwende die generierte ID als taskId für Stripe Metadata
           firebaseUserId: currentUser.uid,
           stripeCustomerId: userProfile.stripeCustomerId,
-          orderDetails: orderDetailsForBackend,
+          orderDetails: orderDetailsForBackend, // Optional, aber gut für Logs
         }),
       });
 
       const data = await response.json();
-      if (data.error) { throw new Error(data.error.message || 'Fehler beim Erstellen der Zahlung.'); }
+      if (!response.ok || data.error) {
+        console.error("API-Antwort Fehler:", data.error);
+        throw new Error(data.error?.message || 'Fehler bei der Kommunikation mit dem Zahlungsserver.');
+      }
 
+      console.log("DEBUG: ERFOLG! clientSecret erhalten. Wechsle zu 'payment'.");
       setClientSecret(data.clientSecret);
       setFinalTotalPriceInCents(totalPriceInCents);
-      setFinalOrderData(orderDetailsForBackend);
       setCurrentStep('payment');
-    } catch (apiError: any) {
-      setError(`API-Fehler: ${apiError.message || 'Unbekannt.'}`);
+
+    } catch (err: unknown) {
+      console.error("DEBUG-FAIL: Fehler in handleDateTimeConfirm.", err);
+      let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as any).message === 'string') {
+        errorMessage = (err as any).message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -264,16 +317,31 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
           </div>
         )}
 
-        {currentStep === 'payment' && finalOrderData && clientSecret && (
+        {currentStep === 'payment' && finalOrderData && (
           <div className="space-y-6">
             <h4 className="text-lg font-semibold text-gray-700">2. Zahlung abschließen</h4>
             <div className="p-4 border rounded-lg bg-gray-50 text-sm space-y-1">
               <p><strong>Anbieter:</strong> {selectedProvider?.companyName}</p>
               <p><strong>Auftrag:</strong> {finalOrderData.selectedSubcategory}</p>
               <p><strong>Datum:</strong> {format(new Date(finalOrderData.jobDateFrom), 'PPP', { locale: de })}</p>
-              <p className="text-lg font-bold mt-2">Gesamtpreis: {(finalOrderData.totalPriceInCents / 100).toFixed(2)} EUR</p>
+              <p className="text-lg font-bold mt-2">Gesamtpreis: ${(finalOrderData.totalPriceInCents / 100).toFixed(2)} EUR</p>
             </div>
-            <PaymentSection totalPriceInCents={finalTotalPriceInCents} onPaymentSuccess={handlePaymentSuccess} onPaymentError={handlePaymentError} fullOrderDetails={finalOrderData} clientSecret={clientSecret} />
+            <PaymentSection
+              userProfile={userProfile}
+              useSavedPaymentMethod={useSavedPaymentMethod}
+              setUseSavedPaymentMethod={setUseSavedPaymentMethod}
+              clientSecret={clientSecret}
+              isPaymentIntentLoading={loading}
+              handleCheckoutFormProcessing={(isProcessing) => setLoading(isProcessing)}
+              handleCheckoutFormError={handlePaymentError}
+              handleCheckoutFormSuccess={handlePaymentSuccess}
+              loading={loading}
+
+              totalPriceInCents={finalTotalPriceInCents}
+              onPaymentSuccess={handlePaymentSuccess}
+              onPaymentError={handlePaymentError}
+              fullOrderDetails={finalOrderData}
+            />
             <div className="flex justify-start pt-2">
               <Button type="button" onClick={() => { setError(null); setCurrentStep('details'); }} variant="outline">Zurück</Button>
             </div>

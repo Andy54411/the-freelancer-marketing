@@ -1,4 +1,3 @@
-// src/components/ChatComponent.tsx
 'use client';
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
@@ -34,8 +33,7 @@ interface UserProfileData {
     firstName?: string;
     lastName?: string;
     companyName?: string;
-    // FEHLER BEHOBEN: 'firma' zu user_type hinzugefügt
-    user_type?: 'kunde' | 'anbieter' | 'firma'; // <--- HIER ANPASSEN!
+    user_type?: 'kunde' | 'anbieter' | 'firma'; // Korrigierter Typ wie besprochen
 }
 
 interface ChatComponentProps {
@@ -52,6 +50,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     const [userProfileLoading, setUserProfileLoading] = useState(true);
     const [chatError, setChatError] = useState<string | null>(null);
     const [loggedInUserProfile, setLoggedInUserProfile] = useState<UserProfileData | null>(null);
+    const [isSendingMessage, setIsSendingMessage] = useState(false); // Neuer State für Sende-Button
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -94,7 +93,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
             if (!currentUser) {
                 setChatError('Bitte melden Sie sich an, um den Chat zu nutzen.');
             } else if (userProfileLoading) {
-                setChatLoading(true);
+                setChatLoading(true); // Bleibe im Ladezustand, bis Profil geladen
             } else if (!orderId) {
                 setChatError('Auftrags-ID fehlt für den Chat.');
             }
@@ -129,24 +128,27 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         });
 
         return () => unsubscribe();
-    }, [authContext, currentUser, orderId, userProfileLoading]);
+    }, [authContext, currentUser, orderId, userProfileLoading]); // `userProfileLoading` als Abhängigkeit hinzugefügt, um Trigger nach Profil-Load zu gewährleisten
 
     // Nachricht senden
     const handleSendMessage = async (e: FormEvent) => {
         e.preventDefault();
-        if (!newMessageText.trim() || !currentUser || !orderId || userProfileLoading) {
+        // Deaktiviere das Senden, wenn Text leer, Benutzer nicht angemeldet oder Profil noch lädt/fehlt
+        if (!newMessageText.trim() || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage) {
             return;
         }
 
-        let senderName: string = currentUser.displayName || loggedInUserProfile?.firstName || 'Unbekannt';
+        setIsSendingMessage(true); // Sende-Vorgang starten
+        setChatError(null); // Fehler zurücksetzen
+
+        let senderName: string = currentUser.displayName || loggedInUserProfile.firstName || 'Unbekannt';
         let senderType: 'kunde' | 'anbieter' = 'kunde';
 
-        // FEHLER BEHOBEN: Prüfung auf 'firma' als user_type
-        if (loggedInUserProfile?.user_type === 'firma') {
+        // Prüfung auf 'firma' als user_type
+        if (loggedInUserProfile.user_type === 'firma') {
             senderType = 'anbieter';
             senderName = loggedInUserProfile.companyName || loggedInUserProfile.firstName || 'Anbieter';
         }
-
 
         try {
             await addDoc(collection(db, 'auftraege', orderId, 'nachrichten'), {
@@ -156,10 +158,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                 text: newMessageText.trim(),
                 timestamp: serverTimestamp(),
             });
-            setNewMessageText('');
+            setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
         } catch (error) {
             console.error('Fehler beim Senden der Nachricht:', error);
             setChatError('Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.');
+        } finally {
+            setIsSendingMessage(false); // Sende-Vorgang beenden
         }
     };
 
@@ -174,6 +178,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         );
     }
 
+    // Zeige Fehler, wenn kein Benutzer angemeldet ist oder Profil nicht geladen werden konnte
     if (!currentUser || !loggedInUserProfile) {
         return (
             <div className="text-center p-4 text-gray-600">
@@ -198,8 +203,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                         >
                             <div
                                 className={`max-w-[70%] p-3 rounded-lg ${msg.senderId === currentUser.uid
-                                        ? 'bg-[#14ad9f] text-white'
-                                        : 'bg-gray-200 text-gray-800'
+                                    ? 'bg-[#14ad9f] text-white'
+                                    : 'bg-gray-200 text-gray-800'
                                     }`}
                             >
                                 <p className="text-xs font-semibold mb-1">
@@ -207,7 +212,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                                 </p>
                                 <p className="text-sm break-words">{msg.text}</p>
                                 <p className="text-right text-xs mt-1 opacity-75">
-                                    {msg.timestamp?.toDate().toLocaleTimeString()}
+                                    {/* Formatieren des Timestamps für eine bessere Anzeige */}
+                                    {msg.timestamp?.toDate().toLocaleDateString()} {msg.timestamp?.toDate().toLocaleTimeString()}
                                 </p>
                             </div>
                         </div>
@@ -223,7 +229,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                     className="flex-1 p-2 border border-gray-300 rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                     rows={1}
                     onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
+                        if (e.key === 'Enter' && !e.shiftKey) { // Senden bei Enter, außer Shift+Enter für Zeilenumbruch
                             e.preventDefault();
                             handleSendMessage(e);
                         }
@@ -232,9 +238,10 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                 <button
                     type="submit"
                     className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] transition-colors flex items-center justify-center"
-                    disabled={!newMessageText.trim() || overallLoading}
+                    // Deaktiviere den Button, wenn Nachricht leer, Chat lädt oder bereits gesendet wird
+                    disabled={!newMessageText.trim() || overallLoading || isSendingMessage}
                 >
-                    <FiSend size={20} />
+                    {isSendingMessage ? <FiLoader className="animate-spin" /> : <FiSend size={20} />}
                 </button>
             </form>
         </div>

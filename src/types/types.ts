@@ -94,6 +94,17 @@ export interface AnbieterDetails {
   stripeAccountId?: string;
 }
 
+// ====================================================================
+// HIER IST DIE HINZUGEFÜGTE ÄNDERUNG
+// ====================================================================
+/**
+ * Erstellt einen Alias namens 'Company', der auf 'AnbieterDetails' verweist.
+ * Dies löst den Import-Fehler in anderen Dateien, ohne sie ändern zu müssen.
+ */
+export type Company = AnbieterDetails;
+// ====================================================================
+
+
 /**
  * Repräsentiert die Rohdaten von der API. Enthält alle möglichen Feldnamen.
  */
@@ -158,6 +169,7 @@ export interface OrderListItem {
   totalPriceInCents: number;
   jobDateFrom?: string;
   jobTimePreference?: string;
+  providerName?: string;
 }
 
 export interface AngebotDetails {

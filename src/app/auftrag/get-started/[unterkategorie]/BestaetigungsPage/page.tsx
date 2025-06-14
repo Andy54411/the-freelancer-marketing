@@ -1,4 +1,3 @@
-// /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/page.tsx
 'use client';
 
 import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
@@ -19,29 +18,31 @@ import { PaymentElement } from '@stripe/react-stripe-js';
 
 
 // HIER WIRD DER STRIPE PUBLISHABLE KEY AKTUALISIERT
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsjMzieGY1n513cwTd8wUGf6cmYphSWfdTpsjMzieGY1n513cwTd8wUGf6cmYphSWfdTpsK00N3Rtf7Dk');
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsjMzieGY1n513cwTd8wUGf6cmYphSWfdTpsK00N3Rtf7Dk');
 
 const auth = getAuth(app);
 const functionsInstance: Functions = getFunctions(app);
 
-// --- INTERFACE DEFINITIONEN ---
+// --- KORRIGIERTE INTERFACE DEFINITIONEN ---
 interface TemporaryJobDraftData {
   customerType: 'private' | 'business' | null;
   selectedCategory: string | null;
   selectedSubcategory: string | null;
   description: string;
-  jobStreet?: string;
-  jobPostalCode?: string;
-  jobCity?: string;
+  jobStreet?: string | null;
+  jobPostalCode?: string | null;
+  jobCity?: string | null;
   jobCountry?: string | null;
   jobDateFrom?: string | null;
   jobDateTo?: string | null;
   jobTimePreference?: string | null;
   selectedAnbieterId?: string | null;
-  jobDurationString?: string;
+  jobDurationString?: string | null;
   jobTotalCalculatedHours?: number | null;
   jobCalculatedPriceInCents?: number | null;
-  tempDraftId?: string;
+  tempDraftId?: string | null;
+  // FIX: billingDetails sind jetzt Teil des Drafts
+  billingDetails?: BillingDetailsPayload | null;
 }
 
 interface TemporaryJobDraftResult {
@@ -54,26 +55,19 @@ interface GetOrCreateStripeCustomerResult {
 }
 
 interface CustomerAddress {
-  line1?: string;
-  line2?: string;
-  city?: string;
-  postal_code?: string;
-  state?: string;
-  country?: string;
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  state?: string | null;
+  country?: string | null;
 }
 
 interface BillingDetailsPayload {
   name?: string | null;
   email?: string | null;
   phone?: string | null;
-  address?: {
-    line1?: string | null;
-    line2?: string | null;
-    city?: string | null;
-    postal_code?: string | null;
-    state?: string | null;
-    country?: string | null;
-  };
+  address?: CustomerAddress;
 }
 
 
@@ -136,10 +130,12 @@ export default function BestaetigungsPage() {
     console.log(PAGE_LOG, `handlePriceCalculatedFromChild: Neuer Preis von Kindkomponente: ${priceInCents} Cents.`);
 
     if (finalTaskAmountInCents !== priceInCents) {
+      console.log(PAGE_LOG, "Preis hat sich geändert. Aktualisiere finalTaskAmountInCents und setze clientSecret zurück.");
       setFinalTaskAmountInCents(priceInCents);
-      setClientSecret(null);
+      setClientSecret(null); // Nur zurücksetzen, wenn der Preis sich tatsächlich ändert
       setPaymentIntentError(null);
-      console.log(PAGE_LOG, "finalTaskAmountInCents aktualisiert. clientSecret auf null gesetzt.");
+    } else {
+      console.log(PAGE_LOG, "Preis ist gleich geblieben. Keine Änderungen an clientSecret.");
     }
 
     if (priceInCents > 0) {
@@ -194,26 +190,28 @@ export default function BestaetigungsPage() {
         const selectedCategoryToUse = registration.selectedCategory || null;
         const selectedSubcategoryToUse = registration.selectedSubcategory || unterkategorieAusPfad || null;
         const descriptionToUse = registration.description || descriptionFromUrl || '';
-        const jobStreetToUse = registration.jobStreet || undefined;
-        const jobPostalCodeToUse = registration.jobPostalCode || postalCodeFromUrl || undefined;
-        const jobCityToUse = registration.jobCity || undefined;
-        const jobCountryToUse = registration.jobCountry || undefined;
+        // FIX: Sicherstellen, dass Adressfelder niemals undefined sind, sondern null
+        const jobStreetToUse = registration.jobStreet || null;
+        const jobPostalCodeToUse = registration.jobPostalCode || postalCodeFromUrl || null;
+        const jobCityToUse = registration.jobCity || null;
+        const jobCountryToUse = registration.jobCountry || null;
+
         const jobDateFromToUse = registration.jobDateFrom || dateFromUrl || null;
         const jobDateToToUse = registration.jobDateTo || null;
         const jobTimePreferenceToUse = registration.jobTimePreference || timeUrl || null;
         const selectedAnbieterIdToUse = registration.selectedAnbieterId || anbieterIdFromUrl || null;
-        const jobDurationStringToUse = registration.jobDurationString || auftragsDauerUrl || '';
+        const jobDurationStringToUse = registration.jobDurationString || auftragsDauerUrl || null;
         const jobTotalCalculatedHoursToUse = registration.jobTotalCalculatedHours || (auftragsDauerUrl ? parseInt(auftragsDauerUrl, 10) : null);
         const jobCalculatedPriceInCentsToUse = registration.jobCalculatedPriceInCents || priceFromUrl || null;
 
         // NEU: Rechnungsadressdetails aus dem registration-Context sammeln
         const collectedBillingAddressDetails: BillingDetailsPayload | null = (() => {
           const baseAddress: CustomerAddress = {
-            line1: undefined, line2: undefined, city: undefined, postal_code: undefined, country: undefined,
+            line1: null, line2: null, city: null, postal_code: null, country: null,
           };
-          let name: string | undefined = undefined;
-          let email: string | undefined = undefined;
-          let phone: string | undefined = undefined;
+          let name: string | null = null;
+          let email: string | null = null;
+          let phone: string | null = null;
 
           if (registration.customerType === 'private') {
             if (registration.personalStreet && registration.personalPostalCode && registration.personalCity && registration.personalCountry) {
@@ -222,9 +220,9 @@ export default function BestaetigungsPage() {
               baseAddress.city = registration.personalCity;
               baseAddress.country = registration.personalCountry;
             }
-            name = (registration.firstName && registration.lastName) ? `${registration.firstName} ${registration.lastName}` : user.displayName || undefined;
-            email = registration.email || user.email || undefined;
-            phone = registration.phoneNumber || undefined;
+            name = (registration.firstName && registration.lastName) ? `${registration.firstName} ${registration.lastName}` : user.displayName || null;
+            email = registration.email || user.email || null;
+            phone = registration.phoneNumber || null;
           } else if (registration.customerType === 'business') {
             if (registration.companyStreet && registration.companyPostalCode && registration.companyCity && registration.companyCountry) {
               baseAddress.line1 = registration.companyStreet + (registration.companyHouseNumber ? ` ${registration.companyHouseNumber}` : '');
@@ -232,9 +230,9 @@ export default function BestaetigungsPage() {
               baseAddress.city = registration.companyCity;
               baseAddress.country = registration.companyCountry;
             }
-            name = registration.companyName || undefined; // Firmenname als Name der Rechnungsadresse
-            email = registration.email || user.email || undefined;
-            phone = registration.phoneNumber || undefined;
+            name = registration.companyName || null;
+            email = registration.email || user.email || null;
+            phone = registration.phoneNumber || null;
           }
 
           // Nur zurückgeben, wenn zumindest die Hauptadressfelder vorhanden sind
@@ -269,13 +267,13 @@ export default function BestaetigungsPage() {
           jobDurationString: jobDurationStringToUse,
           jobTotalCalculatedHours: jobTotalCalculatedHoursToUse,
           jobCalculatedPriceInCents: jobCalculatedPriceInCentsToUse,
-          tempDraftId: tempDraftIdFromUrl || undefined,
+          tempDraftId: tempDraftIdFromUrl || null,
+          billingDetails: collectedBillingAddressDetails, // Rechnungsdetails hier hinzufügen
         };
 
         // FEHLER BEHOBEN: Striktere Typ-Prüfung für jobCalculatedPriceInCents (mit Zwischenvariable)
         if (finalTaskAmountInCents === null && typeof draftData.jobCalculatedPriceInCents === 'number' && draftData.jobCalculatedPriceInCents > 0) {
           setFinalTaskAmountInCents(draftData.jobCalculatedPriceInCents);
-          // Zwischenvariable mit expliziter Typ-Assertion, um TypeScript zu beruhigen
           const validatedPrice = draftData.jobCalculatedPriceInCents as number;
           setPlatformFeeForStripe(Math.round(validatedPrice * 0.10));
           console.log(PAGE_LOG, "BestaetigungsPage: Initialer Preis aus draftData gesetzt.");
@@ -283,6 +281,9 @@ export default function BestaetigungsPage() {
           console.warn(PAGE_WARN, "BestaetigungsPage: jobCalculatedPriceInCents ist ungültig oder 0 aus draftData bei Initialisierung. Preis kann nicht gesetzt werden.");
         }
 
+        // --- Hinzugefügter Debug-Log für draftData vor Validierung ---
+        console.log(PAGE_LOG, "BestaetigungsPage: fullDraftData vor Pflichtdatenprüfung:", JSON.stringify(draftData, null, 2));
+        // --- ENDE Debug-Log ---
 
         // --- KORRIGIERTE PFLICHTDATEN-PRÜFUNG ---
         const missingFields: string[] = [];
@@ -294,8 +295,8 @@ export default function BestaetigungsPage() {
         if (!draftData.selectedAnbieterId) missingFields.push('Anbieter-ID');
         if (!draftData.jobDateFrom) missingFields.push('Auftragsstartdatum');
         if (!draftData.jobTimePreference) missingFields.push('Bevorzugte Uhrzeit');
-        if (!draftData.jobTotalCalculatedHours || draftData.jobTotalCalculatedHours <= 0) missingFields.push('Berechnete Gesamtdauer (Stunden)');
-        if (!draftData.jobCalculatedPriceInCents || draftData.jobCalculatedPriceInCents <= 0) missingFields.push('Berechneter Preis (Cents)');
+        if (draftData.jobTotalCalculatedHours == null || draftData.jobTotalCalculatedHours <= 0) missingFields.push('Berechnete Gesamtdauer (Stunden)'); // `== null` prüft auf null und undefined
+        if (draftData.jobCalculatedPriceInCents == null || draftData.jobCalculatedPriceInCents <= 0) missingFields.push('Berechneter Preis (Cents)'); // `== null` prüft auf null und undefined
         // NEU: Rechnungsadresse ist jetzt auch Pflicht für den PaymentIntent
         if (!collectedBillingAddressDetails || !collectedBillingAddressDetails.address?.line1 || !collectedBillingAddressDetails.address?.postal_code || !collectedBillingAddressDetails.address?.city || !collectedBillingAddressDetails.address?.country) {
           missingFields.push('Vollständige Rechnungsadresse');
@@ -313,7 +314,7 @@ export default function BestaetigungsPage() {
         // --- ENDE KORRIGIERTE PFLICHTDATEN-PRÜFUNG ---
 
         try {
-          console.log(PAGE_LOG, "BestaetigungsPage: Inhalt von draftData vor dem Senden:", JSON.stringify(draftData, null, 2));
+          console.log(PAGE_LOG, "BestaetigungsPage: Inhalt von draftData vor dem Senden an createTemporaryJobDraftCallable:", JSON.stringify(draftData, null, 2));
 
           console.log(PAGE_LOG, "BestaetigungsPage: Rufe createTemporaryJobDraftCallable auf...");
           const createTemporaryJobDraftCallable = httpsCallable<TemporaryJobDraftData, TemporaryJobDraftResult>(functionsInstance, 'createTemporaryJobDraft');
@@ -384,6 +385,7 @@ export default function BestaetigungsPage() {
     finalTaskAmountInCents, platformFeeForStripe,
     // billingAddressDetails ist jetzt eine Abhängigkeit, da es im useEffect gesetzt wird
     billingAddressDetails,
+    currentUser // Auch currentUser als Abhängigkeit für den onAuthStateChanged-Block
   ]);
 
   // =================================================================================================
@@ -404,15 +406,17 @@ export default function BestaetigungsPage() {
         return;
       }
 
-      // Da es sich immer um eine NEUE Karte handelt, muss immer ein neues clientSecret geholt werden.
-      if (clientSecret && !loadingPaymentIntent) {
-        console.log(PAGE_LOG, "Client Secret ist bereits vorhanden. Kein Neuladen erzwungen.");
+      // Hole nur ein neues clientSecret, wenn es noch keins gibt ODER wenn finalTaskAmountInCents sich geändert hat (was clientSecret auf null setzt).
+      // Die Bedingung `!clientSecret` deckt den Fall ab, dass es initial null ist oder durch Preisänderung zurückgesetzt wurde.
+      if (clientSecret && !loadingPaymentIntent && finalTaskAmountInCents === finalTaskAmountInCents /* Ersetze payload.amount durch den korrekten Wert, hier finalTaskAmountInCents selbst, da es der zu prüfende Betrag ist */) {
+        console.log(PAGE_LOG, "Client Secret ist bereits vorhanden und Betrag unverändert. Kein Neuladen erzwungen.");
         return;
       }
+      console.log(PAGE_LOG, "Bedingungen für fetchStripeClientSecret erfüllt. Lade/Aktualisiere clientSecret.");
 
       setLoadingPaymentIntent(true);
       setPaymentIntentError(null);
-      setClientSecret(null); // Setze clientSecret auf null, um ein neues zu erzwingen
+      // setClientSecret(null); // Nicht hier explizit auf null setzen, das passiert bei Preisänderung
 
       try {
         const payload: {
@@ -435,7 +439,7 @@ export default function BestaetigungsPage() {
           firebaseUserId: currentUser.uid,
           stripeCustomerId: kundeStripeCustomerId,
           customerName: currentUser.displayName || `${registration.firstName || ''} ${registration.lastName || ''}`,
-          customerEmail: currentUser.email || registration.email,
+          customerEmail: currentUser.email || registration.email || '',
           billingDetails: billingAddressDetails, // Hier den gesammelten State übergeben
         };
 
@@ -470,7 +474,7 @@ export default function BestaetigungsPage() {
 
     fetchStripeClientSecret();
   }, [
-    kundeStripeCustomerId, tempJobDraftId, currentUser, anbieterStripeConnectId,
+    // clientSecret aus der Abhängigkeitsliste entfernt, um Selbst-Triggerung zu vermeiden, wenn es nur gesetzt wird.
     finalTaskAmountInCents, platformFeeForStripe, loadingPaymentIntent, clientSecret,
     // Abhängigkeiten für die Rechnungsadresse
     billingAddressDetails, // Dies ist der wichtigste Auslöser für Änderungen in diesem Hook
@@ -512,6 +516,13 @@ export default function BestaetigungsPage() {
     billingAddressDetails && billingAddressDetails.address?.line1 && billingAddressDetails.address?.postal_code &&
     billingAddressDetails.address?.city && billingAddressDetails.address?.country;
 
+  // Hilfsvariable, um zu prüfen, ob alle Voraussetzungen für das Abrufen eines clientSecret erfüllt sind
+  const prerequisitesForClientSecretFetchAreMet =
+    currentUser && kundeStripeCustomerId && tempJobDraftId && anbieterStripeConnectId &&
+    finalTaskAmountInCents !== null && finalTaskAmountInCents > 0 && platformFeeForStripe !== null &&
+    billingAddressDetails && billingAddressDetails.address?.line1 && billingAddressDetails.address?.postal_code &&
+    billingAddressDetails.address?.city && billingAddressDetails.address?.country &&
+    !pageError && !paymentIntentError;
 
   const subcategoryForContent = registration.selectedSubcategory || unterkategorieAusPfad;
   const bestaetigungsContentProps: BestaetigungsContentPropsForPage = {
@@ -531,7 +542,7 @@ export default function BestaetigungsPage() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-        {isLoadingPageData ? "Seite wird vorbereitet..." : "Zahlung wird initialisiert..."}
+        {isLoadingOverall ? "Seite wird vorbereitet..." : "Zahlung wird initialisiert..."}
       </div>
     );
   }
@@ -605,7 +616,7 @@ export default function BestaetigungsPage() {
               <p className="text-sm text-gray-600 mb-3">Diese Adresse wird für Ihre Rechnung verwendet und bei der ersten Zahlung gespeichert.</p>
               {billingAddressDetails && billingAddressDetails.address?.line1 && billingAddressDetails.address?.postal_code ? (
                 <div className="text-gray-800">
-                  <p className="font-medium">{billingAddressDetails.name || currentUser?.displayName || `${registration.firstName} ${registration.lastName}`}</p>
+                  <p className="font-medium">{billingAddressDetails.name || currentUser?.displayName || `${registration.firstName || ''} ${registration.lastName || ''}`}</p>
                   <p>{billingAddressDetails.address.line1} {billingAddressDetails.address.line2}</p>
                   <p>{billingAddressDetails.address.postal_code} {billingAddressDetails.address.city}</p>
                   <p>{billingAddressDetails.address.country}</p>
@@ -617,68 +628,75 @@ export default function BestaetigungsPage() {
               )}
             </div>
 
-            {/* NEU: Eingabe der Zahlungsmethode */}
-            <div className="mb-6 p-4 border rounded-md bg-white">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center"><FiCreditCard className="mr-2" /> Zahlungsmethode</h3>
-              <p className="text-sm text-gray-600 mb-3">Geben Sie Ihre Zahlungsinformationen ein. Diese wird für zukünftige Buchungen gespeichert.</p>
-              {dataIsReadyForCheckoutForm && clientSecret ? (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <PaymentElement />
-                </Elements>
-              ) : (
-                !paymentMessage && !paymentIntentError && !pageError && (
-                  <div className="flex flex-col items-center justify-center p-6 text-gray-600">
-                    <FiLoader className="animate-spin text-3xl text-[#14ad9f] mb-3" />
-                    <span>{isLoadingOverall ? 'Zahlungsformular wird geladen...' : 'Daten für Formular fehlen...'}</span>
+            {/* Fall 1: Alles bereit, clientSecret vorhanden -> Formular anzeigen */}
+            {clientSecret && dataIsReadyForCheckoutForm ? (
+              <Elements stripe={stripePromise} options={{ clientSecret }} key={clientSecret}>
+                <div> {/* Wrapper für PaymentElement und StripeCardCheckout */}
+                  {/* Eingabe der Zahlungsmethode */}
+                  <div className="mb-6 p-4 border rounded-md bg-white">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center"><FiCreditCard className="mr-2" /> Zahlungsmethode</h3>
+                    <p className="text-sm text-gray-600 mb-3">Geben Sie Ihre Zahlungsinformationen ein. Diese wird für zukünftige Buchungen gespeichert.</p>
+                    {/* Das PaymentElement muss innerhalb des Elements-Providers sein */}
+                    <PaymentElement />
                   </div>
-                )
-              )}
-            </div>
 
-            {/* Originaler Checkout-Button-Bereich */}
-            {dataIsReadyForCheckoutForm && !paymentIntentError && !pageError ? (
-              <StripeCardCheckout
-                clientSecret={clientSecret!}
-                taskAmount={finalTaskAmountInCents!}
-                taskCurrency="eur"
-                taskerStripeAccountId={anbieterStripeConnectId!}
-                platformFeeAmount={platformFeeForStripe!}
-                customerName={currentUser!.displayName || `${registration.firstName} ${registration.lastName}` || 'Kunde'}
-                customerEmail={currentUser!.email || registration.email || ''}
-                firebaseUserId={currentUser!.uid}
-                stripeCustomerId={kundeStripeCustomerId!}
-                taskId={tempJobDraftId!}
-                onPaymentSuccess={handlePaymentSuccess}
-                onPaymentError={handlePaymentError}
-              />
-            ) : (
-              !paymentMessage && !paymentIntentError && !pageError && (
-                <div className="flex flex-col items-center justify-center p-6 text-gray-600">
-                  {isLoadingOverall ? (
-                    <>
-                      <FiLoader className="animate-spin text-3xl text-[#14ad9f] mb-3" />
-                      <span>Zahlungsoptionen werden vorbereitet...</span>
-                    </>
-                  ) : (
-                    <span>Wichtige Informationen für die Zahlung fehlen. Bitte überprüfen Sie die vorherigen Schritte.</span>
-                  )}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-4 text-xs text-left bg-gray-100 p-2 rounded">
-                      <p className="font-semibold">Debug-Info (Bedingung für Zahlungsformular nicht erfüllt):</p>
-                      <p>clientSecret: {String(!!clientSecret)}</p>
-                      <p>kundeStripeCustomerId: {String(kundeStripeCustomerId)}</p>
-                      <p>tempJobDraftId: {String(tempJobDraftId)}</p>
-                      <p>currentUser: {String(!!currentUser)}</p>
-                      <p>anbieterStripeConnectId: {String(anbieterStripeConnectId)}</p>
-                      <p>pageError: {String(pageError)}</p>
-                      <p>paymentIntentError: {String(paymentIntentError)}</p>
-                      <p>finalTaskAmountInCents: {String(finalTaskAmountInCents)}</p>
-                      <p>platformFeeForStripe: {String(platformFeeForStripe)}</p>
-                    </div>
+                  {/* Checkout-Button-Bereich jetzt INNERHALB von Elements */}
+                  {!paymentIntentError && !pageError && (
+                    <StripeCardCheckout
+                      clientSecret={clientSecret!}
+                      taskAmount={finalTaskAmountInCents!}
+                      taskCurrency="eur"
+                      taskerStripeAccountId={anbieterStripeConnectId!}
+                      platformFeeAmount={platformFeeForStripe!}
+                      customerName={currentUser!.displayName || `${registration.firstName || ''} ${registration.lastName || ''}`}
+                      customerEmail={currentUser!.email || registration.email || ''}
+                      firebaseUserId={currentUser!.uid}
+                      stripeCustomerId={kundeStripeCustomerId!}
+                      taskId={tempJobDraftId!}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                    />
                   )}
                 </div>
-              )
-            )}
+              </Elements>
+              /* Fall 2: Entweder allgemeines Laden ODER clientSecret wird gerade (neu) geladen */
+            ) : isLoadingOverall || (prerequisitesForClientSecretFetchAreMet && !clientSecret && !paymentIntentError && !pageError) ? (
+              <div className="flex flex-col items-center justify-center p-6 text-gray-600">
+                <FiLoader className="animate-spin text-3xl text-[#14ad9f] mb-3" />
+                <span>
+                  {isLoadingPageData
+                    ? "Seitendaten werden geladen..."
+                    : "Zahlungsformular wird vorbereitet..."}
+                </span>
+              </div>
+              /* Fall 3: Grundlegende Daten fehlen oder es gibt einen Fehler, der das Laden des clientSecret verhindert */
+            ) : !paymentMessage && ( // Nur anzeigen, wenn keine spezifische paymentMessage vorhanden ist
+              <div className="flex flex-col items-center justify-center p-6 text-gray-600">
+                <span>{pageError || paymentIntentError || "Wichtige Informationen für die Zahlung fehlen. Bitte überprüfen Sie die vorherigen Schritte."}</span>
+                {/* Debug-Informationen bleiben hier, falls benötigt */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 text-xs text-left bg-gray-100 p-2 rounded">
+                    <p className="font-semibold">Debug-Info (Bedingung für Zahlungsformular nicht erfüllt):</p>
+                    <p>clientSecret: {String(!!clientSecret)}</p>
+                    <p>kundeStripeCustomerId: {String(kundeStripeCustomerId)}</p>
+                    <p>tempJobDraftId: {String(tempJobDraftId)}</p>
+                    <p>currentUser: {String(!!currentUser)}</p>
+                    <p>anbieterStripeConnectId: {String(anbieterStripeConnectId)}</p>
+                    <p>pageError: {String(pageError)}</p>
+                    <p>paymentIntentError: {String(paymentIntentError)}</p>
+                    <p>finalTaskAmountInCents: {String(finalTaskAmountInCents)}</p>
+                    <p>platformFeeForStripe: {String(platformFeeForStripe)}</p>
+                    {/* Debugging der Rechnungsadressdaten */}
+                    <p className="font-semibold mt-2">Billing Address Details Debug:</p>
+                    <p>billingAddressDetails: {String(!!billingAddressDetails)}</p>
+                    <p>address.line1: {String(billingAddressDetails?.address?.line1)}</p>
+                    <p>address.postal_code: {String(billingAddressDetails?.address?.postal_code)}</p>
+                    <p>address.city: {String(billingAddressDetails?.address?.city)}</p>
+                    <p>address.country: {String(billingAddressDetails?.address?.country)}</p>
+                  </div>
+                )}
+              </div>
+            )} {/* Closes the JSX for the third case and the main ternary */}
           </div>
         </div>
       </div>

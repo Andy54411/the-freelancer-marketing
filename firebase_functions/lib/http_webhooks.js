@@ -1,25 +1,20 @@
 "use strict";
-// Dies ist der korrekte Code für die Datei: firebase_functions/src/http_webhooks.ts
+// /Users/andystaudinger/Tilvo/functions/src/http_webhooks.ts
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stripeWebhookHandler = void 0;
-// Angepasste Imports für eine Firebase Cloud Function (v2)
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const stripe_1 = __importDefault(require("stripe"));
-// WICHTIG: FieldValue und Timestamp jetzt direkt aus helpers.ts importieren!
-// Der 'admin'-Import ist hier NICHT MEHR NÖTIG, da FieldValue und Timestamp von helpers kommen.
 const helpers_1 = require("./helpers");
-// Die Funktion wird als Firebase onRequest-Handler exportiert
 exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) => {
-    v2_1.logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}`);
-    // Die Stripe-Instanz und das Secret werden hier sicher innerhalb der Funktion geladen
+    v2_1.logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}, URL: ${request.url}`);
+    const db = (0, helpers_1.getDb)();
     const localStripe = (0, helpers_1.getStripeInstance)();
     const webhookSecret = (0, helpers_1.getStripeWebhookSecret)();
     if (request.method === 'POST') {
-        // Der Request-Body wird bei Firebase Functions direkt über request.rawBody gelesen
         const buf = request.rawBody;
         const sig = request.headers['stripe-signature'];
         if (!sig) {
@@ -29,9 +24,9 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
         }
         let event;
         try {
-            // Die verifizierte Stripe-Instanz und das Secret werden hier verwendet
             event = localStripe.webhooks.constructEvent(buf, sig, webhookSecret);
             v2_1.logger.info(`[stripeWebhookHandler] Event erfolgreich konstruiert: ${event.id}, Typ: ${event.type}`);
+            v2_1.logger.info(`[stripeWebhookHandler] Event Data Object (partial): ${JSON.stringify(event.data.object).substring(0, 200)}...`); // Loggt die ersten 200 Zeichen des Event-Objekts
         }
         catch (err) {
             let message = 'Fehler bei der Webhook-Signaturverifizierung.';
@@ -49,58 +44,72 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
             return;
         }
         const eventType = event.type;
-        // Ihre vollständige switch-Logik, 1-zu-1 übernommen und an die Firebase-Umgebung angepasst
         switch (eventType) {
             case 'payment_intent.succeeded': {
                 const paymentIntentSucceeded = event.data.object;
                 v2_1.logger.info(`[stripeWebhookHandler] PaymentIntent ${paymentIntentSucceeded.id} was successful!`);
                 const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
                 const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
+                v2_1.logger.info(`[stripeWebhookHandler] PI Metadata: tempJobDraftId=${tempJobDraftId}, firebaseUserId=${firebaseUserId}`);
                 if (!tempJobDraftId || !firebaseUserId) {
-                    v2_1.logger.error(`[stripeWebhookHandler] WICHTIG: Fehlende Metadaten im PI ${paymentIntentSucceeded.id}.`);
+                    v2_1.logger.error(`[stripeWebhookHandler] WICHTIG: Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId oder firebaseUserId ist null/undefined.`);
                     response.status(200).json({ received: true, message: 'Missing metadata, handled with error logging' });
                     return;
                 }
-                v2_1.logger.info(`[stripeWebhookHandler] Verarbeite erfolgreichen PaymentIntent ${paymentIntentSucceeded.id} für Job ${tempJobDraftId}`);
+                v2_1.logger.info(`[stripeWebhookHandler] Verarbeite erfolgreichen PaymentIntent ${paymentIntentSucceeded.id} für Job-Entwurf ${tempJobDraftId} von Nutzer ${firebaseUserId}`);
                 try {
-                    const tempJobDraftRef = helpers_1.db.collection('temporaryJobDrafts').doc(tempJobDraftId);
-                    const auftragCollectionRef = helpers_1.db.collection('auftraege');
-                    const userDocRef = helpers_1.db.collection('users').doc(firebaseUserId); // Referenz zum Nutzerdokument
-                    await helpers_1.db.runTransaction(async (transaction) => {
+                    const tempJobDraftRef = db.collection('temporaryJobDrafts').doc(tempJobDraftId);
+                    const auftragCollectionRef = db.collection('auftraege');
+                    const userDocRef = db.collection('users').doc(firebaseUserId);
+                    v2_1.logger.info(`[stripeWebhookHandler] Starte Firestore-Transaktion für Job ${tempJobDraftId}...`);
+                    await db.runTransaction(async (transaction) => {
+                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Lade temporären Job-Entwurf ${tempJobDraftId} und Nutzer ${firebaseUserId}...`);
                         const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
-                        const userDocSnapshot = await transaction.get(userDocRef); // Nutzerdokument abrufen
+                        const userDocSnapshot = await transaction.get(userDocRef);
                         if (tempJobDraftSnapshot.data()?.status === 'converted') {
-                            v2_1.logger.info(`[stripeWebhookHandler] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe Verarbeitung.`);
-                            return;
+                            v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe Verarbeitung.`);
+                            return; // Transaktion beenden
                         }
                         if (!tempJobDraftSnapshot.exists) {
-                            throw new Error(`Temporärer Job-Entwurf ${tempJobDraftId} nicht gefunden.`);
+                            throw new Error(`Transaktion: Temporärer Job-Entwurf ${tempJobDraftId} nicht gefunden.`);
                         }
+                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Job-Entwurf ${tempJobDraftId} gefunden.`);
                         const tempJobDraftData = tempJobDraftSnapshot.data();
-                        // Stellen Sie sicher, dass userData korrekt als UserProfileData gehandhabt wird
                         const userData = userDocSnapshot.data();
+                        // Sicherstellen, dass createdAt ein gültiger Timestamp ist, da es aus Firestore kommt
+                        const createdAtTimestamp = tempJobDraftData.createdAt instanceof helpers_1.Timestamp
+                            ? tempJobDraftData.createdAt
+                            : new helpers_1.Timestamp(Math.floor(Date.now() / 1000), // Fallback zu aktueller Zeit, falls ungültig
+                            0);
                         const auftragData = {
-                            ...tempJobDraftData,
-                            status: 'bezahlt',
-                            paidAt: helpers_1.FieldValue.serverTimestamp(),
-                            customerFirebaseUid: firebaseUserId,
-                            tempJobDraftRefId: tempJobDraftId,
-                            totalPriceInCents: paymentIntentSucceeded.amount,
-                            createdAt: new helpers_1.Timestamp(tempJobDraftData.createdAt?._seconds || Math.floor(Date.now() / 1000), tempJobDraftData.createdAt?._nanoseconds || 0),
-                            paymentMethodId: paymentIntentSucceeded.payment_method || null,
+                            ...tempJobDraftData, // Übernahme aller Daten aus dem Entwurf
+                            status: 'bezahlt', // Status auf bezahlt setzen
+                            paidAt: helpers_1.FieldValue.serverTimestamp(), // Zeitpunkt der Zahlung
+                            customerFirebaseUid: firebaseUserId, // Sicherstellen, dass die UID konsistent ist
+                            tempJobDraftRefId: tempJobDraftId, // Referenz zum ursprünglichen Entwurf
+                            totalPriceInCents: paymentIntentSucceeded.amount, // Exakter Betrag von Stripe
+                            createdAt: createdAtTimestamp, // Behalte den ursprünglichen Erstellungszeitstempel
+                            paymentMethodId: paymentIntentSucceeded.payment_method || null, // Zahlungsmethode ID von Stripe
+                            stripeCustomerId: paymentIntentSucceeded.customer || null, // Stripe Customer ID
                         };
-                        const newAuftragRef = auftragCollectionRef.doc();
-                        transaction.set(newAuftragRef, auftragData);
+                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Daten für neuen Auftrag vorbereitet. Status: ${auftragData.status}`);
+                        // Logge auftragData nur teilweise oder als JSON.stringify, um sensitive Daten zu vermeiden
+                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Auftragsdaten (teilweise): tempJobDraftRefId=${auftragData.tempJobDraftRefId}, customerFirebaseUid=${auftragData.customerFirebaseUid}`);
+                        const newAuftragRef = auftragCollectionRef.doc(); // Neue leere Doc-Referenz
+                        transaction.set(newAuftragRef, auftragData); // Neuen Auftrag erstellen
+                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Neuer Auftrag ${newAuftragRef.id} wird gesetzt.`);
                         transaction.update(tempJobDraftRef, {
-                            status: 'converted',
-                            convertedToOrderId: newAuftragRef.id,
+                            status: 'converted', // Status des Entwurfs auf konvertiert setzen
+                            convertedToOrderId: newAuftragRef.id, // Referenz zum neuen Auftrag
                         });
-                        v2_1.logger.info(`[stripeWebhookHandler] Auftrag ${newAuftragRef.id} erstellt und Entwurf ${tempJobDraftId} aktualisiert.`);
-                        // --- NEU: Speichern der Rechnungsadresse ---
+                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Temporärer Entwurf ${tempJobDraftId} wird als 'converted' aktualisiert.`);
+                        // Speicherung der Rechnungsadresse (falls vorhanden und nicht dupliziert)
                         if (paymentIntentSucceeded.payment_method) {
                             try {
+                                v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Versuche, PaymentMethod ${paymentIntentSucceeded.payment_method} abzurufen.`);
                                 const paymentMethod = await localStripe.paymentMethods.retrieve(paymentIntentSucceeded.payment_method);
                                 const billingDetails = paymentMethod.billing_details;
+                                v2_1.logger.info(`[stripeWebhookHandler] Transaktion: PaymentMethod abgerufen. Billing Details Name: ${billingDetails?.name || 'N/A'}`);
                                 if (billingDetails && billingDetails.address && billingDetails.address.line1 && billingDetails.address.postal_code && billingDetails.address.city && billingDetails.address.country) {
                                     const newAddress = {
                                         id: `addr_${paymentMethod.id}`,
@@ -111,13 +120,10 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                                         postal_code: billingDetails.address.postal_code,
                                         country: billingDetails.address.country,
                                         type: 'billing',
-                                        isDefault: true, // Neue Adresse ist Standard
+                                        isDefault: true,
                                         savedAt: helpers_1.FieldValue.serverTimestamp(),
                                     };
-                                    // FEHLER BEHOBEN: isDefault für existierende Adressen auf 'false' setzen
-                                    // und gleichzeitig sicherstellen, dass alle isDefault-Werte als boolean behandelt werden
-                                    const existingAddresses = (userData?.savedAddresses || []).map(addr => ({ ...addr, isDefault: false }));
-                                    // Überprüfen auf Duplikate anhand der Hauptfelder
+                                    const existingAddresses = (userData?.savedAddresses || []).map(addr => ({ ...addr, isDefault: false })); // Alle anderen auf isDefault=false setzen
                                     const isDuplicateAddress = existingAddresses.some(existingAddr => existingAddr.line1 === newAddress.line1 &&
                                         existingAddr.postal_code === newAddress.postal_code &&
                                         existingAddr.city === newAddress.city &&
@@ -125,25 +131,47 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                                     if (!isDuplicateAddress) {
                                         const updatedAddresses = [...existingAddresses, newAddress];
                                         transaction.update(userDocRef, { savedAddresses: updatedAddresses });
-                                        v2_1.logger.info(`[stripeWebhookHandler] Rechnungsadresse für Nutzer ${firebaseUserId} gespeichert: ${newAddress.id}`);
+                                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Rechnungsadresse ${newAddress.id} für Nutzer ${firebaseUserId} wird zur Speicherung im Array markiert.`);
+                                        // NEU: Aktualisiere auch die Felder auf oberster Ebene, wenn dies die Standard-Rechnungsadresse ist
+                                        // und der Nutzer noch keine primären Adressdaten hat oder diese aktualisiert werden sollen.
+                                        // Diese Logik kann angepasst werden, je nachdem, wann diese Felder überschrieben werden sollen.
+                                        // Hier als Beispiel: Wenn newAddress.isDefault ist, aktualisiere die Hauptfelder.
+                                        if (newAddress.isDefault) {
+                                            const nameParts = newAddress.name.split(' ');
+                                            const firstName = nameParts.shift() || '';
+                                            const lastName = nameParts.join(' ') || '';
+                                            transaction.update(userDocRef, {
+                                                // Verwende die Namen aus der Adresse, wenn vorhanden, sonst Fallback
+                                                firstName: firstName || userData?.firstName || '', // userData?.firstName wäre ein Fallback, falls schon vorhanden
+                                                lastName: lastName || userData?.lastName || '', // userData?.lastName wäre ein Fallback
+                                                addressLine1: newAddress.line1,
+                                                addressLine2: newAddress.line2 || null, // Stelle sicher, dass undefined zu null wird für Firestore
+                                                city: newAddress.city,
+                                                postalCode: newAddress.postal_code, // Beachte die Feldnamen-Konvention
+                                                country: newAddress.country,
+                                            });
+                                            v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Primäre Adressfelder für Nutzer ${firebaseUserId} mit Daten aus Rechnungsadresse ${newAddress.id} aktualisiert.`);
+                                        }
                                     }
                                     else {
-                                        v2_1.logger.info(`[stripeWebhookHandler] Rechnungsadresse für Nutzer ${firebaseUserId} bereits vorhanden. Überspringe Speicherung.`);
+                                        v2_1.logger.info(`[stripeWebhookHandler] Transaktion: Rechnungsadresse für Nutzer ${firebaseUserId} bereits vorhanden. Überspringe Speicherung.`);
                                     }
                                 }
                                 else {
-                                    v2_1.logger.warn(`[stripeWebhookHandler] Unvollständige Rechnungsadresse in PaymentMethod ${paymentMethod.id} für Nutzer ${firebaseUserId}. Überspringe Speicherung.`);
+                                    v2_1.logger.warn(`[stripeWebhookHandler] Transaktion: Unvollständige Rechnungsadresse in PaymentMethod ${paymentMethod.id} für Nutzer ${firebaseUserId}. Überspringe Speicherung.`);
                                 }
                             }
                             catch (pmError) {
-                                v2_1.logger.error(`[stripeWebhookHandler] Fehler beim Abrufen/Speichern der Rechnungsadresse für PaymentIntent ${paymentIntentSucceeded.id}:`, pmError);
+                                v2_1.logger.error(`[stripeWebhookHandler] Transaktion: Fehler beim Abrufen/Speichern der Rechnungsadresse für PaymentIntent ${paymentIntentSucceeded.id}:`, pmError);
+                                // Dies ist kein kritischer Fehler für den Auftrag, Transaktion sollte fortgesetzt werden.
                             }
                         }
-                    }); // Ende db.runTransaction
+                    }); // Ende der Transaktion
+                    v2_1.logger.info(`[stripeWebhookHandler] Transaktion für Job ${tempJobDraftId} erfolgreich abgeschlossen.`);
                 }
                 catch (dbError) {
-                    v2_1.logger.error(`[stripeWebhookHandler] Fehler bei der Job-Konvertierung (Draft ${tempJobDraftId} zu Auftrag):`, dbError);
-                    response.status(200).json({ received: true, message: `Job conversion failed: ${dbError.message}` });
+                    v2_1.logger.error(`[stripeWebhookHandler] Schwerwiegender Fehler bei der Job-Konvertierung (Draft ${tempJobDraftId} zu Auftrag) oder Transaktion fehlgeschlagen:`, dbError);
+                    response.status(500).json({ received: true, message: `Job conversion failed: ${dbError.message}` }); // 500er Status für Stripe
                     return;
                 }
                 break;
@@ -151,6 +179,7 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
             case 'payment_intent.payment_failed': {
                 const paymentIntentFailed = event.data.object;
                 v2_1.logger.info(`[stripeWebhookHandler] PaymentIntent ${paymentIntentFailed.id} failed. Reason: ${paymentIntentFailed.last_payment_error?.message}`);
+                // Hier könnten Sie Logik hinzufügen, um den temporären Job-Entwurf zu aktualisieren (z.B. Status 'Zahlung fehlgeschlagen')
                 break;
             }
             case 'payment_intent.created': {
@@ -179,10 +208,9 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                         v2_1.logger.error(`[stripeWebhookHandler] Firebase UID nicht in Stripe Customer Metadata für ${setupIntent.customer} gefunden. Kann PaymentMethod nicht zuordnen.`);
                         break;
                     }
-                    const userDocRef = helpers_1.db.collection('users').doc(firebaseUid);
+                    const userDocRef = db.collection('users').doc(firebaseUid);
                     const userDoc = await userDocRef.get();
-                    // Stelle sicher, dass die existingSavedPaymentMethods korrekt typisiert sind
-                    const existingSavedPaymentMethods = userDoc.data()?.savedPaymentMethods || []; // Use any[] oder ein spezifisches SavedPaymentMethod[] wenn Sie es haben
+                    const existingSavedPaymentMethods = userDoc.data()?.savedPaymentMethods || [];
                     const isDuplicate = existingSavedPaymentMethods.some((pm) => pm.id === paymentMethod.id);
                     if (isDuplicate) {
                         v2_1.logger.info(`[stripeWebhookHandler] PaymentMethod ${paymentMethod.id} ist bereits für Nutzer ${firebaseUid} gespeichert. Überspringe Hinzufügen.`);
@@ -211,7 +239,6 @@ exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) 
                             country: paymentMethod.sepa_debit.country,
                             last4: paymentMethod.sepa_debit.last4,
                         } : undefined,
-                        // Setze diese als Standard, wenn keine andere PM existiert
                         isDefault: existingSavedPaymentMethods.length === 0,
                     };
                     await userDocRef.update({

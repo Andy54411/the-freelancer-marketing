@@ -4,65 +4,78 @@ service cloud.firestore {
 
     // Regeln für die 'companies' Collection
     match /companies/{companyId} {
-      allow read: if true; // Dies lässt JEDEN den Firmen-Account lesen. Ist das beabsichtigt?
-                           // Wenn nicht, sollten Sie hier strengere Regeln anwenden, z.B. nur für authentifizierte Nutzer oder nur wenn companyId == request.auth.uid für private Daten.
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == companyId;
     }
 
     // Regeln für die 'users' Collection
     match /users/{userId} {
-      // Nur der authentifizierte Benutzer darf sein eigenes Profil lesen und schreiben
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      // allow update: if request.auth != null && request.auth.uid == userId;
-      // Anmerkung: 'write' beinhaltet 'update', daher ist die separate 'update'-Regel redundant,
-      // es sei denn, Sie haben spezifische Feld-Einschränkungen für 'update'.
     }
 
-    // NEUE REGELN: Für die 'auftraege' Collection
+    // Regeln für die 'auftraege' Collection
     match /auftraege/{auftragId} {
-      // Nur der Auftraggeber (kundeId) oder der Auftragnehmer (selectedAnbieterId)
-      // darf das Auftragsdokument lesen.
       allow read: if request.auth != null
                    && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
                        || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid);
+      allow create, update, delete: if false; // Aufträge sollten vom Backend (Webhook) erstellt/aktualisiert werden
+    }
 
-      // KEIN 'write' für Aufträge hier, da Aufträge über Cloud Functions (z.B. nach Zahlung) erstellt/aktualisiert werden sollten.
-      // Wenn das Frontend Aufträge erstellen oder ändern darf, müssen hier spezifische Regeln hinzugefügt werden.
-      // Beispiel (falls Frontend Status ändern darf):
-      // allow update: if request.auth != null && request.auth.uid == resource.data.kundeId && request.resource.data.status != resource.data.status;
+    // --- KORRIGIERTE REGEL: Für die 'temporaryJobDrafts' Collection ---
+    match /temporaryJobDrafts/{docId} {
+      // Für 'create': Prüfen, ob authentifiziert, Feld existiert, String ist und übereinstimmt
+      allow create: if request.auth != null
+                     && ('customerFirebaseUid' in request.resource.data)
+                     && (request.resource.data.customerFirebaseUid is string)
+                     && request.auth.uid == request.resource.data.customerFirebaseUid;
 
-      // NEUE REGELN: Für die 'nachrichten' Sub-Collection unter 'auftraege'
-      match /nachrichten/{nachrichtId} {
-        // Lesen von Nachrichten: Nur wenn der angemeldete Benutzer (request.auth.uid)
-        // entweder der Kunde (kundeId) oder der Anbieter (selectedAnbieterId) des übergeordneten Auftrags ist.
-        allow read: if request.auth != null
+      // Für 'read', 'update', 'delete': Prüfen, ob authentifiziert, Feld existiert, String ist und übereinstimmt
+      allow read, update, delete: if request.auth != null
+                                   && ('customerFirebaseUid' in resource.data)
+                                   && (resource.data.customerFirebaseUid is string)
+                                   && request.auth.uid == resource.data.customerFirebaseUid;
+    }
+
+    // Regeln für die 'nachrichten' Sub-Collection unter 'auftraege'
+    match /auftraege/{auftragId}/nachrichten/{nachrichtId} {
+      allow read: if request.auth != null
                      && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
                          || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid);
 
-        // Schreiben von Nachrichten:
-        // 1. Benutzer muss authentifiziert sein.
-        // 2. Der 'senderId' im gesendeten Nachrichtendokument muss der UID des angemeldeten Benutzers entsprechen.
-        // 3. Der angemeldete Benutzer muss entweder der Kunde oder der Anbieter des übergeordneten Auftrags sein.
-        // 4. Nur bestimmte Felder dürfen geschrieben werden (senderId, senderName, senderType, text, timestamp, optional: imageUrls).
-        //    'timestamp' sollte FieldValue.serverTimestamp() sein.
         allow create: if request.auth != null
                        && request.resource.data.senderId == request.auth.uid
                        && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
                            || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid)
-                       && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'timestamp', 'senderType']) // Erforderliche Felder
-                       && request.resource.data.timestamp == request.time; // Überprüfen, ob Timestamp von Server gesetzt wird
+                       && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'timestamp', 'senderType'])
+                       && request.resource.data.timestamp == request.time;
 
-        // Keine direkte Aktualisierung oder Löschung von Nachrichten nach dem Erstellen
-        // Nachrichten sind in der Regel unveränderlich nach dem Senden.
-        allow update, delete: if false; // Oder spezifische Regeln, wenn Nachrichten bearbeitet/gelöscht werden dürfen
+        allow update, delete: if false;
+    }
+
+    // Regeln für die 'supportChats' Collection und 'messages' Sub-Collection
+    match /supportChats/{chatId} {
+      // Erlaube das Erstellen des Chat-Dokuments selbst nicht direkt durch den Client.
+      // Das Dokument wird implizit erstellt, wenn die erste Nachricht geschrieben wird.
+      allow read, write: if false;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+                       // Der Benutzer darf nur Nachrichten lesen, wenn seine UID Teil der chatId ist.
+                       // chatId ist im Format 'support_chat_{userId}'
+                       && request.auth.uid == chatId.split('_')[2];
+        allow create: if request.auth != null
+                        && request.auth.uid == chatId.split('_')[2] // Stellt sicher, dass der User nur in seinem Chat schreibt
+                        && request.resource.data.senderId == request.auth.uid // Stellt sicher, dass der senderId der des authentifizierten Users ist
+                        && request.resource.data.keys().hasAll(['senderId', 'text', 'timestamp']) // Benötigte Felder
+                        && request.resource.data.timestamp == request.time; // Stellt sicher, dass der Timestamp vom Server kommt
+        allow update, delete: if false; // Nachrichten sollten nicht vom Client aktualisiert/gelöscht werden
       }
     }
 
-    // Fallback-Regel für andere Collections (wie Ihre ursprüngliche)
-    // Diese Regel sollte ZULETZT stehen, da sie sehr allgemein ist.
+    // Fallback-Regel für andere Collections
     match /{collection}/{document} {
       allow read: if request.auth != null;
-      allow write: if false; // Standardmäßig keine Schreibzugriffe für andere Collections
+      allow write: if false;
     }
   }
 }

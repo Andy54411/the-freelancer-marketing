@@ -5,7 +5,7 @@ import Image from 'next/image';
 import React from 'react';
 // Importiere deine globalen Typen - passe den Pfad an deine globale Typendatei an!
 // Z.B. ../../../../../../../lib/types oder besser mit Alias '@/lib/types'
-import type { Company, RatingInfo } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types';
+import type { Company, RatingInfo } from '@/types/types';
 
 // Importiere andere benötigte Komponenten mit korrekten Pfaden
 import ProjectGallery from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/ProjectGallery'; // Beispiel für globalen Pfad

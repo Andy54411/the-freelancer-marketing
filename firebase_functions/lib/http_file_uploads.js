@@ -37,16 +37,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadStripeFile = void 0;
+// /Users/andystaudinger/Tasko/firebase_functions/src/http_file_uploads.ts
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const admin = __importStar(require("firebase-admin"));
+const admin = __importStar(require("firebase-admin")); // Hier wird 'admin' importiert
 const busboy_1 = __importDefault(require("busboy"));
-const helpers_1 = require("./helpers");
+const helpers_1 = require("./helpers"); // Annahme: getStripeInstance ist korrekt definiert
 const path_1 = __importDefault(require("path"));
 const os_1 = __importDefault(require("os"));
 const fs_1 = __importDefault(require("fs"));
 const storage_1 = require("firebase-admin/storage");
 const uuid_1 = require("uuid");
+// WICHTIG: Dies initialisiert die Firebase Admin SDK für DIESE spezielle Funktion.
+// Es muss hier stehen, da diese Datei direkt 'admin'-Dienste nutzt.
+admin.initializeApp();
 const authenticateRequest = async (req) => {
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
         v2_1.logger.warn("[authenticateRequest] Unauthorized: Missing or invalid Authorization header.");
@@ -59,7 +63,7 @@ const authenticateRequest = async (req) => {
         return decodedToken;
     }
     catch (error) {
-        v2_1.logger.warn("[authenticateRequest] Token verification failed:", error);
+        v2_1.logger.warn("[authenticateRequest] Token verification failed:", error); // Dieses Log ist entscheidend!
         throw { status: 401, message: 'Unauthorized: Invalid token.' };
     }
 };

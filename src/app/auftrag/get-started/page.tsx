@@ -1,7 +1,6 @@
 // /Users/andystaudinger/tasko/src/app/auftrag/get-started/page.tsx
 'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import FooterSection from '@/components/footer';
 import { HeroHeader } from '@/components/hero8-header';
@@ -22,6 +21,8 @@ const steps = [
   'Unterkategorie wählen',
   'Auftrag beschreiben'
 ];
+
+const TOTAL_STEPS = steps.length;
 
 type Category = {
   title: string;
@@ -127,41 +128,51 @@ export default function GetStartedPage() {
   const router = useRouter();
   const registration = useRegistration();
 
-  const [selectedType, setSelectedTypeState] = useState<'private' | 'business' | null>(registration.customerType || null);
-  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(registration.selectedCategory || null);
-  const [selectedSubcategoryState, setSelectedSubcategoryState] = useState<string | null>(registration.selectedSubcategory || null);
-  const [description, setDescriptionState] = useState(registration.description || '');
+  // Initialize with server-safe defaults
+  const [selectedType, setSelectedTypeState] = useState<'private' | 'business' | null>(null);
+  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(null);
+  const [selectedSubcategoryState, setSelectedSubcategoryState] = useState<string | null>(null);
+  const [description, setDescriptionState] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClientMounted, setIsClientMounted] = useState(false);
 
+  // Effect to mark client mount and load initial state from context
   useEffect(() => {
-    if (registration.customerType !== selectedType) setSelectedTypeState(registration.customerType);
-    if (registration.selectedCategory !== selectedCategory) setSelectedCategoryState(registration.selectedCategory);
-    if (registration.selectedSubcategory !== selectedSubcategoryState) {
-      setSelectedSubcategoryState(registration.selectedSubcategory);
-    } else if (!registration.selectedSubcategory) {
-      const storedSubcategory = localStorage.getItem('selectedSubcategory');
-      if (storedSubcategory) {
-        setSelectedSubcategoryState(storedSubcategory);
-        registration.setSelectedSubcategory(storedSubcategory);
-      }
-    }
-    if (registration.description !== description) setDescriptionState(registration.description);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    setIsClientMounted(true);
+
+    // Load initial values from context into local state
+    setSelectedTypeState(registration.customerType || null);
+    setSelectedCategoryState(registration.selectedCategory || null);
+    setSelectedSubcategoryState(registration.selectedSubcategory || null);
+    setDescriptionState(registration.description || '');
+
     const unsubscribe = onAuthStateChanged(auth, (_user: User | null) => {
-      // Logic for currentUserId removed as it's not used
+      // Auth logic if needed
     });
     return () => unsubscribe();
-  }, [registration, selectedType, selectedCategory, selectedSubcategoryState, description]);
+  }, [
+    registration.customerType,
+    registration.selectedCategory,
+    registration.selectedSubcategory,
+    registration.description
+    // Removed registration from dependencies to avoid re-running if the whole object changes
+    // but only specific fields are relevant for initial load.
+  ]);
 
-  const stepsCompleted = [
-    !!selectedType,
-    !!selectedCategory,
-    !!selectedSubcategoryState,
-    description.trim().length > 0,
-  ];
-  const currentStep = stepsCompleted.filter(Boolean).length;
+  const logicalCurrentStep = useMemo(() => {
+    const stepsCompleted = [
+      !!selectedType,
+      !!selectedCategory,
+      !!selectedSubcategoryState,
+      description.trim().length > 0,
+    ];
+    return stepsCompleted.filter(Boolean).length;
+  }, [selectedType, selectedCategory, selectedSubcategoryState, description]);
+
+  // Determine the step to display, ensuring server and initial client render match
+  const stepForDisplay = isClientMounted ? logicalCurrentStep : 0;
 
   const handleCustomerTypeChange = (type: 'private' | 'business') => {
     setSelectedTypeState(type);
@@ -178,7 +189,7 @@ export default function GetStartedPage() {
   const handleSubcategoryChange = (subcategoryValue: string) => {
     setSelectedSubcategoryState(subcategoryValue);
     registration.setSelectedSubcategory(subcategoryValue);
-    localStorage.setItem('selectedSubcategory', subcategoryValue);
+    // localStorage.setItem('selectedSubcategory', subcategoryValue); // Context handles persistence
   };
 
   const handleDescriptionChange = (descValue: string) => {
@@ -195,7 +206,13 @@ export default function GetStartedPage() {
   const handleNextClick = () => {
     setError(null);
 
-    if (!selectedType || !selectedCategory || !selectedSubcategoryState || description.trim().length === 0) {
+    // Use local component state for validation as it's the source of truth for the current form
+    if (
+      !selectedType ||
+      !selectedCategory ||
+      !selectedSubcategoryState ||
+      description.trim().length === 0
+    ) {
       setError('Bitte füllen Sie alle Felder aus.');
       return;
     }
@@ -226,11 +243,11 @@ export default function GetStartedPage() {
           </p>
 
           <div className="w-full max-w-4xl mx-auto mt-6">
-            <ProgressBar currentStep={currentStep} totalSteps={steps.length} />
+            <ProgressBar currentStep={stepForDisplay} totalSteps={TOTAL_STEPS} />
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm text-[#14ad9f] font-medium">
-            <p>Schritt {currentStep}/{steps.length}</p>
+            <p>Schritt {stepForDisplay}/{TOTAL_STEPS}</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="hover:underline flex items-center gap-1"
@@ -310,7 +327,7 @@ export default function GetStartedPage() {
             <div className="text-red-500 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">{error}</div>
           )}
 
-          {currentStep === steps.length && (
+          {isClientMounted && logicalCurrentStep === TOTAL_STEPS && (
             <div className="mt-10">
               <button
                 className="bg-[#14ad9f] text-white font-medium py-3 px-6 rounded-lg shadow hover:bg-teal-700 transition"

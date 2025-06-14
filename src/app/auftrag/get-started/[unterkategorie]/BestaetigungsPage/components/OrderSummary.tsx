@@ -11,7 +11,7 @@ import Image from 'next/image';
 import type {
   Company as AnbieterDetails,
   TaskDetails,
-} from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types';
+} from '@/types/types';
 import { TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
 
 export interface OrderSummaryProps {

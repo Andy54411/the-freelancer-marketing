@@ -1,16 +1,15 @@
-// src/app/dashboard/user/[uid]/components/OrderPaymentMethodSelection.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { FiLoader, FiCreditCard } from 'react-icons/fi';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button'; // FEHLER BEHOBEN: Button-Komponente importiert
+import { Button } from '@/components/ui/button';
 
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe, StripeElementsOptions, StripePaymentElementOptions } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-import { SavedPaymentMethod, UserProfileData } from '@/types/dashboard';
+import { SavedPaymentMethod, UserProfileData } from '@/types/types';
 
 // =======================================================
 // Checkout Form - EIGENE KOMPONENTE FÜR STRIPE (Hier definiert, wenn nicht global)
@@ -29,39 +28,73 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ onProcessing, onError, onSu
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+
         if (!stripe || !elements) {
-            onError("Stripe ist noch nicht geladen.");
+            // Stripe.js oder Elements sind noch nicht geladen. Formular nicht absenden.
+            onError("Zahlungssystem ist noch nicht bereit. Bitte warten Sie einen Moment.");
             return;
         }
 
         setProcessingInternal(true); // Internen State setzen
         onProcessing(true); // Parent informieren
-        onError(null);
+        onError(null); // Alte Fehlermeldungen zurücksetzen
 
-        const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-            elements,
-            clientSecret: clientSecret,
-            confirmParams: {},
-            redirect: 'if_required',
-        });
+        try {
+            // WICHTIGE NEUE ZEILE: Zuerst elements.submit() aufrufen.
+            // Dies validiert die Eingaben des Payment Elements und sammelt die Zahlungsdaten.
+            const { error: submitError } = await elements.submit();
 
-        if (confirmError) {
-            onError(confirmError.message || "Ein unerwarteter Zahlungsfehler ist aufgetreten.");
-        } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-            onSuccess(paymentIntent.id);
-        } else {
-            onError("Zahlung fehlgeschlagen. Status: " + paymentIntent?.status);
+            if (submitError) {
+                // Fehler bei der Validierung des Payment Elements (z.B. ungültige Kartennummer)
+                console.error("Fehler beim Absenden des Payment Elements:", submitError);
+                onError(submitError.message || "Fehler bei der Zahlungseingabe.");
+                setProcessingInternal(false);
+                onProcessing(false);
+                return;
+            }
+
+            // Zweiter Schritt: Bestätige die Zahlung mit dem Payment Intent.
+            // Der clientSecret kommt direkt aus den Props.
+            const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+                elements,
+                clientSecret: clientSecret,
+                confirmParams: {
+                    // Da wir im Backend 'automatic_payment_methods: { allow_redirects: "never" }' gesetzt haben,
+                    // ist return_url hier nicht notwendig. Stripe verarbeitet die Zahlung inline.
+                },
+                redirect: 'if_required', // Beibehalten: Stripe entscheidet, ob ein Redirect *theoretisch* nötig wäre, aber 'never' verhindert es.
+            });
+
+            if (confirmError) {
+                // Fehler bei der Bestätigung der Zahlung (z.B. von der Bank abgelehnt)
+                console.error("Fehler bei der Bestätigung des Payment Intents:", confirmError);
+                onError(confirmError.message || "Ein unerwarteter Zahlungsfehler ist aufgetreten.");
+            } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                // Zahlung erfolgreich!
+                console.log("PaymentIntent erfolgreich abgeschlossen:", paymentIntent);
+                onSuccess(paymentIntent.id); // RUFT onSuccess MIT paymentIntent.id AUF
+            } else {
+                // Andere PaymentIntent-Status (z.B. 'processing', 'requires_action' ohne Redirect)
+                console.warn("PaymentIntent Status ist nicht 'succeeded':", paymentIntent?.status);
+                onError(`Zahlung fehlgeschlagen. Status: ${paymentIntent?.status}.`);
+            }
+        } catch (apiError: any) {
+            // Ein unerwarteter Fehler im try-Block
+            console.error("Unerwarteter Fehler im handleSubmit:", apiError);
+            onError(`Ein unerwarteter Fehler ist aufgetreten: ${apiError.message || 'Unbekannt.'}`);
+        } finally {
+            setProcessingInternal(false); // Internen State zurücksetzen
+            onProcessing(false); // Parent informieren
         }
-        setProcessingInternal(false); // Internen State zurücksetzen
-        onProcessing(false); // Parent informieren
     };
 
     return (
         <form onSubmit={handleSubmit}>
+            {/* Das Payment Element sammelt die Zahlungsdetails */}
             <PaymentElement />
             <Button
                 type="submit"
-                className="w-full mt-4 bg-[#14ad9f] text-white hover:bg-[#12908f] transition disabled:opacity-50" // Hover-Farbe korrigiert
+                className="w-full mt-4 bg-[#14ad9f] text-white hover:bg-[#12908f] transition disabled:opacity-50"
                 disabled={!stripe || !elements || processingInternal}
             >
                 {processingInternal ? <FiLoader className="animate-spin mr-2" /> : 'Auftrag erstellen & sicher bezahlen'}
@@ -84,8 +117,15 @@ interface OrderPaymentMethodSelectionProps {
     handleCheckoutFormError: (errorMessage: string | null) => void;
     handleCheckoutFormSuccess: (paymentIntentId: string) => void;
     loading: boolean; // Allgemeiner Ladezustand der Parent-Komponente
+
+    // NEU HINZUGEFÜGTE PROPS, die von CreateOrderModal übergeben werden
+    totalPriceInCents: number;
+    onPaymentSuccess: (paymentIntentId: string) => Promise<void>;
+    onPaymentError: (message: string | null) => void;
+    fullOrderDetails: any;
 }
 
+// Stellen Sie sicher, dass StripePromise nur einmal außerhalb der Komponente geladen wird.
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const OrderPaymentMethodSelection: React.FC<OrderPaymentMethodSelectionProps> = ({
@@ -98,6 +138,12 @@ const OrderPaymentMethodSelection: React.FC<OrderPaymentMethodSelectionProps> = 
     handleCheckoutFormError,
     handleCheckoutFormSuccess,
     loading,
+
+    // Empfange die neuen Props
+    totalPriceInCents,
+    onPaymentSuccess,
+    onPaymentError,
+    fullOrderDetails,
 }) => {
     const showPaymentElement = useSavedPaymentMethod === 'new';
 
@@ -139,7 +185,14 @@ const OrderPaymentMethodSelection: React.FC<OrderPaymentMethodSelectionProps> = 
             {showPaymentElement && (
                 <div className="mt-4 p-3 border border-gray-200 rounded-md bg-gray-50">
                     <p className="text-sm text-gray-600 mb-2">Geben Sie Ihre neue Karte ein:</p>
-                    {clientSecret && !loading ? (
+                    {/* Zeige Ladeindikator an, wenn clientSecret noch geladen wird */}
+                    {isPaymentIntentLoading || !clientSecret ? (
+                        <div className="flex justify-center items-center py-4">
+                            <FiLoader className="animate-spin text-2xl text-[#14ad9f]" />
+                            <span className="ml-2 text-gray-600">Zahlungsformular wird geladen...</span>
+                        </div>
+                    ) : (
+                        // Rendere Elements und CheckoutForm nur, wenn clientSecret verfügbar ist
                         <Elements stripe={stripePromise} options={{ clientSecret }}>
                             <CheckoutForm
                                 onProcessing={handleCheckoutFormProcessing}
@@ -148,11 +201,6 @@ const OrderPaymentMethodSelection: React.FC<OrderPaymentMethodSelectionProps> = 
                                 clientSecret={clientSecret}
                             />
                         </Elements>
-                    ) : (
-                        <div className="flex justify-center items-center py-4">
-                            <FiLoader className="animate-spin text-2xl text-[#14ad9f]" />
-                            <span className="ml-2 text-gray-600">Zahlungsformular wird geladen...</span>
-                        </div>
                     )}
                 </div>
             )}

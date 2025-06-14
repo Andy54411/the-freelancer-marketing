@@ -3,8 +3,7 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-// Angepasste Importe
-import { db, getStripeInstance, getSendGridClient, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
+import { getDb, getStripeInstance, getSendGridClient, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
 import { type MailDataRequired } from '@sendgrid/mail';
 
@@ -85,7 +84,6 @@ interface GetStripeAccountStatusResult {
   missingFields?: string[];
 }
 
-// UserProfile Interface für Firestore-Dokumente (für createSetupIntent)
 interface UserProfile {
   stripeCustomerId?: string;
   savedPaymentMethods?: {
@@ -96,7 +94,6 @@ interface UserProfile {
     exp_year?: number;
     type: string;
   }[];
-  // ... weitere Felder
 }
 
 const translateStripeRequirement = (req: string): string => {
@@ -157,9 +154,9 @@ const mapLegalFormToStripeBusinessInfo = (
 export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableData, Promise<CreateStripeAccountCallableResult>>(
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
+    const db = getDb();
     const localStripe = getStripeInstance();
     const { userId, clientIp, ...payloadFromClient } = request.data;
-    // Hier die öffentliche URL verwenden
     const publicFrontendURL = getPublicFrontendURL();
 
     if (!userId || !clientIp || clientIp.length < 7) {
@@ -191,7 +188,6 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
     const { businessType, companyStructure } = mapLegalFormToStripeBusinessInfo(payloadFromClient.legalForm);
     loggerV2.info(`[DEBUG] Punkt 5: Rechtsform gemappt. Typ: ${businessType}, Struktur: ${companyStructure}`);
 
-    // VALIDIERUNG START
     if (!payloadFromClient.legalForm?.trim()) throw new HttpsError("failed-precondition", "Rechtsform ist eine Pflichtangabe.");
     loggerV2.info('[DEBUG] Validierung OK: legalForm');
     if (!payloadFromClient.email?.trim()) throw new HttpsError("failed-precondition", "E-Mail ist erforderlich.");
@@ -256,7 +252,6 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
 
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null ? undefined : val;
-    // Verwendung der öffentlichen URL für Stripe Business Profile
     const platformProfileUrl = `${publicFrontendURL}/profil/${userId}`;
 
     const accountParams: Stripe.AccountCreateParams = {
@@ -464,10 +459,10 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
 export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData, Promise<UpdateStripeCompanyDetailsResult>>(
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
+    const db = getDb();
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     const userId = request.auth.uid;
     const localStripe = getStripeInstance();
-    // Hier die Emulator-Callback-URL für Account Links verwenden
     const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL();
     const userDocRef = db.collection("users").doc(userId);
 
@@ -518,7 +513,6 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
         const verificationIndividual: Partial<Stripe.AccountUpdateParams.Individual.Verification> = {};
         const documentIndividual: Partial<Stripe.AccountUpdatePersonParams.Verification.Document> = {};
         if (updatePayloadFromClient.identityFrontFileId) documentIndividual.front = updatePayloadFromClient.identityFrontFileId;
-        // FEHLER BEHOBEN: `updatePayload` zu `updatePayloadFromClient` geändert
         if (updatePayloadFromClient.identityBackFileId) documentIndividual.back = updatePayloadFromClient.identityBackFileId;
         if (Object.keys(documentIndividual).length > 0) verificationIndividual.document = documentIndividual;
         if (Object.keys(verificationIndividual).length > 0) individualUpdates.verification = verificationIndividual;
@@ -644,7 +638,6 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
       if (uniqueFinalMissingFieldsList.length > 0) {
         const accLink = await localStripe.accountLinks.create({
           account: stripeAccountId,
-          // Hier die Emulator-Callback-URL für Account Links verwenden
           refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
           return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
           type: 'account_update',
@@ -679,16 +672,11 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
   }
 );
 
-// --- NEUE FUNKTION: createSetupIntent ---
-/**
- * Erstellt einen Stripe SetupIntent, um eine Zahlungsmethode für einen Benutzer zu speichern.
- * Gibt das clientSecret zurück, das vom Frontend verwendet wird, um die Payment Method zu erfassen.
- */
 export const createSetupIntent = onCall<{ firebaseUserId?: string }, Promise<{ clientSecret: string }>>(
-  async (request): Promise<{ clientSecret: string }> => { // Der Rückgabetyp des Callables ist Promise<Result>
+  async (request): Promise<{ clientSecret: string }> => {
     loggerV2.info("[createSetupIntent] Aufgerufen.");
+    const db = getDb();
 
-    // Überprüfen der Authentifizierung
     if (!request.auth?.uid) {
       loggerV2.warn("[createSetupIntent] Unauthentifizierter Aufruf.");
       throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
@@ -708,44 +696,33 @@ export const createSetupIntent = onCall<{ firebaseUserId?: string }, Promise<{ c
 
       const userData = userDoc.data() as UserProfile;
 
-      // Stellen Sie sicher, dass der Benutzer bereits einen Stripe Customer hat
       if (!userData.stripeCustomerId) {
         loggerV2.error(`[createSetupIntent] Stripe Customer ID fehlt für Nutzer ${firebaseUserId}.`);
         throw new HttpsError("failed-precondition", "Stripe Customer ID fehlt. Bitte erstellen Sie zuerst einen Kunden.");
       }
 
-      // Erstellen des SetupIntent
       const setupIntent = await localStripe.setupIntents.create({
-        customer: userData.stripeCustomerId, // Der Stripe Customer, dem die PaymentMethod zugeordnet werden soll
-        usage: 'off_session', // Ermöglicht das spätere Wiederverwenden der PaymentMethod
-        // Sie können hier weitere Parameter wie metadata hinzufügen, wenn nötig
+        customer: userData.stripeCustomerId,
+        usage: 'off_session',
       });
 
       loggerV2.info(`[createSetupIntent] SetupIntent ${setupIntent.id} für Nutzer ${firebaseUserId} erstellt.`);
-      return { clientSecret: setupIntent.client_secret! }; // client_secret ist immer vorhanden bei successful creation
+      return { clientSecret: setupIntent.client_secret! };
 
     } catch (e: any) {
       loggerV2.error(`[createSetupIntent] Fehler für Nutzer ${firebaseUserId}:`, e);
       if (e instanceof HttpsError) {
         throw e;
       }
-      // Generische Fehlermeldung für das Frontend
       throw new HttpsError("internal", "Fehler beim Erstellen des SetupIntent.", e.message);
     }
   }
 );
 
-// --- NEUE FUNKTION: getSavedPaymentMethods ---
-/**
- * Ruft die im Firestore-Nutzerdokument gespeicherten PaymentMethods ab.
- * Beachten Sie: Diese Funktion holt die Daten aus Firestore. Für die aktuellsten
- * Details einer PaymentMethod sollten Sie Stripe.paymentMethods.retrieve verwenden.
- * Für eine Liste, die direkt von Stripe abgerufen wird (und nicht nur die Firestore-Kopie),
- * müssten Sie stripe.customers.listPaymentMethods verwenden.
- */
 export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }>>(
   async (request): Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }> => {
     loggerV2.info("[getSavedPaymentMethods] Aufgerufen.");
+    const db = getDb();
 
     if (!request.auth?.uid) {
       loggerV2.warn("[getSavedPaymentMethods] Unauthentifizierter Aufruf.");
@@ -753,8 +730,7 @@ export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ sa
     }
 
     const firebaseUserId = request.auth.uid;
-    const localStripe = getStripeInstance(); // Nur für den Fall, dass Sie hier direkt Stripe aufrufen wollen
-    // um die aktuellsten Details zu erhalten, anstatt nur Firestore
+    const localStripe = getStripeInstance();
 
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
@@ -767,35 +743,9 @@ export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ sa
 
       const userData = userDoc.data() as UserProfile;
 
-      // Option A: Laden aus Firestore (empfohlen für eine schnelle Anzeige von Übersichten)
-      // Das 'savedPaymentMethods'-Array sollte durch den webhook handler (setup_intent.succeeded) befüllt werden.
       const savedMethods = userData.savedPaymentMethods || [];
       loggerV2.info(`[getSavedPaymentMethods] ${savedMethods.length} PaymentMethods aus Firestore für Nutzer ${firebaseUserId} geladen.`);
       return { savedPaymentMethods: savedMethods };
-
-      // Option B: Laden direkt von Stripe (wenn Sie immer die aktuellsten Stripe-Informationen benötigen)
-      // Dies wäre performanter, wenn das Firestore-Array nicht die primäre Quelle ist.
-      /*
-      if (!userData.stripeCustomerId) {
-        loggerV2.info(`[getSavedPaymentMethods] Keine Stripe Customer ID für Nutzer ${firebaseUserId}.`);
-        return { savedPaymentMethods: [] };
-      }
-      const stripePaymentMethods = await localStripe.paymentMethods.list({
-        customer: userData.stripeCustomerId,
-        type: 'card', // Oder andere Typen, die Sie abrufen möchten
-        limit: 10, // Passen Sie das Limit an
-      });
-      loggerV2.info(`[getSavedPaymentMethods] ${stripePaymentMethods.data.length} PaymentMethods von Stripe für Nutzer ${firebaseUserId} geladen.`);
-      return { savedPaymentMethods: stripePaymentMethods.data.map(pm => ({
-        id: pm.id,
-        brand: pm.card?.brand,
-        last4: pm.card?.last4,
-        exp_month: pm.card?.exp_month,
-        exp_year: pm.card?.exp_year,
-        type: pm.type,
-        // Fügen Sie hier weitere benötigte Details hinzu
-      }))};
-      */
 
     } catch (e: any) {
       loggerV2.error(`[getSavedPaymentMethods] Fehler für Nutzer ${firebaseUserId}:`, e);
@@ -811,10 +761,10 @@ export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ sa
 export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetStripeAccountStatusResult>>(
   async (request: CallableRequest<Record<string, never>>): Promise<GetStripeAccountStatusResult> => {
     loggerV2.info("[getStripeAccountStatus] Aufgerufen.");
+    const db = getDb();
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein."); }
     const userId = request.auth.uid;
     const localStripe = getStripeInstance();
-    // Hier die Emulator-Callback-URL für Account Links verwenden
     const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL();
     try {
       const userDoc = await db.collection("users").doc(userId).get();
@@ -855,7 +805,6 @@ export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetS
         try {
           const accLinkParams: Stripe.AccountLinkCreateParams = {
             account: stripeAccountId,
-            // Hier die Emulator-Callback-URL für Account Links verwenden
             refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
             return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
             type: "account_update",
@@ -901,8 +850,8 @@ export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetS
 export const getProviderStripeAccountId = onCall<{ providerUid: string }, Promise<{ stripeAccountId: string }>>(
   async (request): Promise<{ stripeAccountId: string }> => {
     loggerV2.info("[getProviderStripeAccountId] Aufgerufen.");
+    const db = getDb();
 
-    // Überprüfen der Authentifizierung
     if (!request.auth?.uid) {
       loggerV2.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");
       throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
@@ -915,7 +864,6 @@ export const getProviderStripeAccountId = onCall<{ providerUid: string }, Promis
     }
 
     try {
-      // Anbieterprofil aus der 'users'-Sammlung abrufen
       const providerDoc = await db.collection("users").doc(providerUid).get();
 
       if (!providerDoc.exists) {
@@ -940,7 +888,7 @@ export const getProviderStripeAccountId = onCall<{ providerUid: string }, Promis
     } catch (e: any) {
       loggerV2.error(`[getProviderStripeAccountId] Fehler beim Abrufen der Stripe Account ID für ${request.data?.providerUid}:`, e);
       if (e instanceof HttpsError) {
-        throw e; // Bestehenden HttpsError weiterleiten
+        throw e;
       }
       throw new HttpsError("internal", "Fehler beim Abrufen der Anbieter-Stripe-ID.", e.message);
     }

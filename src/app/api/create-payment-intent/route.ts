@@ -4,24 +4,18 @@ import Stripe from 'stripe';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
-
 if (!stripeSecret) {
   console.error("FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-payment-intent.");
 }
 
 const stripe = stripeSecret ? new Stripe(stripeSecret, {
-  apiVersion: '2024-06-20', // KORRIGIERT: Passend zur Stripe-Typdefinition
+  apiVersion: '2024-06-20',
 }) : null;
 
-// HINWEIS: Das lokale Interface LocalPaymentMethodDataCard kann jetzt entfernt werden,
-// da wir es durch die 'as any' Assertion umgehen.
-// interface LocalPaymentMethodDataCard {
-//   type: 'card';
-//   billing_details?: Stripe.PaymentMethodCreateParams.BillingDetails;
-// }
-
-
 export async function POST(request: NextRequest) {
+  // DEBUGGING: Logge den Beginn der Anfrage
+  console.log("[API /create-payment-intent] POST Anfrage empfangen.");
+
   if (!stripe) {
     console.error("[API /create-payment-intent] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.");
     return NextResponse.json({ error: 'Stripe-Konfiguration auf dem Server fehlt.' }, { status: 500 });
@@ -29,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log("[API /create-payment-intent] Request Body empfangen:", body);
+    console.log("[API /create-payment-intent] Request Body empfangen:", JSON.stringify(body, null, 2));
 
     const {
       amount,
@@ -39,39 +33,42 @@ export async function POST(request: NextRequest) {
       taskId,
       firebaseUserId,
       stripeCustomerId,
-      paymentMethodId,
-      confirmPaymentMethod = true,
-      billingDetails,
+      // paymentMethodId und billingDetails werden hier nicht mehr benötigt,
+      // da die Bestätigung nun Client-seitig erfolgt.
+      orderDetails,
     } = body;
 
     console.log("[API /create-payment-intent] Stripe-Key beginnt mit:", stripeSecret?.slice(0, 10));
     console.log("[API /create-payment-intent] ConnectedAccountId aus Request Body:", connectedAccountId);
 
-    // Validierung der empfangenen Daten
+    // Validierung der empfangenen Daten mit detaillierteren Logs
     if (typeof amount !== 'number' || amount <= 0) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültiger oder fehlender Betrag.", { amount });
       return NextResponse.json({ error: 'Ungültiger Betrag. Muss eine positive Zahl sein.' }, { status: 400 });
     }
     if (typeof currency !== 'string' || currency.length !== 3) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Währung.", { currency });
       return NextResponse.json({ error: 'Ungültige Währung.' }, { status: 400 });
     }
     if (!connectedAccountId || typeof connectedAccountId !== 'string' || !connectedAccountId.startsWith('acct_')) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Connected Account ID.", { connectedAccountId });
       return NextResponse.json({ error: 'Ungültige Connected Account ID. Muss mit "acct_" beginnen.' }, { status: 400 });
     }
     if (typeof platformFee !== 'number' || platformFee < 0 || platformFee >= amount) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Plattformgebühr.", { platformFee, amount });
       return NextResponse.json({ error: 'Ungültige Plattformgebühr. Muss eine positive Zahl sein und kleiner als der Gesamtbetrag.' }, { status: 400 });
     }
     if (!taskId || typeof taskId !== 'string') {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Task-ID (tempJobDraftId).", { taskId });
       return NextResponse.json({ error: 'Ungültige Task-ID (tempJobDraftId).' }, { status: 400 });
     }
     if (!firebaseUserId || typeof firebaseUserId !== 'string') {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Firebase User ID.", { firebaseUserId });
       return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
     }
     if (!stripeCustomerId || typeof stripeCustomerId !== 'string' || !stripeCustomerId.startsWith('cus_')) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Stripe Customer ID.", { stripeCustomerId });
       return NextResponse.json({ error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' }, { status: 400 });
-    }
-
-    if (paymentMethodId && (typeof paymentMethodId !== 'string' || !paymentMethodId.startsWith('pm_'))) {
-      return NextResponse.json({ error: 'Ungültige PaymentMethod ID. Muss mit "pm_" beginnen.' }, { status: 400 });
     }
 
     console.log("[API /create-payment-intent] DEBUG ConnectedAccountId für Stripe (aus Request Body):", `"${connectedAccountId}"`, "Länge:", connectedAccountId.length);
@@ -95,6 +92,7 @@ export async function POST(request: NextRequest) {
           console.log(`[API /create-payment-intent] Connected Account ${connectedAccountId} ist bereit (charges_enabled & payouts_enabled sind true).`);
           break;
         } else {
+          console.log(`[API /create-payment-intent] Connected Account ${connectedAccountId} ist noch nicht bereit. Warte ${delayMs / 1000} Sekunden.`);
           await new Promise(resolve => setTimeout(resolve, delayMs));
           attempts++;
         }
@@ -145,31 +143,36 @@ export async function POST(request: NextRequest) {
     }
     // --- ENDE DER WARTE-LOGIK ---
 
+    // **platformFee in Cents umrechnen**
+    const platformFeeInCents = Math.round(platformFee * 100);
+    console.log(`[API /create-payment-intent] Umgerechnete Plattformgebühr: ${platformFee} EUR -> ${platformFeeInCents} Cents`);
+
+    console.log(`[API /create-payment-intent] Konfiguriere PaymentIntent für Client-seitige Bestätigung (keine Weiterleitungen).`);
+
+
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: amount,
       currency: currency,
       customer: stripeCustomerId,
-      application_fee_amount: platformFee,
+      application_fee_amount: platformFeeInCents,
       transfer_data: {
         destination: connectedAccountId,
       },
-      confirm: confirmPaymentMethod,
+      confirm: false, // PaymentIntent wird NICHT sofort bestätigt
       setup_future_usage: 'off_session',
-      payment_method: paymentMethodId || undefined,
-      // FEHLER BEHOBEN: Casting zu 'any'
-      payment_method_data: billingDetails ? ({
-        type: 'card',
-        billing_details: billingDetails
-      } as any) : undefined, // 
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never', // Verhindert Weiterleitungen
+      },
       metadata: {
         tempJobDraftId: taskId,
-        firebaseUserId: firebaseUserId
+        firebaseUserId: firebaseUserId,
       }
     };
 
     console.log("[API /create-payment-intent] Erstelle PaymentIntent mit Parametern:", JSON.stringify(paymentIntentParams, null, 2));
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
-    console.log("[API /create-payment-intent] PaymentIntent erstellt:", paymentIntent.id);
+    console.log("[API /create-payment-intent] PaymentIntent erfolgreich erstellt:", paymentIntent.id);
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
@@ -183,7 +186,7 @@ export async function POST(request: NextRequest) {
     let rawErrorDetails: Stripe.StripeRawError | null = null;
 
     if (error instanceof Stripe.errors.StripeError) {
-      console.error("[API /create-payment-intent] StripeError:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      console.error("[API /create-payment-intent] StripeError im Catch-Block:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       errorMessage = `Stripe Fehler: ${error.message}`;
       stripeErrorCode = error.code || null;
       stripeErrorType = error.type;
@@ -192,10 +195,10 @@ export async function POST(request: NextRequest) {
         rawErrorDetails = raw;
       }
     } else if (error instanceof Error) {
-      console.error("[API /create-payment-intent] Generic Error:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      console.error("[API /create-payment-intent] Allgemeiner Fehler im Catch-Block:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       errorMessage = error.message;
     } else {
-      console.error("[API /create-payment-intent] Unknown Error:", JSON.stringify(error, null, 2));
+      console.error("[API /create-payment-intent] Unbekannter Fehler im Catch-Block:", JSON.stringify(error, null, 2));
     }
 
     return NextResponse.json({

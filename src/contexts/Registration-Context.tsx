@@ -1,6 +1,7 @@
+// Registration-Context.tsx
 'use client';
 
-import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode } from 'react';
+import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react';
 
 // NEU: jobId hinzugefügt
 interface RegistrationData {
@@ -54,7 +55,7 @@ interface RegistrationData {
   companyWebsite?: string; // Webseite des Unternehmens
   iban?: string;
   accountHolder?: string;
-  selectedSkills?: { [hauptkategorie: string]: string[] | null };
+  selectedSkills: { [hauptkategorie: string]: string[] | null }; // Geändert: Nicht mehr optional
   selectedHandwerkSkills?: string[] | null;
   selectedHaushaltServices?: string[] | null;
   profilePictureFile?: File | null;
@@ -79,24 +80,24 @@ interface RegistrationContextType extends RegistrationData {
   setSelectedCategory: Dispatch<SetStateAction<string | null>>;
   setSelectedSubcategory: Dispatch<SetStateAction<string | null>>;
   setDescription: Dispatch<SetStateAction<string>>;
-  setJobStreet: Dispatch<SetStateAction<string>>;
-  setJobPostalCode: Dispatch<SetStateAction<string>>;
-  setJobCity: Dispatch<SetStateAction<string>>;
-  setJobCountry: Dispatch<SetStateAction<string | null>>;
-  setJobDateFrom: Dispatch<SetStateAction<string | null>>;
-  setJobDateTo: Dispatch<SetStateAction<string | null>>;
-  setJobTimePreference: Dispatch<SetStateAction<string | null>>;
-  setTempJobDraftId: Dispatch<SetStateAction<string | null>>; // Setter ist bereits vorhanden
-  setSelectedAnbieterId: Dispatch<SetStateAction<string | null>>;
-  setJobDurationString: Dispatch<SetStateAction<string>>;
-  setJobTotalCalculatedHours: Dispatch<SetStateAction<number | null>>;
-  setJobCalculatedPriceInCents: Dispatch<SetStateAction<number | null>>;
+  setJobStreet: Dispatch<SetStateAction<string | undefined>>;
+  setJobPostalCode: Dispatch<SetStateAction<string | undefined>>;
+  setJobCity: Dispatch<SetStateAction<string | undefined>>;
+  setJobCountry: Dispatch<SetStateAction<string | null | undefined>>;
+  setJobDateFrom: Dispatch<SetStateAction<string | null | undefined>>;
+  setJobDateTo: Dispatch<SetStateAction<string | null | undefined>>;
+  setJobTimePreference: Dispatch<SetStateAction<string | null | undefined>>;
+  setTempJobDraftId: Dispatch<SetStateAction<string | null | undefined>>;
+  setSelectedAnbieterId: Dispatch<SetStateAction<string | null | undefined>>;
+  setJobDurationString: Dispatch<SetStateAction<string | undefined>>;
+  setJobTotalCalculatedHours: Dispatch<SetStateAction<number | null | undefined>>;
+  setJobCalculatedPriceInCents: Dispatch<SetStateAction<number | null | undefined>>;
   setEmail: Dispatch<SetStateAction<string>>;
-  setPassword: Dispatch<SetStateAction<string>>;
+  setPassword: Dispatch<SetStateAction<string | undefined>>;
   setFirstName: Dispatch<SetStateAction<string>>;
   setLastName: Dispatch<SetStateAction<string>>;
-  setPhoneNumber: Dispatch<SetStateAction<string>>;
-  setCompanyPhoneNumber: Dispatch<SetStateAction<string>>;
+  setPhoneNumber: Dispatch<SetStateAction<string | undefined>>;
+  setCompanyPhoneNumber: Dispatch<SetStateAction<string | undefined>>;
 
   // Setter für persönliche Details
   setDateOfBirth: Dispatch<SetStateAction<string | undefined>>;
@@ -104,7 +105,7 @@ interface RegistrationContextType extends RegistrationData {
   setPersonalHouseNumber: Dispatch<SetStateAction<string | undefined>>;
   setPersonalPostalCode: Dispatch<SetStateAction<string | undefined>>;
   setPersonalCity: Dispatch<SetStateAction<string | undefined>>;
-  setPersonalCountry: Dispatch<SetStateAction<string | null>>;
+  setPersonalCountry: Dispatch<SetStateAction<string | null | undefined>>;
   setIsManagingDirectorOwner: Dispatch<SetStateAction<boolean>>;
   // Setter für granulare Eigentümer- und Vertreterdetails
   setOwnershipPercentage: Dispatch<SetStateAction<number | undefined>>;
@@ -114,31 +115,31 @@ interface RegistrationContextType extends RegistrationData {
   setIsActualExecutive: Dispatch<SetStateAction<boolean | undefined>>;
   setActualRepresentativeTitle: Dispatch<SetStateAction<string | undefined>>;
 
-  setCompanyName: Dispatch<SetStateAction<string>>;
-  setLegalForm: Dispatch<SetStateAction<string | null>>;
-  setCompanyStreet: Dispatch<SetStateAction<string>>;
-  setCompanyHouseNumber: Dispatch<SetStateAction<string>>;
-  setCompanyPostalCode: Dispatch<SetStateAction<string>>;
-  setCompanyCity: Dispatch<SetStateAction<string>>;
-  setCompanyCountry: Dispatch<SetStateAction<string | null>>;
-  setCompanyWebsite: Dispatch<SetStateAction<string>>;
-  setIban: Dispatch<SetStateAction<string>>;
-  setAccountHolder: Dispatch<SetStateAction<string>>;
-  setSelectedSkills: Dispatch<SetStateAction<{ [hauptkategorie: string]: string[] | null }>>;
-  setSelectedHandwerkSkills: Dispatch<SetStateAction<string[] | null>>;
-  setSelectedHaushaltServices: Dispatch<SetStateAction<string[] | null>>;
-  setProfilePictureFile: Dispatch<SetStateAction<File | null>>;
-  setBusinessLicenseFile: Dispatch<SetStateAction<File | null>>;
-  setMasterCraftsmanCertificateFile: Dispatch<SetStateAction<File | null>>;
-  setIdentityFrontFile: Dispatch<SetStateAction<File | null>>;
-  setIdentityBackFile: Dispatch<SetStateAction<File | null>>;
+  setCompanyName: Dispatch<SetStateAction<string | undefined>>;
+  setLegalForm: Dispatch<SetStateAction<string | null | undefined>>;
+  setCompanyStreet: Dispatch<SetStateAction<string | undefined>>;
+  setCompanyHouseNumber: Dispatch<SetStateAction<string | undefined>>;
+  setCompanyPostalCode: Dispatch<SetStateAction<string | undefined>>;
+  setCompanyCity: Dispatch<SetStateAction<string | undefined>>;
+  setCompanyCountry: Dispatch<SetStateAction<string | null | undefined>>;
+  setCompanyWebsite: Dispatch<SetStateAction<string | undefined>>;
+  setIban: Dispatch<SetStateAction<string | undefined>>;
+  setAccountHolder: Dispatch<SetStateAction<string | undefined>>;
+  setSelectedSkills: Dispatch<SetStateAction<{ [hauptkategorie: string]: string[] | null }>>; // Geändert: | undefined entfernt
+  setSelectedHandwerkSkills: Dispatch<SetStateAction<string[] | null | undefined>>;
+  setSelectedHaushaltServices: Dispatch<SetStateAction<string[] | null | undefined>>;
+  setProfilePictureFile: Dispatch<SetStateAction<File | null | undefined>>;
+  setBusinessLicenseFile: Dispatch<SetStateAction<File | null | undefined>>;
+  setMasterCraftsmanCertificateFile: Dispatch<SetStateAction<File | null | undefined>>;
+  setIdentityFrontFile: Dispatch<SetStateAction<File | null | undefined>>;
+  setIdentityBackFile: Dispatch<SetStateAction<File | null | undefined>>;
   setCompanyRegister: Dispatch<SetStateAction<string | undefined>>;
-  setHourlyRate: Dispatch<SetStateAction<string>>;
-  setTaxNumber: Dispatch<SetStateAction<string>>;
-  setVatId: Dispatch<SetStateAction<string>>;
+  setHourlyRate: Dispatch<SetStateAction<string | undefined>>;
+  setTaxNumber: Dispatch<SetStateAction<string | undefined>>;
+  setVatId: Dispatch<SetStateAction<string | undefined>>;
   setLat: Dispatch<SetStateAction<number | null>>;
   setLng: Dispatch<SetStateAction<number | null>>;
-  setLatLngPolygon: Dispatch<SetStateAction<google.maps.LatLngLiteral[] | null>>;
+  setLatLngPolygon: Dispatch<SetStateAction<google.maps.LatLngLiteral[] | null | undefined>>;
   setRadiusKm: Dispatch<SetStateAction<number | null>>;
   resetRegistrationData: () => void;
 }
@@ -150,208 +151,247 @@ interface RegistrationProviderProps {
 }
 
 export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ children }) => {
-  const [step, setStepState] = useState<number>(1);
-  const [customerType, setCustomerTypeState] = useState<'private' | 'business' | null>(null);
-  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(null);
-  const [selectedSubcategory, setSelectedSubcategoryState] = useState<string | null>(null);
-  const [description, setDescriptionState] = useState('');
-  const [jobStreet, setJobStreetState] = useState('');
-  const [jobPostalCode, setJobPostalCodeState] = useState('');
-  const [jobCity, setJobCityState] = useState('');
-  const [jobCountry, setJobCountryState] = useState<string | null>('Deutschland');
-  const [jobDateFrom, setJobDateFromState] = useState<string | null>(null);
-  const [jobDateTo, setJobDateToState] = useState<string | null>(null);
-  const [jobTimePreference, setJobTimePreferenceState] = useState<string | null>(null);
-  const [tempJobDraftId, setTempJobDraftIdState] = useState<string | null>(null);
-  const [selectedAnbieterId, setSelectedAnbieterIdState] = useState<string | null>(null);
-  const [jobDurationString, setJobDurationStringState] = useState('');
-  const [jobTotalCalculatedHours, setJobTotalCalculatedHoursState] = useState<number | null>(null);
-  const [jobCalculatedPriceInCents, setJobCalculatedPriceInCentsState] = useState<number | null>(null);
-  const [email, setEmailState] = useState<string>('');
-  const [password, setPasswordState] = useState<string>('');
-  const [firstName, setFirstNameState] = useState<string>('');
-  const [lastName, setLastNameState] = useState<string>('');
-  const [phoneNumber, setPhoneNumberState] = useState<string>('');
-  const [companyPhoneNumber, setCompanyPhoneNumberState] = useState<string>('');
+  // Hilfsfunktion für den initialen State aus localStorage oder Standardwerten
+  const getInitialState = (): RegistrationData => {
+    if (typeof window !== 'undefined') {
+      const storedData = localStorage.getItem('registrationData');
+      if (storedData) {
+        try {
+          const parsedData = JSON.parse(storedData) as Partial<RegistrationData>;
+          // Fallback-Werte für alle Felder sicherstellen
+          return {
+            step: parsedData.step || 1,
+            customerType: parsedData.customerType || null,
+            selectedCategory: parsedData.selectedCategory || null,
+            selectedSubcategory: parsedData.selectedSubcategory || null,
+            description: parsedData.description || '',
+            jobStreet: parsedData.jobStreet || '',
+            jobPostalCode: parsedData.jobPostalCode || '',
+            jobCity: parsedData.jobCity || '',
+            jobCountry: parsedData.jobCountry ?? 'Deutschland',
+            jobDateFrom: parsedData.jobDateFrom ?? null,
+            jobDateTo: parsedData.jobDateTo ?? null,
+            jobTimePreference: parsedData.jobTimePreference ?? null,
+            tempJobDraftId: parsedData.tempJobDraftId ?? null,
+            selectedAnbieterId: parsedData.selectedAnbieterId ?? null,
+            jobDurationString: parsedData.jobDurationString || '',
+            jobTotalCalculatedHours: parsedData.jobTotalCalculatedHours ?? null,
+            jobCalculatedPriceInCents: parsedData.jobCalculatedPriceInCents ?? null,
+            email: parsedData.email || '',
+            password: parsedData.password ?? '',
+            firstName: parsedData.firstName || '',
+            lastName: parsedData.lastName || '',
+            phoneNumber: parsedData.phoneNumber ?? '',
+            companyPhoneNumber: parsedData.companyPhoneNumber ?? '',
+            dateOfBirth: parsedData.dateOfBirth ?? undefined,
+            personalStreet: parsedData.personalStreet ?? undefined,
+            personalHouseNumber: parsedData.personalHouseNumber ?? undefined,
+            personalPostalCode: parsedData.personalPostalCode ?? undefined,
+            personalCity: parsedData.personalCity ?? undefined,
+            personalCountry: parsedData.personalCountry ?? 'DE', // Standard auf 'DE'
+            isManagingDirectorOwner: typeof parsedData.isManagingDirectorOwner === 'boolean' ? parsedData.isManagingDirectorOwner : true,
+            ownershipPercentage: parsedData.ownershipPercentage ?? undefined,
+            isActualDirector: parsedData.isActualDirector ?? undefined,
+            isActualOwner: parsedData.isActualOwner ?? undefined,
+            actualOwnershipPercentage: parsedData.actualOwnershipPercentage ?? undefined,
+            isActualExecutive: parsedData.isActualExecutive ?? undefined,
+            actualRepresentativeTitle: parsedData.actualRepresentativeTitle ?? undefined,
+            companyName: parsedData.companyName ?? '',
+            legalForm: parsedData.legalForm ?? null,
+            companyStreet: parsedData.companyStreet ?? '',
+            companyHouseNumber: parsedData.companyHouseNumber ?? '',
+            companyPostalCode: parsedData.companyPostalCode ?? '',
+            companyCity: parsedData.companyCity ?? '',
+            companyCountry: parsedData.companyCountry ?? 'DE', // Standard auf 'DE'
+            companyWebsite: parsedData.companyWebsite ?? '',
+            iban: parsedData.iban ?? '',
+            accountHolder: parsedData.accountHolder ?? '',
+            selectedSkills: parsedData.selectedSkills ?? {}, // Diese Zeile ist jetzt korrekt
+            selectedHandwerkSkills: parsedData.selectedHandwerkSkills ?? null,
+            selectedHaushaltServices: parsedData.selectedHaushaltServices ?? null,
+            profilePictureFile: null,
+            businessLicenseFile: null,
+            masterCraftsmanCertificateFile: null,
+            identityFrontFile: null,
+            identityBackFile: null,
+            companyRegister: parsedData.companyRegister ?? undefined,
+            hourlyRate: parsedData.hourlyRate ?? '',
+            taxNumber: parsedData.taxNumber ?? '',
+            vatId: parsedData.vatId ?? '',
+            lat: parsedData.lat ?? null,
+            lng: parsedData.lng ?? null,
+            latLngPolygon: parsedData.latLngPolygon ?? null,
+            radiusKm: parsedData.radiusKm ?? 30,
+          };
+        } catch (e) {
+          console.error("Fehler beim Parsen von registrationData aus localStorage:", e);
+          localStorage.removeItem('registrationData');
+        }
+      }
+    }
+    // Standard-Initialwerte
+    return {
+      step: 1, customerType: null, selectedCategory: null, selectedSubcategory: null, description: '',
+      jobStreet: '', jobPostalCode: '', jobCity: '', jobCountry: 'Deutschland',
+      jobDateFrom: null, jobDateTo: null, jobTimePreference: null, tempJobDraftId: null, selectedAnbieterId: null,
+      jobDurationString: '', jobTotalCalculatedHours: null, jobCalculatedPriceInCents: null,
+      email: '', password: '', firstName: '', lastName: '', phoneNumber: '', companyPhoneNumber: '',
+      dateOfBirth: undefined, personalStreet: undefined, personalHouseNumber: undefined, personalPostalCode: undefined,
+      personalCity: undefined, personalCountry: 'DE', isManagingDirectorOwner: true, // Standard auf 'DE'
+      ownershipPercentage: undefined, isActualDirector: undefined, isActualOwner: undefined,
+      actualOwnershipPercentage: undefined, isActualExecutive: undefined, actualRepresentativeTitle: undefined, // Hier war ein Tippfehler im Original-Diff, korrigiert
+      companyName: '', legalForm: null, companyStreet: '', companyHouseNumber: '', companyPostalCode: '', companyCity: '',
+      companyCountry: 'DE', companyWebsite: '', iban: '', accountHolder: '', selectedSkills: {}, selectedHandwerkSkills: null, // Standard auf 'DE'
+      selectedHaushaltServices: null, profilePictureFile: null, businessLicenseFile: null,
+      masterCraftsmanCertificateFile: null, identityFrontFile: null, identityBackFile: null,
+      companyRegister: undefined, hourlyRate: '', taxNumber: '', vatId: '',
+      lat: null, lng: null, latLngPolygon: null, radiusKm: 30
+    };
+  };
 
-  // States für persönliche Details
-  const [dateOfBirth, setDateOfBirthState] = useState<string | undefined>(undefined);
-  const [personalStreet, setPersonalStreetState] = useState<string | undefined>(undefined);
-  const [personalHouseNumber, setPersonalHouseNumberState] = useState<string | undefined>(undefined);
-  const [personalPostalCode, setPersonalPostalCodeState] = useState<string | undefined>(undefined);
-  const [personalCity, setPersonalCityState] = useState<string | undefined>(undefined);
-  const [personalCountry, setPersonalCountryState] = useState<string | null>(null);
-  const [isManagingDirectorOwner, setIsManagingDirectorOwnerState] = useState<boolean>(true);
-  // States für granulare Eigentümer- und Vertreterdetails
-  const [ownershipPercentage, setOwnershipPercentageState] = useState<number | undefined>(undefined);
-  const [isActualDirector, setIsActualDirectorState] = useState<boolean | undefined>(undefined);
-  const [isActualOwner, setIsActualOwnerState] = useState<boolean | undefined>(undefined);
-  const [actualOwnershipPercentage, setActualOwnershipPercentageState] = useState<number | undefined>(undefined);
-  const [isActualExecutive, setIsActualExecutiveState] = useState<boolean | undefined>(undefined);
-  const [actualRepresentativeTitle, setActualRepresentativeTitleState] = useState<string | undefined>(undefined);
+  const [registrationState, setRegistrationState] = useState<RegistrationData>(getInitialState);
 
-  const [companyName, setCompanyNameState] = useState<string>('');
-  const [legalForm, setLegalFormState] = useState<string | null>(null);
-  const [companyStreet, setCompanyStreetState] = useState<string>('');
-  const [companyHouseNumber, setCompanyHouseNumberState] = useState<string>('');
-  const [companyPostalCode, setCompanyPostalCodeState] = useState<string>('');
-  const [companyCity, setCompanyCityState] = useState<string>('');
-  const [companyCountry, setCompanyCountryState] = useState<string | null>(null);
-  const [companyWebsite, setCompanyWebsiteState] = useState<string>('');
-  const [iban, setIbanState] = useState<string>('');
-  const [accountHolder, setAccountHolderState] = useState<string>('');
-  const [selectedSkills, setSelectedSkillsState] = useState<{ [key: string]: string[] | null }>({});
-  const [selectedHandwerkSkills, setSelectedHandwerkSkillsState] = useState<string[] | null>(null);
-  const [selectedHaushaltServices, setSelectedHaushaltServicesState] = useState<string[] | null>(null);
-  const [profilePictureFile, setProfilePictureFileState] = useState<File | null>(null);
-  const [businessLicenseFile, setBusinessLicenseFileState] = useState<File | null>(null);
-  const [masterCraftsmanCertificateFile, setMasterCraftsmanCertificateFileState] = useState<File | null>(null);
-  const [identityFrontFile, setIdentityFrontFileState] = useState<File | null>(null);
-  const [identityBackFile, setIdentityBackFileState] = useState<File | null>(null);
-  const [companyRegister, setCompanyRegisterState] = useState<string | undefined>(undefined);
-  const [hourlyRate, setHourlyRateState] = useState<string>('');
-  const [taxNumber, setTaxNumberState] = useState<string>('');
-  const [vatId, setVatIdState] = useState<string>('');
-  const [lat, setLatState] = useState<number | null>(null);
-  const [lng, setLngState] = useState<number | null>(null);
-  const [latLngPolygon, setLatLngPolygonState] = useState<google.maps.LatLngLiteral[] | null>(null);
-  const [radiusKm, setRadiusKmState] = useState<number | null>(30);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { profilePictureFile, businessLicenseFile, masterCraftsmanCertificateFile, identityFrontFile, identityBackFile, ...stateToStore } = registrationState;
+      localStorage.setItem('registrationData', JSON.stringify(stateToStore));
+    }
+  }, [registrationState]);
+
+  const setStepState = (value: SetStateAction<number>) => setRegistrationState(prev => ({ ...prev, step: typeof value === 'function' ? value(prev.step) : value }));
+  const setCustomerTypeState = (value: SetStateAction<'private' | 'business' | null>) => setRegistrationState(prev => ({ ...prev, customerType: typeof value === 'function' ? value(prev.customerType) : value }));
+  const setSelectedCategoryState = (value: SetStateAction<string | null>) => setRegistrationState(prev => ({ ...prev, selectedCategory: typeof value === 'function' ? value(prev.selectedCategory) : value }));
+  const setSelectedSubcategoryState = (value: SetStateAction<string | null>) => setRegistrationState(prev => ({ ...prev, selectedSubcategory: typeof value === 'function' ? value(prev.selectedSubcategory) : value }));
+  const setDescriptionState = (value: SetStateAction<string>) => setRegistrationState(prev => ({ ...prev, description: typeof value === 'function' ? value(prev.description) : value }));
+  const setJobStreetState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, jobStreet: typeof value === 'function' ? value(prev.jobStreet) : value }));
+  const setJobPostalCodeState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, jobPostalCode: typeof value === 'function' ? value(prev.jobPostalCode) : value }));
+  const setJobCityState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, jobCity: typeof value === 'function' ? value(prev.jobCity) : value }));
+  const setJobCountryState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, jobCountry: typeof value === 'function' ? value(prev.jobCountry) : value }));
+  const setJobDateFromState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, jobDateFrom: typeof value === 'function' ? value(prev.jobDateFrom) : value }));
+  const setJobDateToState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, jobDateTo: typeof value === 'function' ? value(prev.jobDateTo) : value }));
+  const setJobTimePreferenceState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, jobTimePreference: typeof value === 'function' ? value(prev.jobTimePreference) : value }));
+  const setTempJobDraftIdState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, tempJobDraftId: typeof value === 'function' ? value(prev.tempJobDraftId) : value }));
+  const setSelectedAnbieterIdState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, selectedAnbieterId: typeof value === 'function' ? value(prev.selectedAnbieterId) : value }));
+  const setJobDurationStringState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, jobDurationString: typeof value === 'function' ? value(prev.jobDurationString) : value }));
+  const setJobTotalCalculatedHoursState = (value: SetStateAction<number | null | undefined>) => setRegistrationState(prev => ({ ...prev, jobTotalCalculatedHours: typeof value === 'function' ? value(prev.jobTotalCalculatedHours) : value }));
+  const setJobCalculatedPriceInCentsState = (value: SetStateAction<number | null | undefined>) => setRegistrationState(prev => ({ ...prev, jobCalculatedPriceInCents: typeof value === 'function' ? value(prev.jobCalculatedPriceInCents) : value }));
+  const setEmailState = (value: SetStateAction<string>) => setRegistrationState(prev => ({ ...prev, email: typeof value === 'function' ? value(prev.email) : value }));
+  const setPasswordState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, password: typeof value === 'function' ? value(prev.password) : value }));
+  const setFirstNameState = (value: SetStateAction<string>) => setRegistrationState(prev => ({ ...prev, firstName: typeof value === 'function' ? value(prev.firstName) : value }));
+  const setLastNameState = (value: SetStateAction<string>) => setRegistrationState(prev => ({ ...prev, lastName: typeof value === 'function' ? value(prev.lastName) : value }));
+  const setPhoneNumberState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, phoneNumber: typeof value === 'function' ? value(prev.phoneNumber) : value }));
+  const setCompanyPhoneNumberState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyPhoneNumber: typeof value === 'function' ? value(prev.companyPhoneNumber) : value }));
+  const setDateOfBirthState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, dateOfBirth: typeof value === 'function' ? value(prev.dateOfBirth) : value }));
+  const setPersonalStreetState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, personalStreet: typeof value === 'function' ? value(prev.personalStreet) : value }));
+  const setPersonalHouseNumberState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, personalHouseNumber: typeof value === 'function' ? value(prev.personalHouseNumber) : value }));
+  const setPersonalPostalCodeState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, personalPostalCode: typeof value === 'function' ? value(prev.personalPostalCode) : value }));
+  const setPersonalCityState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, personalCity: typeof value === 'function' ? value(prev.personalCity) : value }));
+  const setPersonalCountryState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, personalCountry: typeof value === 'function' ? value(prev.personalCountry) : value }));
+  const setIsManagingDirectorOwnerState = (value: SetStateAction<boolean>) => setRegistrationState(prev => ({ ...prev, isManagingDirectorOwner: typeof value === 'function' ? value(prev.isManagingDirectorOwner) : value }));
+  const setOwnershipPercentageState = (value: SetStateAction<number | undefined>) => setRegistrationState(prev => ({ ...prev, ownershipPercentage: typeof value === 'function' ? value(prev.ownershipPercentage) : value }));
+  const setIsActualDirectorState = (value: SetStateAction<boolean | undefined>) => setRegistrationState(prev => ({ ...prev, isActualDirector: typeof value === 'function' ? value(prev.isActualDirector) : value }));
+  const setIsActualOwnerState = (value: SetStateAction<boolean | undefined>) => setRegistrationState(prev => ({ ...prev, isActualOwner: typeof value === 'function' ? value(prev.isActualOwner) : value }));
+  const setActualOwnershipPercentageState = (value: SetStateAction<number | undefined>) => setRegistrationState(prev => ({ ...prev, actualOwnershipPercentage: typeof value === 'function' ? value(prev.actualOwnershipPercentage) : value }));
+  const setIsActualExecutiveState = (value: SetStateAction<boolean | undefined>) => setRegistrationState(prev => ({ ...prev, isActualExecutive: typeof value === 'function' ? value(prev.isActualExecutive) : value }));
+  const setActualRepresentativeTitleState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, actualRepresentativeTitle: typeof value === 'function' ? value(prev.actualRepresentativeTitle) : value }));
+  const setCompanyNameState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyName: typeof value === 'function' ? value(prev.companyName) : value }));
+  const setLegalFormState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, legalForm: typeof value === 'function' ? value(prev.legalForm) : value }));
+  const setCompanyStreetState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyStreet: typeof value === 'function' ? value(prev.companyStreet) : value }));
+  const setCompanyHouseNumberState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyHouseNumber: typeof value === 'function' ? value(prev.companyHouseNumber) : value }));
+  const setCompanyPostalCodeState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyPostalCode: typeof value === 'function' ? value(prev.companyPostalCode) : value }));
+  const setCompanyCityState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyCity: typeof value === 'function' ? value(prev.companyCity) : value }));
+  const setCompanyCountryState = (value: SetStateAction<string | null | undefined>) => setRegistrationState(prev => ({ ...prev, companyCountry: typeof value === 'function' ? value(prev.companyCountry) : value }));
+  const setCompanyWebsiteState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyWebsite: typeof value === 'function' ? value(prev.companyWebsite) : value }));
+  const setIbanState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, iban: typeof value === 'function' ? value(prev.iban) : value }));
+  const setAccountHolderState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, accountHolder: typeof value === 'function' ? value(prev.accountHolder) : value }));
+  const setSelectedSkillsState = (value: SetStateAction<{ [key: string]: string[] | null }>) => setRegistrationState(prev => ({ ...prev, selectedSkills: typeof value === 'function' ? value(prev.selectedSkills!) : value })); // prev.selectedSkills! da es jetzt nicht mehr undefined ist
+  const setSelectedHandwerkSkillsState = (value: SetStateAction<string[] | null | undefined>) => setRegistrationState(prev => ({ ...prev, selectedHandwerkSkills: typeof value === 'function' ? value(prev.selectedHandwerkSkills) : value }));
+  const setSelectedHaushaltServicesState = (value: SetStateAction<string[] | null | undefined>) => setRegistrationState(prev => ({ ...prev, selectedHaushaltServices: typeof value === 'function' ? value(prev.selectedHaushaltServices) : value }));
+  const setProfilePictureFileState = (value: SetStateAction<File | null | undefined>) => setRegistrationState(prev => ({ ...prev, profilePictureFile: typeof value === 'function' ? value(prev.profilePictureFile) : value }));
+  const setBusinessLicenseFileState = (value: SetStateAction<File | null | undefined>) => setRegistrationState(prev => ({ ...prev, businessLicenseFile: typeof value === 'function' ? value(prev.businessLicenseFile) : value }));
+  const setMasterCraftsmanCertificateFileState = (value: SetStateAction<File | null | undefined>) => setRegistrationState(prev => ({ ...prev, masterCraftsmanCertificateFile: typeof value === 'function' ? value(prev.masterCraftsmanCertificateFile) : value }));
+  const setIdentityFrontFileState = (value: SetStateAction<File | null | undefined>) => setRegistrationState(prev => ({ ...prev, identityFrontFile: typeof value === 'function' ? value(prev.identityFrontFile) : value }));
+  const setIdentityBackFileState = (value: SetStateAction<File | null | undefined>) => setRegistrationState(prev => ({ ...prev, identityBackFile: typeof value === 'function' ? value(prev.identityBackFile) : value }));
+  const setCompanyRegisterState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, companyRegister: typeof value === 'function' ? value(prev.companyRegister) : value }));
+  const setHourlyRateState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, hourlyRate: typeof value === 'function' ? value(prev.hourlyRate) : value }));
+  const setTaxNumberState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, taxNumber: typeof value === 'function' ? value(prev.taxNumber) : value }));
+  const setVatIdState = (value: SetStateAction<string | undefined>) => setRegistrationState(prev => ({ ...prev, vatId: typeof value === 'function' ? value(prev.vatId) : value }));
+  const setLatState = (value: SetStateAction<number | null>) => setRegistrationState(prev => ({ ...prev, lat: typeof value === 'function' ? value(prev.lat) : value }));
+  const setLngState = (value: SetStateAction<number | null>) => setRegistrationState(prev => ({ ...prev, lng: typeof value === 'function' ? value(prev.lng) : value }));
+  const setLatLngPolygonState = (value: SetStateAction<google.maps.LatLngLiteral[] | null | undefined>) => setRegistrationState(prev => ({ ...prev, latLngPolygon: typeof value === 'function' ? value(prev.latLngPolygon) : value }));
+  const setRadiusKmState = (value: SetStateAction<number | null>) => setRegistrationState(prev => ({ ...prev, radiusKm: typeof value === 'function' ? value(prev.radiusKm) : value }));
 
   const resetRegistrationData = () => {
-    setStepState(1);
-    setCustomerTypeState(null);
-    setSelectedCategoryState(null);
-    setSelectedSubcategoryState(null);
-    setDescriptionState('');
-    setJobStreetState('');
-    setJobPostalCodeState('');
-    setJobCityState('');
-    setJobCountryState('Deutschland');
-    setJobDateFromState(null);
-    setJobDateToState(null);
-    setJobTimePreferenceState(null);
-    setTempJobDraftIdState(null);
-    setSelectedAnbieterIdState(null);
-    setJobDurationStringState('');
-    setJobTotalCalculatedHoursState(null);
-    setJobCalculatedPriceInCentsState(null);
-    setEmailState('');
-    setPasswordState('');
-    setFirstNameState('');
-    setLastNameState('');
-    setPhoneNumberState('');
-    setCompanyPhoneNumberState('');
-    // Resets für persönliche Details
-    setDateOfBirthState(undefined);
-    setPersonalStreetState(undefined);
-    setPersonalHouseNumberState(undefined);
-    setPersonalPostalCodeState(undefined);
-    setPersonalCityState(undefined);
-    setPersonalCountryState(null);
-    setIsManagingDirectorOwnerState(true);
-    // Resets für granulare Eigentümer- und Vertreterdetails
-    setOwnershipPercentageState(undefined);
-    setIsActualDirectorState(undefined);
-    setIsActualOwnerState(undefined);
-    setActualOwnershipPercentageState(undefined);
-    setIsActualExecutiveState(undefined);
-    setActualRepresentativeTitleState(undefined);
-
-    setCompanyNameState('');
-    setLegalFormState(null);
-    setCompanyStreetState('');
-    setCompanyHouseNumberState('');
-    setCompanyPostalCodeState('');
-    setCompanyCityState('');
-    setCompanyCountryState(null);
-    setCompanyWebsiteState('');
-    setIbanState('');
-    setAccountHolderState('');
-    setSelectedSkillsState({});
-    setSelectedHandwerkSkillsState(null);
-    setSelectedHaushaltServicesState(null);
-    setProfilePictureFileState(null);
-    setBusinessLicenseFileState(null);
-    setMasterCraftsmanCertificateFileState(null);
-    setIdentityFrontFileState(null);
-    setIdentityBackFileState(null);
-    setCompanyRegisterState(undefined);
-    setHourlyRateState('');
-    setTaxNumberState('');
-    setVatIdState('');
-    setLatState(null);
-    setLngState(null);
-    setLatLngPolygonState(null);
-    setRadiusKmState(30);
+    setRegistrationState(getInitialState());
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('registrationData');
+    }
   };
 
   const contextValue: RegistrationContextType = {
-    step, setStep: setStepState,
-    customerType, setCustomerType: setCustomerTypeState,
-    selectedCategory, setSelectedCategory: setSelectedCategoryState,
-    selectedSubcategory, setSelectedSubcategory: setSelectedSubcategoryState,
-    description, setDescription: setDescriptionState,
-    jobStreet, setJobStreet: setJobStreetState,
-    jobPostalCode, setJobPostalCode: setJobPostalCodeState,
-    jobCity, setJobCity: setJobCityState,
-    jobCountry, setJobCountry: setJobCountryState,
-    jobDateFrom, setJobDateFrom: setJobDateFromState,
-    jobDateTo, setJobDateTo: setJobDateToState,
-    jobTimePreference, setJobTimePreference: setJobTimePreferenceState,
-    tempJobDraftId, setTempJobDraftId: setTempJobDraftIdState,
-    selectedAnbieterId, setSelectedAnbieterId: setSelectedAnbieterIdState,
-    jobDurationString, setJobDurationString: setJobDurationStringState,
-    jobTotalCalculatedHours, setJobTotalCalculatedHours: setJobTotalCalculatedHoursState,
-    jobCalculatedPriceInCents, setJobCalculatedPriceInCents: setJobCalculatedPriceInCentsState,
-    email, setEmail: setEmailState,
-    password, setPassword: setPasswordState,
-    firstName, setFirstName: setFirstNameState,
-    lastName, setLastName: setLastNameState,
-    phoneNumber, setPhoneNumber: setPhoneNumberState,
-    companyPhoneNumber, setCompanyPhoneNumber: setCompanyPhoneNumberState,
-
-    // Context-Werte für persönliche Details
-    dateOfBirth, setDateOfBirth: setDateOfBirthState,
-    personalStreet, setPersonalStreet: setPersonalStreetState,
-    personalHouseNumber, setPersonalHouseNumber: setPersonalHouseNumberState,
-    personalPostalCode, setPersonalPostalCode: setPersonalPostalCodeState,
-    personalCity, setPersonalCity: setPersonalCityState,
-    personalCountry, setPersonalCountry: setPersonalCountryState,
-    isManagingDirectorOwner, setIsManagingDirectorOwner: setIsManagingDirectorOwnerState,
-    // Context-Werte für granulare Eigentümer- und Vertreterdetails
-    ownershipPercentage, setOwnershipPercentage: setOwnershipPercentageState,
-    isActualDirector, setIsActualDirector: setIsActualDirectorState,
-    isActualOwner, setIsActualOwner: setIsActualOwnerState,
-    actualOwnershipPercentage, setActualOwnershipPercentage: setActualOwnershipPercentageState,
-    isActualExecutive, setIsActualExecutive: setIsActualExecutiveState,
-    actualRepresentativeTitle, setActualRepresentativeTitle: setActualRepresentativeTitleState,
-
-    companyName, setCompanyName: setCompanyNameState,
-    legalForm, setLegalForm: setLegalFormState,
-    companyStreet, setCompanyStreet: setCompanyStreetState,
-    companyHouseNumber, setCompanyHouseNumber: setCompanyHouseNumberState,
-    companyPostalCode, setCompanyPostalCode: setCompanyPostalCodeState,
-    companyCity, setCompanyCity: setCompanyCityState,
-    companyCountry, setCompanyCountry: setCompanyCountryState,
-    companyWebsite, setCompanyWebsite: setCompanyWebsiteState,
-    iban, setIban: setIbanState,
-    accountHolder, setAccountHolder: setAccountHolderState,
-    selectedSkills, setSelectedSkills: setSelectedSkillsState,
-    selectedHandwerkSkills, setSelectedHandwerkSkills: setSelectedHandwerkSkillsState,
-    selectedHaushaltServices, setSelectedHaushaltServices: setSelectedHaushaltServicesState,
-    profilePictureFile, setProfilePictureFile: setProfilePictureFileState,
-    businessLicenseFile, setBusinessLicenseFile: setBusinessLicenseFileState,
-    masterCraftsmanCertificateFile, setMasterCraftsmanCertificateFile: setMasterCraftsmanCertificateFileState,
-    identityFrontFile, setIdentityFrontFile: setIdentityFrontFileState,
-    identityBackFile, setIdentityBackFile: setIdentityBackFileState,
-    companyRegister, setCompanyRegister: setCompanyRegisterState,
-    hourlyRate, setHourlyRate: setHourlyRateState,
-    taxNumber, setTaxNumber: setTaxNumberState,
-    vatId, setVatId: setVatIdState,
-    lat, setLat: setLatState,
-    lng, setLng: setLngState,
-    latLngPolygon, setLatLngPolygon: setLatLngPolygonState,
-    radiusKm, setRadiusKm: setRadiusKmState,
+    ...registrationState,
+    setStep: setStepState,
+    setCustomerType: setCustomerTypeState,
+    setSelectedCategory: setSelectedCategoryState,
+    setSelectedSubcategory: setSelectedSubcategoryState,
+    setDescription: setDescriptionState,
+    setJobStreet: setJobStreetState,
+    setJobPostalCode: setJobPostalCodeState,
+    setJobCity: setJobCityState,
+    setJobCountry: setJobCountryState,
+    setJobDateFrom: setJobDateFromState,
+    setJobDateTo: setJobDateToState,
+    setJobTimePreference: setJobTimePreferenceState,
+    setTempJobDraftId: setTempJobDraftIdState,
+    setSelectedAnbieterId: setSelectedAnbieterIdState,
+    setJobDurationString: setJobDurationStringState,
+    setJobTotalCalculatedHours: setJobTotalCalculatedHoursState,
+    setJobCalculatedPriceInCents: setJobCalculatedPriceInCentsState,
+    setEmail: setEmailState,
+    setPassword: setPasswordState,
+    setFirstName: setFirstNameState,
+    setLastName: setLastNameState,
+    setPhoneNumber: setPhoneNumberState,
+    setCompanyPhoneNumber: setCompanyPhoneNumberState,
+    setDateOfBirth: setDateOfBirthState,
+    setPersonalStreet: setPersonalStreetState,
+    setPersonalHouseNumber: setPersonalHouseNumberState,
+    setPersonalPostalCode: setPersonalPostalCodeState,
+    setPersonalCity: setPersonalCityState,
+    setPersonalCountry: setPersonalCountryState,
+    setIsManagingDirectorOwner: setIsManagingDirectorOwnerState,
+    setOwnershipPercentage: setOwnershipPercentageState,
+    setIsActualDirector: setIsActualDirectorState,
+    setIsActualOwner: setIsActualOwnerState,
+    setActualOwnershipPercentage: setActualOwnershipPercentageState,
+    setIsActualExecutive: setIsActualExecutiveState,
+    setActualRepresentativeTitle: setActualRepresentativeTitleState,
+    setCompanyName: setCompanyNameState,
+    setLegalForm: setLegalFormState,
+    setCompanyStreet: setCompanyStreetState,
+    setCompanyHouseNumber: setCompanyHouseNumberState,
+    setCompanyPostalCode: setCompanyPostalCodeState,
+    setCompanyCity: setCompanyCityState,
+    setCompanyCountry: setCompanyCountryState,
+    setCompanyWebsite: setCompanyWebsiteState,
+    setIban: setIbanState,
+    setAccountHolder: setAccountHolderState,
+    setSelectedSkills: setSelectedSkillsState,
+    setSelectedHandwerkSkills: setSelectedHandwerkSkillsState,
+    setSelectedHaushaltServices: setSelectedHaushaltServicesState,
+    setProfilePictureFile: setProfilePictureFileState,
+    setBusinessLicenseFile: setBusinessLicenseFileState,
+    setMasterCraftsmanCertificateFile: setMasterCraftsmanCertificateFileState,
+    setIdentityFrontFile: setIdentityFrontFileState,
+    setIdentityBackFile: setIdentityBackFileState,
+    setCompanyRegister: setCompanyRegisterState,
+    setHourlyRate: setHourlyRateState,
+    setTaxNumber: setTaxNumberState,
+    setVatId: setVatIdState,
+    setLat: setLatState,
+    setLng: setLngState,
+    setLatLngPolygon: setLatLngPolygonState,
+    setRadiusKm: setRadiusKmState,
     resetRegistrationData,
   };
 

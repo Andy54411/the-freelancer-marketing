@@ -7,7 +7,7 @@ import { FiLoader, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
 import { useJsApiLoader } from '@react-google-maps/api';
 import CompanyProfileDetail from './components/CompanyProfileDetail';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from './components/DateTimeSelectionPopup';
-import type { Company, RatingMap, ExpandedDescriptionsMap } from './components/lib/types';
+import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/types/types';
 import { DateRange } from 'react-day-picker';
 import { format, isValid, parseISO, differenceInCalendarDays } from 'date-fns';
 import { SEARCH_API_URL, DATA_FOR_SUBCATEGORY_API_URL, GLOBAL_FALLBACK_MIN_PRICE, GLOBAL_FALLBACK_MAX_PRICE, PAGE_ERROR, PAGE_LOG, PAGE_WARN, TRUST_AND_SUPPORT_FEE_EUR } from '../../../../../lib/constants';

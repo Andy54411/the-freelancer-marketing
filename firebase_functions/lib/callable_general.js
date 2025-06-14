@@ -39,17 +39,15 @@ const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
 const firestore_1 = require("firebase-admin/firestore");
-const admin = __importStar(require("firebase-admin")); // Wird für admin.auth() und admin.storage() in deleteCompanyAccount benötigt
+const admin = __importStar(require("firebase-admin"));
 const v2_2 = require("firebase-functions/v2");
-v2_2.logger.info("Lade http_general.ts..."); // <-- Füge dies hinzu
+v2_2.logger.info("Lade http_general.ts...");
 try {
-    // Jeder Code, der hier direkt beim Laden der Datei ausgeführt wird
-    // z.B. wenn getStripeInstance() direkt beim Laden aufgerufen würde (was es nicht sollte)
-    v2_2.logger.info("http_general.ts: Globale Initialisierung erfolgreich."); // <-- Füge dies hinzu
+    v2_2.logger.info("http_general.ts: Globale Initialisierung erfolgreich.");
 }
 catch (error) {
-    v2_2.logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack }); // <-- Füge dies hinzu
-    throw error; // Wichtig: Den Fehler werfen, damit er im Log erscheint
+    v2_2.logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
+    throw error;
 }
 exports.getClientIp = (0, https_1.onCall)(async (request) => {
     const rawHttpRequest = request.rawRequest;
@@ -69,7 +67,6 @@ exports.getClientIp = (0, https_1.onCall)(async (request) => {
     }
     if (isEmulated && (clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "IP_NOT_DETERMINED")) {
         clientIp = "127.0.0.1";
-        // loggerV2.warn(`[getClientIp] Emulator. IP auf "${clientIp}" gesetzt.`);
     }
     else if (!isEmulated && (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7 || clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "0.0.0.0")) {
         v2_1.logger.error(`[getClientIp] In NICHT-Emulator-Umgebung keine gültige IP. Gefunden: "${clientIp}".`);
@@ -80,6 +77,7 @@ exports.getClientIp = (0, https_1.onCall)(async (request) => {
 });
 exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+    const db = (0, helpers_1.getDb)();
     if (!request.auth?.uid) {
         v2_1.logger.error("[createTemporaryJobDraft] Nutzer nicht authentifiziert.");
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
@@ -95,14 +93,13 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
         v2_1.logger.error("[createTemporaryJobDraft] Fehlende oder ungültige Pflichtdaten:", jobDetails);
         throw new https_1.HttpsError("invalid-argument", "Unvollständige oder ungültige Auftragsdetails übermittelt.");
     }
-    // Lade die Daten des Kunden (Auftraggebers), um den Namen zu speichern
-    let customerInfo = {
+    const customerInfo = {
         firstName: 'Unbekannt',
         lastName: '',
         email: request.auth.token.email || ''
     };
     try {
-        const userDoc = await helpers_1.db.collection('users').doc(kundeId).get();
+        const userDoc = await db.collection('users').doc(kundeId).get();
         if (userDoc.exists) {
             const data = userDoc.data();
             if (data) {
@@ -122,7 +119,7 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
     let anbieterStripeAccountId = null;
     if (jobDetails.selectedAnbieterId) {
         try {
-            const anbieterDocRef = helpers_1.db.collection('users').doc(jobDetails.selectedAnbieterId);
+            const anbieterDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
             const anbieterDoc = await anbieterDocRef.get();
             if (anbieterDoc.exists) {
                 const anbieterData = anbieterDoc.data();
@@ -166,7 +163,6 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
             jobTotalCalculatedHours: jobDetails.jobTotalCalculatedHours ?? null,
             jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents,
             kundeId: kundeId,
-            // HINZUGEFÜGT:
             customerFirstName: customerInfo.firstName,
             customerLastName: customerInfo.lastName,
             customerEmail: customerInfo.email,
@@ -174,7 +170,7 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
             createdAt: firestore_1.FieldValue.serverTimestamp(),
             lastUpdatedAt: firestore_1.FieldValue.serverTimestamp(),
         };
-        const docRef = await helpers_1.db.collection("temporaryJobDrafts").add(draftDataToSave);
+        const docRef = await db.collection("temporaryJobDrafts").add(draftDataToSave);
         v2_1.logger.info(`[createTemporaryJobDraft] Draft ${docRef.id} für Kunde ${kundeId} und Anbieter ${jobDetails.selectedAnbieterId} erstellt.`);
         return {
             tempDraftId: docRef.id,
@@ -188,13 +184,14 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
 });
 exports.getOrCreateStripeCustomer = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[getOrCreateStripeCustomer] Aufgerufen.");
+    const db = (0, helpers_1.getDb)();
     const localStripe = (0, helpers_1.getStripeInstance)();
     if (!request.auth?.uid) {
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     }
     const firebaseUserId = request.auth.uid;
     try {
-        const userDocRef = helpers_1.db.collection("users").doc(firebaseUserId);
+        const userDocRef = db.collection("users").doc(firebaseUserId);
         const userDoc = await userDocRef.get();
         if (!userDoc.exists) {
             throw new https_1.HttpsError("not-found", "Nutzerprofil nicht gefunden.");
@@ -225,12 +222,13 @@ exports.getOrCreateStripeCustomer = (0, https_1.onCall)(async (request) => {
 });
 exports.deleteCompanyAccount = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[deleteCompanyAccount] Aufgerufen von User:", request.auth?.uid);
+    const db = (0, helpers_1.getDb)();
     if (!request.auth?.uid)
         throw new https_1.HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     const userId = request.auth.uid;
     const localStripe = (0, helpers_1.getStripeInstance)();
-    const userDocRef = helpers_1.db.collection("users").doc(userId);
-    const companyDocRef = helpers_1.db.collection("companies").doc(userId);
+    const userDocRef = db.collection("users").doc(userId);
+    const companyDocRef = db.collection("companies").doc(userId);
     const adminAuthService = admin.auth();
     const adminStorageBucket = admin.storage().bucket();
     let stripeAccountId;

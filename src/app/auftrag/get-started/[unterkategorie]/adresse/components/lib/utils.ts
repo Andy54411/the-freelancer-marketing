@@ -1,8 +1,8 @@
-//Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/utils.ts
+// src/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/utils.ts
 
 // Stellen Sie sicher, dass BookingCharacteristics hier importiert wird,
 // falls es in einer separaten Typendatei definiert ist (z.B. '@/types/types').
-import { BookingCharacteristics } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/types'; // Passen Sie den Pfad bei Bedarf an
+import { BookingCharacteristics } from '@/types/types'; // Passen Sie den Pfad bei Bedarf an
 
 /**
  * Gibt eine Zeichenkette von Sternen (voll, halb, leer) basierend auf einer Bewertung zurück.
@@ -29,17 +29,17 @@ export function getBookingCharacteristics(subcategory: string | null): BookingCh
   switch (subcategory) {
     case 'Mietkoch':
       return {
-        datePickerMode: 'range', // Literal-Typ 'single'
-        durationLabel: 'Dauer (Stunden)',
-        durationPlaceholder: 'z.B. 4',
-        durationHint: 'Geschätzte Dauer des gesamten Einsatzes.',
-        isDurationPerDay: false,
-        defaultDurationHours: 4,
+        datePickerMode: 'range', // Der Mietkoch kann auch für mehrere Tage gebucht werden
+        durationLabel: 'Stunden pro Tag', // <--- Angepasst für Klarheit
+        durationPlaceholder: 'z.B. 8', // <--- Angepasst für Klarheit
+        durationHint: 'Geschätzte Stunden, die pro Tag gearbeitet werden.', // <--- Angepasst für Klarheit
+        isDurationPerDay: true, // <--- HIER IST DIE WICHTIGE KORREKTUR: Setzen auf TRUE
+        defaultDurationHours: 8,
       };
 
     case 'Maler & Lackierer':
       return {
-        datePickerMode: 'range', // Literal-Typ 'range'
+        datePickerMode: 'range',
         durationLabel: 'Stunden pro Tag',
         durationPlaceholder: 'z.B. 8',
         durationHint: 'Geschätzte Stunden, die pro Tag gearbeitet werden.',
@@ -49,7 +49,7 @@ export function getBookingCharacteristics(subcategory: string | null): BookingCh
 
     default:
       return {
-        datePickerMode: 'single', // Literal-Typ 'single'
+        datePickerMode: 'single',
         durationLabel: 'Dauer (Stunden)',
         durationPlaceholder: 'z.B. 2',
         durationHint: 'Geschätzte Dauer der Aufgabe.',
