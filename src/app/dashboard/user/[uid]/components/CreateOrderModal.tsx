@@ -21,7 +21,7 @@ import PaymentSection from '@/app/dashboard/user/[uid]/components/OrderPaymentMe
 
 import { AnbieterDetails, UserProfileData, SavedAddress, BookingCharacteristics } from '@/types/types';
 import { categories } from '@/lib/categories';
-import { TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
+// import { TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants'; // Wird durch prozentuale Gebühr ersetzt
 import { getBookingCharacteristics } from '../../../../auftrag/get-started/[unterkategorie]/adresse/components/lib/utils';
 import type { DateRange } from 'react-day-picker';
 
@@ -50,6 +50,22 @@ interface OrderDetailsForBackend {
   addressName: string;
 }
 
+// Interface für BillingDetails, passend zu dem, was die API erwartet
+// und was in BestaetigungsPage.tsx verwendet wird.
+interface CustomerAddressForBilling {
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  state?: string | null;
+  country?: string | null;
+}
+interface BillingDetailsPayloadForApi {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: CustomerAddressForBilling;
+}
 interface CreateOrderModalProps {
   onClose: () => void;
   currentUser: User;
@@ -64,6 +80,9 @@ function parseDurationStringToHours(durationStr?: string): number | null {
 }
 
 const db = getFirestore(app); // Initialisiere Firestore-Datenbank
+
+// Käufer-Servicegebühr Rate (z.B. 4.5%)
+const BUYER_SERVICE_FEE_RATE = 0.045;
 
 const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUser, userProfile }) => {
   const router = useRouter();
@@ -117,7 +136,10 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
     setCurrentStep('success');
     setTimeout(() => {
       onClose();
-      router.refresh();
+      // Erwägen Sie, router.push zum aktuellen Pfad zu verwenden, um ein
+      // Neuladen der Daten auf der Dashboard-Seite zu erzwingen,
+      // falls router.refresh() nicht ausreicht (z.B. bei Client-Komponenten mit eigenem Fetching).
+      router.push(window.location.pathname); // Navigiert zur aktuellen Seite, um potenziell Daten neu zu laden
     }, 3000);
 
   }, [onClose, router]);
@@ -180,8 +202,23 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
 
 
       const servicePrice = totalHours * hourlyRateNum;
-      const totalPrice = servicePrice + TRUST_AND_SUPPORT_FEE_EUR;
+      const servicePriceInCents = Math.round(servicePrice * 100); // Preis des Dienstleisters in Cents
+      const buyerServiceFeeInCents = Math.round(servicePriceInCents * BUYER_SERVICE_FEE_RATE);
+      const totalPrice = servicePrice + (buyerServiceFeeInCents / 100); // Gesamtpreis inkl. prozentualer Gebühr
       const totalPriceInCents = Math.round(totalPrice * 100);
+
+      // NEU: Client-seitige Validierung des Endpreises (Basispreis für den Draft)
+      if (totalPriceInCents <= 0) {
+        console.error("CreateOrderModal: Client-seitige Validierung fehlgeschlagen - totalPriceInCents (als Basispreis verwendet) ist nicht positiv:", totalPriceInCents);
+        throw new Error("Der berechnete Auftragswert muss positiv sein. Bitte überprüfen Sie Dauer und Stundensatz des Anbieters.");
+      }
+
+      // Zusätzliche Prüfung für den reinen Dienstleistungspreis, der als Basispreis für den Draft dient
+      if (servicePriceInCents <= 0) {
+        console.error("CreateOrderModal: Client-seitige Validierung fehlgeschlagen - servicePriceInCents (als Basispreis für Draft verwendet) ist nicht positiv:", servicePriceInCents);
+        throw new Error("Der reine Dienstleistungspreis muss positiv sein. Überprüfen Sie Stundensatz und Dauer.");
+      }
+
 
       console.log("DEBUG: Adresse finalisieren...");
       const rawFinalAddress = useSavedAddress === 'new' ? newAddressDetails : userProfile.savedAddresses?.find(a => a.id === useSavedAddress);
@@ -198,7 +235,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
         customerLastName: userProfile.lastname || '',
         customerType: userProfile.user_type || 'private',
         description,
-        jobCalculatedPriceInCents: totalPriceInCents,
+        jobCalculatedPriceInCents: servicePriceInCents, // KORREKTUR: Reiner Dienstleistungspreis
         jobCity: finalAddress.city,
         jobCountry: finalAddress.country,
         jobDateFrom: dateFromFormatted,
@@ -212,8 +249,29 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
         selectedAnbieterId: selectedProvider.id,
         selectedCategory: selectedCategory,
         selectedSubcategory: selectedSubcategory,
-        totalPriceInCents: totalPriceInCents,
+        totalPriceInCents: totalPriceInCents, // Gesamtpreis für die Bestellung/Zahlung
         addressName: finalAddress.name,
+      };
+
+      // Erstelle das billingDetails-Objekt für die API
+      const billingDetailsForApi: BillingDetailsPayloadForApi = {
+        name: [
+          (`${userProfile.firstname || ''} ${userProfile.lastname || ''}`).trim(),
+          typeof userProfile.companyName === 'string' ? userProfile.companyName.trim() : null,
+          typeof currentUser.displayName === 'string' ? currentUser.displayName.trim() : null
+        ].find(n => n && n.length > 0) || 'Unbekannter Name',
+        email: currentUser.email || userProfile.email || '',
+        phone: [
+          typeof userProfile.phoneNumber === 'string' ? userProfile.phoneNumber : null,
+          typeof userProfile.companyPhoneNumber === 'string' ? userProfile.companyPhoneNumber : null
+        ].find(p => p && p.length > 0) || undefined,
+        address: {
+          line1: finalAddress.line1,
+          line2: finalAddress.line2 || undefined, // Stelle sicher, dass line2 undefined ist, wenn leer
+          city: finalAddress.city,
+          postal_code: finalAddress.postal_code,
+          country: finalAddress.country,
+        },
       };
 
       console.log("DEBUG: Generiere temporäre Job-Entwurf-ID...");
@@ -242,13 +300,15 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: totalPriceInCents,
+          jobPriceInCents: servicePriceInCents, // Hinzufügen von jobPriceInCents auf Root-Ebene
           currency: 'eur',
           connectedAccountId: selectedProvider.stripeAccountId,
-          platformFee: TRUST_AND_SUPPORT_FEE_EUR,
+          // platformFee wird serverseitig berechnet, daher hier nicht mehr senden (TRUST_AND_SUPPORT_FEE_EUR ist nur für die Client-Anzeige)
           taskId: newTempJobDraftId, // Verwende die generierte ID als taskId für Stripe Metadata
           firebaseUserId: currentUser.uid,
           stripeCustomerId: userProfile.stripeCustomerId,
-          orderDetails: orderDetailsForBackend, // Optional, aber gut für Logs
+          orderDetails: orderDetailsForBackend,
+          billingDetails: billingDetailsForApi, // Hinzufügen von billingDetails auf Root-Ebene
         }),
       });
 

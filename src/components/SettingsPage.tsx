@@ -67,8 +67,9 @@ export interface RawFirestoreUserData {
   lat?: number | null; lng?: number | null; radiusKm?: number | null;
   selectedCategory?: string; selectedSubcategory?: string;
   step1?: Record<string, unknown>; step2?: Record<string, unknown>;
-  step3?: Record<string, unknown>; step4?: Record<string, unknown>;
-  common?: Record<string, unknown>; stripeAccountId?: string | null;
+  step3?: Record<string, unknown>; step4?: Record<string, unknown>; // eslint-disable-line
+  common?: Record<string, unknown>; stripeAccountId?: string | null; // eslint-disable-line
+  updatedAt?: any; // HINZUGEFÜGT: Für Firestore Timestamps
 }
 
 export interface UserDataForSettings {

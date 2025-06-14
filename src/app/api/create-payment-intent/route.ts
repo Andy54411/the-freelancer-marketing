@@ -9,7 +9,7 @@ if (!stripeSecret) {
 }
 
 const stripe = stripeSecret ? new Stripe(stripeSecret, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2024-06-20', // Stelle sicher, dass dies die aktuelle Stripe API Version ist
 }) : null;
 
 export async function POST(request: NextRequest) {
@@ -25,26 +25,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("[API /create-payment-intent] Request Body empfangen:", JSON.stringify(body, null, 2));
 
+    // ANPASSUNG: jobPriceInCents statt platformFee erhalten
     const {
-      amount,
+      amount, // Dies ist der vom Frontend übermittelte Gesamtbetrag (totalAmountPayableInCents)
+      jobPriceInCents, // NEU: Der Basispreis des Dienstleisters vom Frontend
       currency = 'eur',
       connectedAccountId,
-      platformFee,
       taskId,
       firebaseUserId,
       stripeCustomerId,
-      // paymentMethodId und billingDetails werden hier nicht mehr benötigt,
-      // da die Bestätigung nun Client-seitig erfolgt.
-      orderDetails,
+      billingDetails, // Rechnungsdetails, falls für zukünftige Nutzung gespeichert werden
     } = body;
 
     console.log("[API /create-payment-intent] Stripe-Key beginnt mit:", stripeSecret?.slice(0, 10));
     console.log("[API /create-payment-intent] ConnectedAccountId aus Request Body:", connectedAccountId);
+    console.log("[API /create-payment-intent] JobPriceInCents aus Request Body:", jobPriceInCents); // NEU: Log
 
     // Validierung der empfangenen Daten mit detaillierteren Logs
+    // ANPASSUNG: amount wird nun später gegen backend-berechneten Wert validiert
     if (typeof amount !== 'number' || amount <= 0) {
-      console.error("[API /create-payment-intent] Validierungsfehler: Ungültiger oder fehlender Betrag.", { amount });
-      return NextResponse.json({ error: 'Ungültiger Betrag. Muss eine positive Zahl sein.' }, { status: 400 });
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültiger oder fehlender Betrag (amount).", { amount });
+      return NextResponse.json({ error: 'Ungültiger Betrag (amount). Muss eine positive Zahl sein.' }, { status: 400 });
+    }
+    // NEU: Validierung für jobPriceInCents
+    if (typeof jobPriceInCents !== 'number' || jobPriceInCents <= 0) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültiger oder fehlender Basispreis (jobPriceInCents).", { jobPriceInCents });
+      return NextResponse.json({ error: 'Ungültiger Basispreis. Muss eine positive Zahl sein.' }, { status: 400 });
     }
     if (typeof currency !== 'string' || currency.length !== 3) {
       console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Währung.", { currency });
@@ -54,10 +60,7 @@ export async function POST(request: NextRequest) {
       console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Connected Account ID.", { connectedAccountId });
       return NextResponse.json({ error: 'Ungültige Connected Account ID. Muss mit "acct_" beginnen.' }, { status: 400 });
     }
-    if (typeof platformFee !== 'number' || platformFee < 0 || platformFee >= amount) {
-      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Plattformgebühr.", { platformFee, amount });
-      return NextResponse.json({ error: 'Ungültige Plattformgebühr. Muss eine positive Zahl sein und kleiner als der Gesamtbetrag.' }, { status: 400 });
-    }
+    // ANPASSUNG: Entfernung der Validierung für `platformFee`, da sie nicht mehr direkt empfangen wird.
     if (!taskId || typeof taskId !== 'string') {
       console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Task-ID (tempJobDraftId).", { taskId });
       return NextResponse.json({ error: 'Ungültige Task-ID (tempJobDraftId).' }, { status: 400 });
@@ -70,6 +73,12 @@ export async function POST(request: NextRequest) {
       console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Stripe Customer ID.", { stripeCustomerId });
       return NextResponse.json({ error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' }, { status: 400 });
     }
+    // NEU: Validierung für billingDetails
+    if (!billingDetails || !billingDetails.address?.line1 || !billingDetails.address?.postal_code || !billingDetails.address?.city || !billingDetails.address?.country) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Unvollständige Rechnungsadresse.", { billingDetails });
+      return NextResponse.json({ error: 'Vollständige Rechnungsadresse ist erforderlich.' }, { status: 400 });
+    }
+
 
     console.log("[API /create-payment-intent] DEBUG ConnectedAccountId für Stripe (aus Request Body):", `"${connectedAccountId}"`, "Länge:", connectedAccountId.length);
 
@@ -143,23 +152,42 @@ export async function POST(request: NextRequest) {
     }
     // --- ENDE DER WARTE-LOGIK ---
 
-    // **platformFee in Cents umrechnen**
-    const platformFeeInCents = Math.round(platformFee * 100);
-    console.log(`[API /create-payment-intent] Umgerechnete Plattformgebühr: ${platformFee} EUR -> ${platformFeeInCents} Cents`);
+    // ANPASSUNG: Gebührenlogik im Backend neu berechnen und validieren
+    const SELLER_COMMISSION_RATE = 0.125; // 12.5% Provision für Verkäufer
+    const BUYER_SERVICE_FEE_RATE = 0.045; // 4.5% Servicegebühr für Käufer
+
+    const calculatedBuyerServiceFee = Math.round(jobPriceInCents * BUYER_SERVICE_FEE_RATE);
+    const totalAmountToChargeBuyer = jobPriceInCents + calculatedBuyerServiceFee;
+
+    // WICHTIGE VALIDIERUNG: Prüfen, ob der vom Frontend gesendete `amount` mit dem Backend-berechneten `totalAmountToChargeBuyer` übereinstimmt
+    if (amount !== totalAmountToChargeBuyer) {
+      console.error(`[API /create-payment-intent] BETRAGS-INKONSISTENZ: Frontend amount (${amount}) stimmt nicht mit Backend calculated amount (${totalAmountToChargeBuyer}) überein.`);
+      return NextResponse.json({ error: 'Fehler bei der Betragsüberprüfung. Bitte versuchen Sie es erneut.' }, { status: 400 });
+    }
+
+    const platformCommissionFromSeller = Math.round(jobPriceInCents * SELLER_COMMISSION_RATE);
+    const totalApplicationFee = platformCommissionFromSeller + calculatedBuyerServiceFee;
+
+    console.log(`[API /create-payment-intent] Backend-Berechnungen:`);
+    console.log(`  Basispreis (jobPriceInCents): ${jobPriceInCents} Cents`);
+    console.log(`  Käufer-Servicegebühr (calculatedBuyerServiceFee): ${calculatedBuyerServiceFee} Cents`);
+    console.log(`  Gesamtbetrag für Käufer (totalAmountToChargeBuyer): ${totalAmountToChargeBuyer} Cents`);
+    console.log(`  Verkäufer-Provision (platformCommissionFromSeller): ${platformCommissionFromSeller} Cents`);
+    console.log(`  Gesamt-Plattformgebühr (totalApplicationFee): ${totalApplicationFee} Cents`);
+
 
     console.log(`[API /create-payment-intent] Konfiguriere PaymentIntent für Client-seitige Bestätigung (keine Weiterleitungen).`);
 
-
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
-      amount: amount,
+      amount: totalAmountToChargeBuyer, // Der Gesamtbetrag, den der Käufer zahlt
       currency: currency,
       customer: stripeCustomerId,
-      application_fee_amount: platformFeeInCents,
+      application_fee_amount: totalApplicationFee, // Die Gesamtgebühr für eure Plattform
       transfer_data: {
-        destination: connectedAccountId,
+        destination: connectedAccountId, // Der Restbetrag geht an den Dienstleister
       },
       confirm: false, // PaymentIntent wird NICHT sofort bestätigt
-      setup_future_usage: 'off_session',
+      setup_future_usage: 'off_session', // Karte für zukünftige Zahlungen speichern
       automatic_payment_methods: {
         enabled: true,
         allow_redirects: 'never', // Verhindert Weiterleitungen
@@ -167,6 +195,15 @@ export async function POST(request: NextRequest) {
       metadata: {
         tempJobDraftId: taskId,
         firebaseUserId: firebaseUserId,
+        // NEU: Detaillierte Preiskomponenten in den Metadaten speichern
+        originalJobPriceInCents: jobPriceInCents.toString(), // Als String speichern, da Metadaten Strings sind
+        buyerServiceFeeInCents: calculatedBuyerServiceFee.toString(),
+        sellerCommissionInCents: platformCommissionFromSeller.toString(),
+        totalPlatformFeeInCents: totalApplicationFee.toString(),
+        // Optional: Weitere billingDetails hier hinzufügen, wenn sie für Webhooks relevant sind
+        // billingName: billingDetails?.name,
+        // billingEmail: billingDetails?.email,
+        // billingPostalCode: billingDetails?.address?.postal_code,
       }
     };
 

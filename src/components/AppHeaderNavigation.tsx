@@ -1,0 +1,66 @@
+// /Users/andystaudinger/Tasko/src/components/AppHeaderNavigation.tsx
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+// Importiere deine Kategorien-Definition. Passe den Pfad ggf. an,
+// falls du sie in eine zentrale Datei auslagerst. // GEÄNDERT: Import aus zentraler Datei
+import { categories, Category } from '@/lib/categoriesData'; // Importiere Category-Interface und Daten
+
+const AppHeaderNavigation: React.FC = () => {
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+    const handleMouseEnter = (categoryTitle: string) => {
+        setOpenDropdown(categoryTitle);
+    };
+
+    const handleMouseLeave = () => {
+        setOpenDropdown(null);
+    };
+
+    return (
+        <nav className="bg-white border-t border-gray-200 p-3"> {/* Beispiel: Leichterer Hintergrund, kleinere Padding */}
+            <ul className="flex space-x-4 justify-center">
+                {categories.map((category: Category) => (
+                    <li
+                        key={category.title}
+                        className="relative group"
+                        onMouseEnter={() => handleMouseEnter(category.title)}
+                        onMouseLeave={handleMouseLeave}
+                    >
+                        {/* Hauptkategorie-Link (könnte zu einer Übersichtsseite führen) */}
+                        <Link
+                            href={`/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}`}
+                            className="text-gray-700 hover:text-[#14ad9f] px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                            {category.title}
+                        </Link>
+
+                        {/* Dropdown für Unterkategorien */}
+                        {openDropdown === category.title && category.subcategories.length > 0 && (
+                            <div
+                                className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20"
+                            >
+                                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                    {category.subcategories.map((subcategory) => (
+                                        <Link
+                                            key={subcategory}
+                                            href={`/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`}
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                                            role="menuitem"
+                                        >
+                                            {subcategory}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </li>
+                ))}
+                {/* Weitere Menüpunkte wie "Über uns", "Kontakt" etc. könnten hier folgen */}
+            </ul>
+        </nav>
+    );
+};
+
+export default AppHeaderNavigation;

@@ -4,6 +4,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import { getDb, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
+import Stripe from 'stripe'; // Import für den Stripe-Typ hinzufügen
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
 logger.info("Lade http_general.ts...");
@@ -47,6 +48,22 @@ interface TemporaryJobDraftResult {
   anbieterStripeAccountId?: string | null;
 }
 
+// Diese Interface-Definition sollte mit der auf der Client-Seite übereinstimmen
+// (aus /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/page.tsx)
+interface CustomerAddress {
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  state?: string | null;
+  country?: string | null;
+}
+interface GetOrCreateStripeCustomerPayload {
+  email: string;
+  name?: string;
+  phone?: string | null;
+  address?: CustomerAddress | null;
+}
 interface GetOrCreateStripeCustomerResult {
   stripeCustomerId: string;
 }
@@ -197,26 +214,68 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
 );
 
 
-export const getOrCreateStripeCustomer = onCall<Record<string, never>, Promise<GetOrCreateStripeCustomerResult>>(
+export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload, Promise<GetOrCreateStripeCustomerResult>>(
   async (request): Promise<GetOrCreateStripeCustomerResult> => {
-    loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen.");
+    loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = getDb();
     const localStripe = getStripeInstance();
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
     const firebaseUserId = request.auth.uid;
+    const payload = request.data;
+
+    if (!payload.email) {
+      loggerV2.error("[getOrCreateStripeCustomer] Fehlende E-Mail im Payload.");
+      throw new HttpsError("invalid-argument", "E-Mail ist im Payload erforderlich.");
+    }
+
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
       const userDoc = await userDocRef.get();
       if (!userDoc.exists) { throw new HttpsError("not-found", "Nutzerprofil nicht gefunden."); }
-      const userData = userDoc.data() as any;
+
+      // Definieren Sie einen Typ für userData, um Typsicherheit zu erhöhen
+      interface FirestoreUserData {
+        stripeCustomerId?: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        step1?: {
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+        };
+        // Fügen Sie hier weitere Felder hinzu, die Sie möglicherweise aus userData benötigen
+      }
+      const userData = userDoc.data() as FirestoreUserData | undefined;
+
       if (!userData) { throw new HttpsError("internal", "Fehler Lesen Nutzerdaten."); }
       if (userData.stripeCustomerId?.startsWith("cus_")) { return { stripeCustomerId: userData.stripeCustomerId }; }
 
-      const customerName = `${userData.firstName || userData.step1?.firstName || ""} ${userData.lastName || userData.step1?.lastName || ""}`.trim();
-      const customerEmail = userData.email || userData.step1?.email;
-      if (!customerEmail) { throw new HttpsError("failed-precondition", "E-Mail im Profil fehlt."); }
+      // Priorisiere Daten aus dem Payload, falle zurück auf Firestore-Daten
+      const customerEmailForStripe = payload.email; // E-Mail aus Payload ist Pflicht
+      const customerNameForStripe = payload.name || `${userData.firstName || userData.step1?.firstName || ""} ${userData.lastName || userData.step1?.lastName || ""}`.trim() || undefined;
+      const customerPhoneForStripe = payload.phone || undefined;
 
-      const stripeCustomer = await localStripe.customers.create({ email: customerEmail, name: customerName || undefined, metadata: { firebaseUID: firebaseUserId } });
+      const stripeCustomerParams: Stripe.CustomerCreateParams = {
+        email: customerEmailForStripe,
+        name: customerNameForStripe,
+        phone: customerPhoneForStripe,
+        metadata: { firebaseUID: firebaseUserId }
+      };
+
+      if (payload.address) {
+        // Stelle sicher, dass null-Werte in undefined umgewandelt werden, um Typkompatibilität zu gewährleisten
+        stripeCustomerParams.address = {
+          line1: payload.address.line1 || undefined,
+          line2: payload.address.line2 || undefined,
+          city: payload.address.city || undefined,
+          postal_code: payload.address.postal_code || undefined,
+          state: payload.address.state || undefined,
+          country: payload.address.country || undefined,
+        };
+      }
+
+      const stripeCustomer = await localStripe.customers.create(stripeCustomerParams);
       await userDocRef.update({ stripeCustomerId: stripeCustomer.id });
       loggerV2.info(`[getOrCreateStripeCustomer] Stripe Customer ${stripeCustomer.id} für ${firebaseUserId} erstellt.`);
       return { stripeCustomerId: stripeCustomer.id };

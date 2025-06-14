@@ -14,10 +14,11 @@ import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 interface StripeCardCheckoutProps {
   taskAmount: number;
   taskCurrency?: string;
-  taskerStripeAccountId: string;
-  platformFeeAmount: number;
+  taskerStripeAccountId: string; // Bleibt für return_url oder falls Stripe es benötigt
   customerName?: string;
   taskId?: string;
+  clientSecret: string; // Wird direkt von der BestaetigungsPage übergeben
+  paymentIntentId: string; // Wird für die return_url benötigt
   onPaymentSuccess: (paymentIntentId: string) => void;
   onPaymentError: (errorMessage: string) => void;
 }
@@ -32,9 +33,10 @@ export const StripeCardCheckout = ({
   taskAmount,
   taskCurrency = 'eur',
   taskerStripeAccountId,
-  platformFeeAmount,
   customerName,
   taskId,
+  clientSecret, // Wird jetzt direkt verwendet
+  paymentIntentId, // Wird jetzt direkt verwendet
   onPaymentSuccess,
   onPaymentError,
 }: StripeCardCheckoutProps) => {
@@ -59,31 +61,13 @@ export const StripeCardCheckout = ({
     setMessage(null);
 
     try {
-      const serverResponse = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: taskAmount,
-          currency: taskCurrency,
-          connectedAccountId: taskerStripeAccountId,
-          platformFee: platformFeeAmount,
-          customerName: customerName,
-          taskId: taskId,
-        }),
-      });
-
-      const { clientSecret, paymentIntentId, error: backendError } = await serverResponse.json();
-
-      if (backendError || !clientSecret) {
-        throw new Error(backendError || 'Fehler: Client Secret nicht vom Server erhalten.');
-      }
-
       // Explizitere Behandlung des Ergebnisses von confirmPayment
       const result: ConfirmPaymentResult = await stripe.confirmPayment({
         elements,
-        clientSecret,
+        clientSecret: clientSecret, // Verwende den übergebenen clientSecret
         confirmParams: {
-          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment-status?payment_intent_id=${paymentIntentId}&jobId=${taskId || ''}`,
+          // Verwende die übergebene paymentIntentId für die return_url
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment-status?payment_intent_id=${paymentIntentId}&jobId=${taskId || ''}&source=checkout-page`,
         },
       });
 

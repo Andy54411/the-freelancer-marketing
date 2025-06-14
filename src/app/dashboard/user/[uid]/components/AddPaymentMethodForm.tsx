@@ -30,14 +30,30 @@ export default function AddPaymentMethodForm({ onSuccess, onError, clientSecret 
         setIsSuccess(false);
 
         try {
+            // Schritt 1: elements.submit() aufrufen, um die Elementdaten zu validieren und zu sammeln.
+            const { error: submitError } = await elements.submit();
+
+            if (submitError) {
+                // Fehler bei der Validierung der Elements (z.B. ungültige Kartennummer)
+                const errorMessage = submitError.message || "Fehler bei der Validierung der Zahlungsdaten.";
+                setMessage(errorMessage);
+                onError(errorMessage);
+                setIsSuccess(false);
+                setLoading(false);
+                return;
+            }
+
+            // Schritt 2: Wenn elements.submit() erfolgreich war, dann confirmSetup aufrufen.
             const result = await stripe.confirmSetup({
                 elements,
                 clientSecret,
                 confirmParams: {
-                    return_url: `${window.location.origin}/dashboard/user/${auth.currentUser?.uid || 'current'}/payment-methods-success`,
+                    // Leitet zurück zur aktuellen Dashboard-Seite mit Status-Parametern
+                    return_url: `${window.location.href.split('?')[0]}?setup_redirect=true`,
+                    // Die setup_intent und setup_intent_client_secret werden von Stripe automatisch hinzugefügt,
+                    // wenn der Redirect erfolgt. Wir fügen `setup_redirect=true` hinzu, um es leichter zu erkennen.
                 },
             });
-
             // **DIESE LOGIK WIRD JETZT MIT DOPPELTER TYP-ASSERTION ANGEWENDET**
             if (result.error) {
                 const errorMessage = result.error.message || "Unbekannter Fehler bei der Bestätigung.";

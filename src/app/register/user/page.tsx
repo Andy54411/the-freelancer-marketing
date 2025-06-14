@@ -2,7 +2,7 @@
 "use client";
 import { Suspense, useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { auth, db } from '../../../firebase/clients';
+import { auth, db } from '@/firebase/clients';
 import { createUserWithEmailAndPassword, User as FirebaseUser, AuthError } from 'firebase/auth';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
+import FooterSection from '@/components/footer';
+import AppHeaderNavigation from '@/components/AppHeaderNavigation';
+
 
 const PAGE_LOG = "UserRegisterPage:";
 const PAGE_ERROR = "UserRegisterPage ERROR:";
@@ -166,6 +169,7 @@ function UserRegisterFormContent() {
       // KORREKTUR: Adressdaten aus dieser Seite in die persönlichen Adressfelder
       // des Registration-Context schreiben, da dies die Rechnungsadresse des Nutzers ist.
       // Die jobStreet etc. sollten bereits von der "adresse" Seite im Context sein.
+      registration.setCustomerType('private'); // Set customer type for billing
       registration.setPersonalStreet(street);
       registration.setPersonalCity(city);
       registration.setPersonalPostalCode(postalCode);
@@ -182,10 +186,19 @@ function UserRegisterFormContent() {
       if (redirectToFromParams) {
         try {
           const redirectUrlObj = new URL(redirectToFromParams, window.location.origin);
-          const currentSearchParams = redirectUrlObj.searchParams;
+          const currentSearchParams = new URLSearchParams(redirectUrlObj.search);
 
+          // Stelle sicher, dass die Beschreibung aus dem Context in die URL übernommen wird,
+          // falls sie in der ursprünglichen redirectTo URL fehlt oder leer ist.
+          const existingDescriptionParam = currentSearchParams.get('description');
+          // typeof prüft, ob registration.description überhaupt ein String ist (inkl. leerer String)
+          if (typeof registration.description === 'string' && (!existingDescriptionParam || existingDescriptionParam.trim() === '')) {
+            currentSearchParams.set('description', registration.description);
+          }
 
-          finalRedirectUrl = `${redirectUrlObj.pathname}?${currentSearchParams.toString()}`;
+          // Stelle sicher, dass der Suchstring korrekt formatiert ist (mit '?' nur wenn Parameter vorhanden)
+          const searchString = currentSearchParams.toString();
+          finalRedirectUrl = `${redirectUrlObj.pathname}${searchString ? `?${searchString}` : ''}`;
           console.log(PAGE_LOG, `Generierte Redirect-URL mit Adressdaten: ${finalRedirectUrl}`);
 
           const extractedJobId = currentSearchParams.get('jobId');
@@ -452,6 +465,7 @@ function UserRegisterFormContent() {
         redirectTo={redirectToFromParams}
         initialEmail={email}
       />
+      <FooterSection />
     </>
   );
 }

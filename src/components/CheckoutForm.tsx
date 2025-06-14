@@ -20,7 +20,7 @@ interface StripeCardCheckoutProps {
   taskAmount: number;
   taskCurrency?: string;
   taskerStripeAccountId: string;
-  platformFeeAmount: number;
+  // platformFeeAmount: number; // Entfernt, da Backend dies jetzt berechnet
   customerName?: string;
   taskId?: string;
   onPaymentSuccess: (paymentIntentId: string) => void;

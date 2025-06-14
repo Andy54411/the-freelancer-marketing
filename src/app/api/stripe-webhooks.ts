@@ -50,10 +50,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
-        const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
+        console.log(`[WEBHOOK LOG] payment_intent.succeeded: ${paymentIntentSucceeded.id}`);
 
-        if (!tempJobDraftId) {
-          return res.status(200).json({ received: true, message: 'Metadata tempJobDraftId missing.' });
+        const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
+        const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
+
+        if (!tempJobDraftId || !firebaseUserId) {
+          console.error(`[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`);
+          // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
+          return res.status(200).json({ received: true, message: 'Wichtige Metadaten (tempJobDraftId oder firebaseUserId) fehlen.' });
         }
 
         try {
@@ -64,29 +69,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
             if (tempJobDraftSnapshot.data()?.status === 'converted') {
+              console.log(`[WEBHOOK LOG] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe.`);
               return;
             }
             if (!tempJobDraftSnapshot.exists) {
               throw new Error(`Temporärer Job-Entwurf ${tempJobDraftId} nicht gefunden.`);
             }
 
-            const tempJobDraftData = tempJobDraftSnapshot.data();
-            const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
+            const tempJobDraftData = tempJobDraftSnapshot.data()!; // Non-null assertion, da Existenz geprüft
+
+            // Berechnung für die Clearing-Periode (z.B. 14 Tage)
+            const clearingPeriodDays = 14;
+            const paidAtDate = new Date(); // Zeitpunkt der erfolgreichen Zahlung
+            const clearingEndsDate = new Date(paidAtDate.getTime() + clearingPeriodDays * 24 * 60 * 60 * 1000);
+            const clearingPeriodEndsAtTimestamp = admin.firestore.Timestamp.fromDate(clearingEndsDate);
 
             const auftragData = {
               ...tempJobDraftData,
-              status: 'bezahlt',
+              status: 'zahlung_erhalten_clearing', // Neuer Status für die Clearing-Periode
               paymentIntentId: paymentIntentSucceeded.id,
               paidAt: admin.firestore.FieldValue.serverTimestamp(),
               customerFirebaseUid: firebaseUserId,
               tempJobDraftRefId: tempJobDraftId,
-              // =========================================================
-              // FINALE KORREKTUR: Timestamp-Objekt explizit neu erstellen
-              // =========================================================
+              // Detaillierte Preiskomponenten aus Metadaten (Strings in Zahlen umwandeln)
+              originalJobPriceInCents: paymentIntentSucceeded.metadata?.originalJobPriceInCents ? parseInt(paymentIntentSucceeded.metadata.originalJobPriceInCents, 10) : 0,
+              buyerServiceFeeInCents: paymentIntentSucceeded.metadata?.buyerServiceFeeInCents ? parseInt(paymentIntentSucceeded.metadata.buyerServiceFeeInCents, 10) : 0,
+              sellerCommissionInCents: paymentIntentSucceeded.metadata?.sellerCommissionInCents ? parseInt(paymentIntentSucceeded.metadata.sellerCommissionInCents, 10) : 0,
+              totalPlatformFeeInCents: paymentIntentSucceeded.metadata?.totalPlatformFeeInCents ? parseInt(paymentIntentSucceeded.metadata.totalPlatformFeeInCents, 10) : (paymentIntentSucceeded.application_fee_amount || 0),
+              totalAmountPaidByBuyer: paymentIntentSucceeded.amount, // Gesamtbetrag, den der Käufer gezahlt hat
+              applicationFeeAmountFromStripe: paymentIntentSucceeded.application_fee_amount || 0, // Direkter Wert von Stripe
+              // Stelle sicher, dass createdAt ein gültiger Timestamp ist
               createdAt: new admin.firestore.Timestamp(
                 tempJobDraftData?.createdAt?._seconds || Math.floor(Date.now() / 1000),
                 tempJobDraftData?.createdAt?._nanoseconds || 0
               ),
+              paymentMethodId: typeof paymentIntentSucceeded.payment_method === 'string'
+                ? paymentIntentSucceeded.payment_method
+                : (paymentIntentSucceeded.payment_method && typeof paymentIntentSucceeded.payment_method === 'object' && 'id' in paymentIntentSucceeded.payment_method ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id : null),
+              stripeCustomerId: typeof paymentIntentSucceeded.customer === 'string'
+                ? paymentIntentSucceeded.customer
+                : (paymentIntentSucceeded.customer && typeof paymentIntentSucceeded.customer === 'object' && 'id' in paymentIntentSucceeded.customer ? (paymentIntentSucceeded.customer as Stripe.Customer).id : null),
+              clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
+              buyerApprovedAt: null, // Wird später gesetzt
             };
 
             const newAuftragRef = auftragCollectionRef.doc();
@@ -97,6 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               convertedToOrderId: newAuftragRef.id,
             });
           });
+          console.log(`[WEBHOOK LOG] Transaktion für Job ${tempJobDraftId} erfolgreich abgeschlossen.`);
         } catch (dbError: unknown) { // dbError ist hier vom Typ unknown
           let dbErrorMessage = "Unbekannter Datenbankfehler bei der Job-Konvertierung.";
           if (dbError instanceof Error) {
@@ -108,7 +133,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
       }
       // ... andere cases ...
+      // Z.B. setup_intent.succeeded für das Speichern von Zahlungsmethoden
+      // case 'setup_intent.succeeded': { ... }
       default:
+        // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
+        // damit Stripe nicht versucht, sie erneut zu senden.
         console.log(`[WEBHOOK LOG] Unbehandelter Event-Typ ${event.type}.`);
     }
 
