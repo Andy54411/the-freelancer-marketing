@@ -5,22 +5,22 @@ import { useRouter, useParams } from 'next/navigation';
 import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db, app } from '@/firebase/clients';
-import { WelcomeBox } from './components/WelcomeBox';
-import { ProfileShortcut } from './components/ProfileShortcut';
-import { HelpCard } from './components/Support/HelpCard'; // KORRIGIERTER IMPORTPFAD
+import { WelcomeBox } from '../userId/components/WelcomeBox';
+import { ProfileShortcut } from '../userId/components/ProfileShortcut';
+import { HelpCard } from '../userId/components/Support/HelpCard'; // KORRIGIERTER IMPORTPFAD
 import { FiLoader, FiCreditCard, FiMapPin, FiPlus, FiEdit, FiTrash2, FiAlertCircle, FiLogOut, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
-import Modal from '@/app/dashboard/user/[uid]/components/Modal';
+import Modal from '@/app/dashboard/user/userId/components/Modal';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js'; // KORRIGIERTER IMPORT
-import AddPaymentMethodForm from './components/AddPaymentMethodForm';
-import AddressForm from './components/AddressForm';
+import AddPaymentMethodForm from '../userId/components/AddPaymentMethodForm';
+import AddressForm from '../userId/components/AddressForm';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { toast } from 'sonner'; // Importiere toast
-import CreateOrderModal from './components/CreateOrderModal';
-import SupportChatInterface from './components/Support/SupportChatInterface'; // PFAD GEÄNDERT ZU RELATIV
+import CreateOrderModal from '../userId/components/CreateOrderModal';
+import SupportChatInterface from '../userId/components/Support/SupportChatInterface'; // PFAD GEÄNDERT ZU RELATIV
 import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
 import FooterSection from '@/components/footer';
-import Header from '@/components/Header'; // Importiere die Header-Komponente
+
 
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
@@ -377,7 +377,6 @@ export default function UserDashboardPage() {
       </div>
     }>
       <>
-        <Header /> {/* Das Menü wird hier eingefügt */}
         <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
           <div className="max-w-5xl mx-auto space-y-6">
             {/* Header Bereich mit Logout und Neuem Auftrag Button */}

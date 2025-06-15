@@ -11,6 +11,7 @@ import { app } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 
+import { findCategoryBySubcategory } from '@/lib/categoriesData'; // NEU: Import für Kategoriensuche
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { PaymentElement } from '@stripe/react-stripe-js';
@@ -43,15 +44,7 @@ interface TemporaryJobDraftData {
   billingDetails?: BillingDetailsPayload | null;
 }
 
-interface TemporaryJobDraftResult {
-  tempDraftId: string;
-  anbieterStripeAccountId?: string;
-}
-
-interface GetOrCreateStripeCustomerResult {
-  stripeCustomerId: string;
-}
-
+// NEU: Definition von CustomerAddress hier oben, VOR der ersten Verwendung
 interface CustomerAddress {
   line1?: string | null;
   line2?: string | null;
@@ -59,13 +52,6 @@ interface CustomerAddress {
   postal_code?: string | null;
   state?: string | null;
   country?: string | null;
-}
-
-interface BillingDetailsPayload {
-  name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  address?: CustomerAddress;
 }
 
 // NEU: Interface für den Payload der getOrCreateStripeCustomer Cloud Function
@@ -76,6 +62,22 @@ interface GetOrCreateStripeCustomerPayload {
   address?: CustomerAddress | null; // Adresse optional hinzufügen
 }
 
+
+interface TemporaryJobDraftResult {
+  tempDraftId: string;
+  anbieterStripeAccountId?: string;
+}
+
+interface GetOrCreateStripeCustomerResult {
+  stripeCustomerId: string;
+}
+
+interface BillingDetailsPayload {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: CustomerAddress;
+}
 
 interface BestaetigungsContentPropsForPage {
   anbieterId: string;
@@ -200,25 +202,23 @@ export default function BestaetigungsPage() {
         isInitializing.current = true;
 
         console.log(PAGE_LOG, `BestaetigungsPage: User ${user.uid} authentifiziert. Starte einmalige Initialisierung.`);
+        setCurrentUser(user); // Stelle sicher, dass currentUser im State ist
         setIsLoadingPageData(true);
         setPageError(null);
 
         // --- Datenquelle für DraftData (Priorität: Context > URL-Parameter > Fallbacks) ---
         const customerTypeToUse = registration.customerType || null;
         // VERSUCH, selectedCategory abzuleiten, falls nicht im Context
-        let selectedCategoryToUse = registration.selectedCategory || null;
+        let selectedCategoryToUse = registration.selectedCategory || null; // Beginne mit dem Wert aus dem Context
         if (!selectedCategoryToUse && unterkategorieAusPfad) {
-          // Beispielhafte Logik - dies muss an Ihre Kategoriestruktur angepasst werden!
-          // Es ist besser, eine zentrale Mapping-Funktion zu haben, aber hier ein Inline-Beispiel:
-          if (["Mietkoch", "Mietkellner"].includes(unterkategorieAusPfad)) {
-            selectedCategoryToUse = "Hotel & Gastronomie";
-          } else if (["Tischler", "Klempner", "Maler & Lackierer", "Elektriker",
-            "Heizungsbau & Sanitär", "Fliesenleger", "Dachdecker",
-            "Maurer", "Trockenbauer", "Schreiner", "Zimmerer",
-            "Bodenleger", "Glaser", "Schlosser", "Metallbauer", "Fenster- & Türenbauer"].includes(unterkategorieAusPfad)) {
-            selectedCategoryToUse = "Handwerk";
+          // Wenn im Context keine Kategorie ist, versuche sie über die Unterkategorie aus dem Pfad zu finden
+          const foundCategory = findCategoryBySubcategory(unterkategorieAusPfad);
+          if (foundCategory) {
+            selectedCategoryToUse = foundCategory;
+            console.log(PAGE_LOG, `BestaetigungsPage: Kategorie "${foundCategory}" wurde für Unterkategorie "${unterkategorieAusPfad}" über Mapping gefunden.`);
+          } else {
+            console.warn(PAGE_WARN, `BestaetigungsPage: Keine Hauptkategorie für Unterkategorie "${unterkategorieAusPfad}" im Mapping gefunden. 'selectedCategoryToUse' bleibt: ${selectedCategoryToUse}`);
           }
-          // ... fügen Sie hier weitere Kategorien/Unterkategorien-Mappings hinzu
         }
         const selectedSubcategoryToUse = registration.selectedSubcategory || unterkategorieAusPfad || null;
         const descriptionToUse = registration.description || descriptionFromUrl || '';
@@ -325,13 +325,16 @@ export default function BestaetigungsPage() {
         // --- KORRIGIERTE PFLICHTDATEN-PRÜFUNG ---
         const missingFields: string[] = [];
         if (!draftData.customerType) missingFields.push('Kundentyp');
-        if (!draftData.selectedCategory) missingFields.push('Kategorie');
-        if (!draftData.selectedSubcategory) missingFields.push('Unterkategorie');
+        // Kategorie und Unterkategorie können null sein, wenn sie nicht ermittelt werden konnten, aber für den Draft sind sie wichtig.
+        if (draftData.selectedCategory === null || draftData.selectedCategory === undefined || draftData.selectedCategory.trim() === '') missingFields.push('Kategorie');
+        if (draftData.selectedSubcategory === null || draftData.selectedSubcategory === undefined || draftData.selectedSubcategory.trim() === '') missingFields.push('Unterkategorie');
         if (!draftData.description || draftData.description.trim().length === 0) missingFields.push('Auftragsbeschreibung');
-        if (!draftData.jobPostalCode) missingFields.push('Job-Postleitzahl');
-        if (!draftData.selectedAnbieterId) missingFields.push('Anbieter-ID');
-        if (!draftData.jobDateFrom) missingFields.push('Auftragsstartdatum');
-        if (!draftData.jobTimePreference) missingFields.push('Bevorzugte Uhrzeit');
+        // jobPostalCode und selectedAnbieterId sind kritisch
+        if (draftData.jobPostalCode === null || draftData.jobPostalCode === undefined || draftData.jobPostalCode.trim() === '') missingFields.push('Job-Postleitzahl');
+        if (draftData.selectedAnbieterId === null || draftData.selectedAnbieterId === undefined || draftData.selectedAnbieterId.trim() === '') missingFields.push('Anbieter-ID');
+        // jobDateFrom und jobTimePreference sind ebenfalls wichtig für den Draft
+        if (draftData.jobDateFrom === null || draftData.jobDateFrom === undefined || draftData.jobDateFrom.trim() === '') missingFields.push('Auftragsstartdatum');
+        if (draftData.jobTimePreference === null || draftData.jobTimePreference === undefined || draftData.jobTimePreference.trim() === '') missingFields.push('Bevorzugte Uhrzeit');
         if (draftData.jobTotalCalculatedHours == null || draftData.jobTotalCalculatedHours <= 0) missingFields.push('Berechnete Gesamtdauer (Stunden)'); // `== null` prüft auf null und undefined
         // Hier den jobCalculatedPriceInCents als Basispreis prüfen
         if (draftData.jobCalculatedPriceInCents == null || draftData.jobCalculatedPriceInCents <= 0) missingFields.push('Berechneter Preis (Cents)'); // `== null` prüft auf null und undefined
@@ -342,7 +345,10 @@ export default function BestaetigungsPage() {
 
 
         if (missingFields.length > 0) {
-          console.error(PAGE_ERROR, "BestaetigungsPage: Fehlende Pflichtdaten in draftData!", { missingFields, fullDraftData: draftData });
+          // Detaillierteres Logging der fehlenden Felder
+          console.log(PAGE_LOG, "BestaetigungsPage: Inhalt von missingFields Array:", missingFields);
+          console.log(PAGE_LOG, "BestaetigungsPage: Ergebnis von missingFields.join(', '):", missingFields.join(', '));
+          console.error(PAGE_ERROR, "BestaetigungsPage: Fehlende Pflichtdaten in draftData!", { missingFieldsArray: missingFields, missingFieldsJoined: missingFields.join(', '), fullDraftData: draftData });
           setPageError(`Wichtige Auftragsinformationen fehlen: ${missingFields.join(', ')}. Bitte gehen Sie zurück und vervollständigen Sie Ihre Eingaben.`);
           setIsLoadingPageData(false);
           isInitializing.current = false;
@@ -380,12 +386,14 @@ export default function BestaetigungsPage() {
             return;
           }
 
+          // Daten für Stripe-Kundenaufruf vorbereiten
           const stripeCustomerPayload: GetOrCreateStripeCustomerPayload = {
             email: emailForStripe,
             name: collectedBillingAddressDetails?.name || user.displayName || undefined,
             phone: collectedBillingAddressDetails?.phone || undefined,
             address: collectedBillingAddressDetails?.address || undefined,
           };
+
 
           console.log(PAGE_LOG, `BestaetigungsPage: Rufe getOrCreateStripeCustomer für User ${user.uid} auf mit Payload:`, JSON.stringify(stripeCustomerPayload, null, 2));
           const getOrCreateStripeCustomerCallable = httpsCallable<GetOrCreateStripeCustomerPayload, GetOrCreateStripeCustomerResult>(
@@ -439,10 +447,10 @@ export default function BestaetigungsPage() {
     // Abhängigkeiten aus URL-Parametern (alle weiterhin relevant)
     anbieterIdFromUrl, unterkategorieAusPfad, postalCodeFromUrl, dateFromUrl, timeUrl, auftragsDauerUrl, // eslint-disable-line
     priceFromUrl, tempDraftIdFromUrl, descriptionFromUrl,
-    // Lokale States, die hier gelesen/gesetzt werden
-    jobPriceInCents, // Ersetzt finalTaskAmountInCents
-    // billingAddressDetails ist jetzt eine Abhängigkeit, da es im useEffect gesetzt wird
-    billingAddressDetails,
+    // Lokale States, die hier gelesen werden (jobPriceInCents wird initial gesetzt)
+    jobPriceInCents,
+    // billingAddressDetails wurde entfernt, da es im Effekt gesetzt wird und eine Schleife verursachen kann.
+    // Die Aktualisierung von billingAddressDetails wird durch Änderungen seiner Quellabhängigkeiten (registration.*) ausgelöst.
     currentUser // Auch currentUser als Abhängigkeit für den onAuthStateChanged-Block
   ]);
 

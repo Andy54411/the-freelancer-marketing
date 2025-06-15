@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { FaGoogle, FaApple } from 'react-icons/fa';
-import Modal from '@/app/dashboard/user/[uid]/components/Modal'; // Import Ihrer Modal-Komponente (Pfad anpassen!)
+import Modal from '@/app/dashboard/user/userId/components/Modal'; // Import Ihrer Modal-Komponente (Pfad anpassen!)
 
 // Hier ist das entscheidende Interface:
 export interface LoginPopupProps { // <--- EXPORT HIER HINZUFÜGEN!
@@ -178,117 +178,136 @@ export default function LoginPopup({ isOpen, onClose, onLoginSuccess, redirectTo
     }
 
     const content = (
-        <Card className="w-full max-w-lg bg-white glowing-border p-6 mx-auto">
-            <CardHeader className="text-center py-4">
-                <CardTitle className="text-xl font-semibold text-[#14ad9f]">Willkommen zurück bei TASKO</CardTitle>
-                <CardDescription className="text-sm text-[#14ad9f]">Melde dich mit Apple, Google oder E-Mail an</CardDescription>
-            </CardHeader>
-            <CardContent className="py-6">
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="email" className="text-[#14ad9f] font-semibold">E-Mail</Label>
-                        <Input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="h-12"
-                        />
-                    </div>
+        <>
+            {!isFullScreen && ( // Nur anzeigen, wenn es nicht der Vollbildmodus ist
+                <CardHeader className="text-center py-4">
+                    <CardTitle className="text-xl font-semibold text-[#14ad9f]">Willkommen zurück bei TASKO</CardTitle>
+                    <CardDescription className="text-sm text-[#14ad9f]">Melde dich mit Apple, Google oder E-Mail an</CardDescription>
+                </CardHeader>
+            )}
+            <form onSubmit={handleLogin} className={`space-y-6 ${isFullScreen ? 'w-full max-w-lg bg-white glowing-border p-6 mx-auto rounded-lg shadow-lg' : ''}`}>
+                <div className="grid gap-1.5"> {/* Angepasst von gap-2 zu gap-1.5 wie im Original-Formular */}
+                    <Label htmlFor="email" className="text-[#14ad9f] font-semibold">E-Mail</Label>
+                    <Input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="h-12"
+                    />
+                </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="password" className="text-[#14ad9f] font-semibold">Passwort</Label>
-                        <Input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="h-12"
-                        />
-                    </div>
+                <div className="grid gap-1.5"> {/* Angepasst von gap-2 zu gap-1.5 */}
+                    <Label htmlFor="password" className="text-[#14ad9f] font-semibold">Passwort</Label>
+                    <Input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-12"
+                    />
+                </div>
 
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
+                <Button
+                    type="submit"
+                    className="w-full bg-[#14ad9f] text-white hover:bg-teal-700 py-3"
+                    disabled={loading}
+                >
+                    {loading ? 'Anmelden...' : 'Anmelden mit E-Mail'}
+                </Button>
+
+                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:border-t after:border-[#14ad9f]">
+                    <span className="bg-white text-[#14ad9f] relative z-10 px-2">oder</span>
+                </div>
+
+                <div className="flex flex-col gap-4">
                     <Button
-                        type="submit"
-                        className="w-full bg-[#14ad9f] text-white hover:bg-teal-700 py-3"
+                        type="button"
+                        onClick={loginWithGoogle}
+                        className="w-full bg-white border border-gray-300 text-[#14ad9f] py-3 flex items-center justify-center gap-2 hover:bg-teal-50"
                         disabled={loading}
                     >
-                        {loading ? 'Anmelden...' : 'Anmelden mit E-Mail'}
+                        <FaGoogle size={20} />
+                        Mit Google anmelden
                     </Button>
-
-                    <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:border-t after:border-[#14ad9f]">
-                        <span className="bg-white text-[#14ad9f] relative z-10 px-2">oder</span>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                        <Button
-                            type="button"
-                            onClick={loginWithGoogle}
-                            className="w-full bg-white border border-gray-300 text-[#14ad9f] py-3 flex items-center justify-center gap-2 hover:bg-teal-50"
-                            disabled={loading}
-                        >
-                            <FaGoogle size={20} />
-                            Mit Google anmelden
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={loginWithApple}
-                            className="w-full bg-black text-white py-3 flex items-center justify-center gap-2"
-                            disabled={loading}
-                        >
-                            <FaApple size={20} />
-                            Mit Apple anmelden
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
+                    <Button
+                        type="button"
+                        onClick={loginWithApple}
+                        className="w-full bg-black text-white py-3 flex items-center justify-center gap-2"
+                        disabled={loading}
+                    >
+                        <FaApple size={20} />
+                        Mit Apple anmelden
+                    </Button>
+                </div>
+            </form>
+        </>
     );
 
-    return isFullScreen ? (
-        <main className="bg-gradient-to-r from-blue-100 to-teal-200 grid place-items-center min-h-screen p-6 md:p-12">
-            <h1 className="text-3xl font-semibold text-center text-[#14ad9f] mb-6">Willkommen</h1>
-            {content}
-            <div className="text-center text-sm text-[#14ad9f] mt-6">
-                Noch kein Konto?{' '}
-                <Link href="/register/user" className="underline">Registrieren</Link>
-            </div>
-            <div className="text-center text-sm text-[#14ad9f]">
-                <p>
-                    Mit der Anmeldung bei <strong>Tasko</strong> stimmst du unseren{' '}
-                    <Link href="/datenschutz" className="underline">Datenschutzrichtlinien</Link> und{' '}
-                    <Link href="/nutzungsbedingungen" className="underline">Nutzungsbedingungen</Link> zu.
-                </p>
-            </div>
-            <style>{`
-        .glowing-border {
-          border: 2px solid transparent;
-          border-radius: 1px;
-          padding: 1px;
-          position: relative;
-          animation: glowingBorder 1.5s infinite alternate;
-          background-image: linear-gradient(white, white),
-            linear-gradient(45deg, #14ad9f, #14ad9f);
-          background-origin: border-box;
-          background-clip: content-box, border-box;
-        }
+    // Stildefinitionen für den leuchtenden Rand
+    const styles = (
+        <style>{`
+            .glowing-border {
+              border: 2px solid transparent; /* Wichtig für den Hintergrundbild-Trick */
+              /* border-radius: 1px; */ /* Entfernt, um den Radius der Card-Komponente zu nutzen */
+              padding: 1px; /* Erzeugt Platz für den "Rand" */
+              position: relative;
+              animation: glowingBorder 1.5s infinite alternate;
+              background-image: linear-gradient(white, white), /* Innere Hintergrundfarbe */
+                linear-gradient(45deg, #14ad9f, #14ad9f); /* Farbe des Randes */
+              background-origin: border-box;
+              background-clip: content-box, border-box; /* Wichtig für den Effekt */
+            }
 
-        @keyframes glowingBorder {
-          0% {
-            box-shadow: 0 0 5px #14ad9f, 0 0 1px #14ad9f, 0 0 10px #14ad9f;
-          }
-          100% {
-            box-shadow: 0 0 30px #14ad9f, 0 0 10px #14ad9f, 0 0 70px #14ad9f;
-          }
-        }
-      `}</style>
-        </main>
-    ) : (
-        <Modal onClose={onClose} title="Anmelden bei TASKO">
-            {content}
-        </Modal>
+            @keyframes glowingBorder {
+              0% {
+                box-shadow: 0 0 5px #14ad9f, 0 0 1px #14ad9f, 0 0 10px #14ad9f;
+              }
+              100% {
+                box-shadow: 0 0 30px #14ad9f, 0 0 10px #14ad9f, 0 0 70px #14ad9f;
+              }
+            }
+        `}</style>
+    );
+
+    if (isFullScreen) {
+        return (
+            <>
+                {styles}
+                <main className="bg-gradient-to-r from-blue-100 to-teal-200 grid place-items-center min-h-screen p-6 md:p-12">
+                    <h1 className="text-3xl font-semibold text-center text-[#14ad9f] mb-6">Willkommen zurück bei TASKO</h1>
+                    {content} {/* Das Formular innerhalb von content hat bereits die glowing-border Klasse */}
+                    <div className="text-center text-sm text-[#14ad9f] mt-6">
+                        Noch kein Konto?{' '}
+                        <Link href="/register/user" className="underline">Registrieren</Link>
+                    </div>
+                    <div className="text-center text-sm text-[#14ad9f]">
+                        <p>
+                            Mit der Anmeldung bei <strong>Tasko</strong> stimmst du unseren{' '}
+                            <Link href="/datenschutz" className="underline">Datenschutzrichtlinien</Link> und{' '}
+                            <Link href="/nutzungsbedingungen" className="underline">Nutzungsbedingungen</Link> zu.
+                        </p>
+                    </div>
+                </main>
+            </>
+        );
+    }
+
+    // Für den Modal-Fall
+    return (
+        <>
+            {styles}
+            <Modal onClose={onClose} title={isFullScreen ? "" : ""}>
+                <Card className="w-full max-w-lg bg-transparent glowing-border p-2 mx-auto shadow-none">
+                    <CardContent className="py-12">
+                        {content}
+                    </CardContent>
+                </Card>
+            </Modal>
+        </>
     );
 }

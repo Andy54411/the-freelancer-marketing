@@ -4,6 +4,8 @@ import './globals.css';
 import type { Metadata } from 'next';
 // import { Geist, Geist_Mono } from 'next/font/google'; // AUSKOMMENTIERT
 import { Providers } from './providers';
+import { ThemeProvider } from "@/components/theme-provider"; // Korrekter Import für ThemeProvider
+import FooterSection from '@/components/footer'; // Importiere die Footer-Komponente
 
 /*
 const geistSans = Geist({
@@ -32,9 +34,16 @@ export default function RootLayout({
     <html lang="de" suppressHydrationWarning>
       {/* Temporär ohne die Font-Klassen */}
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+        >
+          <Providers>
+            {children}
+            <FooterSection />
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -7,10 +7,11 @@ import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import React from 'react'
 import { ModeToggle } from './mode-toggle'
+import LoginPopup from '@/app/(auth)/login/LoginPopup' // Importiere das LoginPopup
+import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
 
 const menuItems = [
   { name: 'Startseite', href: '/' },
-  { name: 'Hilfe', href: '#link' },
   { name: 'Vision', href: '#link' },
   { name: 'Preis', href: '#link' },
   { name: 'Blog', href: '#link' },
@@ -21,7 +22,26 @@ const menuItems = [
 
 export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false)
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false);
 
+  const handleOpenLoginPopup = () => {
+    setIsLoginPopupOpen(true);
+  };
+
+  const handleCloseLoginPopup = () => {
+    setIsLoginPopupOpen(false);
+  };
+
+  const handleLoginSuccess = (user: FirebaseUser, redirectToUrl?: string | null) => {
+    // Hier könntest du spezifische Logik nach erfolgreichem Login aus dem Header ausführen,
+    // z.B. Weiterleitung oder Aktualisierung des UI-Status.
+    // Fürs Erste schließen wir einfach das Popup. Die Weiterleitung wird im LoginPopup selbst gehandhabt.
+    console.log("Login erfolgreich im Header, User:", user.uid, "Weiterleitung zu:", redirectToUrl);
+    setIsLoginPopupOpen(false);
+    // Die eigentliche Weiterleitung sollte idealerweise im LoginPopup oder einer globalen Auth-Logik erfolgen.
+    // Wenn eine Weiterleitung hier erzwungen werden soll:
+    // if (redirectToUrl) router.push(redirectToUrl); else router.push(`/dashboard/user/${user.uid}`);
+  };
   return (
     <header>
       <nav
@@ -78,11 +98,10 @@ export const HeroHeader = () => {
                 'lg:flex hidden'
               )}
             >
-              <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit">
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/login">
-                    <span>Login</span>
-                  </Link>
+              {/* Login-Button öffnet jetzt das Popup */}
+              <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
+                <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
+                  <span>Login</span>
                 </Button>
                 <Button asChild size="sm">
                   <Link href="/register/company">
@@ -109,8 +128,8 @@ export const HeroHeader = () => {
                   ))}
                 </ul>
                 <div className="px-6 pb-6 flex flex-col gap-3">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/login">Login</Link>
+                  <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
+                    Login
                   </Button>
                   <Button asChild size="sm">
                     <Link href="/register/company">Starte mit Tasko</Link>
@@ -122,6 +141,15 @@ export const HeroHeader = () => {
           </div>
         </div>
       </nav>
+      {/* LoginPopup-Komponente hier einfügen */}
+      <LoginPopup
+        isOpen={isLoginPopupOpen}
+        onClose={handleCloseLoginPopup}
+        onLoginSuccess={handleLoginSuccess}
+        // redirectTo könnte hier übergeben werden, falls es eine Standard-Weiterleitung vom Header aus geben soll
+        // initialEmail kann hier auch gesetzt werden, falls gewünscht
+        isFullScreen={false} // Im Header wird es als Modal/Popup verwendet
+      />
     </header>
   )
 }

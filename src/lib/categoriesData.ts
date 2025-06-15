@@ -69,3 +69,14 @@ export const categories: Category[] = [
         ]
     }
 ];
+
+export function findCategoryBySubcategory(subcategoryName: string): string | null {
+    if (!subcategoryName) return null;
+    for (const category of categories) {
+        if (category.subcategories.some(sub => sub.toLowerCase() === subcategoryName.toLowerCase())) {
+            return category.title;
+        }
+    }
+    console.warn(`[categoriesData] No main category found for subcategory: ${subcategoryName}`);
+    return null;
+}

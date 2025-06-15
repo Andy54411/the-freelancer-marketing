@@ -34,4 +34,5 @@ __exportStar(require("./http_general"), exports);
 __exportStar(require("./http_webhooks"), exports);
 __exportStar(require("./http_file_uploads"), exports);
 __exportStar(require("./triggers_firestore"), exports);
+__exportStar(require("./getUserOrders"), exports); // NEU: Exportiere die neue Funktion
 //# sourceMappingURL=index.js.map
