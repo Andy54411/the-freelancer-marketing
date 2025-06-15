@@ -163,7 +163,7 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
         <div key={review.id} className="bg-white p-4 rounded-lg shadow border space-y-2">
           <div className="flex items-center gap-4">
             <Image
-              src={review.kundeProfilePictureURL || '/default-avatar.jpg'}
+              src={review.kundeProfilePictureURL || '/default-avatar.jpg'} // Pfad oder Dateityp anpassen
               alt="Kunde"
               width={40}
               height={40}

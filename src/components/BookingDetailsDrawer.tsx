@@ -45,9 +45,13 @@ export function BookingDetailsDrawer({ auftrag, children }: BookingDetailsDrawer
         ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(auftrag.totalPriceInCents / 100)
         : 'N/A';
 
-    const formattedDate = auftrag.jobDateFrom
-        ? new Date(auftrag.jobDateFrom).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    // Erweiterte Datums- und Zeitformatierung
+    const formattedDateTime = auftrag.jobDateFrom
+        ? `Am ${new Date(auftrag.jobDateFrom).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' })} um ${new Date(auftrag.jobDateFrom).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`
         : 'N/A';
+
+    const customerFullName = `${auftrag.customerFirstName || ''} ${auftrag.customerLastName || ''}`.trim();
+
 
     const calculateTotalHours = (currentAuftrag: Auftrag): string => {
         const { jobDateFrom, jobDateTo, jobDurationString, jobTotalCalculatedHours } = currentAuftrag;
@@ -127,28 +131,18 @@ export function BookingDetailsDrawer({ auftrag, children }: BookingDetailsDrawer
                 </DrawerHeader>
 
                 <div className="flex flex-col gap-6 overflow-y-auto px-6 text-sm">
-                    <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
-                        <div>
-                            <p className="text-muted-foreground">Kunde</p>
-                            <p className="font-semibold">{`${auftrag.customerFirstName || ''} ${auftrag.customerLastName || ''}`.trim()}</p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">Status</p>
-                            <p><Badge variant="outline">{auftrag.status}</Badge></p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">Datum</p>
-                            <p className="font-semibold">{formattedDate}</p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">Ort</p>
-                            <p className="font-semibold">{auftrag.jobCity || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">Bezahlter Betrag</p>
-                            <p className="font-semibold">{formattedPrice}</p>
-                        </div>
+                    {/* Angepasster Block für die von dir gewünschte Darstellung */}
+                    <div className="flex flex-col gap-2 rounded-lg border p-4">
+                        <p className="font-semibold">
+                            {auftrag.selectedSubcategory || 'Dienstleistung'}
+                            {customerFullName && ` (${customerFullName})`}
+                        </p>
+                        <p className="font-semibold">{formattedDateTime}</p>
+                        <p className="font-semibold">Preis: {formattedPrice}</p>
+                        <p><Badge variant="outline">{auftrag.status || 'N/A'}</Badge></p>
                     </div>
+
+                    {/* Bestehende Detail-Sektionen bleiben erhalten */}
                     <div className="space-y-4"> {/* Optional: Füge space-y-4 hinzu, um Abstand zwischen den Abschnitten zu schaffen */}
                         <p className="text-muted-foreground">Beschreibung</p>
                         <p className="mt-1">{auftrag.description || "Keine Beschreibung vorhanden."}</p>

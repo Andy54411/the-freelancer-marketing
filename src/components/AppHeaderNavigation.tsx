@@ -19,7 +19,7 @@ const AppHeaderNavigation: React.FC = () => {
     };
 
     return (
-        <nav className="bg-white border-t border-gray-200 p-3"> {/* Beispiel: Leichterer Hintergrund, kleinere Padding */}
+        <nav className="bg-white border-t border-gray-200 py-3 px-4">
             <ul className="flex space-x-4 justify-center">
                 {categories.map((category: Category) => (
                     <li
@@ -31,7 +31,7 @@ const AppHeaderNavigation: React.FC = () => {
                         {/* Hauptkategorie-Link (könnte zu einer Übersichtsseite führen) */}
                         <Link
                             href={`/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}`}
-                            className="text-gray-700 hover:text-[#14ad9f] px-3 py-2 rounded-md text-sm font-medium"
+                            className="text-gray-700 hover:text-[#14ad9f] px-3 py-2 rounded-md text-sm font-medium" // Zurück zu text-sm und entsprechendem Padding
                         >
                             {category.title}
                         </Link>

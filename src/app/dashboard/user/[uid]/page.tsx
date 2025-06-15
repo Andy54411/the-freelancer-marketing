@@ -5,20 +5,21 @@ import { useRouter, useParams } from 'next/navigation';
 import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db, app } from '@/firebase/clients';
-import { WelcomeBox } from '../userId/components/WelcomeBox';
-import { ProfileShortcut } from '../userId/components/ProfileShortcut';
-import { HelpCard } from '../userId/components/Support/HelpCard'; // KORRIGIERTER IMPORTPFAD
+import { WelcomeBox } from './components/WelcomeBox';
+import { ProfileShortcut } from './components/ProfileShortcut';
+import { HelpCard } from './components/Support/HelpCard';
 import { FiLoader, FiCreditCard, FiMapPin, FiPlus, FiEdit, FiTrash2, FiAlertCircle, FiLogOut, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
-import Modal from '@/app/dashboard/user/userId/components/Modal';
+import Modal from './components/Modal';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js'; // KORRIGIERTER IMPORT
-import AddPaymentMethodForm from '../userId/components/AddPaymentMethodForm';
-import AddressForm from '../userId/components/AddressForm';
+import AddPaymentMethodForm from './components/AddPaymentMethodForm';
+import AddressForm from './components/AddressForm';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { toast } from 'sonner'; // Importiere toast
-import CreateOrderModal from '../userId/components/CreateOrderModal';
-import SupportChatInterface from '../userId/components/Support/SupportChatInterface'; // PFAD GEÄNDERT ZU RELATIV
+import CreateOrderModal from './components/CreateOrderModal';
+import SupportChatInterface from './components/Support/SupportChatInterface';
 import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
+import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 import FooterSection from '@/components/footer';
 
 
@@ -187,7 +188,7 @@ export default function UserDashboardPage() {
       setShowAddPaymentMethodModal(true);
     } catch (err: any) {
       console.error("Fehler beim Abrufen des SetupIntent Client Secrets:", err);
-      setSetupIntentError(`Fehler beim Vorbereiten der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`);
+      setSetupIntentError(`Fehler beim Vorbereiten der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`); // Typ für msg wird in der Komponente selbst behandelt
     } finally {
       setLoadingSetupIntent(false);
     }
@@ -379,7 +380,7 @@ export default function UserDashboardPage() {
       <>
         <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
           <div className="max-w-5xl mx-auto space-y-6">
-            {/* Header Bereich mit Logout und Neuem Auftrag Button */}
+            {/* Header Bereich mit Neuem Auftrag Button */}
             <div className="flex justify-between items-center mb-4">
               <button
                 onClick={handleCreateNewOrder}
@@ -387,20 +388,20 @@ export default function UserDashboardPage() {
               >
                 <FiPlusCircle className="mr-2" /> Neuen Auftrag erstellen
               </button>
-              <button
+              {/* <button
                 onClick={handleLogout}
                 className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
               >
                 <FiLogOut className="mr-2" /> Abmelden
-              </button>
+              </button> */}
             </div>
 
             <WelcomeBox firstname={userProfile.firstname} />
 
             {/* HIER ÄNDERT SICH DAS LAYOUT: EINZELNER GRID-CONTAINER FÜR ALLE KARTEN */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Abschnitt: Meine Aufträge */}
-              <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
+              {/* Abschnitt: Meine Aufträge - Nimmt jetzt mehr Platz ein */}
+              <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px] sm:col-span-2 lg:col-span-2">
                 <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
                   <FiMessageSquare className="mr-2" /> Meine Aufträge
                 </h2>
@@ -416,32 +417,37 @@ export default function UserDashboardPage() {
                 ) : userOrders.length === 0 ? (
                   <p className="text-gray-500 text-center py-8 flex-grow">Sie haben noch keine Aufträge erstellt.</p>
                 ) : (
-                  <ul className="space-y-4 flex-grow overflow-y-auto max-h-[min(300px, 40vh)]">
+                  <ul className="space-y-3 flex-grow overflow-y-auto max-h-[min(300px, 40vh)]"> {/* Reduced space-y for tighter packing */}
                     {userOrders.map((order) => (
-                      <li key={order.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 border border-gray-200 rounded-md">
-                        {/* Details Section */}
-                        <div className="flex-grow">
-                          <p className="font-medium text-lg text-gray-800">
-                            {order.selectedSubcategory}
-                            {order.providerName && order.providerName !== order.selectedSubcategory && (
-                              <span className="text-sm font-normal text-gray-600 ml-1">({order.providerName})</span>
-                            )}
-                            {order.providerName && order.providerName === order.selectedSubcategory && (
-                              <span className="text-sm font-normal text-gray-600 ml-1">(durch {order.providerName})</span>
-                            )}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Am {order.jobDateFrom ? new Date(order.jobDateFrom).toLocaleDateString('de-DE') : 'Datum nicht angegeben'} um {order.jobTimePreference || 'Uhrzeit nicht angegeben'}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">Preis: {(order.totalPriceInCents / 100).toFixed(2)} EUR</p>
-                        </div>
+                      <li key={order.id} className="p-4 border border-gray-200 rounded-md">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                          {/* Linke Spalte: Dienstleistung und Datum */}
+                          <div className="flex flex-col">
+                            <p className="font-semibold text-gray-800 text-base">
+                              {order.selectedSubcategory}
+                              {order.providerName && (
+                                <span className="text-sm font-normal text-gray-600 ml-1">({order.providerName})</span>
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-0.5">
+                              {order.jobDateFrom
+                                ? `Am ${new Date(order.jobDateFrom).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' })} um ${new Date(order.jobDateFrom).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`
+                                : 'Datum/Zeit nicht angegeben'}
+                            </p>
+                          </div>
 
-                        {/* Status Section */}
-                        <div className="mt-3 sm:mt-0 sm:ml-4 flex-shrink-0">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'bezahlt' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </span>
+                          {/* Rechte Spalte: Preis und Status */}
+                          <div className="flex flex-col sm:items-end mt-2 sm:mt-0">
+                            <p className="text-sm text-gray-700 font-medium">Preis: {(order.totalPriceInCents / 100).toFixed(2)} EUR</p>
+                            <div className="mt-1">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold inline-block ${order.status === 'bezahlt' || order.status === 'Zahlung_erhalten_clearing' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                  }`}
+                              >
+                                {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status.replace(/_/g, ' ').slice(1)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -464,11 +470,6 @@ export default function UserDashboardPage() {
                     <FiMessageSquare className="mr-2" /> Chat & Details (Neuester Auftrag)
                   </button>
                 )}
-              </div>
-
-              {/* Profil Card */}
-              <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
-                <ProfileShortcut />
               </div>
 
               {/* Support Card */}
@@ -574,7 +575,12 @@ export default function UserDashboardPage() {
                 </div>
               </div> {/* <-- HIER SCHLIESST DER FEHLENDE GRID-CONTAINER --> */}
             </div> {/* <-- SCHLIESSENDES TAG FÜR grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
-          </div> {/* Closes the div starting at line 299 */}
+
+            {/* FAQ Section */}
+            <div className="mt-12">
+              <FaqSection />
+            </div>
+          </div> {/* Schließt max-w-5xl mx-auto space-y-6 */}
           <FooterSection />
         </main>
       </>
@@ -608,7 +614,7 @@ export default function UserDashboardPage() {
             <Elements stripe={stripePromise} options={{ clientSecret: clientSecretForSetupIntent }}>
               <AddPaymentMethodForm
                 onSuccess={handlePaymentMethodAdded}
-                onError={(msg) => setSetupIntentError(msg)}
+                onError={(msg: string) => setSetupIntentError(msg)} // Typ für msg hinzugefügt
                 clientSecret={clientSecretForSetupIntent}
               />
             </Elements>

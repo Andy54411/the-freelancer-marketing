@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // WICHTIG: Dies initialisiert die Firebase Admin SDK für DIESE spezielle Funktion.
 // Es muss hier stehen, da diese Datei direkt 'admin'-Dienste nutzt.
-admin.initializeApp();
+// admin.initializeApp(); // Entfernt, da getStorage() dies über getAdminApp() in helpers.ts handhabt
 
 const authenticateRequest = async (req: any): Promise<admin.auth.DecodedIdToken> => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {

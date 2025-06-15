@@ -28,6 +28,11 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+// Regel für allgemeine Benutzer-Uploads (z.B. durch uploadStripeFile Funktion)
+    match /user_uploads/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Standardregel für alle anderen Pfade (falls nicht spezifisch abgedeckt)
     // ACHTUNG: Diese Regel ist sehr breit und sollte an Ihre Sicherheitsanforderungen angepasst werden!
     // Im aktuellen Zustand ist sie nicht vorhanden, was bedeutet, dass alles, was nicht explizit erlaubt ist, verboten ist.

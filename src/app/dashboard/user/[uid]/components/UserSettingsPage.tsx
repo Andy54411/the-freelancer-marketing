@@ -3,9 +3,10 @@
 import React, { useEffect, useState, useCallback, FormEvent } from 'react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // NEU: Firebase Storage Imports
 import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin } from 'react-icons/fi';
 import { toast } from 'sonner';
-import { RawFirestoreUserData } from './SettingsPage'; // Wiederverwenden des Typs
+import { RawFirestoreUserData } from '../../../../../components/SettingsPage'; // Wiederverwenden des Typs
 
 // Interne Datenstruktur für das User-Einstellungsformular
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword, User } from 'firebase/auth';
@@ -75,11 +76,30 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
         }
         setSaving(true);
 
-        // TODO: Implementiere File-Upload für profilePictureFile, falls vorhanden,
-        // und erhalte die URL zurück, um sie in firestoreUpdateData.profilePictureURL zu speichern.
-        // Für dieses Beispiel wird der Upload-Teil übersprungen.
+        let newProfilePictureURL = form.profilePictureURL; // Behalte die alte URL, falls keine neue Datei hochgeladen wird
+
+        if (form.profilePictureFile) {
+            toast.info("Lade Profilbild hoch...");
+            try {
+                const storage = getStorage();
+                // Erstelle einen eindeutigen Dateinamen, um Überschreibungen zu vermeiden, oder verwende einen festen Namen pro User
+                const filePath = `profilePictures/${form.uid}/${form.profilePictureFile.name}`;
+                const fileRef = storageRef(storage, filePath);
+                const uploadTask = uploadBytesResumable(fileRef, form.profilePictureFile);
+
+                await uploadTask; // Warte, bis der Upload abgeschlossen ist
+                newProfilePictureURL = await getDownloadURL(fileRef);
+                toast.success("Profilbild erfolgreich hochgeladen!");
+            } catch (uploadError: any) {
+                console.error("Fehler beim Hochladen des Profilbilds:", uploadError);
+                toast.error(`Fehler beim Hochladen des Profilbilds: ${uploadError.message || 'Unbekannter Fehler'}`);
+                setSaving(false);
+                return; // Breche den Speichervorgang ab, wenn der Bild-Upload fehlschlägt
+            }
+        }
 
         const firestoreUpdateData: Partial<RawFirestoreUserData> = {
+            profilePictureURL: newProfilePictureURL, // Verwende die neue oder alte URL
             firstName: form.firstName,
             lastName: form.lastName,
             phoneNumber: form.phoneNumber,
@@ -88,13 +108,16 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
             personalPostalCode: form.personalPostalCode,
             personalCity: form.personalCity,
             personalCountry: form.personalCountry,
-            // profilePictureURL: aktualisierteURLNachUpload,
             updatedAt: serverTimestamp(),
         };
 
         try {
             await updateDoc(doc(db, "users", form.uid), firestoreUpdateData);
             toast.success("Benutzereinstellungen erfolgreich gespeichert!");
+            // NEU: Event auslösen, um andere Komponenten (wie den Header) zu informieren
+            if (form.profilePictureFile || form.profilePictureURL !== userData?.profilePictureURL) {
+                window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { profilePictureURL: newProfilePictureURL } }));
+            }
             onDataSaved(); // Callback aufrufen, um Daten in der übergeordneten Seite neu zu laden
         } catch (error: unknown) {
             console.error("Fehler beim Speichern der Benutzereinstellungen:", error);

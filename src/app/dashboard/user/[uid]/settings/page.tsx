@@ -7,8 +7,7 @@ import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth
 import { doc, getDoc } from 'firebase/firestore';
 import { db, app } from '@/firebase/clients';
 import CompanySettingsPage, { RawFirestoreUserData } from '@/components/SettingsPage'; // Umbenannt für Klarheit
-import UserSettingsPage from '@/components/UserSettingsPage'; // NEU: Import für User-Einstellungen
-import Header from '@/components/Header'; // Dein Header
+import UserSettingsPage from '@/app/dashboard/user/[uid]/components/UserSettingsPage'; // NEU: Import für User-Einstellungen‚
 import FooterSection from '@/components/footer'; // Dein Footer
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
@@ -86,7 +85,6 @@ export default function UserSettingsDashboardPage() {
 
     return (
         <>
-            <Header />
             {userData?.user_type === 'firma' ? (
                 <CompanySettingsPage userData={userData} onDataSaved={handleDataSaved} />
             ) : userData?.user_type === 'kunde' ? (

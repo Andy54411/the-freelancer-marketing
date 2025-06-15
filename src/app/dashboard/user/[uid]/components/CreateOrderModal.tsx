@@ -17,7 +17,7 @@ import { FiCheckCircle } from 'react-icons/fi';
 import { SimpleSelect } from './SimpleSelect';
 import OrderAddressSelection from './OrderAddressSelection';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
-import PaymentSection from '@/app/dashboard/user/userId/components/OrderPaymentMethodSelection';
+import PaymentSection from '@/app/dashboard/user/[uid]/components/OrderPaymentMethodSelection';
 
 import { AnbieterDetails, UserProfileData, SavedAddress, BookingCharacteristics } from '@/types/types';
 import { categories } from '@/lib/categories';

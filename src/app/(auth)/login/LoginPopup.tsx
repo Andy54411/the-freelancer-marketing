@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { FaGoogle, FaApple } from 'react-icons/fa';
-import Modal from '@/app/dashboard/user/userId/components/Modal'; // Import Ihrer Modal-Komponente (Pfad anpassen!)
+import Modal from '@/app/dashboard/user/[uid]/components/Modal'; // Import Ihrer Modal-Komponente (Pfad anpassen!)
 
 // Hier ist das entscheidende Interface:
 export interface LoginPopupProps { // <--- EXPORT HIER HINZUFÜGEN!
