@@ -2,19 +2,25 @@
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, getStripeInstance } from './helpers';
+import { getDb, getStripeInstance } from './helpers'; // getStripeInstance ist hier möglicherweise nicht mehr nötig
 import { FieldValue } from 'firebase-admin/firestore';
-import Stripe from 'stripe'; // Import für den Stripe-Typ hinzufügen
+// Stripe Importe und admin sind hier nicht direkt für diese Funktionen notwendig,
+// aber wenn sie helpers.ts genutzt werden, ist es in Ordnung.
+import Stripe from 'stripe';
 import * as admin from "firebase-admin";
-import { logger } from "firebase-functions/v2";
-logger.info("Lade http_general.ts...");
+import { logger } from "firebase-functions/v2"; // Firebase Logger für v2 Functions
+
+// Konsolen-Logs anpassen für Klarheit
+loggerV2.info("Lade callable_general.ts..."); // Nutze loggerV2 konsistent
 
 try {
-  logger.info("http_general.ts: Globale Initialisierung erfolgreich.");
+  loggerV2.info("callable_general.ts: Globale Initialisierung erfolgreich.");
 } catch (error: any) {
-  logger.error("http_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
+  loggerV2.error("callable_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
   throw error;
 }
+
+// --- Interfaces für diese Datei ---
 interface GetClientIpData {
 }
 
@@ -48,8 +54,11 @@ interface TemporaryJobDraftResult {
   anbieterStripeAccountId?: string | null;
 }
 
-// Diese Interface-Definition sollte mit der auf der Client-Seite übereinstimmen
-// (aus /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/page.tsx)
+// CustomerAddress, GetOrCreateStripeCustomerPayload, GetOrCreateStripeCustomerResult
+// sind hier nicht mehr direkt für die Funktionen in dieser Datei notwendig,
+// da getOrCreateStripeCustomer verschoben wird.
+// Sie könnten in einer gemeinsamen Interface-Datei oder direkt dort, wo sie benötigt werden, definiert werden.
+/*
 interface CustomerAddress {
   line1?: string | null;
   line2?: string | null;
@@ -67,12 +76,14 @@ interface GetOrCreateStripeCustomerPayload {
 interface GetOrCreateStripeCustomerResult {
   stripeCustomerId: string;
 }
+*/
 
 interface DeleteCompanyAccountResult {
   success: boolean;
   message: string;
 }
 
+// --- Cloud Functions ---
 
 export const getClientIp = onCall<GetClientIpData, Promise<GetClientIpResult>>(
   async (request): Promise<GetClientIpResult> => {
@@ -144,31 +155,40 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
       loggerV2.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
     }
 
-    let anbieterStripeAccountId: string | null = null;
-    if (jobDetails.selectedAnbieterId) {
-      try {
-        const anbieterDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
-        const anbieterDoc = await anbieterDocRef.get();
-        if (anbieterDoc.exists) {
-          const anbieterData = anbieterDoc.data();
-          if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
-            anbieterStripeAccountId = anbieterData.stripeAccountId;
-            loggerV2.info(`[createTemporaryJobDraft] Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} gefunden: ${anbieterStripeAccountId}`);
-          } else {
-            loggerV2.warn(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht im users-Dokument ('${anbieterDoc.ref.path}') gefunden oder ungültig. Wert war: '${anbieterData?.stripeAccountId}'`);
-            anbieterStripeAccountId = null;
-          }
-        } else {
-          loggerV2.warn(`[createTemporaryJobDraft] Anbieter-Dokument (users/${jobDetails.selectedAnbieterId}) nicht gefunden.`);
-          anbieterStripeAccountId = null;
-        }
-      } catch (dbError: any) {
-        loggerV2.error(`[createTemporaryJobDraft] Fehler beim Lesen des Anbieter-Dokuments (users/${jobDetails.selectedAnbieterId}):`, dbError.message, dbError);
-        anbieterStripeAccountId = null;
-      }
-    } else {
-      loggerV2.warn("[createTemporaryJobDraft] Keine selectedAnbieterId im Payload vom Client empfangen, um Stripe Account ID zu suchen.");
+    // --- Start der korrigierten Logik für anbieterStripeAccountId ---
+    let anbieterStripeAccountId: string; // Auf nicht-null gesetzt, wir stellen sicher, dass es gesetzt ist oder werfen einen Fehler
+
+    if (!jobDetails.selectedAnbieterId) {
+      loggerV2.error("[createTemporaryJobDraft] Fehlende 'selectedAnbieterId' im Payload vom Client.");
+      throw new HttpsError("invalid-argument", "Die ID des ausgewählten Anbieters ist erforderlich.");
     }
+
+    try {
+      const anbieterDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
+      const anbieterDoc = await anbieterDocRef.get();
+
+      if (!anbieterDoc.exists) {
+        loggerV2.error(`[createTemporaryJobDraft] Anbieter-Dokument (users/${jobDetails.selectedAnbieterId}) nicht gefunden.`);
+        throw new HttpsError("not-found", `Der ausgewählte Anbieter wurde nicht gefunden.`);
+      }
+
+      const anbieterData = anbieterDoc.data();
+      if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
+        anbieterStripeAccountId = anbieterData.stripeAccountId;
+        loggerV2.info(`[createTemporaryJobDraft] Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} gefunden: ${anbieterStripeAccountId}`);
+      } else {
+        loggerV2.error(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht im users-Dokument ('${anbieterDoc.ref.path}') gefunden oder ungültig. Wert war: '${anbieterData?.stripeAccountId}'`);
+        // Dies ist der kritische Punkt: Wenn keine gültige ID vorhanden ist, wird ein Fehler ausgelöst
+        throw new HttpsError("failed-precondition", "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
+      }
+    } catch (dbError: any) {
+      if (dbError instanceof HttpsError) { // Wirft bereits erstellte HttpsErrors erneut
+        throw dbError;
+      }
+      loggerV2.error(`[createTemporaryJobDraft] Fehler beim Lesen des Anbieter-Dokuments (users/${jobDetails.selectedAnbieterId}):`, dbError.message, dbError);
+      throw new HttpsError("internal", "Fehler beim Abrufen der Anbieterdetails.");
+    }
+    // --- Ende der korrigierten Logik für anbieterStripeAccountId ---
 
     try {
       const draftDataToSave = {
@@ -188,6 +208,7 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
         jobTotalCalculatedHours: jobDetails.jobTotalCalculatedHours ?? null,
         jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents,
         kundeId: kundeId,
+        anbieterStripeAccountId: anbieterStripeAccountId, // Sicherstellen, dass es im gespeicherten Entwurf enthalten ist
 
         customerFirstName: customerInfo.firstName,
         customerLastName: customerInfo.lastName,
@@ -203,7 +224,7 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
 
       return {
         tempDraftId: docRef.id,
-        anbieterStripeAccountId: anbieterStripeAccountId
+        anbieterStripeAccountId: anbieterStripeAccountId // Dies wird nun immer ein gültiger String sein, wenn die Funktion hier ankommt
       };
 
     } catch (e: any) {
@@ -213,79 +234,8 @@ export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<Tem
   }
 );
 
-
-export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload, Promise<GetOrCreateStripeCustomerResult>>(
-  async (request): Promise<GetOrCreateStripeCustomerResult> => {
-    loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
-    const db = getDb();
-    const localStripe = getStripeInstance();
-    if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
-    const firebaseUserId = request.auth.uid;
-    const payload = request.data;
-
-    if (!payload.email) {
-      loggerV2.error("[getOrCreateStripeCustomer] Fehlende E-Mail im Payload.");
-      throw new HttpsError("invalid-argument", "E-Mail ist im Payload erforderlich.");
-    }
-
-    try {
-      const userDocRef = db.collection("users").doc(firebaseUserId);
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) { throw new HttpsError("not-found", "Nutzerprofil nicht gefunden."); }
-
-      // Definieren Sie einen Typ für userData, um Typsicherheit zu erhöhen
-      interface FirestoreUserData {
-        stripeCustomerId?: string;
-        firstName?: string;
-        lastName?: string;
-        email?: string;
-        step1?: {
-          firstName?: string;
-          lastName?: string;
-          email?: string;
-        };
-        // Fügen Sie hier weitere Felder hinzu, die Sie möglicherweise aus userData benötigen
-      }
-      const userData = userDoc.data() as FirestoreUserData | undefined;
-
-      if (!userData) { throw new HttpsError("internal", "Fehler Lesen Nutzerdaten."); }
-      if (userData.stripeCustomerId?.startsWith("cus_")) { return { stripeCustomerId: userData.stripeCustomerId }; }
-
-      // Priorisiere Daten aus dem Payload, falle zurück auf Firestore-Daten
-      const customerEmailForStripe = payload.email; // E-Mail aus Payload ist Pflicht
-      const customerNameForStripe = payload.name || `${userData.firstName || userData.step1?.firstName || ""} ${userData.lastName || userData.step1?.lastName || ""}`.trim() || undefined;
-      const customerPhoneForStripe = payload.phone || undefined;
-
-      const stripeCustomerParams: Stripe.CustomerCreateParams = {
-        email: customerEmailForStripe,
-        name: customerNameForStripe,
-        phone: customerPhoneForStripe,
-        metadata: { firebaseUID: firebaseUserId }
-      };
-
-      if (payload.address) {
-        // Stelle sicher, dass null-Werte in undefined umgewandelt werden, um Typkompatibilität zu gewährleisten
-        stripeCustomerParams.address = {
-          line1: payload.address.line1 || undefined,
-          line2: payload.address.line2 || undefined,
-          city: payload.address.city || undefined,
-          postal_code: payload.address.postal_code || undefined,
-          state: payload.address.state || undefined,
-          country: payload.address.country || undefined,
-        };
-      }
-
-      const stripeCustomer = await localStripe.customers.create(stripeCustomerParams);
-      await userDocRef.update({ stripeCustomerId: stripeCustomer.id });
-      loggerV2.info(`[getOrCreateStripeCustomer] Stripe Customer ${stripeCustomer.id} für ${firebaseUserId} erstellt.`);
-      return { stripeCustomerId: stripeCustomer.id };
-    } catch (e: any) {
-      loggerV2.error(`[getOrCreateStripeCustomer] Fehler für ${firebaseUserId}:`, e);
-      if (e instanceof HttpsError) throw e;
-      throw new HttpsError("internal", "Fehler Stripe Kundendaten.", e.message);
-    }
-  });
-
+// --- getOrCreateStripeCustomer wurde aus dieser Datei verschoben nach callable_stripe.ts ---
+// --- deleteCompanyAccount wird beibehalten ---
 
 export const deleteCompanyAccount = onCall<Record<string, never>, Promise<DeleteCompanyAccountResult>>(
   async (request): Promise<DeleteCompanyAccountResult> => {
@@ -293,7 +243,7 @@ export const deleteCompanyAccount = onCall<Record<string, never>, Promise<Delete
     const db = getDb();
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     const userId = request.auth.uid;
-    const localStripe = getStripeInstance();
+    const localStripe = getStripeInstance(); // Kann hier bleiben, wenn in helpers.ts
     const userDocRef = db.collection("users").doc(userId);
     const companyDocRef = db.collection("companies").doc(userId);
     const adminAuthService = admin.auth();

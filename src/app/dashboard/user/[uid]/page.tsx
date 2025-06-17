@@ -598,7 +598,7 @@ export default function UserDashboardPage() {
 
       {/* Modal für Support Chat */}
       {showSupportChatModal && currentUser && (
-        <Modal onClose={() => setShowSupportChatModal(false)} title="Support Chat">
+        <Modal onClose={() => setShowSupportChatModal(false)} title="Support">
           <SupportChatInterface
             currentUser={currentUser}
             onClose={() => setShowSupportChatModal(false)}

@@ -11,7 +11,7 @@ import { app } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 
-import { findCategoryBySubcategory } from '@/lib/categoriesData'; // NEU: Import für Kategoriensuche
+import { findCategoryBySubcategory } from '@/lib/categoriesData';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { PaymentElement } from '@stripe/react-stripe-js';
@@ -328,7 +328,7 @@ export default function BestaetigungsPage() {
         // Kategorie und Unterkategorie können null sein, wenn sie nicht ermittelt werden konnten, aber für den Draft sind sie wichtig.
         if (draftData.selectedCategory === null || draftData.selectedCategory === undefined || draftData.selectedCategory.trim() === '') missingFields.push('Kategorie');
         if (draftData.selectedSubcategory === null || draftData.selectedSubcategory === undefined || draftData.selectedSubcategory.trim() === '') missingFields.push('Unterkategorie');
-        if (!draftData.description || draftData.description.trim().length === 0) missingFields.push('Auftragsbeschreibung');
+        if (!draftData.description || draftData.description.trim().length === 0) missingFields.push('Auftragsbeschreibung'); // <-- HIER WIRD AUF EINE NICHT-LEERE BESCHREIBUNG GEPRÜFT
         // jobPostalCode und selectedAnbieterId sind kritisch
         if (draftData.jobPostalCode === null || draftData.jobPostalCode === undefined || draftData.jobPostalCode.trim() === '') missingFields.push('Job-Postleitzahl');
         if (draftData.selectedAnbieterId === null || draftData.selectedAnbieterId === undefined || draftData.selectedAnbieterId.trim() === '') missingFields.push('Anbieter-ID');

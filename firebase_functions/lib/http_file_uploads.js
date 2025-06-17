@@ -50,7 +50,7 @@ const storage_1 = require("firebase-admin/storage");
 const uuid_1 = require("uuid");
 // WICHTIG: Dies initialisiert die Firebase Admin SDK für DIESE spezielle Funktion.
 // Es muss hier stehen, da diese Datei direkt 'admin'-Dienste nutzt.
-admin.initializeApp();
+// admin.initializeApp(); // Entfernt, da getStorage() dies über getAdminApp() in helpers.ts handhabt
 const authenticateRequest = async (req) => {
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
         v2_1.logger.warn("[authenticateRequest] Unauthorized: Missing or invalid Authorization header.");

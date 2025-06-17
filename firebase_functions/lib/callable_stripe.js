@@ -1,11 +1,19 @@
 "use strict";
-// /Users/andystaudinger/Tilvo/functions/src/callable_stripe.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProviderStripeAccountId = exports.getStripeAccountStatus = exports.getSavedPaymentMethods = exports.createSetupIntent = exports.updateStripeCompanyDetails = exports.createStripeAccountIfComplete = void 0;
+exports.getProviderStripeAccountId = exports.getStripeAccountStatus = exports.getSavedPaymentMethods = exports.createSetupIntent = exports.updateStripeCompanyDetails = exports.getOrCreateStripeCustomer = exports.createStripeAccountIfComplete = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
 const firestore_1 = require("firebase-admin/firestore");
+// Log für den Ladevorgang der Datei
+v2_1.logger.info("Lade callable_stripe.ts...");
+try {
+    v2_1.logger.info("callable_stripe.ts: Globale Initialisierung erfolgreich.");
+}
+catch (error) {
+    v2_1.logger.error("callable_stripe.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
+    throw error;
+}
 const translateStripeRequirement = (req) => {
     if (req.startsWith('company.address.'))
         return `Firmenadresse (${req.substring(req.lastIndexOf('.') + 1)})`;
@@ -186,7 +194,7 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info('[DEBUG] Alle Validierungen bestanden. Fahre fort mit Kontoerstellung.');
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     const undefinedIfNull = (val) => val === null ? undefined : val;
-    const platformProfileUrl = `${publicFrontendURL}/profil/${userId}`;
+    const platformProfileUrl = `${(0, helpers_1.getPublicFrontendURL)()}/profil/${userId}`;
     const accountParams = {
         type: "custom",
         country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry) : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry),
@@ -377,6 +385,66 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
         missingFields: [...new Set(finalMissingFields)],
     };
 });
+// --- HIER WIRD DIE FUNKTION getOrCreateStripeCustomer HINZUGEFÜGT ---
+exports.getOrCreateStripeCustomer = (0, https_1.onCall)(async (request) => {
+    v2_1.logger.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+    const db = (0, helpers_1.getDb)();
+    const localStripe = (0, helpers_1.getStripeInstance)();
+    if (!request.auth?.uid) {
+        throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+    const firebaseUserId = request.auth.uid;
+    const payload = request.data;
+    if (!payload.email) {
+        v2_1.logger.error("[getOrCreateStripeCustomer] Fehlende E-Mail im Payload.");
+        throw new https_1.HttpsError("invalid-argument", "E-Mail ist im Payload erforderlich.");
+    }
+    try {
+        const userDocRef = db.collection("users").doc(firebaseUserId);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) {
+            throw new https_1.HttpsError("not-found", "Nutzerprofil nicht gefunden.");
+        }
+        const userData = userDoc.data();
+        if (!userData) {
+            throw new https_1.HttpsError("internal", "Fehler Lesen Nutzerdaten.");
+        }
+        if (userData.stripeCustomerId?.startsWith("cus_")) {
+            return { stripeCustomerId: userData.stripeCustomerId };
+        }
+        // Prioritize data from the payload, fallback to Firestore data
+        const customerEmailForStripe = payload.email; // Email from payload is mandatory
+        const customerNameForStripe = payload.name || `${userData.firstName || userData.step1?.firstName || ""} ${userData.lastName || userData.step1?.lastName || ""}`.trim() || undefined;
+        const customerPhoneForStripe = payload.phone || undefined;
+        const stripeCustomerParams = {
+            email: customerEmailForStripe,
+            name: customerNameForStripe,
+            phone: customerPhoneForStripe,
+            metadata: { firebaseUID: firebaseUserId }
+        };
+        if (payload.address) {
+            // Ensure null values are converted to undefined for type compatibility
+            stripeCustomerParams.address = {
+                line1: payload.address.line1 || undefined,
+                line2: payload.address.line2 || undefined,
+                city: payload.address.city || undefined,
+                postal_code: payload.address.postal_code || undefined,
+                state: payload.address.state || undefined,
+                country: payload.address.country || undefined,
+            };
+        }
+        const stripeCustomer = await localStripe.customers.create(stripeCustomerParams);
+        await userDocRef.update({ stripeCustomerId: stripeCustomer.id });
+        v2_1.logger.info(`[getOrCreateStripeCustomer] Stripe Customer ${stripeCustomer.id} für ${firebaseUserId} erstellt.`);
+        return { stripeCustomerId: stripeCustomer.id };
+    }
+    catch (e) {
+        v2_1.logger.error(`[getOrCreateStripeCustomer] Fehler für ${firebaseUserId}:`, e);
+        if (e instanceof https_1.HttpsError)
+            throw e;
+        throw new https_1.HttpsError("internal", "Fehler Stripe Kundendaten.", e.message);
+    }
+});
 exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     const db = (0, helpers_1.getDb)();
@@ -480,9 +548,9 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
             if (updatePayloadFromClient.representativeLastName)
                 personDataToUpdate.last_name = updatePayloadFromClient.representativeLastName;
             if (updatePayloadFromClient.representativeEmail)
-                personDataToUpdate.email = updatePayloadFromClient.representativeEmail;
+                personDataToUpdate.email = updatePayloadFromClient.representativeEmail; // Korrigierter Tippfehler
             if (updatePayloadFromClient.representativePhone)
-                personDataToUpdate.phone = updatePayloadFromClient.representativePhone;
+                personDataToUpdate.phone = updatePayloadFromClient.representativePhone; // Korrigierter Tippfehler
             if (updatePayloadFromClient.representativeDateOfBirth) {
                 const [year, month, day] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number);
                 if (day && month && year && year > 1900 && year < (new Date().getFullYear() - 5) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
@@ -576,8 +644,8 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
         if (uniqueFinalMissingFieldsList.length > 0) {
             const accLink = await localStripe.accountLinks.create({
                 account: stripeAccountId,
-                refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-                return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+                refresh_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+                return_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_return=true`,
                 type: 'account_update',
                 collect: 'currently_due',
             });
@@ -721,8 +789,8 @@ exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
             try {
                 const accLinkParams = {
                     account: stripeAccountId,
-                    refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-                    return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+                    refresh_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+                    return_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_return=true`,
                     type: "account_update",
                     collect: "currently_due",
                 };

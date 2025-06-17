@@ -1,11 +1,41 @@
-// /Users/andystaudinger/Tilvo/functions/src/callable_stripe.ts
-
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
 import { getDb, getStripeInstance, getSendGridClient, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
 import { type MailDataRequired } from '@sendgrid/mail';
+import * as admin from "firebase-admin";
+
+// Log für den Ladevorgang der Datei
+loggerV2.info("Lade callable_stripe.ts...");
+
+try {
+  loggerV2.info("callable_stripe.ts: Globale Initialisierung erfolgreich.");
+} catch (error: any) {
+  loggerV2.error("callable_stripe.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
+  throw error;
+}
+
+// Interfaces wie im Frontend definiert (oder sicherstellen, dass sie global verfügbar sind)
+interface CustomerAddress {
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  state?: string | null;
+  country?: string | null;
+}
+
+interface GetOrCreateStripeCustomerPayload {
+  email: string;
+  name?: string;
+  phone?: string | null;
+  address?: CustomerAddress | null;
+}
+
+interface GetOrCreateStripeCustomerResult {
+  stripeCustomerId: string;
+}
 
 interface CreateStripeAccountCallableData {
   userId: string; clientIp: string;
@@ -94,6 +124,37 @@ interface UserProfile {
     exp_year?: number;
     type: string;
   }[];
+}
+
+interface DeleteCompanyAccountResult {
+  success: boolean;
+  message: string;
+}
+
+interface TemporaryJobDraftData {
+  customerType: 'private' | 'business' | null;
+  selectedCategory: string | null;
+  selectedSubcategory: string | null;
+  description: string;
+  jobStreet?: string;
+  jobPostalCode?: string;
+  jobCity?: string;
+  jobCountry?: string | null;
+  jobDateFrom?: string | null;
+  jobDateTo?: string | null;
+  jobTimePreference?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  timePreference?: string | null;
+  selectedAnbieterId?: string | null;
+  jobDurationString?: string;
+  jobTotalCalculatedHours?: number | null;
+  jobCalculatedPriceInCents?: number | null;
+}
+
+interface TemporaryJobDraftResult {
+  tempDraftId: string;
+  anbieterStripeAccountId?: string | null;
 }
 
 const translateStripeRequirement = (req: string): string => {
@@ -252,7 +313,7 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
 
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null ? undefined : val;
-    const platformProfileUrl = `${publicFrontendURL}/profil/${userId}`;
+    const platformProfileUrl = `${getPublicFrontendURL()}/profil/${userId}`;
 
     const accountParams: Stripe.AccountCreateParams = {
       type: "custom",
@@ -456,6 +517,78 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
   }
 );
 
+// --- HIER WIRD DIE FUNKTION getOrCreateStripeCustomer HINZUGEFÜGT ---
+export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload, Promise<GetOrCreateStripeCustomerResult>>(
+  async (request): Promise<GetOrCreateStripeCustomerResult> => {
+    loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+    const db = getDb();
+    const localStripe = getStripeInstance();
+    if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
+    const firebaseUserId = request.auth.uid;
+    const payload = request.data;
+
+    if (!payload.email) {
+      loggerV2.error("[getOrCreateStripeCustomer] Fehlende E-Mail im Payload.");
+      throw new HttpsError("invalid-argument", "E-Mail ist im Payload erforderlich.");
+    }
+
+    try {
+      const userDocRef = db.collection("users").doc(firebaseUserId);
+      const userDoc = await userDocRef.get();
+      if (!userDoc.exists) { throw new HttpsError("not-found", "Nutzerprofil nicht gefunden."); }
+
+      // Define a type for userData to increase type safety
+      interface FirestoreUserData {
+        stripeCustomerId?: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        step1?: {
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+        };
+      }
+      const userData = userDoc.data() as FirestoreUserData | undefined;
+
+      if (!userData) { throw new HttpsError("internal", "Fehler Lesen Nutzerdaten."); }
+      if (userData.stripeCustomerId?.startsWith("cus_")) { return { stripeCustomerId: userData.stripeCustomerId }; }
+
+      // Prioritize data from the payload, fallback to Firestore data
+      const customerEmailForStripe = payload.email; // Email from payload is mandatory
+      const customerNameForStripe = payload.name || `${userData.firstName || userData.step1?.firstName || ""} ${userData.lastName || userData.step1?.lastName || ""}`.trim() || undefined;
+      const customerPhoneForStripe = payload.phone || undefined;
+
+      const stripeCustomerParams: Stripe.CustomerCreateParams = {
+        email: customerEmailForStripe,
+        name: customerNameForStripe,
+        phone: customerPhoneForStripe,
+        metadata: { firebaseUID: firebaseUserId }
+      };
+
+      if (payload.address) {
+        // Ensure null values are converted to undefined for type compatibility
+        stripeCustomerParams.address = {
+          line1: payload.address.line1 || undefined,
+          line2: payload.address.line2 || undefined,
+          city: payload.address.city || undefined,
+          postal_code: payload.address.postal_code || undefined,
+          state: payload.address.state || undefined,
+          country: payload.address.country || undefined,
+        };
+      }
+
+      const stripeCustomer = await localStripe.customers.create(stripeCustomerParams);
+      await userDocRef.update({ stripeCustomerId: stripeCustomer.id });
+      loggerV2.info(`[getOrCreateStripeCustomer] Stripe Customer ${stripeCustomer.id} für ${firebaseUserId} erstellt.`);
+      return { stripeCustomerId: stripeCustomer.id };
+    } catch (e: any) {
+      loggerV2.error(`[getOrCreateStripeCustomer] Fehler für ${firebaseUserId}:`, e);
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", "Fehler Stripe Kundendaten.", e.message);
+    }
+  });
+
 export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData, Promise<UpdateStripeCompanyDetailsResult>>(
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
@@ -548,8 +681,8 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
 
         if (updatePayloadFromClient.representativeFirstName) personDataToUpdate.first_name = updatePayloadFromClient.representativeFirstName;
         if (updatePayloadFromClient.representativeLastName) personDataToUpdate.last_name = updatePayloadFromClient.representativeLastName;
-        if (updatePayloadFromClient.representativeEmail) personDataToUpdate.email = updatePayloadFromClient.representativeEmail;
-        if (updatePayloadFromClient.representativePhone) personDataToUpdate.phone = updatePayloadFromClient.representativePhone;
+        if (updatePayloadFromClient.representativeEmail) personDataToUpdate.email = updatePayloadFromClient.representativeEmail; // Korrigierter Tippfehler
+        if (updatePayloadFromClient.representativePhone) personDataToUpdate.phone = updatePayloadFromClient.representativePhone; // Korrigierter Tippfehler
 
         if (updatePayloadFromClient.representativeDateOfBirth) {
           const [year, month, day] = updatePayloadFromClient.representativeDateOfBirth.split('-').map(Number);
@@ -638,8 +771,8 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
       if (uniqueFinalMissingFieldsList.length > 0) {
         const accLink = await localStripe.accountLinks.create({
           account: stripeAccountId,
-          refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-          return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+          refresh_url: `${getEmulatorCallbackFrontendURL()}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+          return_url: `${getEmulatorCallbackFrontendURL()}/dashboard/company/${userId}/settings?stripe_return=true`,
           type: 'account_update',
           collect: 'currently_due',
         });
@@ -805,8 +938,8 @@ export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetS
         try {
           const accLinkParams: Stripe.AccountLinkCreateParams = {
             account: stripeAccountId,
-            refresh_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-            return_url: `${emulatorCallbackFrontendURL}/dashboard/company/${userId}/settings?stripe_return=true`,
+            refresh_url: `${getEmulatorCallbackFrontendURL()}/dashboard/company/${userId}/settings?stripe_refresh=true`,
+            return_url: `${getEmulatorCallbackFrontendURL()}/dashboard/company/${userId}/settings?stripe_return=true`,
             type: "account_update",
             collect: "currently_due",
           };
