@@ -13,7 +13,6 @@ import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
-import FooterSection from '@/components/footer';
 import AppHeaderNavigation from '@/components/AppHeaderNavigation';
 
 
@@ -465,7 +464,6 @@ function UserRegisterFormContent() {
         redirectTo={redirectToFromParams}
         initialEmail={email}
       />
-      <FooterSection />
     </>
   );
 }
