@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -40,17 +7,20 @@ exports.uploadStripeFile = void 0;
 // /Users/andystaudinger/Tasko/firebase_functions/src/http_file_uploads.ts
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const admin = __importStar(require("firebase-admin")); // Hier wird 'admin' importiert
 const busboy_1 = __importDefault(require("busboy"));
-const helpers_1 = require("./helpers"); // Annahme: getStripeInstance ist korrekt definiert
+const cors_1 = __importDefault(require("cors"));
+const helpers_1 = require("./helpers");
 const path_1 = __importDefault(require("path"));
 const os_1 = __importDefault(require("os"));
 const fs_1 = __importDefault(require("fs"));
-const storage_1 = require("firebase-admin/storage");
 const uuid_1 = require("uuid");
+const params_1 = require("firebase-functions/params"); // <-- Hinzufügen, falls noch nicht da
+// Parameter zentral definieren (auf oberster Ebene der Datei)
+const STRIPE_SECRET_KEY_UPLOADS = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 // WICHTIG: Dies initialisiert die Firebase Admin SDK für DIESE spezielle Funktion.
 // Es muss hier stehen, da diese Datei direkt 'admin'-Dienste nutzt.
 // admin.initializeApp(); // Entfernt, da getStorage() dies über getAdminApp() in helpers.ts handhabt
+const corsHandler = (0, cors_1.default)({ origin: true });
 const authenticateRequest = async (req) => {
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
         v2_1.logger.warn("[authenticateRequest] Unauthorized: Missing or invalid Authorization header.");
@@ -58,7 +28,7 @@ const authenticateRequest = async (req) => {
     }
     const idToken = req.headers.authorization.split('Bearer ')[1];
     try {
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const decodedToken = await (0, helpers_1.getAuthInstance)().verifyIdToken(idToken);
         v2_1.logger.info(`[authenticateRequest] Token verified for UID: ${decodedToken.uid}`);
         return decodedToken;
     }
@@ -130,95 +100,100 @@ const parseMultipartFormData = (req) => {
     });
 };
 exports.uploadStripeFile = (0, https_1.onRequest)({
-    cors: true,
+    // Die Option { cors: true } scheint bei multipart/form-data nicht zuverlässig zu sein.
+    // Wir verwenden stattdessen den manuellen cors-Handler.
     region: 'us-central1'
 }, async (req, res) => {
-    v2_1.logger.info("[uploadStripeFile] Function execution started.");
-    if (req.method !== 'POST') {
-        v2_1.logger.warn(`[uploadStripeFile] Method Not Allowed: ${req.method}`);
-        res.status(405).send({ success: false, message: 'Method Not Allowed' });
-        return;
-    }
-    const tmpFilepaths = [];
-    try {
-        v2_1.logger.info("[uploadStripeFile] Attempting authentication.");
-        const decodedToken = await authenticateRequest(req);
-        const userId = decodedToken.uid;
-        v2_1.logger.info(`[uploadStripeFile] Authenticated user: ${userId}`);
-        v2_1.logger.info("[uploadStripeFile] Parsing multipart form data.");
-        const { fields, files } = await parseMultipartFormData(req);
-        v2_1.logger.info("[uploadStripeFile] Form data parsed. Fields:", fields);
-        v2_1.logger.info("[uploadStripeFile] Files received (keys):", Object.keys(files));
-        Object.values(files).forEach(f => tmpFilepaths.push(f.filepath));
-        v2_1.logger.info("[uploadStripeFile] Validating inputs.");
-        if (userId !== fields.userId) {
-            v2_1.logger.error(`[uploadStripeFile] Forbidden: UID mismatch. Token UID: ${userId}, Field UID: ${fields.userId}`);
-            throw { status: 403, message: 'Forbidden: UID does not match token.' };
+    corsHandler(req, res, async () => {
+        v2_1.logger.info("[uploadStripeFile] Function execution started.");
+        if (req.method !== 'POST') {
+            v2_1.logger.warn(`[uploadStripeFile] Method Not Allowed: ${req.method}`);
+            res.status(405).send({ success: false, message: 'Method Not Allowed' });
+            return;
         }
-        const purpose = fields.purpose;
-        if (!purpose) {
-            v2_1.logger.error("[uploadStripeFile] Bad Request: Missing 'purpose' field.");
-            throw { status: 400, message: "Bad Request: Missing 'purpose' field." };
-        }
-        const uploadedFile = files.file;
-        if (!uploadedFile) {
-            v2_1.logger.error("[uploadStripeFile] Bad Request: No file uploaded in 'file' field.");
-            throw { status: 400, message: "Bad Request: No file uploaded in 'file' field." };
-        }
-        const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
-        v2_1.logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath}`);
-        const stripe = (0, helpers_1.getStripeInstance)();
-        v2_1.logger.info("[uploadStripeFile] Stripe instance obtained.");
-        const bucket = (0, storage_1.getStorage)().bucket();
-        v2_1.logger.info("[uploadStripeFile] Firebase Storage bucket obtained.");
-        v2_1.logger.info("[uploadStripeFile] Initiating parallel uploads to Stripe and Firebase Storage.");
-        const stripePromise = stripe.files.create({
-            purpose: purpose,
-            file: { data: fs_1.default.readFileSync(uploadedFilePath), name: filename, type: mimeType },
-        });
-        const storagePath = `user_uploads/${userId}/${purpose}_${(0, uuid_1.v4)()}_${filename}`;
-        const storagePromise = bucket.upload(uploadedFilePath, {
-            destination: storagePath,
-            metadata: { contentType: mimeType },
-        });
-        const [stripeFile, storageResponse] = await Promise.all([stripePromise, storagePromise]);
-        v2_1.logger.info(`[uploadStripeFile] Uploads complete. Stripe file ID: ${stripeFile.id}, Storage path: ${storagePath}`);
-        const gcsFile = storageResponse[0];
-        v2_1.logger.info("[uploadStripeFile] GCS file object obtained from storage response.");
-        let fileUrl;
-        if (purpose === 'business_icon') {
-            await gcsFile.makePublic();
-            fileUrl = gcsFile.publicUrl();
-            v2_1.logger.info(`[uploadStripeFile] Business icon made public. URL: ${fileUrl}`);
-        }
-        else {
-            const [signedUrl] = await gcsFile.getSignedUrl({ action: 'read', expires: Date.now() + 24 * 60 * 60 * 1000 });
-            fileUrl = signedUrl;
-            v2_1.logger.warn(`[uploadStripeFile] Signed URL created for ${storagePath}, valid for 24h.`);
-        }
-        v2_1.logger.info("[uploadStripeFile] Sending success response.");
-        res.status(200).send({
-            success: true,
-            stripeFileId: stripeFile.id,
-            firebaseStorageUrl: fileUrl,
-            firebaseStoragePath: storagePath,
-        });
-    }
-    catch (error) {
-        v2_1.logger.error("[uploadStripeFile] Error during processing:", error);
-        const status = error.status || 500;
-        const message = error.message || "Interner Serverfehler beim Upload.";
-        res.status(status).send({ success: false, message: message });
-    }
-    finally {
-        v2_1.logger.info("[uploadStripeFile] Cleaning up temporary files.");
-        tmpFilepaths.forEach(filepath => {
-            if (fs_1.default.existsSync(filepath)) {
-                fs_1.default.unlinkSync(filepath);
-                v2_1.logger.debug(`[uploadStripeFile] Deleted temporary file: ${filepath}`);
+        const tmpFilepaths = [];
+        try {
+            v2_1.logger.info("[uploadStripeFile] Attempting authentication.");
+            const decodedToken = await authenticateRequest(req);
+            const userId = decodedToken.uid;
+            v2_1.logger.info(`[uploadStripeFile] Authenticated user: ${userId}`);
+            v2_1.logger.info("[uploadStripeFile] Parsing multipart form data.");
+            const { fields, files } = await parseMultipartFormData(req);
+            v2_1.logger.info("[uploadStripeFile] Form data parsed. Fields:", fields);
+            v2_1.logger.info("[uploadStripeFile] Files received (keys):", Object.keys(files));
+            Object.values(files).forEach(f => tmpFilepaths.push(f.filepath));
+            v2_1.logger.info("[uploadStripeFile] Validating inputs.");
+            if (userId !== fields.userId) {
+                v2_1.logger.error(`[uploadStripeFile] Forbidden: UID mismatch. Token UID: ${userId}, Field UID: ${fields.userId}`);
+                throw { status: 403, message: 'Forbidden: UID does not match token.' };
             }
-        });
-        v2_1.logger.info("[uploadStripeFile] Function execution finished.");
-    }
+            const purpose = fields.purpose;
+            if (!purpose) {
+                v2_1.logger.error("[uploadStripeFile] Bad Request: Missing 'purpose' field.");
+                throw { status: 400, message: "Bad Request: Missing 'purpose' field." };
+            }
+            const uploadedFile = files.file;
+            if (!uploadedFile) {
+                v2_1.logger.error("[uploadStripeFile] Bad Request: No file uploaded in 'file' field.");
+                throw { status: 400, message: "Bad Request: No file uploaded in 'file' field." };
+            }
+            const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
+            v2_1.logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath}`);
+            const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
+            const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_UPLOADS.value();
+            const stripe = (0, helpers_1.getStripeInstance)(stripeKey);
+            v2_1.logger.info("[uploadStripeFile] Stripe instance obtained.");
+            const bucket = (0, helpers_1.getStorageInstance)().bucket();
+            v2_1.logger.info("[uploadStripeFile] Firebase Storage bucket obtained.");
+            v2_1.logger.info("[uploadStripeFile] Initiating parallel uploads to Stripe and Firebase Storage.");
+            const stripePromise = stripe.files.create({
+                purpose: purpose,
+                file: { data: fs_1.default.readFileSync(uploadedFilePath), name: filename, type: mimeType },
+            });
+            const storagePath = `user_uploads/${userId}/${purpose}_${(0, uuid_1.v4)()}_${filename}`;
+            const storagePromise = bucket.upload(uploadedFilePath, {
+                destination: storagePath,
+                metadata: { contentType: mimeType },
+            });
+            const [stripeFile, storageResponse] = await Promise.all([stripePromise, storagePromise]);
+            v2_1.logger.info(`[uploadStripeFile] Uploads complete. Stripe file ID: ${stripeFile.id}, Storage path: ${storagePath}`);
+            const gcsFile = storageResponse[0];
+            v2_1.logger.info("[uploadStripeFile] GCS file object obtained from storage response.");
+            let fileUrl;
+            if (purpose === 'business_icon') {
+                await gcsFile.makePublic();
+                fileUrl = gcsFile.publicUrl();
+                v2_1.logger.info(`[uploadStripeFile] Business icon made public. URL: ${fileUrl}`);
+            }
+            else {
+                const [signedUrl] = await gcsFile.getSignedUrl({ action: 'read', expires: Date.now() + 24 * 60 * 60 * 1000 });
+                fileUrl = signedUrl;
+                v2_1.logger.warn(`[uploadStripeFile] Signed URL created for ${storagePath}, valid for 24h.`);
+            }
+            v2_1.logger.info("[uploadStripeFile] Sending success response.");
+            res.status(200).send({
+                success: true,
+                stripeFileId: stripeFile.id,
+                firebaseStorageUrl: fileUrl,
+                firebaseStoragePath: storagePath,
+            });
+        }
+        catch (error) {
+            v2_1.logger.error("[uploadStripeFile] Error during processing:", error);
+            const status = error.status || 500;
+            const message = error.message || "Interner Serverfehler beim Upload.";
+            res.status(status).send({ success: false, message: message });
+        }
+        finally {
+            v2_1.logger.info("[uploadStripeFile] Cleaning up temporary files.");
+            tmpFilepaths.forEach(filepath => {
+                if (fs_1.default.existsSync(filepath)) {
+                    fs_1.default.unlinkSync(filepath);
+                    v2_1.logger.debug(`[uploadStripeFile] Deleted temporary file: ${filepath}`);
+                }
+            });
+            v2_1.logger.info("[uploadStripeFile] Function execution finished.");
+        }
+    });
 });
 //# sourceMappingURL=http_file_uploads.js.map

@@ -2,6 +2,7 @@
 
 import { initializeApp, getApps, App as AdminApp } from "firebase-admin/app";
 import { getFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore";
+import { getAuth, Auth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
@@ -14,6 +15,7 @@ import { defineString, defineSecret } from "firebase-functions/params";
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
 // dass sie bei jedem Aufruf neu erstellt werden.
 let dbInstance: Firestore;
+let authInstance: Auth;
 let storageInstance: Storage;
 let stripeClientInstance: Stripe | undefined;
 let sendgridClientConfigured: boolean = false;
@@ -73,6 +75,19 @@ export function getDb(): Firestore {
 }
 
 /**
+ * Gibt die Firebase Auth Instanz zurück.
+ * Die Initialisierung erfolgt nur beim ersten Aufruf ("lazy").
+ * @returns {Auth} Die Auth-Instanz.
+ */
+export function getAuthInstance(): Auth {
+  if (!authInstance) {
+    authInstance = getAuth(getAdminApp());
+    logger.info("[getAuthInstance] Auth-Instanz erfolgreich initialisiert (lazy).");
+  }
+  return authInstance;
+}
+
+/**
  * Gibt die Firebase Storage Instanz zurück.
  * Die Initialisierung erfolgt nur beim ersten Aufruf ("lazy").
  * @returns {Storage} Die Storage-Instanz.
@@ -98,12 +113,9 @@ export function getStorageInstance(): Storage {
 
 // --- Bestehende Getter-Funktionen (JETZT MIT KORRIGIERTER LOGIK) ---
 
-export function getStripeInstance(): Stripe {
+export function getStripeInstance(stripeKey: string): Stripe {
   if (!stripeClientInstance) {
-    const env = process.env as NodeJS.ProcessEnv;
-    // ALT (verursacht Fehler): const stripeKey = env.FUNCTIONS_EMULATOR === 'true' ? env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_PARAM.value();
-    // NEU (korrigiert):
-    const stripeKey = env.FUNCTIONS_EMULATOR === 'true' ? env.STRIPE_SECRET_KEY : defineSecret("STRIPE_SECRET_KEY").value();
+    // Der Stripe-Schlüssel wird jetzt als Parameter übergeben.
 
     if (stripeKey) {
       try {
@@ -128,12 +140,9 @@ export function getStripeInstance(): Stripe {
   return stripeClientInstance!;
 }
 
-export function getSendGridClient(): typeof sendgridMail | undefined {
+export function getSendGridClient(sendgridKey: string | undefined): typeof sendgridMail | undefined {
   if (!sendgridClientConfigured) {
-    const env = process.env as NodeJS.ProcessEnv;
-    // ALT (verursacht Fehler): const sendgridKey = env.FUNCTIONS_EMULATOR === 'true' ? env.SENDGRID_API_KEY : SENDGRID_API_KEY_PARAM.value();
-    // NEU (korrigiert):
-    const sendgridKey = env.FUNCTIONS_EMULATOR === 'true' ? env.SENDGRID_API_KEY : defineSecret("SENDGRID_API_KEY").value();
+    // Der SendGrid-Schlüssel wird jetzt als Parameter übergeben.
 
     if (sendgridKey) {
       try {
@@ -160,10 +169,9 @@ export function getSendGridClient(): typeof sendgridMail | undefined {
  * Gibt die öffentlich zugängliche Frontend-URL zurück (Live-URL im Prod, oder die in .env.local gesetzte Live-URL im Emulator).
  * Diese URL ist für Dienste wie Stripe Business Profile URL gedacht.
  */
-export function getPublicFrontendURL(): string {
-  const env = process.env as NodeJS.ProcessEnv;
-  if (env.FUNCTIONS_EMULATOR === 'true' || env.FIREBASE_EMULATOR_HOST) {
-    const emulatorLiveSimulatedUrl = env.FRONTEND_URL;
+export function getPublicFrontendURL(liveUrl: string): string {
+  if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_EMULATOR_HOST) {
+    const emulatorLiveSimulatedUrl = process.env.FRONTEND_URL;
     if (emulatorLiveSimulatedUrl?.startsWith('http')) {
       logger.info("[getPublicFrontendURL] Liefere Emulator (simulierte Live)-URL.");
       return emulatorLiveSimulatedUrl;
@@ -171,9 +179,7 @@ export function getPublicFrontendURL(): string {
     logger.error("[getPublicFrontendURL] FRONTEND_URL ist im Emulator nicht korrekt konfiguriert oder ungültig.", { url: emulatorLiveSimulatedUrl });
     throw new HttpsError("internal", "Öffentliche Frontend URL ist im Emulator nicht korrekt konfiguriert (FRONTEND_URL in .env.local fehlt/ist ungültig).");
   } else {
-    // ALT (verursacht Fehler): const liveUrl = FRONTEND_URL_PARAM.value();
-    // NEU (korrigiert):
-    const liveUrl = defineString("FRONTEND_URL").value();
+    // Der Live-URL wird nun als Parameter übergeben
     if (liveUrl?.startsWith('http')) {
       logger.info("[getPublicFrontendURL] Liefere Live-URL.");
       return liveUrl;
@@ -187,11 +193,10 @@ export function getPublicFrontendURL(): string {
  * Gibt die für den Emulator spezifische Frontend-URL zurück, die lokal erreichbar ist.
  * Dies ist für Callback-URLs wie Stripe Account Links gedacht.
  */
-export function getEmulatorCallbackFrontendURL(): string {
-  const env = process.env as NodeJS.ProcessEnv;
-  if (env.FUNCTIONS_EMULATOR === 'true' || env.FIREBASE_EMULATOR_HOST) {
+export function getEmulatorCallbackFrontendURL(liveUrl: string): string {
+  if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_EMULATOR_HOST) {
     // Dieser Teil ist schnell und benötigt keine Änderung
-    const emulatorLocalUrl = env.EMULATOR_PUBLIC_FRONTEND_URL;
+    const emulatorLocalUrl = process.env.EMULATOR_PUBLIC_FRONTEND_URL;
     if (emulatorLocalUrl?.startsWith('http')) {
       logger.info("[getEmulatorCallbackFrontendURL] Liefere lokale Emulator-URL.");
       return emulatorLocalUrl;
@@ -200,32 +205,26 @@ export function getEmulatorCallbackFrontendURL(): string {
     return 'http://localhost:3000';
   }
   logger.info("[getEmulatorCallbackFrontendURL] Im Live-Betrieb: Liefere Live-URL (wie getPublicFrontendURL).");
-  return getPublicFrontendURL();
+  return getPublicFrontendURL(liveUrl);
 }
 
 /**
  * Allgemeine Hilfsfunktion für die Frontend-URL.
  */
-export function getFrontendURL(): string {
-  const env = process.env as NodeJS.ProcessEnv;
-  if (env.FUNCTIONS_EMULATOR === 'true' || env.FIREBASE_EMULATOR_HOST) {
-    return getEmulatorCallbackFrontendURL();
+export function getFrontendURL(liveUrl: string): string {
+  if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_EMULATOR_HOST) {
+    return getEmulatorCallbackFrontendURL(liveUrl);
   }
-  // ALT (verursacht Fehler): return FRONTEND_URL_PARAM.value();
-  // NEU (korrigiert):
-  return defineString("FRONTEND_URL").value();
+  return liveUrl;
 }
 
 
-export function getStripeWebhookSecret(): string {
-  const env = process.env as NodeJS.ProcessEnv;
-  // ALT (verursacht Fehler): const webhookSecret = env.FUNCTIONS_EMULATOR === 'true' ? env.STRIPE_WEBHOOK_SECRET : STRIPE_WEBHOOK_SECRET_PARAM.value();
-  // NEU (korrigiert):
-  const webhookSecret = env.FUNCTIONS_EMULATOR === 'true' ? env.STRIPE_WEBHOOK_SECRET : defineSecret("STRIPE_WEBHOOK_SECRET").value();
+export function getStripeWebhookSecret(webhookSecretFromParams: string | undefined): string {
+  const webhookSecret = process.env.FUNCTIONS_EMULATOR === 'true' ? process.env.STRIPE_WEBHOOK_SECRET : webhookSecretFromParams;
 
-  if (webhookSecret) return webhookSecret;
-
-  if (env.FUNCTIONS_EMULATOR === 'true') {
+  if (webhookSecret) {
+    return webhookSecret;
+  } else if (process.env.FUNCTIONS_EMULATOR === 'true') {
     throw new HttpsError("internal", "Stripe Webhook Secret ist im Emulator nicht konfiguriert.");
   } else {
     throw new HttpsError("internal", "Stripe Webhook Secret ist nicht konfiguriert.");

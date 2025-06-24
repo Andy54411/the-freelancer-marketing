@@ -4,6 +4,11 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import Stripe from 'stripe';
 import { getDb, getStripeInstance, getStripeWebhookSecret, FieldValue, Timestamp } from './helpers';
+import { defineSecret } from 'firebase-functions/params';
+
+// Parameter zentral definieren
+const STRIPE_SECRET_KEY_WEBHOOKS = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_WEBHOOK_SECRET_PARAM = defineSecret("STRIPE_WEBHOOK_SECRET");
 
 interface SavedAddress {
     id: string;
@@ -43,9 +48,12 @@ interface SavedPaymentMethodForFirestore {
 
 export const stripeWebhookHandler = onRequest(async (request, response) => {
     logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}, URL: ${request.url}`);
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY_WEBHOOKS.value();
+    const webhookSecretValue = isEmulator ? process.env.STRIPE_WEBHOOK_SECRET : STRIPE_WEBHOOK_SECRET_PARAM.value();
     const db = getDb();
-    const localStripe = getStripeInstance();
-    const webhookSecret = getStripeWebhookSecret();
+    const localStripe = getStripeInstance(stripeKey);
+    const webhookSecret = getStripeWebhookSecret(webhookSecretValue);
 
     if (request.method === 'POST') {
         const buf = request.rawBody;

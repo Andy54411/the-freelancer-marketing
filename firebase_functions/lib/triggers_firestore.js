@@ -6,6 +6,9 @@ const firestore_1 = require("firebase-functions/v2/firestore");
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
 const firestore_2 = require("firebase-admin/firestore");
+const params_1 = require("firebase-functions/params");
+// Parameter zentral definieren
+const STRIPE_SECRET_KEY_TRIGGERS = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}", async (event) => {
     const snapshot = event.data;
     const userId = event.params.userId;
@@ -138,7 +141,9 @@ exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdate
     const userId = event.params.userId;
     v2_1.logger.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
     const db = (0, helpers_1.getDb)();
-    const localStripe = (0, helpers_1.getStripeInstance)();
+    const isEmulated = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_TRIGGERS.value();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey);
     const after = event.data?.after.data();
     if (!after) {
         v2_1.logger.warn(`Keine Daten nach Update für ${userId}.`);

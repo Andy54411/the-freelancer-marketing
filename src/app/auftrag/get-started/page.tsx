@@ -127,8 +127,9 @@ export default function GetStartedPage() {
     });
 
     const encodedSubcategory = encodeURIComponent(selectedSubcategoryState!);
+    const encodedDescription = encodeURIComponent(description); // Beschreibung kodieren
 
-    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
+    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse?description=${encodedDescription}`);
   };
 
   return (

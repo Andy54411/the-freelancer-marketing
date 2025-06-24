@@ -1,5 +1,6 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/index.ts
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 import { setGlobalOptions } from 'firebase-functions/v2/options';
@@ -19,4 +20,4 @@ export * from './http_general';
 export * from './http_webhooks';
 export * from './http_file_uploads';
 export * from './triggers_firestore';
-export * from './getUserOrders'; // NEU: Exportiere die neue Funktion
+export * from './getUserOrders'; 

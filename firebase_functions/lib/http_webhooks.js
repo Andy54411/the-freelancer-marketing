@@ -9,11 +9,18 @@ const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const stripe_1 = __importDefault(require("stripe"));
 const helpers_1 = require("./helpers");
+const params_1 = require("firebase-functions/params");
+// Parameter zentral definieren
+const STRIPE_SECRET_KEY_WEBHOOKS = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
+const STRIPE_WEBHOOK_SECRET_PARAM = (0, params_1.defineSecret)("STRIPE_WEBHOOK_SECRET");
 exports.stripeWebhookHandler = (0, https_1.onRequest)(async (request, response) => {
     v2_1.logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}, URL: ${request.url}`);
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_WEBHOOKS.value();
+    const webhookSecretValue = isEmulator ? process.env.STRIPE_WEBHOOK_SECRET : STRIPE_WEBHOOK_SECRET_PARAM.value();
     const db = (0, helpers_1.getDb)();
-    const localStripe = (0, helpers_1.getStripeInstance)();
-    const webhookSecret = (0, helpers_1.getStripeWebhookSecret)();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey);
+    const webhookSecret = (0, helpers_1.getStripeWebhookSecret)(webhookSecretValue);
     if (request.method === 'POST') {
         const buf = request.rawBody;
         const sig = request.headers['stripe-signature'];

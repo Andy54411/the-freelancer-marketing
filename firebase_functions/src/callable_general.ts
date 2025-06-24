@@ -1,14 +1,14 @@
 // functions/src/callable_general.ts
 
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onCall, HttpsError, onRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, getStripeInstance } from './helpers'; // getStripeInstance ist hier möglicherweise nicht mehr nötig
+import { getDb, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
-// Stripe Importe und admin sind hier nicht direkt für diese Funktionen notwendig,
-// aber wenn sie helpers.ts genutzt werden, ist es in Ordnung.
-import Stripe from 'stripe';
-import * as admin from "firebase-admin";
-import { logger } from "firebase-functions/v2"; // Firebase Logger für v2 Functions
+import * as admin from "firebase-admin"; // <-- Hinzufügen, falls nicht da
+import { defineSecret } from 'firebase-functions/params'; // <-- Hinzufügen
+
+// Parameter zentral definieren (auf oberster Ebene der Datei)
+const STRIPE_SECRET_KEY_GENERAL = defineSecret("STRIPE_SECRET_KEY");
 
 // Konsolen-Logs anpassen für Klarheit
 loggerV2.info("Lade callable_general.ts..."); // Nutze loggerV2 konsistent
@@ -85,28 +85,28 @@ interface DeleteCompanyAccountResult {
 
 // --- Cloud Functions ---
 
-export const getClientIp = onCall<GetClientIpData, Promise<GetClientIpResult>>(
-  async (request): Promise<GetClientIpResult> => {
-    const rawHttpRequest = request.rawRequest;
-    let clientIp = "IP_NOT_DETERMINED";
-    const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
-    if (rawHttpRequest) {
-      const forwardedFor = rawHttpRequest.headers["x-forwarded-for"];
-      const realIpHeader = rawHttpRequest.headers["x-real-ip"];
-      if (forwardedFor && typeof forwardedFor === "string") clientIp = forwardedFor.split(",")[0].trim();
-      else if (realIpHeader && typeof realIpHeader === "string") clientIp = realIpHeader.split(",")[0].trim();
-      else if (rawHttpRequest.ip) clientIp = rawHttpRequest.ip;
-      else if (rawHttpRequest.socket?.remoteAddress) clientIp = rawHttpRequest.socket.remoteAddress;
-    }
-    if (isEmulated && (clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "IP_NOT_DETERMINED")) {
-      clientIp = "127.0.0.1";
-    } else if (!isEmulated && (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7 || clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "0.0.0.0")) {
-      loggerV2.error(`[getClientIp] In NICHT-Emulator-Umgebung keine gültige IP. Gefunden: "${clientIp}".`);
-      throw new HttpsError("unavailable", "Gültige Client-IP konnte nicht ermittelt werden.");
-    }
-    loggerV2.info(`[getClientIp] final IP: ${clientIp}`);
-    return { ip: clientIp };
-  });
+export const getClientIp = onRequest({ cors: true }, (request, response) => {
+  let clientIp = "IP_NOT_DETERMINED";
+  const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
+
+  const forwardedFor = request.headers["x-forwarded-for"];
+  const realIpHeader = request.headers["x-real-ip"];
+
+  if (forwardedFor && typeof forwardedFor === "string") clientIp = forwardedFor.split(",")[0].trim();
+  else if (realIpHeader && typeof realIpHeader === "string") clientIp = realIpHeader.split(",")[0].trim();
+  else if (request.ip) clientIp = request.ip;
+  else if (request.socket?.remoteAddress) clientIp = request.socket.remoteAddress;
+
+  if (isEmulated && (clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "IP_NOT_DETERMINED")) {
+    clientIp = "127.0.0.1";
+  } else if (!isEmulated && (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7 || clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "0.0.0.0")) {
+    loggerV2.error(`[getClientIp] In NICHT-Emulator-Umgebung keine gültige IP. Gefunden: "${clientIp}".`);
+    response.status(503).send({ error: "Gültige Client-IP konnte nicht ermittelt werden." });
+    return;
+  }
+  loggerV2.info(`[getClientIp] final IP: ${clientIp}`);
+  response.status(200).json({ ip: clientIp });
+});
 
 
 export const createTemporaryJobDraft = onCall<TemporaryJobDraftData, Promise<TemporaryJobDraftResult>>(
@@ -243,7 +243,10 @@ export const deleteCompanyAccount = onCall<Record<string, never>, Promise<Delete
     const db = getDb();
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     const userId = request.auth.uid;
-    const localStripe = getStripeInstance(); // Kann hier bleiben, wenn in helpers.ts
+
+    const isEmulated = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY_GENERAL.value();
+    const localStripe = getStripeInstance(stripeKey);
     const userDocRef = db.collection("users").doc(userId);
     const companyDocRef = db.collection("companies").doc(userId);
     const adminAuthService = admin.auth();

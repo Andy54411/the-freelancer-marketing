@@ -5,6 +5,10 @@ import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
 import { getDb, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
+import { defineSecret } from 'firebase-functions/params';
+
+// Parameter zentral definieren
+const STRIPE_SECRET_KEY_TRIGGERS = defineSecret("STRIPE_SECRET_KEY");
 
 interface FirmaUserData {
   uid: string;
@@ -200,7 +204,9 @@ export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{u
   const userId = event.params.userId;
   loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
   const db = getDb();
-  const localStripe = getStripeInstance();
+  const isEmulated = process.env.FUNCTIONS_EMULATOR === 'true';
+  const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY_TRIGGERS.value();
+  const localStripe = getStripeInstance(stripeKey);
   const after = event.data?.after.data() as FirmaUserData;
   if (!after) {
     loggerV2.warn(`Keine Daten nach Update für ${userId}.`);

@@ -4,7 +4,16 @@ exports.getProviderStripeAccountId = exports.getStripeAccountStatus = exports.ge
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
+const params_1 = require("firebase-functions/params");
 const firestore_1 = require("firebase-admin/firestore");
+// Parameter zentral definieren (auf oberster Ebene der Datei)
+const STRIPE_SECRET_KEY = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
+const SENDGRID_API_KEY = (0, params_1.defineSecret)("SENDGRID_API_KEY");
+const FRONTEND_URL_PARAM = (0, params_1.defineString)("FRONTEND_URL");
+const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = (0, params_1.defineString)("EMULATOR_PUBLIC_FRONTEND_URL", {
+    description: 'Publicly accessible URL for the frontend when testing with emulators.',
+    default: ""
+});
 // Log für den Ladevorgang der Datei
 v2_1.logger.info("Lade callable_stripe.ts...");
 try {
@@ -94,10 +103,13 @@ const mapLegalFormToStripeBusinessInfo = (legalForm) => {
 };
 exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const frontendUrlValue = isEmulator ? process.env.FRONTEND_URL : FRONTEND_URL_PARAM.value();
     const db = (0, helpers_1.getDb)();
-    const localStripe = (0, helpers_1.getStripeInstance)();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
     const { userId, clientIp, ...payloadFromClient } = request.data;
-    const publicFrontendURL = (0, helpers_1.getPublicFrontendURL)();
+    const publicFrontendURL = (0, helpers_1.getPublicFrontendURL)(frontendUrlValue); // <-- Parameter übergeben
     if (!userId || !clientIp || clientIp.length < 7) {
         throw new https_1.HttpsError("invalid-argument", "Nutzer-ID und gültige IP sind erforderlich.");
     }
@@ -194,7 +206,7 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info('[DEBUG] Alle Validierungen bestanden. Fahre fort mit Kontoerstellung.');
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     const undefinedIfNull = (val) => val === null ? undefined : val;
-    const platformProfileUrl = `${(0, helpers_1.getPublicFrontendURL)()}/profil/${userId}`;
+    const platformProfileUrl = `${(0, helpers_1.getPublicFrontendURL)(frontendUrlValue)}/profil/${userId}`; // <-- Parameter übergeben
     const accountParams = {
         type: "custom",
         country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry) : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry),
@@ -356,7 +368,8 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
         "step3.identityBackUrl": payloadFromClient.identityBackFileId || null,
     };
     await userDocRef.update(firestoreUpdateData);
-    const sendgrid = (0, helpers_1.getSendGridClient)();
+    const sendgridKey = isEmulator ? process.env.SENDGRID_API_KEY : SENDGRID_API_KEY.value();
+    const sendgrid = (0, helpers_1.getSendGridClient)(sendgridKey); // <-- Parameter übergeben
     if (sendgrid && payloadFromClient.email && payloadFromClient.firstName) {
         const recipientName = payloadFromClient.firstName;
         const entityName = businessType === 'company' ? payloadFromClient.companyName : `${payloadFromClient.firstName} ${payloadFromClient.lastName}`;
@@ -389,7 +402,9 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)(async (request) => {
 exports.getOrCreateStripeCustomer = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = (0, helpers_1.getDb)();
-    const localStripe = (0, helpers_1.getStripeInstance)();
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
     if (!request.auth?.uid) {
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     }
@@ -450,9 +465,12 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
     const db = (0, helpers_1.getDb)();
     if (!request.auth?.uid)
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const frontendUrlValue = isEmulator ? process.env.FRONTEND_URL : FRONTEND_URL_PARAM.value();
     const userId = request.auth.uid;
-    const localStripe = (0, helpers_1.getStripeInstance)();
-    const emulatorCallbackFrontendURL = (0, helpers_1.getEmulatorCallbackFrontendURL)();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
+    const emulatorCallbackFrontendURL = (0, helpers_1.getEmulatorCallbackFrontendURL)(frontendUrlValue); // <-- Parameter übergeben
     const userDocRef = db.collection("users").doc(userId);
     try {
         const userDoc = await userDocRef.get();
@@ -644,8 +662,8 @@ exports.updateStripeCompanyDetails = (0, https_1.onCall)(async (request) => {
         if (uniqueFinalMissingFieldsList.length > 0) {
             const accLink = await localStripe.accountLinks.create({
                 account: stripeAccountId,
-                refresh_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-                return_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_return=true`,
+                refresh_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)(frontendUrlValue)}/dashboard/company/${userId}/settings?stripe_refresh=true`, // <-- Parameter übergeben
+                return_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)(frontendUrlValue)}/dashboard/company/${userId}/settings?stripe_return=true`, // <-- Parameter übergeben
                 type: 'account_update',
                 collect: 'currently_due',
             });
@@ -687,7 +705,9 @@ exports.createSetupIntent = (0, https_1.onCall)(async (request) => {
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     }
     const firebaseUserId = request.auth.uid;
-    const localStripe = (0, helpers_1.getStripeInstance)();
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
     try {
         const userDocRef = db.collection("users").doc(firebaseUserId);
         const userDoc = await userDocRef.get();
@@ -723,7 +743,9 @@ exports.getSavedPaymentMethods = (0, https_1.onCall)(async (request) => {
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     }
     const firebaseUserId = request.auth.uid;
-    const localStripe = (0, helpers_1.getStripeInstance)();
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
     try {
         const userDocRef = db.collection("users").doc(firebaseUserId);
         const userDoc = await userDocRef.get();
@@ -747,12 +769,15 @@ exports.getSavedPaymentMethods = (0, https_1.onCall)(async (request) => {
 exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[getStripeAccountStatus] Aufgerufen.");
     const db = (0, helpers_1.getDb)();
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const frontendUrlValue = isEmulator ? process.env.FRONTEND_URL : FRONTEND_URL_PARAM.value();
     if (!request.auth?.uid) {
         throw new https_1.HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     }
     const userId = request.auth.uid;
-    const localStripe = (0, helpers_1.getStripeInstance)();
-    const emulatorCallbackFrontendURL = (0, helpers_1.getEmulatorCallbackFrontendURL)();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
+    const emulatorCallbackFrontendURL = (0, helpers_1.getEmulatorCallbackFrontendURL)(frontendUrlValue); // <-- Parameter übergeben
     try {
         const userDoc = await db.collection("users").doc(userId).get();
         if (!userDoc.exists)
@@ -789,8 +814,8 @@ exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
             try {
                 const accLinkParams = {
                     account: stripeAccountId,
-                    refresh_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_refresh=true`,
-                    return_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)()}/dashboard/company/${userId}/settings?stripe_return=true`,
+                    refresh_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)(frontendUrlValue)}/dashboard/company/${userId}/settings?stripe_refresh=true`, // <-- Parameter übergeben
+                    return_url: `${(0, helpers_1.getEmulatorCallbackFrontendURL)(frontendUrlValue)}/dashboard/company/${userId}/settings?stripe_return=true`, // <-- Parameter übergeben
                     type: "account_update",
                     collect: "currently_due",
                 };
@@ -839,6 +864,9 @@ exports.getStripeAccountStatus = (0, https_1.onCall)(async (request) => {
 exports.getProviderStripeAccountId = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[getProviderStripeAccountId] Aufgerufen.");
     const db = (0, helpers_1.getDb)();
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY.value();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey); // <-- Parameter übergeben
     if (!request.auth?.uid) {
         v2_1.logger.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");
         throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");

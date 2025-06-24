@@ -37,9 +37,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCompanyAccount = exports.createTemporaryJobDraft = exports.getClientIp = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const helpers_1 = require("./helpers"); // getStripeInstance ist hier möglicherweise nicht mehr nötig
+const helpers_1 = require("./helpers");
 const firestore_1 = require("firebase-admin/firestore");
-const admin = __importStar(require("firebase-admin"));
+const admin = __importStar(require("firebase-admin")); // <-- Hinzufügen, falls nicht da
+const params_1 = require("firebase-functions/params"); // <-- Hinzufügen
+// Parameter zentral definieren (auf oberster Ebene der Datei)
+const STRIPE_SECRET_KEY_GENERAL = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 // Konsolen-Logs anpassen für Klarheit
 v2_1.logger.info("Lade callable_general.ts..."); // Nutze loggerV2 konsistent
 try {
@@ -50,31 +53,29 @@ catch (error) {
     throw error;
 }
 // --- Cloud Functions ---
-exports.getClientIp = (0, https_1.onCall)(async (request) => {
-    const rawHttpRequest = request.rawRequest;
+exports.getClientIp = (0, https_1.onRequest)({ cors: true }, (request, response) => {
     let clientIp = "IP_NOT_DETERMINED";
     const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
-    if (rawHttpRequest) {
-        const forwardedFor = rawHttpRequest.headers["x-forwarded-for"];
-        const realIpHeader = rawHttpRequest.headers["x-real-ip"];
-        if (forwardedFor && typeof forwardedFor === "string")
-            clientIp = forwardedFor.split(",")[0].trim();
-        else if (realIpHeader && typeof realIpHeader === "string")
-            clientIp = realIpHeader.split(",")[0].trim();
-        else if (rawHttpRequest.ip)
-            clientIp = rawHttpRequest.ip;
-        else if (rawHttpRequest.socket?.remoteAddress)
-            clientIp = rawHttpRequest.socket.remoteAddress;
-    }
+    const forwardedFor = request.headers["x-forwarded-for"];
+    const realIpHeader = request.headers["x-real-ip"];
+    if (forwardedFor && typeof forwardedFor === "string")
+        clientIp = forwardedFor.split(",")[0].trim();
+    else if (realIpHeader && typeof realIpHeader === "string")
+        clientIp = realIpHeader.split(",")[0].trim();
+    else if (request.ip)
+        clientIp = request.ip;
+    else if (request.socket?.remoteAddress)
+        clientIp = request.socket.remoteAddress;
     if (isEmulated && (clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "IP_NOT_DETERMINED")) {
         clientIp = "127.0.0.1";
     }
     else if (!isEmulated && (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7 || clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "0.0.0.0")) {
         v2_1.logger.error(`[getClientIp] In NICHT-Emulator-Umgebung keine gültige IP. Gefunden: "${clientIp}".`);
-        throw new https_1.HttpsError("unavailable", "Gültige Client-IP konnte nicht ermittelt werden.");
+        response.status(503).send({ error: "Gültige Client-IP konnte nicht ermittelt werden." });
+        return;
     }
     v2_1.logger.info(`[getClientIp] final IP: ${clientIp}`);
-    return { ip: clientIp };
+    response.status(200).json({ ip: clientIp });
 });
 exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
     v2_1.logger.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
@@ -195,7 +196,9 @@ exports.deleteCompanyAccount = (0, https_1.onCall)(async (request) => {
     if (!request.auth?.uid)
         throw new https_1.HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     const userId = request.auth.uid;
-    const localStripe = (0, helpers_1.getStripeInstance)(); // Kann hier bleiben, wenn in helpers.ts
+    const isEmulated = process.env.FUNCTIONS_EMULATOR === 'true';
+    const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_GENERAL.value();
+    const localStripe = (0, helpers_1.getStripeInstance)(stripeKey);
     const userDocRef = db.collection("users").doc(userId);
     const companyDocRef = db.collection("companies").doc(userId);
     const adminAuthService = admin.auth();
