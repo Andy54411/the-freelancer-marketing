@@ -1,35 +1,32 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FiFilter, FiMoreVertical, FiPackage, FiClock, FiSearch, FiChevronDown, FiInbox, FiLoader, FiFolder } from 'react-icons/fi'; // FiLoader und FiFolder hinzugefügt
-import Image from 'next/image';
+import { FiFilter, FiMoreVertical, FiPackage, FiClock, FiSearch, FiChevronDown, FiInbox, FiLoader, FiFolder } from 'react-icons/fi';
 import Link from 'next/link';
-import { getFunctions, httpsCallable, Functions } from 'firebase/functions'; // Firebase Functions importieren
-import { app } from '@/firebase/clients'; // Deine Firebase App-Initialisierung
+import { httpsCallable } from 'firebase/functions';
+import { Button } from '@/components/ui/button'; // Importiere die Button-Komponente
+import { functions } from '@/firebase/clients'; // Importiere die konfigurierte functions-Instanz
 import { useAuth, AuthContextType } from '@/contexts/AuthContext'; // AuthContextType importiert für bessere Typisierung
 
-// Vereinfachtes Interface für Auftragsdaten
+// Dieses Interface sollte exakt dem Rückgabetyp der `getUserOrders`-Funktion entsprechen.
+// Die Backend-Funktion liefert bereits alle benötigten Felder in einem sauberen Format.
 interface Order {
     id: string;
-    serviceTitle: string;
-    serviceImageUrl?: string;
-    freelancerName: string;
-    freelancerAvatarUrl?: string;
+    selectedSubcategory: string;
+    providerName: string;
+    totalAmountPaidByBuyer: number; // Verwende das Feld für den Gesamtpreis
+    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing';
+    selectedAnbieterId: string;
+    currency?: string;
+    paidAt?: { _seconds: number, _nanoseconds: number } | string; // Verwende das spezifische Feld
     projectName?: string;
-    orderedBy: string;
-    orderDate: { _seconds: number, _nanoseconds: number } | string; // Firestore Timestamp oder ISO String
-    priceInCents: number; // Preis in Cents
-    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG';
-    freelancerId: string;
-    projectId?: string;
-    currency?: string; // z.B. 'EUR'
 }
 
 
 type OrderStatusFilter = 'ALLE' | 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT';
 
-const functionsInstance: Functions = getFunctions(app);
+const TABS: OrderStatusFilter[] = ['ALLE', 'AKTIV', 'ABGESCHLOSSEN', 'STORNIERT'];
 
 const OrdersOverviewPage = () => {
     const params = useParams();
@@ -75,22 +72,26 @@ const OrdersOverviewPage = () => {
             try {
                 // Annahme: Du hast eine Cloud Function 'getUserOrders'
                 // die { userId: string } als Daten erwartet und { orders: Order[] } zurückgibt.
-                const getUserOrdersCallable = httpsCallable<{ userId: string }, { orders: Order[] }>(functionsInstance, 'getUserOrders');
+                const getUserOrdersCallable = httpsCallable<{ userId: string }, { orders: Order[] }>(functions, 'getUserOrders');
                 console.log(`[OrdersOverviewPage] Rufe getUserOrders für User ${uidFromParams} auf...`);
                 const result = await getUserOrdersCallable({ userId: uidFromParams });
 
                 if (result.data && Array.isArray(result.data.orders)) {
-                    console.log(`[OrdersOverviewPage] ${result.data.orders.length} Aufträge empfangen.`);
-                    setOrders(result.data.orders);
+                    // Keine komplexe Zuordnung mehr nötig, da das Backend saubere Daten liefert.
+                    setOrders(result.data.orders as Order[]);
                 } else {
-                    console.warn("[OrdersOverviewPage] Keine Aufträge im erwarteten Format vom Backend erhalten.", result.data);
-                    setOrders([]); // Leere Liste setzen, falls keine Aufträge vorhanden sind oder das Format unerwartet ist
+                    setOrders([]);
                 }
 
             } catch (err: any) {
                 console.error("Fehler beim Laden der Aufträge:", err);
-                const errorMessage = err.message || "Ein unbekannter Fehler ist aufgetreten.";
-                setError(`Aufträge konnten nicht geladen werden: ${errorMessage}`);
+                let detailedMessage = "Ein unbekannter Fehler ist aufgetreten.";
+                if (err.code === 'functions/internal') {
+                    detailedMessage = "Ein interner Serverfehler ist aufgetreten. Dies deutet oft auf ein Problem mit der Cloud Function oder einen fehlenden Datenbank-Index hin. Bitte überprüfen Sie die Firebase Function-Logs für weitere Details.";
+                } else if (err.message) {
+                    detailedMessage = err.message;
+                }
+                setError(`Aufträge konnten nicht geladen werden: ${detailedMessage}`);
             } finally {
                 setIsLoading(false);
             }
@@ -98,6 +99,23 @@ const OrdersOverviewPage = () => {
         fetchOrders();
 
     }, [authContext, uidFromParams, router]); // Geändert von userIdFromParams zu uidFromParams
+
+    const orderCounts = useMemo(() => {
+        const counts: Record<OrderStatusFilter, number> = {
+            ALLE: orders.length,
+            AKTIV: 0,
+            ABGESCHLOSSEN: 0,
+            STORNIERT: 0,
+        };
+        orders.forEach(order => {
+            if (order.status === 'AKTIV' || order.status === 'IN BEARBEITUNG' || order.status === 'FEHLENDE DETAILS') {
+                counts.AKTIV++;
+            } else if (order.status === 'ABGESCHLOSSEN' || order.status === 'STORNIERT') {
+                counts[order.status]++;
+            }
+        });
+        return counts;
+    }, [orders]);
 
     const filteredOrders = useMemo(() => {
         if (activeTab === 'ALLE') return orders;
@@ -118,8 +136,8 @@ const OrdersOverviewPage = () => {
         }
     };
 
-    const formatOrderDate = (date: Order['orderDate']): string => {
-        if (typeof date === 'string') {
+    const formatOrderDate = (date: Order['paidAt']): string => {
+        if (typeof date === 'string' && date) {
             return new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
         }
         if (date && typeof date === 'object' && '_seconds' in date) {
@@ -148,7 +166,7 @@ const OrdersOverviewPage = () => {
             {/* Tabs */}
             <div className="mb-6 border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                    {(['ALLE', 'AKTIV', 'ABGESCHLOSSEN', 'STORNIERT'] as OrderStatusFilter[]).map((tab) => (
+                    {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -160,10 +178,7 @@ const OrdersOverviewPage = () => {
                         >
                             {tab.charAt(0) + tab.slice(1).toLowerCase()}
                             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${activeTab === tab ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-600'}`}>
-                                {tab === 'ALLE' ? orders.length : orders.filter(o => {
-                                    if (tab === 'AKTIV') return o.status === 'AKTIV' || o.status === 'IN BEARBEITUNG' || o.status === 'FEHLENDE DETAILS';
-                                    return o.status === tab;
-                                }).length}
+                                {orderCounts[tab]}
                             </span>
                         </button>
                     ))}
@@ -200,7 +215,7 @@ const OrdersOverviewPage = () => {
                                 <Link href={`/dashboard/user/${uidFromParams}/orders/${order.id}`} className="block hover:bg-gray-50"> {/* Geändert von userIdFromParams zu uidFromParams */}
                                     <div className="px-4 py-4 sm:px-6">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium text-teal-600 truncate w-2/3">{order.serviceTitle}</p>
+                                            <p className="text-sm font-medium text-teal-600 truncate w-2/3">{order.selectedSubcategory}</p>
                                             <div className="ml-2 flex-shrink-0 flex">
                                                 <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
                                                     {order.status}
@@ -211,7 +226,7 @@ const OrdersOverviewPage = () => {
                                             <div className="sm:flex">
                                                 <p className="flex items-center text-sm text-gray-500">
                                                     <FiPackage className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                                    {order.freelancerName}
+                                                    {order.providerName}
                                                 </p>
                                                 {order.projectName && (
                                                     <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
@@ -223,12 +238,16 @@ const OrdersOverviewPage = () => {
                                             <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                                                 <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                                                 <p>
-                                                    Bestellt am <time dateTime={typeof order.orderDate === 'string' ? order.orderDate : new Date(order.orderDate._seconds * 1000).toISOString()}>{formatOrderDate(order.orderDate)}</time>
+                                                    Bestellt am <time dateTime={
+                                                        order.paidAt
+                                                            ? (typeof order.paidAt === 'string' ? order.paidAt : new Date(order.paidAt._seconds * 1000).toISOString())
+                                                            : undefined
+                                                    }>{formatOrderDate(order.paidAt)}</time>
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="mt-2 sm:flex sm:justify-between">
-                                            <p className="text-sm text-gray-900 font-semibold">{formatPrice(order.priceInCents, order.currency)}</p>
+                                            <p className="text-sm text-gray-900 font-semibold">{formatPrice(order.totalAmountPaidByBuyer, order.currency)}</p>
                                             <div className="relative">
                                                 {/* Aktionen-Button (optional) */}
                                                 <button
@@ -272,21 +291,6 @@ const OrdersOverviewPage = () => {
                 </div>
             )}
         </div>
-    );
-};
-
-// In einem größeren Projekt wäre es besser, eine zentrale UI-Komponente für Buttons zu verwenden.
-
-const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'outline' | 'default', className?: string }> = ({ children, variant = 'default', className = '', ...props }) => {
-    const baseStyle = "inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
-    const variantStyle = variant === 'outline'
-        ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-teal-500"
-        : "border-transparent bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500";
-
-    return (
-        <button className={`${baseStyle} ${variantStyle} ${className}`} {...props}>
-            {children}
-        </button>
     );
 };
 

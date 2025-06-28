@@ -4,25 +4,35 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from '@/contexts/AuthContext'; // Korrekter Pfad zu AuthContext
+import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 
 // Icons für UI
-import { FiLoader, FiAlertCircle, FiMessageSquare, FiArrowLeft } from 'react-icons/fi';
+import { FiLoader, FiAlertCircle, FiMessageSquare, FiArrowLeft, FiUser } from 'react-icons/fi'; // FiUser hinzugefügt
 
+import UserInfoCard from '@/components/UserInfoCard'; // Importiere die neue, generische Komponente
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
 
 // Interface für ein Auftragsdokument (basierend auf Ihrem Firestore-Screenshot)
 interface OrderData {
-    jobTotalCalculatedHours: number;
-    kundeId: string;
-    selectedAnbieterId: string;
-    selectedCategory: string;
-    selectedSubcategory: string;
-    status: string; // z.B. "bezahlt", "abgeschlossen"
-    totalPriceInCents: number;
-    description: string; // Annahme: Beschreibung ist auch Teil des Auftrags
+    id: string;
+    serviceTitle: string;
+    // Provider-Informationen
+    providerId: string;
+    providerName: string;
+    providerAvatarUrl?: string;
+    // Kunden-Informationen
+    customerId: string;
+    customerName: string;
+    customerAvatarUrl?: string;
+    orderDate?: { _seconds: number, _nanoseconds: number } | string; // Mapped from paidAt or createdAt
+    priceInCents: number; // Mapped from jobCalculatedPriceInCents
+    status: string;
+    selectedCategory?: string; // Direkt aus Firestore, optional gemacht
+    selectedSubcategory?: string; // Direkt aus Firestore, optional gemacht
+    jobTotalCalculatedHours?: number; // Direkt aus Firestore (bereits vorhanden)
+    beschreibung?: string; // Mapped from description
     jobDateFrom?: string; // Datum
     jobDateTo?: string; // Datum
     jobTimePreference?: string; // Uhrzeit
@@ -38,35 +48,28 @@ export default function OrderDetailPage() {
     const currentUser = authContext?.currentUser || null;
     const authReady = authContext !== null;
 
-
     const [order, setOrder] = useState<OrderData | null>(null);
     const [loadingOrder, setLoadingOrder] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Wenn AuthContext noch nicht bereit ist oder kein Benutzer geladen, warten
-        if (!authReady || !currentUser || !orderId) {
-            if (!authReady) {
-                setLoadingOrder(true); // Setze Ladezustand, wenn AuthContext noch nicht bereit
-                return;
-            }
-            if (!currentUser) {
-                // FEHLER BEHOBEN: Wenn currentUser null ist, leiten wir direkt zur Login-Seite weiter.
-                // Die aktuelle URL wird als redirectTo-Parameter verwendet.
-                console.log("OrderDetailPage: Nicht authentifiziert, leite zu Login weiter.");
-                const currentPath = window.location.pathname + window.location.search;
-                router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
-                return;
-            }
-            // Wenn orderId fehlt, dann ist es ein Fehler, der hier abgefangen wird
-            if (!orderId) {
-                setError("Auftrags-ID in der URL fehlt.");
-                setLoadingOrder(false);
-                return;
-            }
-            // Wenn wir hier ankommen, sollten authReady, currentUser und orderId vorhanden sein,
-            // aber der Code wurde in der vorherigen Zeile aufgrund von 'return' verlassen.
-            // Dieser 'return' hier ist nur ein Fallback.
+        // Warten, bis der Auth-Status endgültig geklärt ist.
+        if (!authReady) {
+            return;
+        }
+
+        // Wenn nach dem Laden kein Benutzer da ist, zum Login weiterleiten.
+        if (!currentUser) {
+            console.log("OrderDetailPage: Nicht authentifiziert, leite zu Login weiter.");
+            const currentPath = window.location.pathname + window.location.search;
+            router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+            return;
+        }
+
+        // Wenn die orderId fehlt, ist das ein Fehler.
+        if (!orderId) {
+            setError("Auftrags-ID in der URL fehlt.");
+            setLoadingOrder(false);
             return;
         }
 
@@ -83,14 +86,81 @@ export default function OrderDetailPage() {
                     return;
                 }
 
-                const orderData = orderDocSnap.data() as OrderData;
+                const data = orderDocSnap.data();
+                console.log("Raw Firestore data for orderId", orderId, ":", data);
+                console.log("Raw selectedCategory:", data.selectedCategory);
+                console.log("Raw selectedSubcategory:", data.selectedSubcategory);
+                console.log("Raw jobTimePreference:", data.jobTimePreference);
 
-                if (currentUser.uid !== orderData.kundeId && currentUser.uid !== orderData.selectedAnbieterId) {
+
+                // Überprüfe die Berechtigung auf der Client-Seite (zusätzlich zur Server-Seite)
+                if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
                     setError('Keine Berechtigung für diesen Auftrag.');
                     setLoadingOrder(false);
                     return;
                 }
 
+                // Funktion zum Abrufen von Teilnehmerdetails (Anbieter oder Kunde)
+                const fetchParticipantDetails = async (uid: string, isProvider: boolean) => {
+                    if (!uid) return { name: 'Unbekannt', avatarUrl: undefined };
+
+                    // Für Anbieter zuerst in 'companies' nachsehen
+                    if (isProvider) {
+                        const companyDocRef = doc(db, 'companies', uid);
+                        const companyDocSnap = await getDoc(companyDocRef);
+                        if (companyDocSnap.exists()) {
+                            return {
+                                name: companyDocSnap.data().companyName || 'Unbekannter Anbieter',
+                                avatarUrl: companyDocSnap.data().logoUrl,
+                            };
+                        }
+                    }
+
+                    // Fallback auf 'users' für Anbieter (falls kein Firmeneintrag) und für Kunden
+                    const userDocRef = doc(db, 'users', uid);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        return {
+                            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Unbekannter Benutzer',
+                            avatarUrl: userData.profilePictureURL,
+                        };
+                    }
+
+                    return { name: 'Unbekannt', avatarUrl: undefined };
+                };
+
+                // Details für beide Teilnehmer parallel abrufen
+                const [providerDetails, customerDetails] = await Promise.all([
+                    fetchParticipantDetails(data.selectedAnbieterId, true),
+                    fetchParticipantDetails(data.kundeId, false)
+                ]);
+
+                const orderData: OrderData = {
+                    id: orderDocSnap.id,
+                    serviceTitle: data.selectedSubcategory || 'Dienstleistung',
+                    providerId: data.selectedAnbieterId,
+                    providerName: providerDetails.name,
+                    providerAvatarUrl: providerDetails.avatarUrl,
+                    customerId: data.kundeId,
+                    customerName: customerDetails.name,
+                    customerAvatarUrl: customerDetails.avatarUrl,
+                    orderDate: data.paidAt || data.createdAt,
+                    priceInCents: data.jobCalculatedPriceInCents || 0,
+                    status: data.status || 'unbekannt',
+                    selectedCategory: data.selectedCategory,
+                    selectedSubcategory: data.selectedSubcategory,
+                    jobTotalCalculatedHours: data.jobTotalCalculatedHours,
+                    beschreibung: data.description,
+                    jobDateFrom: data.jobDateFrom,
+                    jobDateTo: data.jobDateTo,
+                    jobTimePreference: data.jobTimePreference,
+                };
+
+                console.log("Constructed orderData object:", orderData);
+                console.log("Constructed orderData.selectedCategory:", orderData.selectedCategory);
+                console.log("Constructed orderData.selectedSubcategory:", orderData.selectedSubcategory);
+                console.log("Constructed orderData.jobTimePreference:", orderData.jobTimePreference);
                 setOrder(orderData);
             } catch (err: any) {
                 console.error('Fehler beim Laden des Auftrags:', err);
@@ -136,6 +206,13 @@ export default function OrderDetailPage() {
         );
     }
 
+    // Bestimmen, welche Benutzerinformationen in der Karte angezeigt werden sollen.
+    // Zeigt immer die *andere* Person im Auftrag an.
+    const isViewerCustomer = currentUser.uid === order.customerId;
+    const cardUser = isViewerCustomer
+        ? { id: order.providerId, name: order.providerName, avatarUrl: order.providerAvatarUrl, role: 'Anbieter' as const }
+        : { id: order.customerId, name: order.customerName, avatarUrl: order.customerAvatarUrl, role: 'Kunde' as const };
+
     return (
         <Suspense fallback={
             <div className="flex justify-center items-center min-h-screen">
@@ -154,13 +231,24 @@ export default function OrderDetailPage() {
                     <div className="bg-white shadow rounded-lg p-6 mb-8">
                         <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                            <p><strong>Status:</strong> <span className={`font-semibold ${order.status === 'bezahlt' ? 'text-green-600' : 'text-yellow-600'}`}>{order.status}</span></p>
-                            <p><strong>Kategorie:</strong> {order.selectedCategory} / {order.selectedSubcategory}</p>
-                            <p><strong>Dauer:</strong> {order.jobTotalCalculatedHours} Stunden</p>
-                            <p><strong>Gesamtpreis:</strong> {(order.totalPriceInCents / 100).toFixed(2)} EUR</p>
-                            <p><strong>Datum:</strong> {order.jobDateFrom} {order.jobDateTo && order.jobDateTo !== order.jobDateFrom ? `- ${order.jobDateTo}` : ''}</p>
+                            <p><strong>Status:</strong> <span className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}>{order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status?.replace(/_/g, ' ').slice(1)}</span></p>
+                            <p><strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} / {order.selectedSubcategory || 'N/A'}</p>
+                            <p><strong>Dauer:</strong> {order.jobTotalCalculatedHours || 'N/A'} Stunden</p>
+                            <p><strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR</p>
+                            <p><strong>Datum:</strong> {order.jobDateFrom || 'N/A'} {order.jobDateTo && order.jobDateTo !== order.jobDateFrom ? `- ${order.jobDateTo}` : ''}</p>
                             <p><strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}</p>
-                            <p className="col-span-full"><strong>Beschreibung:</strong> {order.description}</p>
+                            <p className="col-span-full"><strong>Beschreibung:</strong> {order.beschreibung || 'Keine Beschreibung vorhanden.'}</p>
+
+                            {/* Container for the FreelancerInfoCard, ensuring it's centered */}
+                            <div className="md:col-span-2 mt-4 flex justify-center"> {/* Added flex justify-center */}
+                                <UserInfoCard
+                                    className="max-w-sm mx-auto" // Apply max-width and auto-margins directly to the card
+                                    userId={cardUser.id}
+                                    userName={cardUser.name}
+                                    userAvatarUrl={cardUser.avatarUrl}
+                                    userRole={cardUser.role}
+                                />
+                            </div>
                         </div>
                     </div>
 

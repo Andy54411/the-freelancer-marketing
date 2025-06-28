@@ -13,7 +13,7 @@ import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
-import AppHeaderNavigation from '@/components/AppHeaderNavigation';
+
 
 
 const PAGE_LOG = "UserRegisterPage:";
@@ -187,11 +187,10 @@ function UserRegisterFormContent() {
           const redirectUrlObj = new URL(redirectToFromParams, window.location.origin);
           const currentSearchParams = new URLSearchParams(redirectUrlObj.search);
 
-          // Stelle sicher, dass die Beschreibung aus dem Context in die URL übernommen wird,
-          // falls sie in der ursprünglichen redirectTo URL fehlt oder leer ist.
+          // Nur eine nicht-leere Beschreibung aus dem Context übernehmen,
+          // falls in der URL keine (oder eine leere) Beschreibung vorhanden ist.
           const existingDescriptionParam = currentSearchParams.get('description');
-          // typeof prüft, ob registration.description überhaupt ein String ist (inkl. leerer String)
-          if (typeof registration.description === 'string' && (!existingDescriptionParam || existingDescriptionParam.trim() === '')) {
+          if (registration.description?.trim() && (!existingDescriptionParam || !existingDescriptionParam.trim())) {
             currentSearchParams.set('description', registration.description);
           }
 
@@ -215,8 +214,10 @@ function UserRegisterFormContent() {
       }
 
       console.log(PAGE_LOG, `Weiterleitung nach Registrierung zu: ${finalRedirectUrl}`);
-      router.push(finalRedirectUrl);
-
+      // Die Verwendung von router.push() kann zu Race-Conditions führen, bei denen die Zielseite
+      // die Authentifizierung prüft, bevor der globale Auth-Status aktualisiert wurde.
+      // Ein vollständiger Reload stellt sicher, dass der Status beim Laden der neuen Seite korrekt ist.
+      window.location.assign(finalRedirectUrl);
     } catch (err: unknown) {
       console.error(PAGE_ERROR, "Registrierungsfehler:", err);
       if (typeof err === 'object' && err !== null && 'code' in err) {
@@ -264,7 +265,10 @@ function UserRegisterFormContent() {
     }
 
     console.log(PAGE_LOG, `Weiterleitung nach Popup-Login zu: ${finalRedirectUrl}`);
-    router.push(finalRedirectUrl);
+    // Die Verwendung von router.push() kann zu Race-Conditions führen, bei denen die Zielseite
+    // die Authentifizierung prüft, bevor der globale Auth-Status aktualisiert wurde.
+    // Ein vollständiger Reload stellt sicher, dass der Status beim Laden der neuen Seite korrekt ist.
+    window.location.assign(finalRedirectUrl);
   };
 
   return (

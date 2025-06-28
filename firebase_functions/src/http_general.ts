@@ -1,12 +1,12 @@
 import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb } from './helpers';
+import { getDb, FieldValue } from './helpers'; // FieldValue import is correct
 import * as admin from 'firebase-admin';
 import cors from 'cors';
 
 const corsHandler = cors({ origin: true });
 
-export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (req, res) => {
+export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   const db = getDb();
   try {
     const usersSnapshot = await db.collection("users").get();
@@ -39,18 +39,10 @@ export const migrateExistingUsersToCompanies = onRequest({ cors: true }, async (
   }
 });
 
-export const searchCompanyProfiles = onRequest(async (req, res) => {
-  await new Promise<void>((resolve) => {
-    corsHandler(req, res, () => resolve());
-  });
-
-  if (res.headersSent) {
-    return;
-  }
-
+export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   const db = getDb();
-  try {
-    const { id, postalCode, selectedSubcategory, minPrice, maxPrice } = req.query;
+  try { // <-- This try-catch block is already present, which is good. No changes needed here.
+    const { id, postalCode, selectedSubcategory, minPrice, maxPrice } = req.query as { [key: string]: string | undefined };
 
     if (id && typeof id === "string") {
       const companyDoc = await db.collection("companies").doc(id).get();
@@ -77,7 +69,6 @@ export const searchCompanyProfiles = onRequest(async (req, res) => {
 
     let query: FirebaseFirestore.Query = db.collection("companies")
       .where("postalCode", "==", postalCode as string)
-      .where("user_type", "==", "firma")
       .where("selectedSubcategory", "==", selectedSubcategory as string);
 
     const numMinPrice = Number(minPrice);
@@ -92,17 +83,37 @@ export const searchCompanyProfiles = onRequest(async (req, res) => {
       return;
     }
 
-    const profiles = querySnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        companyName: data.companyName || data.firmenname || 'Unbekannter Anbieter',
-        profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
-        hourlyRate: data.hourlyRate,
-        description: data.description,
-        stripeAccountId: data.stripeAccountId,
-      };
-    });
+    const companyDocs = querySnapshot.docs;
+    const companyIds = companyDocs.map(doc => doc.id);
+
+    if (companyIds.length === 0) {
+      res.status(200).json([]);
+      return;
+    }
+
+    // Batch-Abfrage der zugehörigen User-Dokumente, um die Existenz zu verifizieren
+    const userDocRefs = companyIds.map(id => db.collection("users").doc(id));
+    const userDocs = await db.getAll(...userDocRefs);
+    // Filter for users that exist AND are of type 'firma'
+    const validUserIds = new Set(
+      userDocs
+        .filter(doc => doc.exists && doc.data()?.user_type === 'firma')
+        .map(doc => doc.id)
+    );
+
+    const profiles = companyDocs
+      .filter(doc => validUserIds.has(doc.id)) // Nur Profile mit gültigem User-Dokument vom Typ 'firma'
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          companyName: data.companyName || data.firmenname || 'Unbekannter Anbieter',
+          profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
+          hourlyRate: data.hourlyRate,
+          description: data.description,
+          stripeAccountId: data.stripeAccountId,
+        };
+      });
 
     res.status(200).json(profiles);
 
@@ -112,7 +123,7 @@ export const searchCompanyProfiles = onRequest(async (req, res) => {
   }
 });
 
-export const getDataForSubcategory = onRequest({ cors: true }, async (req, res) => {
+export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   if (req.method !== "GET") {
     res.status(405).send("Method Not Allowed");
     return;
@@ -184,7 +195,7 @@ export const getDataForSubcategory = onRequest({ cors: true }, async (req, res) 
   }
 });
 
-export const createJobPosting = onRequest({ cors: true }, async (req, res) => {
+export const createJobPosting = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
     return;
@@ -204,183 +215,13 @@ export const createJobPosting = onRequest({ cors: true }, async (req, res) => {
       kategorie: selectedCategory,
       unterkategorie: selectedSubcategory,
       kundentyp: customerType,
-      erstellungsdatum: new Date(),
-      letztesUpdate: new Date(),
+      createdAt: FieldValue.serverTimestamp(), // KORREKTUR: Konsistentes Feld mit Server-Zeitstempel
+      updatedAt: FieldValue.serverTimestamp(), // KORREKTUR: Konsistentes Feld mit Server-Zeitstempel
     };
     const docRef = await db.collection("auftraege").add(newJobData);
     res.status(201).json({ message: "Auftragsentwurf erstellt", jobId: docRef.id });
   } catch (error) {
     loggerV2.error("Error creating job posting:", error);
     res.status(500).send("Fehler.");
-  }
-});
-
-interface SubmitReviewData {
-  anbieterId: string;
-  kundeId: string;
-  auftragId: string;
-  sterne: number;
-  kommentar: string;
-  kundeProfilePictureURL?: string;
-  kategorie: string;
-  unterkategorie: string;
-}
-
-interface SubmitReviewResult {
-  message: string;
-  reviewId: string;
-}
-
-export const submitReview = onRequest({ cors: true }, async (req, res) => {
-  await new Promise<void>((resolve) => {
-    corsHandler(req as any, res as any, () => resolve());
-  });
-
-  if (res.headersSent) {
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
-  }
-
-  const db = getDb();
-  try {
-    const { anbieterId, kundeId, auftragId, sterne, kommentar, kundeProfilePictureURL, kategorie, unterkategorie } = (req.body as { data?: SubmitReviewData }).data || req.body;
-
-    if (!anbieterId || !kundeId || !auftragId || typeof sterne !== "number" || sterne < 1 || sterne > 5 || !kategorie || !unterkategorie) {
-      res.status(400).json({
-        data: null,
-        error: { message: "Missing or invalid data.", code: "invalid-argument" }
-      });
-      return;
-    }
-
-    const newReviewData = {
-      anbieterId,
-      kundeId,
-      auftragId,
-      sterne,
-      kommentar: kommentar || "",
-      kundeProfilePictureURL: kundeProfilePictureURL || null,
-      kategorie,
-      unterkategorie,
-      erstellungsdatum: new Date(),
-    };
-    const docRef = await db.collection("reviews").add(newReviewData);
-
-    res.status(201).json({ data: { message: "Review submitted", reviewId: docRef.id } as SubmitReviewResult });
-
-  } catch (error: unknown) {
-    loggerV2.error("[submitReview] Fehler beim Speichern der Bewertung:", error);
-
-    let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
-    let errorCode = 'internal';
-
-    if (error instanceof HttpsError) {
-      errorMessage = error.message;
-      errorCode = error.code;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
-      errorMessage = (error as any).message;
-    }
-
-    res.status(500).json({
-      data: null,
-      error: {
-        message: errorMessage,
-        code: errorCode,
-        details: (error instanceof HttpsError && error.details) ? error.details : undefined,
-      },
-    });
-  }
-});
-
-interface GetReviewsByProviderData {
-  anbieterId: string;
-}
-
-interface ReviewData {
-  id: string;
-  kundeId: string;
-  sterne: number;
-  kommentar: string;
-  kundeProfilePictureURL?: string;
-  erstellungsdatum?: { _seconds: number, _nanoseconds: number } | Date;
-}
-
-export const getReviewsByProvider = onRequest({ cors: true }, async (req, res) => {
-  await new Promise<void>((resolve) => {
-    corsHandler(req as any, res as any, () => resolve());
-  });
-
-  if (res.headersSent) {
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.status(405).send('Method Not Allowed. Only POST is accepted for this endpoint.');
-    return;
-  }
-
-  const callableData = req.body.data as GetReviewsByProviderData;
-
-  if (!callableData || !callableData.anbieterId) {
-    res.status(400).json({
-      data: null,
-      error: {
-        message: 'Die Anbieter-ID ist erforderlich.',
-        code: 'invalid-argument',
-        details: null,
-      },
-    });
-    return;
-  }
-
-  const db = getDb();
-  try {
-    const reviewsRef = db.collection('reviews');
-    const snapshot = await reviewsRef.where('anbieterId', '==', callableData.anbieterId).orderBy('erstellungsdatum', 'desc').get();
-
-    const reviews: ReviewData[] = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      reviews.push({
-        id: doc.id,
-        kundeId: data.kundeId,
-        sterne: data.sterne,
-        kommentar: data.kommentar,
-        kundeProfilePictureURL: data.kundeProfilePictureURL,
-        erstellungsdatum: data.erstellungsdatum instanceof admin.firestore.Timestamp ? data.erstellungsdatum.toDate() : data.erstellungsdatum,
-      });
-    });
-
-    res.status(200).json({ data: reviews });
-
-  } catch (error: unknown) {
-    loggerV2.error("[getReviewsByProvider] FEHLER im Try-Block beim Abrufen der Bewertungen:", error);
-
-    let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
-    let errorCode = 'internal';
-
-    if (error instanceof HttpsError) {
-      errorMessage = error.message;
-      errorCode = error.code;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
-      errorMessage = (error as any).message;
-    }
-
-    res.status(500).json({
-      data: null,
-      error: {
-        message: errorMessage,
-        code: errorCode,
-        details: (error instanceof HttpsError && error.details) ? error.details : undefined,
-      },
-    });
   }
 });

@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../firebase/clients';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFunctions, httpsCallable, FunctionsError } from 'firebase/functions'; // FunctionsError hinzugefügt
 import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
 import LogoForm from '@/components/dashboard_setting/logo';
-import { PAGE_ERROR } from '@/lib/constants';
+import { PAGE_ERROR } from '@/lib/constants'; // Stellen Sie sicher, dass dies korrekt ist
 import { FiLoader, FiSave, FiX } from 'react-icons/fi';
 import { toast } from 'sonner';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
 import Stripe from 'stripe';
 
 const firebaseFunctions = getFunctions(firebaseApp);
@@ -56,17 +57,25 @@ export interface RawFirestoreUserData {
   firstName?: string; lastName?: string; phoneNumber?: string;
   dateOfBirth?: string; personalStreet?: string; personalHouseNumber?: string;
   personalPostalCode?: string; personalCity?: string; personalCountry?: string | null;
-  isManagingDirectorOwner?: boolean; companyName?: string; legalForm?: string | null;
+  isManagingDirectorOwner?: boolean; companyName?: string; legalForm?: string | null; // `legalForm` kann auch `null` sein
   address?: string; companyStreet?: string; companyHouseNumber?: string;
   companyPostalCode?: string; companyCity?: string; companyCountry?: string | null;
   companyPhoneNumber?: string; companyWebsite?: string; industryMcc?: string;
-  iban?: string; accountHolder?: string; bankCountry?: string | null;
-  profilePictureURL?: string; businessLicenseURL?: string;
-  masterCraftsmanCertificateURL?: string; identityFrontUrl?: string; identityBackUrl?: string;
-  hourlyRate?: string | number; taxNumber?: string; vatId?: string; companyRegister?: string;
-  lat?: number | null; lng?: number | null; radiusKm?: number | null;
-  selectedCategory?: string; selectedSubcategory?: string;
-  step1?: Record<string, unknown>; step2?: Record<string, unknown>;
+  iban?: string; accountHolder?: string; bankCountry?: string | null; // `bankCountry` kann auch `null` sein
+  profilePictureURL?: string | null; // Erlaube `null`
+  profilePictureFirebaseUrl?: string | null; // Erlaube `null`
+  businessLicenseURL?: string | null; // Erlaube `null`
+  masterCraftsmanCertificateURL?: string | null; // Erlaube `null`
+  identityFrontUrl?: string | null; // Erlaube `null`
+  identityBackUrl?: string | null; // Erlaube `null`
+  identityFrontUrlStripeId?: string | null; // Hinzugefügt für root-level Speicherung
+  identityBackUrlStripeId?: string | null; // Hinzugefügt für root-level Speicherung
+  taxNumberForBackend?: string | null; // Hinzugefügt für root-level Speicherung
+  vatIdForBackend?: string | null; // Hinzugefügt für root-level Speicherung
+  hourlyRate?: string | number; taxNumber?: string; vatId?: string; companyRegister?: string | null; // `companyRegister` kann auch `null` sein
+  lat?: number | null; lng?: number | null; radiusKm?: number | null; // `lat`, `lng`, `radiusKm` können `null` sein
+  selectedCategory?: string | null; selectedSubcategory?: string | null; // `selectedCategory`, `selectedSubcategory` können `null` sein
+  step1?: Record<string, any>; step2?: Record<string, any>; // `unknown` zu `any` geändert für einfachere Handhabung
   step3?: Record<string, unknown>; step4?: Record<string, unknown>; // eslint-disable-line
   common?: Record<string, unknown>; stripeAccountId?: string | null; // eslint-disable-line
   updatedAt?: any; // HINZUGEFÜGT: Für Firestore Timestamps
@@ -89,10 +98,13 @@ export interface UserDataForSettings {
   };
   step3: {
     hourlyRate: string; taxNumber: string; vatId: string; companyRegister: string;
-    profilePictureURL: string; businessLicenseURL: string;
-    masterCraftsmanCertificateURL: string; identityFrontUrl: string; identityBackUrl: string;
-    districtCourt?: string; ust?: string; profitMethod?: string;
-    taxMethod?: string; defaultTaxRate?: string; accountingSystem?: string;
+    profilePictureURL: string; // This has a valid fallback and is always a string.
+    businessLicenseURL: string | null;
+    masterCraftsmanCertificateURL: string | null;
+    identityFrontUrl: string | null;
+    identityBackUrl: string | null;
+    districtCourt?: string; ust?: string; profitMethod?: string; taxMethod?: string;
+    defaultTaxRate?: string; accountingSystem?: string;
     priceInput?: string;
   };
   step4: {
@@ -100,11 +112,12 @@ export interface UserDataForSettings {
     bic?: string; bankName?: string;
   };
   lat: number | null; lng: number | null; radiusKm: number | null;
-  selectedCategory: string; selectedSubcategory: string;
+  selectedCategory: string | null;
+  selectedSubcategory: string | null;
   profilePictureFile: File | null; businessLicenseFile: File | null;
   masterCraftsmanCertificateFile: File | null;
   identityFrontFile: File | null; identityBackFile: File | null;
-  stripeAccountId: string | null;
+  stripeAccountId: string | null; // Erlaube `null`
 }
 
 interface SettingsPageProps {
@@ -114,22 +127,23 @@ interface SettingsPageProps {
 
 interface UpdateStripeCompanyDetailsClientData {
   phoneNumber?: string | null; companyWebsite?: string; taxNumber?: string;
-  vatId?: string; companyRegister?: string; mcc?: string; iban?: string;
+  vatId?: string; companyRegister?: string | null; mcc?: string; iban?: string;
   accountHolder?: string; bankCountry?: string | null; representativeFirstName?: string;
   representativeLastName?: string; representativeEmail?: string;
   representativePhone?: string; representativeDateOfBirth?: string;
   representativeAddressStreet?: string; representativeAddressHouseNumber?: string;
   representativeAddressPostalCode?: string; representativeAddressCity?: string;
-  representativeAddressCountry?: string | null; isManagingDirectorOwner?: boolean;
-  identityFrontFileId?: string; identityBackFileId?: string;
-  businessLicenseStripeFileId?: string;
+  representativeAddressCountry?: string | null; isManagingDirectorOwner?: boolean | null; // Erlaube `null`
+  identityFrontFileId?: string | null;
+  identityBackFileId?: string | null;
+  businessLicenseStripeFileId?: string | null;
 }
 
 interface UpdateStripeCompanyDetailsCallableResult {
   success: boolean; message: string; accountLinkUrl?: string;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) => {
+const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'accounting' | 'bank' | 'logo'>('general');
@@ -139,15 +153,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
     if (userData) {
       const get = <T,>(path: string, fallback: T): T => {
         const keys = path.split('.');
-        let current: unknown = userData; // Changed from any to unknown
+        let current: unknown = userData;
         for (const key of keys) {
-          // Type guard to ensure current is an object and has the key
           if (typeof current !== 'object' || current === null || !Object.prototype.hasOwnProperty.call(current, key)) {
             return fallback;
           }
-          current = (current as Record<string, unknown>)[key]; // Access property after check
+          current = (current as Record<string, unknown>)[key];
         }
-        // If the loop completes, 'current' holds the value or is undefined/null.
         return (current === undefined || current === null) ? fallback : current as T;
       };
       setForm({
@@ -184,11 +196,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
           taxNumber: get('step3.taxNumber', get('taxNumber', '')),
           vatId: get('step3.vatId', get('vatId', '')),
           companyRegister: get('step3.companyRegister', get('companyRegister', '')),
-          profilePictureURL: get('step3.profilePictureURL', get('profilePictureURL', '')),
-          businessLicenseURL: get('step3.businessLicenseURL', get('businessLicenseURL', '')),
-          masterCraftsmanCertificateURL: get('step3.masterCraftsmanCertificateURL', get('masterCraftsmanCertificateURL', '')),
-          identityFrontUrl: get('step3.identityFrontUrl', get('identityFrontUrl', '')),
-          identityBackUrl: get('step3.identityBackUrl', get('identityBackUrl', '')),
+          profilePictureURL: get('profilePictureFirebaseUrl', get('step3.profilePictureURL', get('profilePictureURL', '/default-avatar.png'))),
+          businessLicenseURL: get('step3.businessLicenseURL', get('businessLicenseURL', null)),
+          masterCraftsmanCertificateURL: get('step3.masterCraftsmanCertificateURL', get('masterCraftsmanCertificateURL', null)),
+          identityFrontUrl: get('step3.identityFrontUrl', get('identityFrontUrl', null)),
+          identityBackUrl: get('step3.identityBackUrl', get('identityBackUrl', null)),
           districtCourt: get('step3.districtCourt', ''),
           ust: get('step3.ust', 'standard'),
           profitMethod: get('step3.profitMethod', 'euer'),
@@ -203,8 +215,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
           bankCountry: get('step4.bankCountry', get('bankCountry', get('companyCountry', null))),
         },
         lat: get('lat', null), lng: get('lng', null), radiusKm: get('radiusKm', 30),
-        selectedCategory: get('selectedCategory', get('step2.industry', '')),
-        selectedSubcategory: get('selectedSubcategory', ''),
+        selectedCategory: get('selectedCategory', get('step2.industry', null)), // Erlaube null
+        selectedSubcategory: get('selectedSubcategory', null), // Erlaube null
         stripeAccountId: get('stripeAccountId', null),
         profilePictureFile: null, businessLicenseFile: null, masterCraftsmanCertificateFile: null,
         identityFrontFile: null, identityBackFile: null,
@@ -215,7 +227,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
   const handleChange = (path: string, value: string | number | boolean | File | null) => {
     setForm((prevForm) => {
       if (!prevForm) return null;
-      // Ensure updatedForm is correctly typed after JSON.parse/stringify
       const updatedForm = JSON.parse(JSON.stringify(prevForm)) as UserDataForSettings;
       let currentPathObject: Record<string, unknown> = updatedForm as unknown as Record<string, unknown>;
       const keys = path.split('.');
@@ -223,13 +234,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
         if (index === keys.length - 1) {
           currentPathObject[key] = value;
         } else {
-          // Ensure the next level is an object before traversing
           if (!Object.prototype.hasOwnProperty.call(currentPathObject, key) ||
             typeof currentPathObject[key] !== 'object' ||
             currentPathObject[key] === null) {
             currentPathObject[key] = {};
           }
-          currentPathObject = currentPathObject[key] as Record<string, unknown>; // Assign the nested object for the next iteration
+          currentPathObject = currentPathObject[key] as Record<string, unknown>;
         }
       });
       return updatedForm;
@@ -278,7 +288,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
     }
   };
 
-  const handleSave = async () => {
+  const uploadFileToFirebaseStorage = async (file: File, uid: string, folder: string, fileName: string): Promise<string | undefined> => {
+    if (!uid) {
+      toast.error("Benutzer-ID fehlt für den Firebase Storage Upload.");
+      return undefined;
+    }
+    try {
+      const storageInstance = getStorage(firebaseApp);
+      const fileRef = storageRef(storageInstance, `${folder}/${uid}/${fileName}`);
+      await uploadBytes(fileRef, file);
+      const downloadURL = await getDownloadURL(fileRef);
+      return downloadURL;
+    } catch (error: unknown) {
+      console.error(`Fehler beim Hochladen von ${fileName} zu Firebase Storage:`, error);
+      toast.error(`Fehler beim Hochladen von ${fileName}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      return undefined;
+    }
+  };
+
+  const handleSave = useCallback(async () => {
     if (!form || !form.uid) {
       toast.error("Keine Daten zum Speichern.");
       return;
@@ -286,23 +314,60 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
     setSaving(true);
     const updatedForm = { ...form };
 
-    const fileUploads = [
-      form.profilePictureFile ? uploadFileAndUpdateFormState(form.profilePictureFile, 'business_icon', 'step3.profilePictureURL') : Promise.resolve(undefined),
-      form.businessLicenseFile ? uploadFileAndUpdateFormState(form.businessLicenseFile, 'additional_verification', 'step3.businessLicenseURL') : Promise.resolve(undefined),
-      form.masterCraftsmanCertificateFile ? uploadFileAndUpdateFormState(form.masterCraftsmanCertificateFile, 'additional_verification', 'step3.masterCraftsmanCertificateURL') : Promise.resolve(undefined),
-      form.identityFrontFile ? uploadFileAndUpdateFormState(form.identityFrontFile, 'identity_document', 'step3.identityFrontUrl') : Promise.resolve(undefined),
-      form.identityBackFile ? uploadFileAndUpdateFormState(form.identityBackFile, 'identity_document', 'step3.identityBackUrl') : Promise.resolve(undefined),
-    ];
-    const [profilePicId, businessLicId, masterCertId, idFrontId, idBackId] = await Promise.all(fileUploads);
+    let profilePictureFirebaseDownloadUrl: string | null | undefined = form.step3.profilePictureURL;
 
-    if (form.profilePictureFile && !profilePicId) { setSaving(false); return; }
-    if (form.businessLicenseFile && !businessLicId) { setSaving(false); return; }
-    if (form.masterCraftsmanCertificateFile && !masterCertId) { setSaving(false); return; }
-    if (form.identityFrontFile && !idFrontId) { setSaving(false); return; }
-    if (form.identityBackFile && !idBackId) { setSaving(false); return; }
+    if (form.profilePictureFile) {
+      toast.info("Lade Profilbild hoch...");
+      const fileName = `profile_picture_${Date.now()}_${form.profilePictureFile.name}`;
+      profilePictureFirebaseDownloadUrl = await uploadFileToFirebaseStorage(form.profilePictureFile, form.uid, 'profilePictures', fileName);
 
-    // KORREKTUR: Das Update-Objekt wird jetzt "flach" mit Dot-Notation erstellt.
-    const firestoreUpdateData = {
+      if (!profilePictureFirebaseDownloadUrl) {
+        setSaving(false);
+        return;
+      }
+    }
+
+    const fileUploadPromises: Promise<any>[] = [];
+    const uploadedStripeFileIds: { [key: string]: string | undefined | null } = {};
+
+    if (form.businessLicenseFile) {
+      fileUploadPromises.push(uploadFileAndUpdateFormState(form.businessLicenseFile, 'additional_verification', 'step3.businessLicenseURL')
+        .then(id => uploadedStripeFileIds.businessLicenseStripeFileId = id));
+    } else if (form.businessLicenseFile === null) {
+      uploadedStripeFileIds.businessLicenseStripeFileId = null;
+    }
+    if (form.masterCraftsmanCertificateFile) {
+      fileUploadPromises.push(uploadFileAndUpdateFormState(form.masterCraftsmanCertificateFile, 'additional_verification', 'step3.masterCraftsmanCertificateURL')
+        .then(id => uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId = id));
+    } else if (form.masterCraftsmanCertificateFile === null) {
+      uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId = null;
+    }
+    if (form.identityFrontFile) {
+      fileUploadPromises.push(uploadFileAndUpdateFormState(form.identityFrontFile, 'identity_document', 'step3.identityFrontUrl')
+        .then(id => uploadedStripeFileIds.identityFrontStripeFileId = id));
+    } else if (form.identityFrontFile === null) {
+      uploadedStripeFileIds.identityFrontStripeFileId = null;
+    }
+    if (form.identityBackFile) {
+      fileUploadPromises.push(uploadFileAndUpdateFormState(form.identityBackFile, 'identity_document', 'step3.identityBackUrl')
+        .then(id => uploadedStripeFileIds.identityBackStripeFileId = id));
+    } else if (form.identityBackFile === null) {
+      uploadedStripeFileIds.identityBackStripeFileId = null;
+    }
+
+    await Promise.all(fileUploadPromises);
+
+    if (
+      (form.businessLicenseFile && uploadedStripeFileIds.businessLicenseStripeFileId === undefined) ||
+      (form.masterCraftsmanCertificateFile && uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId === undefined) ||
+      (form.identityFrontFile && uploadedStripeFileIds.identityFrontStripeFileId === undefined) ||
+      (form.identityBackFile && uploadedStripeFileIds.identityBackStripeFileId === undefined)
+    ) {
+      setSaving(false);
+      return;
+    }
+
+    const firestoreUpdateData: { [key: string]: any } = {
       'step1.firstName': updatedForm.step1.firstName,
       'step1.lastName': updatedForm.step1.lastName,
       'step1.phoneNumber': updatedForm.step1.phoneNumber,
@@ -345,9 +410,42 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
       updatedAt: serverTimestamp(),
     };
 
+    if (profilePictureFirebaseDownloadUrl) {
+      firestoreUpdateData['step3.profilePictureURL'] = profilePictureFirebaseDownloadUrl;
+      firestoreUpdateData['profilePictureURL'] = profilePictureFirebaseDownloadUrl;
+      firestoreUpdateData['profilePictureFirebaseUrl'] = profilePictureFirebaseDownloadUrl;
+    } else if (form.profilePictureFile === null) {
+      firestoreUpdateData['step3.profilePictureURL'] = null;
+      firestoreUpdateData['profilePictureURL'] = null;
+      firestoreUpdateData['profilePictureFirebaseUrl'] = null;
+    }
+
+    if (uploadedStripeFileIds.businessLicenseStripeFileId !== undefined) {
+      firestoreUpdateData['step3.businessLicenseURL'] = uploadedStripeFileIds.businessLicenseStripeFileId;
+      firestoreUpdateData['businessLicenseStripeId'] = uploadedStripeFileIds.businessLicenseStripeFileId;
+    }
+    if (uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId !== undefined) {
+      firestoreUpdateData['step3.masterCraftsmanCertificateURL'] = uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId;
+      firestoreUpdateData['masterCraftsmanCertificateStripeId'] = uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId;
+    }
+    if (uploadedStripeFileIds.identityFrontStripeFileId !== undefined) {
+      firestoreUpdateData['step3.identityFrontUrl'] = uploadedStripeFileIds.identityFrontStripeFileId;
+      firestoreUpdateData['identityFrontUrlStripeId'] = uploadedStripeFileIds.identityFrontStripeFileId;
+    }
+    if (uploadedStripeFileIds.identityBackStripeFileId !== undefined) {
+      firestoreUpdateData['step3.identityBackUrl'] = uploadedStripeFileIds.identityBackStripeFileId;
+      firestoreUpdateData['identityBackUrlStripeId'] = uploadedStripeFileIds.identityBackStripeFileId;
+    }
+
     try {
       await updateDoc(doc(db, "users", updatedForm.uid), firestoreUpdateData);
       toast.success("Profildaten in Firestore gespeichert!");
+
+      if (form.profilePictureFile && profilePictureFirebaseDownloadUrl) {
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { profilePictureURL: profilePictureFirebaseDownloadUrl } }));
+      } else if (form.profilePictureFile === null) {
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { profilePictureURL: null } }));
+      }
 
       const stripeUpdatePayload: UpdateStripeCompanyDetailsClientData = {
         phoneNumber: updatedForm.step2.companyPhoneNumber,
@@ -370,9 +468,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
         representativeAddressCity: updatedForm.step1.personalCity,
         representativeAddressCountry: updatedForm.step1.personalCountry,
         isManagingDirectorOwner: updatedForm.step1.isManagingDirectorOwner,
-        identityFrontFileId: idFrontId,
-        identityBackFileId: idBackId,
-        businessLicenseStripeFileId: businessLicId,
+        identityFrontFileId: uploadedStripeFileIds.identityFrontStripeFileId !== undefined ? uploadedStripeFileIds.identityFrontStripeFileId : (form.identityFrontFile === null ? null : form.step3.identityFrontUrl),
+        identityBackFileId: uploadedStripeFileIds.identityBackStripeFileId !== undefined ? uploadedStripeFileIds.identityBackStripeFileId : (form.identityBackFile === null ? null : form.step3.identityBackUrl),
+        businessLicenseStripeFileId: uploadedStripeFileIds.businessLicenseStripeFileId || (form.businessLicenseFile === null ? null : form.step3.businessLicenseURL),
       };
 
       const cleanedStripePayload = Object.fromEntries(
@@ -398,18 +496,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
       onDataSaved();
     } catch (error: unknown) {
       console.error(PAGE_ERROR, "[SettingsPage] Fehler beim Speichern:", error);
-      const message = error instanceof Error ? error.message : "Unbekannter Fehler.";
-      toast.error(`Fehler: ${message}`);
+      let errorMessage = "Ein unbekannter Fehler ist aufgetreten.";
+      if (error instanceof FunctionsError) {
+        // Use the specific message from the backend (which now includes the Stripe error)
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      // Zeige die spezifischere Fehlermeldung an
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, userData, onDataSaved, handleChange]); // Abhängigkeiten für useCallback
 
-
-  if (!form) {
-    return <div className="p-6 flex justify-center items-center min-h-[300px]"><FiLoader className="animate-spin mr-3 h-8 w-8 text-teal-600" /><span>Lade Einstellungen...</span></div>;
-  }
-
+  // Alle Hooks müssen vor bedingten Returns aufgerufen werden
   type TabKey = 'general' | 'accounting' | 'bank' | 'logo';
   interface TabDefinition { key: TabKey; label: string; }
 
@@ -419,6 +520,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userData, onDataSaved }) =>
     { key: 'bank', label: 'Bankverbindung' },
     { key: 'logo', label: 'Logo & Dokumente' }
   ];
+
+  if (!form) {
+    return <div className="p-6 flex justify-center items-center min-h-[300px]"><FiLoader className="animate-spin mr-3 h-8 w-8 text-teal-600" /><span>Lade Einstellungen...</span></div>;
+  }
 
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-var(--header-height))] bg-background text-foreground">

@@ -1,56 +1,168 @@
-// /Users/andystaudinger/Tasko/firebase_functions/src/getUserOrders.ts
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb } from './helpers'; // Importiere getDb aus deinen Helfern
+// /firebase_functions/src/getUserOrders.ts
 
-// Interface für die Auftragsdaten, wie sie in Firestore gespeichert sind
-// und wie sie das Frontend erwartet (ggf. anpassen)
+import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
+import { Timestamp } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions/v2';
+import { getDb } from './helpers'; // Use shared helper for DB instance
+
 interface OrderData {
-    id: string; // Firestore document ID
-    serviceTitle: string;
+    id: string;
+    // Fields from the database document, based on provided data
+    anbieterStripeAccountId: string;
+    applicationFeeAmountFromStripe: number;
+    buyerApprovedAt: Timestamp | null;
+    buyerServiceFeeInCents: number;
+    clearingPeriodEndsAt: Timestamp;
+    createdAt: Timestamp;
+    customerEmail: string;
+    customerFirebaseUid: string;
+    customerFirstName: string;
+    customerLastName: string;
+    customerType: 'private' | 'business';
+    description: string;
+    jobCalculatedPriceInCents: number;
+    jobCity: string | null;
+    jobCountry: string;
+    jobDateFrom: string;
+    jobDateTo: string | null;
+    jobDurationString: string;
+    jobPostalCode: string;
+    jobStreet: string | null;
+    jobTimePreference: string;
+    jobTotalCalculatedHours: number;
+    kundeId: string;
+    lastUpdatedAt: Timestamp;
+    originalJobPriceInCents: number;
+    paidAt: Timestamp;
+    paymentMethodId: string;
+    providerName: string;
+    selectedAnbieterId: string;
+    selectedCategory: string;
+    selectedSubcategory: string;
+    sellerCommissionInCents: number;
+    status:
+    | 'AKTIV'
+    | 'ABGESCHLOSSEN'
+    | 'STORNIERT'
+    | 'FEHLENDE DETAILS'
+    | 'IN BEARBEITUNG'
+    | 'zahlung_erhalten_clearing'
+    | 'abgelehnt_vom_anbieter';
+    stripeCustomerId: string;
+    tempJobDraftRefId: string;
+    totalAmountPaidByBuyer: number;
+    totalPlatformFeeInCents: number;
+    // Optional fields that might exist on other orders
     serviceImageUrl?: string;
-    freelancerName: string; // Annahme: Ist im Auftragsdokument gespeichert
-    freelancerAvatarUrl?: string; // Annahme: Ist im Auftragsdokument gespeichert
+    freelancerAvatarUrl?: string;
     projectName?: string;
-    orderedBy: string; // UID des Bestellers (im Frontend) / customerFirebaseUid (in Firestore)
-    orderDate: FirebaseFirestore.Timestamp | string; // Firestore Timestamp oder ISO String
-    priceInCents: number;
-    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing';
-    freelancerId: string;
     projectId?: string;
     currency?: string;
-    // Füge hier alle Felder hinzu, die deine Auftragsdokumente enthalten und die das Frontend benötigt
-    // z.B. Felder aus dem tempJobDraftData, die in auftragData übernommen wurden
-    beschreibung?: string;
-    jobPostalCode?: string;
-    // ... weitere Felder
 }
 
-export const getUserOrders = onCall<{ userId: string }, Promise<{ orders: OrderData[] }>>(
-    async (request) => {
-        loggerV2.info(`[getUserOrders] Aufgerufen für User: ${request.data.userId}`, { structuredData: true });
+// Change back to onCall, which is the correct type for client-side SDK calls.
+// It handles CORS, auth, and data parsing automatically.
+export const getUserOrders = onCall(
+    // Add the region to match the client's request URL and other functions
+    { region: "europe-west1" },
+    async (request: CallableRequest<{ userId: string }>): Promise<{ orders: OrderData[] }> => {
+        logger.info(`[getUserOrders] Called for user: ${request.data.userId}`, { structuredData: true });
 
+        // 1. Authentication Check (handled automatically by onCall)
         if (!request.auth) {
-            loggerV2.error("[getUserOrders] Nicht authentifizierter Aufruf.");
-            throw new HttpsError('unauthenticated', 'Die Funktion muss authentifiziert aufgerufen werden.');
-        }
-        if (!request.data.userId) {
-            loggerV2.error("[getUserOrders] Fehlender Parameter: userId.");
-            throw new HttpsError('invalid-argument', 'Die Funktion muss mit dem Parameter "userId" aufgerufen werden.');
+            logger.error("[getUserOrders] Unauthenticated call.", { userId: request.data.userId });
+            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
 
-        // Sicherheitsüberprüfung: Derzeit darf jeder authentifizierte Benutzer die Aufträge jedes Benutzers abrufen.
-        // Im Frontend wird geprüft, ob request.auth.uid === request.data.userId.
-        // Für eine strengere serverseitige Prüfung könnte man hier context.auth.uid === data.userId erzwingen.
+        const requestingUid = request.auth.uid;
+        const targetUid = request.data.userId;
 
-        const db = getDb();
-        const ordersSnapshot = await db.collection('auftraege') // Deine Auftrags-Collection
-            .where('customerFirebaseUid', '==', request.data.userId) // Filtere nach der UID des Kunden
-            .orderBy('createdAt', 'desc') // Neueste Aufträge zuerst (angenommen, 'createdAt' ist ein Timestamp)
-            .get();
+        // 2. Authorization Check
+        if (requestingUid !== targetUid) {
+            logger.error(`[getUserOrders] Forbidden: User ${requestingUid} attempted to access orders for ${targetUid}.`);
+            throw new HttpsError('permission-denied', 'You are not authorized to view these orders.');
+        }
 
-        const orders: OrderData[] = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderData));
-        loggerV2.info(`[getUserOrders] ${orders.length} Aufträge für User ${request.data.userId} gefunden.`);
-        return { orders };
+        try {
+            const db = getDb(); // Get DB instance from shared helper
+
+            // 3. Fetch Data
+            const snapshot = await db
+                .collection('auftraege')
+                .where('customerFirebaseUid', '==', targetUid)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            if (snapshot.empty) {
+                logger.info(`[getUserOrders] No orders found for user: ${targetUid}`);
+                return { orders: [] };
+            }
+
+            // 4. Process and Return Data
+            const orders = snapshot.docs.map((doc): OrderData => {
+                const data = doc.data() || {}; // Use empty object as fallback
+                // This explicit mapping ensures that the data sent to the client always
+                // matches the OrderData interface, providing default values for missing fields.
+                // This prevents errors like 'NaN €' if a price field is missing.
+                return {
+                    id: doc.id,
+                    anbieterStripeAccountId: data.anbieterStripeAccountId || '',
+                    applicationFeeAmountFromStripe: data.applicationFeeAmountFromStripe || 0,
+                    buyerApprovedAt: data.buyerApprovedAt || null,
+                    buyerServiceFeeInCents: data.buyerServiceFeeInCents || 0,
+                    clearingPeriodEndsAt: data.clearingPeriodEndsAt || new Timestamp(0, 0),
+                    createdAt: data.createdAt || new Timestamp(0, 0), // Provide a fallback date
+                    customerEmail: data.customerEmail || '',
+                    customerFirebaseUid: data.customerFirebaseUid || '',
+                    customerFirstName: data.customerFirstName || '',
+                    customerLastName: data.customerLastName || '',
+                    customerType: data.customerType || 'private',
+                    description: data.description || '',
+                    jobCalculatedPriceInCents: data.jobCalculatedPriceInCents || 0,
+                    jobCity: data.jobCity || null,
+                    jobCountry: data.jobCountry || '',
+                    jobDateFrom: data.jobDateFrom || '',
+                    jobDateTo: data.jobDateTo || null,
+                    jobDurationString: data.jobDurationString || '',
+                    jobPostalCode: data.jobPostalCode || '',
+                    jobStreet: data.jobStreet || null,
+                    jobTimePreference: data.jobTimePreference || '',
+                    jobTotalCalculatedHours: data.jobTotalCalculatedHours || 0,
+                    kundeId: data.kundeId || '',
+                    lastUpdatedAt: data.lastUpdatedAt || new Timestamp(0, 0),
+                    originalJobPriceInCents: data.originalJobPriceInCents || 0,
+                    paidAt: data.paidAt || new Timestamp(0, 0),
+                    paymentMethodId: data.paymentMethodId || '',
+                    providerName: data.providerName || '',
+                    selectedAnbieterId: data.selectedAnbieterId || '',
+                    selectedCategory: data.selectedCategory || '',
+                    selectedSubcategory: data.selectedSubcategory || '',
+                    sellerCommissionInCents: data.sellerCommissionInCents || 0,
+                    status: data.status || 'FEHLENDE DETAILS',
+                    stripeCustomerId: data.stripeCustomerId || '',
+                    tempJobDraftRefId: data.tempJobDraftRefId || '',
+                    totalAmountPaidByBuyer: data.totalAmountPaidByBuyer || 0,
+                    totalPlatformFeeInCents: data.totalPlatformFeeInCents || 0,
+                    serviceImageUrl: data.serviceImageUrl,
+                    freelancerAvatarUrl: data.freelancerAvatarUrl,
+                    projectName: data.projectName,
+                    projectId: data.projectId,
+                    currency: data.currency || 'EUR', // Provide a fallback currency
+                } as OrderData;
+            });
+
+            logger.info(`[getUserOrders] Successfully fetched ${orders.length} orders for user: ${targetUid}`);
+            return { orders };
+
+        } catch (error: any) {
+            // 5. Error Handling
+            logger.error(`[getUserOrders] Database query failed for user ${targetUid}:`, error);
+            // This error often indicates a missing Firestore index. Check the emulator logs for a link to create it.
+            throw new HttpsError(
+                'internal',
+                'An error occurred while fetching the orders. This might be due to a missing database index.',
+                error.message
+            );
+        }
     }
 );

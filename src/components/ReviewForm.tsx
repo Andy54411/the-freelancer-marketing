@@ -67,34 +67,11 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
     };
 
     try {
-      let resultData: SubmitReviewResult;
-
-      if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
-        // Direkter fetch-Aufruf für den Emulator-Modus
-        const emulatorHost = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST;
-        const emulatorPort = 5001; // Standard-Port für Functions Emulator
-
-        const url = `http://${emulatorHost}:${emulatorPort}/tilvo-f142f/us-central1/submitReview`;
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ data: body }), // Payload wie von httpsCallable erwartet
-        });
-
-        const responseData = await res.json(); // Antwort auspacken
-        if (!res.ok || responseData.error) {
-          throw new Error(responseData.error?.message || `Serverfehler: ${res.status}`);
-        }
-        resultData = responseData.data; // Die eigentlichen Daten sind in responseData.data
-      } else {
-        // Im Produktionsmodus weiterhin httpsCallable verwenden
-        const submitReviewProdCallable = httpsCallable<SubmitReviewData, SubmitReviewResult>(functionsInstance, 'submitReview');
-        const result = await submitReviewProdCallable(body);
-        resultData = result.data;
-      }
+      // The httpsCallable function works for both production and emulators.
+      // The Firebase client SDK automatically routes the request to the emulator if it's configured.
+      const submitReviewCallable = httpsCallable<SubmitReviewData, SubmitReviewResult>(functionsInstance, 'submitReview');
+      const result = await submitReviewCallable(body);
+      const resultData = result.data;
 
       console.log('Bewertung erfolgreich gesendet:', resultData);
       setSuccess(true);

@@ -21,11 +21,11 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Importiere Input
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { FaGoogle, FaApple } from 'react-icons/fa';
-import Modal from '@/app/dashboard/user/[uid]/components/Modal'; // Import Ihrer Modal-Komponente (Pfad anpassen!)
+import Modal from '@/components/Modal'; // Import Ihrer Modal-Komponente (Pfad anpassen!)
 
 // Hier ist das entscheidende Interface:
 export interface LoginPopupProps { // <--- EXPORT HIER HINZUFÜGEN!
@@ -84,20 +84,25 @@ export default function LoginPopup({ isOpen, onClose, onLoginSuccess, redirectTo
     const commonLoginLogic = async (user: FirebaseUser) => {
         await createUserProfileIfNew(user, user.email, user.displayName);
 
-        if (onLoginSuccess) {
-            onLoginSuccess(user, actualRedirectTo);
+        // Bestimme den Zielpfad. Priorität: `actualRedirectTo`. Fallback: Dashboard basierend auf user_type.
+        let targetPath: string;
+        if (actualRedirectTo) {
+            targetPath = actualRedirectTo;
         } else {
-            let targetPath: string;
-            if (actualRedirectTo) {
-                targetPath = actualRedirectTo;
-            } else {
-                const userDocSnap = await getDoc(doc(db, 'users', user.uid));
-                const userData = userDocSnap.data();
-                const userType = userData?.user_type;
-                targetPath = (userType === 'firma') ? `/dashboard/company/${user.uid}` : `/dashboard/user/${user.uid}`;
-            }
+            const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+            const userData = userDocSnap.data();
+            const userType = userData?.user_type;
+            // Standard-Weiterleitung zum passenden Dashboard, wenn kein redirectTo vorhanden ist.
+            targetPath = (userType === 'firma') ? `/dashboard/company/${user.uid}` : `/dashboard/user/${user.uid}`;
+        }
+
+        if (onLoginSuccess) {
+            // Rufe den Success-Handler mit dem ermittelten Pfad auf.
+            onLoginSuccess(user, targetPath);
+        } else {
+            // Führe die Weiterleitung direkt aus, wenn kein Handler vorhanden ist.
             console.log(PAGE_LOG, `Weiterleitung zu: ${targetPath}`);
-            router.push(targetPath);
+            window.location.assign(targetPath);
         }
         onClose();
     };
@@ -301,12 +306,8 @@ export default function LoginPopup({ isOpen, onClose, onLoginSuccess, redirectTo
     return (
         <>
             {styles}
-            <Modal onClose={onClose} title={isFullScreen ? "" : ""}>
-                <Card className="w-full max-w-lg bg-transparent glowing-border p-2 mx-auto shadow-none">
-                    <CardContent className="py-12">
-                        {content}
-                    </CardContent>
-                </Card>
+            <Modal onClose={onClose} title=""> {/* Title can be empty as the form itself has a title */}
+                {content}
             </Modal>
         </>
     );

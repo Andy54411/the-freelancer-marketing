@@ -1,12 +1,11 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/helpers.ts
 
 import { initializeApp, getApps, App as AdminApp } from "firebase-admin/app";
-import { getFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore";
+import { getFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"; // Exportiere FieldValue und Timestamp
 import { getAuth, Auth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
-import sendgridMail from "@sendgrid/mail";
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { defineString, defineSecret } from "firebase-functions/params";
@@ -14,11 +13,17 @@ import { defineString, defineSecret } from "firebase-functions/params";
 // --- Instanz-Variablen für Lazy Loading ---
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
 // dass sie bei jedem Aufruf neu erstellt werden.
+
+// Zentrale CORS-Konfiguration für alle Callable Functions.
+export const corsOptions = {
+  region: "europe-west1",
+  cors: ["http://localhost:3000", "https://tilvo-f142f.web.app", "http://localhost:5002"]
+};
+
 let dbInstance: Firestore;
 let authInstance: Auth;
 let storageInstance: Storage;
 let stripeClientInstance: Stripe | undefined;
-let sendgridClientConfigured: boolean = false;
 
 
 /**
@@ -33,27 +38,11 @@ function getAdminApp(): AdminApp {
   const app = initializeApp();
   logger.info("Admin SDK erfolgreich initialisiert.");
 
-  // Emulator-spezifische Konfigurationen, falls zutreffend.
-  // Hinweis: Diese Firestore-Verbindung hier ist nur für die Settings und
-  // wird nicht für die Instanz-Erstellung der Funktion verwendet.
+  // The Admin SDK automatically connects to the Firestore emulator when the
+  // FIRESTORE_EMULATOR_HOST environment variable is set by `firebase emulators:start`.
+  // The explicit configuration below is removed to avoid port conflicts and make the setup more robust.
   if (process.env.FUNCTIONS_EMULATOR === 'true') {
-    try {
-      getFirestore(app).settings({
-        host: 'localhost:8080',
-        ssl: false,
-      });
-      logger.info("[getAdminApp] Firestore Admin SDK mit Emulator verbunden.");
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message.includes("Firestore has already been started")) {
-        logger.warn("[getAdminApp] Firestore-Instanz wurde bereits gestartet (erwartetes Verhalten).");
-      } else {
-        let errorMessage = "Unbekannter Fehler bei der Verbindung zum Firestore Emulator.";
-        if (e instanceof Error) {
-          errorMessage = e.message;
-        }
-        logger.error("[getAdminApp] Fehler bei der Verbindung zum Firestore Emulator:", errorMessage);
-      }
-    }
+    logger.info("[getAdminApp] Running in emulator mode. SDK will auto-connect to Firestore emulator if the environment variable is set.");
   }
 
   return app;
@@ -140,31 +129,6 @@ export function getStripeInstance(stripeKey: string): Stripe {
   return stripeClientInstance!;
 }
 
-export function getSendGridClient(sendgridKey: string | undefined): typeof sendgridMail | undefined {
-  if (!sendgridClientConfigured) {
-    // Der SendGrid-Schlüssel wird jetzt als Parameter übergeben.
-
-    if (sendgridKey) {
-      try {
-        sendgridMail.setApiKey(sendgridKey);
-        sendgridClientConfigured = true;
-        logger.info("[getSendGridClient] SendGrid-Client erfolgreich initialisiert.");
-      } catch (e: unknown) {
-        let errorMessage = "Unbekannter Fehler bei der Initialisierung des SendGrid-Clients.";
-        if (e instanceof Error) {
-          errorMessage = e.message;
-        }
-        logger.error("KRITISCH: Fehler bei der Initialisierung des SendGrid-Clients.", { error: errorMessage, at: 'getSendGridClient' });
-        return undefined;
-      }
-    } else {
-      logger.warn("SENDGRID_API_KEY nicht verfügbar. E-Mail-Versand wird fehlschlagen.", { at: 'getSendGridClient' });
-      return undefined;
-    }
-  }
-  return sendgridClientConfigured ? sendgridMail : undefined;
-}
-
 /**
  * Gibt die öffentlich zugängliche Frontend-URL zurück (Live-URL im Prod, oder die in .env.local gesetzte Live-URL im Emulator).
  * Diese URL ist für Dienste wie Stripe Business Profile URL gedacht.
@@ -233,4 +197,3 @@ export function getStripeWebhookSecret(webhookSecretFromParams: string | undefin
 
 // --- Hilfstypen und Admin-Export ---
 export { FieldValue, Timestamp, admin };
-export type { MailDataRequired } from "@sendgrid/mail";

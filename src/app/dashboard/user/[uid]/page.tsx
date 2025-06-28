@@ -2,25 +2,27 @@
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import ProtectedRoute from '@/components/ProtectedRoute'; // Import ProtectedRoute
+import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext'; // Import SidebarVisibilityProvider
 import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { db, app } from '@/firebase/clients';
+import { db, app, functions } from '@/firebase/clients';
 import { WelcomeBox } from './components/WelcomeBox';
-import { ProfileShortcut } from './components/ProfileShortcut';
 import { HelpCard } from './components/Support/HelpCard';
-import { FiLoader, FiCreditCard, FiMapPin, FiPlus, FiEdit, FiTrash2, FiAlertCircle, FiLogOut, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
+import { FiLoader, FiAlertCircle, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
 import Modal from './components/Modal';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js'; // KORRIGIERTER IMPORT
 import AddPaymentMethodForm from './components/AddPaymentMethodForm';
 import AddressForm from './components/AddressForm';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { toast } from 'sonner'; // Importiere toast
 import CreateOrderModal from './components/CreateOrderModal';
 import SupportChatInterface from './components/Support/SupportChatInterface';
 import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
 import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
-import FooterSection from '@/components/footer';
+
+
 
 
 
@@ -28,11 +30,10 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 
 const PAGE_LOG = "UserDashboardPage:"; // Für Logging
 const auth = getAuth(app);
-const functionsInstance = getFunctions(app);
 
-const createSetupIntentCallable = httpsCallable<{ firebaseUserId?: string }, { clientSecret: string }>(functionsInstance, 'createSetupIntent');
-const getSavedPaymentMethodsCallable = httpsCallable<Record<string, never>, { savedPaymentMethods: SavedPaymentMethod[] }>(functionsInstance, 'getSavedPaymentMethods');
-const detachPaymentMethodCallable = httpsCallable<{ paymentMethodId: string }, { success: boolean; message?: string }>(functionsInstance, 'detachPaymentMethod');
+const createSetupIntentCallable = httpsCallable<{ firebaseUserId?: string }, { clientSecret: string }>(functions, 'createSetupIntent');
+const getSavedPaymentMethodsCallable = httpsCallable<Record<string, never>, { savedPaymentMethods: SavedPaymentMethod[] }>(functions, 'getSavedPaymentMethods');
+const detachPaymentMethodCallable = httpsCallable<{ paymentMethodId: string }, { success: boolean; message?: string }>(functions, 'detachPaymentMethod');
 
 
 export default function UserDashboardPage() {
@@ -48,8 +49,9 @@ export default function UserDashboardPage() {
   const [showAddPaymentMethodModal, setShowAddPaymentMethodModal] = useState(false);
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
-  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false); // Beibehalten, da es für den "Neuen Auftrag erstellen"-Button verwendet wird
   const [showSupportChatModal, setShowSupportChatModal] = useState(false); // NEU: State für Support-Chat
+  // const [activeView, setActiveView] = useState<"dashboard" | "settings">("dashboard"); // Nicht mehr benötigt, da Header die Navigation übernimmt
 
 
   const [clientSecretForSetupIntent, setClientSecretForSetupIntent] = useState<string | null>(null);
@@ -64,75 +66,92 @@ export default function UserDashboardPage() {
   const loadInitialDashboardData = useCallback(async (user: User) => {
     setLoading(true);
     setError(null);
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        if (user.uid !== pageUid) {
-          router.replace(`/dashboard/user/${user.uid}`);
-          return;
-        }
-        setCurrentUser(user);
 
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-          if (!userDocSnap.exists()) {
-            setError("Benutzerprofil nicht gefunden. Bitte kontaktieren Sie den Support.");
-            setLoading(false);
-            return;
-          }
-          const profileData = userDocSnap.data() as UserProfileData;
-
-          const paymentMethodsResult = await getSavedPaymentMethodsCallable({});
-          if (paymentMethodsResult.data?.savedPaymentMethods) {
-            profileData.savedPaymentMethods = paymentMethodsResult.data.savedPaymentMethods;
-          } else {
-            profileData.savedPaymentMethods = [];
-          }
-
-          profileData.savedAddresses = (profileData.savedAddresses as SavedAddress[] || []);
-
-          setUserProfile(profileData);
-
-          setLoadingOrders(true);
-          setOrdersError(null);
-          const ordersCollectionRef = collection(db, 'auftraege');
-          const q = query(
-            ordersCollectionRef,
-            where('kundeId', '==', user.uid),
-            orderBy('paidAt', 'desc')
-          );
-
-          const querySnapshot = await getDocs(q);
-          const fetchedOrders: OrderListItem[] = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            fetchedOrders.push({
-              id: doc.id,
-              selectedSubcategory: data.selectedSubcategory,
-              status: data.status,
-              totalPriceInCents: data.totalPriceInCents,
-              jobDateFrom: data.jobDateFrom,
-              jobTimePreference: data.jobTimePreference,
-              providerName: data.providerName, // Dieses Feld MUSS im OrderListItem Interface existieren!
-            });
-          });
-          setUserOrders(fetchedOrders);
-          setLoadingOrders(false);
-        } catch (err: any) {
-          console.error("Fehler beim Laden des Benutzerprofils oder der Daten:", err);
-          setError(`Fehler beim Laden der Daten: ${err.message || 'Ein unbekannter Fehler ist aufgetreten.'}`);
-          setLoadingOrders(false);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        router.replace(`/login?redirectTo=/dashboard/user/${pageUid}`);
+      if (!userDocSnap.exists()) {
+        setError("Benutzerprofil nicht gefunden. Bitte kontaktieren Sie den Support.");
+        setLoading(false);
+        return;
       }
-    });
+      const profileData = userDocSnap.data() as UserProfileData;
 
-    return () => unsubscribe();
-  }, [pageUid, router]);
+      const paymentMethodsResult = await getSavedPaymentMethodsCallable({});
+      if (paymentMethodsResult.data?.savedPaymentMethods) {
+        profileData.savedPaymentMethods = paymentMethodsResult.data.savedPaymentMethods;
+      } else {
+        profileData.savedPaymentMethods = [];
+      }
+
+      profileData.savedAddresses = (profileData.savedAddresses as SavedAddress[] || []);
+
+      setUserProfile(profileData);
+
+      setLoadingOrders(true);
+      setOrdersError(null);
+      const ordersCollectionRef = collection(db, 'auftraege');
+      const q = query(
+        ordersCollectionRef,
+        where('kundeId', '==', user.uid),
+        orderBy('paidAt', 'desc')
+      );
+
+      const providerNameCache = new Map<string, string>();
+      const querySnapshot = await getDocs(q);
+
+      const orderProcessingPromises = querySnapshot.docs.map(async (orderDoc) => {
+        const data = orderDoc.data();
+        let providerName = data.providerName as string | undefined;
+
+        if (!providerName && data.selectedAnbieterId) {
+          const providerId = data.selectedAnbieterId;
+          if (providerNameCache.has(providerId)) {
+            providerName = providerNameCache.get(providerId);
+          } else {
+            try {
+              const companyDocRef = doc(db, 'companies', providerId);
+              const companyDocSnap = await getDoc(companyDocRef);
+              if (companyDocSnap.exists() && companyDocSnap.data()?.companyName) {
+                providerName = companyDocSnap.data().companyName;
+              } else {
+                const userDocRef = doc(db, 'users', providerId);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                  const userData = userDocSnap.data();
+                  providerName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Unbekannter Anbieter';
+                }
+              }
+              if (providerName) providerNameCache.set(providerId, providerName);
+            } catch (e) {
+              console.error(`Failed to fetch provider name for ID ${providerId}`, e);
+            }
+          }
+        }
+
+        return {
+          id: orderDoc.id,
+          selectedSubcategory: data.selectedSubcategory,
+          status: data.status,
+          totalPriceInCents: data.totalAmountPaidByBuyer || 0,
+          jobDateFrom: data.jobDateFrom,
+          jobTimePreference: data.jobTimePreference,
+          providerName: providerName || 'Anbieter', // Fallback name
+        };
+      });
+
+      const resolvedOrders = await Promise.all(orderProcessingPromises);
+      setUserOrders(resolvedOrders);
+      setLoadingOrders(false);
+    } catch (err: any) {
+      console.error("Fehler beim Laden des Benutzerprofils oder der Daten:", err);
+      setError(`Fehler beim Laden der Daten: ${err.message || 'Ein unbekannter Fehler ist aufgetreten.'}`);
+      setLoadingOrders(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -372,273 +391,167 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-screen">
-        <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" /> Lade Benutzeroberfläche...
-      </div>
-    }>
-      <>
-        <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-          <div className="max-w-5xl mx-auto space-y-6">
-            {/* Header Bereich mit Neuem Auftrag Button */}
-            <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={handleCreateNewOrder}
-                className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129a8f] transition-colors"
-              >
-                <FiPlusCircle className="mr-2" /> Neuen Auftrag erstellen
-              </button>
-              {/* <button
-                onClick={handleLogout}
-                className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-              >
-                <FiLogOut className="mr-2" /> Abmelden
-              </button> */}
-            </div>
-
-            <WelcomeBox firstname={userProfile.firstname} />
-
-            {/* HIER ÄNDERT SICH DAS LAYOUT: EINZELNER GRID-CONTAINER FÜR ALLE KARTEN */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Abschnitt: Meine Aufträge - Nimmt jetzt mehr Platz ein */}
-              <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px] sm:col-span-2 lg:col-span-2">
-                <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                  <FiMessageSquare className="mr-2" /> Meine Aufträge
-                </h2>
-                {loadingOrders ? (
-                  <div className="flex justify-center items-center py-8 flex-grow">
-                    <FiLoader className="animate-spin text-3xl text-[#14ad9f]" />
-                    <span className="ml-3 text-gray-600">Lade Aufträge...</span>
-                  </div>
-                ) : ordersError ? (
-                  <div className="text-center p-4 text-red-600 flex-grow">
-                    <FiAlertCircle className="mr-2 h-5 w-5 inline-block" /> {ordersError}
-                  </div>
-                ) : userOrders.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8 flex-grow">Sie haben noch keine Aufträge erstellt.</p>
-                ) : (
-                  <ul className="space-y-3 flex-grow overflow-y-auto max-h-[min(300px, 40vh)]"> {/* Reduced space-y for tighter packing */}
-                    {userOrders.map((order) => (
-                      <li key={order.id} className="p-4 border border-gray-200 rounded-md">
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                          {/* Linke Spalte: Dienstleistung und Datum */}
-                          <div className="flex flex-col">
-                            <p className="font-semibold text-gray-800 text-base">
-                              {order.selectedSubcategory}
-                              {order.providerName && (
-                                <span className="text-sm font-normal text-gray-600 ml-1">({order.providerName})</span>
-                              )}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-0.5">
-                              {order.jobDateFrom
-                                ? `Am ${new Date(order.jobDateFrom).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' })} um ${new Date(order.jobDateFrom).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`
-                                : 'Datum/Zeit nicht angegeben'}
-                            </p>
-                          </div>
-
-                          {/* Rechte Spalte: Preis und Status */}
-                          <div className="flex flex-col sm:items-end mt-2 sm:mt-0">
-                            <p className="text-sm text-gray-700 font-medium">Preis: {(order.totalPriceInCents / 100).toFixed(2)} EUR</p>
-                            <div className="mt-1">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold inline-block ${order.status === 'bezahlt' || order.status === 'Zahlung_erhalten_clearing' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                  }`}
-                              >
-                                {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status.replace(/_/g, ' ').slice(1)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {/* HIER WIRD DER BUTTON ANGEPASST: NUR EIN BUTTON, DER BEDINGT IST */}
-                {userOrders.length === 0 && (
-                  <button
-                    onClick={handleCreateNewOrder}
-                    className="mt-4 flex items-center justify-center w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors text-sm"
-                  >
-                    <FiPlusCircle className="mr-2" /> Neuen Auftrag erstellen
-                  </button>
-                )}
-                {userOrders.length > 0 && (
-                  <button
-                    onClick={() => router.push(`/dashboard/user/${currentUser?.uid}/orders/${userOrders[0].id}`)}
-                    className="mt-4 flex items-center justify-center w-full px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129a8f] transition-colors text-sm"
-                  >
-                    <FiMessageSquare className="mr-2" /> Chat & Details (Neuester Auftrag)
-                  </button>
-                )}
+    <SidebarVisibilityProvider>
+      <ProtectedRoute>
+        <div className="flex flex-col min-h-screen"> {/* Hauptcontainer für das Benutzer-Dashboard ohne Sidebar */}
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Hauptinhaltsbereich */}
+            <Suspense fallback={
+              <div className="flex justify-center items-center min-h-screen">
+                <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" /> Lade Benutzeroberfläche...
               </div>
+            }>
+              <div className="max-w-5xl mx-auto space-y-6">
+                <WelcomeBox firstname={userProfile.firstname} />
 
-              {/* Support Card */}
-              <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
-                <HelpCard onOpenSupportChat={handleOpenSupportChat} /> {/* NEU: Prop an HelpCard übergeben */}
-              </div>
+                {/* HIER ÄNDERT SICH DAS LAYOUT: EINZELNER GRID-CONTAINER FÜR ALLE KARTEN */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Abschnitt: Meine Aufträge - Nimmt jetzt mehr Platz ein */}
+                  <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px] sm:col-span-2 lg:col-span-2">
+                    <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                      <FiMessageSquare className="mr-2" /> Meine Aufträge
+                    </h2>
+                    {loadingOrders ? (
+                      <div className="flex justify-center items-center py-8 flex-grow">
+                        <FiLoader className="animate-spin text-3xl text-[#14ad9f]" />
+                        <span className="ml-3 text-gray-600">Lade Aufträge...</span>
+                      </div>
+                    ) : ordersError ? (
+                      <div className="text-center p-4 text-red-600 flex-grow">
+                        <FiAlertCircle className="mr-2 h-5 w-5 inline-block" /> {ordersError}
+                      </div>
+                    ) : userOrders.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8 flex-grow">Sie haben noch keine Aufträge erstellt.</p>
+                    ) : (
+                      <ul className="space-y-3 flex-grow overflow-y-auto max-h-[min(300px, 40vh)]"> {/* Reduced space-y for tighter packing */}
+                        {userOrders.map((order) => (
+                          <li key={order.id} className="p-4 border border-gray-200 rounded-md">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                              {/* Linke Spalte: Dienstleistung und Datum */}
+                              <div className="flex flex-col">
+                                <p className="font-semibold text-gray-800 text-base">
+                                  {order.selectedSubcategory}
+                                  {order.providerName && (
+                                    <span className="text-sm font-normal text-gray-600 ml-1">({order.providerName})</span>
+                                  )}
+                                </p>
+                                <p className="text-sm text-gray-600 mt-0.5">
+                                  {order.jobDateFrom
+                                    ? `Am ${new Date(order.jobDateFrom).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' })} um ${new Date(order.jobDateFrom).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`
+                                    : 'Datum/Zeit nicht angegeben'}
+                                </p>
+                              </div>
 
-              {/* Abschnitt: Meine Zahlungsmethoden (NEU HIER PLATZIERT IM EIGENEN GRID) */}
-              {/* Hier ist der äußere Container, der das 2-Spalten-Layout steuert */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 col-span-full">
-                <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
-                  <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                    <FiCreditCard className="mr-2" /> Meine Zahlungsmethoden
-                  </h2>
-                  {userProfile.savedPaymentMethods && userProfile.savedPaymentMethods.length > 0 ? (
-                    <ul className="space-y-4 flex-grow overflow-y-auto max-h-[min(200px, 25vh)]">
-                      {userProfile.savedPaymentMethods.map((pm) => (
-                        <li key={pm.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
-                          <div className="flex items-center">
-                            <span className="text-xl mr-3">💳</span>
-                            <div>
-                              <p className="font-medium">{pm.brand ? pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1) : 'Karte'} **** {pm.last4}</p>
-                              {pm.exp_month && pm.exp_year && (
-                                <p className="text-sm text-gray-500">Gültig bis {pm.exp_month}/{pm.exp_year % 100}</p>
-                              )}
+                              {/* Rechte Spalte: Preis und Status */}
+                              <div className="flex flex-col sm:items-end mt-2 sm:mt-0">
+                                <p className="text-sm text-gray-700 font-medium">Preis: {(order.totalPriceInCents / 100).toFixed(2)} EUR</p>
+                                <div className="mt-1">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold inline-block ${order.status === 'bezahlt' || order.status === 'Zahlung_erhalten_clearing' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                      }`}
+                                  >
+                                    {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status.replace(/_/g, ' ').slice(1)}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <button
-                            onClick={() => handleRemovePaymentMethod(pm.id)}
-                            className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                            title="Zahlungsmethode entfernen"
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 flex-grow text-center flex items-center justify-center">Noch keine Zahlungsmethoden gespeichert.</p>
-                  )}
-                  <button
-                    onClick={handleOpenAddPaymentMethodModal}
-                    className="mt-6 flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129a8f] transition-colors disabled:opacity-50"
-                    disabled={loadingSetupIntent}
-                  >
-                    {loadingSetupIntent ? <FiLoader className="mr-2 animate-spin" /> : <FiPlus className="mr-2" />}
-                    Zahlungsmethode hinzufügen
-                  </button>
-                  {setupIntentError && (
-                    <p className="mt-4 text-red-500 text-sm">{setupIntentError}</p>
-                  )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {/* Always show "Neuen Auftrag erstellen" button */}
+                    <button
+                      onClick={handleCreateNewOrder}
+                      className={`mt-4 flex items-center justify-center w-full px-4 py-2 rounded-md transition-colors text-sm ${userOrders.length === 0
+                        ? 'bg-[#14ad9f] text-white hover:bg-[#129a8f]' // Primary style if no orders
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-100' // Secondary style if orders exist
+                        }`}
+                    >
+                      <FiPlusCircle className="mr-2" /> Neuen Auftrag erstellen
+                    </button>
+
+                    {/* Show "Chat & Details" button only if there are existing orders */}
+                    {userOrders.length > 0 && (
+                      <button
+                        onClick={() => router.push(`/dashboard/user/${currentUser?.uid}/orders/${userOrders[0].id}`)}
+                        className="mt-2 flex items-center justify-center w-full px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129a8f] transition-colors text-sm"
+                      >
+                        <FiMessageSquare className="mr-2" /> Chat & Details (Neuester Auftrag)
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Support Card */}
+                  <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
+                    <HelpCard onOpenSupportChat={handleOpenSupportChat} /> {/* NEU: Prop an HelpCard übergeben */}
+                  </div>
+
+                  {/* Die Abschnitte "Meine Zahlungsmethoden" und "Meine Adressen" wurden entfernt */}
+                </div> {/* <-- SCHLIESSENDES TAG FÜR grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
+
+                {/* FAQ Section */}
+                <div className="mt-12">
+                  <FaqSection />
                 </div>
+              </div> {/* Schließt max-w-5xl mx-auto space-y-6 */}
+            </Suspense>
+          </main>
 
-                {/* Abschnitt: Meine Adressen (NEU HIER PLATZIERT IM GLEICHEN GRID) */}
-                <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
-                  <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                    <FiMapPin className="mr-2" /> Meine Adressen
-                  </h2>
-                  {userProfile.savedAddresses && userProfile.savedAddresses.length > 0 ? (
-                    <ul className="space-y-4 flex-grow overflow-y-auto max-h-[min(200px, 25vh)]">
-                      {userProfile.savedAddresses.map((address) => (
-                        <li key={address.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
-                          <div>
-                            <p className="font-medium">{address.name} {address.isDefault && <span className="text-xs bg-gray-200 px-2 py-1 rounded-full ml-2">Standard</span>}</p>
-                            <p className="text-sm text-gray-700">{address.line1} {address.line2}</p>
-                            <p className="text-sm text-gray-700">{address.postal_code} {address.city}</p>
-                            <p className="text-sm text-gray-700">{address.country}</p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => {
-                                setEditingAddress(address);
-                                setShowAddAddressModal(true);
-                              }}
-                              className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                              title="Adresse bearbeiten"
-                            >
-                              <FiEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAddress(address.id)}
-                              className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                              title="Adresse entfernen"
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 flex-grow text-center flex items-center justify-center">Noch keine Adressen gespeichert.</p>
-                  )}
-                  <button
-                    onClick={() => {
-                      setEditingAddress(null);
-                      setShowAddAddressModal(true);
-                    }}
-                    className="mt-6 flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129a8f] transition-colors"
-                  >
-                    <FiPlus className="mr-2" /> Adresse hinzufügen
-                  </button>
-                </div>
-              </div> {/* <-- HIER SCHLIESST DER FEHLENDE GRID-CONTAINER --> */}
-            </div> {/* <-- SCHLIESSENDES TAG FÜR grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
-
-            {/* FAQ Section */}
-            <div className="mt-12">
-              <FaqSection />
-            </div>
-          </div> {/* Schließt max-w-5xl mx-auto space-y-6 */}
-          <FooterSection />
-        </main>
-      </>
-
-      {/* Modal für Neuen Auftrag erstellen */}
-      {showCreateOrderModal && (
-        <Modal onClose={() => setShowCreateOrderModal(false)} title="Neuen Auftrag erstellen">
-          <CreateOrderModal
-            onClose={() => setShowCreateOrderModal(false)}
-            currentUser={currentUser!}
-            userProfile={userProfile!}
-          />
-        </Modal>
-      )}
-
-      {/* Modal für Support Chat */}
-      {showSupportChatModal && currentUser && (
-        <Modal onClose={() => setShowSupportChatModal(false)} title="Support">
-          <SupportChatInterface
-            currentUser={currentUser}
-            onClose={() => setShowSupportChatModal(false)}
-          // Hier könnten Sie eine chatId übergeben, falls Sie Chat-Sessions verwalten
-          />
-        </Modal>
-      )}
-
-
-      {showAddPaymentMethodModal && (
-        <Modal onClose={() => setShowAddPaymentMethodModal(false)} title="Zahlungsmethode hinzufügen">
-          {clientSecretForSetupIntent ? (
-            <Elements stripe={stripePromise} options={{ clientSecret: clientSecretForSetupIntent }}>
-              <AddPaymentMethodForm
-                onSuccess={handlePaymentMethodAdded}
-                onError={(msg: string) => setSetupIntentError(msg)} // Typ für msg hinzugefügt
-                clientSecret={clientSecretForSetupIntent}
+          {/* Modal für Neuen Auftrag erstellen */}
+          {showCreateOrderModal && (
+            <Modal onClose={() => setShowCreateOrderModal(false)} title="Neuen Auftrag erstellen">
+              <CreateOrderModal
+                onClose={() => setShowCreateOrderModal(false)}
+                currentUser={currentUser!}
+                userProfile={userProfile!}
               />
-            </Elements>
-          ) : (
-            <div className="text-center p-4">
-              <FiLoader className="animate-spin text-3xl text-[#14ad9f] mx-auto mb-3" />
-              <p>Bereite Formular vor...</p>
-            </div>
+            </Modal>
           )}
-        </Modal>
-      )}
 
-      {showAddAddressModal && (
-        <Modal onClose={() => setShowAddAddressModal(false)} title={editingAddress ? "Adresse bearbeiten" : "Adresse hinzufügen"}>
-          <AddressForm
-            initialData={editingAddress ?? undefined}
-            onChange={editingAddress ? handleUpdateAddress : handleAddAddress}
-            onCancel={() => {
-              setShowAddAddressModal(false);
-              setEditingAddress(null);
-            }}
-          />
-        </Modal>
-      )}
-    </Suspense>
+          {/* Modal für Support Chat */}
+          {showSupportChatModal && currentUser && (
+            <Modal onClose={() => setShowSupportChatModal(false)} title="Support">
+              <SupportChatInterface
+                currentUser={currentUser}
+                onClose={() => setShowSupportChatModal(false)}
+              // Hier könnten Sie eine chatId übergeben, falls Sie Chat-Sessions verwalten
+              />
+            </Modal>
+          )}
+
+
+          {showAddPaymentMethodModal && (
+            <Modal onClose={() => setShowAddPaymentMethodModal(false)} title="Zahlungsmethode hinzufügen">
+              {clientSecretForSetupIntent ? (
+                <Elements stripe={stripePromise} options={{ clientSecret: clientSecretForSetupIntent }}>
+                  <AddPaymentMethodForm
+                    onSuccess={handlePaymentMethodAdded}
+                    onError={(msg: string) => setSetupIntentError(msg)} // Typ für msg hinzugefügt
+                    clientSecret={clientSecretForSetupIntent}
+                  />
+                </Elements>
+              ) : (
+                <div className="text-center p-4">
+                  <FiLoader className="animate-spin text-3xl text-[#14ad9f] mx-auto mb-3" />
+                  <p>Bereite Formular vor...</p>
+                </div>
+              )}
+            </Modal>
+          )}
+
+          {showAddAddressModal && (
+            <Modal onClose={() => setShowAddAddressModal(false)} title={editingAddress ? "Adresse bearbeiten" : "Adresse hinzufügen"}>
+              <AddressForm
+                initialData={editingAddress ?? undefined}
+                onChange={editingAddress ? handleUpdateAddress : handleAddAddress}
+                onCancel={() => {
+                  setShowAddAddressModal(false);
+                  setEditingAddress(null);
+                }}
+              />
+            </Modal>
+          )}
+        </div>
+      </ProtectedRoute>
+    </SidebarVisibilityProvider>
   );
 }

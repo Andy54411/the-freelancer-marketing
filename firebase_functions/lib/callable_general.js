@@ -34,13 +34,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCompanyAccount = exports.createTemporaryJobDraft = exports.getClientIp = void 0;
+exports.fixOrderProviderUid = exports.deleteCompanyAccount = exports.getReviewsByProvider = exports.submitReview = exports.createTemporaryJobDraft = exports.getClientIp = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const helpers_1 = require("./helpers");
+const helpers_1 = require("./helpers"); // getStripeInstance ist jetzt nötig für deleteCompanyAccount
 const firestore_1 = require("firebase-admin/firestore");
 const admin = __importStar(require("firebase-admin")); // <-- Hinzufügen, falls nicht da
-const params_1 = require("firebase-functions/params"); // <-- Hinzufügen
+const params_1 = require("firebase-functions/params");
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY_GENERAL = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 // Konsolen-Logs anpassen für Klarheit
@@ -52,7 +52,6 @@ catch (error) {
     v2_1.logger.error("callable_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
     throw error;
 }
-// --- Cloud Functions ---
 exports.getClientIp = (0, https_1.onRequest)({ cors: true }, (request, response) => {
     let clientIp = "IP_NOT_DETERMINED";
     const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
@@ -77,80 +76,82 @@ exports.getClientIp = (0, https_1.onRequest)({ cors: true }, (request, response)
     v2_1.logger.info(`[getClientIp] final IP: ${clientIp}`);
     response.status(200).json({ ip: clientIp });
 });
-exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
-    v2_1.logger.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
-    const db = (0, helpers_1.getDb)();
-    if (!request.auth?.uid) {
-        v2_1.logger.error("[createTemporaryJobDraft] Nutzer nicht authentifiziert.");
-        throw new https_1.HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
-    }
-    const jobDetails = request.data;
-    const kundeId = request.auth.uid;
-    if (!jobDetails.customerType ||
-        !jobDetails.selectedCategory ||
-        !jobDetails.selectedSubcategory ||
-        !jobDetails.jobPostalCode ||
-        !jobDetails.selectedAnbieterId ||
-        !(typeof jobDetails.jobCalculatedPriceInCents === 'number' && jobDetails.jobCalculatedPriceInCents > 0)) {
-        v2_1.logger.error("[createTemporaryJobDraft] Fehlende oder ungültige Pflichtdaten:", jobDetails);
-        throw new https_1.HttpsError("invalid-argument", "Unvollständige oder ungültige Auftragsdetails übermittelt.");
-    }
-    const customerInfo = {
-        firstName: 'Unbekannt',
-        lastName: '',
-        email: request.auth.token.email || ''
-    };
+exports.createTemporaryJobDraft = (0, https_1.onCall)({
+    region: "europe-west1",
+}, async (request) => {
     try {
-        const userDoc = await db.collection('users').doc(kundeId).get();
-        if (userDoc.exists) {
-            const data = userDoc.data();
-            if (data) {
-                customerInfo.firstName = data.firstName || 'Unbekannt';
-                customerInfo.lastName = data.lastName || '';
-                customerInfo.email = data.email || customerInfo.email;
+        v2_1.logger.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+        if (!request.auth) {
+            throw new https_1.HttpsError('unauthenticated', 'Nutzer muss authentifiziert sein.');
+        }
+        const kundeId = request.auth.uid;
+        const kundeEmail = request.auth.token.email || '';
+        const db = (0, helpers_1.getDb)();
+        const jobDetails = request.data;
+        if (!jobDetails.customerType ||
+            !jobDetails.selectedCategory ||
+            !jobDetails.selectedSubcategory ||
+            !jobDetails.description.trim() ||
+            !jobDetails.jobPostalCode ||
+            !jobDetails.selectedAnbieterId ||
+            !(typeof jobDetails.jobCalculatedPriceInCents === 'number' && jobDetails.jobCalculatedPriceInCents > 0)) {
+            throw new https_1.HttpsError('invalid-argument', "Unvollständige oder ungültige Auftragsdetails übermittelt.");
+        }
+        const customerInfo = {
+            firstName: 'Unbekannt',
+            lastName: '',
+            email: kundeEmail
+        };
+        try {
+            const userDoc = await db.collection('users').doc(kundeId).get();
+            if (userDoc.exists) {
+                const data = userDoc.data();
+                if (data) {
+                    customerInfo.firstName = data.firstName || 'Unbekannt';
+                    customerInfo.lastName = data.lastName || '';
+                    customerInfo.email = data.email || customerInfo.email;
+                }
+                v2_1.logger.info(`[createTemporaryJobDraft] Kundendaten für ${kundeId} geladen.`);
             }
-            v2_1.logger.info(`[createTemporaryJobDraft] Kundendaten für ${kundeId} geladen.`);
+            else {
+                v2_1.logger.warn(`[createTemporaryJobDraft] Konnte kein User-Dokument für Kunde ${kundeId} finden.`);
+            }
         }
-        else {
-            v2_1.logger.warn(`[createTemporaryJobDraft] Konnte kein User-Dokument für Kunde ${kundeId} finden.`);
+        catch (e) {
+            v2_1.logger.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
         }
-    }
-    catch (e) {
-        v2_1.logger.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
-    }
-    // --- Start der korrigierten Logik für anbieterStripeAccountId ---
-    let anbieterStripeAccountId; // Auf nicht-null gesetzt, wir stellen sicher, dass es gesetzt ist oder werfen einen Fehler
-    if (!jobDetails.selectedAnbieterId) {
-        v2_1.logger.error("[createTemporaryJobDraft] Fehlende 'selectedAnbieterId' im Payload vom Client.");
-        throw new https_1.HttpsError("invalid-argument", "Die ID des ausgewählten Anbieters ist erforderlich.");
-    }
-    try {
+        let anbieterStripeAccountId;
+        let providerName = 'Unbekannter Anbieter';
+        if (!jobDetails.selectedAnbieterId) {
+            v2_1.logger.error("[createTemporaryJobDraft] selectedAnbieterId ist leer."); // Added log
+            throw new https_1.HttpsError('invalid-argument', "Die ID des ausgewählten Anbieters ist erforderlich.");
+        }
         const anbieterDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
         const anbieterDoc = await anbieterDocRef.get();
         if (!anbieterDoc.exists) {
-            v2_1.logger.error(`[createTemporaryJobDraft] Anbieter-Dokument (users/${jobDetails.selectedAnbieterId}) nicht gefunden.`);
-            throw new https_1.HttpsError("not-found", `Der ausgewählte Anbieter wurde nicht gefunden.`);
+            v2_1.logger.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} nicht gefunden.`); // Added log
+            throw new https_1.HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden.");
         }
         const anbieterData = anbieterDoc.data();
-        if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
-            anbieterStripeAccountId = anbieterData.stripeAccountId;
-            v2_1.logger.info(`[createTemporaryJobDraft] Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} gefunden: ${anbieterStripeAccountId}`);
+        if (!anbieterData || anbieterData?.user_type !== 'firma') {
+            v2_1.logger.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} gefunden, aber kein Firmenkonto oder ungültige Daten. user_type: ${anbieterData?.user_type}`); // Added log
+            throw new https_1.HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
+        }
+        const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
+        if (anbieterCompanyDoc.exists) {
+            const anbieterCompanyData = anbieterCompanyDoc.data();
+            providerName = anbieterCompanyData?.companyName || 'Unbekannte Firma';
         }
         else {
-            v2_1.logger.error(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht im users-Dokument ('${anbieterDoc.ref.path}') gefunden oder ungültig. Wert war: '${anbieterData?.stripeAccountId}'`);
-            // Dies ist der kritische Punkt: Wenn keine gültige ID vorhanden ist, wird ein Fehler ausgelöst
-            throw new https_1.HttpsError("failed-precondition", "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
+            providerName = anbieterData.firstName || anbieterData.lastName ? `${anbieterData.firstName || ''} ${anbieterData.lastName || ''}`.trim() : 'Unbekannte Firma';
         }
-    }
-    catch (dbError) {
-        if (dbError instanceof https_1.HttpsError) { // Wirft bereits erstellte HttpsErrors erneut
-            throw dbError;
+        if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
+            anbieterStripeAccountId = anbieterData.stripeAccountId;
         }
-        v2_1.logger.error(`[createTemporaryJobDraft] Fehler beim Lesen des Anbieter-Dokuments (users/${jobDetails.selectedAnbieterId}):`, dbError.message, dbError);
-        throw new https_1.HttpsError("internal", "Fehler beim Abrufen der Anbieterdetails.");
-    }
-    // --- Ende der korrigierten Logik für anbieterStripeAccountId ---
-    try {
+        else {
+            v2_1.logger.error(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht gefunden.`);
+            throw new https_1.HttpsError('failed-precondition', "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
+        }
         const draftDataToSave = {
             customerType: jobDetails.customerType,
             selectedCategory: jobDetails.selectedCategory,
@@ -164,11 +165,12 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
             jobDateTo: jobDetails.jobDateTo || jobDetails.dateTo || null,
             jobTimePreference: jobDetails.jobTimePreference || jobDetails.timePreference || null,
             selectedAnbieterId: jobDetails.selectedAnbieterId,
+            providerName: providerName,
             jobDurationString: jobDetails.jobDurationString || null,
             jobTotalCalculatedHours: jobDetails.jobTotalCalculatedHours ?? null,
             jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents,
             kundeId: kundeId,
-            anbieterStripeAccountId: anbieterStripeAccountId, // Sicherstellen, dass es im gespeicherten Entwurf enthalten ist
+            anbieterStripeAccountId: anbieterStripeAccountId,
             customerFirstName: customerInfo.firstName,
             customerLastName: customerInfo.lastName,
             customerEmail: customerInfo.email,
@@ -177,27 +179,94 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)(async (request) => {
             lastUpdatedAt: firestore_1.FieldValue.serverTimestamp(),
         };
         const docRef = await db.collection("temporaryJobDrafts").add(draftDataToSave);
-        v2_1.logger.info(`[createTemporaryJobDraft] Draft ${docRef.id} für Kunde ${kundeId} und Anbieter ${jobDetails.selectedAnbieterId} erstellt.`);
+        v2_1.logger.info(`[createTemporaryJobDraft] Draft ${docRef.id} für Kunde ${kundeId} erstellt.`);
+        // Return the result in the format expected by the onCall client
         return {
             tempDraftId: docRef.id,
-            anbieterStripeAccountId: anbieterStripeAccountId // Dies wird nun immer ein gültiger String sein, wenn die Funktion hier ankommt
+            anbieterStripeAccountId: anbieterStripeAccountId,
         };
     }
-    catch (e) {
-        v2_1.logger.error(`[createTemporaryJobDraft] Fehler beim Speichern des Drafts:`, e.message, e);
-        throw new https_1.HttpsError("internal", "Temporärer Auftragsentwurf konnte nicht gespeichert werden.", e.message);
+    catch (error) {
+        v2_1.logger.error(`[createTemporaryJobDraft] Unerwarteter Fehler:`, error);
+        if (error instanceof https_1.HttpsError)
+            throw error;
+        throw new https_1.HttpsError('internal', error.message || "Ein interner Serverfehler ist aufgetreten.");
+    }
+});
+exports.submitReview = (0, https_1.onCall)({ region: "europe-west1" }, async (request) => {
+    v2_1.logger.info("[submitReview] Called with data:", request.data);
+    if (!request.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+    const { anbieterId, kundeId, auftragId, sterne, kommentar, kundeProfilePictureURL, kategorie, unterkategorie } = request.data;
+    if (request.auth.uid !== kundeId) {
+        throw new https_1.HttpsError('permission-denied', 'You can only submit reviews for yourself.');
+    }
+    if (!anbieterId || !kundeId || !auftragId || typeof sterne !== "number" || sterne < 1 || sterne > 5 || !kategorie || !unterkategorie) {
+        throw new https_1.HttpsError('invalid-argument', 'Missing or invalid data provided for review submission.');
+    }
+    const db = (0, helpers_1.getDb)();
+    try {
+        const newReviewData = {
+            anbieterId,
+            kundeId,
+            auftragId,
+            sterne,
+            kommentar: kommentar || "",
+            kundeProfilePictureURL: kundeProfilePictureURL || null,
+            kategorie,
+            unterkategorie,
+            erstellungsdatum: new Date(),
+        };
+        const docRef = await db.collection("reviews").add(newReviewData);
+        v2_1.logger.info(`[submitReview] Review ${docRef.id} created successfully.`);
+        return { message: "Review submitted", reviewId: docRef.id };
+    }
+    catch (error) {
+        v2_1.logger.error("[submitReview] Error saving review to Firestore:", error);
+        throw new https_1.HttpsError('internal', 'Failed to save the review.', error.message);
+    }
+});
+exports.getReviewsByProvider = (0, https_1.onCall)({ region: "europe-west1" }, async (request) => {
+    v2_1.logger.info("[getReviewsByProvider] Called for provider:", request.data.anbieterId);
+    const { anbieterId } = request.data;
+    if (!anbieterId) {
+        throw new https_1.HttpsError('invalid-argument', 'The anbieterId is required.');
+    }
+    const db = (0, helpers_1.getDb)();
+    try {
+        const reviewsRef = db.collection('reviews');
+        const snapshot = await reviewsRef.where('anbieterId', '==', anbieterId).orderBy('erstellungsdatum', 'desc').get();
+        const reviews = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            reviews.push({
+                id: doc.id,
+                kundeId: data.kundeId,
+                sterne: data.sterne,
+                kommentar: data.kommentar,
+                kundeProfilePictureURL: data.kundeProfilePictureURL,
+                erstellungsdatum: data.erstellungsdatum instanceof admin.firestore.Timestamp ? data.erstellungsdatum.toDate() : data.erstellungsdatum,
+            });
+        });
+        return reviews;
+    }
+    catch (error) {
+        v2_1.logger.error("[getReviewsByProvider] Error fetching reviews from Firestore:", error);
+        throw new https_1.HttpsError('internal', 'Failed to fetch reviews.', error.message);
     }
 });
 // --- getOrCreateStripeCustomer wurde aus dieser Datei verschoben nach callable_stripe.ts ---
 // --- deleteCompanyAccount wird beibehalten ---
-exports.deleteCompanyAccount = (0, https_1.onCall)(async (request) => {
+exports.deleteCompanyAccount = (0, https_1.onCall)({ region: "europe-west1" }, async (request) => {
     v2_1.logger.info("[deleteCompanyAccount] Aufgerufen von User:", request.auth?.uid);
     const db = (0, helpers_1.getDb)();
     if (!request.auth?.uid)
         throw new https_1.HttpsError("unauthenticated", "Nutzer muss angemeldet sein.");
     const userId = request.auth.uid;
-    const isEmulated = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_GENERAL.value();
+    // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt,
+    // daher ist keine manuelle isEmulated-Prüfung mehr nötig.
+    const stripeKey = STRIPE_SECRET_KEY_GENERAL.value();
     const localStripe = (0, helpers_1.getStripeInstance)(stripeKey);
     const userDocRef = db.collection("users").doc(userId);
     const companyDocRef = db.collection("companies").doc(userId);
@@ -279,6 +348,41 @@ exports.deleteCompanyAccount = (0, https_1.onCall)(async (request) => {
         if (e instanceof https_1.HttpsError)
             throw e;
         throw new https_1.HttpsError("internal", e.message || "Unbekannter Serverfehler beim Löschen des Kontos.");
+    }
+});
+exports.fixOrderProviderUid = (0, https_1.onCall)({ region: "europe-west1" }, async (request) => {
+    v2_1.logger.info("[fixOrderProviderUid] Aufgerufen mit Daten:", request.data);
+    if (!request.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'Die Funktion muss authentifiziert aufgerufen werden.');
+    }
+    const { orderId, correctProviderUid } = request.data;
+    if (!orderId || !correctProviderUid) {
+        throw new https_1.HttpsError('invalid-argument', 'orderId und correctProviderUid sind erforderlich.');
+    }
+    const db = (0, helpers_1.getDb)();
+    try {
+        const orderRef = db.collection('auftraege').doc(orderId);
+        const orderDoc = await orderRef.get();
+        if (!orderDoc.exists) {
+            v2_1.logger.warn(`[fixOrderProviderUid] Auftrag ${orderId} nicht gefunden.`);
+            throw new https_1.HttpsError('not-found', `Auftrag ${orderId} nicht gefunden.`);
+        }
+        const currentAnbieterId = orderDoc.data()?.selectedAnbieterId;
+        await orderRef.update({
+            selectedAnbieterId: correctProviderUid,
+            lastUpdatedAt: firestore_1.FieldValue.serverTimestamp(), // Update timestamp
+            fixedByAdmin: request.auth.uid, // Zur Auditierung: Wer hat es behoben
+            fixedAt: firestore_1.FieldValue.serverTimestamp(),
+        });
+        v2_1.logger.info(`[fixOrderProviderUid] Auftrag ${orderId}: selectedAnbieterId von ${currentAnbieterId} auf ${correctProviderUid} aktualisiert.`);
+        return { success: true, message: `Auftrag ${orderId} erfolgreich auf Anbieter-UID ${correctProviderUid} aktualisiert.` };
+    }
+    catch (error) {
+        v2_1.logger.error(`[fixOrderProviderUid] Fehler beim Aktualisieren des Auftrags ${orderId}:`, error);
+        if (error instanceof https_1.HttpsError) {
+            throw error;
+        }
+        throw new https_1.HttpsError('internal', 'Fehler beim Beheben des Auftrags.', error.message);
     }
 });
 //# sourceMappingURL=callable_general.js.map

@@ -2,12 +2,7 @@ WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
 WARNING: sun.misc.Unsafe::objectFieldOffset has been called by akka.util.Unsafe (file:/Users/andystaudinger/.cache/firebase/emulators/firebase-database-emulator-v4.11.2.jar)
 WARNING: Please consider reporting this to the maintainers of class akka.util.Unsafe
 WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
-15:58:09.642 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
-15:58:09.822 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
-15:58:24.605 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 69ms, init: 0ms
-15:58:24.630 [NamespaceSystem-blocking-namespace-operation-dispatcher-6] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active
-15:59:29.509 [FirebaseWorkerPool-1-1] WARN com.firebase.core.persistence.backend.dummy.EmulatorMetadataPersistence - Multiple projectIds are not recommended in single project mode. Requested 
-namespace tilvo-f142f, but the emulator is configured for tilvo-f142f-default-rtdb. To 
-opt-out of single project mode add/set the singleProjectMode: false property in 
-the firebase.json emulators config. 
-15:59:29.517 [NamespaceSystem-akka.actor.default-dispatcher-9] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f successfully activated FBKV (SurveyIdle(0)) wait: 2ms, init: 0ms
+15:10:07.207 [NamespaceSystem-akka.actor.default-dispatcher-5] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
+15:10:07.433 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
+15:10:43.739 [NamespaceSystem-akka.actor.default-dispatcher-5] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 149ms, init: 0ms
+15:10:43.815 [NamespaceSystem-blocking-namespace-operation-dispatcher-7] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active

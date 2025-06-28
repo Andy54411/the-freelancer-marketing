@@ -16,10 +16,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true); // Initialisiere loading mit true
 
   useEffect(() => {
-    setLoading(true); // Beginne mit dem Laden
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user as User | null); // Explizite Typzuweisung
-      setLoading(false); // Ladevorgang abgeschlossen
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Force a refresh of the ID token to get the latest custom claims.
+        // This is crucial for security rules that depend on roles.
+        // See: https://firebase.google.com/docs/auth/admin/custom-claims#propagate_claims_to_the_client
+        await user.getIdToken(true);
+        console.log("AuthContext: User token refreshed to get latest claims.");
+      }
+      setCurrentUser(user); // Set the user (or null if logged out)
+      setLoading(false); // Authentication check is complete
     });
 
     return () => unsubscribe();

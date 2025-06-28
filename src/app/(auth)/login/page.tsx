@@ -116,10 +116,13 @@ function UserRegisterFormContent() {
 
       if (redirectToFromParams) {
         console.log(PAGE_LOG, `Weiterleitung nach Registrierung zu: ${redirectToFromParams}`);
-        router.push(redirectToFromParams);
+        // Die Verwendung von router.push() kann zu Race-Conditions führen, bei denen die Zielseite
+        // die Authentifizierung prüft, bevor der globale Auth-Status aktualisiert wurde.
+        // Ein vollständiger Reload stellt sicher, dass der Status beim Laden der neuen Seite korrekt ist.
+        window.location.assign(redirectToFromParams);
       } else {
         console.log(PAGE_LOG, `Weiterleitung nach Registrierung zum Dashboard für User: ${user.uid}`);
-        router.push(`/dashboard/user/${user.uid}`);
+        window.location.assign(`/dashboard/user/${user.uid}`);
       }
 
     } /* ... (catch-Block) ... */ finally {
@@ -147,10 +150,13 @@ function UserRegisterFormContent() {
 
     if (redirectToUrl) {
       console.log(PAGE_LOG, `Weiterleitung nach Popup-Login zu: ${redirectToUrl}`);
-      router.push(redirectToUrl);
+      // Die Verwendung von router.push() kann zu Race-Conditions führen, bei denen die Zielseite
+      // die Authentifizierung prüft, bevor der globale Auth-Status aktualisiert wurde.
+      // Ein vollständiger Reload stellt sicher, dass der Status beim Laden der neuen Seite korrekt ist.
+      window.location.assign(redirectToUrl);
     } else {
       console.log(PAGE_LOG, `Weiterleitung nach Popup-Login zum Dashboard für User: ${loggedInUser.uid}`);
-      router.push(`/dashboard/user/${loggedInUser.uid}`);
+      window.location.assign(`/dashboard/user/${loggedInUser.uid}`);
     }
   };
 

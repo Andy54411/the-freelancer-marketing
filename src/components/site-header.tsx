@@ -7,17 +7,19 @@ import { ModeToggle } from "@/components/mode-toggle" // Pfad anpassen, falls n√
 
 interface SiteHeaderProps {
   currentTab: string
+  showSidebarTrigger?: boolean // Neue Prop hinzugef√ºgt
 }
 
-export function SiteHeader({ currentTab }: SiteHeaderProps) {
+export function SiteHeader({ currentTab, showSidebarTrigger = true }: SiteHeaderProps) { // Standardwert ist true, um bestehende Verwendungen nicht zu beeinflussen
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b border-border bg-white dark:bg-gray-800 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
+        {showSidebarTrigger && ( // SidebarTrigger und Separator nur anzeigen, wenn showSidebarTrigger true ist
+          <>
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
+          </>
+        )}
         <h1 className="text-base font-medium text-gray-900 dark:text-white">{currentTab}</h1>
         <div className="ml-auto flex items-center gap-2">
           <ModeToggle />

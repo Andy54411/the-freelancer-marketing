@@ -156,8 +156,8 @@ export const uploadStripeFile = onRequest(
         const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
         logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath}`);
 
-        const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
-        const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY_UPLOADS.value();
+        // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt,
+        const stripeKey = STRIPE_SECRET_KEY_UPLOADS.value();
         const stripe = getStripeInstance(stripeKey);
         logger.info("[uploadStripeFile] Stripe instance obtained.");
         const bucket = getStorageInstance().bucket();

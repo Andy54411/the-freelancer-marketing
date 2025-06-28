@@ -53,6 +53,34 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "auftraege",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "customerFirebaseUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "auftraege",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "selectedAnbieterId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "paidAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

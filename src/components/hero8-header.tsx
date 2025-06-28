@@ -36,11 +36,15 @@ export const HeroHeader = () => {
     // Hier könntest du spezifische Logik nach erfolgreichem Login aus dem Header ausführen,
     // z.B. Weiterleitung oder Aktualisierung des UI-Status.
     // Fürs Erste schließen wir einfach das Popup. Die Weiterleitung wird im LoginPopup selbst gehandhabt.
-    console.log("Login erfolgreich im Header, User:", user.uid, "Weiterleitung zu:", redirectToUrl);
+    console.log("Login erfolgreich im Header, User:", user.uid, "Leite weiter zu:", redirectToUrl);
     setIsLoginPopupOpen(false);
-    // Die eigentliche Weiterleitung sollte idealerweise im LoginPopup oder einer globalen Auth-Logik erfolgen.
-    // Wenn eine Weiterleitung hier erzwungen werden soll:
-    // if (redirectToUrl) router.push(redirectToUrl); else router.push(`/dashboard/user/${user.uid}`);
+    // Führe die Weiterleitung hier aus, da LoginPopup die Navigation delegiert, wenn onLoginSuccess gesetzt ist.
+    if (redirectToUrl) {
+      window.location.assign(redirectToUrl); // Erzwingt einen vollständigen Seiten-Reload
+    } else {
+      // Fallback, falls redirectToUrl aus irgendeinem Grund null/undefined ist (sollte nicht passieren, aber zur Sicherheit)
+      window.location.assign(`/dashboard/user/${user.uid}`); // Oder ein Standard-Dashboard
+    }
   };
   return (
     <header>

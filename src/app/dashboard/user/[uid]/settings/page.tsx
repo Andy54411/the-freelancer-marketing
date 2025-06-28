@@ -3,20 +3,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { useAuth } from '@/contexts/AuthContext'; // Importiere useAuth
+import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
+import UserHeader from '@/components/UserHeader'; // Importiere die UserHeader-Komponente als Standard-Export
 import { doc, getDoc } from 'firebase/firestore';
 import { db, app } from '@/firebase/clients';
 import CompanySettingsPage, { RawFirestoreUserData } from '@/components/SettingsPage'; // Umbenannt für Klarheit
 import UserSettingsPage from '@/app/dashboard/user/[uid]/components/UserSettingsPage'; // NEU: Import für User-Einstellungen‚
-import FooterSection from '@/components/footer'; // Dein Footer
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
-const auth = getAuth(app);
 
 export default function UserSettingsDashboardPage() {
     const router = useRouter();
     const params = useParams();
     const pageUid = typeof params.uid === 'string' ? params.uid : '';
+
+    const { currentUser: globalCurrentUser, loading: authLoading } = useAuth(); // MOVED HERE
 
     const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
     const [userData, setUserData] = useState<RawFirestoreUserData | null>(null);
@@ -44,23 +46,23 @@ export default function UserSettingsDashboardPage() {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                if (user.uid !== pageUid) {
-                    // Wenn die UID in der URL nicht mit dem eingeloggten Benutzer übereinstimmt,
-                    // leite zum Dashboard des eingeloggten Benutzers oder zur Login-Seite um.
-                    // Für Einstellungen ist es meist sinnvoll, nur die eigenen zu sehen.
-                    router.replace(`/dashboard/user/${user.uid}/settings`);
-                    return;
-                }
-                setCurrentUser(user);
-                fetchUserData(user.uid);
+        if (authLoading) {
+            setLoading(true);
+            return;
+        }
+
+        if (globalCurrentUser) {
+            setCurrentUser(globalCurrentUser);
+            // Daten nur abrufen, wenn die UID mit der Seiten-UID übereinstimmt
+            if (globalCurrentUser.uid === pageUid) {
+                fetchUserData(globalCurrentUser.uid);
             } else {
-                router.replace(`/login?redirectTo=/dashboard/user/${pageUid}/settings`);
+                router.replace(`/dashboard/user/${globalCurrentUser.uid}/settings`);
             }
-        });
-        return () => unsubscribe();
-    }, [pageUid, router, fetchUserData]);
+        } else {
+            router.replace(`/login?redirectTo=/dashboard/user/${pageUid}/settings`);
+        }
+    }, [pageUid, router, fetchUserData, globalCurrentUser, authLoading]); // Add globalCurrentUser and authLoading to dependencies
 
     const handleDataSaved = () => {
         // Daten neu laden oder eine Erfolgsmeldung anzeigen
@@ -84,13 +86,14 @@ export default function UserSettingsDashboardPage() {
     }
 
     return (
-        <>
-            {userData?.user_type === 'firma' ? (
-                <CompanySettingsPage userData={userData} onDataSaved={handleDataSaved} />
-            ) : userData?.user_type === 'kunde' ? (
-                <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
-            ) : null}
-            <FooterSection />
-        </>
+        <div className="flex flex-col min-h-screen"> {/* Header is now provided by layout.tsx */}
+            <main className="flex-1 overflow-y-auto pt-[var(--global-header-height)]"> {/* Hauptinhaltsbereich, der scrollbar ist, mit Padding */}
+                {userData?.user_type === 'firma' ? (
+                    <CompanySettingsPage userData={userData} onDataSaved={handleDataSaved} />
+                ) : userData?.user_type === 'kunde' ? (
+                    <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
+                ) : null}
+            </main>
+        </div>
     );
 }

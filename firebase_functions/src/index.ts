@@ -20,4 +20,6 @@ export * from './http_general';
 export * from './http_webhooks';
 export * from './http_file_uploads';
 export * from './triggers_firestore';
-export * from './getUserOrders'; 
+export * from './callable_orders';
+export * from './getUserOrders';
+export * from './getProviderOrders';

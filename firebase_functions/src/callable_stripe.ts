@@ -1,15 +1,13 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-import { getDb, getStripeInstance, getSendGridClient, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
+import { getDb, getStripeInstance, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
 import { defineSecret, defineString } from 'firebase-functions/params';
 import { FieldValue } from 'firebase-admin/firestore';
-import { type MailDataRequired } from '@sendgrid/mail';
 import * as admin from "firebase-admin";
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
-const SENDGRID_API_KEY = defineSecret("SENDGRID_API_KEY");
 const FRONTEND_URL_PARAM = defineString("FRONTEND_URL");
 const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = defineString("EMULATOR_PUBLIC_FRONTEND_URL", {
   description: 'Publicly accessible URL for the frontend when testing with emulators.',
@@ -221,16 +219,21 @@ const mapLegalFormToStripeBusinessInfo = (
   return { businessType: 'company', companyStructure: undefined };
 };
 
-export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableData, Promise<CreateStripeAccountCallableResult>>(
+export const createStripeAccountIfComplete = onCall(
+  { region: "europe-west1" },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
-    const frontendUrlValue = isEmulator ? process.env.FRONTEND_URL! : FRONTEND_URL_PARAM.value();
+    const stripeKey = STRIPE_SECRET_KEY.value();
+    const frontendUrlValue = FRONTEND_URL_PARAM.value();
     const db = getDb();
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     const { userId, clientIp, ...payloadFromClient } = request.data;
     const publicFrontendURL = getPublicFrontendURL(frontendUrlValue); // <-- Parameter übergeben
+
+    if (!stripeKey) {
+      loggerV2.error("[createStripeAccountIfComplete] FATAL: Stripe Secret Key ist nicht verfügbar. Überprüfen Sie die Umgebungsvariablen/Secrets.");
+      throw new HttpsError("internal", "Server-Konfigurationsfehler: Stripe-Schlüssel fehlt.");
+    }
 
     if (!userId || !clientIp || clientIp.length < 7) {
       throw new HttpsError("invalid-argument", "Nutzer-ID und gültige IP sind erforderlich.");
@@ -261,31 +264,34 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
     const { businessType, companyStructure } = mapLegalFormToStripeBusinessInfo(payloadFromClient.legalForm);
     loggerV2.info(`[DEBUG] Punkt 5: Rechtsform gemappt. Typ: ${businessType}, Struktur: ${companyStructure}`);
 
-    if (!payloadFromClient.legalForm?.trim()) throw new HttpsError("failed-precondition", "Rechtsform ist eine Pflichtangabe.");
-    loggerV2.info('[DEBUG] Validierung OK: legalForm');
-    if (!payloadFromClient.email?.trim()) throw new HttpsError("failed-precondition", "E-Mail ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: email');
-    if (!payloadFromClient.firstName?.trim()) throw new HttpsError("failed-precondition", "Vorname ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: firstName');
-    if (!payloadFromClient.lastName?.trim()) throw new HttpsError("failed-precondition", "Nachname ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: lastName');
-    if (!payloadFromClient.iban?.trim()) throw new HttpsError("failed-precondition", "IBAN ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: iban');
-    if (!payloadFromClient.accountHolder?.trim()) throw new HttpsError("failed-precondition", "Kontoinhaber ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: accountHolder');
-    if (!payloadFromClient.mcc?.trim()) throw new HttpsError("failed-precondition", "MCC (Branchencode) ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: mcc');
-    if (!payloadFromClient.identityFrontFileId || !payloadFromClient.identityBackFileId) throw new HttpsError("failed-precondition", "Ausweisdokumente (Vorder- und Rückseite) sind erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: identityFileIds');
-    if (!payloadFromClient.profilePictureFileId) throw new HttpsError("failed-precondition", "Profilbild ist erforderlich.");
-    loggerV2.info('[DEBUG] Validierung OK: profilePictureFileId');
+    // Refactored validation logic
+    const requiredFields: { key: keyof CreateStripeAccountCallableData, name: string }[] = [
+      { key: 'legalForm', name: 'Rechtsform' },
+      { key: 'email', name: 'E-Mail' },
+      { key: 'firstName', name: 'Vorname' },
+      { key: 'lastName', name: 'Nachname' },
+      { key: 'iban', name: 'IBAN' },
+      { key: 'accountHolder', name: 'Kontoinhaber' },
+      { key: 'mcc', name: 'MCC (Branchencode)' },
+      { key: 'identityFrontFileId', name: 'Ausweisdokument (Vorderseite)' },
+      { key: 'identityBackFileId', name: 'Ausweisdokument (Rückseite)' },
+      { key: 'profilePictureFileId', name: 'Profilbild' },
+    ];
+
+    for (const field of requiredFields) {
+      const value = payloadFromClient[field.key];
+      if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) {
+        throw new HttpsError("failed-precondition", `${field.name} ist eine Pflichtangabe.`);
+      }
+      loggerV2.info(`[DEBUG] Validierung OK: ${field.key}`);
+    }
 
     if (!payloadFromClient.dateOfBirth) {
       throw new HttpsError("failed-precondition", "Geburtsdatum des Ansprechpartners/Inhabers ist erforderlich.");
     }
     loggerV2.info('[DEBUG] Validierung OK: dateOfBirth existiert.');
 
-    const [yearDob, monthDob, dayDob] = payloadFromClient.dateOfBirth.split('-').map(Number);
+    const [yearDob, monthDob, dayDob] = (payloadFromClient.dateOfBirth || '').split('-').map(Number);
     const dobDate = new Date(Date.UTC(yearDob, monthDob - 1, dayDob));
     if (!(dobDate.getUTCFullYear() === yearDob && dobDate.getUTCMonth() === monthDob - 1 && dobDate.getUTCDate() === dayDob && yearDob > 1900 && yearDob < (new Date().getFullYear() - 17))) {
       loggerV2.error(`FEHLER bei DOB-Validierung: Jahr=${yearDob}, Monat=${monthDob}, Tag=${dayDob}`);
@@ -405,15 +411,19 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
       loggerV2.info(`✅✅✅ ERFOLG! Stripe Account ${account.id} wurde erstellt.`);
 
     } catch (e: any) {
-      loggerV2.error("🔥🔥🔥 STRIPE API FEHLER 🔥🔥🔥:", {
-        message: e.message,
-        type: e.type,
-        code: e.code,
-        param: e.param,
-        raw: e.raw
-      });
-      throw new HttpsError("internal", e.raw?.message || "Fehler bei initialer Kontoerstellung durch Stripe.");
+      // Check if it's a Stripe error by looking for a `type` property
+      if (e.type && typeof e.type === 'string') {
+        loggerV2.error("🔥🔥🔥 STRIPE API FEHLER 🔥🔥🔥:", {
+          message: e.message, type: e.type, code: e.code, param: e.param, raw: e.raw
+        });
+        throw new HttpsError("internal", e.raw?.message || "Fehler bei initialer Kontoerstellung durch Stripe.");
+      } else {
+        // Fallback für nicht-Stripe-Fehler
+        loggerV2.error("🔥🔥🔥 ALLGEMEINER FEHLER BEI KONTOERSTELLUNG 🔥🔥🔥:", e);
+        throw new HttpsError("internal", e.message || "Ein unerwarteter Fehler ist bei der Kontoerstellung aufgetreten.");
+      }
     }
+
 
     loggerV2.info(">>>> NACH dem Stripe API Call. Account-Daten:", account);
 
@@ -494,27 +504,10 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
       "step3.masterCraftsmanCertificateURL": payloadFromClient.masterCraftsmanCertificateFileId || FieldValue.delete(),
       "step3.identityFrontUrl": payloadFromClient.identityFrontFileId || null,
       "step3.identityBackUrl": payloadFromClient.identityBackFileId || null,
+      "step4.iban": payloadFromClient.iban ? `****${payloadFromClient.iban.slice(-4)}` : null, // Nur die letzten 4 Ziffern speichern
+      "step4.accountHolder": payloadFromClient.accountHolder || null,
     };
     await userDocRef.update(firestoreUpdateData);
-
-    const sendgridKey = isEmulator ? process.env.SENDGRID_API_KEY! : SENDGRID_API_KEY.value();
-    const sendgrid = getSendGridClient(sendgridKey); // <-- Parameter übergeben
-    if (sendgrid && payloadFromClient.email && payloadFromClient.firstName) {
-      const recipientName = payloadFromClient.firstName;
-      const entityName = businessType === 'company' ? payloadFromClient.companyName : `${payloadFromClient.firstName} ${payloadFromClient.lastName}`;
-      const emailContent: MailDataRequired = {
-        to: payloadFromClient.email,
-        from: { email: "support@tilvo.com", name: "Tilvo Team" },
-        subject: `Dein Tilvo Konto wurde bei Stripe angelegt`,
-        html: `<p>Hallo ${recipientName},</p><p>Dein Stripe-Konto (<code>${account.id}</code>) für "<strong>${entityName}</strong>" wurde initial bei Stripe angelegt. Bitte vervollständige alle notwendigen Angaben in deinem Tilvo Dashboard, um dein Konto zu aktivieren.</p><p>Viel Erfolg!</p><p>Dein Tilvo-Team</p>`,
-        text: `Hallo ${recipientName},\n\nDein Stripe-Konto (${account.id}) für "${entityName}" wurde initial bei Stripe angelegt. Bitte vervollständige alle notwendigen Angaben in deinem Tilvo Dashboard, um dein Konto zu aktivieren.\n\nViel Erfolg,\nDein Tilvo-Team`,
-      };
-      try {
-        await sendgrid.send(emailContent);
-      } catch (e: any) {
-        loggerV2.error("Mail Senden (Firma):", e.response?.body || e.message, e);
-      }
-    }
 
     const finalAccountData = await localStripe.accounts.retrieve(account.id);
     const finalMissingFields: string[] = [];
@@ -531,12 +524,12 @@ export const createStripeAccountIfComplete = onCall<CreateStripeAccountCallableD
 );
 
 // --- HIER WIRD DIE FUNKTION getOrCreateStripeCustomer HINZUGEFÜGT ---
-export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload, Promise<GetOrCreateStripeCustomerResult>>(
-  async (request): Promise<GetOrCreateStripeCustomerResult> => {
+export const getOrCreateStripeCustomer = onCall(
+  { region: "europe-west1" },
+  async (request: CallableRequest<GetOrCreateStripeCustomerPayload>): Promise<GetOrCreateStripeCustomerResult> => {
     loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = getDb();
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
+    const stripeKey = STRIPE_SECRET_KEY.value();
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
 
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
@@ -605,14 +598,14 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
     }
   });
 
-export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData, Promise<UpdateStripeCompanyDetailsResult>>(
+export const updateStripeCompanyDetails = onCall(
+  { region: "europe-west1" },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     const db = getDb();
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
-    const frontendUrlValue = isEmulator ? process.env.FRONTEND_URL! : FRONTEND_URL_PARAM.value();
+    const stripeKey = STRIPE_SECRET_KEY.value();
+    const frontendUrlValue = FRONTEND_URL_PARAM.value();
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL(frontendUrlValue); // <-- Parameter übergeben
@@ -685,6 +678,7 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
           account_holder_name: updatePayloadFromClient.accountHolder,
           account_number: updatePayloadFromClient.iban.replace(/\s/g, ''),
           country: updatePayloadFromClient.bankCountry,
+          currency: 'eur', // Hinzugefügt: Währung für das externe Konto
         };
       }
 
@@ -692,6 +686,13 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
         await localStripe.accounts.update(stripeAccountId, accountUpdateParams);
         loggerV2.info(`Stripe Account ${stripeAccountId} (Typ: ${currentBusinessType}) aktualisiert.`);
       }
+
+      // Firestore-Daten ebenfalls aktualisieren, um Konsistenz zu wahren
+      const firestoreUpdatePayload: { [key: string]: any } = {
+        "step4.iban": updatePayloadFromClient.iban ? `****${updatePayloadFromClient.iban.slice(-4)}` : undefined,
+        "step4.accountHolder": updatePayloadFromClient.accountHolder || undefined,
+      };
+      await userDocRef.set(firestoreUpdatePayload, { merge: true });
 
       if (currentBusinessType === 'company') {
         let personIdToUpdate: string | undefined = currentFirestoreUserData.stripeRepresentativePersonId;
@@ -802,30 +803,35 @@ export const updateStripeCompanyDetails = onCall<UpdateStripeCompanyDetailsData,
 
     } catch (error: any) {
       loggerV2.error(`[updateStripeCompanyDetails] Fehler für Nutzer ${userId}:`, { message: error.message, type: error.type, code: error.code, param: error.param, raw: error.raw });
-      let errMsg = "Interner Fehler beim Aktualisieren der Stripe-Informationen.";
-      if (error instanceof HttpsError) errMsg = error.message;
-      else if (error.type === "StripeInvalidRequestError" || error.type === "StripeCardError") errMsg = error.message;
-      else if (error.message) errMsg = error.message;
+
+      // If it's a Stripe validation error, use its message directly and return a 400-level error.
+      if (error.type === "StripeInvalidRequestError" || error.type === "StripeCardError") {
+        throw new HttpsError('invalid-argument', error.message);
+      }
+
+      // If it's an HttpsError we've thrown ourselves, re-throw it.
+      if (error instanceof HttpsError) throw error;
 
       try {
         const userDocForError = db.collection("users").doc(userId);
-        await userDocForError.update({ stripeAccountError: errMsg, updatedAt: FieldValue.serverTimestamp() });
+        await userDocForError.update({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() });
         const companyDocRefForError = db.collection("companies").doc(userId);
         if ((await companyDocRefForError.get()).exists) {
-          await companyDocRefForError.set({ stripeAccountError: errMsg, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+          await companyDocRefForError.set({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }
       } catch (dbError: any) {
         loggerV2.error(`DB-Fehler beim Speichern des Stripe-Fehlers für ${userId} im Catch-Block von updateStripeCompanyDetails:`, dbError.message);
       }
 
-      if (error instanceof HttpsError) throw error;
-      throw new HttpsError("internal", errMsg, error.raw?.code || error.code || error.type);
+      // For all other unexpected errors, throw a generic 'internal' error.
+      throw new HttpsError("internal", error.message || "Interner Serverfehler beim Aktualisieren der Stripe-Informationen.", error.raw?.code || error.code || error.type);
     }
   }
 );
 
-export const createSetupIntent = onCall<{ firebaseUserId?: string }, Promise<{ clientSecret: string }>>(
-  async (request): Promise<{ clientSecret: string }> => {
+export const createSetupIntent = onCall(
+  { region: "europe-west1" },
+  async (request: CallableRequest<{ firebaseUserId?: string }>): Promise<{ clientSecret: string | null }> => {
     loggerV2.info("[createSetupIntent] Aufgerufen.");
     const db = getDb();
 
@@ -835,8 +841,7 @@ export const createSetupIntent = onCall<{ firebaseUserId?: string }, Promise<{ c
     }
 
     const firebaseUserId = request.auth.uid;
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
+    const stripeKey = STRIPE_SECRET_KEY.value();
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
 
     try {
@@ -873,19 +878,19 @@ export const createSetupIntent = onCall<{ firebaseUserId?: string }, Promise<{ c
   }
 );
 
-export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }>>(
-  async (request): Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }> => {
+export const getSavedPaymentMethods = onCall(
+  { region: "europe-west1" },
+  async (request: CallableRequest<Record<string, never>>): Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }> => {
     loggerV2.info("[getSavedPaymentMethods] Aufgerufen.");
     const db = getDb();
-
+    // Authentifizierung ist hier korrekt
     if (!request.auth?.uid) {
       loggerV2.warn("[getSavedPaymentMethods] Unauthentifizierter Aufruf.");
       throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     }
 
     const firebaseUserId = request.auth.uid;
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
+    const stripeKey = STRIPE_SECRET_KEY.value(); // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt.
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
 
     try {
@@ -913,14 +918,13 @@ export const getSavedPaymentMethods = onCall<Record<string, never>, Promise<{ sa
   }
 );
 
-
-export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetStripeAccountStatusResult>>(
+export const getStripeAccountStatus = onCall(
+  { region: "europe-west1" },
   async (request: CallableRequest<Record<string, never>>): Promise<GetStripeAccountStatusResult> => {
     loggerV2.info("[getStripeAccountStatus] Aufgerufen.");
-    const db = getDb();
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
-    const frontendUrlValue = isEmulator ? process.env.FRONTEND_URL! : FRONTEND_URL_PARAM.value();
+    const db = getDb(); // Firestore-Instanz
+    const stripeKey = STRIPE_SECRET_KEY.value(); // Secret-Zugriff
+    const frontendUrlValue = FRONTEND_URL_PARAM.value(); // String-Parameter-Zugriff
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein."); }
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
@@ -1006,12 +1010,12 @@ export const getStripeAccountStatus = onCall<Record<string, never>, Promise<GetS
   }
 );
 
-export const getProviderStripeAccountId = onCall<{ providerUid: string }, Promise<{ stripeAccountId: string }>>(
-  async (request): Promise<{ stripeAccountId: string }> => {
+export const getProviderStripeAccountId = onCall(
+  { region: "europe-west1" },
+  async (request: CallableRequest<{ providerUid: string }>): Promise<{ stripeAccountId: string }> => {
     loggerV2.info("[getProviderStripeAccountId] Aufgerufen.");
-    const db = getDb();
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY.value();
+    const db = getDb(); // Firestore-Instanz
+    const stripeKey = STRIPE_SECRET_KEY.value(); // Secret-Zugriff
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     if (!request.auth?.uid) {
       loggerV2.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");

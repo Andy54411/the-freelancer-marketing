@@ -6,11 +6,10 @@ import { FiLoader, FiAlertCircle, FiMapPin, FiCreditCard } from 'react-icons/fi'
 import BestaetigungsContent from './components/BestaetigungsContent';
 import { StripeCardCheckout } from '@/components/CheckoutForm';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { getFunctions, httpsCallable, Functions, FunctionsError } from 'firebase/functions';
-import { app } from '@/firebase/clients';
+import { httpsCallable, FunctionsError } from 'firebase/functions';
+import { app, functions } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
-
 import { findCategoryBySubcategory } from '@/lib/categoriesData';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -21,7 +20,6 @@ import { PaymentElement } from '@stripe/react-stripe-js';
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUG6cmYphSWfdTpsjMzieGY1n513cwTd8wUG6cmYphSWfdTpsK00N3Rtf7Dk');
 
 const auth = getAuth(app);
-const functionsInstance: Functions = getFunctions(app);
 
 // --- KORRIGIERTE INTERFACE DEFINITIONEN ---
 interface TemporaryJobDraftData {
@@ -97,6 +95,45 @@ interface BestaetigungsContentPropsForPage {
 }
 // --- ENDE DER INTERFACE DEFINITIONEN ---
 
+// Helper function to compute billing details. Moved outside the component to avoid re-declaration on every render.
+const getBillingDetails = (registration: any, user: User | null): BillingDetailsPayload | null => {
+  const baseAddress: CustomerAddress = {
+    line1: null, line2: null, city: null, postal_code: null, country: null,
+  };
+  let name: string | null = null;
+  let email: string | null = null;
+  let phone: string | null = null;
+
+  if (registration.customerType === 'private') {
+    if (registration.personalStreet && registration.personalPostalCode && registration.personalCity && registration.personalCountry) {
+      baseAddress.line1 = `${registration.personalStreet}${registration.personalHouseNumber ? ` ${registration.personalHouseNumber}` : ''}`;
+      baseAddress.postal_code = registration.personalPostalCode;
+      baseAddress.city = registration.personalCity;
+      baseAddress.country = registration.personalCountry;
+    }
+
+    name = (registration.firstName && registration.lastName) ? `${registration.firstName} ${registration.lastName}` : user?.displayName || null;
+    email = registration.email || user?.email || null;
+    phone = registration.phoneNumber || null;
+  } else if (registration.customerType === 'business') {
+    if (registration.companyStreet && registration.companyPostalCode && registration.companyCity && registration.companyCountry) {
+      baseAddress.line1 = `${registration.companyStreet}${registration.companyHouseNumber ? ` ${registration.companyHouseNumber}` : ''}`;
+      baseAddress.postal_code = registration.companyPostalCode;
+      baseAddress.city = registration.companyCity;
+      baseAddress.country = registration.companyCountry;
+    }
+    name = registration.companyName || null;
+    email = registration.email || user?.email || null;
+    phone = registration.phoneNumber || null;
+  }
+
+  // Only return if the main address fields are present
+  if (baseAddress.line1 && baseAddress.postal_code && baseAddress.city && baseAddress.country) {
+    return { name, email, phone, address: baseAddress };
+  }
+  return null; // Return null if the address is incomplete
+};
+
 
 export default function BestaetigungsPage() {
   const router = useRouter();
@@ -125,9 +162,6 @@ export default function BestaetigungsPage() {
 
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
 
-  const [billingAddressDetails, setBillingAddressDetails] = useState<BillingDetailsPayload | null>(null);
-
-
   const anbieterIdFromUrl = useMemo(() => searchParams?.get('anbieterId') ?? '', [searchParams]);
   const unterkategorieAusPfad = useMemo(() => typeof pathParams?.unterkategorie === 'string' ? decodeURIComponent(pathParams.unterkategorie as string) : '', [pathParams]);
   const postalCodeFromUrl = useMemo(() => searchParams?.get('postalCode') ?? '', [searchParams]);
@@ -142,6 +176,10 @@ export default function BestaetigungsPage() {
   const descriptionFromUrl = useMemo(() => searchParams?.get('description') ?? '', [searchParams]);
 
   const isInitializing = useRef(false);
+
+  // NEU: Prüfen, ob essentielle Registrierungsdaten geladen sind, um vorzeitige Validierung zu vermeiden.
+  // Wir nehmen an, dass customerType und description gute Indikatoren dafür sind, dass der Kontext geladen ist.
+  const isEssentialRegistrationDataMissing = !registration.customerType || !registration.description || registration.description.trim().length === 0;
 
   // Callback, der den vom BestaetigungsContent berechneten Preis (Basispreis) erhält
   const handlePriceCalculatedFromChild = useCallback((priceInCents: number) => {
@@ -182,27 +220,59 @@ export default function BestaetigungsPage() {
     console.log(PAGE_LOG, "BestaetigungsPage: onDetailsChange von Kindkomponente empfangen.");
   }, []);
 
+  // Call the helper function inside a useMemo hook at the top level of the component.
+  // This follows the Rules of Hooks and ensures the value is only recomputed when its dependencies change.
+  const billingAddressDetails = useMemo(() => {
+    return getBillingDetails(registration, currentUser);
+  }, [
+    registration.customerType,
+    registration.personalStreet, registration.personalHouseNumber, registration.personalPostalCode, registration.personalCity, registration.personalCountry,
+    registration.firstName, registration.lastName, registration.email, registration.phoneNumber,
+    registration.companyName, registration.companyStreet, registration.companyHouseNumber, registration.companyPostalCode, registration.companyCity, registration.companyCountry,
+    currentUser
+  ]);
+
   // =================================================================================================
-  // ERSTER useEffect-HOOK: Authentifizierung, Draft-Erstellung, Stripe Customer ID
-  // Hier werden auch die Rechnungsadressdetails aus dem Registration-Context gesammelt
+  // EFFECT 1: Handle user authentication state
   // =================================================================================================
   useEffect(() => {
-    console.log(PAGE_LOG, "BestaetigungsPage: Erster useEffect WIRD AUSGEFÜHRT.");
-
+    console.log(PAGE_LOG, "BestaetigungsPage: Auth listener effect setup.");
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log(PAGE_LOG, "BestaetigungsPage: onAuthStateChanged-Callback, User:", user?.uid);
+      console.log(PAGE_LOG, "BestaetigungsPage: Auth state changed, user:", user?.uid);
       if (user) {
         setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+        console.warn(PAGE_WARN, "BestaetigungsPage: No user logged in. Redirecting to login...");
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+        router.push(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      }
+    });
+    return () => {
+      console.log(PAGE_LOG, "BestaetigungsPage: Cleaning up auth listener effect.");
+      unsubscribe();
+    };
+  }, [router]); // This effect should only run once to set up the listener.
+
+  // =================================================================================================
+  // EFFECT 2: Handle data initialization and server communication once the user is authenticated.
+  // =================================================================================================
+  useEffect(() => {
+    const initializeOrder = async () => {
+      if (currentUser) {
+        // NEU: Wenn essentielle Registrierungsdaten noch fehlen, warten und nicht initialisieren.
+        if (isEssentialRegistrationDataMissing) {
+          console.log(PAGE_LOG, "BestaetigungsPage: Essential registration data is missing, waiting for context update.");
+          return; // Nicht fortfahren, bis Daten verfügbar sind.
+        }
 
         if (isInitializing.current) {
           console.log(PAGE_LOG, "BestaetigungsPage: Initialisierung bereits im Gange oder abgeschlossen. Überspringe.");
-          setIsLoadingPageData(false);
           return;
         }
         isInitializing.current = true;
 
-        console.log(PAGE_LOG, `BestaetigungsPage: User ${user.uid} authentifiziert. Starte einmalige Initialisierung.`);
-        setCurrentUser(user); // Stelle sicher, dass currentUser im State ist
+        console.log(PAGE_LOG, `BestaetigungsPage: User ${currentUser.uid} authenticated. Starting one-time initialization.`);
         setIsLoadingPageData(true);
         setPageError(null);
 
@@ -236,54 +306,6 @@ export default function BestaetigungsPage() {
         const jobTotalCalculatedHoursToUse = registration.jobTotalCalculatedHours || (auftragsDauerUrl ? parseInt(auftragsDauerUrl, 10) : null);
         const jobCalculatedPriceInCentsToUse = registration.jobCalculatedPriceInCents || priceFromUrl || null;
 
-        // NEU: Rechnungsadressdetails aus dem registration-Context sammeln
-        const collectedBillingAddressDetails: BillingDetailsPayload | null = (() => {
-          const baseAddress: CustomerAddress = {
-            line1: null, line2: null, city: null, postal_code: null, country: null,
-          };
-          let name: string | null = null;
-          let email: string | null = null;
-          let phone: string | null = null;
-
-          if (registration.customerType === 'private') {
-            if (registration.personalStreet && registration.personalPostalCode && registration.personalCity && registration.personalCountry) {
-              baseAddress.line1 = `${registration.personalStreet}${registration.personalHouseNumber ? ` ${registration.personalHouseNumber}` : ''}`;
-              baseAddress.postal_code = registration.personalPostalCode;
-              baseAddress.city = registration.personalCity;
-              baseAddress.country = registration.personalCountry;
-            }
-
-            name = (registration.firstName && registration.lastName) ? `${registration.firstName} ${registration.lastName}` : user.displayName || null;
-            email = registration.email || user.email || null;
-            phone = registration.phoneNumber || null;
-          } else if (registration.customerType === 'business') {
-            if (registration.companyStreet && registration.companyPostalCode && registration.companyCity && registration.companyCountry) {
-              baseAddress.line1 = `${registration.companyStreet}${registration.companyHouseNumber ? ` ${registration.companyHouseNumber}` : ''}`;
-              baseAddress.postal_code = registration.companyPostalCode;
-              baseAddress.city = registration.companyCity;
-              baseAddress.country = registration.companyCountry;
-            }
-            name = registration.companyName || null;
-            email = registration.email || user.email || null;
-            phone = registration.phoneNumber || null;
-          }
-
-          // Nur zurückgeben, wenn zumindest die Hauptadressfelder vorhanden sind
-          if (baseAddress.line1 && baseAddress.postal_code && baseAddress.city && baseAddress.country) {
-            return {
-              name: name,
-              email: email,
-              phone: phone,
-              address: baseAddress,
-            };
-          }
-          return null; // Wenn Adresse unvollständig
-        })();
-
-        // Setze die Billing Address Details in den State
-        setBillingAddressDetails(collectedBillingAddressDetails);
-
-
         const draftData: TemporaryJobDraftData = {
           customerType: customerTypeToUse,
           selectedCategory: selectedCategoryToUse,
@@ -301,7 +323,7 @@ export default function BestaetigungsPage() {
           jobTotalCalculatedHours: jobTotalCalculatedHoursToUse,
           jobCalculatedPriceInCents: jobCalculatedPriceInCentsToUse,
           tempDraftId: tempDraftIdFromUrl || null,
-          billingDetails: collectedBillingAddressDetails, // Rechnungsdetails hier hinzufügen
+          billingDetails: billingAddressDetails, // Rechnungsdetails hier hinzufügen
         };
 
         // jobCalculatedPriceInCents ist der Basis-Preis des Anbieters
@@ -338,8 +360,8 @@ export default function BestaetigungsPage() {
         if (draftData.jobTotalCalculatedHours == null || draftData.jobTotalCalculatedHours <= 0) missingFields.push('Berechnete Gesamtdauer (Stunden)'); // `== null` prüft auf null und undefined
         // Hier den jobCalculatedPriceInCents als Basispreis prüfen
         if (draftData.jobCalculatedPriceInCents == null || draftData.jobCalculatedPriceInCents <= 0) missingFields.push('Berechneter Preis (Cents)'); // `== null` prüft auf null und undefined
-        // NEU: Rechnungsadresse ist jetzt auch Pflicht für den PaymentIntent
-        if (!collectedBillingAddressDetails || !collectedBillingAddressDetails.address?.line1 || !collectedBillingAddressDetails.address?.postal_code || !collectedBillingAddressDetails.address?.city || !collectedBillingAddressDetails.address?.country) {
+        // Rechnungsadresse ist jetzt auch Pflicht für den PaymentIntent
+        if (!billingAddressDetails || !billingAddressDetails.address?.line1 || !billingAddressDetails.address?.postal_code || !billingAddressDetails.address?.city || !billingAddressDetails.address?.country) {
           missingFields.push('Vollständige Rechnungsadresse');
         }
 
@@ -360,24 +382,34 @@ export default function BestaetigungsPage() {
         try {
           console.log(PAGE_LOG, "BestaetigungsPage: Inhalt von draftData vor dem Senden an createTemporaryJobDraftCallable:", JSON.stringify(draftData, null, 2));
 
-          console.log(PAGE_LOG, "BestaetigungsPage: Rufe createTemporaryJobDraftCallable auf...");
-          const createTemporaryJobDraftCallable = httpsCallable<TemporaryJobDraftData, TemporaryJobDraftResult>(functionsInstance, 'createTemporaryJobDraft');
-          const draftResult = await createTemporaryJobDraftCallable(draftData);
-          setTempJobDraftId(draftResult.data.tempDraftId);
-          console.log(PAGE_LOG, `BestaetigungsPage: Temporärer Job-Entwurf erstellt/aktualisiert: ${draftResult.data.tempDraftId}`);
+          console.log(PAGE_LOG, "BestaetigungsPage: Rufe createTemporaryJobDraft Callable auf...");
+          console.log(PAGE_LOG, `BestaetigungsPage: Sende DraftData für Anbieter-ID: ${draftData.selectedAnbieterId}`); // Added debug log
 
-          if (!draftResult.data.anbieterStripeAccountId) {
+          // --- KORREKTUR: Zurück zu httpsCallable, um CORS-Probleme zu vermeiden. ---
+          // Dies erfordert, dass die 'createTemporaryJobDraft' Firebase Function eine 'onCall' Funktion ist,
+          // was die empfohlene Vorgehensweise für Aufrufe aus Client-Anwendungen ist.
+          const createTemporaryJobDraftCallable = httpsCallable<TemporaryJobDraftData, TemporaryJobDraftResult>(
+            functions,
+            'createTemporaryJobDraft'
+          );
+          const draftResult = await createTemporaryJobDraftCallable(draftData);
+          const draftResultData = draftResult.data;
+
+          setTempJobDraftId(draftResultData.tempDraftId);
+          console.log(PAGE_LOG, `BestaetigungsPage: Temporärer Job-Entwurf erstellt/aktualisiert: ${draftResultData.tempDraftId}`);
+
+          if (!draftResultData.anbieterStripeAccountId) {
             console.error(PAGE_ERROR, "BestaetigungsPage: Anbieter Stripe Account ID NICHT vom Backend erhalten!");
             setPageError("Wichtige Zahlungsinformationen des Anbieters fehlen. Bitte stellen Sie sicher, dass der Anbieter korrekt registriert ist."); // Klarere Fehlermeldung
             setIsLoadingPageData(false);
             isInitializing.current = false;
             return;
           }
-          setAnbieterStripeConnectId(draftResult.data.anbieterStripeAccountId);
+          setAnbieterStripeConnectId(draftResultData.anbieterStripeAccountId);
           console.log(PAGE_LOG, "BestaetigungsPage: Anbieter Stripe Account ID erhalten.");
 
           // Daten für Stripe-Kundenaufruf vorbereiten
-          const emailForStripe = collectedBillingAddressDetails?.email || user.email;
+          const emailForStripe = billingAddressDetails?.email || currentUser.email;
           if (!emailForStripe) {
             console.error(PAGE_ERROR, "BestaetigungsPage: E-Mail für Stripe-Kunden konnte nicht ermittelt werden.");
             setPageError("E-Mail für die Zahlungsabwicklung fehlt. Bitte Profil vervollständigen oder erneut versuchen.");
@@ -389,15 +421,15 @@ export default function BestaetigungsPage() {
           // Daten für Stripe-Kundenaufruf vorbereiten
           const stripeCustomerPayload: GetOrCreateStripeCustomerPayload = {
             email: emailForStripe,
-            name: collectedBillingAddressDetails?.name || user.displayName || undefined,
-            phone: collectedBillingAddressDetails?.phone || undefined,
-            address: collectedBillingAddressDetails?.address || undefined,
+            name: billingAddressDetails?.name || currentUser.displayName || undefined,
+            phone: billingAddressDetails?.phone || undefined,
+            address: billingAddressDetails?.address || undefined,
           };
 
 
-          console.log(PAGE_LOG, `BestaetigungsPage: Rufe getOrCreateStripeCustomer für User ${user.uid} auf mit Payload:`, JSON.stringify(stripeCustomerPayload, null, 2));
+          console.log(PAGE_LOG, `BestaetigungsPage: Rufe getOrCreateStripeCustomer für User ${currentUser.uid} auf mit Payload:`, JSON.stringify(stripeCustomerPayload, null, 2));
           const getOrCreateStripeCustomerCallable = httpsCallable<GetOrCreateStripeCustomerPayload, GetOrCreateStripeCustomerResult>(
-            functionsInstance,
+            functions,
             'getOrCreateStripeCustomer'
           );
           const customerResult = await getOrCreateStripeCustomerCallable(stripeCustomerPayload);
@@ -406,52 +438,50 @@ export default function BestaetigungsPage() {
 
         } catch (error: unknown) {
           console.error(PAGE_ERROR, "BestaetigungsPage: FEHLER bei Initialisierung:", error);
-          let specificErrorMessage = 'Ein unbekannter Fehler ist bei der Zahlungsvorbereitung aufgetreten.';
+          let specificErrorMessage = 'Ein unbekannter Fehler ist bei der Auftragsvorbereitung aufgetreten.';
           if (error instanceof FunctionsError) {
-            specificErrorMessage = `Fehler bei der Zahlungsvorbereitung (${error.code}): ${error.message}`;
+            if (error.code === 'not-found' || error.code === 'failed-precondition') {
+              specificErrorMessage = 'Der ausgewählte Anbieter ist nicht mehr verfügbar oder existiert nicht. Bitte wählen Sie einen anderen Anbieter aus.';
+            } else {
+              // Allgemeine Fehlermeldung für andere FunctionsError-Codes
+              specificErrorMessage = `Fehler bei der Zahlungsvorbereitung (${error.code}): ${error.message}`;
+            }
           } else if (error instanceof Error) {
             specificErrorMessage = `Fehler bei der Zahlungsvorbereitung: ${error.message}`;
           }
           setPageError(specificErrorMessage);
-          isInitializing.current = false;
         } finally {
           setIsLoadingPageData(false);
+          isInitializing.current = false;
         }
-      } else {
-        setCurrentUser(null);
-        isInitializing.current = false;
-        console.warn(PAGE_WARN, "BestaetigungsPage: Kein Nutzer eingeloggt. Leite zum Login weiter...");
-        const currentPath = `${window.location.pathname}${window.location.search}`;
-        router.push(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
       }
-    });
-
-    return () => {
-      console.log(PAGE_LOG, "BestaetigungsPage: Cleanup von useEffect und onAuthStateChanged.");
-      unsubscribe();
     };
+
+    initializeOrder();
+
   }, [
-    router, BUYER_SERVICE_FEE_RATE, // Hinzugefügt als Abhängigkeit für den Effect
-    // Abhängigkeiten aus dem registration-Context (alle weiterhin relevant)
+    currentUser,
+    // Specific registration properties to avoid re-running on every context change
     registration.customerType, registration.selectedCategory, registration.selectedSubcategory,
-    registration.description, registration.jobStreet, registration.jobPostalCode, registration.jobCity,
-    registration.jobCountry, registration.jobDateFrom, registration.jobDateTo, registration.jobTimePreference,
-    registration.selectedAnbieterId, registration.jobDurationString, registration.jobTotalCalculatedHours,
-    registration.jobCalculatedPriceInCents,
-    // NEU: Hinzugefügte persönliche/Firmen-Details aus dem Registration-Context, die für billingDetails benötigt werden
-    registration.personalStreet, registration.personalHouseNumber, registration.personalPostalCode,
-    registration.personalCity, registration.personalCountry, registration.phoneNumber, registration.email,
-    registration.firstName, registration.lastName,
-    registration.companyStreet, registration.companyHouseNumber, registration.companyPostalCode,
-    registration.companyCity, registration.companyCountry, registration.companyName, // companyName für BillingDetails name
-    // Abhängigkeiten aus URL-Parametern (alle weiterhin relevant)
-    anbieterIdFromUrl, unterkategorieAusPfad, postalCodeFromUrl, dateFromUrl, timeUrl, auftragsDauerUrl, // eslint-disable-line
-    priceFromUrl, tempDraftIdFromUrl, descriptionFromUrl,
-    // Lokale States, die hier gelesen werden (jobPriceInCents wird initial gesetzt)
+    registration.description, registration.jobStreet, registration.jobPostalCode,
+    registration.jobCity, registration.jobCountry, registration.jobDateFrom,
+    registration.jobDateTo, registration.jobTimePreference, registration.selectedAnbieterId,
+    registration.jobDurationString, registration.jobTotalCalculatedHours, registration.jobCalculatedPriceInCents,
+    // URL params (memoized)
+    anbieterIdFromUrl,
+    unterkategorieAusPfad,
+    postalCodeFromUrl,
+    dateFromUrl,
+    timeUrl,
+    auftragsDauerUrl,
+    priceFromUrl,
+    tempDraftIdFromUrl,
+    descriptionFromUrl,
+    // Other state and memoized values
     jobPriceInCents,
-    // billingAddressDetails wurde entfernt, da es im Effekt gesetzt wird und eine Schleife verursachen kann.
-    // Die Aktualisierung von billingAddressDetails wird durch Änderungen seiner Quellabhängigkeiten (registration.*) ausgelöst.
-    currentUser // Auch currentUser als Abhängigkeit für den onAuthStateChanged-Block
+    billingAddressDetails,
+    router,
+    isEssentialRegistrationDataMissing,
   ]);
 
   // =================================================================================================
@@ -578,7 +608,8 @@ export default function BestaetigungsPage() {
     setPaymentMessage(`Fehler bei der Zahlung: ${errorMessage}`);
   };
 
-  const isLoadingOverall = isLoadingPageData || loadingPaymentIntent;
+  // Gesamtladezustand berücksichtigt nun auch das Laden der Registrierungsdaten
+  const isLoadingOverall = isLoadingPageData || loadingPaymentIntent || (currentUser && isEssentialRegistrationDataMissing);
 
   const dataIsReadyForCheckoutForm =
     clientSecret && kundeStripeCustomerId && tempJobDraftId && currentUser &&
@@ -776,14 +807,14 @@ export default function BestaetigungsPage() {
                     <div className="mt-4 text-xs text-left bg-gray-100 p-2 rounded">
                       <p className="font-semibold">Debug-Info (Bedingung für Zahlungsformular nicht erfüllt):</p>
                       <p>clientSecret: {String(!!clientSecret)}</p>
-                      <p>kundeStripeCustomerId: {String(kundeStripeCustomerId)}</p>
-                      <p>tempJobDraftId: {String(tempJobDraftId)}</p>
+                      <p>kundeStripeCustomerId: {String(!!kundeStripeCustomerId)}</p>
+                      <p>tempJobDraftId: {String(!!tempJobDraftId)}</p>
                       <p>currentUser: {String(!!currentUser)}</p>
-                      <p>anbieterStripeConnectId: {String(anbieterStripeConnectId)}</p>
-                      <p>pageError: {String(pageError)}</p>
-                      <p>paymentIntentError: {String(paymentIntentError)}</p>
-                      <p>jobPriceInCents: {String(jobPriceInCents)}</p>
-                      <p>totalAmountPayableInCents: {String(totalAmountPayableInCents)}</p>
+                      <p>anbieterStripeConnectId: {String(!!anbieterStripeConnectId)}</p>
+                      <p>pageError: {String(!!pageError)}</p>
+                      <p>paymentIntentError: {String(!!paymentIntentError)}</p>
+                      <p>jobPriceInCents: {String(!!jobPriceInCents)}</p>
+                      <p>totalAmountPayableInCents: {String(!!totalAmountPayableInCents)}</p>
                       <p className="font-semibold mt-2">Billing Address Details Debug:</p>
                       <p>billingAddressDetails: {String(!!billingAddressDetails)}</p>
                       <p>address.line1: {String(billingAddressDetails?.address?.line1)}</p>

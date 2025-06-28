@@ -31,20 +31,22 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
+  SidebarMenu, // SidebarMenu ist eine Komponente, die den Kontext konsumiert
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarProvider, // Dies ist der tatsächliche Kontext-Provider
 } from "@/components/ui/sidebar";
 import { RawFirestoreUserData } from "./SettingsPage"; // Import the type
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   setView?: (view: "dashboard" | "settings") => void;
   activeView?: "dashboard" | "settings";
+  // children: React.ReactNode; // Diese Prop wird hier nicht mehr benötigt
 };
 
 export function AppSidebar({ setView, activeView = "dashboard", ...sidebarProps }: AppSidebarProps) {
   const [userData, setUserData] = useState<RawFirestoreUserData | null>(null);
-  const [profilePictureURL, setProfilePictureURL] = useState<string>("/default-avatar.jpg");
+  const [profilePictureURL, setProfilePictureURL] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +75,8 @@ export function AppSidebar({ setView, activeView = "dashboard", ...sidebarProps 
       if (list.items.length > 0) {
         const url = await getDownloadURL(list.items[0]);
         setProfilePictureURL(url);
+      } else {
+        setProfilePictureURL(null);
       }
     } catch (err) {
       console.error("Fehler beim Abrufen der Daten:", err);
@@ -118,7 +122,7 @@ export function AppSidebar({ setView, activeView = "dashboard", ...sidebarProps 
     user: {
       name: `${firstName} ${lastName}`,
       email: displayEmail,
-      avatar: profilePictureURL,
+      avatar: profilePictureURL || undefined,
     },
     navMain: [
       {

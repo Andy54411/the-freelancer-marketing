@@ -2,8 +2,8 @@
 
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
-import Stripe from 'stripe';
-import { getDb, getStripeInstance, getStripeWebhookSecret, FieldValue, Timestamp } from './helpers';
+import Stripe from 'stripe'; // Keep Stripe import
+import { getDb, getStripeInstance, getStripeWebhookSecret, FieldValue, Timestamp } from './helpers'; // Keep necessary helpers
 import { defineSecret } from 'firebase-functions/params';
 
 // Parameter zentral definieren
@@ -48,9 +48,9 @@ interface SavedPaymentMethodForFirestore {
 
 export const stripeWebhookHandler = onRequest(async (request, response) => {
     logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}, URL: ${request.url}`);
-    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulator ? process.env.STRIPE_SECRET_KEY! : STRIPE_SECRET_KEY_WEBHOOKS.value();
-    const webhookSecretValue = isEmulator ? process.env.STRIPE_WEBHOOK_SECRET : STRIPE_WEBHOOK_SECRET_PARAM.value();
+    // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt
+    const stripeKey = STRIPE_SECRET_KEY_WEBHOOKS.value();
+    const webhookSecretValue = STRIPE_WEBHOOK_SECRET_PARAM.value();
     const db = getDb();
     const localStripe = getStripeInstance(stripeKey);
     const webhookSecret = getStripeWebhookSecret(webhookSecretValue);
@@ -163,6 +163,7 @@ export const stripeWebhookHandler = onRequest(async (request, response) => {
                         const auftragData = {
                             ...tempJobDraftData,
                             status: 'zahlung_erhalten_clearing', // Neuer Status für die Clearing-Periode
+                            paymentIntentId: paymentIntentSucceeded.id, // WICHTIG: Speichern für eventuelle Rückerstattungen
                             paidAt: FieldValue.serverTimestamp(),
                             customerFirebaseUid: firebaseUserId,
                             tempJobDraftRefId: tempJobDraftId,

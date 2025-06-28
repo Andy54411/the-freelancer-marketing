@@ -2,80 +2,166 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regeln für die 'companies' Collection
-    match /companies/{companyId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == companyId;
+    // 🔁 Rollen anhand des user_type im Firestore-Dokument des Benutzers prüfen
+    function isCompany() {
+      // Prüft, ob der anfragende Benutzer in seinem /users/{uid} Dokument den Typ 'firma' hat.
+      // Dies ist robuster als sich auf Custom Claims zu verlassen.
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'firma';
+    }
+    function isAdmin() {
+      return request.auth != null && 'role' in request.auth.token
+             && request.auth.token.role == 'admin';
     }
 
-    // Regeln für die 'users' Collection
+    // --- users Collection ---
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read:  if request.auth != null
+                   && (request.auth.uid == userId || isAdmin() || isCompany());
+      allow write: if request.auth != null
+                   && request.auth.uid == userId;
     }
 
-    // Regeln für die 'auftraege' Collection
-    match /auftraege/{auftragId} {
-      allow read: if request.auth != null
-                   && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
-                       || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid);
-      allow create, update, delete: if false; // Aufträge sollten vom Backend (Webhook) erstellt/aktualisiert werden
-    }
-
-    // --- KORRIGIERTE REGEL: Für die 'temporaryJobDrafts' Collection ---
-    match /temporaryJobDrafts/{docId} {
-      // Für 'create': Prüfen, ob authentifiziert, Feld existiert, String ist und übereinstimmt
+    // --- companies Collection ---
+    match /companies/{companyId} {
+      allow read:  if request.auth != null;
+      // Allow a user to create their own company document during registration.
+      // They do not need the 'company' role yet for this initial step.
       allow create: if request.auth != null
-                     && ('customerFirebaseUid' in request.resource.data)
-                     && (request.resource.data.customerFirebaseUid is string)
-                     && request.auth.uid == request.resource.data.customerFirebaseUid;
-
-      // Für 'read', 'update', 'delete': Prüfen, ob authentifiziert, Feld existiert, String ist und übereinstimmt
-      allow read, update, delete: if request.auth != null
-                                   && ('customerFirebaseUid' in resource.data)
-                                   && (resource.data.customerFirebaseUid is string)
-                                   && request.auth.uid == resource.data.customerFirebaseUid;
+                    && request.auth.uid == companyId;
+      // For subsequent updates, the user must have the 'company' role.
+      allow update: if request.auth != null
+                    && request.auth.uid == companyId
+                    && isCompany();
+      allow delete: if false; // It's safest to explicitly deny deletes for now.
     }
 
-    // Regeln für die 'nachrichten' Sub-Collection unter 'auftraege'
-    match /auftraege/{auftragId}/nachrichten/{nachrichtId} {
-      allow read: if request.auth != null
-                     && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
-                         || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid);
+    // --- auftraege Collection ---
+    match /auftraege/{auftragId} {
+      allow read:    if request.auth != null
+                     && (
+                          resource.data.kundeId == request.auth.uid ||
+                          resource.data.selectedAnbieterId == request.auth.uid ||
+                          isCompany() ||
+                          isAdmin()
+                        );
+      allow create,
+            update,
+            delete: if false;
+
+      // Sub-Collection: nachrichten
+      // Hier muss jedes Nachricht-Dokument ein Feld `chatUsers` (Array) enthalten,
+      // das alle teilnehmenden UIDs angibt (kunde + anbieter).
+      match /nachrichten/{nachrichtId} {
+        // 'get' erlaubt Admins/Firmen, eine einzelne Nachricht zu lesen, wenn sie die ID kennen.
+        allow get: if request.auth != null && (
+                     ('chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers) ||
+                     isCompany() ||
+                     isAdmin()
+                   );
+
+        // 'list' ist strenger und erfordert, dass die Abfrage nach der UID des Benutzers filtert.
+        // Dies stellt sicher, dass Benutzer nur die Chats auflisten können, an denen sie beteiligt sind.
+        // Die Client-Abfrage MUSS `where('chatUsers', 'array-contains', currentUser.uid)` enthalten.
+        allow list: if request.auth != null &&
+                     'chatUsers' in resource.data &&
+                     request.auth.uid in resource.data.chatUsers;
 
         allow create: if request.auth != null
                        && request.resource.data.senderId == request.auth.uid
-                       && (get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid
-                           || get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid)
-                       && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'timestamp', 'senderType'])
+                       && request.resource.data.keys().hasAll([
+                            "senderId", "senderName", "text", "timestamp",
+                            "senderType", "chatUsers"
+                          ])
                        && request.resource.data.timestamp == request.time;
-
         allow update, delete: if false;
-    }
-
-    // Regeln für die 'supportChats' Collection und 'messages' Sub-Collection
-    match /supportChats/{chatId} {
-      // Erlaube das Erstellen des Chat-Dokuments selbst nicht direkt durch den Client.
-      // Das Dokument wird implizit erstellt, wenn die erste Nachricht geschrieben wird.
-      allow read, write: if false;
-
-      match /messages/{messageId} {
-        allow read: if request.auth != null
-                       // Der Benutzer darf nur Nachrichten lesen, wenn seine UID Teil der chatId ist.
-                       // chatId ist im Format 'support_chat_{userId}'
-                       && request.auth.uid == chatId.split('_')[2];
-        allow create: if request.auth != null
-                        && request.auth.uid == chatId.split('_')[2] // Stellt sicher, dass der User nur in seinem Chat schreibt
-                        && request.resource.data.senderId == request.auth.uid // Stellt sicher, dass der senderId der des authentifizierten Users ist
-                        && request.resource.data.keys().hasAll(['senderId', 'text', 'timestamp']) // Benötigte Felder
-                        && request.resource.data.timestamp == request.time; // Stellt sicher, dass der Timestamp vom Server kommt
-        allow update, delete: if false; // Nachrichten sollten nicht vom Client aktualisiert/gelöscht werden
       }
     }
 
-    // Fallback-Regel für andere Collections
-    match /{collection}/{document} {
-      allow read: if request.auth != null;
-      allow write: if false;
+    // --- temporaryJobDrafts Collection ---
+    // Diese Dokumente müssen ein Feld `customerFirebaseUid` enthalten.
+    match /temporaryJobDrafts/{draftId} {
+      allow create: if request.auth != null
+                     && request.resource.data.customerFirebaseUid == request.auth.uid;
+      allow read,
+            update,
+            delete: if request.auth != null
+                     && resource.data.customerFirebaseUid == request.auth.uid;
+    }
+
+    // --- supportChats Collection ---
+    // Hier ebenfalls: jede Nachricht im Unterdokument `messages` braucht `chatUsers`.
+    match /supportChats/{chatId} {
+      allow create: if request.auth != null
+                     && request.resource.data.userId == request.auth.uid;
+      allow read:   if request.auth != null
+                     && resource.data.userId == request.auth.uid;
+      allow update,
+            delete: if false;
+
+      match /messages/{messageId} {
+        // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
+        allow get: if request.auth != null && (
+                     ('chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers) ||
+                     isCompany() ||
+                     isAdmin()
+                   );
+        allow list: if request.auth != null &&
+                     'chatUsers' in resource.data &&
+                     request.auth.uid in resource.data.chatUsers;
+
+        allow create: if request.auth != null
+                       && request.resource.data.senderId == request.auth.uid
+                       && request.resource.data.keys().hasAll([
+                            "senderId", "text", "timestamp", "chatUsers"
+                          ])
+                       && request.resource.data.timestamp == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    // --- chats Collection (Allgemeine Chats) ---
+    // Auch hier: jede Nachricht braucht `chatUsers`.
+    match /chats/{chatId} {
+      allow read: if request.auth != null
+                   && ('users' in resource.data)
+                   && request.auth.uid in resource.data.users;
+      allow create, update: if request.auth != null
+                             && ('users' in request.resource.data)
+                             && request.auth.uid in request.resource.data.users;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
+        allow get: if request.auth != null && (
+                     ('chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers) ||
+                     isCompany() ||
+                     isAdmin()
+                   );
+        allow list: if request.auth != null &&
+                     'chatUsers' in resource.data &&
+                     request.auth.uid in resource.data.chatUsers;
+
+        allow create: if request.auth != null
+                       && request.resource.data.senderId == request.auth.uid
+                       && request.resource.data.keys().hasAll([
+                            "senderId", "text", "timestamp", "chatUsers"
+                          ])
+                       && request.resource.data.timestamp == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /auftraege/{auftragId}/nachrichten/{nachrichtId} {
+      allow list, get: if request.auth != null
+        && ('chatUsers' in resource.data)
+        && request.auth.uid in resource.data.chatUsers;
+      allow create: if request.auth != null
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+             "senderId", "text", "timestamp", "chatUsers"
+           ])
+        && request.resource.data.timestamp == request.time;
+      allow update, delete: if false;
     }
   }
 }

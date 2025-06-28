@@ -3,11 +3,9 @@
 
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import { httpsCallable, getFunctions } from 'firebase/functions';
-import { app } from '@/firebase/clients';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/firebase/clients'; // Importiere die konfigurierte functions-Instanz
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
-
-const functionsInstance = getFunctions(app);
 
 // Interfaces
 interface Review {
@@ -51,7 +49,7 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
             try {
                 // Für dieses Beispiel verwenden wir direkt httpsCallable, da die Emulator-Logik komplex sein kann.
                 // Deine Logik mit dem direkten Fetch-Aufruf für den Emulator ist in Ordnung, aber dies ist eine Vereinfachung.
-                const getReviewsCallable = httpsCallable<{ anbieterId: string }, { data: Review[] }>(functionsInstance, 'getReviewsByProvider');
+                const getReviewsCallable = httpsCallable<{ anbieterId: string }, { data: Review[] }>(functions, 'getReviewsByProvider');
                 const result = await getReviewsCallable({ anbieterId });
 
                 const data = result.data.data;

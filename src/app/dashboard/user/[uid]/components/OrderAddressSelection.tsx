@@ -51,7 +51,17 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
         setError(null);
         setExpandedStates({});
         try {
-            const apiUrl = `${SEARCH_API_URL}?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(subcategory)}`;
+            let apiUrl = `${SEARCH_API_URL}?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(subcategory)}`;
+
+            // KORREKTUR: Im Entwicklungsmodus die Emulator-URL dynamisch und mit der korrekten Region erstellen.
+            // Dies behebt den 404/CORS-Fehler, da die Funktion in 'europe-west1' und nicht 'us-central1' läuft.
+            if (process.env.NODE_ENV === 'development') {
+                const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+                const region = 'europe-west1'; // Die Region Ihrer Funktion
+                const functionName = 'searchCompanyProfiles';
+                apiUrl = `http://127.0.0.1:5001/${projectId}/${region}/${functionName}?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(subcategory)}`;
+            }
+
             const res = await fetch(apiUrl);
             if (!res.ok) throw new Error(`API-Fehler ${res.status}`);
 

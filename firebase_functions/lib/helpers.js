@@ -37,18 +37,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.admin = exports.Timestamp = exports.FieldValue = void 0;
+exports.admin = exports.Timestamp = exports.FieldValue = exports.corsOptions = void 0;
 exports.getDb = getDb;
 exports.getAuthInstance = getAuthInstance;
 exports.getStorageInstance = getStorageInstance;
 exports.getStripeInstance = getStripeInstance;
-exports.getSendGridClient = getSendGridClient;
 exports.getPublicFrontendURL = getPublicFrontendURL;
 exports.getEmulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL;
 exports.getFrontendURL = getFrontendURL;
 exports.getStripeWebhookSecret = getStripeWebhookSecret;
 const app_1 = require("firebase-admin/app");
-const firestore_1 = require("firebase-admin/firestore");
+const firestore_1 = require("firebase-admin/firestore"); // Exportiere FieldValue und Timestamp
 Object.defineProperty(exports, "FieldValue", { enumerable: true, get: function () { return firestore_1.FieldValue; } });
 Object.defineProperty(exports, "Timestamp", { enumerable: true, get: function () { return firestore_1.Timestamp; } });
 const auth_1 = require("firebase-admin/auth");
@@ -56,17 +55,20 @@ const storage_1 = require("firebase-admin/storage");
 const admin = __importStar(require("firebase-admin"));
 exports.admin = admin;
 const stripe_1 = __importDefault(require("stripe"));
-const mail_1 = __importDefault(require("@sendgrid/mail"));
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 // --- Instanz-Variablen für Lazy Loading ---
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
 // dass sie bei jedem Aufruf neu erstellt werden.
+// Zentrale CORS-Konfiguration für alle Callable Functions.
+exports.corsOptions = {
+    region: "europe-west1",
+    cors: ["http://localhost:3000", "https://tilvo-f142f.web.app", "http://localhost:5002"]
+};
 let dbInstance;
 let authInstance;
 let storageInstance;
 let stripeClientInstance;
-let sendgridClientConfigured = false;
 /**
  * Initialisiert und gibt die Firebase Admin App Instanz zurück.
  * Diese Funktion stellt sicher, dass die App nur einmal initialisiert wird.
@@ -77,29 +79,11 @@ function getAdminApp() {
     }
     const app = (0, app_1.initializeApp)();
     v2_1.logger.info("Admin SDK erfolgreich initialisiert.");
-    // Emulator-spezifische Konfigurationen, falls zutreffend.
-    // Hinweis: Diese Firestore-Verbindung hier ist nur für die Settings und
-    // wird nicht für die Instanz-Erstellung der Funktion verwendet.
+    // The Admin SDK automatically connects to the Firestore emulator when the
+    // FIRESTORE_EMULATOR_HOST environment variable is set by `firebase emulators:start`.
+    // The explicit configuration below is removed to avoid port conflicts and make the setup more robust.
     if (process.env.FUNCTIONS_EMULATOR === 'true') {
-        try {
-            (0, firestore_1.getFirestore)(app).settings({
-                host: 'localhost:8080',
-                ssl: false,
-            });
-            v2_1.logger.info("[getAdminApp] Firestore Admin SDK mit Emulator verbunden.");
-        }
-        catch (e) {
-            if (e instanceof Error && e.message.includes("Firestore has already been started")) {
-                v2_1.logger.warn("[getAdminApp] Firestore-Instanz wurde bereits gestartet (erwartetes Verhalten).");
-            }
-            else {
-                let errorMessage = "Unbekannter Fehler bei der Verbindung zum Firestore Emulator.";
-                if (e instanceof Error) {
-                    errorMessage = e.message;
-                }
-                v2_1.logger.error("[getAdminApp] Fehler bei der Verbindung zum Firestore Emulator:", errorMessage);
-            }
-        }
+        v2_1.logger.info("[getAdminApp] Running in emulator mode. SDK will auto-connect to Firestore emulator if the environment variable is set.");
     }
     return app;
 }
@@ -176,31 +160,6 @@ function getStripeInstance(stripeKey) {
         }
     }
     return stripeClientInstance;
-}
-function getSendGridClient(sendgridKey) {
-    if (!sendgridClientConfigured) {
-        // Der SendGrid-Schlüssel wird jetzt als Parameter übergeben.
-        if (sendgridKey) {
-            try {
-                mail_1.default.setApiKey(sendgridKey);
-                sendgridClientConfigured = true;
-                v2_1.logger.info("[getSendGridClient] SendGrid-Client erfolgreich initialisiert.");
-            }
-            catch (e) {
-                let errorMessage = "Unbekannter Fehler bei der Initialisierung des SendGrid-Clients.";
-                if (e instanceof Error) {
-                    errorMessage = e.message;
-                }
-                v2_1.logger.error("KRITISCH: Fehler bei der Initialisierung des SendGrid-Clients.", { error: errorMessage, at: 'getSendGridClient' });
-                return undefined;
-            }
-        }
-        else {
-            v2_1.logger.warn("SENDGRID_API_KEY nicht verfügbar. E-Mail-Versand wird fehlschlagen.", { at: 'getSendGridClient' });
-            return undefined;
-        }
-    }
-    return sendgridClientConfigured ? mail_1.default : undefined;
 }
 /**
  * Gibt die öffentlich zugängliche Frontend-URL zurück (Live-URL im Prod, oder die in .env.local gesetzte Live-URL im Emulator).

@@ -80,6 +80,8 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
       await updateDoc(doc(db, "users", uid), {
         "profilePictureURL": url,
+        "profilePictureFirebaseUrl": url, // Sicherstellen, dass dies auch aktualisiert wird
+        "step3.profilePictureURL": url, // Sicherstellen, dass step3 auch aktualisiert wird
       });
 
       setFileUrl(url);

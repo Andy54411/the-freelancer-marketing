@@ -34,5 +34,7 @@ __exportStar(require("./http_general"), exports);
 __exportStar(require("./http_webhooks"), exports);
 __exportStar(require("./http_file_uploads"), exports);
 __exportStar(require("./triggers_firestore"), exports);
+__exportStar(require("./callable_orders"), exports);
 __exportStar(require("./getUserOrders"), exports);
+__exportStar(require("./getProviderOrders"), exports);
 //# sourceMappingURL=index.js.map

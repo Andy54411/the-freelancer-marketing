@@ -8,12 +8,15 @@ import {
     orderBy,
     limit,
     onSnapshot,
+    where,
     addDoc,
     serverTimestamp,
     QueryDocumentSnapshot,
     Timestamp,
     doc,
     getDoc,
+    setDoc,
+    updateDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { FiSend, FiLoader } from 'react-icons/fi';
@@ -36,6 +39,12 @@ interface UserProfileData {
     user_type?: 'kunde' | 'anbieter' | 'firma'; // Korrigierter Typ wie besprochen
 }
 
+// Interface für die Auftragsdaten, die für den Chat relevant sind
+interface OrderData {
+    kundeId: string;
+    selectedAnbieterId: string;
+}
+
 interface ChatComponentProps {
     orderId: string;
 }
@@ -51,6 +60,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     const [chatError, setChatError] = useState<string | null>(null);
     const [loggedInUserProfile, setLoggedInUserProfile] = useState<UserProfileData | null>(null);
     const [isSendingMessage, setIsSendingMessage] = useState(false); // Neuer State für Sende-Button
+    const [orderData, setOrderData] = useState<OrderData | null>(null); // State für Auftragsdaten
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +68,25 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Lade die Auftragsdaten, um die UIDs beider Chat-Teilnehmer zu haben
+    useEffect(() => {
+        if (!orderId) return;
+        const fetchOrderData = async () => {
+            const orderDocRef = doc(db, 'auftraege', orderId);
+            const orderDocSnap = await getDoc(orderDocRef);
+            if (orderDocSnap.exists()) {
+                const data = orderDocSnap.data();
+                setOrderData({
+                    kundeId: data.kundeId,
+                    selectedAnbieterId: data.selectedAnbieterId,
+                });
+            } else {
+                setChatError("Zugehöriger Auftrag konnte nicht gefunden werden.");
+            }
+        };
+        fetchOrderData();
+    }, [orderId]);
 
     // Laden des Benutzerprofils, sobald currentUser verfügbar ist
     useEffect(() => {
@@ -104,7 +133,11 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         setChatError(null);
 
         const messagesCollectionRef = collection(db, 'auftraege', orderId, 'nachrichten');
-        const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'), limit(50));
+        // KORREKTUR: Füge eine where-Klausel hinzu, die der Sicherheitsregel entspricht.
+        // Dies ist entscheidend für 'list'-Operationen, wenn die Regel auf Feldern im Dokument basiert.
+        const q = query(messagesCollectionRef,
+            where('chatUsers', 'array-contains', currentUser.uid), // <-- DIESE ZEILE IST NEU
+            orderBy('timestamp', 'asc'), limit(50));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedMessages: ChatMessage[] = [];
@@ -134,7 +167,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     const handleSendMessage = async (e: FormEvent) => {
         e.preventDefault();
         // Deaktiviere das Senden, wenn Text leer, Benutzer nicht angemeldet oder Profil noch lädt/fehlt
-        if (!newMessageText.trim() || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage) {
+        if (!newMessageText.trim() || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage || !orderData) {
             return;
         }
 
@@ -150,14 +183,34 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
             senderName = loggedInUserProfile.companyName || loggedInUserProfile.firstName || 'Anbieter';
         }
 
+        const messagePayload = {
+            senderId: currentUser.uid,
+            senderName: senderName,
+            senderType: senderType,
+            text: newMessageText.trim(),
+            timestamp: serverTimestamp(),
+            chatUsers: [orderData.kundeId, orderData.selectedAnbieterId], // Hinzufügen, um die Sicherheitsregel zu erfüllen
+        };
+
+        const lastMessagePayload = {
+            text: newMessageText.trim(),
+            senderId: currentUser.uid,
+            timestamp: serverTimestamp(),
+            isRead: false, // Wichtig für die Benachrichtigung!
+        };
+
         try {
-            await addDoc(collection(db, 'auftraege', orderId, 'nachrichten'), {
-                senderId: currentUser.uid,
-                senderName: senderName,
-                senderType: senderType,
-                text: newMessageText.trim(),
-                timestamp: serverTimestamp(),
-            });
+            // 1. Nachricht zur Chat-History hinzufügen (wie bisher)
+            await addDoc(collection(db, 'auftraege', orderId, 'nachrichten'), messagePayload);
+
+            // 2. Top-Level Chat-Dokument für Benachrichtigungen aktualisieren
+            const chatDocRef = doc(db, 'chats', orderId);
+            await setDoc(chatDocRef, {
+                users: [orderData.kundeId, orderData.selectedAnbieterId], // Beide Teilnehmer
+                lastMessage: lastMessagePayload,
+                lastUpdated: serverTimestamp(),
+            }, { merge: true }); // Erstellt das Dokument, falls es nicht existiert
+
             setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
         } catch (error) {
             console.error('Fehler beim Senden der Nachricht:', error);

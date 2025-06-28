@@ -279,6 +279,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
       setTempJobDraftId(newTempJobDraftId); // Speichere im State
       setFinalOrderData(orderDetailsForBackend); // FinalOrderData hier aktualisieren
 
+      console.log("DEBUG: selectedAnbieterId, die an die API gesendet wird:", selectedProvider.id); // Hinzugefügt
       console.log("DEBUG: Speichere temporären Job-Entwurf in Firestore (temporaryJobDrafts)...", newTempJobDraftId);
       const tempDraftToSave = {
         ...orderDetailsForBackend,

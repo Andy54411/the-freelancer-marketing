@@ -9,6 +9,24 @@ const firestore_2 = require("firebase-admin/firestore");
 const params_1 = require("firebase-functions/params");
 // Parameter zentral definieren
 const STRIPE_SECRET_KEY_TRIGGERS = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
+// Helper function to clean and normalize company data before writing to Firestore.
+const cleanAndNormalizeCompanyData = (data) => {
+    const cleanedData = { ...data };
+    Object.keys(cleanedData).forEach((key) => {
+        if (cleanedData[key] === undefined || cleanedData[key] === "") {
+            cleanedData[key] = null;
+        }
+    });
+    if (cleanedData.hourlyRate !== null && isNaN(cleanedData.hourlyRate))
+        cleanedData.hourlyRate = null;
+    if (cleanedData.radiusKm !== null && isNaN(cleanedData.radiusKm))
+        cleanedData.radiusKm = null;
+    if (cleanedData.lat !== null && isNaN(Number(cleanedData.lat)))
+        cleanedData.lat = null;
+    if (cleanedData.lng !== null && isNaN(Number(cleanedData.lng)))
+        cleanedData.lng = null;
+    return cleanedData;
+};
 exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}", async (event) => {
     const snapshot = event.data;
     const userId = event.params.userId;
@@ -40,22 +58,10 @@ exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}",
             updatedAt: firestore_2.FieldValue.serverTimestamp(),
             profileLastUpdatedAt: firestore_2.FieldValue.serverTimestamp(),
         };
-        Object.keys(companyData).forEach((key) => {
-            if (companyData[key] === undefined || companyData[key] === "") {
-                companyData[key] = null;
-            }
-        });
-        if (companyData.hourlyRate !== null && isNaN(companyData.hourlyRate))
-            companyData.hourlyRate = null;
-        if (companyData.radiusKm !== null && isNaN(companyData.radiusKm))
-            companyData.radiusKm = null;
-        if (companyData.lat !== null && isNaN(Number(companyData.lat)))
-            companyData.lat = null;
-        if (companyData.lng !== null && isNaN(Number(companyData.lng)))
-            companyData.lng = null;
-        v2_1.logger.info(`[createUserProfile] Schreibe companyData-Objekt für ${userId}:`, JSON.stringify(companyData, null, 2));
+        const finalCompanyData = cleanAndNormalizeCompanyData(companyData);
+        v2_1.logger.info(`[createUserProfile] Schreibe companyData-Objekt für ${userId}:`, JSON.stringify(finalCompanyData, null, 2));
         try {
-            await db.collection("companies").doc(userId).set(companyData, { merge: true });
+            await db.collection("companies").doc(userId).set(finalCompanyData, { merge: true });
             v2_1.logger.info(`[createUserProfile] Company-Dokument für ${userId} erstellt/gemerged.`);
         }
         catch (error) {
@@ -110,22 +116,10 @@ exports.updateUserProfile = (0, firestore_1.onDocumentUpdated)("users/{userId}",
                 companyDataUpdate.createdAt = firestore_2.FieldValue.serverTimestamp();
             }
         }
-        Object.keys(companyDataUpdate).forEach((key) => {
-            if (companyDataUpdate[key] === undefined || companyDataUpdate[key] === "") {
-                companyDataUpdate[key] = null;
-            }
-        });
-        if (companyDataUpdate.hourlyRate !== null && isNaN(companyDataUpdate.hourlyRate))
-            companyDataUpdate.hourlyRate = null;
-        if (companyDataUpdate.radiusKm !== null && isNaN(companyDataUpdate.radiusKm))
-            companyDataUpdate.radiusKm = null;
-        if (companyDataUpdate.lat !== null && isNaN(Number(companyDataUpdate.lat)))
-            companyDataUpdate.lat = null;
-        if (companyDataUpdate.lng !== null && isNaN(Number(companyDataUpdate.lng)))
-            companyDataUpdate.lng = null;
-        v2_1.logger.info(`[updateUserProfile] Schreibe companyDataUpdate-Objekt für ${userId}:`, JSON.stringify(companyDataUpdate, null, 2));
+        const finalCompanyDataUpdate = cleanAndNormalizeCompanyData(companyDataUpdate);
+        v2_1.logger.info(`[updateUserProfile] Schreibe companyDataUpdate-Objekt für ${userId}:`, JSON.stringify(finalCompanyDataUpdate, null, 2));
         try {
-            await db.collection("companies").doc(userId).set(companyDataUpdate, { merge: true });
+            await db.collection("companies").doc(userId).set(finalCompanyDataUpdate, { merge: true });
             v2_1.logger.info(`[updateUserProfile] Company-Dokument für ${userId} aktualisiert.`);
         }
         catch (error) {
@@ -141,8 +135,9 @@ exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdate
     const userId = event.params.userId;
     v2_1.logger.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
     const db = (0, helpers_1.getDb)();
-    const isEmulated = process.env.FUNCTIONS_EMULATOR === 'true';
-    const stripeKey = isEmulated ? process.env.STRIPE_SECRET_KEY : STRIPE_SECRET_KEY_TRIGGERS.value();
+    // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt,
+    // daher ist keine manuelle isEmulated-Prüfung mehr nötig.
+    const stripeKey = STRIPE_SECRET_KEY_TRIGGERS.value();
     const localStripe = (0, helpers_1.getStripeInstance)(stripeKey);
     const after = event.data?.after.data();
     if (!after) {
@@ -157,45 +152,48 @@ exports.createStripeCustomAccountOnUserUpdate = (0, firestore_1.onDocumentUpdate
         v2_1.logger.info(`${userId} hat bereits eine Stripe-Konto ID (${after.stripeAccountId}), aber nicht via Callable. Fallback-Trigger bricht ab.`);
         return null;
     }
-    const userEmail = after.email || after.step1?.email;
-    const companyCountryFromData = after.companyCountryForBackend || after.step2?.country;
-    const companyPostalCodeFromData = after.companyPostalCodeForBackend || after.step2?.postalCode;
-    const companyCityFromData = after.companyCityForBackend || after.step2?.city;
-    const companyAddressLine1 = after.companyAddressLine1ForBackend || `${after.step2?.street || ""} ${after.step2?.houseNumber || ""}`.trim();
-    const companyNameFromData = after.companyName || after.step2?.companyName;
-    const companyPhoneFromData = after.companyPhoneNumberForBackend || after.step1?.phoneNumber;
-    const companyWebsiteFromData = after.companyWebsiteForBackend || after.step2?.website;
-    const industryMccFromData = after.industryMcc;
-    const ibanFromData = after.iban || after.step4?.iban;
-    const accountHolderFromData = after.accountHolder || after.step4?.accountHolder;
-    const taxIdFromData = after.taxNumberForBackend || after.step3?.taxNumber;
-    const vatIdFromData = after.vatIdForBackend || after.step3?.vatId;
-    const companyRegisterFromData = after.companyRegisterForBackend || after.step3?.companyRegister;
-    const firstNameFromData = after.firstName || after.step1?.firstName;
-    const lastNameFromData = after.lastName || after.step1?.lastName;
-    const phoneFromData = after.phoneNumber || after.step1?.phoneNumber;
-    const dobFromData = after.dateOfBirth || after.step1?.dateOfBirth;
-    const personalStreetFromData = after.personalStreet || after.step1?.personalStreet;
-    const personalHouseNumberFromData = after.personalHouseNumber || after.step1?.personalHouseNumber;
-    const personalPostalCodeFromData = after.personalPostalCode || after.step1?.personalPostalCode;
-    const personalCityFromData = after.personalCity || after.step1?.personalCity;
-    const personalCountryFromData = after.personalCountry || after.step1?.personalCountry;
+    // Helper to pick the first non-empty value from a list of potential sources.
+    const pickFirst = (...args) => args.find(v => v) || undefined;
+    const userEmail = pickFirst(after.email, after.step1?.email);
+    const companyCountryFromData = pickFirst(after.companyCountryForBackend, after.step2?.country);
+    const companyPostalCodeFromData = pickFirst(after.companyPostalCodeForBackend, after.step2?.postalCode);
+    const companyCityFromData = pickFirst(after.companyCityForBackend, after.step2?.city);
+    const companyAddressLine1 = pickFirst(after.companyAddressLine1ForBackend, `${after.step2?.street || ""} ${after.step2?.houseNumber || ""}`.trim());
+    const companyNameFromData = pickFirst(after.companyName, after.step2?.companyName);
+    const companyPhoneFromData = pickFirst(after.companyPhoneNumberForBackend, after.step1?.phoneNumber);
+    const companyWebsiteFromData = pickFirst(after.companyWebsiteForBackend, after.step2?.website);
+    const industryMccFromData = pickFirst(after.industryMcc);
+    const ibanFromData = pickFirst(after.iban, after.step4?.iban);
+    const accountHolderFromData = pickFirst(after.accountHolder, after.step4?.accountHolder);
+    const taxIdFromData = pickFirst(after.taxNumberForBackend, after.step3?.taxNumber);
+    const vatIdFromData = pickFirst(after.vatIdForBackend, after.step3?.vatId);
+    const companyRegisterFromData = pickFirst(after.companyRegisterForBackend, after.step3?.companyRegister);
+    const firstNameFromData = pickFirst(after.firstName, after.step1?.firstName);
+    const lastNameFromData = pickFirst(after.lastName, after.step1?.lastName);
+    const phoneFromData = pickFirst(after.phoneNumber, after.step1?.phoneNumber);
+    const dobFromData = pickFirst(after.dateOfBirth, after.step1?.dateOfBirth);
+    const personalStreetFromData = pickFirst(after.personalStreet, after.step1?.personalStreet);
+    const personalHouseNumberFromData = pickFirst(after.personalHouseNumber, after.step1?.personalHouseNumber);
+    const personalPostalCodeFromData = pickFirst(after.personalPostalCode, after.step1?.personalPostalCode);
+    const personalCityFromData = pickFirst(after.personalCity, after.step1?.personalCity);
+    const personalCountryFromData = pickFirst(after.personalCountry, after.step1?.personalCountry);
     const isManagingDirectorOwnerFromData = after.isManagingDirectorOwner ?? after.step1?.isManagingDirectorOwner ?? false;
-    const identityFrontStripeId = after.identityFrontUrlStripeId || after.step3?.identityFrontUrl;
-    const identityBackStripeId = after.identityBackUrlStripeId || after.step3?.identityBackUrl;
+    const identityFrontStripeId = pickFirst(after.identityFrontUrlStripeId, after.step3?.identityFrontUrl);
+    const identityBackStripeId = pickFirst(after.identityBackUrlStripeId, after.step3?.identityBackUrl);
     const clientIp = after.common?.tosAcceptanceIp;
     const userAgent = after.common?.tosAcceptanceUserAgent || "UserAgentNotProvidedInFirestoreTrigger";
-    const requiredFields = after.user_type === "firma" &&
-        userEmail &&
-        firstNameFromData && lastNameFromData &&
-        companyNameFromData && companyAddressLine1 &&
-        companyCityFromData && companyPostalCodeFromData && companyCountryFromData &&
-        (taxIdFromData || vatIdFromData || companyRegisterFromData) &&
-        ibanFromData && accountHolderFromData &&
-        clientIp &&
-        !["FALLBACK_IP_ADDRESS", "IP_NOT_DETERMINED", "NEEDS_REAL_USER_IP", "8.8.8.8", "127.0.0.1", "::1"].includes(clientIp);
-    if (!requiredFields) {
-        v2_1.logger.info(`${userId} ist nicht Firma oder es fehlen wichtige Daten/gültige IP für den Fallback Stripe Account Creation Trigger. Details: userEmail=${!!userEmail}, firstName=${!!firstNameFromData}, lastName=${!!lastNameFromData}, companyName=${!!companyNameFromData}, companyAddressLine1=${!!companyAddressLine1}, companyCity=${!!companyCityFromData}, companyPostalCode=${!!companyPostalCodeFromData}, companyCountry=${!!companyCountryFromData}, tax/vat/register=${!!(taxIdFromData || vatIdFromData || companyRegisterFromData)}, iban=${!!ibanFromData}, accountHolder=${!!accountHolderFromData}, clientIp=${clientIp}`);
+    const validationChecks = {
+        isCompany: after.user_type === "firma",
+        hasContactDetails: !!userEmail && !!firstNameFromData && !!lastNameFromData,
+        hasCompanyDetails: !!companyNameFromData && !!companyAddressLine1 && !!companyCityFromData && !!companyPostalCodeFromData && !!companyCountryFromData,
+        hasTaxInfo: !!(taxIdFromData || vatIdFromData || companyRegisterFromData),
+        hasBankDetails: !!ibanFromData && !!accountHolderFromData,
+        hasValidIp: !!clientIp && !["FALLBACK_IP_ADDRESS", "IP_NOT_DETERMINED", "NEEDS_REAL_USER_IP", "8.8.8.8", "127.0.0.1", "::1"].includes(clientIp),
+    };
+    const allChecksPassed = Object.values(validationChecks).every(Boolean);
+    if (!allChecksPassed) {
+        v2_1.logger.info(`${userId} erfüllt nicht alle Bedingungen für den Fallback Stripe Account Creation Trigger. Status:`, { ...validationChecks, clientIp: clientIp } // Log validation status and the IP for context
+        );
         return null;
     }
     try {

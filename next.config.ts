@@ -30,19 +30,19 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
         port: '',
-        pathname: '/v0/b/tilvo-f142f.firebasestorage.app/o/**',
+        pathname: '/v0/b/**', // Korrigiert für allgemeinere Firebase Storage URLs
       },
       {
         protocol: 'http',
         hostname: '127.0.0.1',
         port: '9199',
-        pathname: '/tilvo-f142f.firebasestorage.app/**',
+        pathname: '/**', // Allow any path from the local emulator
       },
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '9199',
-        pathname: '/tilvo-f142f.firebasestorage.app/**',
+        pathname: '/**', // Allow any path from the local emulator
       },
       {
         protocol: 'https',
@@ -93,6 +93,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_USE_FIREBASE_EMULATORS: process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS,
     NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: process.env.FIREBASE_AUTH_EMULATOR_HOST,
     NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST: process.env.FIRESTORE_EMULATOR_HOST,
+    NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST: process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST, // Add this line
     NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST: process.env.FIREBASE_STORAGE_EMULATOR_HOST,
   }
 };

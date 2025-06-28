@@ -5,7 +5,7 @@ import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions';
 import { app } from '@/firebase/clients';
-import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiLoader, FiAlertCircle, FiUser } from 'react-icons/fi';
 
 // --- Functions Initialisierung (jetzt wird getReviewsCallable nur bei Bedarf genutzt) ---
 // Wir initialisieren hier NUR die functionsInstance, um sie später zu nutzen.
@@ -54,42 +54,11 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       setError(null);
 
       try {
-        let data: Review[];
-
-        // Prüfe, ob wir im Emulator-Modus sind
-        if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
-          // Direkter fetch-Aufruf für den Emulator-Modus
-          const emulatorHost = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST;
-          const emulatorPort = 5001; // Standard-Port für Functions Emulator
-
-          // Die URL für den direkten fetch-Aufruf der onRequest-Funktion
-          const url = `http://${emulatorHost}:${emulatorPort}/tilvo-f142f/us-central1/getReviewsByProvider`;
-
-          // Die Payload für Callable-Funktionen wird als JSON im 'data'-Feld gesendet
-          const payload = { data: { anbieterId } };
-
-          const res = await fetch(url, {
-            method: 'POST', // Callable-Funktionen senden POST
-            headers: {
-              'Content-Type': 'application/json',
-              // Hier sind keine zusätzlichen CORS-Header nötig, da der Backend-Workaround greifen sollte
-            },
-            body: JSON.stringify(payload),
-          });
-
-          // Die Antwort von onRequest-Funktionen muss manuell ausgepackt werden
-          const responseData = await res.json();
-
-          if (!res.ok || responseData.error) {
-            throw new Error(responseData.error?.message || `Serverfehler: ${res.status}`);
-          }
-          data = responseData.data; // Die eigentlichen Daten sind in responseData.data
-        } else {
-          // Im Produktionsmodus weiterhin httpsCallable verwenden (oder auch hier auf fetch umstellen)
-          const getReviewsProdCallable = httpsCallable<{ anbieterId: string }, Review[]>(functionsInstance, 'getReviewsByProvider');
-          const result = await getReviewsProdCallable({ anbieterId });
-          data = result.data;
-        }
+        // The httpsCallable function works for both production and emulators.
+        // The Firebase client SDK automatically routes the request to the emulator if it's configured.
+        const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(functionsInstance, 'getReviewsByProvider');
+        const result = await getReviewsCallable({ anbieterId });
+        const data = result.data;
 
         if (!Array.isArray(data)) {
           throw new Error('Ungültiges Datenformat von der Cloud Function.');
@@ -162,13 +131,19 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       {reviews.map((review) => (
         <div key={review.id} className="bg-white p-4 rounded-lg shadow border space-y-2">
           <div className="flex items-center gap-4">
-            <Image
-              src={review.kundeProfilePictureURL || '/default-avatar.jpg'} // Pfad oder Dateityp anpassen
-              alt="Kunde"
-              width={40}
-              height={40}
-              className="rounded-full object-cover"
-            />
+            {review.kundeProfilePictureURL ? (
+              <Image
+                src={review.kundeProfilePictureURL}
+                alt="Kunde"
+                width={40}
+                height={40}
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <FiUser className="text-gray-500" />
+              </div>
+            )}
             <div className="text-yellow-500 text-base font-medium">
               {renderStars(review.sterne)} <span className="text-gray-700">({review.sterne})</span>
             </div>
