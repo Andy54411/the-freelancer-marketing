@@ -37,10 +37,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.fixOrderProviderUid = exports.deleteCompanyAccount = exports.getReviewsByProvider = exports.submitReview = exports.createTemporaryJobDraft = exports.getClientIp = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const helpers_1 = require("./helpers"); // getStripeInstance ist jetzt nötig für deleteCompanyAccount
+const helpers_1 = require("./helpers"); // getUserDisplayName hinzugefügt
 const firestore_1 = require("firebase-admin/firestore");
 const admin = __importStar(require("firebase-admin")); // <-- Hinzufügen, falls nicht da
 const params_1 = require("firebase-functions/params");
+const constants_1 = require("./constants"); // Konstanten importieren
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY_GENERAL = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 // Konsolen-Logs anpassen für Klarheit
@@ -98,7 +99,7 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)({
             throw new https_1.HttpsError('invalid-argument', "Unvollständige oder ungültige Auftragsdetails übermittelt.");
         }
         const customerInfo = {
-            firstName: 'Unbekannt',
+            firstName: constants_1.UNKNOWN_USER_NAME,
             lastName: '',
             email: kundeEmail
         };
@@ -107,7 +108,7 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)({
             if (userDoc.exists) {
                 const data = userDoc.data();
                 if (data) {
-                    customerInfo.firstName = data.firstName || 'Unbekannt';
+                    customerInfo.firstName = data.firstName || constants_1.UNKNOWN_USER_NAME;
                     customerInfo.lastName = data.lastName || '';
                     customerInfo.email = data.email || customerInfo.email;
                 }
@@ -121,7 +122,7 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)({
             v2_1.logger.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
         }
         let anbieterStripeAccountId;
-        let providerName = 'Unbekannter Anbieter';
+        let providerName = constants_1.UNKNOWN_PROVIDER_NAME;
         if (!jobDetails.selectedAnbieterId) {
             v2_1.logger.error("[createTemporaryJobDraft] selectedAnbieterId ist leer."); // Added log
             throw new https_1.HttpsError('invalid-argument', "Die ID des ausgewählten Anbieters ist erforderlich.");
@@ -137,14 +138,10 @@ exports.createTemporaryJobDraft = (0, https_1.onCall)({
             v2_1.logger.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} gefunden, aber kein Firmenkonto oder ungültige Daten. user_type: ${anbieterData?.user_type}`); // Added log
             throw new https_1.HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
         }
+        // Logik zur Namensfindung mit der zentralen Hilfsfunktion vereinfacht
         const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
-        if (anbieterCompanyDoc.exists) {
-            const anbieterCompanyData = anbieterCompanyDoc.data();
-            providerName = anbieterCompanyData?.companyName || 'Unbekannte Firma';
-        }
-        else {
-            providerName = anbieterData.firstName || anbieterData.lastName ? `${anbieterData.firstName || ''} ${anbieterData.lastName || ''}`.trim() : 'Unbekannte Firma';
-        }
+        const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : null;
+        providerName = (0, helpers_1.getUserDisplayName)(companyData, (0, helpers_1.getUserDisplayName)(anbieterData, constants_1.UNKNOWN_PROVIDER_NAME));
         if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
             anbieterStripeAccountId = anbieterData.stripeAccountId;
         }

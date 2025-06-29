@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { UNKNOWN_USER_NAME } from '@/constants/strings';
 import { useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,19 +73,12 @@ export default function UserInboxPage() {
             const chatPromises = snapshot.docs.map(async (chatDoc) => {
                 const chatData = chatDoc.data();
                 const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
+                const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
 
-                let otherUser: OtherUser = { name: 'Unbekannter Nutzer', avatarUrl: null };
-                if (otherUserId) {
-                    const userDocRef = doc(db, 'users', otherUserId);
-                    const userDocSnap = await getDoc(userDocRef);
-                    if (userDocSnap.exists()) {
-                        const userData = userDocSnap.data();
-                        otherUser = {
-                            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.companyName || 'Unbekannter Nutzer',
-                            avatarUrl: userData.profilePictureURL || null,
-                        };
-                    }
-                }
+                const otherUser: OtherUser = {
+                    name: userDetails?.name || UNKNOWN_USER_NAME,
+                    avatarUrl: userDetails?.avatarUrl || null,
+                };
 
                 return {
                     id: chatDoc.id,
@@ -92,7 +86,9 @@ export default function UserInboxPage() {
                     lastMessage: {
                         text: chatData.lastMessage?.text || '',
                         timestamp: chatData.lastMessage?.timestamp || null,
-                        isRead: chatData.lastMessage?.senderId === currentUser.uid ? true : (chatData.lastMessage?.isRead ?? true),
+                        // If I sent the message, it's read.
+                        // If the other person sent it, use the 'isRead' flag, defaulting to 'false' (unread).
+                        isRead: chatData.lastMessage?.senderId === currentUser.uid ? true : (chatData.lastMessage?.isRead ?? false),
                         senderId: chatData.lastMessage?.senderId || '',
                     },
                 };

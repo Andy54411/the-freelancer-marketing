@@ -397,9 +397,37 @@ exports.getOrCreateStripeCustomer = (0, https_1.onCall)({ region: "europe-west1"
     }
     try {
         const userDocRef = db.collection("users").doc(firebaseUserId);
-        const userDoc = await userDocRef.get();
+        let userDoc = await userDocRef.get();
         if (!userDoc.exists) {
-            throw new https_1.HttpsError("not-found", "Nutzerprofil nicht gefunden.");
+            v2_1.logger.warn(`[getOrCreateStripeCustomer] Nutzerprofil für ${firebaseUserId} nicht gefunden. Erstelle ein neues Profil aus den Payload-Daten.`);
+            const [firstName, ...lastNameParts] = (payload.name || "").split(" ");
+            const lastName = lastNameParts.join(" ");
+            const newUserProfileData = {
+                uid: firebaseUserId,
+                email: payload.email,
+                firstName: firstName || null,
+                lastName: lastName || null,
+                phoneNumber: payload.phone || null,
+                createdAt: firestore_1.FieldValue.serverTimestamp(),
+                updatedAt: firestore_1.FieldValue.serverTimestamp(),
+                user_type: 'kunde', // Default to 'customer' type
+                savedAddresses: payload.address && payload.address.line1 ? [{
+                        id: `addr_${new Date().getTime()}`,
+                        name: payload.name || `Rechnungsadresse`,
+                        line1: payload.address.line1,
+                        line2: payload.address.line2,
+                        city: payload.address.city,
+                        postal_code: payload.address.postal_code,
+                        country: payload.address.country,
+                        isDefault: true,
+                        type: 'billing',
+                        savedAt: firestore_1.FieldValue.serverTimestamp(),
+                    }] : [],
+            };
+            await userDocRef.set(newUserProfileData, { merge: true });
+            v2_1.logger.info(`[getOrCreateStripeCustomer] Neues Nutzerprofil für ${firebaseUserId} erfolgreich erstellt.`);
+            // Re-fetch the document to proceed with consistent data
+            userDoc = await userDocRef.get();
         }
         const userData = userDoc.data();
         if (!userData) {

@@ -68,6 +68,9 @@ export default function CompanyChatPage() {
         const fetchOrderAndParticipants = async () => {
             setLoading(true);
             setError(null);
+            let orderDataFromDb;
+
+            // Step 1: Fetch the order with its own error handling
             try {
                 const orderDocRef = doc(db, 'auftraege', orderId);
                 const orderDocSnap = await getDoc(orderDocRef);
@@ -77,9 +80,23 @@ export default function CompanyChatPage() {
                     setLoading(false);
                     return;
                 }
+                orderDataFromDb = orderDocSnap.data();
+            } catch (err: any) {
+                console.error("Fehler beim Laden des Auftrags:", err);
+                if (err.code === 'permission-denied') {
+                    setError(
+                        "Zugriff auf diesen Auftrag verweigert. Dies liegt wahrscheinlich an inkonsistenten Auftragsdaten (z.B. eine fehlende Anbieter-ID). Bitte kontaktieren Sie den Support."
+                    );
+                } else {
+                    setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+                }
+                setLoading(false);
+                return;
+            }
 
-                const data = orderDocSnap.data();
-                const customerId = data.customerFirebaseUid || data.kundeId;
+            // Step 2: Fetch customer details with its own error handling
+            try {
+                const customerId = orderDataFromDb.customerFirebaseUid || orderDataFromDb.kundeId;
 
                 if (!customerId) {
                     setError('Kundeninformationen im Auftrag unvollständig.');
@@ -87,9 +104,9 @@ export default function CompanyChatPage() {
                     return;
                 }
 
-                // Fetch customer details
                 const userDocRef = doc(db, 'users', customerId);
                 const userDocSnap = await getDoc(userDocRef);
+
                 const customerDetails = userDocSnap.exists()
                     ? {
                         name: `${userDocSnap.data().firstName || ''} ${userDocSnap.data().lastName || ''}`.trim() || 'Unbekannter Kunde',
@@ -97,30 +114,34 @@ export default function CompanyChatPage() {
                     }
                     : { name: 'Unbekannter Kunde', avatarUrl: undefined };
 
-                // Robust date handling.
-                // NOTE: orderDocSnap.createTime is not available on the client-side SDK for getDoc().
-                const orderDate = data.paidAt || data.createdAt;
+                const orderDate = orderDataFromDb.paidAt || orderDataFromDb.createdAt;
 
                 const orderData: OrderData = {
-                    id: orderDocSnap.id,
-                    serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-                    providerId: data.selectedAnbieterId,
+                    id: orderId,
+                    serviceTitle: orderDataFromDb.selectedSubcategory || 'Dienstleistung',
+                    providerId: orderDataFromDb.selectedAnbieterId,
                     customerId: customerId,
                     customerName: customerDetails.name,
                     customerAvatarUrl: customerDetails.avatarUrl,
                     orderDate: orderDate,
-                    priceInCents: data.jobCalculatedPriceInCents || 0,
-                    status: data.status || 'unbekannt',
-                    beschreibung: data.description || 'Keine Beschreibung vorhanden.',
-                    jobDateFrom: data.jobDateFrom,
-                    jobDateTo: data.jobDateTo,
-                    jobTimePreference: data.jobTimePreference,
+                    priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
+                    status: orderDataFromDb.status || 'unbekannt',
+                    beschreibung: orderDataFromDb.description || 'Keine Beschreibung vorhanden.',
+                    jobDateFrom: orderDataFromDb.jobDateFrom,
+                    jobDateTo: orderDataFromDb.jobDateTo,
+                    jobTimePreference: orderDataFromDb.jobTimePreference,
                 };
 
                 setOrder(orderData);
             } catch (err: any) {
-                console.error('Fehler beim Laden des Auftrags:', err);
-                setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+                console.error("Fehler beim Laden der Kundendetails:", err);
+                if (err.code === 'permission-denied') {
+                    setError(
+                        "Zugriff auf Kundendetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support."
+                    );
+                } else {
+                    setError(`Fehler beim Laden der Kundendetails: ${err.message || 'Unbekannter Fehler'}`);
+                }
             } finally {
                 setLoading(false);
             }

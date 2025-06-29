@@ -49,6 +49,27 @@ interface ChatComponentProps {
     orderId: string;
 }
 
+// NEUE HILFSFUNKTION: Formatiert den Zeitstempel für eine bessere Lesbarkeit
+const formatMessageTimestamp = (timestamp: Timestamp | undefined): string => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    const now = new Date();
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+
+    if (date >= startOfToday) {
+        // Heute: Nur Uhrzeit
+        return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    }
+    if (date >= startOfYesterday) {
+        // Gestern: "Gestern, HH:mm"
+        return `Gestern, ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    // Älter: "TT.MM.JJJJ"
+    return date.toLocaleDateString('de-DE');
+};
+
 const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     const authContext = useAuth();
     const currentUser = authContext?.currentUser || null;
@@ -73,16 +94,27 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     useEffect(() => {
         if (!orderId) return;
         const fetchOrderData = async () => {
-            const orderDocRef = doc(db, 'auftraege', orderId);
-            const orderDocSnap = await getDoc(orderDocRef);
-            if (orderDocSnap.exists()) {
-                const data = orderDocSnap.data();
-                setOrderData({
-                    kundeId: data.kundeId,
-                    selectedAnbieterId: data.selectedAnbieterId,
-                });
-            } else {
-                setChatError("Zugehöriger Auftrag konnte nicht gefunden werden.");
+            try {
+                const orderDocRef = doc(db, 'auftraege', orderId);
+                const orderDocSnap = await getDoc(orderDocRef);
+                if (orderDocSnap.exists()) {
+                    const data = orderDocSnap.data();
+                    setOrderData({
+                        kundeId: data.kundeId,
+                        selectedAnbieterId: data.selectedAnbieterId,
+                    });
+                } else {
+                    setChatError("Zugehöriger Auftrag konnte nicht gefunden werden.");
+                }
+            } catch (error: any) {
+                console.error("Fehler beim Laden des Auftrags:", error);
+                if (error.code === 'permission-denied') {
+                    setChatError(
+                        "Sie haben keine Berechtigung, auf diesen Chat zuzugreifen. Dies liegt wahrscheinlich an inkonsistenten Auftragsdaten."
+                    );
+                } else {
+                    setChatError(`Fehler beim Laden der Auftragsdaten: ${error.message || 'Unbekannter Fehler'}`);
+                }
             }
         };
         fetchOrderData();
@@ -265,8 +297,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                                 </p>
                                 <p className="text-sm break-words">{msg.text}</p>
                                 <p className="text-right text-xs mt-1 opacity-75">
-                                    {/* Formatieren des Timestamps für eine bessere Anzeige */}
-                                    {msg.timestamp?.toDate().toLocaleDateString()} {msg.timestamp?.toDate().toLocaleTimeString()}
+                                    {formatMessageTimestamp(msg.timestamp)}
                                 </p>
                             </div>
                         </div>

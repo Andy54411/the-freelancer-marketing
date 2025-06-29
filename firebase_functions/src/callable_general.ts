@@ -2,10 +2,11 @@
 
 import { onCall, HttpsError, onRequest, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, getAuthInstance, getStripeInstance } from './helpers'; // getStripeInstance ist jetzt nötig für deleteCompanyAccount
+import { getDb, getAuthInstance, getStripeInstance, getUserDisplayName, corsOptions } from './helpers'; // getUserDisplayName hinzugefügt
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from "firebase-admin"; // <-- Hinzufügen, falls nicht da
 import { defineSecret } from 'firebase-functions/params';
+import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from './constants'; // Konstanten importieren
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY_GENERAL = defineSecret("STRIPE_SECRET_KEY");
@@ -146,7 +147,7 @@ export const createTemporaryJobDraft = onCall(
       }
 
       const customerInfo = {
-        firstName: 'Unbekannt',
+        firstName: UNKNOWN_USER_NAME,
         lastName: '',
         email: kundeEmail
       };
@@ -155,7 +156,7 @@ export const createTemporaryJobDraft = onCall(
         if (userDoc.exists) {
           const data = userDoc.data();
           if (data) {
-            customerInfo.firstName = data.firstName || 'Unbekannt';
+            customerInfo.firstName = data.firstName || UNKNOWN_USER_NAME;
             customerInfo.lastName = data.lastName || '';
             customerInfo.email = data.email || customerInfo.email;
           }
@@ -168,7 +169,7 @@ export const createTemporaryJobDraft = onCall(
       }
 
       let anbieterStripeAccountId: string;
-      let providerName: string = 'Unbekannter Anbieter';
+      let providerName: string = UNKNOWN_PROVIDER_NAME;
 
       if (!jobDetails.selectedAnbieterId) {
         loggerV2.error("[createTemporaryJobDraft] selectedAnbieterId ist leer."); // Added log
@@ -189,13 +190,10 @@ export const createTemporaryJobDraft = onCall(
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
 
+      // Logik zur Namensfindung mit der zentralen Hilfsfunktion vereinfacht
       const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
-      if (anbieterCompanyDoc.exists) {
-        const anbieterCompanyData = anbieterCompanyDoc.data();
-        providerName = anbieterCompanyData?.companyName || 'Unbekannte Firma';
-      } else {
-        providerName = anbieterData.firstName || anbieterData.lastName ? `${anbieterData.firstName || ''} ${anbieterData.lastName || ''}`.trim() : 'Unbekannte Firma';
-      }
+      const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : null;
+      providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
 
       if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
         anbieterStripeAccountId = anbieterData.stripeAccountId;

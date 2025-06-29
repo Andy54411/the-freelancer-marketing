@@ -177,10 +177,6 @@ export default function BestaetigungsPage() {
 
   const isInitializing = useRef(false);
 
-  // NEU: Prüfen, ob essentielle Registrierungsdaten geladen sind, um vorzeitige Validierung zu vermeiden.
-  // Wir nehmen an, dass customerType und description gute Indikatoren dafür sind, dass der Kontext geladen ist.
-  const isEssentialRegistrationDataMissing = !registration.customerType || !registration.description || registration.description.trim().length === 0;
-
   // Callback, der den vom BestaetigungsContent berechneten Preis (Basispreis) erhält
   const handlePriceCalculatedFromChild = useCallback((priceInCents: number) => {
     console.log(PAGE_LOG, `handlePriceCalculatedFromChild: Neuer Basis-Preis (jobPrice) von Kindkomponente: ${priceInCents} Cents.`);
@@ -260,12 +256,6 @@ export default function BestaetigungsPage() {
   useEffect(() => {
     const initializeOrder = async () => {
       if (currentUser) {
-        // NEU: Wenn essentielle Registrierungsdaten noch fehlen, warten und nicht initialisieren.
-        if (isEssentialRegistrationDataMissing) {
-          console.log(PAGE_LOG, "BestaetigungsPage: Essential registration data is missing, waiting for context update.");
-          return; // Nicht fortfahren, bis Daten verfügbar sind.
-        }
-
         if (isInitializing.current) {
           console.log(PAGE_LOG, "BestaetigungsPage: Initialisierung bereits im Gange oder abgeschlossen. Überspringe.");
           return;
@@ -374,12 +364,13 @@ export default function BestaetigungsPage() {
           setPageError(`Wichtige Auftragsinformationen fehlen: ${missingFields.join(', ')}. Bitte gehen Sie zurück und vervollständigen Sie Ihre Eingaben.`);
           setIsLoadingPageData(false);
           isInitializing.current = false;
-          router.push('/auftrag/get-started'); // Weiterleitung zu Startseite, um fehlende Daten zu ergänzen
+          // router.push('/auftrag/get-started'); // Weiterleitung entfernt, um die Fehlermeldung auf der Seite anzuzeigen.
           return;
         }
         // --- ENDE KORRIGIERTE PFLICHTDATEN-PRÜFUNG ---
 
         try {
+          // Schritt 1: Temporären Job-Entwurf erstellen oder aktualisieren
           console.log(PAGE_LOG, "BestaetigungsPage: Inhalt von draftData vor dem Senden an createTemporaryJobDraftCallable:", JSON.stringify(draftData, null, 2));
 
           console.log(PAGE_LOG, "BestaetigungsPage: Rufe createTemporaryJobDraft Callable auf...");
@@ -408,6 +399,26 @@ export default function BestaetigungsPage() {
           setAnbieterStripeConnectId(draftResultData.anbieterStripeAccountId);
           console.log(PAGE_LOG, "BestaetigungsPage: Anbieter Stripe Account ID erhalten.");
 
+        } catch (error: unknown) {
+          console.error(PAGE_ERROR, "BestaetigungsPage: FEHLER bei createTemporaryJobDraft:", error);
+          let specificErrorMessage = 'Ein Fehler ist bei der Auftragsvorbereitung aufgetreten.';
+          if (error instanceof FunctionsError) {
+            if (error.code === 'not-found' || error.code === 'failed-precondition') {
+              specificErrorMessage = 'Der ausgewählte Anbieter ist nicht mehr verfügbar oder existiert nicht. Bitte wählen Sie einen anderen Anbieter aus.';
+            } else {
+              specificErrorMessage = `Fehler bei der Auftragsvorbereitung (${error.code}): ${error.message}`;
+            }
+          } else if (error instanceof Error) {
+            specificErrorMessage = `Fehler bei der Auftragsvorbereitung: ${error.message}`;
+          }
+          setPageError(specificErrorMessage);
+          setIsLoadingPageData(false);
+          isInitializing.current = false;
+          return; // Breche die Initialisierung hier ab
+        }
+
+        // Schritt 2: Stripe-Kunden-ID abrufen oder erstellen
+        try {
           // Daten für Stripe-Kundenaufruf vorbereiten
           const emailForStripe = billingAddressDetails?.email || currentUser.email;
           if (!emailForStripe) {
@@ -436,18 +447,14 @@ export default function BestaetigungsPage() {
           setKundeStripeCustomerId(customerResult.data.stripeCustomerId);
           console.log(PAGE_LOG, `BestaetigungsPage: Stripe Customer ID erhalten: ${customerResult.data.stripeCustomerId}`);
 
-        } catch (error: unknown) {
-          console.error(PAGE_ERROR, "BestaetigungsPage: FEHLER bei Initialisierung:", error);
-          let specificErrorMessage = 'Ein unbekannter Fehler ist bei der Auftragsvorbereitung aufgetreten.';
+        } catch (error) {
+          console.error(PAGE_ERROR, "BestaetigungsPage: FEHLER bei getOrCreateStripeCustomer:", error);
+          let specificErrorMessage = 'Ein Fehler bei der Synchronisierung Ihres Kundenprofils ist aufgetreten.';
           if (error instanceof FunctionsError) {
-            if (error.code === 'not-found' || error.code === 'failed-precondition') {
-              specificErrorMessage = 'Der ausgewählte Anbieter ist nicht mehr verfügbar oder existiert nicht. Bitte wählen Sie einen anderen Anbieter aus.';
-            } else {
-              // Allgemeine Fehlermeldung für andere FunctionsError-Codes
-              specificErrorMessage = `Fehler bei der Zahlungsvorbereitung (${error.code}): ${error.message}`;
-            }
+            // Hier ist 'not-found' ein technischer Fehler (Funktion nicht gefunden), keine Geschäftslogik.
+            specificErrorMessage = `Fehler bei der Kommunikation mit dem Zahlungssystem (${error.code}): ${error.message}. Bitte versuchen Sie es später erneut.`;
           } else if (error instanceof Error) {
-            specificErrorMessage = `Fehler bei der Zahlungsvorbereitung: ${error.message}`;
+            specificErrorMessage = `Fehler bei der Kundenprofil-Synchronisierung: ${error.message}`;
           }
           setPageError(specificErrorMessage);
         } finally {
@@ -480,8 +487,7 @@ export default function BestaetigungsPage() {
     // Other state and memoized values
     jobPriceInCents,
     billingAddressDetails,
-    router,
-    isEssentialRegistrationDataMissing,
+    router
   ]);
 
   // =================================================================================================
@@ -609,7 +615,7 @@ export default function BestaetigungsPage() {
   };
 
   // Gesamtladezustand berücksichtigt nun auch das Laden der Registrierungsdaten
-  const isLoadingOverall = isLoadingPageData || loadingPaymentIntent || (currentUser && isEssentialRegistrationDataMissing);
+  const isLoadingOverall = isLoadingPageData || loadingPaymentIntent;
 
   const dataIsReadyForCheckoutForm =
     clientSecret && kundeStripeCustomerId && tempJobDraftId && currentUser &&

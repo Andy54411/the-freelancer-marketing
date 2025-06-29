@@ -1,7 +1,8 @@
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb } from "./helpers";
+import { getDb, getUserDisplayName } from "./helpers";
 import { Timestamp, FirestoreDataConverter, DocumentData, QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { UNKNOWN_CUSTOMER_NAME } from "./constants";
 
 const FIRESTORE_COLLECTIONS = {
     ORDERS: 'auftraege',
@@ -126,7 +127,7 @@ export const getProviderOrders = onCall(
                 for (const customerDoc of customerDocs) {
                     if (customerDoc.exists) {
                         const customerData = customerDoc.data() || {};
-                        const name = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || 'Unbekannter Kunde';
+                        const name = getUserDisplayName(customerData, UNKNOWN_CUSTOMER_NAME);
                         customersMap.set(customerDoc.id, { name, avatarUrl: customerData.profilePictureURL });
                     }
                 }
@@ -134,7 +135,7 @@ export const getProviderOrders = onCall(
 
             // 6. Map to final OrderData structure
             const orders: OrderData[] = ordersFromDb.map(data => {
-                const customerDetails = customersMap.get(data.customerFirebaseUid) || { name: 'Unbekannter Kunde', avatarUrl: undefined };
+                const customerDetails = customersMap.get(data.customerFirebaseUid) || { name: UNKNOWN_CUSTOMER_NAME, avatarUrl: undefined };
 
                 return {
                     id: data.id,

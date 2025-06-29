@@ -37,4 +37,6 @@ __exportStar(require("./triggers_firestore"), exports);
 __exportStar(require("./callable_orders"), exports);
 __exportStar(require("./getUserOrders"), exports);
 __exportStar(require("./getProviderOrders"), exports);
+__exportStar(require("./triggers_chat"), exports);
+__exportStar(require("./http_migrations"), exports);
 //# sourceMappingURL=index.js.map

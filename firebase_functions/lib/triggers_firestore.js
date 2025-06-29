@@ -7,6 +7,7 @@ const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers");
 const firestore_2 = require("firebase-admin/firestore");
 const params_1 = require("firebase-functions/params");
+const constants_1 = require("./constants");
 // Parameter zentral definieren
 const STRIPE_SECRET_KEY_TRIGGERS = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 // Helper function to clean and normalize company data before writing to Firestore.
@@ -41,7 +42,7 @@ exports.createUserProfile = (0, firestore_1.onDocumentCreated)("users/{userId}",
         const companyData = {
             uid: userId,
             user_type: "firma",
-            companyName: userData.companyName || "Unbenanntes Unternehmen",
+            companyName: userData.companyName || constants_1.UNNAMED_COMPANY,
             postalCode: userData.companyPostalCodeForBackend || null,
             companyCity: userData.companyCityForBackend || null,
             selectedCategory: userData.selectedCategory || null,

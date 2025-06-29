@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { getDb, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
+import { UNNAMED_COMPANY } from './constants';
 
 // Parameter zentral definieren
 const STRIPE_SECRET_KEY_TRIGGERS = defineSecret("STRIPE_SECRET_KEY");
@@ -101,7 +102,7 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
     const companyData: any = {
       uid: userId,
       user_type: "firma",
-      companyName: userData.companyName || "Unbenanntes Unternehmen",
+      companyName: userData.companyName || UNNAMED_COMPANY,
       postalCode: userData.companyPostalCodeForBackend || null,
       companyCity: userData.companyCityForBackend || null,
       selectedCategory: userData.selectedCategory || null,

@@ -543,8 +543,42 @@ export const getOrCreateStripeCustomer = onCall(
 
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) { throw new HttpsError("not-found", "Nutzerprofil nicht gefunden."); }
+      let userDoc = await userDocRef.get();
+      if (!userDoc.exists) {
+        loggerV2.warn(`[getOrCreateStripeCustomer] Nutzerprofil für ${firebaseUserId} nicht gefunden. Erstelle ein neues Profil aus den Payload-Daten.`);
+
+        const [firstName, ...lastNameParts] = (payload.name || "").split(" ");
+        const lastName = lastNameParts.join(" ");
+
+        const newUserProfileData = {
+          uid: firebaseUserId,
+          email: payload.email,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          phoneNumber: payload.phone || null,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+          user_type: 'kunde', // Default to 'customer' type
+          savedAddresses: payload.address && payload.address.line1 ? [{
+            id: `addr_${new Date().getTime()}`,
+            name: payload.name || `Rechnungsadresse`,
+            line1: payload.address.line1,
+            line2: payload.address.line2,
+            city: payload.address.city,
+            postal_code: payload.address.postal_code,
+            country: payload.address.country,
+            isDefault: true,
+            type: 'billing',
+            savedAt: FieldValue.serverTimestamp(),
+          }] : [],
+        };
+
+        await userDocRef.set(newUserProfileData, { merge: true });
+        loggerV2.info(`[getOrCreateStripeCustomer] Neues Nutzerprofil für ${firebaseUserId} erfolgreich erstellt.`);
+
+        // Re-fetch the document to proceed with consistent data
+        userDoc = await userDocRef.get();
+      }
 
       // Define a type for userData to increase type safety
       interface FirestoreUserData {

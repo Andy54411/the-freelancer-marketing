@@ -10,7 +10,7 @@ import { FiLoader, FiAlertCircle, FiUser } from 'react-icons/fi';
 // --- Functions Initialisierung (jetzt wird getReviewsCallable nur bei Bedarf genutzt) ---
 // Wir initialisieren hier NUR die functionsInstance, um sie später zu nutzen.
 // Die Callable-Instanz erstellen wir bedingt im useEffect.
-const functionsInstance = getFunctions(app);
+const functionsInstance = getFunctions(app, 'europe-west1');
 
 // --- Interfaces ---
 interface Review {

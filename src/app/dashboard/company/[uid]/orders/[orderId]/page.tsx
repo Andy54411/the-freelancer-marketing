@@ -82,6 +82,7 @@ export default function CompanyOrderDetailPage() {
         const fetchOrder = async () => {
             setLoadingOrder(true);
             setError(null);
+            let orderDataFromDb;
             try {
                 const orderDocRef = doc(db, 'auftraege', orderId);
                 const orderDocSnap = await getDoc(orderDocRef);
@@ -91,14 +92,31 @@ export default function CompanyOrderDetailPage() {
                     setLoadingOrder(false);
                     return;
                 }
+                orderDataFromDb = orderDocSnap.data();
+            } catch (err: any) {
+                console.error("Fehler beim Laden des Auftrags:", err);
+                if (err.code === 'permission-denied') {
+                    setError(
+                        "Zugriff auf diesen Auftrag verweigert. Dies liegt wahrscheinlich an inkonsistenten Auftragsdaten (z.B. eine fehlende Anbieter-ID). Bitte kontaktieren Sie den Support."
+                    );
+                } else {
+                    setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+                }
+                setLoadingOrder(false);
+                return;
+            }
 
-                const data = orderDocSnap.data();
-                console.log("Raw Firestore data for orderId", orderId, ":", data);
-                console.log("Raw selectedCategory:", data.selectedCategory);
-                console.log("Raw selectedSubcategory:", data.selectedSubcategory);
-                console.log("Raw jobTimePreference:", data.jobTimePreference);
+            console.log("Raw Firestore data for orderId", orderId, ":", orderDataFromDb);
+            console.log("Raw selectedCategory:", orderDataFromDb.selectedCategory);
+            console.log("Raw selectedSubcategory:", orderDataFromDb.selectedSubcategory);
+            console.log("Raw jobTimePreference:", orderDataFromDb.jobTimePreference);
 
-                const fetchParticipantDetails = async (uid: string, isProvider: boolean) => {
+            // Step 2: Fetch participant details with its own error handling
+            try {
+                const fetchParticipantDetails = async (
+                    uid: string,
+                    isProvider: boolean
+                ) => {
                     if (!uid) return { name: 'Unbekannt', avatarUrl: undefined };
 
                     if (isProvider) {
@@ -126,39 +144,42 @@ export default function CompanyOrderDetailPage() {
                 };
 
                 const [providerDetails, customerDetails] = await Promise.all([
-                    fetchParticipantDetails(data.selectedAnbieterId, true),
-                    fetchParticipantDetails(data.kundeId, false)
+                    fetchParticipantDetails(orderDataFromDb.selectedAnbieterId, true),
+                    fetchParticipantDetails(orderDataFromDb.kundeId, false),
                 ]);
 
                 const orderData: OrderData = {
-                    id: orderDocSnap.id,
-                    serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-                    providerId: data.selectedAnbieterId,
+                    id: orderId,
+                    serviceTitle: orderDataFromDb.selectedSubcategory || 'Dienstleistung',
+                    providerId: orderDataFromDb.selectedAnbieterId,
                     providerName: providerDetails.name,
                     providerAvatarUrl: providerDetails.avatarUrl,
-                    customerId: data.kundeId,
+                    customerId: orderDataFromDb.kundeId,
                     customerName: customerDetails.name,
                     customerAvatarUrl: customerDetails.avatarUrl,
-                    orderDate: data.paidAt || data.createdAt,
-                    priceInCents: data.jobCalculatedPriceInCents || 0,
-                    status: data.status || 'unbekannt',
-                    selectedCategory: data.selectedCategory,
-                    selectedSubcategory: data.selectedSubcategory,
-                    jobTotalCalculatedHours: data.jobTotalCalculatedHours,
-                    beschreibung: data.description,
-                    jobDateFrom: data.jobDateFrom,
-                    jobDateTo: data.jobDateTo,
-                    jobTimePreference: data.jobTimePreference,
+                    orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
+                    priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
+                    status: orderDataFromDb.status || 'unbekannt',
+                    selectedCategory: orderDataFromDb.selectedCategory,
+                    selectedSubcategory: orderDataFromDb.selectedSubcategory,
+                    jobTotalCalculatedHours: orderDataFromDb.jobTotalCalculatedHours,
+                    beschreibung: orderDataFromDb.description,
+                    jobDateFrom: orderDataFromDb.jobDateFrom,
+                    jobDateTo: orderDataFromDb.jobDateTo,
+                    jobTimePreference: orderDataFromDb.jobTimePreference,
                 };
 
                 console.log("Constructed orderData object:", orderData);
-                console.log("Constructed orderData.selectedCategory:", orderData.selectedCategory);
-                console.log("Constructed orderData.selectedSubcategory:", orderData.selectedSubcategory);
-                console.log("Constructed orderData.jobTimePreference:", orderData.jobTimePreference);
                 setOrder(orderData);
             } catch (err: any) {
-                console.error('Fehler beim Laden des Auftrags:', err);
-                setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+                console.error("Fehler beim Laden der Teilnehmerdetails:", err);
+                if (err.code === 'permission-denied') {
+                    setError(
+                        "Zugriff auf Teilnehmerdetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support."
+                    );
+                } else {
+                    setError(`Fehler beim Laden der Teilnehmerdetails: ${err.message || 'Unbekannter Fehler'}`);
+                }
             } finally {
                 setLoadingOrder(false);
             }

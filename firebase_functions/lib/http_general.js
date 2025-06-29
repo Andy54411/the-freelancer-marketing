@@ -8,6 +8,7 @@ const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const helpers_1 = require("./helpers"); // FieldValue import is correct
 const cors_1 = __importDefault(require("cors"));
+const constants_1 = require("./constants");
 const corsHandler = (0, cors_1.default)({ origin: true });
 exports.migrateExistingUsersToCompanies = (0, https_1.onRequest)({ region: "europe-west1", cors: true }, async (req, res) => {
     const db = (0, helpers_1.getDb)();
@@ -102,7 +103,7 @@ exports.searchCompanyProfiles = (0, https_1.onRequest)({ region: "europe-west1",
             const data = doc.data();
             return {
                 id: doc.id,
-                companyName: data.companyName || data.firmenname || 'Unbekannter Anbieter',
+                companyName: (0, helpers_1.getUserDisplayName)(data, constants_1.UNKNOWN_PROVIDER_NAME),
                 profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
                 hourlyRate: data.hourlyRate,
                 description: data.description,

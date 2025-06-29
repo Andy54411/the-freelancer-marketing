@@ -7,7 +7,7 @@ import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions'
 import { app } from '@/firebase/clients'
 
 // Funktionen-Instanz initialisieren
-const functionsInstance = getFunctions(app);
+const functionsInstance = getFunctions(app, 'europe-west1');
 
 // Interfaces für die Callable Function (Input und Output)
 interface SubmitReviewData {

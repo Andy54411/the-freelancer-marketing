@@ -41,6 +41,8 @@ exports.admin = exports.Timestamp = exports.FieldValue = exports.corsOptions = v
 exports.getDb = getDb;
 exports.getAuthInstance = getAuthInstance;
 exports.getStorageInstance = getStorageInstance;
+exports.getUserDisplayName = getUserDisplayName;
+exports.getChatParticipantDetails = getChatParticipantDetails;
 exports.getStripeInstance = getStripeInstance;
 exports.getPublicFrontendURL = getPublicFrontendURL;
 exports.getEmulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL;
@@ -57,6 +59,7 @@ exports.admin = admin;
 const stripe_1 = __importDefault(require("stripe"));
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
+const constants_1 = require("./constants");
 // --- Instanz-Variablen für Lazy Loading ---
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
 // dass sie bei jedem Aufruf neu erstellt werden.
@@ -123,6 +126,53 @@ function getStorageInstance() {
         v2_1.logger.info("[getStorageInstance] Storage-Instanz erfolgreich initialisiert (lazy).");
     }
     return storageInstance;
+}
+/**
+ * Generates a display name for a user.
+ * It prioritizes the company name, then falls back to a combination of
+ * first and last names, and finally to a default string if no name can be constructed.
+ * @param userData - An object containing user name properties.
+ * @returns The display name as a string.
+ * @param fallback - A fallback string to use if no name can be constructed.
+ */
+function getUserDisplayName(userData, fallback = constants_1.UNKNOWN_USER_NAME) {
+    if (!userData) {
+        return fallback;
+    }
+    const name = userData.companyName || userData.firmenname || `${userData.firstName || ""} ${userData.lastName || ""}`.trim();
+    return name || fallback;
+}
+/**
+ * Fetches the correct display name and avatar for a chat participant.
+ * It intelligently checks if the user is a 'firma' (company) and fetches
+ * data from the 'companies' collection, otherwise it uses the 'users' collection.
+ * @param db - The Firestore database instance.
+ * @param userId - The ID of the user to fetch details for.
+ * @returns A promise that resolves to the participant's details.
+ */
+async function getChatParticipantDetails(db, userId) {
+    try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (!userDoc.exists) {
+            return { name: constants_1.UNKNOWN_USER_NAME, avatarUrl: null };
+        }
+        const userData = userDoc.data();
+        if (userData.user_type === 'firma') {
+            const companyDoc = await db.collection("companies").doc(userId).get();
+            const companyData = companyDoc.exists ? companyDoc.data() : null;
+            // For companies, the name and avatar come from the 'companies' document.
+            return {
+                name: companyData?.companyName || getUserDisplayName(userData, constants_1.UNKNOWN_PROVIDER_NAME),
+                avatarUrl: companyData?.profilePictureURL || null,
+            };
+        }
+        // For regular users, use their personal details.
+        return { name: getUserDisplayName(userData), avatarUrl: userData.profilePictureURL || userData.profilePictureFirebaseUrl || null };
+    }
+    catch (error) {
+        v2_1.logger.error(`[getChatParticipantDetails] Error fetching details for user ${userId}:`, error);
+        return { name: constants_1.UNKNOWN_USER_NAME, avatarUrl: null };
+    }
 }
 // --- Parameter-Definitionen (AUSKOMMENTIERT, DA SIE DEN FEHLER VERURSACHEN) ---
 // export const STRIPE_SECRET_KEY_PARAM = defineSecret("STRIPE_SECRET_KEY");

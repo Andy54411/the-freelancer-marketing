@@ -1,8 +1,9 @@
 import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, FieldValue } from './helpers'; // FieldValue import is correct
+import { getDb, FieldValue, getUserDisplayName } from './helpers'; // FieldValue import is correct
 import * as admin from 'firebase-admin';
 import cors from 'cors';
+import { UNKNOWN_PROVIDER_NAME } from './constants';
 
 const corsHandler = cors({ origin: true });
 
@@ -107,7 +108,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
         const data = doc.data();
         return {
           id: doc.id,
-          companyName: data.companyName || data.firmenname || 'Unbekannter Anbieter',
+          companyName: getUserDisplayName(data, UNKNOWN_PROVIDER_NAME),
           profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
           hourlyRate: data.hourlyRate,
           description: data.description,
