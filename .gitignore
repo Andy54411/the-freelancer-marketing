@@ -42,8 +42,4 @@ firestore-debug.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.env.local
-.env.local
-.env
-.env.*
 /Users/andystaudinger/Tasko/firebase-emulator-data

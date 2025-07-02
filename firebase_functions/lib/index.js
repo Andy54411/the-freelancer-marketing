@@ -22,6 +22,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const options_1 = require("firebase-functions/v2/options");
 (0, options_1.setGlobalOptions)({
+    region: "europe-west1", // <-- HIER die korrekte Region global festlegen
     timeoutSeconds: 540,
     memory: '512MiB',
     cpu: 1,
@@ -39,4 +40,6 @@ __exportStar(require("./getUserOrders"), exports);
 __exportStar(require("./getProviderOrders"), exports);
 __exportStar(require("./triggers_chat"), exports);
 __exportStar(require("./http_migrations"), exports);
+__exportStar(require("./invites"), exports);
+__exportStar(require("./triggers_auth"), exports);
 //# sourceMappingURL=index.js.map

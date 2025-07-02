@@ -22,8 +22,7 @@ const POPUP_ERROR = "LoginPopup ERROR:";
 interface LoginPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: User, redirectTo?: string | null) => void;
-  redirectTo?: string | null; // Die URL, zu der nach Erfolg weitergeleitet werden soll
+  onLoginSuccess: (user: User) => void;
   initialEmail?: string; // Optional, um E-Mail vorzubelegen
 }
 
@@ -31,13 +30,12 @@ export default function LoginPopup({
   isOpen,
   onClose,
   onLoginSuccess,
-  redirectTo,
   initialEmail = ''
 }: LoginPopupProps) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [, setLoading] = useState<'email' | 'google' | 'apple' | null>(null); // _loading entfernt
+  const [loading, setLoading] = useState<'email' | 'google' | 'apple' | null>(null);
 
   // Setzt die E-Mail zurück, wenn das Popup neu geöffnet wird (optional)
   useEffect(() => {
@@ -59,7 +57,7 @@ export default function LoginPopup({
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log(POPUP_LOG, "Email/Passwort Login erfolgreich für:", userCredential.user.uid);
-      onLoginSuccess(userCredential.user, redirectTo);
+      onLoginSuccess(userCredential.user);
     } catch (err: unknown) {
       // Prüfen, ob es ein Firebase Auth Fehler ist, indem wir auf 'code' und 'message' prüfen
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
@@ -88,7 +86,7 @@ export default function LoginPopup({
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       console.log(POPUP_LOG, "Google Login erfolgreich für:", result.user.uid);
-      onLoginSuccess(result.user, redirectTo);
+      onLoginSuccess(result.user);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
@@ -119,7 +117,7 @@ export default function LoginPopup({
       // provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
       console.log(POPUP_LOG, "Apple Login erfolgreich für:", result.user.uid);
-      onLoginSuccess(result.user, redirectTo);
+      onLoginSuccess(result.user);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
@@ -178,6 +176,9 @@ export default function LoginPopup({
           onSubmitEmailPassword={handleEmailPasswordLogin}
           onGoogleLogin={handleGoogleLogin}
           onAppleLogin={handleAppleLogin}
+          // HINWEIS: Die LoginForm-Komponente sollte eine 'disabled'-Prop erhalten,
+          // um die Buttons während des Ladevorgangs zu deaktivieren.
+          disabled={loading !== null}
         // TODO: error und loading Props an LoginForm übergeben, falls die UI das dort anzeigen soll.
         // Aktuell wird der Fehler nur unterhalb der LoginForm angezeigt (siehe unten).
         // Der "Sign up"-Link in LoginForm müsste onClose aufrufen oder speziell behandelt werden.

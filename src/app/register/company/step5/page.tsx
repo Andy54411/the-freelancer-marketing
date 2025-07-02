@@ -351,6 +351,27 @@ export default function Step5CompanyPage() {
     setCurrentStepMessage('Registrierung wird vorbereitet...');
 
     try {
+      // Telefonnummern für Stripe ins E.164-Format normalisieren.
+      // Dies ist eine einfache Implementierung, die für deutsche Nummern funktioniert.
+      const normalizePhoneNumber = (num: string | null | undefined, countryCode: string | null | undefined): string => {
+        if (!num) return '';
+        const effectiveCountryCode = countryCode || 'DE'; // Fallback auf Deutschland
+
+        // Für Deutschland: Führende '0' durch '+49' ersetzen.
+        if (effectiveCountryCode === 'DE' && num.startsWith('0')) {
+          return `+49${num.substring(1)}`;
+        }
+        // Wenn bereits im E.164-Format, unverändert lassen.
+        if (num.startsWith('+')) {
+          return num;
+        }
+        // Hier könnten weitere Ländercodes (z.B. 'AT', 'CH') hinzugefügt werden.
+        return num; // Fallback
+      };
+
+      const normalizedPersonalPhoneNumber = normalizePhoneNumber(phoneNumber, personalCountry);
+      const normalizedCompanyPhoneNumber = normalizePhoneNumber(companyPhoneNumber, companyCountry);
+
       const derivedMcc = mapCategoryToMcc(selectedCategory);
 
       const firebaseAuthInstance = getAuth(firebaseApp);
@@ -418,14 +439,14 @@ export default function Step5CompanyPage() {
 
       const userPrivateData: Record<string, unknown> = {
         uid: currentAuthUserUID, email: email!, user_type: 'firma',
-        firstName: firstName?.trim() || '', lastName: lastName?.trim() || '',
-        phoneNumber: phoneNumber || null, dateOfBirth: dateOfBirth || null,
+        firstName: firstName?.trim() || '', lastName: lastName?.trim() || '', // Persönliche Daten
+        phoneNumber: normalizedPersonalPhoneNumber || null, dateOfBirth: dateOfBirth || null,
         personalStreet: personalStreet || null, personalHouseNumber: personalHouseNumber || null,
         personalPostalCode: personalPostalCode || null, personalCity: personalCity || null,
         personalCountry: personalCountry || null, isManagingDirectorOwner: isManagingDirectorOwner ?? true,
         ownershipPercentage: ownershipPercentage !== undefined ? ownershipPercentage : deleteField(),
-        isActualDirector: isActualDirector ?? deleteField(),
-        isActualOwner: isActualOwner ?? deleteField(),
+        isActualDirector: isActualDirector ?? deleteField(), // Daten zur wirtschaftlich berechtigten Person
+        isActualOwner: isActualOwner ?? deleteField(), // (falls abweichend)
         actualOwnershipPercentage: actualOwnershipPercentage ?? deleteField(),
         isActualExecutive: isActualExecutive ?? deleteField(),
         actualRepresentativeTitle: actualRepresentativeTitle || null,
@@ -435,10 +456,10 @@ export default function Step5CompanyPage() {
         identityBackUrlStripeId: idBackResult.stripeFileId,
         businessLicenseStripeId: businessLicResult.stripeFileId,
         masterCraftsmanCertificateStripeId: masterCertStripeFileId || deleteField(),
-        companyName: companyName || '', legalForm: legalForm || null,
+        companyName: companyName || '', legalForm: legalForm || null, // Firmendaten
         companyAddressLine1ForBackend: fullCompanyAddressForFirestore,
         companyCityForBackend: companyCity || null, companyPostalCodeForBackend: companyPostalCode || null,
-        companyCountryForBackend: companyCountry || null, companyPhoneNumberForBackend: companyPhoneNumber || null,
+        companyCountryForBackend: companyCountry || null, companyPhoneNumberForBackend: normalizedCompanyPhoneNumber || null,
         companyWebsiteForBackend: companyWebsite || null, companyRegisterForBackend: companyRegister || null,
         taxNumberForBackend: taxNumber || null, vatIdForBackend: vatId || null,
         lat: lat ?? null, lng: lng ?? null,
@@ -484,17 +505,17 @@ export default function Step5CompanyPage() {
       const dataForStripeCallable: CreateStripeAccountClientData = {
         userId: currentAuthUserUID, clientIp: clientIpAddress,
         firstName: firstName?.trim(),
-        lastName: lastName?.trim(),
-        email: email!, phoneNumber, dateOfBirth,
+        lastName: lastName?.trim(), // Persönliche Daten des Vertreters
+        email: email!, phoneNumber: normalizedPersonalPhoneNumber, dateOfBirth,
         personalStreet, personalHouseNumber, personalPostalCode, personalCity, personalCountry,
-        isManagingDirectorOwner, ownershipPercentage: ownershipPercentage ?? undefined,
+        isManagingDirectorOwner, ownershipPercentage: ownershipPercentage ?? undefined, // Daten zur wirtschaftlich berechtigten Person
         isActualDirector: isActualDirector ?? undefined, isActualOwner: isActualOwner ?? undefined,
         actualOwnershipPercentage: actualOwnershipPercentage ?? undefined,
         isActualExecutive: isActualExecutive ?? undefined,
-        actualRepresentativeTitle, companyName, legalForm,
+        actualRepresentativeTitle, companyName, legalForm, // Firmendaten
         companyAddressLine1: fullCompanyAddressForFirestore,
         companyCity, companyPostalCode, companyCountry,
-        companyPhoneNumber, companyWebsite, companyRegister, taxNumber, vatId, mcc: derivedMcc,
+        companyPhoneNumber: normalizedCompanyPhoneNumber, companyWebsite, companyRegister, taxNumber, vatId, mcc: derivedMcc,
         iban,
         accountHolder: accountHolder?.trim(),
         profilePictureFileId: profilePicResult.stripeFileId,

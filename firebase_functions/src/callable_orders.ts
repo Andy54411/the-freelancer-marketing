@@ -20,7 +20,7 @@ interface RejectOrderPayload extends OrderActionPayload {
  * Ändert den Status von 'zahlung_erhalten_clearing' zu 'AKTIV'.
  */
 export const acceptOrder = onCall(
-    corsOptions,
+    { cors: corsOptions },
     async (request: CallableRequest<OrderActionPayload>) => {
         logger.info(`[acceptOrder] Called for order: ${request.data.orderId}`);
         if (!request.auth) {
@@ -73,7 +73,7 @@ export const acceptOrder = onCall(
  * Ändert den Status zu 'abgelehnt_vom_anbieter'.
  */
 export const rejectOrder = onCall(
-    corsOptions,
+    { cors: corsOptions },
     async (request: CallableRequest<RejectOrderPayload>) => {
         logger.info(`[rejectOrder] Called for order: ${request.data.orderId}`);
         if (!request.auth) {
@@ -117,15 +117,34 @@ export const rejectOrder = onCall(
             });
             logger.info(`[rejectOrder] Stripe refund created: ${refund.id}`);
 
-            // Update the order document in Firestore
-            await orderRef.update({
+            // Get a reference to the chat document. The chat ID is the same as the order ID.
+            const chatDocRef = db.collection('chats').doc(orderId);
+
+            // Create a batch to update both documents atomically.
+            const batch = db.batch();
+
+            // Update the order document
+            batch.update(orderRef, {
                 status: 'abgelehnt_vom_anbieter',
                 rejectionReason: reason,
                 refundId: refund.id,
                 lastUpdatedAt: FieldValue.serverTimestamp()
             });
 
-            logger.info(`[rejectOrder] Order ${orderId} successfully rejected and refunded.`);
+            // WICHTIG: UIDs beider Teilnehmer aus dem Auftrag holen.
+            const customerId = orderData?.customerFirebaseUid || orderData?.kundeId;
+            const providerId = orderData?.selectedAnbieterId;
+
+            // Lock the corresponding chat. Use set with merge to create the doc if it doesn't exist.
+            batch.set(chatDocRef, {
+                isLocked: true,
+                lastUpdated: FieldValue.serverTimestamp(),
+                users: [customerId, providerId].filter(Boolean) // Stellt sicher, dass die UIDs für die Sicherheitsregeln vorhanden sind.
+            }, { merge: true });
+
+            await batch.commit();
+
+            logger.info(`[rejectOrder] Order ${orderId} successfully rejected, refunded, and chat locked.`);
             return { success: true, message: 'Auftrag erfolgreich abgelehnt und Rückerstattung eingeleitet.' };
 
         } catch (error: any) {

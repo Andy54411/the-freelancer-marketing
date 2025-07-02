@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+'use client';
+
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 interface SidebarVisibilityContextType {
     isSidebarOpen: boolean;
@@ -9,7 +11,7 @@ interface SidebarVisibilityContextType {
 
 const SidebarVisibilityContext = createContext<SidebarVisibilityContextType | undefined>(undefined);
 
-export const SidebarVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SidebarVisibilityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const toggleSidebar = useCallback(() => {

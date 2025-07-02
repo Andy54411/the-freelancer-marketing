@@ -63,11 +63,12 @@ const constants_1 = require("./constants");
 // --- Instanz-Variablen für Lazy Loading ---
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
 // dass sie bei jedem Aufruf neu erstellt werden.
-// Zentrale CORS-Konfiguration für alle Callable Functions.
-exports.corsOptions = {
-    region: "europe-west1",
-    cors: ["http://localhost:3000", "https://tilvo-f142f.web.app", "http://localhost:5002"]
-};
+// Zentrale CORS-Konfiguration für den lokalen Emulator-Zugriff.
+// Dies sollte nur die erlaubten Origins enthalten. Die Region wird pro Funktion definiert.
+exports.corsOptions = [
+    "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
+    "https://tilvo-f142f.web.app", "http://localhost:5002"
+];
 let dbInstance;
 let authInstance;
 let storageInstance;
@@ -85,8 +86,14 @@ function getAdminApp() {
     // The Admin SDK automatically connects to the Firestore emulator when the
     // FIRESTORE_EMULATOR_HOST environment variable is set by `firebase emulators:start`.
     // The explicit configuration below is removed to avoid port conflicts and make the setup more robust.
-    if (process.env.FUNCTIONS_EMULATOR === 'true') {
-        v2_1.logger.info("[getAdminApp] Running in emulator mode. SDK will auto-connect to Firestore emulator if the environment variable is set.");
+    if (process.env.FUNCTIONS_EMULATOR === "true") {
+        v2_1.logger.info("[getAdminApp] Running in emulator mode.");
+        if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+            v2_1.logger.info(`[getAdminApp] Auth emulator detected at: ${process.env.FIREBASE_AUTH_EMULATOR_HOST}. SDK will connect automatically.`);
+        }
+        else {
+            v2_1.logger.warn("[getAdminApp] Auth emulator NOT detected. Admin SDK will connect to LIVE Auth service. Is FIREBASE_AUTH_EMULATOR_HOST set?");
+        }
     }
     return app;
 }
@@ -174,15 +181,6 @@ async function getChatParticipantDetails(db, userId) {
         return { name: constants_1.UNKNOWN_USER_NAME, avatarUrl: null };
     }
 }
-// --- Parameter-Definitionen (AUSKOMMENTIERT, DA SIE DEN FEHLER VERURSACHEN) ---
-// export const STRIPE_SECRET_KEY_PARAM = defineSecret("STRIPE_SECRET_KEY");
-// export const STRIPE_WEBHOOK_SECRET_PARAM = defineSecret("STRIPE_WEBHOOK_SECRET");
-// export const SENDGRID_API_KEY_PARAM = defineSecret("SENDGRID_API_KEY");
-// export const FRONTEND_URL_PARAM = defineString("FRONTEND_URL");
-// export const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = defineString("EMULATOR_PUBLIC_FRONTEND_URL", {
-//   description: 'Publicly accessible URL for the frontend when testing with emulators.',
-//   default: ""
-// });
 // --- Bestehende Getter-Funktionen (JETZT MIT KORRIGIERTER LOGIK) ---
 function getStripeInstance(stripeKey) {
     if (!stripeClientInstance) {

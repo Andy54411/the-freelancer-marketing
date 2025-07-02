@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 // import { Geist, Geist_Mono } from 'next/font/google'; // AUSKOMMENTIERT
 import { Providers } from './providers';
 import { ThemeProvider } from "@/components/theme-provider"; // Korrekter Import für ThemeProvider
+import Chatbot from '@/components/Chatbot'; // Importiere den neuen Chatbot
 import FooterSection from '@/components/footer'; // Importiere die Footer-Komponente
 
 /*
@@ -42,6 +43,7 @@ export default function RootLayout({
           <Providers>
             {children}
             <FooterSection />
+            <Chatbot /> {/* Füge den Chatbot hier hinzu, damit er auf allen Seiten verfügbar ist */}
           </Providers>
         </ThemeProvider>
       </body>

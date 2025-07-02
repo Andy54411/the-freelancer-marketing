@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute'; // Import ProtectedRoute
+import ProtectedRoute from '@/components/auth/ProtectedRoute'; // Import ProtectedRoute
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext'; // Import SidebarVisibilityProvider
 import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -142,7 +142,12 @@ export default function UserDashboardPage() {
       });
 
       const resolvedOrders = await Promise.all(orderProcessingPromises);
-      setUserOrders(resolvedOrders);
+      // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus,
+      // da diese in der Dashboard-Vorschau nicht angezeigt werden sollen.
+      const visibleOrders = resolvedOrders.filter(
+        order => order.status !== 'abgelehnt_vom_anbieter'
+      );
+      setUserOrders(visibleOrders);
       setLoadingOrders(false);
     } catch (err: any) {
       console.error("Fehler beim Laden des Benutzerprofils oder der Daten:", err);
@@ -358,6 +363,14 @@ export default function UserDashboardPage() {
     setShowSupportChatModal(true);
   };
 
+  const handleOrderCreationSuccess = useCallback(() => {
+    setShowCreateOrderModal(false); // Schließt das Modal
+    if (currentUser) {
+      toast.success("Auftrag erfolgreich erstellt! Die Daten werden aktualisiert.");
+      loadInitialDashboardData(currentUser); // Lädt die Auftragsliste neu
+    }
+  }, [currentUser, loadInitialDashboardData]);
+
 
   if (loading || loadingOrders) {
     return (
@@ -401,7 +414,7 @@ export default function UserDashboardPage() {
               </div>
             }>
               <div className="max-w-5xl mx-auto space-y-6">
-                <WelcomeBox firstname={userProfile.firstname} />
+                <WelcomeBox firstname={userProfile.firstName ? String(userProfile.firstName) : (userProfile.firstname ? String(userProfile.firstname) : '')} />
 
                 {/* HIER ÄNDERT SICH DAS LAYOUT: EINZELNER GRID-CONTAINER FÜR ALLE KARTEN */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -501,6 +514,7 @@ export default function UserDashboardPage() {
             <Modal onClose={() => setShowCreateOrderModal(false)} title="Neuen Auftrag erstellen">
               <CreateOrderModal
                 onClose={() => setShowCreateOrderModal(false)}
+                onSuccess={handleOrderCreationSuccess}
                 currentUser={currentUser!}
                 userProfile={userProfile!}
               />

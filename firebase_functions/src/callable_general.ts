@@ -364,10 +364,19 @@ export const deleteCompanyAccount = onCall(
           }
         }
       }
-      const paths = [`profilePictures/${userId}/`, `logos/${userId}/`, `businessLicenses/${userId}/`, `masterCraftsmanCertificates/${userId}/`, `projectImages/${userId}/`, `identityDocs/${userId}/`];
-      for (const p of paths) {
-        try { await adminStorageBucket.deleteFiles({ prefix: p }); loggerV2.info(`Storage ${p} gelöscht.`); }
-        catch (e: any) { if (e.code !== 404 && e.code !== 'storage/object-not-found') errors.push(`Storage ${p}: ${e.message}`); else loggerV2.info(`Storage ${p} nicht gefunden.`); }
+      // This is the robust way to delete all user-related files.
+      // The old logic with multiple paths is no longer needed and can be removed.
+      const userUploadsPrefix = `user_uploads/${userId}/`;
+      try {
+        await adminStorageBucket.deleteFiles({ prefix: userUploadsPrefix });
+        loggerV2.info(`Storage-Dateien unter dem Präfix '${userUploadsPrefix}' gelöscht.`);
+      } catch (e: any) {
+        // It's not an error if the folder doesn't exist.
+        if (e.code !== 404 && e.code !== 'storage/object-not-found') {
+          errors.push(`Storage (${userUploadsPrefix}): ${e.message}`);
+        } else {
+          loggerV2.info(`Keine Storage-Dateien unter dem Präfix '${userUploadsPrefix}' gefunden.`);
+        }
       }
       try { if ((await userDocRef.get()).exists) await userDocRef.delete(); loggerV2.info(`Firestore 'users/${userId}' gelöscht.`); }
       catch (e: any) { errors.push(`Firestore (user): ${e.message}`); }

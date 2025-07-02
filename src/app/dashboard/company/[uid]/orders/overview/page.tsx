@@ -19,7 +19,7 @@ interface Order {
     orderedBy: string; // customerFirebaseUid
     orderDate?: { _seconds: number, _nanoseconds: number } | string;
     priceInCents: number;
-    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'BEZAHLT' | 'ZAHLUNG_ERHALTEN_CLEARING';
+    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'BEZAHLT' | 'ZAHLUNG_ERHALTEN_CLEARING' | 'abgelehnt_vom_anbieter';
     uid: string; // Die UID des Anbieters (dieses Unternehmens)
     projectId?: string;
     currency?: string;
@@ -71,7 +71,11 @@ const CompanyOrdersOverviewPage = () => {
 
                 if (result.data && Array.isArray(result.data.orders)) {
                     console.log(`[CompanyOrdersOverviewPage] ${result.data.orders.length} Aufträge empfangen.`);
-                    setOrders(result.data.orders);
+                    // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus, da diese nicht in der Übersicht erscheinen sollen.
+                    const visibleOrders = result.data.orders.filter(
+                        order => order.status !== 'abgelehnt_vom_anbieter'
+                    );
+                    setOrders(visibleOrders);
                 } else {
                     console.warn("[CompanyOrdersOverviewPage] Keine Aufträge im erwarteten Format vom Backend erhalten.", result.data);
                     setOrders([]);

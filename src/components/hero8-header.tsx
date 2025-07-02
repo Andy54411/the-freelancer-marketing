@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { Logo } from './logo'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import React from 'react'
+import React, { Suspense } from 'react'
 import { ModeToggle } from './mode-toggle'
-import LoginPopup from '@/app/(auth)/login/LoginPopup' // Importiere das LoginPopup
+import LoginPopup from '@/components/LoginPopup'
 import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
 
 const menuItems = [
@@ -32,19 +32,15 @@ export const HeroHeader = () => {
     setIsLoginPopupOpen(false);
   };
 
-  const handleLoginSuccess = (user: FirebaseUser, redirectToUrl?: string | null) => {
-    // Hier könntest du spezifische Logik nach erfolgreichem Login aus dem Header ausführen,
-    // z.B. Weiterleitung oder Aktualisierung des UI-Status.
-    // Fürs Erste schließen wir einfach das Popup. Die Weiterleitung wird im LoginPopup selbst gehandhabt.
-    console.log("Login erfolgreich im Header, User:", user.uid, "Leite weiter zu:", redirectToUrl);
+  const handleLoginSuccess = (user: FirebaseUser) => {
+    // Nach erfolgreichem Login wird das Popup geschlossen.
+    // Die AuthProvider-Komponente erkennt die Zustandsänderung und die App
+    // leitet den Benutzer automatisch zum richtigen Dashboard weiter.
+    console.log("Login erfolgreich im Header für User:", user.uid);
     setIsLoginPopupOpen(false);
-    // Führe die Weiterleitung hier aus, da LoginPopup die Navigation delegiert, wenn onLoginSuccess gesetzt ist.
-    if (redirectToUrl) {
-      window.location.assign(redirectToUrl); // Erzwingt einen vollständigen Seiten-Reload
-    } else {
-      // Fallback, falls redirectToUrl aus irgendeinem Grund null/undefined ist (sollte nicht passieren, aber zur Sicherheit)
-      window.location.assign(`/dashboard/user/${user.uid}`); // Oder ein Standard-Dashboard
-    }
+    // Ein Neuladen der Seite stellt sicher, dass alle Kontexte (wie der AuthContext)
+    // neu initialisiert werden und die Weiterleitungslogik greift.
+    window.location.reload();
   };
   return (
     <header>
@@ -146,14 +142,13 @@ export const HeroHeader = () => {
         </div>
       </nav>
       {/* LoginPopup-Komponente hier einfügen */}
-      <LoginPopup
-        isOpen={isLoginPopupOpen}
-        onClose={handleCloseLoginPopup}
-        onLoginSuccess={handleLoginSuccess}
-        // redirectTo könnte hier übergeben werden, falls es eine Standard-Weiterleitung vom Header aus geben soll
-        // initialEmail kann hier auch gesetzt werden, falls gewünscht
-        isFullScreen={false} // Im Header wird es als Modal/Popup verwendet
-      />
+      <Suspense fallback={null}>
+        <LoginPopup
+          isOpen={isLoginPopupOpen}
+          onClose={handleCloseLoginPopup}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </Suspense>
     </header>
   )
 }

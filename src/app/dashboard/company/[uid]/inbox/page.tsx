@@ -81,7 +81,11 @@ export default function CompanyInboxPage() {
             if (!uid || authLoading) return;
             // 1. Alle Aufträge dieser Firma laden
             const auftraegeRef = collection(db, "auftraege");
-            const auftraegeQ = query(auftraegeRef, where("selectedAnbieterId", "==", uid));
+            const auftraegeQ = query(
+                auftraegeRef,
+                where("selectedAnbieterId", "==", uid),
+                where("status", "!=", "abgelehnt_vom_anbieter") // Filtere abgelehnte Aufträge direkt in der Abfrage heraus
+            );
             const auftraegeSnap = await getDocs(auftraegeQ);
 
             const chatPreviews: ChatPreview[] = [];

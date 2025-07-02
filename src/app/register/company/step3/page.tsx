@@ -205,7 +205,7 @@ export default function Step3CompanyPage() {
   // Handler für Dateiänderungen (allgemein)
   const handleFileChange = async (
     e: ChangeEvent<HTMLInputElement>,
-    fileSetter: Dispatch<SetStateAction<File | null>>, // Korrigierter Typ für den Setter
+    fileSetter: Dispatch<SetStateAction<File | null | undefined>>,
     localPreviewSetter: Dispatch<SetStateAction<string | null>>,
     maxSizeBytes?: number,
     fileTypeForAlert?: string,

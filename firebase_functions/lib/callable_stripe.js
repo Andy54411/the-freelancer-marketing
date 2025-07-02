@@ -201,7 +201,16 @@ exports.createStripeAccountIfComplete = (0, https_1.onCall)({ region: "europe-we
     v2_1.logger.info('[DEBUG] Alle Validierungen bestanden. Fahre fort mit Kontoerstellung.');
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     const undefinedIfNull = (val) => val === null ? undefined : val;
-    const platformProfileUrl = `${(0, helpers_1.getPublicFrontendURL)(frontendUrlValue)}/profil/${userId}`; // <-- Parameter übergeben
+    // The platformProfileUrl for Stripe's business_profile MUST be a public, non-localhost URL.
+    // We will always use the production frontend URL for this, which is correctly
+    // sourced from the FRONTEND_URL parameter.
+    const platformProfileUrl = `${frontendUrlValue}/profil/${userId}`;
+    // This block now serves as a final safety net and warning.
+    // If this log appears, it means the FRONTEND_URL parameter is misconfigured.
+    if (platformProfileUrl.startsWith("http://localhost")) {
+        v2_1.logger.error(`[createStripeAccountIfComplete] CRITICAL: The configured FRONTEND_URL parameter is a localhost URL ('${platformProfileUrl}'). This is invalid for Stripe. Please configure the production URL for the FRONTEND_URL parameter.`);
+        throw new https_1.HttpsError("internal", "Server configuration error: Invalid frontend URL for Stripe.");
+    }
     const accountParams = {
         type: "custom",
         country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry) : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry),

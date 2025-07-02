@@ -331,7 +331,18 @@ export const createStripeAccountIfComplete = onCall(
 
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null ? undefined : val;
-    const platformProfileUrl = `${getPublicFrontendURL(frontendUrlValue)}/profil/${userId}`; // <-- Parameter übergeben
+
+    // The platformProfileUrl for Stripe's business_profile MUST be a public, non-localhost URL.
+    // We will always use the production frontend URL for this, which is correctly
+    // sourced from the FRONTEND_URL parameter.
+    const platformProfileUrl = `${frontendUrlValue}/profil/${userId}`;
+
+    // This block now serves as a final safety net and warning.
+    // If this log appears, it means the FRONTEND_URL parameter is misconfigured.
+    if (platformProfileUrl.startsWith("http://localhost")) {
+      loggerV2.error(`[createStripeAccountIfComplete] CRITICAL: The configured FRONTEND_URL parameter is a localhost URL ('${platformProfileUrl}'). This is invalid for Stripe. Please configure the production URL for the FRONTEND_URL parameter.`);
+      throw new HttpsError("internal", "Server configuration error: Invalid frontend URL for Stripe.");
+    }
 
     const accountParams: Stripe.AccountCreateParams = {
       type: "custom",

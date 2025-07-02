@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import * as React from "react"
 import {
@@ -113,7 +113,8 @@ export const schema = z.object({
   status: z.string(),
   target: z.string(),
   limit: z.string(),
-  reviewer: z.string(),
+  reviewer: z.string().optional(), // Reviewer ist in den JSON-Daten optional
+  umsatz: z.number().optional(), // Umsatz-Feld hinzugefügt
 })
 
 // Create a separate component for the drag handle
@@ -255,9 +256,10 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     accessorKey: "reviewer",
     header: "Reviewer",
     cell: ({ row }) => {
-      const isAssigned = row.original.reviewer !== "Assign reviewer"
+      const reviewer = row.original.reviewer
+      const isAssigned = reviewer && reviewer !== "Assign reviewer"
 
-      if (isAssigned) {
+      if (isAssigned && reviewer) {
         return row.original.reviewer
       }
 
@@ -284,6 +286,18 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         </>
       )
     },
+  },
+  {
+    accessorKey: "umsatz",
+    header: () => <div className="w-full text-right">Umsatz</div>,
+    cell: ({ row }) => (
+      <div className="w-24 text-right font-mono">
+        {typeof row.original.umsatz === "number"
+          ? row.original.umsatz.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+          : "-"}
+      </div>
+    ),
+    enableSorting: true,
   },
   {
     id: "actions",
@@ -660,68 +674,9 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
       <DrawerContent>
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.header}</DrawerTitle>
-          <DrawerDescription>
-            Showing total visitors for the last 6 months
-          </DrawerDescription>
+          <DrawerDescription>Details für diesen Auftrag bearbeiten.</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          {!isMobile && (
-            <>
-              <ChartContainer config={chartConfig}>
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    left: 0,
-                    right: 10,
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                    hide
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Area
-                    dataKey="mobile"
-                    type="natural"
-                    fill="var(--color-mobile)"
-                    fillOpacity={0.6}
-                    stroke="var(--color-mobile)"
-                    stackId="a"
-                  />
-                  <Area
-                    dataKey="desktop"
-                    type="natural"
-                    fill="var(--color-desktop)"
-                    fillOpacity={0.4}
-                    stroke="var(--color-desktop)"
-                    stackId="a"
-                  />
-                </AreaChart>
-              </ChartContainer>
-              <Separator />
-              <div className="grid gap-2">
-                <div className="flex gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month{" "}
-                  <IconTrendingUp className="size-4" />
-                </div>
-                <div className="text-muted-foreground">
-                  Showing total visitors for the last 6 months. This is just
-                  some random text to test the layout. It spans multiple lines
-                  and should wrap around.
-                </div>
-              </div>
-              <Separator />
-            </>
-          )}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="header">Header</Label>
@@ -777,6 +732,14 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                 <Label htmlFor="limit">Limit</Label>
                 <Input id="limit" defaultValue={item.limit} />
               </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="umsatz">Umsatz</Label>
+              <Input
+                id="umsatz"
+                type="number"
+                defaultValue={item.umsatz}
+              />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="reviewer">Reviewer</Label>

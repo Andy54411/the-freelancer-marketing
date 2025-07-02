@@ -1,14 +1,54 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { HeroHeader } from '@/components/hero8-header'
 import { InfiniteSlider } from '@/components/ui/infinite-slider'
 import { ProgressiveBlur } from '@/components/ui/progressive-blur'
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
+import { db } from '@/firebase/clients'
+
+interface CompanyLogo {
+  name: string;
+  profilePictureURL: string;
+}
 
 export default function HeroSection() {
+  const [newCompanies, setNewCompanies] = useState<CompanyLogo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNewCompanies = async () => {
+      try {
+        const companiesRef = collection(db, 'companies');
+        // Annahme: Ein 'createdAt' Feld vom Typ Timestamp existiert in den Firmendokumenten zur Sortierung.
+        const q = query(companiesRef, orderBy('createdAt', 'desc'), limit(15));
+        const querySnapshot = await getDocs(q);
+
+        const companies: CompanyLogo[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // Nur Firmen mit einem Logo und Namen hinzufügen
+          if (data.profilePictureURL && data.companyName) {
+            companies.push({
+              name: data.companyName,
+              profilePictureURL: data.profilePictureURL,
+            });
+          }
+        });
+        setNewCompanies(companies);
+      } catch (error) {
+        console.error("Fehler beim Laden der neuen Firmen:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewCompanies();
+  }, []);
+
   return (
     <>
       <HeroHeader />
@@ -70,29 +110,29 @@ export default function HeroSection() {
                 <p className="text-end text-sm">unsere neuen Tasker</p>
               </div>
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
-                <InfiniteSlider speedOnHover={20} speed={40} gap={112}>
-                  {[
-                    'nvidia',
-                    'column',
-                    'github',
-                    'nike',
-                    'lemonsqueezy',
-                    'laravel',
-                    'lilly',
-                    'openai',
-                  ].map((brand) => (
-                    <div key={brand} className="flex">
-                      <Image
-                        className="mx-auto h-6 w-fit dark:invert"
-                        src={`https://html.tailus.io/blocks/customers/${brand}.svg`}
-                        alt={`${brand} Logo`}
-                        height={24}
-                        width={100} // Provide an estimated width, or adjust based on actual SVG sizes
-                        style={{ objectFit: "contain" }}
-                      />
-                    </div>
-                  ))}
-                </InfiniteSlider>
+                {newCompanies.length > 0 && (
+                  <InfiniteSlider speedOnHover={20} speed={40} gap={112}>
+                    {loading ? (
+                      // Zeige Platzhalter während des Ladens
+                      Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      ))
+                    ) : (
+                      newCompanies.map((company) => (
+                        <div key={company.name} className="flex">
+                          <Image
+                            className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
+                            src={company.profilePictureURL}
+                            alt={`${company.name} Logo`}
+                            height={100}
+                            width={200}
+                            style={{ objectFit: "contain" }}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </InfiniteSlider>
+                )}
 
                 <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>
                 <div className="bg-linear-to-l from-background absolute inset-y-0 right-0 w-20"></div>

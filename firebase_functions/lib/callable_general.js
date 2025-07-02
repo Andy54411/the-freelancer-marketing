@@ -297,17 +297,20 @@ exports.deleteCompanyAccount = (0, https_1.onCall)({ region: "europe-west1" }, a
                 }
             }
         }
-        const paths = [`profilePictures/${userId}/`, `logos/${userId}/`, `businessLicenses/${userId}/`, `masterCraftsmanCertificates/${userId}/`, `projectImages/${userId}/`, `identityDocs/${userId}/`];
-        for (const p of paths) {
-            try {
-                await adminStorageBucket.deleteFiles({ prefix: p });
-                v2_1.logger.info(`Storage ${p} gelöscht.`);
+        // This is the robust way to delete all user-related files.
+        // The old logic with multiple paths is no longer needed and can be removed.
+        const userUploadsPrefix = `user_uploads/${userId}/`;
+        try {
+            await adminStorageBucket.deleteFiles({ prefix: userUploadsPrefix });
+            v2_1.logger.info(`Storage-Dateien unter dem Präfix '${userUploadsPrefix}' gelöscht.`);
+        }
+        catch (e) {
+            // It's not an error if the folder doesn't exist.
+            if (e.code !== 404 && e.code !== 'storage/object-not-found') {
+                errors.push(`Storage (${userUploadsPrefix}): ${e.message}`);
             }
-            catch (e) {
-                if (e.code !== 404 && e.code !== 'storage/object-not-found')
-                    errors.push(`Storage ${p}: ${e.message}`);
-                else
-                    v2_1.logger.info(`Storage ${p} nicht gefunden.`);
+            else {
+                v2_1.logger.info(`Keine Storage-Dateien unter dem Präfix '${userUploadsPrefix}' gefunden.`);
             }
         }
         try {

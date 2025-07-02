@@ -15,11 +15,12 @@ import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from "./constants";
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
 // dass sie bei jedem Aufruf neu erstellt werden.
 
-// Zentrale CORS-Konfiguration für alle Callable Functions.
-export const corsOptions = {
-  region: "europe-west1",
-  cors: ["http://localhost:3000", "https://tilvo-f142f.web.app", "http://localhost:5002"]
-};
+// Zentrale CORS-Konfiguration für den lokalen Emulator-Zugriff.
+// Dies sollte nur die erlaubten Origins enthalten. Die Region wird pro Funktion definiert.
+export const corsOptions: string[] = [
+  "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
+  "https://tilvo-f142f.web.app", "http://localhost:5002"
+];
 
 let dbInstance: Firestore;
 let authInstance: Auth;
@@ -30,23 +31,12 @@ let stripeClientInstance: Stripe | undefined;
 /**
  * Initialisiert und gibt die Firebase Admin App Instanz zurück.
  * Diese Funktion stellt sicher, dass die App nur einmal initialisiert wird.
+ * WICHTIG: initializeApp() MUSS global in index.ts aufgerufen werden.
  */
 function getAdminApp(): AdminApp {
-  if (getApps().length > 0) {
-    return getApps()[0];
-  }
-
-  const app = initializeApp();
-  logger.info("Admin SDK erfolgreich initialisiert.");
-
-  // The Admin SDK automatically connects to the Firestore emulator when the
-  // FIRESTORE_EMULATOR_HOST environment variable is set by `firebase emulators:start`.
-  // The explicit configuration below is removed to avoid port conflicts and make the setup more robust.
-  if (process.env.FUNCTIONS_EMULATOR === 'true') {
-    logger.info("[getAdminApp] Running in emulator mode. SDK will auto-connect to Firestore emulator if the environment variable is set.");
-  }
-
-  return app;
+  // This function now assumes that initializeApp() has been called in the main
+  // entry point (index.ts). It simply retrieves the already-initialized app.
+  return getApps()[0];
 }
 
 // --- ANGEPASSTE "GETTER"-FUNKTIONEN FÜR LAZY INITIALIZATION ---
@@ -153,17 +143,6 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
     return { name: UNKNOWN_USER_NAME, avatarUrl: null };
   }
 }
-
-// --- Parameter-Definitionen (AUSKOMMENTIERT, DA SIE DEN FEHLER VERURSACHEN) ---
-// export const STRIPE_SECRET_KEY_PARAM = defineSecret("STRIPE_SECRET_KEY");
-// export const STRIPE_WEBHOOK_SECRET_PARAM = defineSecret("STRIPE_WEBHOOK_SECRET");
-// export const SENDGRID_API_KEY_PARAM = defineSecret("SENDGRID_API_KEY");
-// export const FRONTEND_URL_PARAM = defineString("FRONTEND_URL");
-// export const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = defineString("EMULATOR_PUBLIC_FRONTEND_URL", {
-//   description: 'Publicly accessible URL for the frontend when testing with emulators.',
-//   default: ""
-// });
-
 
 // --- Bestehende Getter-Funktionen (JETZT MIT KORRIGIERTER LOGIK) ---
 

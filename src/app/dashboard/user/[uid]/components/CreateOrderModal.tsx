@@ -68,6 +68,7 @@ interface BillingDetailsPayloadForApi {
 }
 interface CreateOrderModalProps {
   onClose: () => void;
+  onSuccess: () => void;
   currentUser: User;
   userProfile: UserProfileData;
 }
@@ -84,7 +85,7 @@ const db = getFirestore(app); // Initialisiere Firestore-Datenbank
 // Käufer-Servicegebühr Rate (z.B. 4.5%)
 const BUYER_SERVICE_FEE_RATE = 0.045;
 
-const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUser, userProfile }) => {
+const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onSuccess, currentUser, userProfile }) => {
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState<'details' | 'payment' | 'success'>('details');
@@ -134,15 +135,9 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, currentUse
 
     setLoading(false);
     setCurrentStep('success');
-    setTimeout(() => {
-      onClose();
-      // Erwägen Sie, router.push zum aktuellen Pfad zu verwenden, um ein
-      // Neuladen der Daten auf der Dashboard-Seite zu erzwingen,
-      // falls router.refresh() nicht ausreicht (z.B. bei Client-Komponenten mit eigenem Fetching).
-      router.push(window.location.pathname); // Navigiert zur aktuellen Seite, um potenziell Daten neu zu laden
-    }, 3000);
-
-  }, [onClose, router]);
+    // Nach 3 Sekunden die Erfolgs-Callback-Funktion aufrufen, die das Modal schließt und die Daten neu lädt.
+    setTimeout(onSuccess, 3000);
+  }, [onSuccess]);
 
   const handlePaymentError = useCallback((message: string | null) => {
     setLoading(false);

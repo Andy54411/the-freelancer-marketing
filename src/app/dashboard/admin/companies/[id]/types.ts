@@ -1,0 +1,1 @@
+export type CompanyDetailData = Record<string, any> & { id: string; documents: { name: string; url: string }[] };

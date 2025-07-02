@@ -2,11 +2,7 @@ WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
 WARNING: sun.misc.Unsafe::objectFieldOffset has been called by akka.util.Unsafe (file:/Users/andystaudinger/.cache/firebase/emulators/firebase-database-emulator-v4.11.2.jar)
 WARNING: Please consider reporting this to the maintainers of class akka.util.Unsafe
 WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
-22:26:32.441 [NamespaceSystem-akka.actor.default-dispatcher-6] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
-22:26:32.533 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
-22:26:48.410 [NamespaceSystem-akka.actor.default-dispatcher-6] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 67ms, init: 0ms
-22:26:48.440 [NamespaceSystem-blocking-namespace-operation-dispatcher-8] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active
-23:36:15.630 [Thread-0] INFO com.firebase.server.forge.App$ - Attempting graceful shutdown.
-23:36:15.820 [NamespaceSystem-akka.actor.default-dispatcher-13] INFO com.firebase.core.namespace.Terminator$Terminator - 1 actors left to terminate: tilvo-f142f-default-rtdb
-23:36:15.864 [NamespaceSystem-akka.actor.default-dispatcher-13] INFO com.firebase.core.namespace.NamespaceActor - stopped namespace actor for tilvo-f142f-default-rtdb
-23:36:15.895 [Thread-0] INFO com.firebase.server.forge.App$ - Graceful shutdown complete.
+09:25:18.827 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
+09:25:19.024 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
+09:25:38.089 [NamespaceSystem-akka.actor.default-dispatcher-4] INFO com.firebase.core.namespace.NamespaceActor - tilvo-f142f-default-rtdb successfully activated FBKV (SurveyIdle(0)) wait: 293ms, init: 0ms
+09:25:38.215 [NamespaceSystem-blocking-namespace-operation-dispatcher-7] INFO com.firebase.core.namespace.StateManager - Namespace tilvo-f142f-default-rtdb status Active to Active

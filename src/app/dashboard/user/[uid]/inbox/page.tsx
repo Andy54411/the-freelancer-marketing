@@ -5,7 +5,7 @@ import { UNKNOWN_USER_NAME } from '@/constants/strings';
 import { useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiInbox, FiLoader, FiMessageSquare, FiUser } from 'react-icons/fi';
+import { FiInbox, FiLoader, FiMessageSquare, FiUser, FiSlash } from 'react-icons/fi';
 import { db } from '@/firebase/clients';
 import {
     collection,
@@ -48,6 +48,8 @@ export default function UserInboxPage() {
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [loadingChats, setLoadingChats] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedOrderStatus, setSelectedOrderStatus] = useState<string | null>(null);
+    const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
 
     useEffect(() => {
         if (!currentUser?.uid) {
@@ -71,6 +73,22 @@ export default function UserInboxPage() {
             }
 
             const chatPromises = snapshot.docs.map(async (chatDoc) => {
+                // NEU: Überprüfe den Status des zugehörigen Auftrags.
+                // Zeige den Chat nicht an, wenn der Auftrag abgelehnt oder storniert wurde.
+                const orderId = chatDoc.id;
+                try {
+                    const orderDocRef = doc(db, 'auftraege', orderId);
+                    const orderDocSnap = await getDoc(orderDocRef);
+                    if (orderDocSnap.exists()) {
+                        const status = orderDocSnap.data().status;
+                        if (status === 'abgelehnt_vom_anbieter' || status === 'STORNIERT') {
+                            return null; // Signalisiert, dass dieser Chat herausgefiltert werden soll.
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Fehler beim Prüfen des Auftragsstatus für Chat ${orderId}:`, e);
+                    // Im Fehlerfall den Chat sicherheitshalber nicht anzeigen.
+                }
                 const chatData = chatDoc.data();
                 const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
                 const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
@@ -94,8 +112,10 @@ export default function UserInboxPage() {
                 };
             });
 
-            const resolvedChats = await Promise.all(chatPromises);
-            setChats(resolvedChats);
+            // Filtere die Chats heraus, die als 'null' markiert wurden (weil der Auftrag inaktiv ist).
+            const resolvedChatsWithNulls = await Promise.all(chatPromises);
+            const validChats = resolvedChatsWithNulls.filter(chat => chat !== null) as ChatPreview[];
+            setChats(validChats);
             setLoadingChats(false);
         }, (err) => {
             console.error("Fehler beim Laden der Chats:", err);
@@ -109,6 +129,34 @@ export default function UserInboxPage() {
     const selectedChat = useMemo(() => {
         return chats.find(chat => chat.id === selectedChatId) || null;
     }, [chats, selectedChatId]);
+
+    useEffect(() => {
+        if (!selectedChatId) {
+            setSelectedOrderStatus(null);
+            return;
+        }
+
+        const fetchOrderStatus = async () => {
+            setLoadingOrderStatus(true);
+            try {
+                const orderDocRef = doc(db, 'auftraege', selectedChatId);
+                const orderDocSnap = await getDoc(orderDocRef);
+                if (orderDocSnap.exists()) {
+                    setSelectedOrderStatus(orderDocSnap.data().status || null);
+                } else {
+                    setSelectedOrderStatus(null);
+                    setError("Zugehöriger Auftrag für diesen Chat nicht gefunden.");
+                }
+            } catch (err) {
+                console.error("Fehler beim Laden des Auftragsstatus:", err);
+                setError("Fehler beim Laden des Auftragsstatus.");
+            } finally {
+                setLoadingOrderStatus(false);
+            }
+        };
+
+        fetchOrderStatus();
+    }, [selectedChatId]);
 
     if (authLoading || loadingChats) {
         return (
@@ -168,8 +216,18 @@ export default function UserInboxPage() {
 
                 {/* Rechte Spalte: Chat-Ansicht */}
                 <main className="flex-1 flex flex-col">
-                    {selectedChatId ? (
-                        <ChatComponent orderId={selectedChatId} />
+                    {loadingOrderStatus ? (
+                        <div className="flex-1 flex justify-center items-center">
+                            <FiLoader className="animate-spin text-4xl text-[#14ad9f]" />
+                        </div>
+                    ) : selectedChatId && (selectedOrderStatus === 'abgelehnt_vom_anbieter' || selectedOrderStatus === 'STORNIERT') ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-100 p-4">
+                            <FiSlash className="text-4xl text-gray-400 mb-3" />
+                            <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
+                            <p className="text-gray-500 text-sm">Für diesen Auftrag ist der Chat nicht mehr verfügbar.</p>
+                        </div>
+                    ) : selectedChatId ? (
+                        <ChatComponent orderId={selectedChatId} /> // Render ChatComponent if status is OK
                     ) : (
                         <div className="flex-1 flex flex-col justify-center items-center text-center text-gray-500 p-8">
                             <FiMessageSquare size={64} className="mb-4 text-gray-300" />

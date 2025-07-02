@@ -218,11 +218,16 @@ export default function CompanyChatPage() {
                         <p className="text-sm text-gray-500">Mit {order.customerName}</p>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">
-                        {order.status === 'abgelehnt_vom_anbieter' || order.status === 'STORNIERT' ? (
+                        {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(order.status) ? (
                             <div className="flex h-full flex-col items-center justify-center text-center bg-gray-100 rounded-lg p-4">
                                 <FiSlash className="text-4xl text-gray-400 mb-3" />
                                 <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
-                                <p className="text-gray-500 text-sm">Für abgelehnte oder stornierte Aufträge ist der Chat nicht verfügbar.</p>
+                                <p className="text-gray-500 text-sm">
+                                    {order.status === 'zahlung_erhalten_clearing'
+                                        ? 'Bitte nehmen Sie den Auftrag zuerst an, um den Chat zu aktivieren.'
+                                        : 'Für diesen Auftrag ist der Chat nicht verfügbar.'
+                                    }
+                                </p>
                             </div>
                         ) : (
                             <ChatComponent orderId={orderId} />

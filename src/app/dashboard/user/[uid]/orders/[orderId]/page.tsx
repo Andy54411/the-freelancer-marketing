@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 
 // Icons für UI
-import { FiLoader, FiAlertCircle, FiMessageSquare, FiArrowLeft, FiUser } from 'react-icons/fi'; // FiUser hinzugefügt
+import { FiLoader, FiAlertCircle, FiMessageSquare, FiArrowLeft, FiUser, FiSlash } from 'react-icons/fi'; // FiUser hinzugefügt
 
 import UserInfoCard from '@/components/UserInfoCard'; // Importiere die neue, generische Komponente
 // Die Chat-Komponente
@@ -257,9 +257,17 @@ export default function OrderDetailPage() {
                         <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
                             <FiMessageSquare className="mr-2" /> Chat zum Auftrag
                         </h2>
-                        <div className="flex-1 min-h-0">
-                            <ChatComponent orderId={orderId} />
-                        </div>
+                        {order.status === 'abgelehnt_vom_anbieter' || order.status === 'STORNIERT' ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
+                                <FiSlash className="text-4xl text-gray-400 mb-3" />
+                                <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
+                                <p className="text-gray-500 text-sm">Für diesen Auftrag ist der Chat nicht mehr verfügbar.</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 min-h-0">
+                                <ChatComponent orderId={orderId} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

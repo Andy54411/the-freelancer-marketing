@@ -17,101 +17,69 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
+// Die Region muss mit der Deployment-Region der Funktion übereinstimmen.
+// Die Cloud Functions sind in `firebase_functions/src/invites.ts` für `europe-west1` konfiguriert.
+// Dies ist die entscheidende Korrektur.
 const functionsRegion = 'europe-west1';
 
-// --- Typ-Definitionen für das globale Objekt ---
-// Dies ist notwendig, um TypeScript mitzuteilen, dass wir Firebase-Instanzen
-// im globalen Namespace speichern, was in der Entwicklung mit HMR (Hot Module Replacement)
-// nützlich ist, um den Zustand zwischen den Neuladungen zu erhalten.
-declare global {
-  var _firebaseApp: FirebaseApp | undefined;
-  var _firebaseAuth: Auth | undefined;
-  var _firebaseDb: Firestore | undefined;
-  var _firebaseStorage: FirebaseStorage | undefined;
-  var _firebaseFunctions: Functions | undefined;
-}
+/**
+ * Stellt eine einzige, initialisierte Firebase App-Instanz bereit.
+ * Verhindert die mehrfache Initialisierung in Server-Side-Rendering- und
+ * Hot-Module-Replacement-Szenarien.
+ * @returns {FirebaseApp} Die initialisierte Firebase App.
+ */
+const getClientApp = (): FirebaseApp => {
+  if (getApps().length) {
+    return getApp();
+  }
+  console.log('[Firebase Client] Initializing new Firebase App.');
+  return initializeApp(firebaseConfig);
+};
 
-// --- Hauptlogik ---
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
-let functions: Functions;
+// --- Instanzen abrufen ---
+const app = getClientApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const functions = getFunctions(app, functionsRegion);
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isClient = typeof window !== 'undefined';
+// --- Emulatoren verbinden (nur im Entwicklungsmodus) ---
+// Dieser Block wird nur einmal pro Prozess ausgeführt, auch bei Hot-Reloads.
+if (process.env.NODE_ENV === 'development') {
+  // Ein globales Flag, um zu verhindern, dass die Verbindung zu den Emulatoren
+  // bei jedem Hot-Reload erneut versucht wird, was zu Fehlern führen würde.
+  if (!(global as any)._firebaseEmulatorsConnected) {
+    console.log('[Firebase Client] (Dev) Connecting to emulators...');
 
-if (isDevelopment && isClient) {
-  // Im Entwicklungsmodus verwenden wir das 'global'-Objekt als Cache.
-  // Dies verhindert, dass bei jedem Fast Refresh von Next.js eine neue
-  // Firebase-App initialisiert und die Emulator-Verbindungen verloren gehen.
-
-  // Check for the existence of the cached app AND functions instance.
-  // If either is missing, re-initialize everything to prevent stale states caused by HMR.
-  if (!global._firebaseApp || !global._firebaseFunctions) {
-    console.log('[Firebase Client] (Dev) Re-initializing Firebase and caching in global.');
-
-    // Initialisiere die App und die Dienste
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    functions = getFunctions(app, functionsRegion);
-
-    // Speichere die Instanzen im globalen Cache
-    global._firebaseApp = app;
-    global._firebaseAuth = auth;
-    global._firebaseDb = db;
-    global._firebaseStorage = storage;
-    global._firebaseFunctions = functions;
-
-    // Verbinde die Emulatoren NUR bei der allerersten Initialisierung.
     // Auth Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST) {
-      connectAuthEmulator(auth, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
+      connectAuthEmulator(auth, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`, { disableWarnings: true });
       console.log(`[Firebase Client] (Dev) Auth Emulator connected.`);
     }
+
     // Firestore Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
-      const [host, port] = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST.split(':');
-      connectFirestoreEmulator(db, host, parseInt(port, 10));
-      console.log(`[Firebase Client] (Dev) Firestore Emulator connected.`);
-    }
-    // Storage Emulator
-    if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST) {
-      const [host, port] = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST.split(':');
-      connectStorageEmulator(storage, host, parseInt(port, 10));
-      console.log(`[Firebase Client] (Dev) Storage Emulator connected.`);
-    }
-    // Functions Emulator
-    if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
-      const hostWithPort = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST;
-      const [host, portStr] = hostWithPort.includes(':') ? hostWithPort.split(':') : [hostWithPort, '5001'];
-      connectFunctionsEmulator(functions, host, parseInt(portStr, 10));
-      console.log(`[Firebase Client] (Dev) Functions Emulator connected.`);
+      const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST.split(':');
+      connectFirestoreEmulator(db, host, parseInt(portStr, 10));
+      console.log(`[Firebase Client] (Dev) Firestore Emulator connected to ${host}:${portStr}.`);
     }
 
-  } else {
-    // Wenn die Instanzen bereits im globalen Cache vorhanden sind, verwenden wir sie wieder.
-    console.log('[Firebase Client] (Dev) Reusing cached Firebase instances from global.');
-    app = global._firebaseApp!;
-    auth = global._firebaseAuth!;
-    db = global._firebaseDb!;
-    storage = global._firebaseStorage!;
-    functions = global._firebaseFunctions!;
+    // Storage Emulator
+    if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST) {
+      const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST.split(':');
+      connectStorageEmulator(storage, host, parseInt(portStr, 10));
+      console.log(`[Firebase Client] (Dev) Storage Emulator connected to ${host}:${portStr}.`);
+    }
+
+    // Functions Emulator
+    if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
+      const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST.split(':');
+      connectFunctionsEmulator(functions, host, parseInt(portStr, 10));
+      console.log(`[Firebase Client] (Dev) Functions Emulator connected to ${host}:${portStr}.`);
+    }
+
+    (global as any)._firebaseEmulatorsConnected = true;
   }
-} else {
-  // Im Produktionsmodus oder auf dem Server verwenden wir das Standard-Singleton-Pattern.
-  if (!getApps().length) {
-    console.log('[Firebase Client] (Prod) Initializing Firebase App.');
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApp();
-  }
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-  functions = getFunctions(app, functionsRegion);
 }
 
 // --- Exporte ---

@@ -11,10 +11,17 @@ declare module 'lucide-react' {
 
   export const Menu: LucideIcon;
   export const X: LucideIcon;
+  export const Home: LucideIcon;
   export const Search: LucideIcon;
   export const User: LucideIcon;
+  export const Users: LucideIcon;
   export const ChevronDown: LucideIcon;
   export const Shield: LucideIcon;
+  export const ShieldCheck: LucideIcon;
+  export const Settings: LucideIcon;
+  export const Bot: LucideIcon;
+  export const MessageSquare: LucideIcon;
+  export const Briefcase: LucideIcon;
   export const Moon: LucideIcon;
   export const Sun: LucideIcon;
   export const ArrowRight: LucideIcon;
@@ -102,4 +109,10 @@ declare module 'lucide-react' {
   export const SearchIcon: LucideIcon;
   export const XIcon: LucideIcon;
   export const ChevronLeft: LucideIcon;
+  export const LoaderCircle: LucideIcon;
+  export const AlertTriangle: LucideIcon;
+  export const CheckCircle2: LucideIcon;
+  export const PlusCircle: LucideIcon;
+  export const LogOut: LucideIcon;
+  export const CircleUserRound: LucideIcon;
 }

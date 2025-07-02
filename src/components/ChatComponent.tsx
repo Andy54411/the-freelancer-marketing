@@ -39,6 +39,12 @@ interface UserProfileData {
     user_type?: 'kunde' | 'anbieter' | 'firma'; // Korrigierter Typ wie besprochen
 }
 
+// Interface für das Haupt-Chat-Dokument
+interface ChatData {
+    isLocked?: boolean;
+    // andere Felder wie 'users', 'lastMessage' etc. können hier bei Bedarf hinzugefügt werden
+}
+
 // Interface für die Auftragsdaten, die für den Chat relevant sind
 interface OrderData {
     kundeId: string;
@@ -81,6 +87,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     const [chatError, setChatError] = useState<string | null>(null);
     const [loggedInUserProfile, setLoggedInUserProfile] = useState<UserProfileData | null>(null);
     const [isSendingMessage, setIsSendingMessage] = useState(false); // Neuer State für Sende-Button
+    const [isChatLocked, setIsChatLocked] = useState(false); // NEU: State für den Sperrstatus des Chats
     const [orderData, setOrderData] = useState<OrderData | null>(null); // State für Auftragsdaten
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -164,6 +171,29 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         setChatLoading(true);
         setChatError(null);
 
+        // NEU: Listener für das Haupt-Chat-Dokument, um den Sperrstatus zu überwachen
+        const chatDocRef = doc(db, 'chats', orderId);
+        const unsubscribeChatDoc = onSnapshot(chatDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const chatData = docSnap.data() as ChatData;
+                // Setze den State basierend auf dem 'isLocked'-Feld.
+                // !! wandelt undefined/null/false in false und true in true um.
+                setIsChatLocked(!!chatData.isLocked);
+            } else {
+                // Das Dokument existiert (noch) nicht, also ist der Chat nicht gesperrt.
+                setIsChatLocked(false);
+            }
+        }, (error) => {
+            // Ein 'permission-denied'-Fehler ist für neue Chats zu erwarten, da das
+            // /chats/{orderId}-Dokument noch nicht existiert und die Sicherheitsregel
+            // den Lesezugriff verweigert (da resource == null ist). Wir können diesen Fehler ignorieren.
+            if (error.code === 'permission-denied') {
+                setIsChatLocked(false); // Sicherstellen, dass der Chat als nicht gesperrt gilt.
+            } else {
+                console.error("Fehler beim Überwachen des Chat-Status:", error);
+            }
+        });
+
         const messagesCollectionRef = collection(db, 'auftraege', orderId, 'nachrichten');
         // KORREKTUR: Füge eine where-Klausel hinzu, die der Sicherheitsregel entspricht.
         // Dies ist entscheidend für 'list'-Operationen, wenn die Regel auf Feldern im Dokument basiert.
@@ -192,16 +222,46 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
             setChatLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            unsubscribeChatDoc(); // WICHTIG: Beide Listener beim Verlassen der Komponente abmelden
+        };
     }, [authContext, currentUser, orderId, userProfileLoading]); // `userProfileLoading` als Abhängigkeit hinzugefügt, um Trigger nach Profil-Load zu gewährleisten
 
     // Nachricht senden
     const handleSendMessage = async (e: FormEvent) => {
         e.preventDefault();
+        const messageToSend = newMessageText.trim();
+
         // Deaktiviere das Senden, wenn Text leer, Benutzer nicht angemeldet oder Profil noch lädt/fehlt
-        if (!newMessageText.trim() || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage || !orderData) {
+        if (!messageToSend || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage || !orderData) {
             return;
         }
+
+        // --- NEUE VALIDIERUNG ---
+        // Regex für E-Mail-Adressen. Wir normalisieren den Text, um Umgehungsversuche zu erschweren.
+        const sanitizedText = messageToSend.toLowerCase()
+            .replace(/\s+at\s+/g, '@')
+            .replace(/\(at\)/g, '@')
+            .replace(/\s+dot\s+/g, '.')
+            .replace(/\(dot\)/g, '.')
+            .replace(/\s/g, ''); // Entfernt ALLE Leerzeichen, um "test @ test . de" zu fangen
+        const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+
+        if (emailRegex.test(sanitizedText)) {
+            setChatError("Die Weitergabe von E-Mail-Adressen ist im Chat nicht gestattet. Bitte halten Sie die Kommunikation auf der Plattform.");
+            return; // Senden blockieren
+        }
+
+        // Regex für Telefonnummern. Wir entfernen alle nicht-numerischen Zeichen und suchen dann
+        // nach einer Sequenz von 8 oder mehr Ziffern, um Umgehungsversuche zu erschweren.
+        const digitsOnly = messageToSend.replace(/\D/g, '');
+        const phoneRegex = /\d{8,}/; // Sucht nach 8 oder mehr aufeinanderfolgenden Ziffern
+        if (phoneRegex.test(digitsOnly)) {
+            setChatError("Die Weitergabe von Telefonnummern ist im Chat nicht gestattet. Bitte halten Sie die Kommunikation auf der Plattform.");
+            return; // Senden blockieren
+        }
+        // --- ENDE VALIDIERUNG ---
 
         setIsSendingMessage(true); // Sende-Vorgang starten
         setChatError(null); // Fehler zurücksetzen
@@ -219,13 +279,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
             senderId: currentUser.uid,
             senderName: senderName,
             senderType: senderType,
-            text: newMessageText.trim(),
+            text: messageToSend,
             timestamp: serverTimestamp(),
             chatUsers: [orderData.kundeId, orderData.selectedAnbieterId], // Hinzufügen, um die Sicherheitsregel zu erfüllen
         };
 
         const lastMessagePayload = {
-            text: newMessageText.trim(),
+            text: messageToSend,
             senderId: currentUser.uid,
             timestamp: serverTimestamp(),
             isRead: false, // Wichtig für die Benachrichtigung!
@@ -305,29 +365,24 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                 )}
                 <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 flex items-center">
-                <textarea
-                    value={newMessageText}
-                    onChange={(e) => setNewMessageText(e.target.value)}
-                    placeholder="Nachricht eingeben..."
-                    className="flex-1 p-2 border border-gray-300 rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                    rows={1}
-                    onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) { // Senden bei Enter, außer Shift+Enter für Zeilenumbruch
-                            e.preventDefault();
-                            handleSendMessage(e);
-                        }
-                    }}
-                />
-                <button
-                    type="submit"
-                    className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] transition-colors flex items-center justify-center"
-                    // Deaktiviere den Button, wenn Nachricht leer, Chat lädt oder bereits gesendet wird
-                    disabled={!newMessageText.trim() || overallLoading || isSendingMessage}
-                >
-                    {isSendingMessage ? <FiLoader className="animate-spin" /> : <FiSend size={20} />}
-                </button>
-            </form>
+            {isChatLocked ? (
+                <div className="p-4 border-t border-gray-200 text-center text-sm text-gray-500 bg-gray-100">
+                    Dieser Chat wurde deaktiviert.
+                </div>
+            ) : (
+                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 flex items-center">
+                    <textarea
+                        value={newMessageText}
+                        onChange={(e) => setNewMessageText(e.target.value)}
+                        placeholder="Nachricht eingeben..."
+                        className="flex-1 p-2 border border-gray-300 rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                        rows={1}
+                        onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }} />
+                    <button type="submit" className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] transition-colors flex items-center justify-center" disabled={!newMessageText.trim() || overallLoading || isSendingMessage}>
+                        {isSendingMessage ? <FiLoader className="animate-spin" /> : <FiSend size={20} />}
+                    </button>
+                </form>
+            )}
         </div>
     );
 };

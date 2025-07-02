@@ -16,7 +16,7 @@ interface Order {
     selectedSubcategory: string;
     providerName: string;
     totalAmountPaidByBuyer: number; // Verwende das Feld für den Gesamtpreis
-    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing';
+    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing' | 'abgelehnt_vom_anbieter';
     selectedAnbieterId: string;
     currency?: string;
     paidAt?: { _seconds: number, _nanoseconds: number } | string; // Verwende das spezifische Feld
@@ -77,8 +77,12 @@ const OrdersOverviewPage = () => {
                 const result = await getUserOrdersCallable({ userId: uidFromParams });
 
                 if (result.data && Array.isArray(result.data.orders)) {
-                    // Keine komplexe Zuordnung mehr nötig, da das Backend saubere Daten liefert.
-                    setOrders(result.data.orders as Order[]);
+                    // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus,
+                    // da diese in der Übersicht nicht angezeigt werden sollen.
+                    const visibleOrders = (result.data.orders as Order[]).filter(
+                        order => order.status !== 'abgelehnt_vom_anbieter'
+                    );
+                    setOrders(visibleOrders);
                 } else {
                     setOrders([]);
                 }
