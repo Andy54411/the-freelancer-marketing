@@ -65,7 +65,7 @@ interface InviteManagerProps {
 }
 
 export default function InviteManager({ initialCodes }: InviteManagerProps) {
-    const { user, loading: authLoading, userRole } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [codes, setCodes] = useState<InviteCode[]>(initialCodes);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export default function InviteManager({ initialCodes }: InviteManagerProps) {
     const [recipientEmail, setRecipientEmail] = useState('');
     const [roleToCreate, setRoleToCreate] = useState<'support' | 'master'>('support');
 
-    const canCreateInvites = userRole === 'master' || userRole === 'support';
+    const canCreateInvites = user?.role === 'master' || user?.role === 'support';
 
     const handleGenerateAndSendCode = async () => {
         if (!canCreateInvites) {

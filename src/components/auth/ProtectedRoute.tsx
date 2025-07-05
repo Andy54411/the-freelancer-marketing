@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FiLoader } from 'react-icons/fi';
@@ -11,28 +11,26 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // Log bei jeder Renderung, um den Zustand zu sehen
-    console.log(`[ProtectedRoute] Render für Pfad: ${pathname}. Lade-Status: ${loading}, Benutzer: ${user ? user.uid : 'null'}`);
+    // Memoize the redirect URL to avoid re-calculating it on every render.
+    const redirectTo = useMemo(() => {
+        const params = searchParams.toString();
+        return `${pathname}${params ? `?${params}` : ''}`;
+    }, [pathname, searchParams]);
 
     useEffect(() => {
-        console.log(`[ProtectedRoute Effect] Effekt wird ausgeführt. Lade-Status: ${loading}, Benutzer: ${user ? user.uid : 'null'}`);
-        // Nichts unternehmen, solange der Authentifizierungsstatus noch geprüft wird.
+        // Do nothing while the auth state is loading.
         if (loading) {
-            console.log("[ProtectedRoute Effect] Ladevorgang aktiv. Effekt wird beendet.");
             return;
         }
 
-        // Wenn die Prüfung abgeschlossen ist und kein Benutzer angemeldet ist, zur Login-Seite weiterleiten.
+        // When loading is finished and there's no user, redirect.
         if (!user) {
-            const redirectTo = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-            console.log(`[ProtectedRoute Effect] KEIN BENUTZER. Leite zu /login weiter mit redirectTo=${redirectTo}`);
             router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
         }
-    }, [user, loading, router, pathname, searchParams]);
+    }, [user, loading, router, redirectTo]);
 
-    // Während der Authentifizierungsstatus geprüft wird, eine Ladeanzeige anzeigen, um ein Flackern des Inhalts zu vermeiden.
+    // While loading, show a full-screen spinner to avoid content flicker.
     if (loading) {
-        console.log("[ProtectedRoute Render] Zeige Lade-Spinner an.");
         return (
             <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
                 <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
@@ -41,13 +39,12 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         );
     }
 
-    // Wenn die Prüfung abgeschlossen ist und ein Benutzer angemeldet ist, den geschützten Inhalt anzeigen.
+    // If loading is done and we have a user, render the protected content.
     if (user) {
-        console.log(`[ProtectedRoute Render] Benutzer ${user.uid} ist authentifiziert. Zeige geschützten Inhalt an.`);
         return <>{children}</>;
     }
 
-    // Andernfalls `null` zurückgeben; die Weiterleitung wird durch den `useEffect`-Hook im Hintergrund ausgeführt.
-    console.log("[ProtectedRoute Render] Kein Benutzer und nicht am Laden. Gebe null zurück, während auf Weiterleitung gewartet wird.");
+    // If loading is done and there is no user, render nothing.
+    // The useEffect is handling the redirect. This prevents a flash of the children.
     return null;
 }

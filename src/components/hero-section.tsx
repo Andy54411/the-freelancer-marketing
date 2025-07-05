@@ -11,6 +11,7 @@ import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { db } from '@/firebase/clients'
 
 interface CompanyLogo {
+  id: string; // WICHTIG: Eindeutige ID für den React-Key
   name: string;
   profilePictureURL: string;
 }
@@ -18,10 +19,18 @@ interface CompanyLogo {
 export default function HeroSection() {
   const [newCompanies, setNewCompanies] = useState<CompanyLogo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
 
   useEffect(() => {
     const fetchNewCompanies = async () => {
       try {
+        // HINZUGEFÜGT: Sicherheitsprüfung, um sicherzustellen, dass die DB-Instanz initialisiert ist.
+        // Dies verhindert den Absturz, falls die Komponente rendert, bevor Firebase bereit ist.
+        if (!db) {
+          setError("Fehler: Datenbankverbindung konnte nicht hergestellt werden.");
+          setLoading(false);
+          return;
+        }
         const companiesRef = collection(db, 'companies');
         // Annahme: Ein 'createdAt' Feld vom Typ Timestamp existiert in den Firmendokumenten zur Sortierung.
         const q = query(companiesRef, orderBy('createdAt', 'desc'), limit(15));
@@ -32,15 +41,17 @@ export default function HeroSection() {
           const data = doc.data();
           // Nur Firmen mit einem Logo und Namen hinzufügen
           if (data.profilePictureURL && data.companyName) {
-            companies.push({
+            companies.push({ // ID hinzufügen
+              id: doc.id,
               name: data.companyName,
               profilePictureURL: data.profilePictureURL,
             });
           }
         });
         setNewCompanies(companies);
-      } catch (error) {
-        console.error("Fehler beim Laden der neuen Firmen:", error);
+      } catch (err) {
+        console.error("Fehler beim Laden der neuen Firmen:", err);
+        setError("Die neuesten Dienstleister konnten nicht geladen werden."); // Fehlermeldung für den Benutzer setzen
       } finally {
         setLoading(false);
       }
@@ -97,6 +108,7 @@ export default function HeroSection() {
                   alt="Tasko Hero"
                   width={1200}
                   height={800}
+                  priority
                 />
               </div>
             </div>
@@ -118,8 +130,8 @@ export default function HeroSection() {
                         <div key={i} className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                       ))
                     ) : (
-                      newCompanies.map((company) => (
-                        <div key={company.name} className="flex">
+                      newCompanies.map((company) => ( // Den eindeutigen Key verwenden
+                        <div key={company.id} className="flex">
                           <Image
                             className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
                             src={company.profilePictureURL}
@@ -132,6 +144,12 @@ export default function HeroSection() {
                       ))
                     )}
                   </InfiniteSlider>
+                )}
+                {error && !loading && (
+                  <div className="text-center text-sm text-red-500">{error}</div>
+                )}
+                {!loading && !error && newCompanies.length === 0 && (
+                  <div className="text-center text-sm text-gray-500">Aktuell keine neuen Dienstleister.</div>
                 )}
 
                 <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>

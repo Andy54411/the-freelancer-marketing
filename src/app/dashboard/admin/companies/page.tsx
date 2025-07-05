@@ -1,6 +1,6 @@
 import { db } from '@/firebase/server';
-import { CompaniesDataTable } from './components/companies-data-table';
-import { columns } from './components/columns';
+import { CompaniesDataTable } from './[id]/components/companies-data-table';
+import { columns } from './[id]/components/columns';
 
 // Definiert die Datenstruktur, die wir an den Client übergeben
 export type CompanyData = {

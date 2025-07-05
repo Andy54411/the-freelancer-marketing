@@ -82,9 +82,6 @@ function parseDurationStringToHours(durationStr?: string): number | null {
 
 const db = getFirestore(app); // Initialisiere Firestore-Datenbank
 
-// Käufer-Servicegebühr Rate (z.B. 4.5%)
-const BUYER_SERVICE_FEE_RATE = 0.045;
-
 const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onSuccess, currentUser, userProfile }) => {
   const router = useRouter();
 
@@ -197,10 +194,10 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onSuccess,
 
 
       const servicePrice = totalHours * hourlyRateNum;
-      const servicePriceInCents = Math.round(servicePrice * 100); // Preis des Dienstleisters in Cents
-      const buyerServiceFeeInCents = Math.round(servicePriceInCents * BUYER_SERVICE_FEE_RATE);
-      const totalPrice = servicePrice + (buyerServiceFeeInCents / 100); // Gesamtpreis inkl. prozentualer Gebühr
-      const totalPriceInCents = Math.round(totalPrice * 100);
+      const servicePriceInCents = Math.round(servicePrice * 100);
+      // KORREKTUR: Die Servicegebühr wird jetzt serverseitig vom Anbieterguthaben abgezogen.
+      // Der Kunde zahlt nur den reinen Auftragswert. Der Gesamtbetrag ist identisch mit dem Dienstleistungspreis.
+      const totalPriceInCents = servicePriceInCents;
 
       // NEU: Client-seitige Validierung des Endpreises (Basispreis für den Draft)
       if (totalPriceInCents <= 0) {
@@ -296,7 +293,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onSuccess,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: totalPriceInCents,
-          jobPriceInCents: servicePriceInCents, // Hinzufügen von jobPriceInCents auf Root-Ebene
+          jobPriceInCents: servicePriceInCents, // Der Basispreis, von dem die Gebühr berechnet wird. Muss mit `amount` übereinstimmen.
           currency: 'eur',
           connectedAccountId: selectedProvider.stripeAccountId,
           // platformFee wird serverseitig berechnet, daher hier nicht mehr senden (TRUST_AND_SUPPORT_FEE_EUR ist nur für die Client-Anzeige)

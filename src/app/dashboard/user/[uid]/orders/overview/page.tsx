@@ -46,7 +46,7 @@ const OrdersOverviewPage = () => {
             return;
         }
 
-        const currentUser = authContext.currentUser;
+        const currentUser = authContext.user;
 
         if (!currentUser) {
             // Optional: Weiterleitung zum Login, falls kein Benutzer angemeldet ist

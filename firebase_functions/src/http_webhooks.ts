@@ -3,7 +3,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import Stripe from 'stripe'; // Keep Stripe import
-import { getDb, getStripeInstance, getStripeWebhookSecret, FieldValue, Timestamp } from './helpers'; // Keep necessary helpers
+import { getDb, getStripeInstance, FieldValue, Timestamp } from './helpers'; // Removed getStripeWebhookSecret
 import { defineSecret } from 'firebase-functions/params';
 
 // Parameter zentral definieren
@@ -55,30 +55,47 @@ function getStripeId(property: string | { id: string } | null | undefined): stri
 export const stripeWebhookHandler = onRequest(
     // The region is now inherited from the global options in index.ts (europe-west1).
     // This ensures consistency and simplifies local testing URLs.
-    { secrets: [STRIPE_SECRET_KEY_WEBHOOKS, STRIPE_WEBHOOK_SECRET_PARAM] },
+    {
+        secrets: [STRIPE_SECRET_KEY_WEBHOOKS, STRIPE_WEBHOOK_SECRET_PARAM],
+    },
     async (request, response) => {
         logger.info(`[stripeWebhookHandler] Webhook aufgerufen, Methode: ${request.method}, URL: ${request.url}`);
         // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt
         const stripeKey = STRIPE_SECRET_KEY_WEBHOOKS.value();
-        const webhookSecretValue = STRIPE_WEBHOOK_SECRET_PARAM.value();
         const db = getDb();
         const localStripe = getStripeInstance(stripeKey);
-        const webhookSecret = getStripeWebhookSecret(webhookSecretValue);
+        const webhookSecret = STRIPE_WEBHOOK_SECRET_PARAM.value();
+
+        const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
 
         if (request.method === 'POST') {
-            const buf = request.rawBody;
-            const sig = request.headers['stripe-signature'];
-
-            if (!sig) {
-                logger.error('[stripeWebhookHandler] Missing stripe-signature header');
-                response.status(400).send('Webhook Error: Missing stripe-signature header');
-                return;
+            let buf = request.rawBody;
+            if (!buf && request.body) {
+                buf = Buffer.from(typeof request.body === 'string' ? request.body : JSON.stringify(request.body));
             }
+            const sigHeader = request.headers['stripe-signature'];
+            const sig = Array.isArray(sigHeader) ? sigHeader[0] : sigHeader; // Stripe erwartet string
 
             let event: Stripe.Event;
 
             try {
-                event = localStripe.webhooks.constructEvent(buf, sig, webhookSecret);
+                if (isEmulator) {
+                    event = request.body as Stripe.Event;
+                    logger.warn('[stripeWebhookHandler] ⚠️  Emulator-Modus: Stripe-Signaturprüfung wird übersprungen!');
+                } else {
+                    // Im Live-Betrieb müssen der Body-Buffer und die Signatur vorhanden sein.
+                    // Diese Prüfungen beheben den TypeScript-Fehler, da sie den Typ für `buf` und `sig` eingrenzen.
+                    if (!buf) {
+                        throw new Error('Request body is missing or could not be read.');
+                    }
+                    if (!sig) {
+                        throw new Error('Stripe signature header is missing.');
+                    }
+                    if (!webhookSecret) {
+                        throw new Error('Stripe Webhook Secret is not defined.');
+                    }
+                    event = localStripe.webhooks.constructEvent(buf, sig, webhookSecret);
+                }
                 logger.info(`[stripeWebhookHandler] Event erfolgreich konstruiert: ${event.id}, Typ: ${event.type}`);
                 // Logge nur einen kleinen Teil des Objekts, um sensible Daten zu vermeiden, falls das Objekt sehr groß ist
                 if (event.data?.object && typeof event.data.object === 'object') {
@@ -247,21 +264,26 @@ export const stripeWebhookHandler = onRequest(
                                             logger.info(`[stripeWebhookHandler] Transaktion: Rechnungsadresse ${newBillingAddress.id} für Nutzer ${firebaseUserId} wird zur Speicherung im Array markiert.`);
 
                                             if (newBillingAddress.isDefault) {
+                                                const userProfileUpdate: { [key: string]: any } = {};
                                                 const nameParts = newBillingAddress.name.split(' ');
-                                                const firstName = nameParts.shift() || '';
-                                                const lastName = nameParts.join(' ') || '';
-                                                const userProfileUpdate: { [key: string]: any } = {
-                                                    firstName: firstName || userData?.firstName || '',
-                                                    lastName: lastName || userData?.lastName || '',
-                                                    personalStreet: newBillingAddress.line1,
-                                                    personalCity: newBillingAddress.city,
-                                                    personalPostalCode: newBillingAddress.postal_code,
-                                                    personalCountry: newBillingAddress.country,
-                                                };
-                                                if (!userProfileUpdate.firstName && !userData?.firstName) delete userProfileUpdate.firstName;
-                                                if (!userProfileUpdate.lastName && !userData?.lastName) delete userProfileUpdate.lastName;
+                                                const firstNameFromAddress = nameParts.shift() || '';
+                                                const lastNameFromAddress = nameParts.join(' ') || '';
+
+                                                // Aktualisiere den Namen nur, wenn er im Profil noch nicht gesetzt ist.
+                                                if (!userData?.firstName && firstNameFromAddress) {
+                                                    userProfileUpdate.firstName = firstNameFromAddress;
+                                                }
+                                                if (!userData?.lastName && lastNameFromAddress) {
+                                                    userProfileUpdate.lastName = lastNameFromAddress;
+                                                }
+                                                // Aktualisiere immer die Adressfelder von der neuen Standard-Rechnungsadresse.
+                                                userProfileUpdate.personalStreet = newBillingAddress.line1;
+                                                userProfileUpdate.personalCity = newBillingAddress.city;
+                                                userProfileUpdate.personalPostalCode = newBillingAddress.postal_code;
+                                                userProfileUpdate.personalCountry = newBillingAddress.country;
+
                                                 transaction.update(userDocRef, userProfileUpdate);
-                                                logger.info(`[stripeWebhookHandler] Transaktion: Primäre Adressfelder für Nutzer ${firebaseUserId} mit Daten aus Rechnungsadresse ${newBillingAddress.id} aktualisiert.`);
+                                                logger.info(`[stripeWebhookHandler] Transaktion: Primäre Adress- und Profildetails für Nutzer ${firebaseUserId} mit Daten aus Rechnungsadresse ${newBillingAddress.id} aktualisiert.`);
                                             }
                                         } else {
                                             logger.info(`[stripeWebhookHandler] Transaktion: Rechnungsadresse für Nutzer ${firebaseUserId} bereits vorhanden. Überspringe Speicherung.`);

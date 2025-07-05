@@ -2,7 +2,16 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 // Importiere den Typ CompanyData statt des Werts
-import type { CompanyData } from '../../page'; // Korrigierter Pfad zur page.tsx, die den Typ exportiert
+// Define CompanyData type here if not exported from '../page'
+export type CompanyData = {
+    id: string;
+    companyName: string;
+    email: string;
+    createdAt: string | Date;
+    stripeAccountId?: string;
+};
+// Or import from the correct module if it exists:
+// import type { CompanyData } from 'path/to/your/types';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';

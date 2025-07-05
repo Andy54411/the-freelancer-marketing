@@ -115,4 +115,17 @@ declare module 'lucide-react' {
   export const PlusCircle: LucideIcon;
   export const LogOut: LucideIcon;
   export const CircleUserRound: LucideIcon;
+  export const ArrowUpDown: LucideIcon
+  export const AlertCircle: LucideIcon;
+  export const CircleDollarSign: LucideIcon;
+  export const CircleExclamation: LucideIcon;
+  export const Send: LucideIcon;
+  export const Trash2: LucideIcon;
+  export const Loader2: LucideIcon;
+  export const FiCalendar: LucideIcon;
+  export const FiGrid: LucideIcon;
+  export const FiSearch: LucideIcon;
+
+
+
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, getDocs, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext'; // useAuth importieren
+import { collection, query, where, getDocs } from 'firebase/firestore'; // onSnapshot, doc, getDoc entfernt
 import { db } from '@/firebase/clients';
 import {
   IconTrendingUp,
@@ -24,20 +24,20 @@ interface DashboardStats {
   monthlyRevenue: number;
   newOrders: number;
   activeOrders: number;
-  unreadMessages: number;
 }
 
 export function SectionCards() {
-  const { currentUser } = useAuth();
+  // unreadMessagesCount direkt aus dem AuthContext holen
+  const { user: currentUser, unreadMessagesCount } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     monthlyRevenue: 0,
     newOrders: 0,
     activeOrders: 0,
-    unreadMessages: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wenn kein Benutzer angemeldet ist, nichts tun.
     if (!currentUser) {
       setLoading(false);
       return;
@@ -46,7 +46,7 @@ export function SectionCards() {
     const uid = currentUser.uid;
     setLoading(true);
 
-    // One-time fetch for order stats
+    // Einmalige Abfrage für die Auftragsstatistiken.
     const fetchOrderStats = async () => {
       const ordersRef = collection(db, 'auftraege');
       const q = query(ordersRef, where('selectedAnbieterId', '==', uid));
@@ -70,39 +70,14 @@ export function SectionCards() {
         if (order.status === 'AKTIV' || order.status === 'IN BEARBEITUNG') activeOrders++;
       });
 
-      setStats(prev => ({ ...prev, monthlyRevenue: monthlyRevenue / 100, newOrders, activeOrders }));
+      // Setze nur die Statistiken, die hier berechnet werden.
+      setStats({ monthlyRevenue: monthlyRevenue / 100, newOrders, activeOrders });
     };
 
-    // Real-time listener for unread messages
-    const chatsRef = collection(db, 'chats');
-    const unreadQuery = query(
-      chatsRef,
-      where('users', 'array-contains', uid),
-      where('lastMessage.senderId', '!=', uid),
-      where('lastMessage.isRead', '==', false)
-    );
-
-    const unsubscribeMessages = onSnapshot(unreadQuery, async (snapshot) => {
-      const chatPromises = snapshot.docs.map(async (chatDoc) => {
-        const orderDocRef = doc(db, 'auftraege', chatDoc.id);
-        const orderDocSnap = await getDoc(orderDocRef);
-        if (orderDocSnap.exists()) {
-          const status = orderDocSnap.data().status;
-          return status !== 'abgelehnt_vom_anbieter' && status !== 'STORNIERT';
-        }
-        return false;
-      });
-
-      const results = await Promise.all(chatPromises);
-      const validUnreadCount = results.filter(Boolean).length;
-      setStats(prev => ({ ...prev, unreadMessages: validUnreadCount }));
-    });
-
+    // Führe die Abfrage aus und setze den Ladezustand danach auf false.
     fetchOrderStats().finally(() => setLoading(false));
 
-    return () => {
-      unsubscribeMessages();
-    };
+    // Da es keine Listener mehr gibt, ist keine Cleanup-Funktion nötig.
   }, [currentUser]);
 
   const formatCurrency = (value: number) => {
@@ -170,10 +145,10 @@ export function SectionCards() {
           <CardHeader>
             <CardDescription className="flex items-center gap-2"><IconMail size={16} /> Ungelesene Nachrichten</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-              {stats.unreadMessages}
+              {unreadMessagesCount}
             </CardTitle>
             <CardAction>
-              <Badge variant={stats.unreadMessages > 0 ? "destructive" : "outline"}>
+              <Badge variant={unreadMessagesCount > 0 ? "destructive" : "outline"}>
                 Zum Posteingang
               </Badge>
             </CardAction>

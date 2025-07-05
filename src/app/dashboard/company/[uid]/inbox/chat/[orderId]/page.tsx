@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { Timestamp } from 'firebase/firestore'; // Import Timestamp for type checking
-import { useRouter, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/firebase/clients';
 
 // Icons
 import { FiLoader, FiAlertCircle, FiArrowLeft, FiFileText, FiCalendar, FiDollarSign, FiClock, FiSlash } from 'react-icons/fi';
@@ -17,8 +18,8 @@ import ChatComponent from '@/components/ChatComponent';
 export interface OrderData { // Exporting for potential reuse
     id: string;
     serviceTitle: string;
-    providerId: string;
-    customerId: string;
+    providerId: string; // This is the selectedAnbieterId
+    customerId: string; // This is the kundeId or customerFirebaseUid
     customerName: string;
     customerAvatarUrl?: string;
     orderDate?: Timestamp | Date | string; // Use the official Timestamp type
@@ -30,13 +31,20 @@ export interface OrderData { // Exporting for potential reuse
     status: string;
 }
 
+// Interface für die Teilnehmerdetails, die von der Cloud Function zurückgegeben werden
+interface ParticipantDetails {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+}
+
 export default function CompanyChatPage() {
     const router = useRouter();
     const params = useParams();
     const orderId = typeof params.orderId === 'string' ? params.orderId : '';
     const companyUid = typeof params.uid === 'string' ? params.uid : '';
 
-    const { currentUser, loading: authLoading } = useAuth();
+    const { user: currentUser, loading: authLoading } = useAuth();
 
     const [order, setOrder] = useState<OrderData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -94,36 +102,31 @@ export default function CompanyChatPage() {
                 return;
             }
 
-            // Step 2: Fetch customer details with its own error handling
+            // Step 2: Fetch customer details using a secure Cloud Function to bypass client-side security rule limitations.
             try {
-                const customerId = orderDataFromDb.customerFirebaseUid || orderDataFromDb.kundeId;
+                const getOrderParticipantDetails = httpsCallable<
+                    { orderId: string },
+                    { provider: ParticipantDetails, customer: ParticipantDetails }
+                >(functions, 'getOrderParticipantDetails');
 
+                const result = await getOrderParticipantDetails({ orderId });
+                const { customer: customerDetails } = result.data;
+
+                const customerId = orderDataFromDb.customerFirebaseUid || orderDataFromDb.kundeId;
                 if (!customerId) {
                     setError('Kundeninformationen im Auftrag unvollständig.');
                     setLoading(false);
                     return;
                 }
 
-                const userDocRef = doc(db, 'users', customerId);
-                const userDocSnap = await getDoc(userDocRef);
-
-                const customerDetails = userDocSnap.exists()
-                    ? {
-                        name: `${userDocSnap.data().firstName || ''} ${userDocSnap.data().lastName || ''}`.trim() || 'Unbekannter Kunde',
-                        avatarUrl: userDocSnap.data().profilePictureURL,
-                    }
-                    : { name: 'Unbekannter Kunde', avatarUrl: undefined };
-
-                const orderDate = orderDataFromDb.paidAt || orderDataFromDb.createdAt;
-
                 const orderData: OrderData = {
                     id: orderId,
                     serviceTitle: orderDataFromDb.selectedSubcategory || 'Dienstleistung',
                     providerId: orderDataFromDb.selectedAnbieterId,
                     customerId: customerId,
-                    customerName: customerDetails.name,
-                    customerAvatarUrl: customerDetails.avatarUrl,
-                    orderDate: orderDate,
+                    customerName: customerDetails.name, // Use name from the Cloud Function
+                    customerAvatarUrl: customerDetails.avatarUrl || undefined, // Use avatar from the Cloud Function
+                    orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
                     priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
                     status: orderDataFromDb.status || 'unbekannt',
                     beschreibung: orderDataFromDb.description || 'Keine Beschreibung vorhanden.',
@@ -134,8 +137,8 @@ export default function CompanyChatPage() {
 
                 setOrder(orderData);
             } catch (err: any) {
-                console.error("Fehler beim Laden der Kundendetails:", err);
-                if (err.code === 'permission-denied') {
+                console.error("Fehler beim Laden der Kundendetails via Cloud Function:", err);
+                if (err.code === 'permission-denied' || err.code === 'functions/permission-denied') {
                     setError(
                         "Zugriff auf Kundendetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support."
                     );
@@ -230,7 +233,11 @@ export default function CompanyChatPage() {
                                 </p>
                             </div>
                         ) : (
-                            <ChatComponent orderId={orderId} />
+                            <ChatComponent
+                                orderId={orderId}
+                                participants={{ customerId: order.customerId, providerId: order.providerId }}
+                                orderStatus={order.status}
+                            />
                         )}
                     </div>
                 </div>

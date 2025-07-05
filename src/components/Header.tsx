@@ -7,8 +7,7 @@ import { FiSearch, FiBell, FiMail, FiHelpCircle, FiChevronDown, FiGrid, FiBriefc
 import { User, getAuth, signOut } from 'firebase/auth'; // Für Benutzer-Infos und Logout
 import { app, storage, db } from '@/firebase/clients'; // Firebase App-Instanz, Storage und Firestore DB
 import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
-import { doc, getDoc } from 'firebase/firestore'; // Firestore Funktionen
-import { collection, query, where, onSnapshot, QuerySnapshot } from 'firebase/firestore'; // Firestore Funktionen für Echtzeit-Updates
+import { doc, getDoc, collection, query, where, onSnapshot, QuerySnapshot, orderBy, limit } from 'firebase/firestore'; // Firestore Funktionen
 import { categories, Category } from '@/lib/categoriesData'; // Importiere Kategorien und Typen
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +18,16 @@ interface FirestoreUserData {
     firstName?: string;
     lastName?: string;
     user_type?: 'kunde' | 'firma' | 'admin'; // Passen Sie diese Typen ggf. an Ihre Struktur an
+}
+
+// NEU: Interface für die Chat-Vorschau im Header-Dropdown
+interface HeaderChatPreview {
+    id: string;
+    otherUserName: string;
+    otherUserAvatarUrl?: string | null;
+    lastMessageText: string;
+    isUnread: boolean;
+    link: string;
 }
 
 // NEU: Props, um den Header als allgemeinen App-Header oder als spezifischen Company-Header zu verwenden
@@ -41,32 +50,66 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false); // State für Such-Dropdown
+    const [isInboxDropdownOpen, setIsInboxDropdownOpen] = useState(false); // NEU: State für Posteingang-Dropdown
     const [searchTerm, setSearchTerm] = useState(''); // NEU: State für den Suchbegriff
     const profileDropdownRef = useRef<HTMLDivElement>(null);
     const searchDropdownContainerRef = useRef<HTMLDivElement>(null); // Ref für Such-Dropdown-Container
     const searchInputRef = useRef<HTMLInputElement>(null); // Ref für das Such-Inputfeld
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0); // State für ungelesene Nachrichten
+    const [recentChats, setRecentChats] = useState<HeaderChatPreview[]>([]); // NEU: State für die letzten Chats
+    const inboxHoverTimeout = useRef<NodeJS.Timeout | null>(null); // NEU: Ref für den Hover-Timeout
     const router = useRouter();
 
-    const subscribeToUnreadMessages = useCallback((uid: string | undefined) => {
-        if (!uid) {
+    const subscribeToRecentChats = useCallback((uid: string | undefined, userType: FirestoreUserData['user_type']) => {
+        if (!uid || !userType) {
             setUnreadMessagesCount(0);
+            setRecentChats([]);
             return () => { }; // Leere Cleanup-Funktion zurückgeben
         }
 
+        console.log(`[Header] Attaching recent chats listener for user: ${uid}`);
         const chatCollectionRef = collection(db, 'chats');
-        const unreadMessagesQuery = query(
+        const recentChatsQuery = query(
             chatCollectionRef,
             where('users', 'array-contains', uid),
-            where('lastMessage.senderId', '!=', uid),
-            where('lastMessage.isRead', '==', false)
+            orderBy('lastUpdated', 'desc'),
+            limit(5) // Lade die 5 neuesten Konversationen für die Vorschau
         );
 
-        const unsubscribe = onSnapshot(unreadMessagesQuery, (snapshot: QuerySnapshot) => {
-            setUnreadMessagesCount(snapshot.size);
-        });
+        const unsubscribe = onSnapshot(recentChatsQuery,
+            (snapshot: QuerySnapshot) => {
+                const chatsData = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const otherUserId = data.users.find((id: string) => id !== uid);
+                    const userDetails = otherUserId ? data.userDetails?.[otherUserId] : null;
+
+                    // Bestimme den korrekten Link zum Posteingang basierend auf dem Benutzertyp
+                    const inboxLink = userType === 'firma'
+                        ? `/dashboard/company/${uid}/inbox`
+                        : `/dashboard/user/${uid}/inbox`;
+
+                    return {
+                        id: doc.id,
+                        otherUserName: userDetails?.name || 'Unbekannter Benutzer',
+                        otherUserAvatarUrl: userDetails?.avatarUrl || null,
+                        lastMessageText: data.lastMessage?.text || '',
+                        isUnread: data.lastMessage?.senderId !== uid && !data.lastMessage?.isRead,
+                        link: inboxLink,
+                    };
+                });
+
+                const unreadCount = chatsData.filter(chat => chat.isUnread).length;
+                setUnreadMessagesCount(unreadCount);
+                setRecentChats(chatsData);
+            },
+            (error) => {
+                console.error(`[Header] Fehler im Listener für aktuelle Chats für User: ${uid}`, error);
+                setUnreadMessagesCount(0);
+                setRecentChats([]);
+            });
         return () => unsubscribe(); // Cleanup-Funktion für den Listener
     }, []);
+
     // Effekt zur Überwachung des Authentifizierungsstatus
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(user => {
@@ -75,11 +118,13 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         return () => unsubscribe();
     }, []);
 
-    // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer
+    // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
     useEffect(() => {
-        const unsubscribe = subscribeToUnreadMessages(currentUser?.uid);
-        return unsubscribe; // Gibt die Cleanup-Funktion von onSnapshot zurück
-    }, [currentUser, subscribeToUnreadMessages]);
+        if (currentUser?.uid && firestoreUserData) {
+            const unsubscribe = subscribeToRecentChats(currentUser.uid, firestoreUserData.user_type);
+            return unsubscribe;
+        }
+    }, [currentUser, firestoreUserData, subscribeToRecentChats]);
 
     const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
         if (!uid) {
@@ -176,6 +221,25 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         }
     };
 
+    // NEU: Hover-Handler für das Posteingang-Dropdown
+    const handleInboxEnter = () => {
+        if (inboxHoverTimeout.current) {
+            clearTimeout(inboxHoverTimeout.current);
+        }
+        setIsInboxDropdownOpen(true);
+    };
+
+    const handleInboxLeave = () => {
+        inboxHoverTimeout.current = setTimeout(() => {
+            setIsInboxDropdownOpen(false);
+        }, 300); // Eine kleine Verzögerung, damit der Benutzer die Maus zum Dropdown bewegen kann
+    };
+
+    // NEU: Funktion zum Öffnen des Chatbots
+    const handleHelpClick = () => {
+        window.dispatchEvent(new CustomEvent('openChatbot'));
+    };
+
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -210,9 +274,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         {company ? (
                             // --- ANSICHT FÜR COMPANY DASHBOARD ---
                             <div className="flex items-center gap-4">
-                                {company.logoUrl && (
-                                    <img src={company.logoUrl} alt={`${company.companyName} Logo`} className="h-10 w-10 rounded-md object-cover" />
-                                )}
+                                {/* Das Logo wird jetzt im Benutzer-Dropdown-Button auf der rechten Seite angezeigt */}
                                 <h1 className="text-2xl font-bold text-gray-800">{company.companyName}</h1>
                             </div>
                         ) : (
@@ -269,17 +331,70 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                     </span>
                                 )}
                             </div>
-                            <Link
-                                href={currentUser ? (company ? `/dashboard/company/${company.uid}/inbox` : `/dashboard/user/${currentUser.uid}/inbox`) : '/login'}
-                                className="text-gray-600 hover:text-[#14ad9f]">
-                                <FiMail size={22} />
-                            </Link>
-                            <button className="text-gray-600 hover:text-[#14ad9f]"><FiHelpCircle size={22} /></button>
+                            {/* NEU: Posteingang-Icon mit Hover-Dropdown */}
+                            <div
+                                className="relative"
+                                onMouseEnter={handleInboxEnter}
+                                onMouseLeave={handleInboxLeave}
+                            >
+                                <Link
+                                    href={currentUser ? (company ? `/dashboard/company/${company.uid}/inbox` : `/dashboard/user/${currentUser.uid}/inbox`) : '/login'}
+                                    className="text-gray-600 hover:text-[#14ad9f]">
+                                    <FiMail size={22} />
+                                </Link>
+                                {isInboxDropdownOpen && currentUser && (
+                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                                        <div className="p-3 border-b">
+                                            <h4 className="font-semibold text-gray-800">Letzte Nachrichten</h4>
+                                        </div>
+                                        {recentChats.length > 0 ? (
+                                            <ul>
+                                                {recentChats.map(chat => (
+                                                    <li key={chat.id}>
+                                                        <Link href={chat.link} onClick={() => setIsInboxDropdownOpen(false)} className={`block p-3 hover:bg-gray-100 ${chat.isUnread ? 'bg-teal-50' : ''}`}>
+                                                            <div className="flex items-center gap-3">
+                                                                {chat.otherUserAvatarUrl ? (
+                                                                    <img src={chat.otherUserAvatarUrl} alt={chat.otherUserName} className="w-10 h-10 rounded-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center"><FiUser /></div>
+                                                                )}
+                                                                <div className="flex-1 overflow-hidden">
+                                                                    <p className="font-semibold truncate text-sm">{chat.otherUserName}</p>
+                                                                    <p className={`text-sm truncate ${chat.isUnread ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                                                        {chat.lastMessageText}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="p-4 text-sm text-gray-500 text-center">Keine neuen Nachrichten.</p>
+                                        )}
+                                        <div className="border-t p-2 text-center">
+                                            <Link href={currentUser ? (company ? `/dashboard/company/${company.uid}/inbox` : `/dashboard/user/${currentUser.uid}/inbox`) : '/login'} onClick={() => setIsInboxDropdownOpen(false)} className="text-sm font-medium text-[#14ad9f] hover:underline">
+                                                Zum Posteingang
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={handleHelpClick} className="text-gray-600 hover:text-[#14ad9f]" aria-label="Hilfe & Support Chatbot öffnen">
+                                <FiHelpCircle size={22} />
+                            </button>
 
                             {currentUser ? (
                                 <div className="relative" ref={profileDropdownRef}>
                                     <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center">
-                                        {profilePictureURLFromStorage || currentUser.photoURL ? (
+                                        {/* NEUE LOGIK: Firmenlogo > Benutzerbild > Platzhalter */}
+                                        {company?.logoUrl ? (
+                                            <img
+                                                src={company.logoUrl}
+                                                alt="Firmenlogo"
+                                                className="w-8 h-8 rounded-md object-cover"
+                                            />
+                                        ) : profilePictureURLFromStorage || currentUser.photoURL ? (
                                             <img
                                                 src={profilePictureURLFromStorage || currentUser.photoURL || ''} // Fügt einen leeren String als Fallback hinzu
                                                 alt="Avatar"

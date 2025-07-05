@@ -1,6 +1,6 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/helpers.ts
 
-import { initializeApp, getApps, App as AdminApp } from "firebase-admin/app";
+import { getApps, App as AdminApp } from "firebase-admin/app";
 import { getFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"; // Exportiere FieldValue und Timestamp
 import { getAuth, Auth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
@@ -91,6 +91,7 @@ interface UserLike {
 }
 
 export interface ParticipantDetails {
+  id: string;
   name: string;
   avatarUrl: string | null;
 }
@@ -123,7 +124,7 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
   try {
     const userDoc = await db.collection("users").doc(userId).get();
     if (!userDoc.exists) {
-      return { name: UNKNOWN_USER_NAME, avatarUrl: null };
+      return { id: userId, name: UNKNOWN_USER_NAME, avatarUrl: null };
     }
     const userData = userDoc.data()!;
 
@@ -132,15 +133,16 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
       const companyData = companyDoc.exists ? companyDoc.data() : null;
       // For companies, the name and avatar come from the 'companies' document.
       return {
+        id: userId,
         name: companyData?.companyName || getUserDisplayName(userData, UNKNOWN_PROVIDER_NAME),
         avatarUrl: companyData?.profilePictureURL || null,
       };
     }
     // For regular users, use their personal details.
-    return { name: getUserDisplayName(userData), avatarUrl: userData.profilePictureURL || userData.profilePictureFirebaseUrl || null };
+    return { id: userId, name: getUserDisplayName(userData), avatarUrl: userData.profilePictureURL || userData.profilePictureFirebaseUrl || null };
   } catch (error: any) {
     logger.error(`[getChatParticipantDetails] Error fetching details for user ${userId}:`, error);
-    return { name: UNKNOWN_USER_NAME, avatarUrl: null };
+    return { id: userId, name: UNKNOWN_USER_NAME, avatarUrl: null };
   }
 }
 

@@ -20,7 +20,6 @@ export default function ContentSection() {
           alt="team image"
           width={2940} // Intrinsic width of the image
           height={1960} // Intrinsic height of the image (estimate based on common aspect ratios, adjust if known)
-          layout="responsive" // Makes the image scale with its container
         />
 
         <div className="relative mx-auto grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-8 lg:grid-cols-4">

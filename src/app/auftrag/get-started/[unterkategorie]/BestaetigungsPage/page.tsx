@@ -90,7 +90,6 @@ interface BestaetigungsContentPropsForPage {
   onDetailsChange?: () => void;
   // NEU: Props zur Anzeige der Preisaufschlüsselung in BestaetigungsContent (falls benötigt)
   jobPriceInCents: number | null;
-  buyerServiceFeeInCents: number | null;
   totalAmountPayableInCents: number | null;
 }
 // --- ENDE DER INTERFACE DEFINITIONEN ---
@@ -141,9 +140,6 @@ export default function BestaetigungsPage() {
   const pathParams = useParams();
   const registration = useRegistration();
 
-  // ANPASSUNG: Käufer-Servicegebühr als Konstante definiert
-  const BUYER_SERVICE_FEE_RATE = 0.045; // 4.5% Käufer-Servicegebühr
-
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [kundeStripeCustomerId, setKundeStripeCustomerId] = useState<string | null>(null);
   const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null);
@@ -157,7 +153,6 @@ export default function BestaetigungsPage() {
 
   // NEU: Detailliertere Preis-States für die neue Gebührenstruktur
   const [jobPriceInCents, setJobPriceInCents] = useState<number | null>(null); // Preis, den der Anbieter festlegt
-  const [buyerServiceFeeInCents, setBuyerServiceFeeInCents] = useState<number | null>(null); // 4.5% Servicegebühr für den Käufer
   const [totalAmountPayableInCents, setTotalAmountPayableInCents] = useState<number | null>(null); // Gesamtbetrag, den der Käufer zahlt
 
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
@@ -187,15 +182,12 @@ export default function BestaetigungsPage() {
       setJobPriceInCents(priceInCents);
 
       if (priceInCents > 0) {
-        // ANPASSUNG: Neue Käufer-Servicegebühr (4.5%) wird mit der Rate-Konstante verwendet
-        const calculatedBuyerServiceFee = Math.round(priceInCents * BUYER_SERVICE_FEE_RATE);
-        setBuyerServiceFeeInCents(calculatedBuyerServiceFee);
-        const calculatedTotalPayable = priceInCents + calculatedBuyerServiceFee;
-        setTotalAmountPayableInCents(calculatedTotalPayable);
-        console.log(PAGE_LOG, `Neuer Job-Preis: ${priceInCents}, Käufer-Servicegebühr: ${calculatedBuyerServiceFee}, Gesamt zu zahlen: ${calculatedTotalPayable}`);
+        // ANPASSUNG: Der Gesamtbetrag, den der Käufer zahlt, ist jetzt identisch mit dem Auftragswert.
+        // Die Servicegebühr wird serverseitig vom Guthaben des Anbieters abgezogen.
+        setTotalAmountPayableInCents(priceInCents);
+        console.log(PAGE_LOG, `Neuer Job-Preis und Gesamtbetrag: ${priceInCents}`);
       } else {
         // Preise zurücksetzen, wenn Basispreis <= 0 ist
-        setBuyerServiceFeeInCents(null);
         setTotalAmountPayableInCents(null);
       }
 
@@ -210,7 +202,7 @@ export default function BestaetigungsPage() {
       registration.setJobCalculatedPriceInCents(priceInCents);
       console.log(PAGE_LOG, "registration.jobCalculatedPriceInCents (Basis-Preis) im Context aktualisiert.");
     }
-  }, [jobPriceInCents, registration.jobCalculatedPriceInCents, registration.setJobCalculatedPriceInCents, BUYER_SERVICE_FEE_RATE]); // BUYER_SERVICE_FEE_RATE hinzugefügt
+  }, [jobPriceInCents, registration.jobCalculatedPriceInCents, registration.setJobCalculatedPriceInCents]); // BUYER_SERVICE_FEE_RATE entfernt
 
   const handleDetailsChangeFromChild = useCallback(() => {
     console.log(PAGE_LOG, "BestaetigungsPage: onDetailsChange von Kindkomponente empfangen.");
@@ -291,7 +283,8 @@ export default function BestaetigungsPage() {
         const jobDateFromToUse = registration.jobDateFrom || dateFromUrl || null;
         const jobDateToToUse = registration.jobDateTo || null;
         const jobTimePreferenceToUse = registration.jobTimePreference || timeUrl || null;
-        const selectedAnbieterIdToUse = registration.selectedAnbieterId || anbieterIdFromUrl || null;
+        // FIX: Prioritize the anbieterId from the URL, as it's the source of truth for this page.
+        const selectedAnbieterIdToUse = anbieterIdFromUrl || registration.selectedAnbieterId || null;
         const jobDurationStringToUse = registration.jobDurationString || auftragsDauerUrl || null;
         const jobTotalCalculatedHoursToUse = registration.jobTotalCalculatedHours || (auftragsDauerUrl ? parseInt(auftragsDauerUrl, 10) : null);
         const jobCalculatedPriceInCentsToUse = registration.jobCalculatedPriceInCents || priceFromUrl || null;
@@ -320,11 +313,9 @@ export default function BestaetigungsPage() {
         const initialJobPrice = draftData.jobCalculatedPriceInCents;
         if (jobPriceInCents === null && typeof initialJobPrice === 'number' && initialJobPrice > 0) {
           setJobPriceInCents(initialJobPrice);
-          // ANPASSUNG: Neue initiale Käufer-Servicegebühr (4.5%)
-          const initialBuyerServiceFee = Math.round(initialJobPrice * BUYER_SERVICE_FEE_RATE);
-          setBuyerServiceFeeInCents(initialBuyerServiceFee);
-          setTotalAmountPayableInCents(initialJobPrice + initialBuyerServiceFee);
-          console.log(PAGE_LOG, "BestaetigungsPage: Initialer Basis-Preis (jobPrice) aus draftData gesetzt.");
+          // ANPASSUNG: Der Gesamtbetrag ist jetzt identisch mit dem Auftragswert.
+          setTotalAmountPayableInCents(initialJobPrice);
+          console.log(PAGE_LOG, "BestaetigungsPage: Initialer Basis-Preis (jobPrice) und Gesamtbetrag aus draftData gesetzt.");
         } else if (jobPriceInCents === null && (initialJobPrice == null || initialJobPrice <= 0)) {
           console.warn(PAGE_WARN, "BestaetigungsPage: jobCalculatedPriceInCents (Basis-Preis) ist ungültig oder 0 aus draftData bei Initialisierung. Preis kann nicht gesetzt werden.");
         }
@@ -648,9 +639,28 @@ export default function BestaetigungsPage() {
     onDetailsChange: handleDetailsChangeFromChild,
     // NEU: Übergebe die berechneten Preisdetails zur Anzeige an BestaetigungsContent
     jobPriceInCents: jobPriceInCents,
-    buyerServiceFeeInCents: buyerServiceFeeInCents,
     totalAmountPayableInCents: totalAmountPayableInCents,
   };
+
+  // NEU: Optionen für das PaymentElement, um die Rechnungsdetails vorab auszufüllen.
+  const paymentElementOptions = useMemo(() => ({
+    defaultValues: {
+      billingDetails: {
+        name: billingAddressDetails?.name || '',
+        email: billingAddressDetails?.email || '',
+        phone: billingAddressDetails?.phone || '',
+        address: {
+          line1: billingAddressDetails?.address?.line1 || '',
+          line2: billingAddressDetails?.address?.line2 || '',
+          city: billingAddressDetails?.address?.city || '',
+          postal_code: billingAddressDetails?.address?.postal_code || '',
+          country: billingAddressDetails?.address?.country || '',
+        },
+      },
+    },
+    // Optional: Layout anpassen
+    layout: 'tabs' as const,
+  }), [billingAddressDetails]);
 
   if (isLoadingOverall) {
     return (
@@ -742,24 +752,17 @@ export default function BestaetigungsPage() {
               )}
             </div>
 
-            {/* NEU: Anzeige der Preisdetails */}
-            {jobPriceInCents !== null && totalAmountPayableInCents !== null && (
+            {/* NEU: Vereinfachte Anzeige der Preisdetails */}
+            {totalAmountPayableInCents !== null && (
               <div className="mb-6 p-4 border rounded-md bg-white">
                 <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center"><FiCreditCard className="mr-2" /> Preisübersicht</h3>
-                <div className="flex justify-between py-1">
-                  <span className="text-gray-600">Auftragswert (Dienstleister):</span>
-                  <span className="font-semibold">{(jobPriceInCents / 100).toFixed(2)} EUR</span>
-                </div>
-                {buyerServiceFeeInCents !== null && buyerServiceFeeInCents > 0 && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-600">Servicegebühr (4,5 %):</span> {/* ANPASSUNG: Text für 4.5% */}
-                    <span className="font-semibold">{(buyerServiceFeeInCents / 100).toFixed(2)} EUR</span>
-                  </div>
-                )}
                 <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between font-bold text-lg">
-                  <span>Gesamtbetrag (vom Käufer zu zahlen):</span>
+                  <span>Gesamtbetrag:</span>
                   <span>{(totalAmountPayableInCents / 100).toFixed(2)} EUR</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Der angezeigte Betrag ist der Endpreis. Die Servicegebühr wird vom Dienstleister getragen.
+                </p>
               </div>
             )}
 
@@ -772,7 +775,7 @@ export default function BestaetigungsPage() {
                   <div className="mb-6 p-4 border rounded-md bg-white">
                     <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center"><FiCreditCard className="mr-2" /> Zahlungsmethode</h3>
                     <p className="text-sm text-gray-600 mb-3">Geben Sie Ihre Zahlungsinformationen ein. Diese wird für zukünftige Buchungen gespeichert.</p>
-                    <PaymentElement />
+                    <PaymentElement options={paymentElementOptions} />
                   </div>
 
                   {/* Checkout-Button-Bereich jetzt INNERHALB von Elements */}

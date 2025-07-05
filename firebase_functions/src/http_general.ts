@@ -3,37 +3,87 @@ import { logger as loggerV2 } from 'firebase-functions/v2';
 import { getDb, FieldValue, getUserDisplayName } from './helpers'; // FieldValue import is correct
 import * as admin from 'firebase-admin';
 import cors from 'cors';
-import { UNKNOWN_PROVIDER_NAME } from './constants';
+import { UNKNOWN_PROVIDER_NAME, UNNAMED_COMPANY } from './constants';
+import { geohashForLocation } from 'geofire-common';
 
 const corsHandler = cors({ origin: true });
 
-export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
+export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB" }, async (req, res) => {
   const db = getDb();
   try {
-    const usersSnapshot = await db.collection("users").get();
+    // Query only for 'firma' users to make it more efficient
+    const usersSnapshot = await db.collection("users").where("user_type", "==", "firma").get();
     if (usersSnapshot.empty) {
-      res.status(200).send("No users found to migrate.");
+      res.status(200).send("No 'firma' users found to migrate.");
       return;
     }
     let migratedCount = 0;
     let batch = db.batch();
-    let count = 0;
-    for (const doc of usersSnapshot.docs) {
-      const userData = doc.data();
-      if (!userData || userData.user_type !== "firma") continue;
-      const companyData = { ...userData, uid: doc.id, updatedAt: new Date() };
-      const companyRef = db.collection("companies").doc(doc.id);
+    let writeCountInBatch = 0;
+
+    // Helper to find the first non-empty, non-null value from a list of potential sources.
+    const pickFirst = <T>(...args: (T | null | undefined)[]) => args.find((v) => v) ?? null;
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+
+      // --- Robust data sourcing logic (from triggers_firestore.ts) ---
+      const lat = pickFirst(userData.lat);
+      const lng = pickFirst(userData.lng);
+      let geohash: string | null = null;
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        geohash = geohashForLocation([lat, lng]);
+      }
+
+      const postalCode = pickFirst(userData.companyPostalCodeForBackend, userData.step2?.postalCode, userData.step2?.companyPostalCode);
+      const companyName = pickFirst(userData.companyName, userData.step2?.companyName) || UNNAMED_COMPANY;
+      const companyCity = pickFirst(userData.companyCityForBackend, userData.step2?.city);
+      const hourlyRate = pickFirst(userData.hourlyRate, userData.step3?.hourlyRate);
+      const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
+      const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
+      // --- End of robust data sourcing logic ---
+
+      const companyData = {
+        uid: userId,
+        user_type: "firma",
+        companyName: companyName,
+        postalCode: postalCode, // For display purposes
+        companyPostalCodeForBackend: postalCode, // For querying
+        companyCity: companyCity,
+        selectedCategory: userData.selectedCategory || null,
+        selectedSubcategory: userData.selectedSubcategory || null,
+        stripeAccountId: userData.stripeAccountId || null,
+        hourlyRate: Number(hourlyRate) || null,
+        lat: lat,
+        lng: lng,
+        radiusKm: Number(userData.radiusKm) || null,
+        geohash: geohash,
+        profilePictureURL: profilePictureURL,
+        industryMcc: industryMcc,
+        description: userData.description || "",
+        createdAt: userData.createdAt || FieldValue.serverTimestamp(), // Preserve original creation date
+        updatedAt: FieldValue.serverTimestamp(), // Always set a fresh update timestamp
+        profileLastUpdatedAt: userData.profileLastUpdatedAt || FieldValue.serverTimestamp(),
+      };
+
+      const companyRef = db.collection("companies").doc(userId);
       batch.set(companyRef, companyData, { merge: true });
       migratedCount++;
-      count++;
-      if (count >= 400) {
+      writeCountInBatch++;
+
+      if (writeCountInBatch >= 400) {
         await batch.commit();
+        loggerV2.info(`Committed a batch of ${writeCountInBatch} migrations.`);
         batch = db.batch();
-        count = 0;
+        writeCountInBatch = 0;
       }
     }
-    if (count > 0) await batch.commit();
-    res.status(200).send(`Successfully migrated ${migratedCount} users to companies.`);
+    if (writeCountInBatch > 0) {
+      await batch.commit();
+      loggerV2.info(`Committed the final batch of ${writeCountInBatch} migrations.`);
+    }
+    res.status(200).send(`Successfully migrated/updated ${migratedCount} company profiles.`);
   } catch (e) {
     loggerV2.error("Migration failed:", e);
     res.status(500).send("Migration failed.");
@@ -43,7 +93,13 @@ export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1
 export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   const db = getDb();
   try { // <-- This try-catch block is already present, which is good. No changes needed here.
-    const { id, postalCode, selectedSubcategory, minPrice, maxPrice } = req.query as { [key: string]: string | undefined };
+    const { id, postalCode, selectedSubcategory, minPrice, maxPrice, geohash } = req.query as { [key: string]: string | undefined };
+
+    // --- Hinzugefügtes, detailliertes Logging ---
+    loggerV2.info("[searchCompanyProfiles] Suche gestartet mit Parametern:", {
+      id, postalCode, selectedSubcategory, minPrice, maxPrice, geohash,
+    });
+    // --- Ende Logging ---
 
     if (id && typeof id === "string") {
       const companyDoc = await db.collection("companies").doc(id).get();
@@ -53,6 +109,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
       }
       const companyData = companyDoc.data()!;
       res.status(200).json({
+        // WICHTIG: Hier werden die Daten für die Detailansicht eines Anbieters zurückgegeben.
         id: companyDoc.id,
         companyName: companyData.companyName || companyData.firmenname,
         profilePictureURL: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl,
@@ -63,50 +120,48 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
       return;
     }
 
+    // --- Hinzugefügtes Logging für den Such-Fall ---
+    if (!postalCode) loggerV2.warn("[searchCompanyProfiles] Warnung: Suche ohne 'postalCode' durchgeführt.");
+    if (!selectedSubcategory) loggerV2.warn("[searchCompanyProfiles] Warnung: Suche ohne 'selectedSubcategory' durchgeführt.");
+    // --- Ende Logging ---
+
     if (!postalCode || !selectedSubcategory) {
       res.status(400).send("Fehlende Parameter: postalCode und selectedSubcategory sind erforderlich.");
       return;
     }
 
-    let query: FirebaseFirestore.Query = db.collection("companies")
-      .where("postalCode", "==", postalCode as string)
+    // KORREKTUR: Die Abfrage wird effizienter und zuverlässiger gestaltet.
+    // Wir fügen `where("user_type", "==", "firma")` hinzu, um sicherzustellen, dass wir nur aktive
+    // Firmenkonten abrufen. Dies macht die zweite Abfrage der 'users'-Collection überflüssig,
+    // was die Funktion beschleunigt und die Komplexität reduziert.
+    let query: FirebaseFirestore.Query = db.collection("companies");
+
+    // Wende die obligatorischen Filter an.
+    query = query
+      .where("user_type", "==", "firma") // Stellt sicher, dass es sich um ein Firmenprofil handelt.
+      .where("companyPostalCodeForBackend", "==", postalCode as string) // KORREKTUR: Das Feld 'postalCode' existiert nicht. Verwende das korrekte Feld 'companyPostalCodeForBackend'.
       .where("selectedSubcategory", "==", selectedSubcategory as string);
 
+    // Wende die optionalen Preisfilter an.
     const numMinPrice = Number(minPrice);
     const numMaxPrice = Number(maxPrice);
     if (!isNaN(numMinPrice) && minPrice !== undefined) query = query.where("hourlyRate", ">=", numMinPrice);
     if (!isNaN(numMaxPrice) && maxPrice !== undefined) query = query.where("hourlyRate", "<=", numMaxPrice);
 
     const querySnapshot = await query.get();
-
     if (querySnapshot.empty) {
+      // --- Hinzugefügtes Logging für den "Nichts gefunden"-Fall ---
+      loggerV2.warn(`[searchCompanyProfiles] Keine Profile für die Abfrage gefunden.`, { postalCode, selectedSubcategory, minPrice, maxPrice });
+      // --- Ende Logging ---
       res.status(200).json([]);
       return;
     }
 
-    const companyDocs = querySnapshot.docs;
-    const companyIds = companyDocs.map(doc => doc.id);
-
-    if (companyIds.length === 0) {
-      res.status(200).json([]);
-      return;
-    }
-
-    // Batch-Abfrage der zugehörigen User-Dokumente, um die Existenz zu verifizieren
-    const userDocRefs = companyIds.map(id => db.collection("users").doc(id));
-    const userDocs = await db.getAll(...userDocRefs);
-    // Filter for users that exist AND are of type 'firma'
-    const validUserIds = new Set(
-      userDocs
-        .filter(doc => doc.exists && doc.data()?.user_type === 'firma')
-        .map(doc => doc.id)
-    );
-
-    const profiles = companyDocs
-      .filter(doc => validUserIds.has(doc.id)) // Nur Profile mit gültigem User-Dokument vom Typ 'firma'
+    const profiles = querySnapshot.docs
       .map((doc) => {
         const data = doc.data();
         return {
+          // WICHTIG: Dies ist die Struktur für die Ergebnisliste
           id: doc.id,
           companyName: getUserDisplayName(data, UNKNOWN_PROVIDER_NAME),
           profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
@@ -115,6 +170,10 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
           stripeAccountId: data.stripeAccountId,
         };
       });
+
+    // --- Hinzugefügtes Logging für erfolgreiche Suche ---
+    loggerV2.info(`[searchCompanyProfiles] ${profiles.length} Profile gefunden und zurückgegeben.`);
+    // --- Ende Logging ---
 
     res.status(200).json(profiles);
 

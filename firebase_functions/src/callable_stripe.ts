@@ -1,7 +1,7 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-import { getDb, getStripeInstance, getPublicFrontendURL, getEmulatorCallbackFrontendURL } from './helpers';
+import { getDb, getStripeInstance, getPublicFrontendURL, getEmulatorCallbackFrontendURL, getChatParticipantDetails, ParticipantDetails, corsOptions } from './helpers';
 import { defineSecret, defineString } from 'firebase-functions/params';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from "firebase-admin";
@@ -60,7 +60,20 @@ interface CreateStripeAccountCallableData {
   isActualExecutive?: boolean;
   actualRepresentativeTitle?: string;
 
-  identityFrontFileId?: string; identityBackFileId?: string;
+  // Stripe File IDs for verification
+  identityFrontFileId?: string;
+  identityBackFileId?: string;
+  businessLicenseFileId?: string;
+  masterCraftsmanCertificateFileId?: string;
+  profilePictureFileId?: string;
+
+  // Firebase Storage URLs for display
+  identityFrontUrl?: string;
+  identityBackUrl?: string;
+  businessLicenseUrl?: string;
+  masterCraftsmanCertificateUrl?: string;
+  profilePictureUrl?: string;
+
   companyName?: string;
   legalForm?: string | null;
   companyAddressLine1?: string; companyCity?: string;
@@ -72,8 +85,6 @@ interface CreateStripeAccountCallableData {
   companyWebsite?: string;
   mcc?: string;
   iban?: string; accountHolder?: string;
-  profilePictureFileId?: string; businessLicenseFileId?: string;
-  masterCraftsmanCertificateFileId?: string;
 }
 
 interface CreateStripeAccountCallableResult {
@@ -220,7 +231,7 @@ const mapLegalFormToStripeBusinessInfo = (
 };
 
 export const createStripeAccountIfComplete = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
     const stripeKey = STRIPE_SECRET_KEY.value();
@@ -273,9 +284,9 @@ export const createStripeAccountIfComplete = onCall(
       { key: 'iban', name: 'IBAN' },
       { key: 'accountHolder', name: 'Kontoinhaber' },
       { key: 'mcc', name: 'MCC (Branchencode)' },
-      { key: 'identityFrontFileId', name: 'Ausweisdokument (Vorderseite)' },
-      { key: 'identityBackFileId', name: 'Ausweisdokument (Rückseite)' },
-      { key: 'profilePictureFileId', name: 'Profilbild' },
+      { key: 'identityFrontFileId', name: 'Ausweisdokument (Vorderseite)' }, // Validate File ID presence
+      { key: 'identityBackFileId', name: 'Ausweisdokument (Rückseite)' },   // Validate File ID presence
+      { key: 'profilePictureFileId', name: 'Profilbild' },                 // Validate File ID presence
     ];
 
     for (const field of requiredFields) {
@@ -305,7 +316,7 @@ export const createStripeAccountIfComplete = onCall(
       if (!payloadFromClient.companyAddressLine1?.trim() || !payloadFromClient.companyCity?.trim() || !payloadFromClient.companyPostalCode?.trim() || !payloadFromClient.companyCountry?.trim()) {
         throw new HttpsError("failed-precondition", "Vollständige Firmenadresse ist erforderlich.");
       }
-      if (payloadFromClient.companyCountry && payloadFromClient.companyCountry.length !== 2) throw new HttpsError("invalid-argument", "Ländercode Firma muss 2-stellig sein.");
+      if (payloadFromClient.companyCountry && payloadFromClient.companyCountry.length !== 2) throw new HttpsError("invalid-argument", "Ländercode der Firma muss 2-stellig sein (z.B. DE).");
       if (!payloadFromClient.businessLicenseFileId) throw new HttpsError("failed-precondition", "Gewerbeschein ist für Firmen erforderlich.");
       loggerV2.info('[DEBUG] Company-Validierung OK: Basis-Infos.');
     } else { // businessType === 'individual'
@@ -510,11 +521,11 @@ export const createStripeAccountIfComplete = onCall(
       "step3.companyRegister": payloadFromClient.companyRegister || null,
       "step3.taxNumber": payloadFromClient.taxNumber || null,
       "step3.vatId": payloadFromClient.vatId || null,
-      "step3.profilePictureURL": payloadFromClient.profilePictureFileId || null,
-      "step3.businessLicenseURL": payloadFromClient.businessLicenseFileId || null,
-      "step3.masterCraftsmanCertificateURL": payloadFromClient.masterCraftsmanCertificateFileId || FieldValue.delete(),
-      "step3.identityFrontUrl": payloadFromClient.identityFrontFileId || null,
-      "step3.identityBackUrl": payloadFromClient.identityBackFileId || null,
+      "step3.profilePictureURL": payloadFromClient.profilePictureUrl || null,
+      "step3.businessLicenseURL": payloadFromClient.businessLicenseUrl || null,
+      "step3.masterCraftsmanCertificateURL": payloadFromClient.masterCraftsmanCertificateUrl || FieldValue.delete(),
+      "step3.identityFrontUrl": payloadFromClient.identityFrontUrl || null,
+      "step3.identityBackUrl": payloadFromClient.identityBackUrl || null,
       "step4.iban": payloadFromClient.iban ? `****${payloadFromClient.iban.slice(-4)}` : null, // Nur die letzten 4 Ziffern speichern
       "step4.accountHolder": payloadFromClient.accountHolder || null,
     };
@@ -536,7 +547,7 @@ export const createStripeAccountIfComplete = onCall(
 
 // --- HIER WIRD DIE FUNKTION getOrCreateStripeCustomer HINZUGEFÜGT ---
 export const getOrCreateStripeCustomer = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<GetOrCreateStripeCustomerPayload>): Promise<GetOrCreateStripeCustomerResult> => {
     loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = getDb();
@@ -644,7 +655,7 @@ export const getOrCreateStripeCustomer = onCall(
   });
 
 export const updateStripeCompanyDetails = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     const db = getDb();
@@ -874,8 +885,50 @@ export const updateStripeCompanyDetails = onCall(
   }
 );
 
+/**
+ * Ruft die öffentlichen Teilnehmerdetails (Anbieter und Kunde) für eine bestimmte Auftrags-ID ab.
+ * Diese Funktion stellt sicher, dass der anfragende Benutzer ein Teilnehmer des Auftrags ist,
+ * bevor sie die Daten zurückgibt.
+ */
+export const getOrderParticipantDetails = onCall(
+  { region: "europe-west1", cors: corsOptions },
+  async (request: CallableRequest<{ orderId: string }>): Promise<{ provider: ParticipantDetails, customer: ParticipantDetails }> => {
+    const { orderId } = request.data;
+    loggerV2.info(`[getOrderParticipantDetails] Called for orderId: ${orderId} by user: ${request.auth?.uid}`);
+
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+    const db = getDb();
+    if (!orderId) {
+      throw new HttpsError("invalid-argument", "Eine Auftrags-ID (orderId) ist erforderlich.");
+    }
+
+    const orderDocRef = db.collection('auftraege').doc(orderId);
+    const orderDoc = await orderDocRef.get();
+
+    if (!orderDoc.exists) {
+      throw new HttpsError("not-found", `Auftrag ${orderId} nicht gefunden.`);
+    }
+    const orderData = orderDoc.data()!;
+
+    // Sicherheitsprüfung: Nur Teilnehmer des Auftrags dürfen die Details abrufen.
+    if (request.auth.uid !== orderData.kundeId && request.auth.uid !== orderData.selectedAnbieterId) {
+      throw new HttpsError("permission-denied", "Sie haben keine Berechtigung, die Details für diesen Auftrag abzurufen.");
+    }
+
+    const [providerDetails, customerDetails] = await Promise.all([
+      getChatParticipantDetails(db, orderData.selectedAnbieterId),
+      getChatParticipantDetails(db, orderData.kundeId),
+    ]);
+
+    loggerV2.info(`[getOrderParticipantDetails] Successfully fetched details for orderId: ${orderId}`);
+    return { provider: providerDetails, customer: customerDetails };
+  }
+);
+
 export const createSetupIntent = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<{ firebaseUserId?: string }>): Promise<{ clientSecret: string | null }> => {
     loggerV2.info("[createSetupIntent] Aufgerufen.");
     const db = getDb();
@@ -924,7 +977,7 @@ export const createSetupIntent = onCall(
 );
 
 export const getSavedPaymentMethods = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<Record<string, never>>): Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }> => {
     loggerV2.info("[getSavedPaymentMethods] Aufgerufen.");
     const db = getDb();
@@ -964,7 +1017,7 @@ export const getSavedPaymentMethods = onCall(
 );
 
 export const getStripeAccountStatus = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<Record<string, never>>): Promise<GetStripeAccountStatusResult> => {
     loggerV2.info("[getStripeAccountStatus] Aufgerufen.");
     const db = getDb(); // Firestore-Instanz
@@ -1056,7 +1109,7 @@ export const getStripeAccountStatus = onCall(
 );
 
 export const getProviderStripeAccountId = onCall(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: corsOptions },
   async (request: CallableRequest<{ providerUid: string }>): Promise<{ stripeAccountId: string }> => {
     loggerV2.info("[getProviderStripeAccountId] Aufgerufen.");
     const db = getDb(); // Firestore-Instanz

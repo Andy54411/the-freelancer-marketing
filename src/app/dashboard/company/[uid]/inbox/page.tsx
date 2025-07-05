@@ -1,168 +1,228 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation'; // useRouter hinzugefügt
-import React, { useState, useEffect } from 'react';
-import { FiInbox, FiLoader, FiAlertCircle } from 'react-icons/fi'; // Icons für Lade-/Fehlerzustand
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'; // Firestore-Funktionen
+import React, { useState, useEffect, useMemo } from 'react';
+import { UNKNOWN_USER_NAME } from '@/constants/strings';
+import { useParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { FiInbox, FiLoader, FiMessageSquare, FiUser, FiSlash } from 'react-icons/fi';
 import { db } from '@/firebase/clients'; // Firestore-Instanz
-import { RawFirestoreUserData } from '@/components/SettingsPage'; // Typ für Benutzerdaten
-import { useAuth } from '@/contexts/AuthContext'; // Auth-Hook (moved below Header import)
+import {
+    collection,
+    query,
+    where,
+    orderBy,
+    onSnapshot,
+    doc,
+    getDoc,
+    Timestamp,
+} from 'firebase/firestore';
+import ChatComponent from '@/components/ChatComponent';
+import Image from 'next/image';
+
+// --- Interfaces ---
+interface OtherUser {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+}
+
+interface LastMessage {
+    text: string;
+    timestamp: Timestamp | null;
+    isRead: boolean;
+    senderId: string;
+}
 
 interface ChatPreview {
-    orderId: string;
-    customerName: string;
-    lastMessage: string;
-    lastMessageAt: Date;
+    id: string; // Auftrags-ID, die als Chat-ID dient
+    otherUser: OtherUser;
+    lastMessage: LastMessage;
 }
 
 export default function CompanyInboxPage() {
     const params = useParams();
-    const router = useRouter(); // useRouter initialisiert
+    const uidFromParams = typeof params.uid === 'string' ? params.uid : '';
+    const { user: currentUser, loading: authLoading } = useAuth();
 
-    const uid = typeof params.uid === 'string' ? params.uid : '';
-
-    const { currentUser, loading: authLoading } = useAuth(); // Aktuellen Benutzer und Ladezustand der Authentifizierung abrufen
-    const [companyName, setCompanyName] = useState<string | null>(null);
-    const [loadingData, setLoadingData] = useState(true); // Ladezustand für Firmendaten
-    const [error, setError] = useState<string | null>(null);
-    const [companyLogoUrl, setCompanyLogoUrl] = useState<string | undefined>(undefined); // State für Logo-URL
     const [chats, setChats] = useState<ChatPreview[]>([]);
+    const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+    const [loadingChats, setLoadingChats] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedOrderStatus, setSelectedOrderStatus] = useState<string | null>(null);
+    const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
 
     useEffect(() => {
-        if (!uid) {
-            setError("Keine Firmen-UID in der URL gefunden.");
-            setLoadingData(false);
+        if (!currentUser?.uid) {
+            setLoadingChats(false);
             return;
         }
 
-        const fetchCompanyName = async () => {
-            // Warten, bis die Authentifizierung abgeschlossen ist und eine UID vorhanden ist
-            if (!uid || authLoading) {
+        const chatsCollectionRef = collection(db, 'chats');
+        const q = query(
+            chatsCollectionRef,
+            where('users', 'array-contains', currentUser.uid),
+            where('isLocked', '==', false), // Explizit nur nicht-gesperrte Chats abfragen
+            orderBy('lastUpdated', 'desc')
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setLoadingChats(true);
+            if (snapshot.empty) {
+                setChats([]);
+                setLoadingChats(false);
                 return;
             }
 
-            // Überprüfen, ob der angemeldete Benutzer der UID in der URL entspricht
-            if (!currentUser || currentUser.uid !== uid) {
-                setError("Zugriff verweigert oder Benutzer nicht angemeldet.");
-                setLoadingData(false);
-                return;
-            }
+            const validChats = snapshot.docs.map((chatDoc) => {
+                const chatData = chatDoc.data();
+                const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
+                const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
 
-            setLoadingData(true);
-            setError(null);
-            try {
-                const userDocRef = doc(db, "users", uid);
-                const userDocSnap = await getDoc(userDocRef);
+                const otherUser: OtherUser = {
+                    id: otherUserId,
+                    name: userDetails?.name || UNKNOWN_USER_NAME,
+                    avatarUrl: userDetails?.avatarUrl || null,
+                };
 
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data() as RawFirestoreUserData;
-                    // Firmennamen aus step2 oder direkt aus dem Root-Objekt abrufen
-                    const fetchedCompanyName = userData.step2?.companyName || userData.companyName;
-                    const fetchedLogoUrl = userData.step3?.profilePictureURL || userData.profilePictureURL; // Logo-URL abrufen
-                    const fetchedFirebaseLogoUrl = userData.profilePictureFirebaseUrl; // NEU: Firebase URL abrufen
-                    if (typeof fetchedCompanyName === 'string' && fetchedCompanyName.trim() !== '') {
-                        setCompanyName(fetchedCompanyName);
-                    } else {
-                        setCompanyName("Unbekannte Firma"); // Fallback, falls Name leer ist
-                    }
-                    setCompanyLogoUrl(typeof fetchedFirebaseLogoUrl === 'string' && fetchedFirebaseLogoUrl.trim() !== '' ? fetchedFirebaseLogoUrl : undefined); // Verwende die Firebase URL
-                } else {
-                    setError("Firmendaten nicht gefunden.");
-                }
-            } catch (err: any) {
-                console.error("Fehler beim Laden des Firmennamens:", err);
-                setError(`Fehler beim Laden der Firmendaten: ${err.message || 'Unbekannter Fehler'}`);
-            } finally {
-                setLoadingData(false);
-            }
-        };
+                return {
+                    id: chatDoc.id,
+                    otherUser,
+                    lastMessage: {
+                        text: chatData.lastMessage?.text || '',
+                        timestamp: chatData.lastMessage?.timestamp || null,
+                        isRead: chatData.lastMessage?.senderId === currentUser.uid ? true : (chatData.lastMessage?.isRead ?? false),
+                        senderId: chatData.lastMessage?.senderId || '',
+                    },
+                };
+            });
 
-        const fetchChats = async () => {
-            if (!uid || authLoading) return;
-            // 1. Alle Aufträge dieser Firma laden
-            const auftraegeRef = collection(db, "auftraege");
-            const auftraegeQ = query(
-                auftraegeRef,
-                where("selectedAnbieterId", "==", uid),
-                where("status", "!=", "abgelehnt_vom_anbieter") // Filtere abgelehnte Aufträge direkt in der Abfrage heraus
-            );
-            const auftraegeSnap = await getDocs(auftraegeQ);
+            setChats(validChats);
+            setLoadingChats(false);
+        }, (err) => {
+            console.error("Fehler beim Laden der Chats:", err);
+            setError("Fehler beim Laden der Chats.");
+            setLoadingChats(false);
+        });
 
-            const chatPreviews: ChatPreview[] = [];
+        return () => unsubscribe();
+    }, [currentUser]);
 
-            for (const docSnap of auftraegeSnap.docs) {
-                const auftrag = docSnap.data();
-                const orderId = docSnap.id;
-                // 2. Letzte Nachricht aus Untercollection "nachrichten" holen
-                const nachrichtenRef = collection(db, "auftraege", orderId, "nachrichten");
-                // KORREKTUR: Die Abfrage muss die 'where'-Klausel enthalten, um den Sicherheitsregeln zu entsprechen.
-                const nachrichtenQ = query(
-                    nachrichtenRef,
-                    where("chatUsers", "array-contains", uid), // Stellt sicher, dass nur erlaubte Chats gelesen werden
-                    orderBy("timestamp", "desc"),
-                    limit(1)
-                );
-                const nachrichtenSnap = await getDocs(nachrichtenQ);
-                const lastMsgDoc = nachrichtenSnap.docs[0];
-                chatPreviews.push({
-                    orderId,
-                    customerName: auftrag.customerFirstName + " " + auftrag.customerLastName,
-                    lastMessage: lastMsgDoc ? lastMsgDoc.data().text : "Noch keine Nachrichten",
-                    lastMessageAt: lastMsgDoc ? lastMsgDoc.data().timestamp.toDate() : new Date(0),
-                });
-            }
-            setChats(chatPreviews);
-        };
+    const selectedChat = useMemo(() => {
+        return chats.find(chat => chat.id === selectedChatId) || null;
+    }, [chats, selectedChatId]);
 
-        if (!authLoading) {
-            fetchCompanyName();
-            fetchChats();
+    useEffect(() => {
+        if (!selectedChatId) {
+            setSelectedOrderStatus(null);
+            return;
         }
-    }, [uid, currentUser, authLoading]); // Abhängigkeiten: uid, currentUser, authLoading
 
-    if (authLoading || loadingData) {
+        const fetchOrderStatus = async () => {
+            setLoadingOrderStatus(true);
+            try {
+                const orderDocRef = doc(db, 'auftraege', selectedChatId);
+                const orderDocSnap = await getDoc(orderDocRef);
+                if (orderDocSnap.exists()) {
+                    setSelectedOrderStatus(orderDocSnap.data().status || null);
+                } else {
+                    setSelectedOrderStatus(null);
+                    setError("Zugehöriger Auftrag für diesen Chat nicht gefunden.");
+                }
+            } catch (err) {
+                console.error("Fehler beim Laden des Auftragsstatus:", err);
+                setError("Fehler beim Laden des Auftragsstatus.");
+            } finally {
+                setLoadingOrderStatus(false);
+            }
+        };
+
+        fetchOrderStatus();
+    }, [selectedChatId]);
+
+    if (authLoading || loadingChats) {
         return (
-            <div className="flex justify-center items-center min-h-[300px]">
+            <div className="flex justify-center items-center min-h-screen">
                 <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
                 Lade Posteingang...
             </div>
         );
     }
 
-    if (error) {
-        return (
-            <div className="flex justify-center items-center min-h-[300px] text-red-500">
-                <FiAlertCircle className="mr-2" /> {error}
-            </div>
-        );
+    if (!currentUser || currentUser.uid !== uidFromParams) {
+        return <div className="text-center py-10 text-red-500">Zugriff verweigert oder Benutzer nicht angemeldet.</div>;
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 flex-grow pt-[var(--global-header-height)]">
-            <h1 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-                <FiInbox className="mr-3" /> Posteingang für {companyName || 'Ihre Firma'}
-            </h1>
-            <div className="bg-white shadow rounded-lg p-6">
-                {chats.length === 0 ? (
-                    <p className="text-gray-600">Noch keine Chats vorhanden.</p>
+        <div className="flex h-[calc(100vh-var(--header-height,80px))] bg-gray-50">
+            {/* Linke Spalte: Chat-Liste */}
+            <aside className="w-full md:w-1/3 lg:w-1/4 border-r border-gray-200 bg-white flex flex-col">
+                <div className="p-4 border-b">
+                    <h1 className="text-xl font-semibold text-gray-800 flex items-center">
+                        <FiInbox className="mr-3" /> Posteingang
+                    </h1>
+                </div>
+                <div className="overflow-y-auto flex-grow">
+                    {chats.length > 0 ? (
+                        <ul>
+                            {chats.map((chat) => (
+                                <li key={chat.id} onClick={() => setSelectedChatId(chat.id)}
+                                    className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${selectedChatId === chat.id ? 'bg-teal-50' : ''}`}>
+                                    <div className="flex items-center gap-3">
+                                        {chat.otherUser.avatarUrl ? (
+                                            <Image src={chat.otherUser.avatarUrl} alt={chat.otherUser.name} width={48} height={48} className="rounded-full object-cover" />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center"><FiUser /></div>
+                                        )}
+                                        <div className="flex-1 overflow-hidden">
+                                            <div className="flex justify-between items-center">
+                                                <p className="font-semibold truncate">{chat.otherUser.name}</p>
+                                                <p className="text-xs text-gray-500 whitespace-nowrap">
+                                                    {chat.lastMessage.timestamp?.toDate().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <p className={`text-sm truncate ${!chat.lastMessage.isRead ? 'text-gray-900 font-bold' : 'text-gray-500'}`}>
+                                                {chat.lastMessage.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="p-6 text-center text-gray-500">Keine Konversationen gefunden.</div>
+                    )}
+                </div>
+            </aside>
+
+            {/* Rechte Spalte: Chat-Ansicht */}
+            <main className="flex-1 flex flex-col">
+                {loadingOrderStatus ? (
+                    <div className="flex-1 flex justify-center items-center">
+                        <FiLoader className="animate-spin text-4xl text-[#14ad9f]" />
+                    </div>
+                ) : selectedChatId && (selectedOrderStatus === 'abgelehnt_vom_anbieter' || selectedOrderStatus === 'STORNIERT') ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-100 p-4">
+                        <FiSlash className="text-4xl text-gray-400 mb-3" />
+                        <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
+                        <p className="text-gray-500 text-sm">Für diesen Auftrag ist der Chat nicht mehr verfügbar.</p>
+                    </div>
+                ) : selectedChatId && selectedChat && currentUser ? (
+                    <ChatComponent
+                        orderId={selectedChatId}
+                        participants={{
+                            customerId: selectedChat.otherUser.id,
+                            providerId: currentUser.uid,
+                        }}
+                        orderStatus={selectedOrderStatus}
+                    />
                 ) : (
-                    <ul>
-                        {chats.map(chat => (
-                            <li key={chat.orderId} className="mb-4 border-b pb-2">
-                                <div className="font-semibold">{chat.customerName}</div>
-                                <div className="text-sm text-gray-500">{chat.lastMessage}</div>
-                                <div className="text-xs text-gray-400">{chat.lastMessageAt.toLocaleString()}</div>
-                                <a
-                                    href={`/dashboard/company/${uid}/inbox/chat/${chat.orderId}`}
-                                    className="text-blue-600 hover:underline text-sm"
-                                >
-                                    Zum Chat
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="flex-1 flex flex-col justify-center items-center text-center text-gray-500 p-8">
+                        <FiMessageSquare size={64} className="mb-4 text-gray-300" />
+                        <h2 className="text-xl font-semibold">Wählen Sie einen Chat aus</h2>
+                        <p>Ihre Konversationen werden hier angezeigt.</p>
+                    </div>
                 )}
-            </div>
+            </main>
         </div>
     );
 }

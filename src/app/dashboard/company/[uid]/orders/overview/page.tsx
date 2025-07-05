@@ -12,13 +12,13 @@ import { useAuth } from '@/contexts/AuthContext';
 // Vereinfachtes Interface für Auftragsdaten aus Anbietersicht
 interface Order {
     id: string;
-    serviceTitle: string; // z.B. selectedSubcategory
+    selectedSubcategory: string;
     customerName: string; // Name des Kunden
     customerAvatarUrl?: string; // Profilbild des Kunden
     projectName?: string; // Falls vorhanden
     orderedBy: string; // customerFirebaseUid
     orderDate?: { _seconds: number, _nanoseconds: number } | string;
-    priceInCents: number;
+    totalAmountPaidByBuyer: number;
     status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'BEZAHLT' | 'ZAHLUNG_ERHALTEN_CLEARING' | 'abgelehnt_vom_anbieter';
     uid: string; // Die UID des Anbieters (dieses Unternehmens)
     projectId?: string;
@@ -44,7 +44,7 @@ const CompanyOrdersOverviewPage = () => {
             return;
         }
 
-        const currentUser = authContext.currentUser;
+        const currentUser = authContext.user;
 
         if (!currentUser) {
             setError("Bitte melden Sie sich an, um Ihre Aufträge anzuzeigen.");
@@ -125,7 +125,7 @@ const CompanyOrdersOverviewPage = () => {
     };
 
     const formatPrice = (priceInCents: number, currency?: string | null): string => {
-        const amount = priceInCents / 100;
+        const amount = (priceInCents || 0) / 100; // Add fallback for safety to prevent NaN
         const validCurrency = currency || 'EUR';
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: validCurrency }).format(amount);
     };
@@ -197,7 +197,7 @@ const CompanyOrdersOverviewPage = () => {
                                 <Link href={`/dashboard/company/${uidFromParams}/orders/${order.id}`} className="block hover:bg-gray-50">
                                     <div className="px-4 py-4 sm:px-6">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium text-teal-600 truncate w-2/3">{order.serviceTitle}</p>
+                                            <p className="text-sm font-medium text-teal-600 truncate w-2/3">{order.selectedSubcategory}</p>
                                             <div className="ml-2 flex-shrink-0 flex">
                                                 <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
                                                     {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status.replace(/_/g, ' ').slice(1)}
@@ -229,7 +229,7 @@ const CompanyOrdersOverviewPage = () => {
                                             </div>
                                         </div>
                                         <div className="mt-2 sm:flex sm:justify-between">
-                                            <p className="text-sm text-gray-900 font-semibold">{formatPrice(order.priceInCents, order.currency)}</p>
+                                            <p className="text-sm text-gray-900 font-semibold">{formatPrice(order.totalAmountPaidByBuyer, order.currency)}</p>
                                             <div className="relative">
                                                 <button
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); alert(`Aktionen für Auftrag ${order.id}`); }}

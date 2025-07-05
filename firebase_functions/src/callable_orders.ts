@@ -15,6 +15,13 @@ interface RejectOrderPayload extends OrderActionPayload {
     reason: string;
 }
 
+// Hilfsfunktion, um Datumsüberschneidungen zu prüfen.
+// Eine Überschneidung findet statt, wenn ein Bereich beginnt, bevor der andere endet,
+// UND endet, nachdem der andere begonnen hat.
+const doRangesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): boolean => {
+    return start1 < end2 && end1 > start2;
+};
+
 /**
  * Akzeptiert einen bezahlten Auftrag.
  * Ändert den Status von 'zahlung_erhalten_clearing' zu 'AKTIV'.
@@ -28,6 +35,7 @@ export const acceptOrder = onCall(
         }
 
         const { orderId } = request.data;
+        const providerUid = request.auth.uid; // Capture UID to use in transaction
         if (!orderId) {
             throw new HttpsError('invalid-argument', 'The function must be called with an "orderId".');
         }
@@ -43,27 +51,70 @@ export const acceptOrder = onCall(
                 }
 
                 const orderData = orderDoc.data();
-                if (orderData?.selectedAnbieterId !== request.auth?.uid) {
+                if (orderData?.selectedAnbieterId !== providerUid) {
                     throw new HttpsError('permission-denied', 'You are not authorized to accept this order.');
                 }
 
-                if (orderData?.status !== 'zahlung_erhalten_clearing') {
-                    throw new HttpsError('failed-precondition', `Order cannot be accepted in its current state: ${orderData?.status}.`);
+                const orderToAcceptData = orderData;
+                if (orderToAcceptData?.status !== 'zahlung_erhalten_clearing') {
+                    throw new HttpsError('failed-precondition', `Order cannot be accepted in its current state: ${orderToAcceptData?.status}.`);
                 }
 
+                // --- NEU: Logik zur Konfliktprüfung ---
+                const newOrderStart = orderToAcceptData.jobDateFrom ? new Date(orderToAcceptData.jobDateFrom) : null;
+                // Wenn kein Enddatum vorhanden ist, wird das Startdatum als Enddatum angenommen (z.B. für stundenbasierte Aufträge am selben Tag)
+                const newOrderEnd = orderToAcceptData.jobDateTo ? new Date(orderToAcceptData.jobDateTo) : newOrderStart;
+
+                // Nur prüfen, wenn der neue Auftrag Zeitdaten hat
+                if (newOrderStart && newOrderEnd) {
+                    const activeOrdersQuery = db.collection('auftraege').where('selectedAnbieterId', '==', providerUid).where('status', '==', 'AKTIV');
+                    const activeOrdersSnapshot = await transaction.get(activeOrdersQuery);
+
+                    for (const doc of activeOrdersSnapshot.docs) {
+                        const activeOrder = doc.data();
+                        const activeOrderStart = activeOrder.jobDateFrom ? new Date(activeOrder.jobDateFrom) : null;
+                        const activeOrderEnd = activeOrder.jobDateTo ? new Date(activeOrder.jobDateTo) : activeOrderStart;
+
+                        // Prüfe auf Überschneidung
+                        if (activeOrderStart && activeOrderEnd && doRangesOverlap(newOrderStart, newOrderEnd, activeOrderStart, activeOrderEnd)) {
+                            throw new HttpsError('failed-precondition', `Dieser Auftrag überschneidet sich mit einem bereits aktiven Auftrag (ID: ${doc.id}).`);
+                        }
+                    }
+                } else {
+                    logger.info(`Order ${orderId} has no job dates. Accepting without conflict check.`);
+                }
+                // --- ENDE: Logik zur Konfliktprüfung ---
+
+                // NEU: Referenz auf das Chat-Dokument holen (ID ist identisch mit Auftrags-ID)
+                const chatDocRef = db.collection('chats').doc(orderId);
+                const customerId = orderToAcceptData?.customerFirebaseUid || orderToAcceptData?.kundeId;
+                const providerId = orderToAcceptData?.selectedAnbieterId;
+
+                // Aktualisiere den Auftragsstatus
                 transaction.update(orderRef, {
                     status: 'AKTIV',
                     lastUpdatedAt: FieldValue.serverTimestamp()
                 });
+
+                // NEU: Schalte den zugehörigen Chat frei.
+                // set mit merge:true erstellt das Dokument, falls es nicht existiert,
+                // und aktualisiert es, falls es existiert.
+                transaction.set(chatDocRef, {
+                    isLocked: false, // Chat explizit freischalten
+                    lastUpdated: FieldValue.serverTimestamp(),
+                    users: [customerId, providerId].filter(Boolean) // Stellt sicher, dass die UIDs für Regeln/Abfragen vorhanden sind
+                }, { merge: true });
             });
 
-            logger.info(`[acceptOrder] Order ${orderId} successfully accepted.`);
+            logger.info(`[acceptOrder] Order ${orderId} successfully accepted and chat unlocked.`);
             return { success: true, message: 'Auftrag erfolgreich angenommen.' };
 
         } catch (error: any) {
             logger.error(`[acceptOrder] Transaction failed for order ${orderId}:`, error);
             if (error instanceof HttpsError) throw error;
-            throw new HttpsError('internal', 'An error occurred while accepting the order.', error.message);
+            throw new HttpsError('internal', `An internal error occurred while accepting the order: ${error.message}`, {
+                originalError: error.toString()
+            });
         }
     }
 );
@@ -81,6 +132,7 @@ export const rejectOrder = onCall(
         }
 
         const { orderId, reason } = request.data;
+        const providerUid = request.auth.uid; // Capture UID
         if (!orderId || !reason) {
             throw new HttpsError('invalid-argument', 'The function must be called with an "orderId" and a "reason".');
         }
@@ -97,7 +149,7 @@ export const rejectOrder = onCall(
             }
 
             const orderData = orderDoc.data();
-            if (orderData?.selectedAnbieterId !== request.auth?.uid) {
+            if (orderData?.selectedAnbieterId !== providerUid) {
                 throw new HttpsError('permission-denied', 'You are not authorized to reject this order.');
             }
 

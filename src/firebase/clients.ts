@@ -1,7 +1,8 @@
 // src/firebase/clients.ts
 
 import { initializeApp, getApps, FirebaseApp, getApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
+import { getAuth, connectAuthEmulator, onAuthStateChanged, signOut } from 'firebase/auth';
+import type { Auth, User } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator, Functions } from 'firebase/functions';
@@ -84,4 +85,4 @@ if (process.env.NODE_ENV === 'development') {
 
 // --- Exporte ---
 // Exportiere die Instanzen mit Aliasen für eine saubere Verwendung in der App.
-export { app, auth, db, storage, functions };
+export { app, auth, db, storage, functions, onAuthStateChanged, signOut, type User };

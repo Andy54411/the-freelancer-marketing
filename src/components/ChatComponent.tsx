@@ -14,12 +14,13 @@ import {
     QueryDocumentSnapshot,
     Timestamp,
     doc,
+    updateDoc,
     getDoc,
     setDoc,
-    updateDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { FiSend, FiLoader } from 'react-icons/fi';
+import { Badge } from '@/components/ui/badge'; // Badge für Statusanzeige importieren
 
 // Interface für ein Chat-Nachrichten-Dokument in Firestore
 interface ChatMessage {
@@ -39,20 +40,13 @@ interface UserProfileData {
     user_type?: 'kunde' | 'anbieter' | 'firma'; // Korrigierter Typ wie besprochen
 }
 
-// Interface für das Haupt-Chat-Dokument
-interface ChatData {
-    isLocked?: boolean;
-    // andere Felder wie 'users', 'lastMessage' etc. können hier bei Bedarf hinzugefügt werden
-}
-
-// Interface für die Auftragsdaten, die für den Chat relevant sind
-interface OrderData {
-    kundeId: string;
-    selectedAnbieterId: string;
-}
-
 interface ChatComponentProps {
     orderId: string;
+    participants: {
+        customerId: string;
+        providerId: string;
+    };
+    orderStatus?: string | null; // NEU: Prop für den Auftragsstatus
 }
 
 // NEUE HILFSFUNKTION: Formatiert den Zeitstempel für eine bessere Lesbarkeit
@@ -76,9 +70,16 @@ const formatMessageTimestamp = (timestamp: Timestamp | undefined): string => {
     return date.toLocaleDateString('de-DE');
 };
 
-const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
+// NEU: Hilfsfunktion zum Formatieren des Status
+const formatStatus = (status: string | null | undefined): string => {
+    if (!status) return 'Unbekannt';
+    // Ersetzt Unterstriche durch Leerzeichen und macht den ersten Buchstaben jedes Wortes groß
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, orderStatus }) => {
     const authContext = useAuth();
-    const currentUser = authContext?.currentUser || null;
+    const currentUser = authContext?.user || null;
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessageText, setNewMessageText] = useState('');
@@ -87,8 +88,6 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     const [chatError, setChatError] = useState<string | null>(null);
     const [loggedInUserProfile, setLoggedInUserProfile] = useState<UserProfileData | null>(null);
     const [isSendingMessage, setIsSendingMessage] = useState(false); // Neuer State für Sende-Button
-    const [isChatLocked, setIsChatLocked] = useState(false); // NEU: State für den Sperrstatus des Chats
-    const [orderData, setOrderData] = useState<OrderData | null>(null); // State für Auftragsdaten
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -97,43 +96,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Lade die Auftragsdaten, um die UIDs beider Chat-Teilnehmer zu haben
-    useEffect(() => {
-        if (!orderId) return;
-        const fetchOrderData = async () => {
-            try {
-                const orderDocRef = doc(db, 'auftraege', orderId);
-                const orderDocSnap = await getDoc(orderDocRef);
-                if (orderDocSnap.exists()) {
-                    const data = orderDocSnap.data();
-                    setOrderData({
-                        kundeId: data.kundeId,
-                        selectedAnbieterId: data.selectedAnbieterId,
-                    });
-                } else {
-                    setChatError("Zugehöriger Auftrag konnte nicht gefunden werden.");
-                }
-            } catch (error: any) {
-                console.error("Fehler beim Laden des Auftrags:", error);
-                if (error.code === 'permission-denied') {
-                    setChatError(
-                        "Sie haben keine Berechtigung, auf diesen Chat zuzugreifen. Dies liegt wahrscheinlich an inkonsistenten Auftragsdaten."
-                    );
-                } else {
-                    setChatError(`Fehler beim Laden der Auftragsdaten: ${error.message || 'Unbekannter Fehler'}`);
-                }
-            }
-        };
-        fetchOrderData();
-    }, [orderId]);
-
     // Laden des Benutzerprofils, sobald currentUser verfügbar ist
     useEffect(() => {
         if (currentUser) {
             const fetchUserProfile = async () => {
                 setUserProfileLoading(true);
                 try {
-                    const userDocRef = doc(db, 'users', currentUser.uid);
+                    const userDocRef = doc(db, 'users', currentUser.uid); // This is a one-time read, which is fine.
                     const userDocSnap = await getDoc(userDocRef);
                     if (userDocSnap.exists()) {
                         setLoggedInUserProfile(userDocSnap.data() as UserProfileData);
@@ -157,42 +126,16 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
 
     // Echtzeit-Nachrichten laden
     useEffect(() => {
-        if (!authContext || userProfileLoading || !currentUser || !orderId) {
-            if (!currentUser) {
-                setChatError('Bitte melden Sie sich an, um den Chat zu nutzen.');
-            } else if (userProfileLoading) {
-                setChatLoading(true); // Bleibe im Ladezustand, bis Profil geladen
-            } else if (!orderId) {
-                setChatError('Auftrags-ID fehlt für den Chat.');
-            }
+        // The listener only depends on the user's UID and the order ID.
+        // We can set it up as soon as these are available and handle loading states separately.
+        if (!currentUser?.uid || !orderId) {
             return;
         }
 
         setChatLoading(true);
         setChatError(null);
 
-        // NEU: Listener für das Haupt-Chat-Dokument, um den Sperrstatus zu überwachen
-        const chatDocRef = doc(db, 'chats', orderId);
-        const unsubscribeChatDoc = onSnapshot(chatDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const chatData = docSnap.data() as ChatData;
-                // Setze den State basierend auf dem 'isLocked'-Feld.
-                // !! wandelt undefined/null/false in false und true in true um.
-                setIsChatLocked(!!chatData.isLocked);
-            } else {
-                // Das Dokument existiert (noch) nicht, also ist der Chat nicht gesperrt.
-                setIsChatLocked(false);
-            }
-        }, (error) => {
-            // Ein 'permission-denied'-Fehler ist für neue Chats zu erwarten, da das
-            // /chats/{orderId}-Dokument noch nicht existiert und die Sicherheitsregel
-            // den Lesezugriff verweigert (da resource == null ist). Wir können diesen Fehler ignorieren.
-            if (error.code === 'permission-denied') {
-                setIsChatLocked(false); // Sicherstellen, dass der Chat als nicht gesperrt gilt.
-            } else {
-                console.error("Fehler beim Überwachen des Chat-Status:", error);
-            }
-        });
+        console.log(`[ChatComponent] Attaching snapshot listener for orderId: ${orderId}`);
 
         const messagesCollectionRef = collection(db, 'auftraege', orderId, 'nachrichten');
         // KORREKTUR: Füge eine where-Klausel hinzu, die der Sicherheitsregel entspricht.
@@ -217,16 +160,15 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
             setMessages(fetchedMessages);
             setChatLoading(false);
         }, (error) => {
-            console.error("Fehler beim Laden der Chat-Nachrichten:", error);
+            console.error(`[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`, error);
             setChatError('Fehler beim Laden der Nachrichten. Bitte versuchen Sie es später erneut.');
             setChatLoading(false);
         });
 
         return () => {
             unsubscribe();
-            unsubscribeChatDoc(); // WICHTIG: Beide Listener beim Verlassen der Komponente abmelden
         };
-    }, [authContext, currentUser, orderId, userProfileLoading]); // `userProfileLoading` als Abhängigkeit hinzugefügt, um Trigger nach Profil-Load zu gewährleisten
+    }, [currentUser?.uid, orderId]); // participants is stable and doesn't need to be a dependency
 
     // Nachricht senden
     const handleSendMessage = async (e: FormEvent) => {
@@ -234,7 +176,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         const messageToSend = newMessageText.trim();
 
         // Deaktiviere das Senden, wenn Text leer, Benutzer nicht angemeldet oder Profil noch lädt/fehlt
-        if (!messageToSend || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage || !orderData) {
+        if (!messageToSend || !currentUser || !orderId || !loggedInUserProfile || isSendingMessage || !participants) {
             return;
         }
 
@@ -266,7 +208,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
         setIsSendingMessage(true); // Sende-Vorgang starten
         setChatError(null); // Fehler zurücksetzen
 
-        let senderName: string = currentUser.displayName || loggedInUserProfile.firstName || 'Unbekannt';
+        let senderName: string = loggedInUserProfile.firstName || 'Unbekannt';
         let senderType: 'kunde' | 'anbieter' = 'kunde';
 
         // Prüfung auf 'firma' als user_type
@@ -281,7 +223,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
             senderType: senderType,
             text: messageToSend,
             timestamp: serverTimestamp(),
-            chatUsers: [orderData.kundeId, orderData.selectedAnbieterId], // Hinzufügen, um die Sicherheitsregel zu erfüllen
+            chatUsers: [participants.customerId, participants.providerId], // Hinzufügen, um die Sicherheitsregel zu erfüllen
         };
 
         const lastMessagePayload = {
@@ -293,15 +235,18 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
 
         try {
             // 1. Nachricht zur Chat-History hinzufügen (wie bisher)
-            await addDoc(collection(db, 'auftraege', orderId, 'nachrichten'), messagePayload);
+            const messagesRef = collection(db, 'auftraege', orderId, 'nachrichten');
+            await addDoc(messagesRef, messagePayload);
 
             // 2. Top-Level Chat-Dokument für Benachrichtigungen aktualisieren
             const chatDocRef = doc(db, 'chats', orderId);
+            // KORREKTUR: setDoc mit { merge: true } verwenden. Dies erstellt das Dokument, falls es nicht existiert,
+            // oder aktualisiert es, ohne andere Felder (wie isLocked) zu überschreiben.
             await setDoc(chatDocRef, {
-                users: [orderData.kundeId, orderData.selectedAnbieterId], // Beide Teilnehmer
+                users: [participants.customerId, participants.providerId], // Beide Teilnehmer
                 lastMessage: lastMessagePayload,
                 lastUpdated: serverTimestamp(),
-            }, { merge: true }); // Erstellt das Dokument, falls es nicht existiert
+            }, { merge: true });
 
             setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
         } catch (error) {
@@ -335,7 +280,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
     return (
         <div className="flex flex-col h-full bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800">Chat zum Auftrag: {orderId}</h3>
+                {/* Header mit Auftrags-ID und Status-Badge */}
+                <div className="flex justify-between items-center gap-4">
+                    <h3 className="text-lg font-semibold text-gray-800 truncate">Chat zum Auftrag: {orderId}</h3>
+                    {/* Zeige den Status-Badge nur an, wenn ein Status übergeben wurde */}
+                    {orderStatus && <Badge variant="outline" className="flex-shrink-0">{formatStatus(orderStatus)}</Badge>}
+                </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
@@ -365,24 +315,18 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId }) => {
                 )}
                 <div ref={messagesEndRef} />
             </div>
-            {isChatLocked ? (
-                <div className="p-4 border-t border-gray-200 text-center text-sm text-gray-500 bg-gray-100">
-                    Dieser Chat wurde deaktiviert.
-                </div>
-            ) : (
-                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 flex items-center">
-                    <textarea
-                        value={newMessageText}
-                        onChange={(e) => setNewMessageText(e.target.value)}
-                        placeholder="Nachricht eingeben..."
-                        className="flex-1 p-2 border border-gray-300 rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                        rows={1}
-                        onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }} />
-                    <button type="submit" className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] transition-colors flex items-center justify-center" disabled={!newMessageText.trim() || overallLoading || isSendingMessage}>
-                        {isSendingMessage ? <FiLoader className="animate-spin" /> : <FiSend size={20} />}
-                    </button>
-                </form>
-            )}
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 flex items-center">
+                <textarea
+                    value={newMessageText}
+                    onChange={(e) => setNewMessageText(e.target.value)}
+                    placeholder="Nachricht eingeben..."
+                    className="flex-1 p-2 border border-gray-300 rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                    rows={1}
+                    onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }} />
+                <button type="submit" className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] transition-colors flex items-center justify-center" disabled={!newMessageText.trim() || overallLoading || isSendingMessage}>
+                    {isSendingMessage ? <FiLoader className="animate-spin" /> : <FiSend size={20} />}
+                </button>
+            </form>
         </div>
     );
 };

@@ -7,6 +7,7 @@ import { getDb, getStripeInstance } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { UNNAMED_COMPANY } from './constants';
+import { geohashForLocation } from 'geofire-common';
 
 // Parameter zentral definieren
 const STRIPE_SECRET_KEY_TRIGGERS = defineSecret("STRIPE_SECRET_KEY");
@@ -84,6 +85,11 @@ interface FirmaUserData {
   createdAt?: FirebaseFirestore.Timestamp | Date;
   updatedAt?: FirebaseFirestore.Timestamp | Date;
   stripeAccountId?: string;
+
+  // Hinzugefügt, um die Fehler zu beheben. Diese Felder werden vom Stripe-Webhook gesetzt.
+  stripeChargesEnabled?: boolean;
+  stripePayoutsEnabled?: boolean;
+  stripeDetailsSubmitted?: boolean;
 }
 
 export const createUserProfile = onDocumentCreated("users/{userId}", async (event) => {
@@ -98,23 +104,45 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
   loggerV2.info(`[createUserProfile Trigger] Verarbeite User ${userId}. Quelldaten (userData):`, JSON.stringify(userData, null, 2));
 
   if (userData.user_type === "firma") {
+    // Helper to find the first non-empty, non-null value from a list of potential sources.
+    const pickFirst = <T>(...args: (T | null | undefined)[]) => args.find((v) => v) ?? null;
+
+    const lat = pickFirst(userData.lat);
+    const lng = pickFirst(userData.lng);
+    let geohash: string | null = null;
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      geohash = geohashForLocation([lat, lng]);
+    }
+
+    const postalCode = pickFirst(userData.companyPostalCodeForBackend, userData.step2?.postalCode, userData.step2?.companyPostalCode);
+    const companyName = pickFirst(userData.companyName, userData.step2?.companyName) || UNNAMED_COMPANY;
+    const companyCity = pickFirst(userData.companyCityForBackend, userData.step2?.city);
+    const hourlyRate = pickFirst(userData.hourlyRate, userData.step3?.hourlyRate);
+    const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
+    const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
 
     const companyData: any = {
       uid: userId,
       user_type: "firma",
-      companyName: userData.companyName || UNNAMED_COMPANY,
-      postalCode: userData.companyPostalCodeForBackend || null,
-      companyCity: userData.companyCityForBackend || null,
+      companyName: companyName,
+      postalCode: postalCode,
+      companyPostalCodeForBackend: postalCode,
+      companyCity: companyCity,
       selectedCategory: userData.selectedCategory || null,
       selectedSubcategory: userData.selectedSubcategory || null,
       stripeAccountId: userData.stripeAccountId || null, // HINZUGEFÜGT
-      hourlyRate: Number(userData.hourlyRate) || null,
-      lat: userData.lat ?? null,
-      lng: userData.lng ?? null,
+      hourlyRate: Number(hourlyRate) || null,
+      lat: lat,
+      lng: lng,
       radiusKm: Number(userData.radiusKm) || null,
-      profilePictureURL: userData.profilePictureFirebaseUrl || null,
-      industryMcc: userData.industryMcc || null,
+      geohash: geohash,
+      profilePictureURL: profilePictureURL,
+      industryMcc: industryMcc,
       description: userData.description || "",
+      // Stripe-Statusfelder für die Anbietersuche synchronisieren
+      stripeChargesEnabled: userData.stripeChargesEnabled ?? false,
+      stripePayoutsEnabled: userData.stripePayoutsEnabled ?? false,
+      stripeDetailsSubmitted: userData.stripeDetailsSubmitted ?? false,
 
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -151,25 +179,48 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
   loggerV2.info(`[updateUserProfile Trigger] Verarbeite User ${userId}. Quelldaten (userData):`, JSON.stringify(userData, null, 2));
 
   if (userData.user_type === "firma") {
+    // Helper to find the first non-empty, non-null value from a list of potential sources.
+    const pickFirst = <T>(...args: (T | null | undefined)[]) => args.find((v) => v) ?? null;
+
+    const lat = pickFirst(userData.lat);
+    const lng = pickFirst(userData.lng);
+    let geohash: string | null = null;
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      geohash = geohashForLocation([lat, lng]);
+    }
+
+    const postalCode = pickFirst(userData.companyPostalCodeForBackend, userData.step2?.postalCode, userData.step2?.companyPostalCode);
+    const companyName = pickFirst(userData.companyName, userData.step2?.companyName);
+    const companyCity = pickFirst(userData.companyCityForBackend, userData.step2?.city);
+    const hourlyRate = pickFirst(userData.hourlyRate, userData.step3?.hourlyRate);
+    const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
+    const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
+
     const companyDataUpdate: any = {
       uid: userId,
       user_type: "firma",
       updatedAt: FieldValue.serverTimestamp(),
       profileLastUpdatedAt: FieldValue.serverTimestamp(),
 
-      companyName: userData.companyName || null,
-      postalCode: userData.companyPostalCodeForBackend || null,
-      companyCity: userData.companyCityForBackend || null,
+      companyName: companyName,
+      postalCode: postalCode,
+      companyPostalCodeForBackend: postalCode,
+      companyCity: companyCity,
       selectedCategory: userData.selectedCategory || null,
       selectedSubcategory: userData.selectedSubcategory || null,
       stripeAccountId: userData.stripeAccountId || null, // HINZUGEFÜGT
-      hourlyRate: Number(userData.hourlyRate) || null,
-      lat: userData.lat ?? null,
-      lng: userData.lng ?? null,
+      hourlyRate: Number(hourlyRate) || null,
+      lat: lat,
+      lng: lng,
       radiusKm: Number(userData.radiusKm) || null,
-      profilePictureURL: userData.profilePictureFirebaseUrl || null,
-      industryMcc: userData.industryMcc || null,
+      geohash: geohash,
+      profilePictureURL: profilePictureURL,
+      industryMcc: industryMcc,
       description: userData.description || "",
+      // Stripe-Statusfelder für die Anbietersuche synchronisieren
+      stripeChargesEnabled: userData.stripeChargesEnabled ?? false,
+      stripePayoutsEnabled: userData.stripePayoutsEnabled ?? false,
+      stripeDetailsSubmitted: userData.stripeDetailsSubmitted ?? false,
     };
 
     const companyDocBefore = await db.collection("companies").doc(userId).get();

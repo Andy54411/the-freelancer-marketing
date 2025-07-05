@@ -159,7 +159,7 @@ export default function LoginPopup({
         */}
         <button
           onClick={onClose}
-          className="absolute -top-3 -right-3 z-[60] bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-full p-1.5 shadow-lg transition-transform hover:scale-110"
+          className="absolute -top-3 -right-3 z-[60] bg-gray-200 text-gray-800 hover:bg-teal-100 hover:text-teal-800 rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
           aria-label="Popup schließen"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">

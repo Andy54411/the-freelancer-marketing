@@ -60,6 +60,12 @@ interface CreateStripeAccountClientData {
   masterCraftsmanCertificateFileId?: string;
   identityFrontFileId?: string;
   identityBackFileId?: string;
+  // Firebase Storage URLs for display and saving
+  profilePictureUrl?: string;
+  businessLicenseUrl?: string;
+  masterCraftsmanCertificateUrl?: string;
+  identityFrontUrl?: string;
+  identityBackUrl?: string;
 }
 
 type GetClientIpData = Record<string, never>;
@@ -352,21 +358,41 @@ export default function Step5CompanyPage() {
 
     try {
       // Telefonnummern für Stripe ins E.164-Format normalisieren.
-      // Dies ist eine einfache Implementierung, die für deutsche Nummern funktioniert.
-      const normalizePhoneNumber = (num: string | null | undefined, countryCode: string | null | undefined): string => {
+      // KORREKTUR: Diese Funktion wurde robuster gemacht, um verschiedene Eingabeformate
+      // und Ländercodes zu verarbeiten und ein gültiges E.164-Format sicherzustellen.
+      const normalizePhoneNumber = (num: string | null | undefined, countryISO: string | null | undefined): string => {
         if (!num) return '';
-        const effectiveCountryCode = countryCode || 'DE'; // Fallback auf Deutschland
 
-        // Für Deutschland: Führende '0' durch '+49' ersetzen.
-        if (effectiveCountryCode === 'DE' && num.startsWith('0')) {
-          return `+49${num.substring(1)}`;
+        // 1. Alle nicht-numerischen Zeichen außer einem führenden '+' entfernen.
+        let cleanedNum = num.trim();
+        if (cleanedNum.startsWith('+')) {
+          cleanedNum = '+' + cleanedNum.substring(1).replace(/\D/g, '');
+        } else {
+          cleanedNum = cleanedNum.replace(/\D/g, '');
         }
-        // Wenn bereits im E.164-Format, unverändert lassen.
-        if (num.startsWith('+')) {
-          return num;
+
+        // 2. Wenn die Nummer bereits ein internationales Präfix hat, wird sie als korrekt angenommen.
+        if (cleanedNum.startsWith('+')) {
+          return cleanedNum;
         }
-        // Hier könnten weitere Ländercodes (z.B. 'AT', 'CH') hinzugefügt werden.
-        return num; // Fallback
+
+        // 3. Anhand des Ländercodes (ISO 2-stellig) die Ländervorwahl bestimmen.
+        const effectiveCountryISO = countryISO || 'DE'; // Fallback auf Deutschland
+        let dialCode = '';
+        switch (effectiveCountryISO.toUpperCase()) {
+          case 'DE': dialCode = '+49'; break;
+          case 'AT': dialCode = '+43'; break;
+          case 'CH': dialCode = '+41'; break;
+          // Fügen Sie hier bei Bedarf weitere Länder hinzu.
+          default: dialCode = '+49'; // Standard auf Deutschland
+        }
+
+        // 4. Eine eventuelle führende Null von der nationalen Nummer entfernen.
+        if (cleanedNum.startsWith('0')) {
+          cleanedNum = cleanedNum.substring(1);
+        }
+
+        return `${dialCode}${cleanedNum}`;
       };
 
       const normalizedPersonalPhoneNumber = normalizePhoneNumber(phoneNumber, personalCountry);
@@ -421,8 +447,9 @@ export default function Step5CompanyPage() {
       const idBackResult = await uploadFileToStripeAndStorage(identityBackFile, 'identity_document', 'Ausweis Rückseite', currentAuthUserUID, idToken);
 
       let masterCertStripeFileId: string | undefined = undefined;
+      let masterCertResult: FileUploadResult | null = null;
       if (masterCraftsmanCertificateFile instanceof File) {
-        const masterCertResult = await uploadFileToStripeAndStorage(masterCraftsmanCertificateFile, 'additional_verification', 'Meisterbrief', currentAuthUserUID, idToken);
+        masterCertResult = await uploadFileToStripeAndStorage(masterCraftsmanCertificateFile, 'additional_verification', 'Meisterbrief', currentAuthUserUID, idToken);
         masterCertStripeFileId = masterCertResult?.stripeFileId;
       }
 
@@ -523,6 +550,12 @@ export default function Step5CompanyPage() {
         masterCraftsmanCertificateFileId: masterCertStripeFileId,
         identityFrontFileId: idFrontResult.stripeFileId,
         identityBackFileId: idBackResult.stripeFileId,
+        // Pass the URLs to the backend as well for correct Firestore saving
+        profilePictureUrl: profilePicResult.firebaseStorageUrl,
+        businessLicenseUrl: businessLicResult.firebaseStorageUrl,
+        masterCraftsmanCertificateUrl: masterCertResult?.firebaseStorageUrl,
+        identityFrontUrl: idFrontResult.firebaseStorageUrl,
+        identityBackUrl: idBackResult.firebaseStorageUrl,
       };
 
       if (dataForStripeCallable.legalForm === 'Einzelunternehmen' || dataForStripeCallable.legalForm === 'Freiberufler') {

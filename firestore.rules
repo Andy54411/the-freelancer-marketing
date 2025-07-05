@@ -17,18 +17,12 @@ service cloud.firestore {
     // --- Helper-Funktionen für Chat-Nachrichten ---
     function isChatParticipant() {
       // Prüft, ob der anfragende Benutzer in der 'chatUsers'-Liste der Nachricht ist.
-      return 'chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers;
+      return request.auth != null && resource != null && 'chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers;
     }
 
     function canReadMessage() {
       // Erlaubt das Lesen einer Nachricht, wenn der Benutzer Teilnehmer, Firma oder Admin ist.
       return request.auth != null && (isChatParticipant() || isAdmin());
-    }
-
-    function canListMessages() {
-      // Erlaubt das Auflisten von Nachrichten nur für direkte Teilnehmer.
-      // Dies erzwingt sichere 'array-contains'-Abfragen auf dem Client.
-      return request.auth != null && request.auth.uid in resource.data.chatUsers;
     }
 
     function canCreateMessage(requiredFields) {
@@ -41,6 +35,26 @@ service cloud.firestore {
         && request.resource.data.chatUsers is list
         && request.resource.data.chatUsers.size() == 2
         && request.auth.uid in request.resource.data.chatUsers; // Der Sender muss selbst Teilnehmer sein
+    }
+
+    // --- NEUE HELFER-FUNKTIONEN für Listen-Berechtigungen ---
+    function isAuftragParticipant(auftragId) {
+      // KORRIGIERT: Die gesamte Logik muss in einem einzigen return-Statement sein.
+      // Der exists()-Check verhindert, dass get() auf ein nicht-existierendes Dokument zugreift.
+      // Der 'in'-Check verhindert den Zugriff auf ein nicht-existierendes Feld.
+      return exists(/databases/$(database)/documents/auftraege/$(auftragId)) &&
+             (
+               ('kundeId' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
+                get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid) ||
+               ('selectedAnbieterId' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
+                get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid)
+             );
+    }
+
+    function isSupportChatParticipant(chatId) {
+      // Diese Regel ist sicher, da die Chat-ID direkt von der UID des authentifizierten
+      // Benutzers abgeleitet wird. Sie benötigt keinen Lesezugriff auf das Dokument selbst.
+      return request.auth != null && chatId == "support_chat_" + request.auth.uid;
     }
 
     // --- users Collection ---
@@ -84,7 +98,8 @@ service cloud.firestore {
       match /nachrichten/{nachrichtId} {
         // 'get' erlaubt Admins/Firmen, eine einzelne Nachricht zu lesen, wenn sie die ID kennen.
         allow get: if canReadMessage();
-        allow list: if canListMessages();
+        // KORRIGIERT: Die komplexe Logik wird in eine wiederverwendbare und sichere Funktion ausgelagert.
+        allow list: if request.auth != null && isAuftragParticipant(auftragId);
         allow create: if canCreateMessage([
           "senderId", "senderName", "text", "timestamp", "senderType", "chatUsers"
         ]);
@@ -107,15 +122,21 @@ service cloud.firestore {
     match /supportChats/{chatId} {
       allow create: if request.auth != null
                      && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource != null
-                  && resource.data.userId == request.auth.uid;
-      allow update,
-            delete: if false;
+      // KORREKTUR: Erlaube das Lesen, wenn die Chat-ID dem Muster entspricht.
+      // Dies löst das "Huhn-Ei-Problem", bei dem man nicht lesen kann, um zu prüfen,
+      // ob ein Dokument existiert, weil die Leseregel das existierende Dokument erfordert.
+      allow read: if request.auth != null && chatId == "support_chat_" + request.auth.uid;
+      // KORREKTUR: Erlaube dem Benutzer, sein eigenes Support-Chat-Dokument zu aktualisieren (z.B. für lastMessage).
+      allow update: if request.auth != null && resource != null
+                    && resource.data.userId == request.auth.uid;
+      allow delete: if false;
 
       match /messages/{messageId} {
         // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
         allow get: if canReadMessage();
-        allow list: if canListMessages();
+        // KORRIGIERT: Vereinfachte und sichere Regel. Ein Benutzer darf die Nachrichten
+        // in seinem eigenen Support-Chat auflisten. Dies vermeidet den fehleranfälligen `get()`-Aufruf.
+        allow list: if isSupportChatParticipant(chatId);
         allow create: if canCreateMessage([
           "senderId", "text", "timestamp", "chatUsers"
         ]);
@@ -132,17 +153,48 @@ service cloud.firestore {
       allow create, update: if request.auth != null
                              && ('users' in request.resource.data)
                              && request.auth.uid in request.resource.data.users;
+      // NEU: Explizite Regel für Listenabfragen.
+      // Erlaubt eine Abfrage der 'chats'-Sammlung nur, wenn sie explizit
+      // nach der UID des angemeldeten Benutzers im 'users'-Array filtert.
+      // Dies sichert die `array-contains`-Abfragen in den Inbox-Seiten ab.
+      allow list: if (request.auth.uid != null && request.query.where.path == "users" && request.query.where.op == "array-contains" && request.query.where.value == request.auth.uid)
+                  || isAdmin(); // Admins dürfen alle Chats für die Support-Seite auflisten.
       allow delete: if false;
 
       match /messages/{messageId} {
         // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
         allow get: if canReadMessage();
-        allow list: if canListMessages();
+        // KORREKTUR: Für 'list' (Abfragen) ist 'resource' nicht verfügbar.
+        // Wir müssen die Berechtigung über einen 'get'-Aufruf auf das Elterndokument prüfen.
+        allow list: if request.auth != null
+                     && exists(/databases/$(database)/documents/chats/$(chatId))
+                     // KORREKTUR: Prüfe, ob 'users' ein Array (list) ist, bevor darauf zugegriffen wird.
+                     // Dies ist sicherer als `('users' in ...)` und verhindert Auswertungsfehler,
+                     // falls das Feld nicht existiert oder kein Array ist.
+                     && get(/databases/$(database)/documents/chats/$(chatId)).data.users is list
+                     && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.users;
         allow create: if canCreateMessage([
           "senderId", "text", "timestamp", "chatUsers"
         ]);
         allow update, delete: if false;
       }
+    }
+
+    // NEU: Regeln für die Benachrichtigungs-Sammlung
+    match /notifications/{notificationId} {
+      // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu lesen (sowohl einzeln als auch als Liste).
+      // Diese Regel sichert die Abfrage in UserHeader.tsx ab, die `where('userId', '==', uid)` verwendet.
+      allow read: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+
+      // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
+      allow update: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+
+      // Erlaubt einem authentifizierten Benutzer, eine Benachrichtigung für sich selbst zu erstellen.
+      // Hinweis: In der Regel werden Benachrichtigungen vom Backend (Cloud Functions) erstellt.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu löschen.
+      allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
     }
     // ...weitere Regeln...
   }

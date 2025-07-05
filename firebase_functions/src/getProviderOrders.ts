@@ -15,7 +15,7 @@ interface AuftraegeDocumentData {
     selectedAnbieterId: string;
     selectedSubcategory: string;
     paidAt?: Timestamp;
-    createdAt?: Timestamp;
+    createdAt: Timestamp;
     jobCalculatedPriceInCents: number;
     status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing' | 'abgelehnt_vom_anbieter';
     description?: string;
@@ -37,33 +37,45 @@ const auftraegeConverter: FirestoreDataConverter<AuftraegeDocumentData> = {
     },
     fromFirestore(snapshot: QueryDocumentSnapshot): AuftraegeDocumentData {
         // This ensures that any data read from Firestore is correctly typed.
-        // It provides a single point of control for data validation and transformation.
-        const data = snapshot.data();
+        // It provides a single point of control for data validation, transformation, and setting default values.
+        const data = snapshot.data() || {};
+
+        // Add validation and default values to prevent runtime errors from malformed data.
+        if (!data.createdAt) {
+            // This case should be rare because of the orderBy('createdAt') clause in the query,
+            // but it's a good safeguard to prevent crashes.
+            logger.warn(`[getProviderOrders] Order document ${snapshot.id} is missing the 'createdAt' field.`);
+        }
+
         return {
-            ...data,
-        } as AuftraegeDocumentData;
+            ...data, // Spread optional fields first
+            customerFirebaseUid: data.customerFirebaseUid || '',
+            selectedAnbieterId: data.selectedAnbieterId || '',
+            selectedSubcategory: data.selectedSubcategory || 'Dienstleistung',
+            createdAt: data.createdAt || Timestamp.now(), // Fallback to satisfy the type, though the query requires it
+            jobCalculatedPriceInCents: data.jobCalculatedPriceInCents || 0,
+            status: data.status || 'FEHLENDE DETAILS',
+        };
     }
 };
 
-// This interface defines the structure of a single order from the provider's perspective.
-interface OrderData {
+// This interface defines the structure of a single order returned to the client data table.
+// It is aligned with the 'Order' type in the frontend components and provides all necessary fields.
+interface ProviderOrderData {
     id: string;
-    serviceTitle: string;
-    serviceImageUrl?: string;
-    customerName: string; // Fetched from the customer's user document
-    customerAvatarUrl?: string; // Fetched from the customer's user document
-    orderDate?: Timestamp; // Mapped from paidAt or createdAt
-    priceInCents: number;
+    selectedSubcategory: string;
+    customerName: string;
+    customerAvatarUrl?: string;
     status: string;
-    customerId: string; // The customer's Firebase UID
-    beschreibung?: string;
-    jobPostalCode?: string;
-    jobTotalCalculatedHours?: number; // Mapped
-    projectId?: string;
-    currency?: string;
-    jobDateFrom?: string;
-    jobDateTo?: string;
+    orderDate: Timestamp; // Use a consistent date field. It will be populated by paidAt or createdAt.
+    totalAmountPaidByBuyer: number;
     uid: string; // The provider's UID (this company's UID)
+    orderedBy: string; // The customer's UID
+    projectId?: string;
+    projectName?: string; // Mapped from projectId for frontend compatibility
+    currency?: string;
+    jobDateFrom?: string; // WICHTIG: Hinzugefügt für den Kalender
+    jobDateTo?: string;   // WICHTIG: Hinzugefügt für den Kalender
 }
 
 export const getProviderOrders = onCall(
@@ -72,7 +84,7 @@ export const getProviderOrders = onCall(
         // Explicitly allow requests from your local development server.
         cors: ["http://localhost:3000"],
     },
-    async (request: CallableRequest<{ providerId: string }>): Promise<{ orders: OrderData[] }> => {
+    async (request: CallableRequest<{ providerId: string }>): Promise<{ orders: ProviderOrderData[] }> => {
         logger.info(`[getProviderOrders] Called for provider: ${request.data.providerId}`);
 
         // 1. Authentication Check (handled by onCall wrapper)
@@ -103,8 +115,9 @@ export const getProviderOrders = onCall(
 
             const ordersSnapshot = await ordersCollection
                 .where('selectedAnbieterId', '==', providerId) // Filter by the provider's UID
-                .where('paidAt', '!=', null) // Ignore documents where 'paidAt' is missing to prevent crashes.
-                .orderBy('paidAt', 'desc') // Now safe to order.
+                // By ordering by creation date, we can include all orders, not just paid ones.
+                // This gives the provider a complete overview of all jobs assigned to them.
+                .orderBy('createdAt', 'desc')
                 .get();
 
             if (ordersSnapshot.empty) {
@@ -134,27 +147,28 @@ export const getProviderOrders = onCall(
             }
 
             // 6. Map to final OrderData structure
-            const orders: OrderData[] = ordersFromDb.map(data => {
+            const orders: ProviderOrderData[] = ordersFromDb.map(data => {
                 const customerDetails = customersMap.get(data.customerFirebaseUid) || { name: UNKNOWN_CUSTOMER_NAME, avatarUrl: undefined };
 
                 return {
                     id: data.id,
-                    serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-                    serviceImageUrl: data.serviceImageUrl,
+                    selectedSubcategory: data.selectedSubcategory || 'Dienstleistung',
                     customerName: customerDetails.name,
                     customerAvatarUrl: customerDetails.avatarUrl,
-                    orderDate: data.paidAt || data.createdAt, // Prefer paidAt, fallback to createdAt
-                    priceInCents: data.jobCalculatedPriceInCents || 0,
                     status: data.status,
-                    customerId: data.customerFirebaseUid,
-                    beschreibung: data.description,
-                    jobPostalCode: data.jobPostalCode,
-                    jobTotalCalculatedHours: data.jobTotalCalculatedHours,
+                    // Use paidAt if it exists, otherwise fall back to createdAt.
+                    // Since the query orders by createdAt, it is guaranteed to exist.
+                    orderDate: data.paidAt || data.createdAt,
+                    totalAmountPaidByBuyer: data.jobCalculatedPriceInCents || 0,
+                    uid: data.selectedAnbieterId,
+                    orderedBy: data.customerFirebaseUid,
                     projectId: data.projectId,
+                    // Map projectId to projectName for compatibility with the overview page.
+                    projectName: data.projectId,
                     currency: data.currency || 'EUR',
+                    // Hinzugefügte Felder, damit der Kalender die Aufträge anzeigen kann
                     jobDateFrom: data.jobDateFrom,
                     jobDateTo: data.jobDateTo,
-                    uid: data.selectedAnbieterId,
                 };
             });
 

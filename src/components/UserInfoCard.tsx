@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 interface UserInfoCardProps {
     userId: string;
     userName: string;
-    userAvatarUrl?: string;
+    userAvatarUrl?: string | null;
     userRole: 'Kunde' | 'Anbieter';
     className?: string;
 }

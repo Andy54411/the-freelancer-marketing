@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UNKNOWN_USER_NAME } from '@/constants/strings';
 import { useParams } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuth, UserProfile } from '@/contexts/AuthContext';
 import { FiInbox, FiLoader, FiMessageSquare, FiUser, FiSlash } from 'react-icons/fi';
 import { db } from '@/firebase/clients';
 import {
@@ -17,11 +17,12 @@ import {
     getDoc,
     Timestamp,
 } from 'firebase/firestore';
-import ChatComponent from '@/components/ChatComponent'; // Importieren der Chat-Komponente
+import ChatComponent from '@/components/ChatComponent';
 import Image from 'next/image';
 
 // --- Interfaces ---
 interface OtherUser {
+    id: string;
     name: string;
     avatarUrl: string | null;
 }
@@ -42,7 +43,7 @@ interface ChatPreview {
 export default function UserInboxPage() {
     const params = useParams();
     const uidFromParams = typeof params.uid === 'string' ? params.uid : '';
-    const { currentUser, loading: authLoading } = useAuth();
+    const { user: currentUser, loading: authLoading } = useAuth();
 
     const [chats, setChats] = useState<ChatPreview[]>([]);
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -57,43 +58,31 @@ export default function UserInboxPage() {
             return;
         }
 
-        setLoadingChats(true);
         const chatsCollectionRef = collection(db, 'chats');
+        // KORREKTUR: Füge eine Filterung für 'isLocked' hinzu, um die Notwendigkeit
+        // einer sekundären Abfrage des Auftragsstatus zu eliminieren.
         const q = query(
             chatsCollectionRef,
             where('users', 'array-contains', currentUser.uid),
+            where('isLocked', '==', false), // Explizit nur nicht-gesperrte Chats abfragen
             orderBy('lastUpdated', 'desc')
         );
 
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setLoadingChats(true);
             if (snapshot.empty) {
                 setChats([]);
                 setLoadingChats(false);
                 return;
             }
 
-            const chatPromises = snapshot.docs.map(async (chatDoc) => {
-                // NEU: Überprüfe den Status des zugehörigen Auftrags.
-                // Zeige den Chat nicht an, wenn der Auftrag abgelehnt oder storniert wurde.
-                const orderId = chatDoc.id;
-                try {
-                    const orderDocRef = doc(db, 'auftraege', orderId);
-                    const orderDocSnap = await getDoc(orderDocRef);
-                    if (orderDocSnap.exists()) {
-                        const status = orderDocSnap.data().status;
-                        if (status === 'abgelehnt_vom_anbieter' || status === 'STORNIERT') {
-                            return null; // Signalisiert, dass dieser Chat herausgefiltert werden soll.
-                        }
-                    }
-                } catch (e) {
-                    console.error(`Fehler beim Prüfen des Auftragsstatus für Chat ${orderId}:`, e);
-                    // Im Fehlerfall den Chat sicherheitshalber nicht anzeigen.
-                }
+            const validChats = snapshot.docs.map((chatDoc) => {
                 const chatData = chatDoc.data();
                 const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
                 const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
 
                 const otherUser: OtherUser = {
+                    id: otherUserId,
                     name: userDetails?.name || UNKNOWN_USER_NAME,
                     avatarUrl: userDetails?.avatarUrl || null,
                 };
@@ -112,9 +101,6 @@ export default function UserInboxPage() {
                 };
             });
 
-            // Filtere die Chats heraus, die als 'null' markiert wurden (weil der Auftrag inaktiv ist).
-            const resolvedChatsWithNulls = await Promise.all(chatPromises);
-            const validChats = resolvedChatsWithNulls.filter(chat => chat !== null) as ChatPreview[];
             setChats(validChats);
             setLoadingChats(false);
         }, (err) => {
@@ -226,8 +212,15 @@ export default function UserInboxPage() {
                             <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
                             <p className="text-gray-500 text-sm">Für diesen Auftrag ist der Chat nicht mehr verfügbar.</p>
                         </div>
-                    ) : selectedChatId ? (
-                        <ChatComponent orderId={selectedChatId} /> // Render ChatComponent if status is OK
+                    ) : selectedChatId && selectedChat && currentUser ? (
+                        <ChatComponent
+                            orderId={selectedChatId}
+                            participants={{
+                                customerId: currentUser.uid,
+                                providerId: selectedChat.otherUser.id,
+                            }}
+                            orderStatus={selectedOrderStatus}
+                        />
                     ) : (
                         <div className="flex-1 flex flex-col justify-center items-center text-center text-gray-500 p-8">
                             <FiMessageSquare size={64} className="mb-4 text-gray-300" />

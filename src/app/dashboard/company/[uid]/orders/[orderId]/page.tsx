@@ -4,7 +4,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, UserProfile } from '@/contexts/AuthContext';
 import { db, functions } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
 
@@ -16,6 +16,12 @@ import UserInfoCard from '@/components/UserInfoCard';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
 
+interface ParticipantDetails {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+}
+
 // Interface für ein Auftragsdokument
 interface OrderData {
     id: string;
@@ -23,11 +29,11 @@ interface OrderData {
     // Provider-Informationen
     providerId: string;
     providerName: string;
-    providerAvatarUrl?: string;
+    providerAvatarUrl?: string | null;
     // Kunden-Informationen
     customerId: string;
     customerName: string;
-    customerAvatarUrl?: string;
+    customerAvatarUrl?: string | null;
     orderDate?: { _seconds: number, _nanoseconds: number } | string;
     priceInCents: number;
     status: string;
@@ -46,7 +52,7 @@ export default function CompanyOrderDetailPage() {
     const orderId = typeof params.orderId === 'string' ? params.orderId : '';
     const companyUid = typeof params.uid === 'string' ? params.uid : '';
 
-    const { currentUser, loading: authLoading } = useAuth();
+    const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: 'user' aus dem AuthContext verwenden
 
     const [order, setOrder] = useState<OrderData | null>(null);
     const [loadingOrder, setLoadingOrder] = useState(true);
@@ -94,6 +100,15 @@ export default function CompanyOrderDetailPage() {
                 }
                 orderDataFromDb = orderDocSnap.data();
             } catch (err: any) {
+                // --- NEU: Spezifische Fehlerbehandlung für 'permission-denied' ---
+                // Dieser Fehler tritt auf, wenn die Firestore-Regeln den Zugriff verweigern.
+                if (err.code === 'permission-denied') {
+                    console.error("Fehler beim Laden des Auftrags: Zugriff verweigert. Dies deutet auf inkonsistente Daten hin (Anbieter-ID im Auftrag stimmt nicht mit dem angemeldeten Benutzer überein).");
+                    setError("Zugriff auf diesen Auftrag verweigert. Die Auftragsdaten sind möglicherweise einem anderen Anbieter zugeordnet.");
+                    setLoadingOrder(false);
+                    return;
+                }
+
                 console.error("Fehler beim Laden des Auftrags:", err);
                 if (err.code === 'permission-denied') {
                     setError(
@@ -106,56 +121,38 @@ export default function CompanyOrderDetailPage() {
                 return;
             }
 
+            // --- NEU: Zusätzliche clientseitige Validierung ---
+            // Überprüft, ob der im Dokument gespeicherte Anbieter mit dem Benutzer übereinstimmt, der die Seite aufruft.
+            if (orderDataFromDb.selectedAnbieterId !== companyUid) {
+                setError(`Daten-Inkonsistenz: Dieser Auftrag (${orderId}) ist dem Anbieter ${orderDataFromDb.selectedAnbieterId} zugeordnet, nicht Ihnen (${companyUid}).`);
+                setLoadingOrder(false);
+                return;
+            }
+
             console.log("Raw Firestore data for orderId", orderId, ":", orderDataFromDb);
             console.log("Raw selectedCategory:", orderDataFromDb.selectedCategory);
             console.log("Raw selectedSubcategory:", orderDataFromDb.selectedSubcategory);
             console.log("Raw jobTimePreference:", orderDataFromDb.jobTimePreference);
 
             // Step 2: Fetch participant details with its own error handling
+            // KORREKTUR: Verwende die neue, sichere Cloud Function
             try {
-                const fetchParticipantDetails = async (
-                    uid: string,
-                    isProvider: boolean
-                ) => {
-                    if (!uid) return { name: 'Unbekannt', avatarUrl: undefined };
+                const getOrderParticipantDetails = httpsCallable<
+                    { orderId: string },
+                    { provider: ParticipantDetails, customer: ParticipantDetails }
+                >(functions, 'getOrderParticipantDetails');
 
-                    if (isProvider) {
-                        const companyDocRef = doc(db, 'companies', uid);
-                        const companyDocSnap = await getDoc(companyDocRef);
-                        if (companyDocSnap.exists()) {
-                            return {
-                                name: companyDocSnap.data().companyName || 'Unbekannter Anbieter',
-                                avatarUrl: companyDocSnap.data().logoUrl,
-                            };
-                        }
-                    }
-
-                    const userDocRef = doc(db, 'users', uid);
-                    const userDocSnap = await getDoc(userDocRef);
-                    if (userDocSnap.exists()) {
-                        const userData = userDocSnap.data();
-                        return {
-                            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Unbekannter Benutzer',
-                            avatarUrl: userData.profilePictureURL,
-                        };
-                    }
-
-                    return { name: 'Unbekannt', avatarUrl: undefined };
-                };
-
-                const [providerDetails, customerDetails] = await Promise.all([
-                    fetchParticipantDetails(orderDataFromDb.selectedAnbieterId, true),
-                    fetchParticipantDetails(orderDataFromDb.kundeId, false),
-                ]);
+                const result = await getOrderParticipantDetails({ orderId });
+                const { provider: providerDetails, customer: customerDetails } = result.data;
 
                 const orderData: OrderData = {
                     id: orderId,
                     serviceTitle: orderDataFromDb.selectedSubcategory || 'Dienstleistung',
                     providerId: orderDataFromDb.selectedAnbieterId,
-                    providerName: providerDetails.name,
+                    providerName: providerDetails.name, // Name aus der Cloud Function
                     providerAvatarUrl: providerDetails.avatarUrl,
                     customerId: orderDataFromDb.kundeId,
-                    customerName: customerDetails.name,
+                    customerName: customerDetails.name, // Name aus der Cloud Function
                     customerAvatarUrl: customerDetails.avatarUrl,
                     orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
                     priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
@@ -345,7 +342,10 @@ export default function CompanyOrderDetailPage() {
                             </div>
                         ) : (
                             <div className="flex-1 min-h-0">
-                                <ChatComponent orderId={orderId} />
+                                <ChatComponent
+                                    orderId={orderId}
+                                    participants={{ customerId: order.customerId, providerId: order.providerId }}
+                                />
                             </div>
                         )}
                     </div>

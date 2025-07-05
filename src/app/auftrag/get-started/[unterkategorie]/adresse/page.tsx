@@ -185,7 +185,7 @@ export default function AddressPage() {
           apiUrl += `&dateTo=${format(finalSelectedDateRange.to, "yyyy-MM-dd")}`;
         }
       }
-      if (finalSelectedTime) { apiUrl += `&&time=${encodeURIComponent(finalSelectedTime)}`; }
+      if (finalSelectedTime) { apiUrl += `&time=${encodeURIComponent(finalSelectedTime)}`; }
       const res = await fetch(apiUrl);
       if (!res.ok) {
         const errorText = await res.text(); console.error(`${PAGE_ERROR} API searchCompanyProfiles FAILED: ${res.status} ${res.statusText}. Response: ${errorText}`); throw new Error(`Anbieter konnten nicht geladen werden (Fehler ${res.status})`);
@@ -331,22 +331,10 @@ export default function AddressPage() {
       const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
 
       // NEU: Redirection check hier, beim Klick auf Bestätigen von Datum/Uhrzeit
-      const user = auth.currentUser; // Holen Sie den aktuellen Benutzerstatus
+      const user = auth.currentUser;
       if (user) {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        const userData = userDocSnap.data();
-
-        if (userData && userData.stripeCustomerId) {
-          // Benutzer ist eingeloggt UND hat bereits eine Stripe Customer ID.
-          // Das bedeutet, der erste Auftrag ist abgeschlossen. Leite zum Dashboard weiter.
-          console.log(PAGE_LOG, `AdressePage: User ${user.uid} eingeloggt & erster Auftrag fertig. Leite zu Dashboard weiter (nach Datums-Bestätigung).`);
-          router.replace(`/dashboard/user/${user.uid}`);
-          setSelectedCompanyForPopup(null); // Optional: Popup schließen
-          return; // Wichtig: Beende die Funktion hier
-        }
-        // Wenn der User eingeloggt ist, aber KEINE Stripe Customer ID hat,
-        // dann ist er im Prozess des ersten Auftrags und soll hier fortfahren zur Bestätigungsseite.
+        // Wenn der Benutzer bereits eingeloggt ist, leiten Sie ihn direkt zur Bestätigungsseite weiter.
+        // Die vorherige Logik, die hier zum Dashboard weiterleitete, verhinderte, dass bestehende Benutzer neue Aufträge erstellen konnten.
         router.push(bestaetigungsPagePath);
       } else {
         // Nicht angemeldet, leite zur Registrierungsseite weiter

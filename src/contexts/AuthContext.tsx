@@ -1,10 +1,18 @@
 "use client";
 
 import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
-import { createContext, useState, useEffect, useContext, ReactNode } from "react";
+import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from '../firebase/clients';
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
+import { orderBy, limit } from "firebase/firestore"; // NEU: orderBy und limit importieren
+import { auth, db } from '@/firebase/clients';
 
 /**
  * Definiert ein einheitliches Benutzerprofil, das Daten aus Firebase Auth
@@ -19,10 +27,24 @@ export interface UserProfile {
   // Fügen Sie hier weitere globale Profilfelder hinzu
 }
 
-interface AuthContextType {
-  user: UserProfile | null; // Das kombinierte, reichhaltige Benutzerobjekt
-  firebaseUser: FirebaseUser | null; // Das rohe Firebase-Benutzerobjekt für spezielle Operationen
+// NEU: Interface für die Chat-Vorschau, die im Header benötigt wird.
+// Dies stellt sicher, dass der Context und der Header dieselbe Datenstruktur verwenden.
+export interface HeaderChatPreview {
+  id: string;
+  otherUserName: string;
+  otherUserAvatarUrl?: string | null;
+  lastMessageText: string;
+  isUnread: boolean;
+  link: string;
+}
+
+export interface AuthContextType {
+  user: UserProfile | null;
+  firebaseUser: FirebaseUser | null;
   loading: boolean;
+  userRole: 'master' | 'support' | 'user' | null;
+  unreadMessagesCount: number;
+  recentChats: HeaderChatPreview[]; // NEU: Fügt die letzten Chats zum Context hinzu
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,23 +53,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isRedirecting, setIsRedirecting] = useState(false); // Zustand zur Vermeidung von Schleifen
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [recentChats, setRecentChats] = useState<HeaderChatPreview[]>([]); // NEU: State für die letzten Chats
+
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      // Wrap the entire async logic in a try...catch...finally block
-      // to handle potential errors and ensure loading state is always updated.
       try {
         if (fbUser) {
           setFirebaseUser(fbUser);
-          // Erzwinge ein Neuladen des Tokens, um die neuesten Custom Claims zu erhalten.
-          // Dies ist entscheidend nach der Registrierung, damit die Rolle verfügbar wird.
-          const idTokenResult = await fbUser.getIdTokenResult(true);
-          const role = (idTokenResult.claims.role as UserProfile['role']) || 'kunde'; // Fallback auf 'kunde', falls der Claim noch nicht gesetzt ist.
-
-          // Versuche, das Benutzerprofil aus Firestore abzurufen.
+          // HINZUGEFÜGT: Sicherheitsprüfung, um sicherzustellen, dass die DB-Instanz initialisiert ist.
+          // Dies verhindert den Absturz, falls der Hook ausgeführt wird, bevor Firebase bereit ist.
+          if (!db) {
+            throw new Error("Firestore DB-Instanz ist nicht initialisiert.");
+          }
           const userDocRef = doc(db, 'users', fbUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
@@ -56,38 +78,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              // HIER IST DIE KORREKTUR: Wir verwenden den 'user_type' direkt aus der Datenbank.
-              // Das ist die "Source of Truth" und umgeht Probleme mit veralteten Tokens.
               role: (profileData.user_type as UserProfile['role']) || 'kunde',
               firstName: profileData.firstName,
               lastName: profileData.lastName,
             });
           } else {
-            // Dieser Fall tritt während der Registrierung auf, wenn der Auth-Benutzer existiert,
-            // das Firestore-Dokument aber noch nicht erstellt wurde.
-            // Wir erstellen ein temporäres Benutzerobjekt, um zu verhindern, dass ProtectedRoute
-            // eine Weiterleitung zur /login-Seite auslöst.
             console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden. Dies ist während der Registrierung zu erwarten. Es wird ein temporäres Profil verwendet.`);
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              role: role, // Verwende die Rolle aus dem Token, auch wenn es der Standardwert ist.
+              role: 'kunde',
             });
           }
         } else {
-          // No user is signed in.
           setUser(null);
           setFirebaseUser(null);
         }
       } catch (error) {
         console.error("AuthContext: Fehler beim Abrufen des Benutzerprofils oder der Claims.", error);
-        // If an error occurs, ensure the user is logged out in the state.
         setUser(null);
         setFirebaseUser(null);
       } finally {
-        // This is crucial: always set loading to false after the process is complete,
-        // whether it succeeded or failed. This prevents the app from getting stuck
-        // in a loading state.
         setLoading(false);
       }
     });
@@ -95,22 +106,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  // KORREKTUR: Dieser Effekt ist jetzt der ZENTRALE Listener für alle globalen Chat-Informationen.
+  // Er ersetzt die separaten Listener in UserHeader und AuthContext.
+  useEffect(() => {
+    if (!user?.uid) {
+      setUnreadMessagesCount(0);
+      setRecentChats([]); // Chats ebenfalls zurücksetzen
+      return;
+    }
+    // HINZUGEFÜGT: Zusätzliche Sicherheitsprüfung für die DB-Instanz.
+    if (!db) {
+      console.error("[AuthContext] Firestore DB ist nicht für den Listener für ungelesene Nachrichten verfügbar.");
+      setUnreadMessagesCount(0);
+      setRecentChats([]);
+      return;
+    }
+
+    const chatsRef = collection(db, 'chats');
+    // Diese eine Abfrage holt die 5 neuesten, aktiven Chats.
+    const recentChatsQuery = query(
+      chatsRef,
+      where('users', 'array-contains', user.uid),
+      where('isLocked', '==', false),
+      orderBy('lastUpdated', 'desc'),
+      limit(5)
+    );
+
+    const unsubscribe = onSnapshot(recentChatsQuery, (snapshot) => {
+      const chatsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const otherUserId = data.users.find((id: string) => id !== user.uid);
+        const userDetails = otherUserId ? data.userDetails?.[otherUserId] : null;
+        const inboxLink = user.role === 'firma' ? `/dashboard/company/${user.uid}/inbox` : `/dashboard/user/${user.uid}/inbox`;
+
+        return {
+          id: doc.id,
+          otherUserName: userDetails?.name || 'Unbekannter Benutzer',
+          otherUserAvatarUrl: userDetails?.avatarUrl || null,
+          lastMessageText: data.lastMessage?.text || '',
+          isUnread: data.lastMessage?.senderId !== user.uid && !data.lastMessage?.isRead,
+          link: inboxLink,
+        };
+      });
+
+      const unreadCount = chatsData.filter(chat => chat.isUnread).length;
+      setUnreadMessagesCount(unreadCount);
+      setRecentChats(chatsData);
+    }, (error) => {
+      console.error("[AuthContext] Fehler beim Abhören der Chats:", error);
+      setUnreadMessagesCount(0);
+      setRecentChats([]);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+
   // Effekt für die automatische Weiterleitung nach dem Login
   useEffect(() => {
-    // Nichts tun, während der Auth-Status noch geprüft wird oder eine Weiterleitung bereits läuft.
     if (loading || isRedirecting) {
       return;
     }
 
-    // Liste der öffentlichen Seiten, von denen ein eingeloggter Benutzer weitergeleitet werden soll.
-    const publicPaths = ['/', '/login', '/register/company'];
+    const publicPaths = ['/', '/login', '/register/company', '/register/user'];
     const shouldRedirect = user && publicPaths.includes(pathname);
 
     if (shouldRedirect) {
       console.log(`AuthContext: Benutzer ${user.uid} ist auf einer öffentlichen Seite (${pathname}). Leite weiter...`);
-
-      // Setze den Weiterleitungs-Status, um zu verhindern, dass der Effekt erneut ausgeführt wird,
-      // bevor die URL-Änderung wirksam wird.
       setIsRedirecting(true);
 
       let destination: string;
@@ -122,19 +184,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         case 'firma':
           destination = `/dashboard/company/${user.uid}`;
           break;
-        default: // 'kunde' oder undefiniert
+        default:
           destination = `/dashboard/user/${user.uid}`;
           break;
       }
       console.log(`AuthContext: Benutzerrolle ist '${user.role}', leite weiter zu: ${destination}`);
-      // Führe die Weiterleitung durch. `router.replace` ist hier besser, um die Login-Seite
-      // aus der Browser-Historie zu entfernen.
-      console.log(`[AuthContext] Rufe router.replace('${destination}') auf...`);
       router.replace(destination);
     }
-  }, [user, loading, pathname, router, isRedirecting]); // Abhängigkeiten aktualisiert
+  }, [user, loading, pathname, router, isRedirecting]);
 
-  const value = { user, firebaseUser, loading };
+  const userRole = user?.role
+    ? user.role === 'master' || user.role === 'support'
+      ? user.role
+      : user.role === 'firma'
+        ? 'user'
+        : 'user'
+    : null;
+
+  const value = useMemo(
+    () => ({ user, firebaseUser, loading, userRole: userRole as 'master' | 'support' | 'user' | null, unreadMessagesCount, recentChats }),
+    [user, firebaseUser, loading, userRole, unreadMessagesCount, recentChats]
+  );
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

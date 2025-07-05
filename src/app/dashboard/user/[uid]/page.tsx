@@ -3,20 +3,19 @@
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/auth/ProtectedRoute'; // Import ProtectedRoute
-import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext'; // Import SidebarVisibilityProvider
-import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { db, app, functions } from '@/firebase/clients';
+import { db, functions, auth, onAuthStateChanged, signOut, type User as FirebaseUser } from '@/firebase/clients';
 import { WelcomeBox } from './components/WelcomeBox';
-import { HelpCard } from './components/Support/HelpCard';
-import { FiLoader, FiAlertCircle, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
+import { FiLoader, FiAlertCircle, FiMessageSquare, FiPlusCircle, FiHelpCircle } from 'react-icons/fi';
 import Modal from './components/Modal';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js'; // KORRIGIERTER IMPORT
+import { Elements } from '@stripe/react-stripe-js';
 import AddPaymentMethodForm from './components/AddPaymentMethodForm';
 import AddressForm from './components/AddressForm';
 import { httpsCallable } from 'firebase/functions';
 import { toast } from 'sonner'; // Importiere toast
+import ProfilePictureUploadModal from './components/ProfilePictureUploadModal'; // Pfad korrigiert
 import CreateOrderModal from './components/CreateOrderModal';
 import SupportChatInterface from './components/Support/SupportChatInterface';
 import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
@@ -29,7 +28,6 @@ import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 const PAGE_LOG = "UserDashboardPage:"; // Für Logging
-const auth = getAuth(app);
 
 const createSetupIntentCallable = httpsCallable<{ firebaseUserId?: string }, { clientSecret: string }>(functions, 'createSetupIntent');
 const getSavedPaymentMethodsCallable = httpsCallable<Record<string, never>, { savedPaymentMethods: SavedPaymentMethod[] }>(functions, 'getSavedPaymentMethods');
@@ -41,7 +39,7 @@ export default function UserDashboardPage() {
   const params = useParams();
   const pageUid = typeof params.uid === 'string' ? params.uid : ''; // Umbenannt, um Konflikt mit user.uid zu vermeiden
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
@@ -49,6 +47,7 @@ export default function UserDashboardPage() {
   const [showAddPaymentMethodModal, setShowAddPaymentMethodModal] = useState(false);
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false); // Beibehalten, da es für den "Neuen Auftrag erstellen"-Button verwendet wird
   const [showSupportChatModal, setShowSupportChatModal] = useState(false); // NEU: State für Support-Chat
   // const [activeView, setActiveView] = useState<"dashboard" | "settings">("dashboard"); // Nicht mehr benötigt, da Header die Navigation übernimmt
@@ -63,7 +62,7 @@ export default function UserDashboardPage() {
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
 
-  const loadInitialDashboardData = useCallback(async (user: User) => {
+  const loadInitialDashboardData = useCallback(async (user: FirebaseUser) => {
     setLoading(true);
     setError(null);
 
@@ -159,7 +158,7 @@ export default function UserDashboardPage() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user: FirebaseUser | null) => {
       if (user) {
         if (user.uid !== pageUid) {
           router.replace(`/dashboard/user/${user.uid}`);
@@ -198,6 +197,14 @@ export default function UserDashboardPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Nur einmal beim Mounten ausführen, um die URL zu prüfen
+
+  const handleProfilePictureUploaded = (newUrl: string) => {
+    // Update local state to reflect the change immediately
+    setUserProfile(prev => prev ? { ...prev, profilePictureURL: newUrl, profilePictureFirebaseUrl: newUrl } : null);
+    // Dispatch an event for other components like the header to listen to
+    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { profilePictureURL: newUrl } }));
+    setShowUploadModal(false);
+  };
 
   const handleOpenAddPaymentMethodModal = async () => {
     if (!currentUser || !userProfile?.stripeCustomerId) {
@@ -414,7 +421,14 @@ export default function UserDashboardPage() {
               </div>
             }>
               <div className="max-w-5xl mx-auto space-y-6">
-                <WelcomeBox firstname={userProfile.firstName ? String(userProfile.firstName) : (userProfile.firstname ? String(userProfile.firstname) : '')} />
+                <WelcomeBox
+                  firstname={typeof userProfile.firstName === 'string' ? userProfile.firstName : ''}
+                  profilePictureUrl={
+                    (typeof userProfile.profilePictureURL === 'string' ? userProfile.profilePictureURL : null) ||
+                    (typeof userProfile.profilePictureFirebaseUrl === 'string' ? userProfile.profilePictureFirebaseUrl : null)
+                  }
+                  onProfilePictureClick={() => setShowUploadModal(true)}
+                />
 
                 {/* HIER ÄNDERT SICH DAS LAYOUT: EINZELNER GRID-CONTAINER FÜR ALLE KARTEN */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -495,7 +509,21 @@ export default function UserDashboardPage() {
 
                   {/* Support Card */}
                   <div className="bg-white shadow rounded-lg p-6 flex flex-col h-full min-h-[250px]">
-                    <HelpCard onOpenSupportChat={handleOpenSupportChat} /> {/* NEU: Prop an HelpCard übergeben */}
+                    {/* ERSETZT: HelpCard wurde durch direkten JSX-Code ersetzt, um den Fehler "nicht gefunden" zu beheben. */}
+                    <div className="flex-grow">
+                      <h2 className="text-2xl font-semibold text-gray-700 mb-2 flex items-center">
+                        <FiHelpCircle className="mr-2" /> Hilfe & Support
+                      </h2>
+                      <p className="text-gray-500 text-sm">
+                        Haben Sie Fragen zu einem Auftrag oder benötigen Sie Hilfe? Unser Support-Team ist für Sie da.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleOpenSupportChat}
+                      className="mt-4 flex items-center justify-center w-full px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
+                    >
+                      Support kontaktieren
+                    </button>
                   </div>
 
                   {/* Die Abschnitte "Meine Zahlungsmethoden" und "Meine Adressen" wurden entfernt */}
@@ -508,6 +536,15 @@ export default function UserDashboardPage() {
               </div> {/* Schließt max-w-5xl mx-auto space-y-6 */}
             </Suspense>
           </main>
+
+          {/* Modal für Profilbild-Upload */}
+          {showUploadModal && currentUser && (
+            <ProfilePictureUploadModal
+              currentUser={currentUser}
+              onClose={() => setShowUploadModal(false)}
+              onSuccess={handleProfilePictureUploaded}
+            />
+          )}
 
           {/* Modal für Neuen Auftrag erstellen */}
           {showCreateOrderModal && (
@@ -522,13 +559,10 @@ export default function UserDashboardPage() {
           )}
 
           {/* Modal für Support Chat */}
-          {showSupportChatModal && currentUser && (
+          {showSupportChatModal && currentUser && userProfile && (
             <Modal onClose={() => setShowSupportChatModal(false)} title="Support">
-              <SupportChatInterface
-                currentUser={currentUser}
-                onClose={() => setShowSupportChatModal(false)}
-              // Hier könnten Sie eine chatId übergeben, falls Sie Chat-Sessions verwalten
-              />
+              {/* KORREKTUR: Die Props 'currentUser' und 'userProfile' wurden entfernt, da die Komponente sie jetzt intern über den AuthContext bezieht. */}
+              <SupportChatInterface onClose={() => setShowSupportChatModal(false)} />
             </Modal>
           )}
 

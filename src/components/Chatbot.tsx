@@ -29,6 +29,13 @@ const Chatbot = () => {
         }
     }, [isOpen, messages.length]);
 
+    // NEU: useEffect, um auf externe Events zum Öffnen des Chats zu lauschen
+    useEffect(() => {
+        const openChatbot = () => setIsOpen(true);
+        window.addEventListener('openChatbot', openChatbot);
+        return () => window.removeEventListener('openChatbot', openChatbot);
+    }, []);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };

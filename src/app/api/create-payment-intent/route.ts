@@ -152,28 +152,26 @@ export async function POST(request: NextRequest) {
     }
     // --- ENDE DER WARTE-LOGIK ---
 
-    // ANPASSUNG: Gebührenlogik im Backend neu berechnen und validieren
-    const SELLER_COMMISSION_RATE = 0.125; // 12.5% Provision für Verkäufer
-    const BUYER_SERVICE_FEE_RATE = 0.045; // 4.5% Servicegebühr für Käufer
+    // ANPASSUNG: Neue Gebührenlogik, bei der die Gebühr vom Dienstleister getragen wird.
+    const SELLER_SERVICE_FEE_RATE = 0.045; // 4.5% Servicegebühr, die vom Verkäufer (Dienstleister) getragen wird.
 
-    const calculatedBuyerServiceFee = Math.round(jobPriceInCents * BUYER_SERVICE_FEE_RATE);
-    const totalAmountToChargeBuyer = jobPriceInCents + calculatedBuyerServiceFee;
+    // Der Gesamtbetrag, den der Käufer zahlt, ist jetzt einfach der jobPriceInCents.
+    const totalAmountToChargeBuyer = jobPriceInCents;
 
-    // WICHTIGE VALIDIERUNG: Prüfen, ob der vom Frontend gesendete `amount` mit dem Backend-berechneten `totalAmountToChargeBuyer` übereinstimmt
+    // WICHTIGE VALIDIERUNG: Der vom Frontend gesendete Betrag MUSS dem Basispreis entsprechen.
     if (amount !== totalAmountToChargeBuyer) {
-      console.error(`[API /create-payment-intent] BETRAGS-INKONSISTENZ: Frontend amount (${amount}) stimmt nicht mit Backend calculated amount (${totalAmountToChargeBuyer}) überein.`);
+      console.error(`[API /create-payment-intent] BETRAGS-INKONSISTENZ: Frontend amount (${amount}) stimmt nicht mit dem Backend-Auftragswert (${totalAmountToChargeBuyer}) überein.`);
       return NextResponse.json({ error: 'Fehler bei der Betragsüberprüfung. Bitte versuchen Sie es erneut.' }, { status: 400 });
     }
 
-    const platformCommissionFromSeller = Math.round(jobPriceInCents * SELLER_COMMISSION_RATE);
-    const totalApplicationFee = platformCommissionFromSeller + calculatedBuyerServiceFee;
+    // Die Plattformgebühr (application_fee_amount) ist nun die Gebühr, die vom Verkäufer abgezogen wird.
+    const totalApplicationFee = Math.round(jobPriceInCents * SELLER_SERVICE_FEE_RATE);
 
-    console.log(`[API /create-payment-intent] Backend-Berechnungen:`);
-    console.log(`  Basispreis (jobPriceInCents): ${jobPriceInCents} Cents`);
-    console.log(`  Käufer-Servicegebühr (calculatedBuyerServiceFee): ${calculatedBuyerServiceFee} Cents`);
-    console.log(`  Gesamtbetrag für Käufer (totalAmountToChargeBuyer): ${totalAmountToChargeBuyer} Cents`);
-    console.log(`  Verkäufer-Provision (platformCommissionFromSeller): ${platformCommissionFromSeller} Cents`);
-    console.log(`  Gesamt-Plattformgebühr (totalApplicationFee): ${totalApplicationFee} Cents`);
+
+    console.log(`[API /create-payment-intent] Backend-Berechnungen (NEUE LOGIK):`);
+    console.log(`  Basispreis & Gesamtbetrag für Käufer (jobPriceInCents): ${jobPriceInCents} Cents`);
+    console.log(`  Plattformgebühr (totalApplicationFee, von Anbieter getragen): ${totalApplicationFee} Cents`);
+
 
 
     console.log(`[API /create-payment-intent] Konfiguriere PaymentIntent für Client-seitige Bestätigung (keine Weiterleitungen).`);
@@ -196,9 +194,9 @@ export async function POST(request: NextRequest) {
         tempJobDraftId: taskId,
         firebaseUserId: firebaseUserId,
         // NEU: Detaillierte Preiskomponenten in den Metadaten speichern
-        originalJobPriceInCents: jobPriceInCents.toString(), // Als String speichern, da Metadaten Strings sind
-        buyerServiceFeeInCents: calculatedBuyerServiceFee.toString(),
-        sellerCommissionInCents: platformCommissionFromSeller.toString(),
+        originalJobPriceInCents: jobPriceInCents.toString(),
+        buyerServiceFeeInCents: '0', // Käufer zahlt keine Gebühr mehr
+        sellerCommissionInCents: totalApplicationFee.toString(), // Die Gebühr des Verkäufers
         totalPlatformFeeInCents: totalApplicationFee.toString(),
         // Optional: Weitere billingDetails hier hinzufügen, wenn sie für Webhooks relevant sind
         // billingName: billingDetails?.name,

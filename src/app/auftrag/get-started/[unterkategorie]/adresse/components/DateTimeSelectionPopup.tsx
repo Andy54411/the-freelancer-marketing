@@ -15,7 +15,8 @@ import { de } from 'date-fns/locale';
 import type { Company as AnbieterDetails } from '@/types/types';
 import { PAGE_LOG } from '../../../../../../lib/constants';
 
-import { getBookingCharacteristics } from './SidebarFilters_components/utils';
+// Ersetzt den lokalen Import durch die zentrale, geteilte Logik
+import { getBookingCharacteristics } from '@/shared/booking-characteristics';
 
 // Optionen für die Uhrzeit für das Popup (00:00 bis 23:30 in 30-Minuten-Schritten)
 const generalTimeOptionsForPopup: string[] = (() => {
@@ -55,6 +56,7 @@ export function DateTimeSelectionPopup({
   const [selectedDateValue, setSelectedDateValue] = useState<Date | DateRange | undefined>(undefined);
   const [selectedTimeInPopup, setSelectedTimeInPopup] = useState<string>('');
   const [durationInput, setDurationInput] = useState<string>('');
+  const [durationError, setDurationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -81,6 +83,7 @@ export function DateTimeSelectionPopup({
 
       const initialDurationValue = initialDuration || characteristics.defaultDurationHours?.toString() || '';
       setDurationInput(initialDurationValue);
+      setDurationError(null); // Fehler beim Öffnen zurücksetzen
     }
   }, [isOpen, currentCalendarMode, initialDateRange, initialTime, initialDuration, characteristics.defaultDurationHours]);
 
@@ -96,8 +99,27 @@ export function DateTimeSelectionPopup({
     }
   };
 
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDurationInput(value);
+
+    if (value === '') {
+      setDurationError(null);
+    } else {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue <= 0) {
+        setDurationError('Bitte geben Sie eine positive Zahl ein.');
+      } else {
+        setDurationError(null);
+      }
+    }
+  };
+
   const handleConfirmClick = () => {
-    console.log(PAGE_LOG, "[Popup] handleConfirmClick - Werte an Parent:", { selectedDateValue, selectedTimeInPopup, durationInput });
+    if (durationError) {
+      // Verhindere das Bestätigen, wenn ein Fehler vorliegt
+      return;
+    }
     onConfirm(selectedDateValue, selectedTimeInPopup, durationInput);
   };
 
@@ -145,6 +167,8 @@ export function DateTimeSelectionPopup({
   }
 
   const { durationLabel, durationPlaceholder, durationHint } = characteristics;
+
+  const isConfirmButtonDisabled = durationError !== null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -198,8 +222,11 @@ export function DateTimeSelectionPopup({
             </div>
             <div className="pt-2">
               <Label htmlFor="duration-input-popup" className="text-sm font-medium text-gray-700">{durationLabel}</Label>
-              <Input id="duration-input-popup" type="text" placeholder={durationPlaceholder} value={durationInput} onChange={(e) => setDurationInput(e.target.value)} className="w-full mt-1 border-gray-300 rounded-lg shadow-sm p-2.5 focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f]" />
+              <Input id="duration-input-popup" type="number" placeholder={durationPlaceholder} value={durationInput} onChange={handleDurationChange} className={`w-full mt-1 border-gray-300 rounded-lg shadow-sm p-2.5 focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f] ${durationError ? 'border-red-500' : ''}`} />
               <p className="text-xs text-gray-500 mt-1">{durationHint}</p>
+              {durationError && (
+                <p className="text-xs text-red-500 mt-1">{durationError}</p>
+              )}
             </div>
             {showTwoColumnLayout && (<p className="text-xs text-gray-500 pt-2">Nach der Buchung könnt ihr im Chat weitere Details klären.</p>)}
           </div>
@@ -212,7 +239,7 @@ export function DateTimeSelectionPopup({
                 {durationInput && <p className="text-sm text-gray-600 mt-1">Dauer: {durationInput} {characteristics.isDurationPerDay ? "Std./Tag" : "Std. gesamt"}</p>}
               </div>
               <div className="w-full space-y-3">
-                <button onClick={handleConfirmClick} className="w-full bg-[#14ad9f] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-base">Termin & Dauer bestätigen</button>
+                <button onClick={handleConfirmClick} disabled={isConfirmButtonDisabled} className="w-full bg-[#14ad9f] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed">Termin & Dauer bestätigen</button>
                 <p className="text-xs text-gray-500 flex items-start"><FiMessageCircle className="w-5 h-5 mr-1.5 shrink-0 text-gray-400" /><span>Bestätige die Auswahl, um mit dem Anbieter in Kontakt zu treten.</span></p>
               </div>
             </div>
@@ -220,7 +247,7 @@ export function DateTimeSelectionPopup({
         </div>
         {(!showTwoColumnLayout) && (
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <button onClick={handleConfirmClick} className="w-full bg-[#14ad9f] text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-sm">
+            <button onClick={handleConfirmClick} disabled={isConfirmButtonDisabled} className="w-full bg-[#14ad9f] text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed">
               {currentCalendarMode === 'single' ? 'Datum, Zeit & Dauer bestätigen' : 'Zeitraum, Zeit & Dauer bestätigen'}
             </button>
           </div>

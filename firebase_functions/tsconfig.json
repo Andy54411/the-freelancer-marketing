@@ -3,8 +3,12 @@
         "target": "ES2020",
         "module": "commonjs",
         "moduleResolution": "node",
-        "outDir": "lib",
-        "rootDir": "src",
+        "outDir": "lib", // Das Ausgabe-Verzeichnis bleibt 'lib'
+        // "rootDir" wird durch "rootDirs" ersetzt, um Importe von außerhalb des lokalen 'src' zu erlauben
+        "rootDirs": [
+            "src",
+            "../src/shared"
+        ],
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
@@ -16,10 +20,13 @@
             "node",
             "firebase-functions"
         ],
-        "baseUrl": "./src",
+        "baseUrl": ".",
         "paths": {
             "@functions/*": [
-                "*"
+                "src/*"
+            ],
+            "@shared/*": [
+                "../src/shared/*"
             ]
         }
     },

@@ -41,10 +41,7 @@ interface TemporaryJobDraftData {
   jobDateFrom?: string | null;
   jobDateTo?: string | null;
   jobTimePreference?: string | null;
-  dateFrom?: string | null; // Legacy field
   providerName?: string | null; // Name of the provider/freelancer
-  dateTo?: string | null; // Legacy field
-  timePreference?: string | null; // Legacy field
   selectedAnbieterId?: string | null;
   jobDurationString?: string;
   jobTotalCalculatedHours?: number | null;
@@ -176,23 +173,34 @@ export const createTemporaryJobDraft = onCall(
         throw new HttpsError('invalid-argument', "Die ID des ausgewählten Anbieters ist erforderlich.");
       }
 
-      const anbieterDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
-      const anbieterDoc = await anbieterDocRef.get();
+      // The 'users' document is the single source of truth for a provider's existence and type.
+      const anbieterUserDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
+      const anbieterUserDoc = await anbieterUserDocRef.get();
 
-      if (!anbieterDoc.exists) {
-        loggerV2.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} nicht gefunden.`); // Added log
-        throw new HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden.");
+      if (!anbieterUserDoc.exists) {
+        // This is a critical error. The provider selected by the client does not exist in our system.
+        loggerV2.error(`[createTemporaryJobDraft] Anbieter-Nutzerdokument für ID ${jobDetails.selectedAnbieterId} nicht gefunden. Auftrag kann nicht erstellt werden.`);
+        throw new HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.");
       }
 
-      const anbieterData = anbieterDoc.data();
-      if (!anbieterData || anbieterData?.user_type !== 'firma') {
-        loggerV2.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} gefunden, aber kein Firmenkonto oder ungültige Daten. user_type: ${anbieterData?.user_type}`); // Added log
+      const anbieterData = anbieterUserDoc.data();
+      if (anbieterData?.user_type !== 'firma') {
+        // The user exists but is not a company, which is a precondition for creating a job draft against them.
+        loggerV2.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} ist kein Firmenkonto. user_type: ${anbieterData?.user_type}`);
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
 
-      // Logik zur Namensfindung mit der zentralen Hilfsfunktion vereinfacht
+      // Now that we've validated the provider, let's get their public profile data.
+      // The 'companies' document might not exist yet due to replication lag from triggers,
+      // so we handle this gracefully.
       const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
-      const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : null;
+      if (!anbieterCompanyDoc.exists) {
+        loggerV2.warn(`[createTemporaryJobDraft] Firmenprofil für Anbieter ${jobDetails.selectedAnbieterId} nicht in 'companies' gefunden. Dies deutet auf eine Replikationsverzögerung hin. Fahre mit Daten aus 'users' fort.`);
+      }
+
+      // Logik zur Namensfindung: Priorisiere Daten aus dem 'companies'-Dokument (die öffentliche Ansicht),
+      // aber nutze das 'users'-Dokument als Fallback, um einen Namen zu finden.
+      const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterUserDoc.data();
       providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
 
       if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
@@ -211,9 +219,9 @@ export const createTemporaryJobDraft = onCall(
         jobPostalCode: jobDetails.jobPostalCode,
         jobCity: jobDetails.jobCity || null,
         jobCountry: jobDetails.jobCountry || null,
-        jobDateFrom: jobDetails.jobDateFrom || jobDetails.dateFrom || null,
-        jobDateTo: jobDetails.jobDateTo || jobDetails.dateTo || null,
-        jobTimePreference: jobDetails.jobTimePreference || jobDetails.timePreference || null,
+        jobDateFrom: jobDetails.jobDateFrom || null,
+        jobDateTo: jobDetails.jobDateTo || null,
+        jobTimePreference: jobDetails.jobTimePreference || null,
         selectedAnbieterId: jobDetails.selectedAnbieterId,
         providerName: providerName,
         jobDurationString: jobDetails.jobDurationString || null,

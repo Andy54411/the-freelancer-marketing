@@ -5,22 +5,32 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from '
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'; // Importiere Link
 import { User, getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
-import { app, storage, db } from '@/firebase/clients'; // Firebase App, Storage, Firestore
+import { app, storage, db } from '@/firebase/clients';
 import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; // Firebase Storage Functions
-import { doc, getDoc } from 'firebase/firestore'; // Firestore Functions
+import { doc, getDoc, collection, query, where, onSnapshot, QuerySnapshot, orderBy, limit, updateDoc, Timestamp } from 'firebase/firestore'; // Query-Imports werden für Notifications noch gebraucht
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
 import { Logo } from '@/components/logo'; // Logo component
 import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
-import { FiSearch, FiBell, FiMail, FiHelpCircle, FiChevronDown, FiGrid, FiBriefcase, FiUsers, FiAward, FiSettings, FiLogOut, FiFilePlus, FiInbox, FiCheckSquare, FiUser } from 'react-icons/fi'; // Icons
-import { collection, query, where, onSnapshot, QuerySnapshot } from 'firebase/firestore';
-import { Badge } from "@/components/ui/badge";
+import { FiSearch, FiBell, FiMail, FiHelpCircle, FiChevronDown, FiGrid, FiBriefcase, FiUsers, FiAward, FiSettings, FiLogOut, FiFilePlus, FiInbox, FiCheckSquare, FiUser, FiPackage, FiInfo } from 'react-icons/fi'; // Icons, added FiPackage, FiInfo
+import { useAuth, HeaderChatPreview } from '@/contexts/AuthContext'; // HeaderChatPreview aus dem Context importieren
 const auth = getAuth(app);
+
+// NEU: Interface für Benachrichtigungen
+interface NotificationPreview {
+    id: string;
+    type: 'order' | 'support' | 'system' | 'update';
+    message: string;
+    link: string;
+    isRead: boolean;
+    createdAt: Timestamp;
+}
 
 interface UserHeaderProps {
     currentUid: string;
 }
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
+    const { unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Daten aus dem Context beziehen
 
     const router = useRouter();
     const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(null);
@@ -28,11 +38,45 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+    const [isInboxDropdownOpen, setIsInboxDropdownOpen] = useState(false);
+    const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+    const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0); // NEU
+    const [notifications, setNotifications] = useState<NotificationPreview[]>([]); // NEU
     const [searchTerm, setSearchTerm] = useState('');
     const profileDropdownRef = useRef<HTMLDivElement>(null);
     const searchDropdownContainerRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+    const inboxHoverTimeout = useRef<NodeJS.Timeout | null>(null);
+    const notificationHoverTimeout = useRef<NodeJS.Timeout | null>(null); // NEU
+
+    // NEU: Funktion zum Abonnieren von Benachrichtigungen
+    const subscribeToNotifications = useCallback((uid: string | undefined) => {
+        if (!uid) {
+            setUnreadNotificationsCount(0);
+            setNotifications([]);
+            return () => { };
+        }
+
+        const notificationsQuery = query(
+            collection(db, 'notifications'),
+            where('userId', '==', uid),
+            orderBy('createdAt', 'desc'),
+            limit(10) // Die 10 neuesten Benachrichtigungen
+        );
+
+        const unsubscribe = onSnapshot(notificationsQuery, (snapshot: QuerySnapshot) => {
+            const fetchedNotifications = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as NotificationPreview));
+
+            const unreadCount = fetchedNotifications.filter(n => !n.isRead).length;
+            setNotifications(fetchedNotifications);
+            setUnreadNotificationsCount(unreadCount);
+        }, (error) => console.error("[UserHeader] Fehler beim Laden der Benachrichtigungen:", error));
+
+        return () => unsubscribe();
+    }, []);
 
     const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
         if (!uid) {
@@ -74,25 +118,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         }
     }, []);
 
-    const subscribeToUnreadMessages = useCallback((uid: string | undefined) => {
-        if (!uid) {
-            setUnreadMessagesCount(0);
-            return () => { }; // Return an empty cleanup function for cleanup
-        }
-
-        const chatCollectionRef = collection(db, 'chats');
-        const unreadMessagesQuery = query(
-            chatCollectionRef,
-            where('users', 'array-contains', uid),
-            where('lastMessage.senderId', '!=', uid),
-            where('lastMessage.isRead', '==', false)
-        );
-        const unsubscribe = onSnapshot(unreadMessagesQuery, (snapshot: QuerySnapshot) => {
-            setUnreadMessagesCount(snapshot.size);
-        });
-        return () => unsubscribe(); // Clean up the subscription
-    }, []);
-
     useEffect(() => {
         // Effekt zur Überwachung des Authentifizierungsstatus und zum Laden der initialen Daten
         const unsubscribe = onAuthStateChanged(auth, (user: User | null) => { // Explizite Typisierung für 'user'
@@ -117,11 +142,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         return () => unsubscribe();
     }, [currentUid, router, loadProfilePictureFromStorage, loadFirestoreUserData]);
 
-    // Separater Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer
+    // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
     useEffect(() => {
-        const unsubscribe = subscribeToUnreadMessages(currentUser?.uid);
-        return unsubscribe; // Gibt die Cleanup-Funktion von onSnapshot zurück
-    }, [currentUser, subscribeToUnreadMessages]);
+        if (currentUser?.uid) {
+            const unsubscribeNotifications = subscribeToNotifications(currentUser.uid);
+            return () => {
+                unsubscribeNotifications();
+            };
+        }
+    }, [currentUser, subscribeToNotifications]);
 
     useEffect(() => {
         const handleProfileUpdate = (event: Event) => {
@@ -153,13 +182,58 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         };
     }, [profileDropdownRef, searchDropdownContainerRef, isProfileDropdownOpen, isSearchDropdownOpen]);
 
-    const handleSubcategorySelect = useCallback(() => {
+    const handleSubcategorySelect = () => {
         setIsSearchDropdownOpen(false);
         if (searchInputRef.current) {
             searchInputRef.current.value = '';
             setSearchTerm('');
         }
-    }, []);
+    };
+
+    // NEU: Hover-Handler für das Posteingang-Dropdown
+    const handleInboxEnter = () => {
+        if (inboxHoverTimeout.current) {
+            clearTimeout(inboxHoverTimeout.current);
+        }
+        setIsInboxDropdownOpen(true);
+    };
+
+    const handleInboxLeave = () => {
+        inboxHoverTimeout.current = setTimeout(() => {
+            setIsInboxDropdownOpen(false);
+        }, 300); // Eine kleine Verzögerung, damit der Benutzer die Maus zum Dropdown bewegen kann
+    };
+
+    // NEU: Hover-Handler für das Benachrichtigungs-Dropdown
+    const handleNotificationEnter = () => {
+        if (notificationHoverTimeout.current) {
+            clearTimeout(notificationHoverTimeout.current);
+        }
+        setIsNotificationDropdownOpen(true);
+    };
+
+    const handleNotificationLeave = () => {
+        notificationHoverTimeout.current = setTimeout(() => {
+            setIsNotificationDropdownOpen(false);
+        }, 300);
+    };
+
+    // NEU: Funktion zum Öffnen des Chatbots
+    const handleHelpClick = () => {
+        window.dispatchEvent(new CustomEvent('openChatbot'));
+    };
+
+    // NEU: Funktion zum Markieren einer Benachrichtigung als gelesen
+    const handleNotificationClick = async (notificationId: string) => {
+        setIsNotificationDropdownOpen(false); // Dropdown schließen
+        const notificationRef = doc(db, 'notifications', notificationId);
+        try {
+            // Wir müssen nicht auf das Ergebnis warten, die UI wird durch den Listener aktualisiert
+            await updateDoc(notificationRef, { isRead: true });
+        } catch (error) {
+            console.error("Fehler beim Aktualisieren der Benachrichtigung:", error);
+        }
+    };
 
     const handleLogout = useCallback(async () => {
         try {
@@ -236,22 +310,107 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
                         {/* Icons und Benutzerprofil */}
                         <div className="flex items-center space-x-4">
-                            <div className="relative"> {/* Wrapper für die Glocke */}
-                                <button className="text-gray-600 hover:text-[#14ad9f]"><FiBell size={22} /></button>
-                                {unreadMessagesCount > 0 && (
-                                    <Badge
-                                        className="absolute -top-1 -right-1 rounded-full px-1.5 py-0.5 text-xs font-medium bg-[#14ad9f] text-white z-10"
-                                    >
-                                        {unreadMessagesCount}
-                                    </Badge>
+                            {/* NEU: Glocken-Icon mit Hover-Dropdown und Badge */}
+                            <div
+                                className="relative"
+                                onMouseEnter={handleNotificationEnter}
+                                onMouseLeave={handleNotificationLeave}
+                            >
+                                <button className="text-gray-600 hover:text-[#14ad9f] block">
+                                    <FiBell size={22} />
+                                </button>
+                                {unreadNotificationsCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
+                                        {unreadNotificationsCount}
+                                    </span>
+                                )}
+                                {isNotificationDropdownOpen && currentUser && (
+                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                                        <div className="p-3 border-b">
+                                            <h4 className="font-semibold text-gray-800">Benachrichtigungen</h4>
+                                        </div>
+                                        {notifications.length > 0 ? (
+                                            <ul>
+                                                {notifications.map(notification => (
+                                                    <li key={notification.id}>
+                                                        <Link href={notification.link} onClick={() => handleNotificationClick(notification.id)} className={`block p-3 hover:bg-gray-100 ${!notification.isRead ? 'bg-blue-50' : ''}`}>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                                                                    {notification.type === 'order' && <FiPackage className="text-gray-600" />}
+                                                                    {notification.type === 'support' && <FiHelpCircle className="text-gray-600" />}
+                                                                    {(notification.type === 'system' || notification.type === 'update') && <FiInfo className="text-gray-600" />}
+                                                                </div>
+                                                                <div className="flex-1 overflow-hidden">
+                                                                    <p className={`text-sm ${!notification.isRead ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>{notification.message}</p>
+                                                                    <p className="text-xs text-gray-400 mt-1">{notification.createdAt.toDate().toLocaleString('de-DE')}</p>
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (<p className="p-4 text-sm text-gray-500 text-center">Keine neuen Benachrichtigungen.</p>)}
+                                    </div>
                                 )}
                             </div>
-                            <Link
-                                href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'}
-                                className="text-gray-600 hover:text-[#14ad9f]">
-                                <FiMail size={22} />
-                            </Link>
-                            <button className="text-gray-600 hover:text-[#14ad9f]"><FiHelpCircle size={22} /></button>
+                            {/* NEU: Posteingang-Icon mit Hover-Dropdown und Badge */}
+                            <div
+                                className="relative"
+                                onMouseEnter={handleInboxEnter}
+                                onMouseLeave={handleInboxLeave}
+                            >
+                                <Link
+                                    href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'}
+                                    className="text-gray-600 hover:text-[#14ad9f] block" // block, damit der Badge richtig positioniert wird
+                                >
+                                    <FiMail size={22} />
+                                </Link>
+                                {unreadMessagesCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
+                                        {unreadMessagesCount}
+                                    </span>
+                                )}
+                                {isInboxDropdownOpen && currentUser && (
+                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                                        <div className="p-3 border-b">
+                                            <h4 className="font-semibold text-gray-800">Letzte Nachrichten</h4>
+                                        </div>
+                                        {recentChats.length > 0 ? (
+                                            <ul>
+                                                {recentChats.map(chat => (
+                                                    <li key={chat.id}>
+                                                        <Link href={chat.link} onClick={() => setIsInboxDropdownOpen(false)} className={`block p-3 hover:bg-gray-100 ${chat.isUnread ? 'bg-teal-50' : ''}`}>
+                                                            <div className="flex items-center gap-3">
+                                                                {chat.otherUserAvatarUrl ? (
+                                                                    <img src={chat.otherUserAvatarUrl} alt={chat.otherUserName} className="w-10 h-10 rounded-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center"><FiUser /></div>
+                                                                )}
+                                                                <div className="flex-1 overflow-hidden">
+                                                                    <p className="font-semibold truncate text-sm">{chat.otherUserName}</p>
+                                                                    <p className={`text-sm truncate ${chat.isUnread ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                                                        {chat.lastMessageText}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="p-4 text-sm text-gray-500 text-center">Keine neuen Nachrichten.</p>
+                                        )}
+                                        <div className="border-t p-2 text-center">
+                                            <Link href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'} onClick={() => setIsInboxDropdownOpen(false)} className="text-sm font-medium text-[#14ad9f] hover:underline">
+                                                Zum Posteingang
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={handleHelpClick} className="text-gray-600 hover:text-[#14ad9f]" aria-label="Hilfe & Support Chatbot öffnen">
+                                <FiHelpCircle size={22} />
+                            </button>
 
                             {currentUser ? (
                                 <div className="relative" ref={profileDropdownRef}>

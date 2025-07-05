@@ -80,7 +80,7 @@ export default function Step1() {
         <div className="flex justify-end mb-4">
           <button
             onClick={() => router.push('/')} // Navigiert zur Startseite bei Abbruch
-            className="text-gray-600 hover:text-gray-800 text-base sm:text-lg flex items-center transition-colors duration-200"
+            className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200"
           >
             <span className="mr-2">Abbrechen</span>
             <FiX className="text-xl" />

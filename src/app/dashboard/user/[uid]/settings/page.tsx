@@ -18,9 +18,9 @@ export default function UserSettingsDashboardPage() {
     const params = useParams();
     const pageUid = typeof params.uid === 'string' ? params.uid : '';
 
-    const { currentUser: globalCurrentUser, loading: authLoading } = useAuth(); // MOVED HERE
+    const { user: globalCurrentUser, loading: authLoading } = useAuth();
 
-    const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+    const [currentUser, setCurrentUser] = useState<typeof globalCurrentUser>(null);
     const [userData, setUserData] = useState<RawFirestoreUserData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
