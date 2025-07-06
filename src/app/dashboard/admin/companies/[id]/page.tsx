@@ -4,12 +4,12 @@ import { CompanyDetailClientPage } from './components/CompanyDetailClientPage';
 
 export const dynamic = 'force-dynamic';
 
-type Props = {
+// Wir typisieren nur noch das, was wir wirklich aus den Props destrukturieren und verwenden.
+export default async function CompanyDetailPage({
+    params,
+}: {
     params: { id: string };
-    searchParams: { [key: string]: string | string[] | undefined };
-};
-
-export default async function CompanyDetailPage({ params }: Props) {
+}) {
     const { id } = params;
 
     if (!id) {
