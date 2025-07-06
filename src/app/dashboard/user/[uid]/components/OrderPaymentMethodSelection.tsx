@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
-import { loadStripe, Stripe, StripeElementsOptions, StripePaymentElementOptions } from '@stripe/stripe-js';
+import { stripePromise } from '@/lib/stripe'; // Import the shared promise
+import { Stripe, StripeElementsOptions, StripePaymentElementOptions } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 import { SavedPaymentMethod, UserProfileData } from '@/types/types';
@@ -124,9 +125,6 @@ interface OrderPaymentMethodSelectionProps {
     onPaymentError: (message: string | null) => void;
     fullOrderDetails: any;
 }
-
-// Stellen Sie sicher, dass StripePromise nur einmal außerhalb der Komponente geladen wird.
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const OrderPaymentMethodSelection: React.FC<OrderPaymentMethodSelectionProps> = ({
     userProfile,
