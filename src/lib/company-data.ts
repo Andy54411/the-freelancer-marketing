@@ -5,6 +5,12 @@ export interface CompanyData {
     [key: string]: any;
 }
 
+export async function getAllCompanies() {
+    const companiesSnapshot = await db.collection('companies').get();
+    const companies = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return companies;
+}
+
 export async function getCompanyData(id: string): Promise<CompanyData | null> {
     const userDocRef = db.collection('users').doc(id);
     const companyDocRef = db.collection('companies').doc(id);
