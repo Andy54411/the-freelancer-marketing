@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiCheckCircle, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import { useRegistration } from '@/contexts/Registration-Context';
-import { getAuth, createUserWithEmailAndPassword, UserCredential, User as AuthUser } from 'firebase/auth'; // FieldValue,
+import { getAuth, createUserWithEmailAndPassword, UserCredential, User as AuthUser, getIdToken } from 'firebase/auth'; // FieldValue,
 import { doc, setDoc, serverTimestamp, deleteField, updateDoc, FieldValue } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';

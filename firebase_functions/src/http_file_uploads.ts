@@ -125,7 +125,7 @@ export const uploadStripeFile = onRequest(
   {
     // Die Option { cors: true } scheint bei multipart/form-data nicht zuverlässig zu sein.
     // Wir verwenden stattdessen den manuellen cors-Handler.
-    region: 'us-central1'
+    region: 'europe-west1'
   },
   async (req, res) => {
     // WICHTIG: Der corsHandler MUSS die Anfrage verarbeiten, BEVOR irgendeine andere Logik ausgeführt wird.

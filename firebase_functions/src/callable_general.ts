@@ -1,6 +1,6 @@
 // functions/src/callable_general.ts
 
-import { onCall, HttpsError, onRequest, CallableRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import { getDb, getStripeInstance, getUserDisplayName } from './helpers'; // getUserDisplayName hinzugefügt
 import { FieldValue } from 'firebase-admin/firestore';
@@ -85,27 +85,41 @@ interface ReviewData {
 }
 
 
-export const getClientIp = onRequest({ cors: true }, (request, response) => {
+export const getClientIp = onCall({ cors: true }, (request) => {
+  // HttpsError wird bei onCall-Funktionen bevorzugt.
+  if (!request.rawRequest) {
+    throw new HttpsError('internal', 'Raw request is not available.');
+  }
+
   let clientIp = "IP_NOT_DETERMINED";
   const isEmulated = process.env.FUNCTIONS_EMULATOR === "true";
 
-  const forwardedFor = request.headers["x-forwarded-for"];
-  const realIpHeader = request.headers["x-real-ip"];
+  const forwardedFor = request.rawRequest.headers["x-forwarded-for"];
+  const realIpHeader = request.rawRequest.headers["x-real-ip"];
 
-  if (forwardedFor && typeof forwardedFor === "string") clientIp = forwardedFor.split(",")[0].trim();
-  else if (realIpHeader && typeof realIpHeader === "string") clientIp = realIpHeader.split(",")[0].trim();
-  else if (request.ip) clientIp = request.ip;
-  else if (request.socket?.remoteAddress) clientIp = request.socket.remoteAddress;
+  if (forwardedFor && typeof forwardedFor === "string") {
+    clientIp = forwardedFor.split(",")[0].trim();
+  } else if (realIpHeader && typeof realIpHeader === "string") {
+    clientIp = realIpHeader.split(",")[0].trim();
+  } else if (request.rawRequest.ip) {
+    clientIp = request.rawRequest.ip;
+  } else if (request.rawRequest.socket?.remoteAddress) {
+    clientIp = request.rawRequest.socket.remoteAddress;
+  }
 
   if (isEmulated && (clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "IP_NOT_DETERMINED")) {
-    clientIp = "127.0.0.1";
-  } else if (!isEmulated && (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7 || clientIp === "::1" || clientIp.startsWith("127.") || clientIp === "0.0.0.0")) {
-    loggerV2.error(`[getClientIp] In NICHT-Emulator-Umgebung keine gültige IP. Gefunden: "${clientIp}".`);
-    response.status(503).send({ error: "Gültige Client-IP konnte nicht ermittelt werden." });
-    return;
+    clientIp = "127.0.0.1"; // Standard-Emulator-IP
   }
-  loggerV2.info(`[getClientIp] final IP: ${clientIp}`);
-  response.status(200).json({ ip: clientIp });
+
+  if (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7) {
+    loggerV2.warn(`[getClientIp] Konnte keine gültige IP ermitteln. Headers: ${JSON.stringify(request.rawRequest.headers)}`);
+    // Anstatt einen Fehler zu werfen, der den Client blockiert, geben wir einen klaren Status zurück.
+    // Der Client kann dann entscheiden, ob er den Fallback (ipify) nutzen möchte.
+    return { ip: 'IP_NOT_DETERMINED' };
+  }
+
+  loggerV2.info(`[getClientIp] Ermittelte IP: ${clientIp}`);
+  return { ip: clientIp };
 });
 
 export const createTemporaryJobDraft = onCall(
