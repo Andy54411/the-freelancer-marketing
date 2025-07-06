@@ -34,24 +34,27 @@ export async function registerEmployee(prevState: FormState, formData: FormData)
         return { error: 'Bitte füllen Sie alle erforderlichen Felder aus, einschließlich des Einladungscodes.', success: false };
     }
 
-    console.log(`Attempting employee registration for email: ${email}, firstName: ${firstName}, lastName: ${lastName}, inviteCode: ${inviteCode}`);
     try {
-        // 1. Einladungscode gegen die Umgebungsvariable validieren
-        const validInviteCode = process.env.EMPLOYEE_INVITE_CODE;
+        let role: 'master' | 'support';
 
-        // Sicherheitscheck: Ist die Variable auf dem Server gesetzt?
-        if (!validInviteCode) {
-            console.error("Die Umgebungsvariable EMPLOYEE_INVITE_CODE ist nicht gesetzt.");
-            return { error: "Fehler bei der Serverkonfiguration.", success: false };
+        // 1. Prüfe auf den einmaligen Master-Code
+        const masterInviteCode = process.env.MASTER_INVITE_CODE;
+        if (masterInviteCode && inviteCode === masterInviteCode) {
+            role = 'master';
+            console.log(`[registerEmployee] Master-Einladungscode erkannt. Weise Rolle '${role}' zu.`);
+        } else {
+            // 2. Fallback auf den regulären Mitarbeiter-Code
+            const employeeInviteCode = process.env.EMPLOYEE_INVITE_CODE;
+            if (!employeeInviteCode) {
+                console.error("Die Umgebungsvariable EMPLOYEE_INVITE_CODE ist nicht gesetzt.");
+                return { error: "Fehler bei der Serverkonfiguration.", success: false };
+            }
+            if (inviteCode !== employeeInviteCode) {
+                return { error: 'Dieser Einladungscode ist ungültig oder wurde bereits verwendet.', success: false };
+            }
+            role = 'support';
+            console.log(`[registerEmployee] Mitarbeiter-Einladungscode erkannt. Weise Rolle '${role}' zu.`);
         }
-
-        if (inviteCode !== validInviteCode) {
-            return { error: 'Dieser Einladungscode ist ungültig oder wurde bereits verwendet.', success: false };
-        }
-
-        // Da wir nun einen statischen Code verwenden, weisen wir eine feste Rolle zu.
-        // Passen Sie 'support' bei Bedarf an (z.B. 'master').
-        const role = 'support';
 
         let userRecord: UserRecord;
         let isNewUser = false;
