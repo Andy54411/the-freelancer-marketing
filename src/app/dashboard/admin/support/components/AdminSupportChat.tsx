@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
+import { useSearchParams, useRouter } from 'next/navigation'; // NEU
+import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import ChatList from './ChatList';
 import { ChatWindow } from './ChatWindow';
@@ -15,54 +16,65 @@ export interface ChatSession {
         senderId: string;
         isReadBySupport: boolean; // Renamed for clarity
     };
-    users: string[];
-    customerName?: string;
-    customerProfilePicture?: string;
+    userName: string;
+    userAvatarUrl?: string;
+    userId: string;
+    status?: 'bot' | 'human' | 'closed'; // NEU: Chat-Status
 }
 
 const AdminSupportChat = () => {
     const [chats, setChats] = useState<ChatSession[]>([]);
-    const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); // NEU
 
+    // NEU: Die Komponente wird jetzt über die URL gesteuert.
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const selectedChatId = searchParams.get('chatId');
+
     useEffect(() => {
         const q = query(
-            collection(db, 'chats'),
-            where('isLocked', '==', false),
-            where('lastMessage.timestamp', '!=', null),
-            orderBy('lastMessage.timestamp', 'desc')
+            collection(db, 'supportChats'),
+            // KORREKTUR: Nur Chats abrufen, die menschliche Aufmerksamkeit erfordern ('human').
+            // Dies ist effizienter und erfordert einen einfacheren Index.
+            where('status', '==', 'human'),
+            orderBy('lastUpdated', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const chatSessions = querySnapshot.docs.map((chatDoc) => {
                 const chatData = chatDoc.data();
-                const customerId = chatData.users.find((uid: string) => !['support_user_placeholder', 'master_user_placeholder'].includes(uid));
-                const customerDetails = customerId ? chatData.userDetails?.[customerId] : null;
 
                 return {
                     id: chatDoc.id,
                     ...chatData,
-                    customerName: customerDetails?.name || 'Unbekannter Benutzer',
-                    customerProfilePicture: customerDetails?.avatarUrl || undefined,
+                    userName: chatData.userName || 'Unbekannter Benutzer',
+                    userAvatarUrl: chatData.userAvatarUrl || undefined,
                 } as ChatSession;
             });
 
             setChats(chatSessions);
             setLoading(false);
-            setError(null); // Fehler zurücksetzen
+            setError(null);
         }, (error) => {
             console.error("Error fetching chat sessions: ", error);
-            setError("Fehler beim Laden der Chats. Bitte prüfe die Datenstruktur in Firestore.");
+            setError("Fehler beim Laden der Chats. Bitte prüfen Sie Ihre Firebase-Sicherheitsregeln und die Netzwerkverbindung.");
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, []);
 
+    // NEU: Diese Funktion aktualisiert die URL, anstatt nur den State zu setzen.
+    const handleSelectChat = (chatId: string) => {
+        router.push(`/dashboard/admin/support?chatId=${chatId}`);
+    };
+
     return (
-        <div className="h-screen flex bg-gray-100">
-            <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={setSelectedChatId} loading={loading} />
+        // KORREKTUR: 'h-full' statt 'h-screen' verwenden, damit sich die Komponente
+        // korrekt in das Admin-Layout einfügt. Zusätzliche Stile für ein besseres Aussehen.
+        <div className="h-full flex bg-white dark:bg-gray-900 border rounded-lg overflow-hidden shadow-sm">
+            <ChatList chats={chats} selectedChatId={selectedChatId} onSelectChat={handleSelectChat} loading={loading} />
             <div className="flex-1 flex flex-col">
                 {error && <div className="text-red-500 p-4">{error}</div>}
                 {selectedChatId
@@ -70,7 +82,7 @@ const AdminSupportChat = () => {
                     : <div className="flex flex-col justify-center items-center h-full text-gray-500">
                         <FiMessageSquare size={48} />
                         <p className="mt-4 text-lg">Wählen Sie einen Chat aus, um zu beginnen.</p>
-                      </div>
+                    </div>
                 }
             </div>
         </div>

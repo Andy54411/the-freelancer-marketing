@@ -1,38 +1,20 @@
 {
     "compilerOptions": {
-        "target": "ES2020",
         "module": "commonjs",
-        "moduleResolution": "node",
-        "outDir": "lib", // Das Ausgabe-Verzeichnis bleibt 'lib'
-        // "rootDir" wird durch "rootDirs" ersetzt, um Importe von außerhalb des lokalen 'src' zu erlauben
-        "rootDirs": [
-            "src",
-            "../src/shared"
-        ],
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true,
-        "noImplicitAny": false,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "outDir": "lib",
         "sourceMap": true,
-        "types": [
-            "node",
-            "firebase-functions"
-        ],
-        "baseUrl": ".",
-        "paths": {
-            "@functions/*": [
-                "src/*"
-            ],
-            "@shared/*": [
-                "../src/shared/*"
-            ]
-        }
+        "strict": true,
+        "target": "es2021",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "rootDir": "src"
     },
+    "compileOnSave": true,
     "include": [
-        "src/**/*.ts", // Alle TypeScript-Dateien im src-Ordner
-        "src/**/*.d.ts" // Explizite Einbindung von .d.ts-Dateien
+        "src"
     ],
     "exclude": [
         "node_modules",

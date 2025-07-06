@@ -2,7 +2,7 @@
 
 import { onCall, HttpsError, onRequest, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, getAuthInstance, getStripeInstance, getUserDisplayName, corsOptions } from './helpers'; // getUserDisplayName hinzugefügt
+import { getDb, getStripeInstance, getUserDisplayName } from './helpers'; // getUserDisplayName hinzugefügt
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from "firebase-admin"; // <-- Hinzufügen, falls nicht da
 import { defineSecret } from 'firebase-functions/params';
@@ -21,13 +21,7 @@ try {
   throw error;
 }
 
-// --- Interfaces für diese Datei ---
-interface GetClientIpData {
-}
 
-interface GetClientIpResult {
-  ip: string;
-}
 
 interface TemporaryJobDraftData {
   customerType: 'private' | 'business' | null;

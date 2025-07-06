@@ -27,7 +27,7 @@ export const backfillChatUserDetails = onRequest(
         let lastVisibleDoc: QueryDocumentSnapshot | null = null;
 
         try {
-            // eslint-disable-next-line no-constant-condition
+             
             while (true) {
                 logger.info(`Processing next page of chats... (starting after doc: ${lastVisibleDoc?.id || 'beginning'})`);
 

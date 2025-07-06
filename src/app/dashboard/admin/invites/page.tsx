@@ -1,53 +1,20 @@
-import { db } from '@/firebase/server';
-import InviteManager from './InviteManager';
+import { Suspense } from 'react';
+import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react'; // 'AlertTriangle' ist semantisch passender für Fehler
+import { getUnusedInviteCodes, type InviteCode } from '@/lib/invites-data';
+import InviteManager from './InviteManager';
 
-// Definieren eines Typs für unsere Einladungscode-Daten für bessere Typsicherheit
-export interface InviteCode {
-    id: string;
-    code: string;
-    role: 'support' | 'master';
-    createdAt: Date;
-}
-
-interface FetchResult {
-    codes: InviteCode[];
-    error: string | null;
-}
-
-async function getUnusedInviteCodes(): Promise<FetchResult> {
-    try {
-        const snapshot = await db.collection('invite_codes')
-            .where('used', '==', false)
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        if (snapshot.empty) {
-            return { codes: [], error: null };
-        }
-
-        const codes = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                code: data.code,
-                role: data.role,
-                // Firestore Timestamps müssen für die Übergabe an Client-Komponenten serialisiert werden
-                createdAt: data.createdAt.toDate(),
-            };
-        });
-        return { codes, error: null };
-    } catch (error: any) {
-        console.error("Fehler beim Abrufen der Einladungscodes:", error);
-        // Bei einem Fehler eine aussagekräftige Fehlermeldung zurückgeben
-        return { codes: [], error: "Die Einladungscodes konnten nicht geladen werden. Bitte versuchen Sie es später erneut." };
-    }
-}
+export const dynamic = "force-dynamic";
 
 export default async function InvitesPage() {
-    const { codes: unusedCodes, error } = await getUnusedInviteCodes();
+    let codes: InviteCode[] = [];
+    let error: string | null = null;
+    try {
+        codes = await getUnusedInviteCodes();
+    } catch (e: any) {
+        error = e.message || "Ein Fehler ist beim Laden der Einladungscodes aufgetreten.";
+    }
 
     return (
         <div className="space-y-6">
@@ -58,17 +25,19 @@ export default async function InvitesPage() {
                         Erstelle neue Einladungscodes für Mitarbeiter oder sieh dir bestehende, unbenutzte Codes an.
                     </CardDescription>
                 </CardHeader>
-                {error && (
+                {error ? (
                     <CardContent>
                         <Alert variant="destructive">
-                            <AlertTriangle className="h-4 w-4" />
+                            <FiAlertCircle className="h-4 w-4" />
                             <AlertTitle>Fehler</AlertTitle>
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     </CardContent>
-                )}
+                ) : null}
             </Card>
-            <InviteManager initialCodes={unusedCodes} />
+            <Suspense fallback={<div className="flex justify-center items-center h-32"><FiLoader className="animate-spin text-2xl" /></div>}>
+                <InviteManager initialCodes={codes.map(c => ({ ...c, createdAt: new Date(c.createdAt) }))} />
+            </Suspense>
         </div>
     );
 }

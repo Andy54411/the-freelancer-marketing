@@ -4,14 +4,21 @@ service cloud.firestore {
 
     // 🔁 Rollen anhand des user_type im Firestore-Dokument des Benutzers prüfen
     function isCompany() {
-      // Prüft, ob der Benutzer die Rolle 'firma' in seinen Auth-Token-Claims hat.
-      // Dies ist die empfohlene, performante Methode zur Rollenprüfung, die rekursive Fehler vermeidet.
-      return request.auth != null && 'user_type' in request.auth.token
-             && request.auth.token.user_type == 'firma';
+      // KORREKTUR: Liest die Rolle direkt aus dem Firestore-Dokument des Benutzers.
+      // Dies ist zwar weniger performant als Custom Claims, stellt aber die Konsistenz
+      // mit der aktuellen Client-Logik im AuthContext sicher.
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'firma';
     }
-    function isAdmin() {
-      return request.auth != null && 'role' in request.auth.token
-             && request.auth.token.role == 'admin';
+    // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
+    function isSupportStaff() {
+      // KORREKTUR: Liest die Rolle direkt aus dem Firestore-Dokument des Benutzers.
+      // Dies behebt den Fehler, da die Client-Logik ebenfalls aus diesem Dokument liest.
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'master' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'support');
     }
 
     // --- Helper-Funktionen für Chat-Nachrichten ---
@@ -22,7 +29,7 @@ service cloud.firestore {
 
     function canReadMessage() {
       // Erlaubt das Lesen einer Nachricht, wenn der Benutzer Teilnehmer, Firma oder Admin ist.
-      return request.auth != null && (isChatParticipant() || isAdmin());
+      return request.auth != null && (isChatParticipant() || isSupportStaff());
     }
 
     function canCreateMessage(requiredFields) {
@@ -86,7 +93,7 @@ service cloud.firestore {
       allow read: if request.auth != null && resource != null && (
         resource.data.kundeId == request.auth.uid ||
         resource.data.selectedAnbieterId == request.auth.uid ||
-        isAdmin()
+        isSupportStaff()
       );
       allow create,
             update,
@@ -125,10 +132,17 @@ service cloud.firestore {
       // KORREKTUR: Erlaube das Lesen, wenn die Chat-ID dem Muster entspricht.
       // Dies löst das "Huhn-Ei-Problem", bei dem man nicht lesen kann, um zu prüfen,
       // ob ein Dokument existiert, weil die Leseregel das existierende Dokument erfordert.
-      allow read: if request.auth != null && chatId == "support_chat_" + request.auth.uid;
+      // NEU: Support-Mitarbeiter dürfen auch jedes einzelne Chat-Dokument lesen.
+      allow read: if (request.auth != null && chatId == "support_chat_" + request.auth.uid) || isSupportStaff();
       // KORREKTUR: Erlaube dem Benutzer, sein eigenes Support-Chat-Dokument zu aktualisieren (z.B. für lastMessage).
-      allow update: if request.auth != null && resource != null
-                    && resource.data.userId == request.auth.uid;
+      // NEU: Erlaube Support-Mitarbeitern, alle Support-Chats aufzulisten.
+      // Dies ist der Schlüssel zur Behebung des "false for 'list'"-Fehlers im Admin-Dashboard.
+      allow list: if isSupportStaff();
+      // NEU: Support-Mitarbeiter dürfen ein Chat-Dokument aktualisieren (z.B. um es als gelesen zu markieren oder den Status zu ändern).
+      // Der Chatbot (Cloud Function) wird mit Admin-Rechten ausgeführt und kann den Status ebenfalls ändern.
+      allow update: if request.auth != null && resource != null && (
+                      resource.data.userId == request.auth.uid || isSupportStaff()
+                    );
       allow delete: if false;
 
       match /messages/{messageId} {
@@ -136,7 +150,7 @@ service cloud.firestore {
         allow get: if canReadMessage();
         // KORRIGIERT: Vereinfachte und sichere Regel. Ein Benutzer darf die Nachrichten
         // in seinem eigenen Support-Chat auflisten. Dies vermeidet den fehleranfälligen `get()`-Aufruf.
-        allow list: if isSupportChatParticipant(chatId);
+        allow list: if isSupportChatParticipant(chatId) || isSupportStaff();
         allow create: if canCreateMessage([
           "senderId", "text", "timestamp", "chatUsers"
         ]);
@@ -157,8 +171,15 @@ service cloud.firestore {
       // Erlaubt eine Abfrage der 'chats'-Sammlung nur, wenn sie explizit
       // nach der UID des angemeldeten Benutzers im 'users'-Array filtert.
       // Dies sichert die `array-contains`-Abfragen in den Inbox-Seiten ab.
-      allow list: if (request.auth.uid != null && request.query.where.path == "users" && request.query.where.op == "array-contains" && request.query.where.value == request.auth.uid)
-                  || isAdmin(); // Admins dürfen alle Chats für die Support-Seite auflisten.
+      allow list: if isSupportStaff() ||
+                  (request.auth.uid != null &&
+                   request.query != null &&
+                   'where' in request.query && // KORREKTUR: Sicherstellen, dass überhaupt eine Filterbedingung existiert.
+                   request.query.where is list &&
+                   request.query.where.size() == 1 &&
+                   request.query.where[0].path == 'users' &&
+                   request.query.where[0].op == 'array-contains' &&
+                   request.query.where[0].value == request.auth.uid);
       allow delete: if false;
 
       match /messages/{messageId} {
@@ -182,16 +203,32 @@ service cloud.firestore {
 
     // NEU: Regeln für die Benachrichtigungs-Sammlung
     match /notifications/{notificationId} {
-      // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu lesen (sowohl einzeln als auch als Liste).
-      // Diese Regel sichert die Abfrage in UserHeader.tsx ab, die `where('userId', '==', uid)` verwendet.
-      allow read: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+      // get: Ein Benutzer darf seine eigene Benachrichtigung lesen. Ein Admin darf jede lesen.
+      allow get: if request.auth != null && (
+        (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
+      );
+
+      // list: Support-Mitarbeiter dürfen alle Benachrichtigungen auflisten.
+      // Normale Benutzer dürfen nur ihre eigenen Benachrichtigungen auflisten, indem sie ihre UID filtern.
+      // KORREKTUR: Die übermäßig komplexe Hilfsfunktion wird entfernt. Stattdessen wird die
+      // Regel direkt und analog zur 'chats'-Sammlung implementiert. Dies ist robuster und
+      // weniger fehleranfällig.
+      allow list: if isSupportStaff() ||
+                  (request.auth.uid != null &&
+                   // The query MUST filter by the user's own UID.
+                   // Removing the size check makes the rule more robust and allows for `orderBy`.
+                   request.query.where[0].path == 'userId' &&
+                   request.query.where[0].op == '==' &&
+                   request.query.where[0].value == request.auth.uid);
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
-      allow update: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+      // Ein Admin darf ebenfalls jede Benachrichtigung aktualisieren.
+      allow update: if request.auth != null && resource != null && (
+        resource.data.userId == request.auth.uid || isSupportStaff()
+      );
 
-      // Erlaubt einem authentifizierten Benutzer, eine Benachrichtigung für sich selbst zu erstellen.
-      // Hinweis: In der Regel werden Benachrichtigungen vom Backend (Cloud Functions) erstellt.
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // create: Wird vom Backend (Cloud Function) mit Admin-Rechten erledigt.
+      allow create: if false;
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu löschen.
       allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;

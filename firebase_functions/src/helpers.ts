@@ -8,7 +8,6 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { defineString, defineSecret } from "firebase-functions/params";
 import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from "./constants";
 
 // --- Instanz-Variablen für Lazy Loading ---
@@ -156,7 +155,7 @@ export function getStripeInstance(stripeKey: string): Stripe {
       try {
         stripeClientInstance = new Stripe(stripeKey, {
           typescript: true,
-          apiVersion: "2025-05-28.basil",
+          apiVersion: "2024-06-20",
         });
         logger.info("[getStripeInstance] Stripe-Client erfolgreich initialisiert.");
       } catch (e: unknown) {

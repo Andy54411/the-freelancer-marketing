@@ -174,13 +174,6 @@ export const stripeWebhookHandler = onRequest(
                                 personalCountry?: string;
                             } | undefined;
 
-                            const createdAtTimestamp = tempJobDraftData.createdAt instanceof Timestamp
-                                ? tempJobDraftData.createdAt
-                                : new Timestamp(
-                                    Math.floor(Date.now() / 1000),
-                                    0
-                                );
-
                             // Berechnung für die Clearing-Periode (z.B. 14 Tage)
                             const clearingPeriodDays = 14;
                             const paidAtDate = new Date(); // Zeitpunkt der erfolgreichen Zahlung

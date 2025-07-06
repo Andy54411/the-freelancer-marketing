@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { httpsCallable, HttpsCallableResult } from 'firebase/functions';
 import { functions } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
-import { InviteCode } from './page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -59,6 +58,14 @@ interface DeleteInviteData {
     codeId: string;
 }
 type DeleteInviteResult = CallableFunctionResult;
+
+// Typdefinition direkt hier, da nicht mehr aus page importiert werden kann
+export interface InviteCode {
+    id: string;
+    code: string;
+    role: 'support' | 'master';
+    createdAt: Date;
+}
 
 interface InviteManagerProps {
     initialCodes: InviteCode[];

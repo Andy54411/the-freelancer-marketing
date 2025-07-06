@@ -1,38 +1,17 @@
-// src/app/dashboard/admin/support/page.tsx
 'use client';
 
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { FiLoader, FiShield } from 'react-icons/fi';
-import AdminSupportChat from './components/AdminSupportChat';
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
-const AdminSupportPage = () => {
-    const { user, loading } = useAuth();
+import React, { Suspense } from 'react';
+import { FiLoader } from 'react-icons/fi';
+import AdminSupportChat from './components/AdminSupportChat'; // NEU: Importiere die Hauptkomponente
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <FiLoader className="animate-spin text-4xl text-teal-500" />
-            </div>
-        );
-    }
-
-    if (user?.role !== 'master' && user?.role !== 'support') {
-        return (
-            <div className="flex flex-col justify-center items-center min-h-screen text-center">
-                <FiShield size={48} className="text-red-500 mb-4" />
-                <h1 className="text-2xl font-bold">Zugriff verweigert</h1>
-                <p className="text-gray-600 mt-2">Sie haben nicht die erforderlichen Berechtigungen, um diese Seite anzuzeigen.</p>
-            </div>
-        );
-    }
-
+export default function AdminSupportPage() {
     return (
-        <ProtectedRoute>
+        // Suspense ist notwendig, da AdminSupportChat jetzt `useSearchParams` verwendet.
+        <Suspense fallback={<div className="flex justify-center items-center h-full"><FiLoader className="animate-spin text-2xl" /></div>}>
             <AdminSupportChat />
-        </ProtectedRoute>
+        </Suspense>
     );
-};
-
-export default AdminSupportPage;
+}

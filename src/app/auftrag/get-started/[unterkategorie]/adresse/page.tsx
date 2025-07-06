@@ -1,10 +1,11 @@
+
 // /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/page.tsx
 'use client';
 
 import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { FiLoader, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
 import CompanyProfileDetail from './components/CompanyProfileDetail';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from './components/DateTimeSelectionPopup';
 import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/types/types';
@@ -42,11 +43,7 @@ export default function AddressPage() {
   const [city, setCityState] = useState(registration.jobCity || '');
   const [postalCode, setPostalCodeState] = useState(registration.jobPostalCode || '');
   const [country, setCountryState] = useState(registration.jobCountry || 'Deutschland');
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
-    libraries: libraries,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
@@ -126,11 +123,27 @@ export default function AddressPage() {
         registration.setSelectedSubcategory(initialSubcategory);
       }
     } else { console.warn(PAGE_WARN, "Keine initiale Unterkategorie für AddressPage gefunden."); }
+
+    // KORREKTUR: Beschreibung aus URL-Parametern lesen und im Context speichern.
+    // Dies stellt sicher, dass die Beschreibung auch nach einem Reload oder bei direkter Navigation
+    // zur Adress-Seite vorhanden ist und nicht verloren geht.
+    const descriptionFromUrl = searchParams?.get('description');
+    if (descriptionFromUrl && (!registration.description || registration.description.trim() === '')) {
+      try {
+        const decodedDescription = decodeURIComponent(descriptionFromUrl);
+        registration.setDescription(decodedDescription);
+        console.log(PAGE_LOG, `Beschreibung aus URL in Context geladen: "${decodedDescription}"`);
+      } catch (e) {
+        console.error(PAGE_ERROR, "Fehler beim Dekodieren der Beschreibung aus der URL:", e);
+        registration.setDescription(descriptionFromUrl); // Fallback auf nicht-dekodierten Wert
+      }
+    }
+
     if (registration.jobStreet) setStreetState(registration.jobStreet);
     if (registration.jobPostalCode) setPostalCodeState(registration.jobPostalCode);
     if (registration.jobCity) setCityState(registration.jobCity);
     if (registration.jobCountry) setCountryState(registration.jobCountry);
-  }, [pathParams, registration]);
+  }, [pathParams, registration, searchParams]);
 
   const selectedMainCategory = useMemo(() => {
     if (!selectedSubcategory) return null;
@@ -326,8 +339,11 @@ export default function AddressPage() {
       bestaetigungsPageParams.append('dateFrom', dateFromFormatted);
       if (dateToFormatted && dateToFormatted !== dateFromFormatted) bestaetigungsPageParams.append('dateTo', dateToFormatted);
       if (finalTimeParam) bestaetigungsPageParams.append('time', finalTimeParam);
-      if (finalDurationStringInput) bestaetigungsPageParams.append('auftragsDauer', encodeURIComponent(finalDurationStringInput));
+      if (finalDurationStringInput) bestaetigungsPageParams.append('auftragsDauer', finalDurationStringInput);
       if (totalPriceInCents) bestaetigungsPageParams.append('price', (totalPriceInCents / 100).toFixed(2));
+      // KORREKTUR: Die Auftragsbeschreibung aus dem Context muss hier an die URL übergeben werden.
+      if (registration.description) bestaetigungsPageParams.append('description', registration.description);
+
       const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
 
       // NEU: Redirection check hier, beim Klick auf Bestätigen von Datum/Uhrzeit
@@ -338,7 +354,7 @@ export default function AddressPage() {
         router.push(bestaetigungsPagePath);
       } else {
         // Nicht angemeldet, leite zur Registrierungsseite weiter
-        router.push(`/register/user?redirectTo=${encodeURIComponent(bestaetigungsPagePath)}`);
+        router.push(`/register/user?redirectTo=${bestaetigungsPagePath}`);
       }
     } else if (dateFromFormatted) {
       console.log(`${PAGE_LOG} Nur Datum/Zeit im Filter geändert. Lade Profile neu.`); fetchCompanyProfiles();

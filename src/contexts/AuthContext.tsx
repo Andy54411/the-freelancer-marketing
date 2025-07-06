@@ -24,6 +24,7 @@ export interface UserProfile {
   role: 'master' | 'support' | 'firma' | 'kunde'; // Spezifischere Rollen
   firstName?: string;
   lastName?: string;
+  profilePictureURL?: string; // NEU: Avatar-URL für alle Benutzerprofile
   // Fügen Sie hier weitere globale Profilfelder hinzu
 }
 
@@ -81,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               role: (profileData.user_type as UserProfile['role']) || 'kunde',
               firstName: profileData.firstName,
               lastName: profileData.lastName,
+              profilePictureURL: profileData.profilePictureURL || undefined,
             });
           } else {
             console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden. Dies ist während der Registrierung zu erwarten. Es wird ein temporäres Profil verwendet.`);
@@ -166,6 +168,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading || isRedirecting) {
       return;
+    }
+
+    // KORREKTUR: Prüfe auf ein sessionStorage-Flag, das nach der Registrierung gesetzt wird.
+    // Dies verhindert die sofortige Weiterleitung zum Dashboard und erlaubt die Navigation zur Bestätigungsseite.
+    const justRegisteredFlag = sessionStorage.getItem('justRegistered');
+    if (justRegisteredFlag === 'true') {
+      console.log("AuthContext: Weiterleitung zum Dashboard wird unterdrückt, da 'justRegistered' Flag gefunden wurde. Das Flag wird nun entfernt.");
+      // Entferne das Flag, damit es bei der nächsten Navigation nicht erneut blockiert.
+      sessionStorage.removeItem('justRegistered');
+      return; // Breche diesen Effekt hier ab, um die Weiterleitung zu verhindern.
     }
 
     const publicPaths = ['/', '/login', '/register/company', '/register/user'];

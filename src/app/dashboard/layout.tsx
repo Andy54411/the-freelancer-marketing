@@ -1,3 +1,7 @@
+'use client';
+
+export const dynamic = "force-dynamic";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function DashboardLayout({

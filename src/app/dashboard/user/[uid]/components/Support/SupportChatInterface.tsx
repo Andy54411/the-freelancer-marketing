@@ -17,30 +17,28 @@ import { db } from '@/firebase/clients';
 import { FiLoader, FiSend, FiUser, FiCpu } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface ChatMessage {
+import ChatMessageBubble from './ChatMessageBubble'; // Import der neuen Komponente
+
+// NEU: Eine Schnittstelle für die Nutzdaten einer Systemnachricht
+export interface SystemMessagePayload {
+  agentName: string;
+  agentAvatarUrl?: string | null;
+}
+
+export interface ChatMessage { // Exportiert für die Verwendung in ChatMessageBubble
   id: string;
   text: string;
   senderId: string;
   senderName: string;
-  senderType: 'kunde' | 'support';
+  senderType: 'kunde' | 'support' | 'bot' | 'system'; // 'system' als senderType hinzugefügt
   timestamp: any; // Should be Firestore Timestamp
+  systemPayload?: SystemMessagePayload; // NEU: Optionale Nutzdaten für Systemnachrichten
+  chatUsers?: string[]; // Hinzugefügt für Konsistenz
 }
 
 interface SupportChatInterfaceProps {
   onClose: () => void;
 }
-
-const formatMessageTimestamp = (timestamp: any): string => {
-  if (!timestamp || typeof timestamp.toDate !== 'function') return '';
-  const date = timestamp.toDate();
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  if (date >= startOfToday) {
-    return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  }
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
 
 const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) => {
   const { user: userProfile, firebaseUser: currentUser } = useAuth();
@@ -48,6 +46,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isChatReady, setIsChatReady] = useState(false); // NEU: State, um sicherzustellen, dass der Chat initialisiert ist.
   const [chatError, setChatError] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const chatId = currentUser ? `support_chat_${currentUser.uid}` : null;
@@ -56,6 +55,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
   useEffect(() => {
     if (!chatId || !currentUser || !userProfile) {
       setLoading(false);
+      setIsChatReady(false);
       return;
     }
 
@@ -97,11 +97,25 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
               isReadBySupport: true, // Initial message is read by default
             },
             lastUpdated: serverTimestamp(),
+            users: [currentUser.uid], // NEU: Das 'users'-Array von Anfang an hinzufügen, damit der Bot es lesen kann.
+            status: 'bot', // NEU: Chat standardmäßig im Bot-Modus starten, damit der Chatbot antwortet.
           });
+        } else {
+          // NEU: Prüfen, ob das existierende Dokument den 'status' hat.
+          // Wenn nicht, wird er hinzugefügt, um alte Chats zu migrieren.
+          const chatData = docSnap.data();
+          // KORREKTUR: Setze den Status bei JEDEM Öffnen des Chats auf 'bot',
+          // um sicherzustellen, dass jede neue Konversation mit dem Bot beginnt.
+          if (chatData.status !== 'bot') {
+            console.log(`[SupportChat] Chat-Dokument ${chatId} existiert, aber Status ist '${chatData.status || 'undefined'}'. Setze auf 'bot' zurück...`);
+            await updateDoc(chatDocRef, { status: 'bot' });
+          }
         }
+        setIsChatReady(true); // Chat ist jetzt initialisiert und bereit zum Senden.
       } catch (error) {
         console.error("Fehler beim Sicherstellen des Chat-Dokuments:", error);
         setChatError("Chat konnte nicht initialisiert werden.");
+        setIsChatReady(false);
       }
     };
 
@@ -178,17 +192,12 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         {loading ? (
           <div className="flex justify-center items-center h-full"><FiLoader className="animate-spin text-2xl text-teal-500" /></div>
         ) : (
-          chatMessages.map(message => (
-            <div key={message.id} className={`flex items-start gap-3 ${message.senderId === currentUser?.uid ? 'justify-end' : 'justify-start'}`} title={`Gesendet von ${message.senderName}`}>
-              {message.senderId !== currentUser?.uid && (<div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0" title="Support"><FiCpu className="text-teal-600" /></div>)}
-              <div className={`max-w-[80%] p-3 rounded-lg ${message.senderId === currentUser?.uid ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                <p>{message.text}</p>
-                <p className={`text-xs mt-1 ${message.senderId === currentUser?.uid ? 'text-teal-100' : 'text-gray-500'} text-right`}>
-                  {formatMessageTimestamp(message.timestamp)}
-                </p>
-              </div>
-              {message.senderId === currentUser?.uid && (<div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center shrink-0"><FiUser className="text-white" /></div>)}
-            </div>
+          chatMessages.map(msg => (
+            <ChatMessageBubble
+              key={msg.id}
+              message={msg}
+              isCurrentUser={msg.senderId === currentUser?.uid}
+            />
           ))
         )}
         <div ref={messagesEndRef} />
@@ -208,7 +217,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         />
         <button
           type="submit"
-          disabled={!message.trim() || loading || isSending}
+          disabled={!message.trim() || loading || isSending || !isChatReady} // NEU: Senden wird blockiert, bis der Chat bereit ist.
           className="p-3 bg-teal-500 text-white rounded-full hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
         >
           {isSending ? <FiLoader className="animate-spin" size={20} /> : <FiSend size={20} />}

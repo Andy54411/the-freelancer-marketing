@@ -13,15 +13,15 @@ import { geohashForLocation } from 'geofire-common';
 const STRIPE_SECRET_KEY_TRIGGERS = defineSecret("STRIPE_SECRET_KEY");
 
 // Helper function to clean and normalize company data before writing to Firestore.
-const cleanAndNormalizeCompanyData = (data: any): any => {
+const cleanAndNormalizeCompanyData = (data: Record<string, unknown>): Record<string, unknown> => {
   const cleanedData = { ...data };
   Object.keys(cleanedData).forEach((key) => {
     if (cleanedData[key] === undefined || cleanedData[key] === "") {
       cleanedData[key] = null;
     }
   });
-  if (cleanedData.hourlyRate !== null && isNaN(cleanedData.hourlyRate)) cleanedData.hourlyRate = null;
-  if (cleanedData.radiusKm !== null && isNaN(cleanedData.radiusKm)) cleanedData.radiusKm = null;
+  if (cleanedData.hourlyRate !== null && isNaN(Number(cleanedData.hourlyRate))) cleanedData.hourlyRate = null;
+  if (cleanedData.radiusKm !== null && isNaN(Number(cleanedData.radiusKm))) cleanedData.radiusKm = null;
   if (cleanedData.lat !== null && isNaN(Number(cleanedData.lat))) cleanedData.lat = null;
   if (cleanedData.lng !== null && isNaN(Number(cleanedData.lng))) cleanedData.lng = null;
   return cleanedData;
@@ -121,7 +121,7 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
     const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
     const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
 
-    const companyData: any = {
+    const companyData: Record<string, unknown> = {
       uid: userId,
       user_type: "firma",
       companyName: companyName,
@@ -155,8 +155,12 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
     try {
       await db.collection("companies").doc(userId).set(finalCompanyData, { merge: true });
       loggerV2.info(`[createUserProfile] Company-Dokument für ${userId} erstellt/gemerged.`);
-    } catch (error: any) {
-      loggerV2.error(`[createUserProfile] Fehler bei Company-Dokument für ${userId}:`, error.message, error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        loggerV2.error(`[createUserProfile] Fehler bei Company-Dokument für ${userId}:`, error.message, error);
+      } else {
+        loggerV2.error(`[createUserProfile] Fehler bei Company-Dokument für ${userId}:`, String(error));
+      }
     }
   }
   return null;
@@ -196,7 +200,7 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
     const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
     const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
 
-    const companyDataUpdate: any = {
+    const companyDataUpdate: Record<string, unknown> = {
       uid: userId,
       user_type: "firma",
       updatedAt: FieldValue.serverTimestamp(),
@@ -240,8 +244,12 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
     try {
       await db.collection("companies").doc(userId).set(finalCompanyDataUpdate, { merge: true });
       loggerV2.info(`[updateUserProfile] Company-Dokument für ${userId} aktualisiert.`);
-    } catch (error: any) {
-      loggerV2.error(`[updateUserProfile] Fehler Company-Dokument für ${userId}:`, error.message, error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        loggerV2.error(`[updateUserProfile] Fehler Company-Dokument für ${userId}:`, error.message, error);
+      } else {
+        loggerV2.error(`[updateUserProfile] Fehler Company-Dokument für ${userId}:`, String(error));
+      }
     }
   } else {
     loggerV2.info(`[updateUserProfile] User ${userId} Typ '${userData.user_type}', kein Update für companies Dokument.`);
@@ -396,11 +404,21 @@ export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{u
       stripeAccountError: FieldValue.delete(),
     });
     return null;
-  } catch (error: any) {
-    loggerV2.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, error.message, error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      loggerV2.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, error.message, error);
+    } else {
+      loggerV2.error(`Fehler Erstellung Stripe Account (Trigger Fallback) für ${userId}:`, String(error));
+    }
     await db.collection("users").doc(userId).update({
-      stripeAccountError: error instanceof Error ? error.message : String(error.toString()),
-    }).catch((dbErr: any) => loggerV2.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, dbErr.message, dbErr));
+      stripeAccountError: error instanceof Error ? error.message : String(error),
+    }).catch((dbErr: unknown) => {
+      if (dbErr instanceof Error) {
+        loggerV2.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, dbErr.message, dbErr);
+      } else {
+        loggerV2.error(`DB-Fehler Speichern Stripe-Fehler (Trigger Fallback) für ${userId}:`, String(dbErr));
+      }
+    });
     return null;
   }
 });

@@ -2,7 +2,7 @@
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { logger as loggerV2 } from "firebase-functions/v2";
 import { getDb, getUserDisplayName, getChatParticipantDetails } from "./helpers";
-import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from "./constants"; // UNKNOWN_PROVIDER_NAME is used in onCompanyUpdatePropagateToChats
+import { UNKNOWN_PROVIDER_NAME } from "./constants"; // UNKNOWN_PROVIDER_NAME is used in onCompanyUpdatePropagateToChats
 
 interface UserDetails {
     [key: string]: {
@@ -134,7 +134,7 @@ export const onChatUpdateManageUserDetails = onDocumentUpdated("chats/{chatId}",
     loggerV2.info(`[onChatUpdateManageUserDetails] Users ${addedUserIds.join(', ')} added to chat ${chatId}. Fetching details.`);
 
     const db = getDb();
-    const userDetailsUpdates: { [key: string]: any } = {};
+    const userDetailsUpdates: Record<string, unknown> = {};
 
     const userPromises = addedUserIds.map(async (userId) => {
         const userIdStr = String(userId);

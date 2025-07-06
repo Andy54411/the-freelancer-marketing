@@ -1,63 +1,9 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GenerationConfig, SafetySetting } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server'; // Korrekt: Server-Instanz für API-Routen verwenden
+import { getSystemInstruction } from '@/shared/chatbot-utils';
 
 const MODEL_NAME = "gemini-1.5-flash-latest";
-
-// Einfacher In-Memory-Cache, um Firestore-Abfragen zu reduzieren
-let cachedSystemInstruction: string | null = null;
-let lastFetchTime = 0;
-const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 Minuten
-
-async function getSystemInstruction(): Promise<string> {
-    const now = Date.now();
-    if (cachedSystemInstruction && (now - lastFetchTime < CACHE_DURATION_MS)) {
-        return cachedSystemInstruction;
-    }
-
-    try {
-        const docRef = db.collection('chatbot_config').doc('knowledge_base');
-        const configDoc = await docRef.get();
-        if (!configDoc.exists) {
-            throw new Error("Chatbot 'knowledge_base' Dokument nicht in Firestore gefunden.");
-        }
-        const configData = configDoc.data();
-
-        // Dynamisches Erstellen der Anweisung aus den Firestore-Daten
-        const persona = configData?.persona || "Du bist ein hilfsbereiter Assistent.";
-        const context = configData?.context || "Tasko ist eine Plattform.";
-        const faqs = configData?.faqs || [];
-        const rules = configData?.rules || [];
-
-        const faqString = faqs.map((faq: { q: string, a: string }, index: number) =>
-            `${index + 1}.  **Frage: ${faq.q}**\n    *   **Antwort:** ${faq.a}`
-        ).join('\n\n');
-
-        const rulesString = rules.map((rule: string) => `- ${rule}`).join('\n');
-
-        const instruction = `
-${persona}
-
-## Kontext über Tasko:
-${context}
-
-## Deine Wissensdatenbank (Antworte NUR basierend auf diesen Informationen):
-**Häufig gestellte Fragen (FAQ):**
-${faqString}
-
-## Verhaltensregeln:
-${rulesString}
-        `.trim();
-
-        cachedSystemInstruction = instruction;
-        lastFetchTime = now;
-        return cachedSystemInstruction;
-    } catch (error) {
-        console.error("Fehler beim Laden der Chatbot-Konfiguration aus Firestore:", error);
-        // Fallback auf eine Standard-Anweisung, falls Firestore fehlschlägt
-        return "Du bist ein hilfsbereiter Assistent für Tasko. Antworte freundlich und auf Deutsch.";
-    }
-}
 
 export async function POST(request: Request) {
     try {
@@ -71,7 +17,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt." }, { status: 500 });
         }
 
-        const systemInstruction = await getSystemInstruction();
+        // KORREKTUR: Verwende die geteilte Funktion. Der Standard-Logger (console.error) ist hier ausreichend.
+        const systemInstruction = await getSystemInstruction(db);
 
         const genAI = new GoogleGenerativeAI(apiKey);
         // Verwende das dedizierte systemInstruction-Feld für besseres Kontextmanagement

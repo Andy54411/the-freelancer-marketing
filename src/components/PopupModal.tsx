@@ -113,7 +113,11 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
         {showQRCode && (
           <div className="mb-4 flex justify-center items-center">
             <p className="text-blue-600 font-semibold mb-2">Scanne den QR-Code mit deinem Handy, um die Ausweisdokumente hochzuladen:</p>
-            <QRCode value={`${window.location.origin}/upload-from-phone?sessionId=${uid}`} size={220} />
+            <QRCode 
+              value={`${window.location.origin}/upload-from-phone?sessionId=${uid}`}
+              size={220}
+              title="QR-Code für Upload-Link"
+            />
           </div>
         )}
 

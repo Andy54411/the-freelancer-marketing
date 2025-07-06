@@ -327,7 +327,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       }
     }
 
-    const fileUploadPromises: Promise<any>[] = [];
+    // Statt Promise<any>[] => Promise<unknown>[] für Typsicherheit und keine any-Fehler
+    const fileUploadPromises: Promise<unknown>[] = [];
     const uploadedStripeFileIds: { [key: string]: string | undefined | null } = {};
 
     if (form.businessLicenseFile) {

@@ -1,12 +1,8 @@
-import { onRequest, HttpsError } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import { getDb, FieldValue, getUserDisplayName } from './helpers'; // FieldValue import is correct
-import * as admin from 'firebase-admin';
-import cors from 'cors';
 import { UNKNOWN_PROVIDER_NAME, UNNAMED_COMPANY } from './constants';
 import { geohashForLocation } from 'geofire-common';
-
-const corsHandler = cors({ origin: true });
 
 export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB" }, async (req, res) => {
   const db = getDb();

@@ -39,6 +39,7 @@ export default function Step1() {
 
   const router = useRouter(); // Next.js Router für Navigation
 
+
   // Funktion zum Behandeln des "Weiter"-Klicks
   const handleNext = () => {
     if (localPassword !== confirmPassword) {
@@ -68,12 +69,12 @@ export default function Step1() {
       confirmPassword.trim() !== '' &&
       localDateOfBirth.trim() !== '' &&
       localPhoneNumber.trim() !== '' &&
+      localPhoneNumber.trim() !== '' &&
       agreeTerms && // Allgemeine Geschäftsbedingungen müssen akzeptiert sein
       localIsSoleOwner; // Alleiniger Inhaber muss bestätigt sein
   };
 
   return (
-    // Hauptcontainer mit Hintergrundverlauf und Zentrierung
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br p-4 sm:p-6 font-sans">
       {/* Top-Bereich: Abbrechen-Button, Fortschrittsbalken, Schritt-Header */}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4"> {/* Max-Breite angepasst */}
@@ -108,7 +109,7 @@ export default function Step1() {
       </div>
 
       {/* Formular-Container */}
-      <div className="max-w-xl w-full bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-200"> {/* Verbesserter Schatten und Rundung */}
+      <div className="max-w-2xl w-full bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-200"> {/* Verbesserter Schatten und Rundung */}
         <h2 className="text-2xl sm:text-3xl font-bold text-teal-600 mb-6 text-center">Registrierung als Tasker</h2> {/* Neuer Titel */}
         <p className="text-gray-600 text-center mb-8">Erzählen Sie uns etwas über sich.</p> {/* Zusätzlicher Untertitel */}
 
@@ -156,15 +157,34 @@ export default function Step1() {
 
             {/* Telefonnummer */}
             <div className="mb-4 md:mb-0">
-              <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="phoneNumber">Telefonnummer</label>
-              <input
-                type="tel" // Typ "tel" für Telefonnummern
-                id="phoneNumber"
-                value={localPhoneNumber}
-                onChange={(e) => setLocalPhoneNumber(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
-              />
+              <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="phoneNumber">
+                Telefonnummer
+              </label>
+              <div className="flex">
+                <select
+                  className="w-24 mr-2 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
+                  value={localPhoneNumber.substring(0, localPhoneNumber.indexOf(' ') + 1).trim()}
+                  onChange={(e) =>
+                    setLocalPhoneNumber(e.target.value + localPhoneNumber.substring(localPhoneNumber.indexOf(' ') + 1))
+                  }
+                >
+                  <option value="+49">+49 (Deutschland)</option>
+                  <option value="+41">+41 (Schweiz)</option>
+                  <option value="+43">+43 (Österreich)</option>
+                  {/* Füge hier weitere Ländercodes hinzu */}
+                </select>
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  value={localPhoneNumber.substring(localPhoneNumber.indexOf(' ') + 1)}
+                  onChange={(e) =>
+                    setLocalPhoneNumber(localPhoneNumber.substring(0, localPhoneNumber.indexOf(' ') + 1) + e.target.value)
+                  }
+                  required
+                  placeholder="Deine Nummer"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
+                />
+              </div>
             </div>
           </div> {/* Ende Grid */}
 

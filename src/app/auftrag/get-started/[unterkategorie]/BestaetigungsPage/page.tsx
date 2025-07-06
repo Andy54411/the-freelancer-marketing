@@ -7,13 +7,14 @@ import BestaetigungsContent from './components/BestaetigungsContent';
 import { StripeCardCheckout } from '@/components/CheckoutForm';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { httpsCallable, FunctionsError } from 'firebase/functions';
-import { app, functions } from '@/firebase/clients';
+import { app, functions, db } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 import { findCategoryBySubcategory } from '@/lib/categoriesData';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { PaymentElement } from '@stripe/react-stripe-js';
+import { doc, getDoc } from 'firebase/firestore';
 
 
 // HIER WIRD DER STRIPE PUBLISHABLE KEY AKTUALISIERT
@@ -140,6 +141,55 @@ export default function BestaetigungsPage() {
   const pathParams = useParams();
   const registration = useRegistration();
 
+  // --- NEU: Frühe Pflichtdaten-Prüfung und Redirect, bevor irgendetwas anderes passiert ---
+  React.useEffect(() => {
+    // Hilfsfunktionen für Pflichtdaten aus Context/URL
+    const unterkategorieAusPfad = typeof pathParams?.unterkategorie === 'string' ? decodeURIComponent(pathParams.unterkategorie as string) : '';
+    const anbieterIdFromUrl = searchParams?.get('anbieterId') ?? '';
+    const postalCodeFromUrl = searchParams?.get('postalCode') ?? '';
+    const dateFromUrl = searchParams?.get('dateFrom') ?? '';
+    const timeUrl = searchParams?.get('time') ?? '';
+    const auftragsDauerUrl = searchParams?.get('auftragsDauer') ?? '';
+    const priceFromUrl = (() => {
+      const priceString = searchParams?.get('price');
+      return priceString ? Math.round(parseFloat(priceString) * 100) : null;
+    })();
+    const descriptionFromUrl = searchParams?.get('description') ?? '';
+
+    // Context/URL-Mix für Pflichtfelder
+    const requiredFields = {
+      customerType: registration.customerType,
+      selectedCategory: registration.selectedCategory || (unterkategorieAusPfad ? findCategoryBySubcategory(unterkategorieAusPfad) : null),
+      selectedSubcategory: registration.selectedSubcategory || unterkategorieAusPfad,
+      description: registration.description || descriptionFromUrl,
+      jobPostalCode: registration.jobPostalCode || postalCodeFromUrl,
+      jobDateFrom: registration.jobDateFrom || dateFromUrl,
+      jobTimePreference: registration.jobTimePreference || timeUrl,
+      selectedAnbieterId: anbieterIdFromUrl || registration.selectedAnbieterId,
+      jobDurationString: registration.jobDurationString || auftragsDauerUrl,
+      jobTotalCalculatedHours: registration.jobTotalCalculatedHours || (auftragsDauerUrl ? parseInt(auftragsDauerUrl, 10) : null),
+      jobCalculatedPriceInCents: registration.jobCalculatedPriceInCents || priceFromUrl,
+    };
+    // Prüfe auf fehlende Pflichtfelder
+    const missing = [];
+    if (!requiredFields.customerType) missing.push('Kundentyp');
+    if (!requiredFields.selectedCategory) missing.push('Kategorie');
+    if (!requiredFields.selectedSubcategory) missing.push('Unterkategorie');
+    if (!requiredFields.description || requiredFields.description.trim().length === 0) missing.push('Beschreibung');
+    if (!requiredFields.jobPostalCode) missing.push('PLZ');
+    if (!requiredFields.jobDateFrom) missing.push('Datum');
+    if (!requiredFields.jobTimePreference) missing.push('Uhrzeit');
+    if (!requiredFields.selectedAnbieterId) missing.push('Anbieter');
+    if (!requiredFields.jobDurationString) missing.push('Dauer');
+    if (!requiredFields.jobTotalCalculatedHours || requiredFields.jobTotalCalculatedHours <= 0) missing.push('Gesamtdauer');
+    if (!requiredFields.jobCalculatedPriceInCents || requiredFields.jobCalculatedPriceInCents <= 0) missing.push('Preis');
+
+    if (missing.length > 0) {
+      // Sofortige Weiterleitung zurück zum Start der Auftragserstellung
+      router.replace('/auftrag/get-started');
+    }
+  }, [registration, searchParams, pathParams, router]);
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [kundeStripeCustomerId, setKundeStripeCustomerId] = useState<string | null>(null);
   const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null);
@@ -258,8 +308,22 @@ export default function BestaetigungsPage() {
         setIsLoadingPageData(true);
         setPageError(null);
 
+        // KORREKTUR: Lade das Benutzerprofil, um den Kundentyp zuverlässig zu bestimmen,
+        // anstatt sich nur auf den RegistrationContext zu verlassen.
+        let userProfileData: { user_type?: 'private' | 'business' } = {};
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            userProfileData = userDocSnap.data() as { user_type?: 'private' | 'business' };
+            console.log(PAGE_LOG, `Benutzerprofil für ${currentUser.uid} geladen. Kundentyp: ${userProfileData.user_type}`);
+          }
+        } catch (e) {
+          console.error(PAGE_ERROR, "Fehler beim Laden des Benutzerprofils:", e);
+        }
+
         // --- Datenquelle für DraftData (Priorität: Context > URL-Parameter > Fallbacks) ---
-        const customerTypeToUse = registration.customerType || null;
+        const customerTypeToUse = registration.customerType || userProfileData.user_type || null;
         // VERSUCH, selectedCategory abzuleiten, falls nicht im Context
         let selectedCategoryToUse = registration.selectedCategory || null; // Beginne mit dem Wert aus dem Context
         if (!selectedCategoryToUse && unterkategorieAusPfad) {
@@ -355,7 +419,10 @@ export default function BestaetigungsPage() {
           setPageError(`Wichtige Auftragsinformationen fehlen: ${missingFields.join(', ')}. Bitte gehen Sie zurück und vervollständigen Sie Ihre Eingaben.`);
           setIsLoadingPageData(false);
           isInitializing.current = false;
-          // router.push('/auftrag/get-started'); // Weiterleitung entfernt, um die Fehlermeldung auf der Seite anzuzeigen.
+          // Automatische Weiterleitung nach 2 Sekunden
+          setTimeout(() => {
+            router.push('/auftrag/get-started');
+          }, 2000);
           return;
         }
         // --- ENDE KORRIGIERTE PFLICHTDATEN-PRÜFUNG ---
@@ -591,13 +658,15 @@ export default function BestaetigungsPage() {
     setPaymentMessage(`Zahlung erfolgreich! ID: ${paymentIntentId}. Dein Auftrag ${tempJobDraftId || 'unbekannt'} wird bearbeitet.`);
     if (registration.resetRegistrationData) registration.resetRegistrationData();
 
-    // WICHTIG: Weiterleitung zum Dashboard nach erfolgreicher Zahlung und Speicherung
-    if (currentUser?.uid) {
-      router.push(`/dashboard/user/${currentUser.uid}`);
-    } else {
-      // Fallback, falls currentUser aus irgendeinem Grund nicht verfügbar ist
-      router.push('/dashboard'); // Oder eine generische Erfolgsseite
-    }
+    // Weiterleitung zum Dashboard nach erfolgreicher Zahlung.
+    // Eine kurze Verzögerung gibt dem Benutzer Zeit, die Erfolgsmeldung zu lesen.
+    setTimeout(() => {
+      if (currentUser?.uid) {
+        router.push(`/dashboard/user/${currentUser.uid}`);
+      } else {
+        router.push('/dashboard'); // Fallback, falls die User-ID nicht verfügbar ist
+      }
+    }, 3000); // 3 Sekunden Verzögerung
   };
 
   const handlePaymentError = (errorMessage: string) => {
@@ -629,12 +698,12 @@ export default function BestaetigungsPage() {
   const bestaetigungsContentProps: BestaetigungsContentPropsForPage = {
     anbieterId: anbieterIdFromUrl,
     unterkategorie: subcategoryForContent || '',
-    postalCodeJob: registration.jobPostalCode || postalCodeFromUrl || '',
-    initialJobDateFrom: registration.jobDateFrom,
-    initialJobDateTo: registration.jobDateTo,
-    initialJobTime: registration.jobTimePreference,
-    initialJobDescription: registration.description,
-    initialJobDurationString: registration.jobDurationString,
+    postalCodeJob: postalCodeFromUrl || registration.jobPostalCode || '',
+    initialJobDateFrom: dateFromUrl || registration.jobDateFrom,
+    initialJobDateTo: registration.jobDateTo, // This is less critical, often null
+    initialJobTime: timeUrl || registration.jobTimePreference,
+    initialJobDescription: descriptionFromUrl || registration.description,
+    initialJobDurationString: auftragsDauerUrl || registration.jobDurationString,
     onPriceCalculated: handlePriceCalculatedFromChild,
     onDetailsChange: handleDetailsChangeFromChild,
     // NEU: Übergebe die berechneten Preisdetails zur Anzeige an BestaetigungsContent

@@ -1,50 +1,41 @@
 'use server';
 
-import { db } from "@/firebase/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from 'next/cache';
+import { db } from '@/firebase/server';
 
 export type FormState = {
     message: string;
     isError: boolean;
 }
 
-// Der erste Parameter 'prevState' wird von useFormState benötigt
-export async function updateConfig(prevState: FormState, formData: FormData): Promise<FormState> {
-    const rawFormData = {
-        persona: formData.get('persona') as string,
-        context: formData.get('context') as string,
-        faqsRaw: formData.get('faqs') as string,
-        rulesRaw: formData.get('rules') as string,
-    };
-
-    let faqs = [];
+export async function updateConfig(
+    prevState: FormState,
+    formData: FormData,
+): Promise<FormState> {
     try {
-        // Parse den JSON-String der FAQs sicher
-        faqs = JSON.parse(rawFormData.faqsRaw || '[]');
-    } catch (error) {
-        console.error("Fehler beim Parsen der FAQ-JSON:", error);
-        return { message: "Das FAQ-JSON ist ungültig. Bitte überprüfe die Syntax.", isError: true };
-    }
+        const persona = formData.get('persona') as string;
+        const context = formData.get('context') as string;
+        const faqsString = formData.get('faqs') as string;
+        const rulesString = formData.get('rules') as string;
+        const coreProcessesString = formData.get('coreProcesses') as string; // NEU
 
-    const rules = rawFormData.rulesRaw.split('\n').filter(rule => rule.trim() !== '');
+        let faqs;
+        try {
+            faqs = JSON.parse(faqsString);
+            if (!Array.isArray(faqs)) throw new Error("FAQs müssen ein gültiges JSON-Array sein.");
+        } catch (e) {
+            return { message: 'Fehler: Die FAQs sind kein gültiges JSON-Format.', isError: true };
+        }
 
-    try {
-        const docRef = db.collection('chatbot_config').doc('knowledge_base');
-        await docRef.set({
-            persona: rawFormData.persona,
-            context: rawFormData.context,
-            faqs: faqs,
-            rules: rules,
-        }, { merge: true }); // merge: true stellt sicher, dass andere Felder im Dokument nicht überschrieben werden
+        const rules = rulesString.split('\n').map(rule => rule.trim()).filter(Boolean);
+        const coreProcesses = coreProcessesString.split('\n').map(process => process.trim()).filter(Boolean); // NEU
 
-        // Leere den Cache für die API-Route und die Admin-Seite, damit die Änderungen sofort sichtbar sind
-        revalidatePath('/api/chat');
+        await db.collection('chatbot_config').doc('knowledge_base').set({ persona, context, faqs, rules, coreProcesses }, { merge: true });
+
         revalidatePath('/dashboard/admin/ai-config');
-
         return { message: "Konfiguration erfolgreich gespeichert!", isError: false };
-
     } catch (error) {
-        console.error("Fehler beim Speichern der Konfiguration in Firestore:", error);
-        return { message: "Konfiguration konnte nicht in Firestore gespeichert werden.", isError: true };
+        const errorMessage = error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+        return { message: `Fehler beim Speichern: ${errorMessage}`, isError: true };
     }
 }

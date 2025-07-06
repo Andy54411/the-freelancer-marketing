@@ -1,18 +1,13 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-import { getDb, getStripeInstance, getPublicFrontendURL, getEmulatorCallbackFrontendURL, getChatParticipantDetails, ParticipantDetails, corsOptions } from './helpers';
+import { getDb, getStripeInstance, getEmulatorCallbackFrontendURL, getChatParticipantDetails, ParticipantDetails, corsOptions } from './helpers';
 import { defineSecret, defineString } from 'firebase-functions/params';
 import { FieldValue } from 'firebase-admin/firestore';
-import * as admin from "firebase-admin";
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const FRONTEND_URL_PARAM = defineString("FRONTEND_URL");
-const EMULATOR_PUBLIC_FRONTEND_URL_PARAM = defineString("EMULATOR_PUBLIC_FRONTEND_URL", {
-  description: 'Publicly accessible URL for the frontend when testing with emulators.',
-  default: ""
-});
 // Log für den Ladevorgang der Datei
 loggerV2.info("Lade callable_stripe.ts...");
 
@@ -144,36 +139,8 @@ interface UserProfile {
   }[];
 }
 
-interface DeleteCompanyAccountResult {
-  success: boolean;
-  message: string;
-}
 
-interface TemporaryJobDraftData {
-  customerType: 'private' | 'business' | null;
-  selectedCategory: string | null;
-  selectedSubcategory: string | null;
-  description: string;
-  jobStreet?: string;
-  jobPostalCode?: string;
-  jobCity?: string;
-  jobCountry?: string | null;
-  jobDateFrom?: string | null;
-  jobDateTo?: string | null;
-  jobTimePreference?: string | null;
-  dateFrom?: string | null;
-  dateTo?: string | null;
-  timePreference?: string | null;
-  selectedAnbieterId?: string | null;
-  jobDurationString?: string;
-  jobTotalCalculatedHours?: number | null;
-  jobCalculatedPriceInCents?: number | null;
-}
 
-interface TemporaryJobDraftResult {
-  tempDraftId: string;
-  anbieterStripeAccountId?: string | null;
-}
 
 const translateStripeRequirement = (req: string): string => {
   if (req.startsWith('company.address.')) return `Firmenadresse (${req.substring(req.lastIndexOf('.') + 1)})`;
@@ -239,7 +206,6 @@ export const createStripeAccountIfComplete = onCall(
     const db = getDb();
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     const { userId, clientIp, ...payloadFromClient } = request.data;
-    const publicFrontendURL = getPublicFrontendURL(frontendUrlValue); // <-- Parameter übergeben
 
     if (!stripeKey) {
       loggerV2.error("[createStripeAccountIfComplete] FATAL: Stripe Secret Key ist nicht verfügbar. Überprüfen Sie die Umgebungsvariablen/Secrets.");
@@ -290,7 +256,7 @@ export const createStripeAccountIfComplete = onCall(
     ];
 
     for (const field of requiredFields) {
-      const value = payloadFromClient[field.key];
+      const value = request.data[field.key];
       if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) {
         throw new HttpsError("failed-precondition", `${field.name} ist eine Pflichtangabe.`);
       }
@@ -664,7 +630,6 @@ export const updateStripeCompanyDetails = onCall(
     const frontendUrlValue = FRONTEND_URL_PARAM.value();
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
-    const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL(frontendUrlValue); // <-- Parameter übergeben
     const userDocRef = db.collection("users").doc(userId);
 
     try {
@@ -988,8 +953,6 @@ export const getSavedPaymentMethods = onCall(
     }
 
     const firebaseUserId = request.auth.uid;
-    const stripeKey = STRIPE_SECRET_KEY.value(); // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt.
-    const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
 
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
@@ -1026,7 +989,6 @@ export const getStripeAccountStatus = onCall(
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein."); }
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
-    const emulatorCallbackFrontendURL = getEmulatorCallbackFrontendURL(frontendUrlValue); // <-- Parameter übergeben
     try {
       const userDoc = await db.collection("users").doc(userId).get();
       if (!userDoc.exists) throw new HttpsError("not-found", "Nutzerdokument nicht gefunden.");
@@ -1113,8 +1075,6 @@ export const getProviderStripeAccountId = onCall(
   async (request: CallableRequest<{ providerUid: string }>): Promise<{ stripeAccountId: string }> => {
     loggerV2.info("[getProviderStripeAccountId] Aufgerufen.");
     const db = getDb(); // Firestore-Instanz
-    const stripeKey = STRIPE_SECRET_KEY.value(); // Secret-Zugriff
-    const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     if (!request.auth?.uid) {
       loggerV2.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");
       throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");

@@ -15,7 +15,6 @@ import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Goog
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
 
 
-
 const PAGE_LOG = "UserRegisterPage:";
 const PAGE_ERROR = "UserRegisterPage ERROR:";
 const PAGE_WARN = "UserRegisterPage WARN:";
@@ -165,6 +164,10 @@ function UserRegisterFormContent() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       console.log(PAGE_LOG, 'Benutzer registriert:', user.uid);
+
+      // KORREKTUR: Setze das sessionStorage-Flag SOFORT nach der erfolgreichen
+      // Authentifizierung, um die Race Condition mit dem AuthContext zu gewinnen.
+      sessionStorage.setItem('justRegistered', 'true');
 
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,

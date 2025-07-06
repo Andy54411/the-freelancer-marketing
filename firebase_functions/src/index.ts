@@ -16,7 +16,6 @@ setGlobalOptions({
     concurrency: 1, // <-- NEU: Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
 });
 
-export * from './callable_admin';
 export * from './callable_stripe';
 export * from './callable_general';
 export * from './http_general';
@@ -31,3 +30,4 @@ export * from './http_migrations'
 export * from './invites';
 export * from './triggers_auth';
 export * from './on_call_functions';
+export * from './chatbot';

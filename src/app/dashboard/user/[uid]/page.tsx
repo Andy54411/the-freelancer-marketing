@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/auth/ProtectedRoute'; // Import ProtectedRoute
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy, documentId } from 'firebase/firestore';
 import { db, functions, auth, onAuthStateChanged, signOut, type User as FirebaseUser } from '@/firebase/clients';
 import { WelcomeBox } from './components/WelcomeBox';
 import { FiLoader, FiAlertCircle, FiMessageSquare, FiPlusCircle, FiHelpCircle } from 'react-icons/fi';
@@ -97,50 +97,54 @@ export default function UserDashboardPage() {
         orderBy('paidAt', 'desc')
       );
 
-      const providerNameCache = new Map<string, string>();
       const querySnapshot = await getDocs(q);
-
-      const orderProcessingPromises = querySnapshot.docs.map(async (orderDoc) => {
-        const data = orderDoc.data();
-        let providerName = data.providerName as string | undefined;
-
-        if (!providerName && data.selectedAnbieterId) {
-          const providerId = data.selectedAnbieterId;
-          if (providerNameCache.has(providerId)) {
-            providerName = providerNameCache.get(providerId);
-          } else {
-            try {
-              const companyDocRef = doc(db, 'companies', providerId);
-              const companyDocSnap = await getDoc(companyDocRef);
-              if (companyDocSnap.exists() && companyDocSnap.data()?.companyName) {
-                providerName = companyDocSnap.data().companyName;
-              } else {
-                const userDocRef = doc(db, 'users', providerId);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists()) {
-                  const userData = userDocSnap.data();
-                  providerName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Unbekannter Anbieter';
-                }
-              }
-              if (providerName) providerNameCache.set(providerId, providerName);
-            } catch (e) {
-              console.error(`Failed to fetch provider name for ID ${providerId}`, e);
-            }
-          }
-        }
-
-        return {
-          id: orderDoc.id,
-          selectedSubcategory: data.selectedSubcategory,
-          status: data.status,
-          totalPriceInCents: data.totalAmountPaidByBuyer || 0,
-          jobDateFrom: data.jobDateFrom,
-          jobTimePreference: data.jobTimePreference,
-          providerName: providerName || 'Anbieter', // Fallback name
-        };
+      const ordersData = querySnapshot.docs.map(doc => {
+        const data = doc.data() as Omit<OrderListItem, 'id'> & { selectedAnbieterId?: string };
+        return { id: doc.id, ...data };
       });
 
-      const resolvedOrders = await Promise.all(orderProcessingPromises);
+      // 1. Collect all unique provider IDs that don't already have a providerName
+      const providerIdsToFetch = [...new Set(
+        ordersData
+          .filter(order => !order.providerName && order.selectedAnbieterId)
+          .map(order => order.selectedAnbieterId!)
+      )];
+
+      const providerNameCache = new Map<string, string>();
+
+      // 2. Efficiently fetch all required provider names in batches
+      if (providerIdsToFetch.length > 0) {
+        const CHUNK_SIZE = 30; // Firestore 'in' query limit
+        for (let i = 0; i < providerIdsToFetch.length; i += CHUNK_SIZE) {
+          const chunk = providerIdsToFetch.slice(i, i + CHUNK_SIZE);
+
+          // First, try to get names from the 'companies' collection
+          const companiesQuery = query(collection(db, 'companies'), where(documentId(), 'in', chunk));
+          const companiesSnapshot = await getDocs(companiesQuery);
+          companiesSnapshot.forEach(doc => {
+            providerNameCache.set(doc.id, doc.data().companyName || 'Unbekannter Anbieter');
+          });
+
+          // For any IDs not found in 'companies', look them up in 'users'
+          const remainingIds = chunk.filter(id => !providerNameCache.has(id));
+          if (remainingIds.length > 0) {
+            const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', remainingIds));
+            const usersSnapshot = await getDocs(usersQuery);
+            usersSnapshot.forEach(doc => {
+              const userData = doc.data();
+              const name = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Unbekannter Anbieter';
+              providerNameCache.set(doc.id, name);
+            });
+          }
+        }
+      }
+
+      // 3. Map over the original orders data and populate the provider names
+      const resolvedOrders = ordersData.map(order => ({
+        ...order,
+        providerName: order.providerName || providerNameCache.get(order.selectedAnbieterId!) || 'Anbieter',
+      }));
+
       // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus,
       // da diese in der Dashboard-Vorschau nicht angezeigt werden sollen.
       const visibleOrders = resolvedOrders.filter(

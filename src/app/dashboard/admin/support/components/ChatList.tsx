@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { FiUser, FiLoader } from 'react-icons/fi';
+import { FiUser, FiLoader, FiCpu } from 'react-icons/fi'; // FiCpu für Bot-Icon
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -35,8 +35,8 @@ const ChatList: React.FC<ChatListProps> = ({ chats, selectedChatId, onSelectChat
                             className={`flex items-center p-3 cursor-pointer border-b border-gray-200 transition-colors duration-150 ${selectedChatId === chat.id ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
                         >
                             <div className="relative mr-3 flex-shrink-0">
-                                {chat.customerProfilePicture ? (
-                                    <Image src={chat.customerProfilePicture} alt={chat.customerName || 'User'} width={48} height={48} className="rounded-full object-cover" />
+                                {chat.userAvatarUrl ? (
+                                    <Image src={chat.userAvatarUrl} alt={chat.userName || 'User'} width={48} height={48} className="rounded-full object-cover" />
                                 ) : (
                                     <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center"><FiUser className="text-white" size={24} /></div>
                                 )}
@@ -47,12 +47,15 @@ const ChatList: React.FC<ChatListProps> = ({ chats, selectedChatId, onSelectChat
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="font-semibold text-gray-800 truncate">{chat.customerName}</h3>
+                                    <h3 className="font-semibold text-gray-800 truncate">{chat.userName}</h3>
                                     <p className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                                        {chat.lastMessage?.timestamp && formatDistanceToNow(chat.lastMessage.timestamp.toDate(), { addSuffix: true, locale: de })}
+                                        {chat.lastMessage?.timestamp ? formatDistanceToNow(chat.lastMessage.timestamp.toDate(), { addSuffix: true, locale: de }) : ''}
                                     </p>
                                 </div>
-                                <p className={`text-sm truncate ${chat.lastMessage && !chat.lastMessage.isReadBySupport && chat.lastMessage.senderId !== user?.uid ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>{chat.lastMessage?.text}</p>
+                                <div className="flex items-center justify-between">
+                                    <p className={`text-sm truncate ${chat.lastMessage && !chat.lastMessage.isReadBySupport && chat.lastMessage.senderId !== user?.uid ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>{chat.lastMessage?.text}</p>
+                                    {chat.status === 'bot' && <FiCpu className="text-teal-500 ml-2 flex-shrink-0" title="Wird von Bot bearbeitet" />}
+                                </div>
                             </div>
                         </div>
                     ))}

@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
-import { registerEmployee } from './actions'; // Importiere die Action-Funktion
+import { registerEmployee } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,17 +25,32 @@ function SubmitButton() {
 }
 
 export default function EmployeeRegistrationPage() {
-    const [state, dispatch] = useActionState(registerEmployee, { error: null, success: false });
+    const [state, setState] = useState<{ error: string | null; success: boolean }>({ error: null, success: false });
+    const [formDisabled, setFormDisabled] = useState(false);
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setFormDisabled(true);
+        const formData = new FormData(event.currentTarget);
+        const result = await registerEmployee(state, formData);
+        setState(result);
+        setFormDisabled(false);
+    }
+
+    useEffect(() => {
+        if (state.success) {
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        }
+    }, [state.success]);
 
     if (state.success) {
         return (
             <main className="flex items-center justify-center min-h-screen bg-gray-100">
                 <Card className="w-full max-w-md text-center p-6">
                     <CardTitle className="text-2xl text-green-600">Registrierung erfolgreich!</CardTitle>
-                    <CardDescription className="mt-2">Dein Mitarbeiter-Konto wurde erstellt. Du kannst dich jetzt anmelden.</CardDescription>
-                    <Button asChild className="mt-4 bg-[#14ad9f] hover:bg-teal-700">
-                        <Link href="/login">Zur Anmeldung</Link>
-                    </Button>
+                    <CardDescription className="mt-2">Dein Mitarbeiter-Konto wurde erstellt. Du wirst gleich weitergeleitet.</CardDescription>
                 </Card>
             </main>
         );
@@ -43,37 +58,37 @@ export default function EmployeeRegistrationPage() {
 
     return (
         <main className="flex items-center justify-center min-h-screen bg-gray-100">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-md p-6">
                 <CardHeader>
-                    <CardTitle>Mitarbeiter-Registrierung</CardTitle>
-                    <CardDescription>Erstelle ein neues Konto für das Tasko-Dashboard.</CardDescription>
+                    <CardTitle className="text-2xl">Mitarbeiter registrieren</CardTitle>
+                    <CardDescription>Bitte fülle das Formular aus, um ein Mitarbeiterkonto zu erstellen.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form action={dispatch} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="firstName">Vorname</Label>
-                                <Input id="firstName" name="firstName" required />
+                                <Input id="firstName" name="firstName" required disabled={formDisabled} />
                             </div>
                             <div>
                                 <Label htmlFor="lastName">Nachname</Label>
-                                <Input id="lastName" name="lastName" required />
+                                <Input id="lastName" name="lastName" required disabled={formDisabled} />
                             </div>
                         </div>
                         <div>
                             <Label htmlFor="email">E-Mail</Label>
-                            <Input id="email" name="email" type="email" required />
+                            <Input id="email" name="email" type="email" required disabled={formDisabled} />
                         </div>
                         <div>
                             <Label htmlFor="password">Passwort</Label>
-                            <Input id="password" name="password" type="password" required minLength={6} />
+                            <Input id="password" name="password" type="password" required minLength={6} disabled={formDisabled} />
                         </div>
                         <div>
                             <Label htmlFor="inviteCode">Einladungscode</Label>
-                            <Input id="inviteCode" name="inviteCode" required />
+                            <Input id="inviteCode" name="inviteCode" required disabled={formDisabled} />
                         </div>
-                        {state.error && (<p className="text-sm text-red-500">{state.error}</p>)}
                         <SubmitButton />
+                        {state.error && <p className="text-red-600 mt-2">{state.error}</p>}
                     </form>
                 </CardContent>
             </Card>

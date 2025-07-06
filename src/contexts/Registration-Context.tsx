@@ -74,7 +74,7 @@ interface RegistrationData {
 }
 
 // NEU: setJobId zur RegistrationContextType hinzugefügt
-interface RegistrationContextType extends RegistrationData {
+export interface RegistrationContextType extends RegistrationData {
   setStep: Dispatch<SetStateAction<number>>;
   setCustomerType: Dispatch<SetStateAction<'private' | 'business' | null>>;
   setSelectedCategory: Dispatch<SetStateAction<string | null>>;
@@ -239,13 +239,13 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       dateOfBirth: undefined, personalStreet: undefined, personalHouseNumber: undefined, personalPostalCode: undefined,
       personalCity: undefined, personalCountry: 'DE', isManagingDirectorOwner: true, // Standard auf 'DE'
       ownershipPercentage: undefined, isActualDirector: undefined, isActualOwner: undefined,
-      actualOwnershipPercentage: undefined, isActualExecutive: undefined, actualRepresentativeTitle: undefined, // Hier war ein Tippfehler im Original-Diff, korrigiert
+      actualOwnershipPercentage: undefined, isActualExecutive: undefined, actualRepresentativeTitle: undefined,
       companyName: '', legalForm: null, companyStreet: '', companyHouseNumber: '', companyPostalCode: '', companyCity: '',
       companyCountry: 'DE', companyWebsite: '', iban: '', accountHolder: '', selectedSkills: {}, selectedHandwerkSkills: null, // Standard auf 'DE'
       selectedHaushaltServices: null, profilePictureFile: null, businessLicenseFile: null,
       masterCraftsmanCertificateFile: null, identityFrontFile: null, identityBackFile: null,
       companyRegister: undefined, hourlyRate: '', taxNumber: '', vatId: '',
-      lat: null, lng: null, latLngPolygon: null, radiusKm: 30
+      lat: null, lng: null, latLngPolygon: null, radiusKm: 30,
     };
   };
 

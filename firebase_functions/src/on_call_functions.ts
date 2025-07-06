@@ -2,8 +2,8 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb } from "./helpers"; // Relativer Pfad ist hier in Ordnung.
-import { getBookingCharacteristics } from "@shared/booking-characteristics"; // Alias für geteilten Code verwenden.
+import { getDb } from "./helpers";
+import { getBookingCharacteristics } from "./shared/booking-characteristics";
 
 // Typen für die Funktion
 interface SearchPayload {

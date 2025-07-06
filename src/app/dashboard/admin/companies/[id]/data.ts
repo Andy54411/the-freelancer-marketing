@@ -1,6 +1,5 @@
 import { db, admin } from '@/firebase/server';
 import type { CompanyDetailData } from './types';
-import type { File } from '@google-cloud/storage';
 
 async function listUserDocuments(companyId: string): Promise<{ files: { name: string; url: string }[] }> {
     try {
@@ -19,7 +18,7 @@ async function listUserDocuments(companyId: string): Promise<{ files: { name: st
         console.log(`[data.ts] 2. listUserDocuments: ${files.length} Datei(en) im Storage gefunden.`);
 
         const documents = await Promise.all(
-            files.map(async (file: File) => {
+            files.map(async (file) => {
                 if (file.name.endsWith('/')) return null;
                 const [url] = await file.getSignedUrl({ action: 'read', expires: '03-09-2491' });
                 return { name: file.name, url };

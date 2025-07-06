@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';  // Verwendet jetzt 'react-qr-code' statt 'qrcode.react'
 import { getDatabase, ref, set, onValue } from 'firebase/database';
@@ -17,6 +19,7 @@ export default function UploadPromptDesktop() {
   const [sessionId, setSessionId] = useState('');
   const [uploadStatus, setUploadStatus] = useState<'pending' | 'uploaded' | 'error' | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [phoneUrl, setPhoneUrl] = useState<string>('');
 
   useEffect(() => {
     // Session ID erzeugen
@@ -43,22 +46,26 @@ export default function UploadPromptDesktop() {
       const url = snapshot.val();
       if (url) setUploadedImageUrl(url);
     });
-  }, []);
 
-  // URL für den QR-Code erstellen
-  const phoneUrl = `${window.location.origin}/upload-from-phone?sessionId=${sessionId}`;
+    // phoneUrl nur im Client setzen
+    if (typeof window !== 'undefined') {
+      setPhoneUrl(`${window.location.origin}/upload-from-phone?sessionId=${newSessionId}`);
+    }
+  }, []);
 
   return (
     <div className="p-6 text-center">
       <h2 className="mb-4 text-xl font-semibold">Upload per Handy</h2>
       <p className="mb-4">Scanne den QR-Code mit deinem Handy, um direkt Fotos aufzunehmen und hochzuladen.</p>
-      {sessionId && <QRCode value={phoneUrl} size={220} />}
+      {sessionId && phoneUrl && <QRCode value={phoneUrl} size={220} title="QR-Code für Upload-Link" />}
       <p className="mt-4">
         Oder öffne auf deinem Handy diesen Link:
         <br />
-        <a href={phoneUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-          {phoneUrl}
-        </a>
+        {phoneUrl && (
+          <a href={phoneUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+            {phoneUrl}
+          </a>
+        )}
       </p>
 
       <div className="mt-6">
