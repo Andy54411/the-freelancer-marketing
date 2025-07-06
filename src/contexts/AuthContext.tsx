@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { orderBy, limit } from "firebase/firestore"; // NEU: orderBy und limit importieren
 import { auth, db } from '@/firebase/clients';
+import { signOut } from "firebase/auth"; // NEU: signOut importieren
 
 /**
  * Definiert ein einheitliches Benutzerprofil, das Daten aus Firebase Auth
@@ -43,7 +44,8 @@ export interface AuthContextType {
   user: UserProfile | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
-  userRole: 'master' | 'support' | 'user' | null;
+  logout: () => Promise<void>; // NEU: Logout-Funktion hinzufügen
+  userRole: 'master' | 'support' | 'firma' | 'kunde' | null;
   unreadMessagesCount: number;
   recentChats: HeaderChatPreview[]; // NEU: Fügt die letzten Chats zum Context hinzu
 }
@@ -60,6 +62,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const router = useRouter();
   const pathname = usePathname();
+
+  // NEU: Logout-Funktion implementieren
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setFirebaseUser(null);
+      // Optional: Leite den Benutzer nach dem Logout weiter
+      router.push('/login');
+    } catch (error) {
+      console.error("Fehler beim Abmelden: ", error);
+      // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -108,8 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  // KORREKTUR: Dieser Effekt ist jetzt der ZENTRALE Listener für alle globalen Chat-Informationen.
-  // Er ersetzt die separaten Listener in UserHeader und AuthContext.
+  // NEU: Chat-Listener für eingeloggte Benutzer
   useEffect(() => {
     if (!user?.uid) {
       setUnreadMessagesCount(0);
@@ -160,63 +175,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRecentChats([]);
     });
 
-    return () => unsubscribe();
-  }, [user]);
-
-
-  // Effekt für die automatische Weiterleitung nach dem Login
-  useEffect(() => {
-    if (loading || isRedirecting) {
-      return;
-    }
-
-    // KORREKTUR: Prüfe auf ein sessionStorage-Flag, das nach der Registrierung gesetzt wird.
-    // Dies verhindert die sofortige Weiterleitung zum Dashboard und erlaubt die Navigation zur Bestätigungsseite.
-    const justRegisteredFlag = sessionStorage.getItem('justRegistered');
-    if (justRegisteredFlag === 'true') {
-      console.log("AuthContext: Weiterleitung zum Dashboard wird unterdrückt, da 'justRegistered' Flag gefunden wurde. Das Flag wird nun entfernt.");
-      // Entferne das Flag, damit es bei der nächsten Navigation nicht erneut blockiert.
-      sessionStorage.removeItem('justRegistered');
-      return; // Breche diesen Effekt hier ab, um die Weiterleitung zu verhindern.
-    }
-
-    const publicPaths = ['/', '/login', '/register/company', '/register/user'];
-    const shouldRedirect = user && publicPaths.includes(pathname);
-
-    if (shouldRedirect) {
-      console.log(`AuthContext: Benutzer ${user.uid} ist auf einer öffentlichen Seite (${pathname}). Leite weiter...`);
-      setIsRedirecting(true);
-
-      let destination: string;
-      switch (user.role) {
-        case 'master':
-        case 'support':
-          destination = '/dashboard/admin';
-          break;
-        case 'firma':
-          destination = `/dashboard/company/${user.uid}`;
-          break;
-        default:
-          destination = `/dashboard/user/${user.uid}`;
-          break;
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
       }
-      console.log(`AuthContext: Benutzerrolle ist '${user.role}', leite weiter zu: ${destination}`);
-      router.replace(destination);
-    }
-  }, [user, loading, pathname, router, isRedirecting]);
+    };
+  }, [user]); // Abhängig vom Benutzerobjekt
 
-  const userRole = user?.role
-    ? user.role === 'master' || user.role === 'support'
-      ? user.role
-      : user.role === 'firma'
-        ? 'user'
-        : 'user'
-    : null;
-
-  const value = useMemo(
-    () => ({ user, firebaseUser, loading, userRole: userRole as 'master' | 'support' | 'user' | null, unreadMessagesCount, recentChats }),
-    [user, firebaseUser, loading, userRole, unreadMessagesCount, recentChats]
-  );
+  // HINWEIS: `useMemo` wird verwendet, um unnötige Neurenderungen von abhängigen Komponenten zu vermeiden.
+  // Der Context-Wert wird nur dann neu berechnet, wenn sich eine der Abhängigkeiten ändert.
+  const value = useMemo(() => ({
+    user,
+    firebaseUser,
+    loading,
+    logout, // NEU: Logout-Funktion im Context bereitstellen
+    userRole: user?.role || null,
+    unreadMessagesCount,
+    recentChats,
+  }), [user, firebaseUser, loading, unreadMessagesCount, recentChats]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
