@@ -266,7 +266,7 @@ export default function Step5CompanyPage() {
     formData.append('userId', userId);
 
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f';
-    const region = 'us-central1';
+    const region = 'europe-west1';
 
     const uploadUrl = process.env.NODE_ENV === 'development'
       ? `http://127.0.0.1:5001/${projectId}/${region}/uploadStripeFile`
