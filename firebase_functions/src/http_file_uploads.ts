@@ -15,12 +15,27 @@ import { defineSecret } from "firebase-functions/params"; // <-- Hinzufügen, fa
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY_UPLOADS = defineSecret("STRIPE_SECRET_KEY");
 
-// WICHTIG: Dies initialisiert die Firebase Admin SDK für DIESE spezielle Funktion.
-// Es muss hier stehen, da diese Datei direkt 'admin'-Dienste nutzt.
-// admin.initializeApp(); // Entfernt, da getStorage() dies über getAdminApp() in helpers.ts handhabt
+// CORS-Konfiguration für verschiedene Umgebungen
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://tasko-rho.vercel.app',
+  'https://tasko-zh8k.vercel.app',
+  'https://tilvo-f142f.web.app'
+];
 
-const corsHandler = cors({ origin: true });
-
+const corsHandler = cors({ 
+  origin: (origin, callback) => {
+    // `origin` ist `undefined` für Server-zu-Server-Anfragen oder wenn der Client den Origin-Header nicht sendet (z.B. curl)
+    // In diesen Fällen oder wenn die Herkunft erlaubt ist, den Zugriff gewähren.
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+});
 
 const authenticateRequest = async (req: any): Promise<admin.auth.DecodedIdToken> => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
@@ -113,8 +128,16 @@ export const uploadStripeFile = onRequest(
     region: 'us-central1'
   },
   async (req, res) => {
+    // WICHTIG: Der corsHandler MUSS die Anfrage verarbeiten, BEVOR irgendeine andere Logik ausgeführt wird.
     corsHandler(req, res, async () => {
-      logger.info("[uploadStripeFile] Function execution started.");
+      logger.info("[uploadStripeFile] Function execution started after CORS check.");
+
+      // Der Preflight-Request (OPTIONS) sollte hier bereits behandelt worden sein.
+      // Wenn es sich um einen OPTIONS-Request handelt, hat corsHandler bereits geantwortet und wir sollten hier nicht weitermachen.
+      if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+      }
 
       if (req.method !== 'POST') {
         logger.warn(`[uploadStripeFile] Method Not Allowed: ${req.method}`);
