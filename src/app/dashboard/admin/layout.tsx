@@ -1,58 +1,46 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-    IconLayoutDashboard,
-    IconClipboardList,
-    IconBuilding,
-    IconMessageCircle,
-} from '@tabler/icons-react';
-
-const navigation = [
-    { name: 'Dashboard', href: '/dashboard/admin', icon: IconLayoutDashboard },
-    { name: 'Aufträge', href: '/dashboard/admin/orders', icon: IconClipboardList },
-    { name: 'Firmen', href: '/dashboard/admin/companies', icon: IconBuilding },
-    { name: 'Support', href: '/dashboard/admin/support', icon: IconMessageCircle },
-];
-
-function classNames(...classes: (string | boolean | undefined)[]) {
-    return classes.filter(Boolean).join(' ');
-}
+import React, { useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import Sidebar from './support/components/Sidebar';
+import Header from './support/components/Header';
+import { FiLoader } from 'react-icons/fi';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
+    const { user, loading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && user) {
+            // Nur 'master' und 'support' dürfen auf das Admin-Dashboard zugreifen.
+            if (user.role !== 'master' && user.role !== 'support') {
+                console.warn(`[AdminLayout] Unbefugter Zugriff von Benutzer ${user.uid} mit Rolle '${user.role}'. Leite weiter...`);
+                router.replace('/dashboard'); // Leite zu einem sicheren Standard-Dashboard weiter.
+            }
+        } else if (!loading && !user) {
+            // Wenn nicht eingeloggt, zum Login weiterleiten.
+            router.replace('/login');
+        }
+    }, [user, loading, router]);
+
+    if (loading || !user || (user.role !== 'master' && user.role !== 'support')) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900">
+                <FiLoader className="h-8 w-8 animate-spin text-teal-500" />
+            </div>
+        );
+    }
 
     return (
-        <div className="flex h-screen bg-gray-50 font-sans">
-            {/* Sidebar */}
-            <aside className="w-64 flex-shrink-0 bg-white shadow-md">
-                <div className="flex h-full flex-col">
-                    <div className="flex h-16 flex-shrink-0 items-center border-b px-6">
-                        <h1 className="text-xl font-bold text-gray-800">Tasko Admin</h1>
-                    </div>
-                    <nav className="flex-1 space-y-1 p-4">
-                        {navigation.map((item) => (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                className={classNames(
-                                    pathname === item.href || (item.href !== '/dashboard/admin' && pathname.startsWith(item.href))
-                                        ? 'bg-teal-50 text-[#14ad9f]'
-                                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                                    'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors'
-                                )}
-                            >
-                                <item.icon className="mr-3 h-5 w-5 flex-shrink-0" aria-hidden="true" />
-                                {item.name}
-                            </Link>
-                        ))}
-                    </nav>
-                </div>
-            </aside>
-
-            {/* Main content */}
-            <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
+        <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+            <Sidebar />
+            <div className="flex flex-col">
+                <Header />
+                <Suspense fallback={<div className="flex-1 flex items-center justify-center"><FiLoader className="h-8 w-8 animate-spin text-teal-500" /></div>}>
+                    <main className="flex-1 p-4 sm:p-6">{children}</main>
+                </Suspense>
+            </div>
         </div>
     );
 }
