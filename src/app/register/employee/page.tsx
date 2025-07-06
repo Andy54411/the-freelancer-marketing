@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useFormStatus } from 'react-dom';
 import { registerEmployee } from './actions';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,6 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import Link from 'next/link';
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -24,9 +24,19 @@ function SubmitButton() {
     );
 }
 
-export default function EmployeeRegistrationPage() {
+function RegistrationForm() {
+    const searchParams = useSearchParams();
     const [state, setState] = useState<{ error: string | null; success: boolean }>({ error: null, success: false });
     const [formDisabled, setFormDisabled] = useState(false);
+    const [inviteCode, setInviteCode] = useState('');
+
+    useEffect(() => {
+        // Liest den Einladungscode aus der URL, wenn die Komponente geladen wird.
+        const codeFromUrl = searchParams.get('inviteCode');
+        if (codeFromUrl) {
+            setInviteCode(codeFromUrl);
+        }
+    }, [searchParams]);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -85,7 +95,14 @@ export default function EmployeeRegistrationPage() {
                         </div>
                         <div>
                             <Label htmlFor="inviteCode">Einladungscode</Label>
-                            <Input id="inviteCode" name="inviteCode" required disabled={formDisabled} />
+                            <Input
+                                id="inviteCode"
+                                name="inviteCode"
+                                required
+                                disabled={formDisabled}
+                                value={inviteCode}
+                                onChange={(e) => setInviteCode(e.target.value)}
+                            />
                         </div>
                         <SubmitButton />
                         {state.error && <p className="text-red-600 mt-2">{state.error}</p>}
@@ -93,5 +110,16 @@ export default function EmployeeRegistrationPage() {
                 </CardContent>
             </Card>
         </main>
+    );
+}
+
+export default function EmployeeRegistrationPage() {
+    // Da wir `useSearchParams` verwenden, muss die Komponente, die den Hook nutzt,
+    // in eine <Suspense>-Boundary eingewickelt werden.
+    return (
+        // Ein einfacher Lade-Fallback, während die URL-Parameter gelesen werden.
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Lade...</div>}>
+            <RegistrationForm />
+        </Suspense>
     );
 }
