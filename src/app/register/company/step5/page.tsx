@@ -417,23 +417,46 @@ export default function Step5CompanyPage() {
 
       setCurrentStepMessage('IP-Adresse wird ermittelt...');
       const getClientIpFunction = httpsCallable<GetClientIpData, GetClientIpResult>(firebaseFunctions, 'getClientIp');
-      let clientIpAddress = 'FALLBACK_IP_ADDRESS';
+      let clientIpAddress = ''; // Initialisieren als leerer String
 
       try {
+        console.log("[Step5] Versuche, IP über Firebase Function zu erhalten...");
         const ipResult = await getClientIpFunction({});
         if (ipResult.data?.ip && ipResult.data.ip !== 'IP_NOT_DETERMINED' && ipResult.data.ip.length >= 7) {
           clientIpAddress = ipResult.data.ip;
+          console.log(`[Step5] IP von Firebase Function erhalten: ${clientIpAddress}`);
+        } else {
+          console.warn(PAGE_WARN, `[Step5] Ungültige IP von Firebase Function erhalten:`, ipResult.data);
         }
       } catch (ipLookupError: unknown) {
-        console.warn(PAGE_WARN, "[Step5] Fehler beim Ermitteln der Client IP:", ipLookupError);
+        console.warn(PAGE_WARN, "[Step5] Fehler beim Ermitteln der Client IP via Firebase Function:", ipLookupError);
       }
 
-      if (clientIpAddress === 'FALLBACK_IP_ADDRESS' && process.env.NODE_ENV === 'development') {
+      // Fallback, wenn die Firebase Function fehlschlägt oder keine gültige IP liefert
+      if (!clientIpAddress) {
+        try {
+          console.log("[Step5] Firebase Function fehlgeschlagen. Versuche Fallback über ipify.org...");
+          const response = await fetch('https://api.ipify.org?format=json');
+          if (!response.ok) {
+            throw new Error(`ipify.org antwortete mit Status: ${response.status}`);
+          }
+          const ipData = await response.json();
+          if (ipData.ip) {
+            clientIpAddress = ipData.ip;
+            console.log(`[Step5] IP von ipify.org erhalten: ${clientIpAddress}`);
+          }
+        } catch (fallbackError: unknown) {
+          console.error(PAGE_ERROR, "[Step5] Fallback zur IP-Ermittlung ist ebenfalls fehlgeschlagen:", fallbackError);
+        }
+      }
+
+
+      if (!clientIpAddress && process.env.NODE_ENV === 'development') {
         console.warn("WARNUNG: Keine echte IP gefunden. Verwende eine öffentliche Placeholder-IP für den Stripe-Test.");
-        clientIpAddress = '8.8.8.8';
+        clientIpAddress = '8.8.8.8'; // Eine gültige öffentliche IP für Tests
       }
 
-      if (clientIpAddress === 'FALLBACK_IP_ADDRESS') {
+      if (!clientIpAddress) {
         throw new Error("Konnte keine gültige IP-Adresse für die Stripe-Registrierung ermitteln.");
       }
 
