@@ -24,7 +24,6 @@ export const corsOptions: string[] = [
 let dbInstance: Firestore;
 let authInstance: Auth;
 let storageInstance: Storage;
-let stripeClientInstance: Stripe | undefined;
 
 
 /**
@@ -148,30 +147,33 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
 // --- Bestehende Getter-Funktionen (JETZT MIT KORRIGIERTER LOGIK) ---
 
 export function getStripeInstance(stripeKey: string): Stripe {
-  if (!stripeClientInstance) {
-    // Der Stripe-Schlüssel wird jetzt als Parameter übergeben.
+  // Die Singleton-Logik wird entfernt. Jede Funktion, die diese Hilfsfunktion aufruft,
+  // ist nun dafür verantwortlich, den korrekten Schlüssel bereitzustellen.
+  // if (!stripeClientInstance) {
 
-    if (stripeKey) {
-      try {
-        stripeClientInstance = new Stripe(stripeKey, {
-          typescript: true,
-          apiVersion: "2024-06-20",
-        });
-        logger.info("[getStripeInstance] Stripe-Client erfolgreich initialisiert.");
-      } catch (e: unknown) {
-        let errorMessage = "Unbekannter Fehler bei der Initialisierung des Stripe-Clients.";
-        if (e instanceof Error) {
-          errorMessage = e.message;
-        }
-        logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: errorMessage, at: 'getStripeInstance' });
-        throw new HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${errorMessage}`);
+  if (stripeKey) {
+    try {
+      // Erstelle und gib immer eine neue Instanz zurück.
+      const stripeInstance = new Stripe(stripeKey, {
+        typescript: true,
+        apiVersion: "2024-06-20",
+      });
+      logger.info("[getStripeInstance] Stripe-Client erfolgreich initialisiert.");
+      return stripeInstance;
+    } catch (e: unknown) {
+      let errorMessage = "Unbekannter Fehler bei der Initialisierung des Stripe-Clients.";
+      if (e instanceof Error) {
+        errorMessage = e.message;
       }
-    } else {
-      logger.error("KRITISCH: STRIPE_SECRET_KEY nicht verfügbar!", { at: 'getStripeInstance' });
-      throw new HttpsError("internal", "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt).");
+      logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: errorMessage, at: 'getStripeInstance' });
+      throw new HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${errorMessage}`);
     }
+  } else {
+    logger.error("KRITISCH: STRIPE_SECRET_KEY nicht verfügbar!", { at: 'getStripeInstance' });
+    throw new HttpsError("internal", "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt).");
   }
-  return stripeClientInstance!;
+  // }
+  // return stripeClientInstance!;
 }
 
 /**
