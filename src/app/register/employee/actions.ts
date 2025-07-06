@@ -115,12 +115,20 @@ export async function registerEmployee(prevState: FormState, formData: FormData)
 
     } catch (error: unknown) {
         console.error("Fehler bei der Mitarbeiter-Registrierung:", error);
+
         if (isFirebaseError(error)) {
-            if (error.code === 'auth/email-already-exists') {
-                return { error: 'Diese E-Mail-Adresse wird bereits verwendet. Der Benutzer muss sich mit seinem bestehenden Passwort anmelden.', success: false };
-            }
-            if (error.code === 'auth/weak-password') {
-                return { error: 'Das Passwort ist zu schwach. Es muss mindestens 6 Zeichen lang sein.', success: false };
+            // Detailliertere Fehlermeldungen basierend auf dem Firebase-Fehlercode
+            switch (error.code) {
+                case 'auth/email-already-exists':
+                    return { error: 'Diese E-Mail-Adresse wird bereits verwendet. Der Benutzer muss sich mit seinem bestehenden Passwort anmelden.', success: false };
+                case 'auth/weak-password':
+                    return { error: 'Das Passwort ist zu schwach. Es muss mindestens 6 Zeichen lang sein.', success: false };
+                case 'auth/invalid-email':
+                    return { error: 'Die angegebene E-Mail-Adresse hat ein ungültiges Format.', success: false };
+                case 'auth/operation-not-allowed':
+                    return { error: 'Die Registrierung per E-Mail und Passwort ist derzeit nicht aktiviert.', success: false };
+                default:
+                    return { error: `Ein unerwarteter Firebase-Fehler ist aufgetreten. Code: ${error.code}`, success: false };
             }
         }
         return { error: 'Ein unerwarteter Fehler ist aufgetreten.', success: false };
