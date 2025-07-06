@@ -1,7 +1,7 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/http_migrations.ts
 import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb, getChatParticipantDetails } from "./helpers"; // Use the new intelligent helper
+import { getDb, getChatParticipantDetails, getAuthInstance } from "./helpers"; // Use the new intelligent helper
 import { FieldPath, QueryDocumentSnapshot } from "firebase-admin/firestore"; // QueryDocumentSnapshot is needed for pagination
 
 interface UserDetails {
@@ -17,8 +17,29 @@ interface UserDetails {
  * To run, deploy it and then visit its URL in your browser.
  */
 export const backfillChatUserDetails = onRequest(
-    { region: "europe-west1", timeoutSeconds: 540, memory: "1GiB" },
+    { region: "europe-west1", timeoutSeconds: 540, memory: "1GiB", cpu: 1 },
     async (req, res) => {
+        // --- NEU: Authentifizierung und Autorisierung ---
+        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+            logger.warn("[backfillChatUserDetails] Unauthenticated access attempt.");
+            res.status(403).send('Unauthorized');
+            return;
+        }
+        const idToken = req.headers.authorization.split('Bearer ')[1];
+        try {
+            const decodedToken = await getAuthInstance().verifyIdToken(idToken);
+            if (decodedToken.role !== 'master') {
+                logger.error(`[backfillChatUserDetails] Forbidden access attempt by user ${decodedToken.uid} with role ${decodedToken.role}.`);
+                res.status(403).send('Forbidden: Insufficient permissions.');
+                return;
+            }
+            logger.info(`[backfillChatUserDetails] Authorized execution by master user ${decodedToken.uid}.`);
+        } catch (error) {
+            logger.error("[backfillChatUserDetails] Token verification failed.", error);
+            res.status(403).send('Unauthorized');
+            return;
+        }
+        // --- ENDE: Authentifizierung und Autorisierung ---
         logger.info("[backfillChatUserDetails] Starting FORCEFUL migration. This will overwrite userDetails in ALL chats to ensure data is correct.");
         const db = getDb();
         let processedChats = 0;
@@ -27,7 +48,7 @@ export const backfillChatUserDetails = onRequest(
         let lastVisibleDoc: QueryDocumentSnapshot | null = null;
 
         try {
-             
+
             while (true) {
                 logger.info(`Processing next page of chats... (starting after doc: ${lastVisibleDoc?.id || 'beginning'})`);
 

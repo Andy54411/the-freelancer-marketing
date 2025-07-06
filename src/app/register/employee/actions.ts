@@ -34,6 +34,7 @@ export async function registerEmployee(prevState: FormState, formData: FormData)
         return { error: 'Bitte füllen Sie alle erforderlichen Felder aus, einschließlich des Einladungscodes.', success: false };
     }
 
+    console.log(`Attempting employee registration for email: ${email}, firstName: ${firstName}, lastName: ${lastName}, inviteCode: ${inviteCode}`);
     try {
         // 1. Einladungscode gegen die Umgebungsvariable validieren
         const validInviteCode = process.env.EMPLOYEE_INVITE_CODE;

@@ -1,10 +1,31 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, FieldValue, getUserDisplayName } from './helpers'; // FieldValue import is correct
+import { getDb, FieldValue, getUserDisplayName, getAuthInstance } from './helpers'; // FieldValue import is correct
 import { UNKNOWN_PROVIDER_NAME, UNNAMED_COMPANY } from './constants';
 import { geohashForLocation } from 'geofire-common';
 
-export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB" }, async (req, res) => {
+export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
+  // --- NEU: Authentifizierung und Autorisierung ---
+  if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+    loggerV2.warn("[migrateExistingUsersToCompanies] Unauthenticated access attempt.");
+    res.status(403).send('Unauthorized');
+    return;
+  }
+  const idToken = req.headers.authorization.split('Bearer ')[1];
+  try {
+    const decodedToken = await getAuthInstance().verifyIdToken(idToken);
+    if (decodedToken.role !== 'master') {
+      loggerV2.error(`[migrateExistingUsersToCompanies] Forbidden access attempt by user ${decodedToken.uid} with role ${decodedToken.role}.`);
+      res.status(403).send('Forbidden: Insufficient permissions.');
+      return;
+    }
+    loggerV2.info(`[migrateExistingUsersToCompanies] Authorized execution by master user ${decodedToken.uid}.`);
+  } catch (error) {
+    loggerV2.error("[migrateExistingUsersToCompanies] Token verification failed.", error);
+    res.status(403).send('Unauthorized');
+    return;
+  }
+  // --- ENDE: Authentifizierung und Autorisierung ---
   const db = getDb();
   try {
     // Query only for 'firma' users to make it more efficient
