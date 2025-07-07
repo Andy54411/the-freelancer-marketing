@@ -48,6 +48,12 @@ const nextConfig = {
       { protocol: 'https', hostname: 'avatars.githubusercontent.com', port: '', pathname: '/u/**' },
       { protocol: 'https', hostname: 'html.tailus.io', port: '', pathname: '/blocks/customers/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', port: '', pathname: '/**' },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 
