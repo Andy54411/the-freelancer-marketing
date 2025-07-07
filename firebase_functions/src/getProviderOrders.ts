@@ -81,8 +81,14 @@ interface ProviderOrderData {
 export const getProviderOrders = onCall(
     {
         region: "europe-west1", // Aligned with Firestore (eur3) and Hosting for better performance.
-        // Explicitly allow requests from your local development server.
-        cors: ["http://localhost:3000"],
+        // Explicitly allow requests from your local development server and production frontends.
+        cors: [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'https://tasko-rho.vercel.app',
+            'https://tasko-zh8k.vercel.app',
+            'https://tilvo-f142f.web.app'
+        ],
     },
     async (request: CallableRequest<{ providerId: string }>): Promise<{ orders: ProviderOrderData[] }> => {
         logger.info(`[getProviderOrders] Called for provider: ${request.data.providerId}`);

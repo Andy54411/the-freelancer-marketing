@@ -211,10 +211,10 @@ export const createStripeAccountIfComplete = onCall(
   { region: "europe-west1", cors: allowedOrigins },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
-    
+
     const stripeKey = STRIPE_SECRET_KEY.value();
     const frontendUrlValue = FRONTEND_URL_PARAM.value().trim();
-    
+
     // --- NEUE, STRIKTE PRÜFUNG DER FRONTEND_URL ---
     if (!frontendUrlValue || !frontendUrlValue.startsWith('http')) {
       loggerV2.error(`[createStripeAccountIfComplete] FATAL: Die FRONTEND_URL ist nicht korrekt konfiguriert. Aktueller Wert: '${frontendUrlValue}'. Die URL muss eine vollständige Produktions-URL sein (z.B. https://mein-projekt.web.app).`);
@@ -441,9 +441,9 @@ export const createStripeAccountIfComplete = onCall(
         // Fallback für nicht-Stripe-Fehler
         // --- ERWEITERTES LOGGING START ---
         loggerV2.error("🔥🔥🔥 ALLGEMEINER FEHLER BEI KONTOERSTELLUNG (DETAILLIERT) 🔥🔥🔥:", {
-            error: e,
-            message: e.message,
-            stack: e.stack
+          error: e,
+          message: e.message,
+          stack: e.stack
         });
         // --- ERWEITERTES LOGGING ENDE ---
         throw new HttpsError("internal", e.message || "Ein unerwarteter Fehler ist bei der Kontoerstellung aufgetreten.");
