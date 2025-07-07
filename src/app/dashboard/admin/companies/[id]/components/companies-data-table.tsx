@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -61,6 +62,15 @@ export function CompaniesDataTable<TData, TValue>({
             columnVisibility,
         },
     })
+
+    const router = useRouter()
+
+    const handleRowClick = (row: any) => {
+        const companyId = row.original.id
+        if (companyId) {
+            router.push(`/dashboard/admin/companies/${companyId}`)
+        }
+    }
 
     return (
         <div>
@@ -126,6 +136,8 @@ export function CompaniesDataTable<TData, TValue>({
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
+                                    onClick={() => handleRowClick(row)} // Füge den onClick-Handler hinzu
+                                    className="cursor-pointer" // Ändere den Cursor, um Klickbarkeit anzuzeigen
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>
