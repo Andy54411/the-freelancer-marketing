@@ -69,6 +69,20 @@
                     "order": "ASCENDING"
                 },
                 {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "auftraege",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "selectedAnbieterId",
+                    "order": "ASCENDING"
+                },
+                {
                     "fieldPath": "status",
                     "order": "ASCENDING"
                 }
