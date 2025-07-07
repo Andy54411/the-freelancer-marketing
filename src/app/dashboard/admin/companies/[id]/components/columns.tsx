@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { IconDotsVertical } from '@tabler/icons-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export const columns: ColumnDef<CompanyData>[] = [
     {
@@ -39,8 +39,14 @@ export const columns: ColumnDef<CompanyData>[] = [
     },
     {
         id: 'actions',
-        cell: ({ row }) => {
+        cell: function Cell({ row }) {
             const company = row.original;
+            const router = useRouter();
+
+            const handleDetailsClick = () => {
+                router.push(`/dashboard/admin/companies/${company.id}`);
+            };
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -50,8 +56,8 @@ export const columns: ColumnDef<CompanyData>[] = [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/admin/companies/${company.id}`}>Details ansehen</Link>
+                        <DropdownMenuItem onClick={handleDetailsClick}>
+                            Details ansehen
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                             Account deaktivieren
