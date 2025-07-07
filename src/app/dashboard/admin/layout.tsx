@@ -3,8 +3,8 @@
 import React, { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Sidebar from './support/components/Sidebar';
-import Header from './support/components/Header';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 import { FiLoader } from 'react-icons/fi';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
