@@ -207,11 +207,24 @@ const mapLegalFormToStripeBusinessInfo = (
 };
 
 export const createStripeAccountIfComplete = onCall(
+  // Force redeploy by adding a comment
   { region: "europe-west1", cors: allowedOrigins },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
+    
     const stripeKey = STRIPE_SECRET_KEY.value();
     const frontendUrlValue = FRONTEND_URL_PARAM.value();
+    
+    // --- NEUE, STRIKTE PRÜFUNG DER FRONTEND_URL ---
+    if (!frontendUrlValue || !frontendUrlValue.startsWith('http')) {
+      loggerV2.error(`[createStripeAccountIfComplete] FATAL: Die FRONTEND_URL ist nicht korrekt konfiguriert. Aktueller Wert: '${frontendUrlValue}'. Die URL muss eine vollständige Produktions-URL sein (z.B. https://mein-projekt.web.app).`);
+      throw new HttpsError("internal", "Server-Konfigurationsfehler: Die Frontend-URL ist ungültig oder fehlt.");
+    }
+    // --- ENDE DER PRÜFUNG ---
+
+    loggerV2.info(`[DEBUG] Stripe Key geladen? ${stripeKey ? 'Ja, Länge: ' + stripeKey.length : 'NEIN, LEER!'}`);
+    loggerV2.info(`[DEBUG] Frontend URL geladen? ${frontendUrlValue ? 'Ja: ' + frontendUrlValue : 'NEIN, LEER!'}`);
+
     const db = getDb();
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     const { userId, clientIp, ...payloadFromClient } = request.data;
@@ -403,26 +416,44 @@ export const createStripeAccountIfComplete = onCall(
 
     let account: Stripe.Account;
     try {
-      loggerV2.info(">>>> VERSUCHE, STRIPE KONTO ZU ERSTELLEN mit Parametern:", JSON.stringify(accountParams, null, 2));
+      // --- ERWEITERTES LOGGING START ---
+      loggerV2.info(">>>> VERSUCHE, STRIPE KONTO ZU ERSTELLEN mit Parametern (detailliert):", { params: JSON.stringify(accountParams, null, 2) });
+      // --- ERWEITERTES LOGGING ENDE ---
       account = await localStripe.accounts.create(accountParams);
       loggerV2.info(`✅✅✅ ERFOLG! Stripe Account ${account.id} wurde erstellt.`);
 
     } catch (e: any) {
       // Check if it's a Stripe error by looking for a `type` property
       if (e.type && typeof e.type === 'string') {
-        loggerV2.error("🔥🔥🔥 STRIPE API FEHLER 🔥🔥🔥:", {
-          message: e.message, type: e.type, code: e.code, param: e.param, raw: e.raw
+        // --- ERWEITERTES LOGGING START ---
+        loggerV2.error("🔥🔥🔥 STRIPE API FEHLER (DETAILLIERT) 🔥🔥🔥:", {
+          message: e.message,
+          type: e.type,
+          code: e.code,
+          param: e.param,
+          statusCode: e.statusCode,
+          requestId: e.requestId,
+          raw: JSON.stringify(e.raw) // Vollständiges Raw-Objekt als String loggen
         });
+        // --- ERWEITERTES LOGGING ENDE ---
         throw new HttpsError("internal", e.raw?.message || "Fehler bei initialer Kontoerstellung durch Stripe.");
       } else {
         // Fallback für nicht-Stripe-Fehler
-        loggerV2.error("🔥🔥🔥 ALLGEMEINER FEHLER BEI KONTOERSTELLUNG 🔥🔥🔥:", e);
+        // --- ERWEITERTES LOGGING START ---
+        loggerV2.error("🔥🔥🔥 ALLGEMEINER FEHLER BEI KONTOERSTELLUNG (DETAILLIERT) 🔥🔥🔥:", {
+            error: e,
+            message: e.message,
+            stack: e.stack
+        });
+        // --- ERWEITERTES LOGGING ENDE ---
         throw new HttpsError("internal", e.message || "Ein unerwarteter Fehler ist bei der Kontoerstellung aufgetreten.");
       }
     }
 
 
-    loggerV2.info(">>>> NACH dem Stripe API Call. Account-Daten:", account);
+    // --- NEUES LOGGING START ---
+    loggerV2.info(">>>> NACH dem Stripe API Call. Account-Daten (vollständig):", { accountData: JSON.stringify(account, null, 2) });
+    // --- NEUES LOGGING ENDE ---
 
 
     if (businessType === 'company') {
@@ -480,10 +511,13 @@ export const createStripeAccountIfComplete = onCall(
         } catch (e: any) {
           // Loggen Sie den Fehler, aber fahren Sie fort, anstatt das Konto zu löschen.
           // Das Konto existiert bereits und das Hinzufügen der Person kann später erneut versucht werden.
-          loggerV2.error(`Fehler beim Erstellen der Personendaten für Konto ${account.id}, aber das Konto wird beibehalten.`, {
+          // --- ERWEITERTES LOGGING START ---
+          loggerV2.error(`Fehler beim Erstellen der Personendaten für Konto ${account.id}, aber das Konto wird beibehalten. (DETAILLIERT)`, {
             message: e.raw?.message || e.message,
             accountId: account.id,
+            rawError: JSON.stringify(e.raw) // Vollständiges Raw-Objekt als String loggen
           });
+          // --- ERWEITERTES LOGGING ENDE ---
           // Optional: Speichern Sie den Fehler im Nutzerdokument, um ihn später zu behandeln.
           await userDocRef.update({
             stripeAccountError: `Personen-Erstellung fehlgeschlagen: ${e.raw?.message || e.message}`

@@ -12,8 +12,8 @@ setGlobalOptions({
     region: "europe-west1", // <-- HIER die korrekte Region global festlegen
     timeoutSeconds: 540,
     memory: '512MiB',
-    cpu: 0.25, // <-- WEITER REDUZIERT: CPU-Anforderung nochmals gesenkt, um das Quota-Limit sicher einzuhalten.
-    concurrency: 1, // <-- NEU: Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
+    cpu: 0.1, // <-- NOCHMALS REDUZIERT: CPU-Anforderung weiter gesenkt, um das Quota-Limit sicher einzuhalten.
+    concurrency: 1, // <-- Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
 });
 
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.
