@@ -162,8 +162,8 @@ export const uploadStripeFile = onRequest(
         // Zurück zur korrekten Methode für v2 Secrets
         const stripeKey = STRIPE_SECRET_KEY_UPLOADS.value();
         if (!stripeKey) {
-            logger.error("[uploadStripeFile] Stripe secret key is not available from Secret Manager.");
-            throw { status: 500, message: "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt)." };
+          logger.error("[uploadStripeFile] Stripe secret key is not available from Secret Manager.");
+          throw { status: 500, message: "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt)." };
         }
 
         const stripe = getStripeInstance(stripeKey);

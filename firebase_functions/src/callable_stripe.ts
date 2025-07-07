@@ -1,9 +1,18 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
-import { getDb, getStripeInstance, getEmulatorCallbackFrontendURL, getChatParticipantDetails, ParticipantDetails, corsOptions } from './helpers';
+import { getDb, getStripeInstance, getEmulatorCallbackFrontendURL, getChatParticipantDetails, ParticipantDetails } from './helpers';
 import { defineSecret, defineString } from 'firebase-functions/params';
 import { FieldValue } from 'firebase-admin/firestore';
+
+// Definiere die erlaubten Origins direkt hier
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://tasko-rho.vercel.app',
+  'https://tasko-zh8k.vercel.app',
+  'https://tilvo-f142f.web.app'
+];
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
@@ -198,7 +207,7 @@ const mapLegalFormToStripeBusinessInfo = (
 };
 
 export const createStripeAccountIfComplete = onCall(
-  { region: "europe-west1", cors: corsOptions },
+  { region: "europe-west1", cors: allowedOrigins },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
     const stripeKey = STRIPE_SECRET_KEY.value();
@@ -417,44 +426,74 @@ export const createStripeAccountIfComplete = onCall(
 
 
     if (businessType === 'company') {
-      const personRelationship: Stripe.AccountCreatePersonParams['relationship'] = {
-        representative: true,
-        director: payloadFromClient.isActualDirector,
-        owner: payloadFromClient.isActualOwner,
-        executive: payloadFromClient.isActualExecutive,
-        title: payloadFromClient.actualRepresentativeTitle,
-      };
+      // Nur versuchen, eine Person zu erstellen, wenn die erforderlichen Daten vorhanden sind.
+      const hasRequiredPersonData =
+        payloadFromClient.firstName &&
+        payloadFromClient.lastName &&
+        payloadFromClient.email &&
+        payloadFromClient.dateOfBirth &&
+        payloadFromClient.identityFrontFileId &&
+        payloadFromClient.identityBackFileId &&
+        payloadFromClient.personalStreet &&
+        payloadFromClient.personalPostalCode &&
+        payloadFromClient.personalCity &&
+        payloadFromClient.personalCountry;
 
-      if (payloadFromClient.isManagingDirectorOwner) {
-        personRelationship.owner = true;
-        personRelationship.director = true;
-        personRelationship.executive = true;
-        personRelationship.title = "Geschäftsführender Gesellschafter";
-        personRelationship.percent_ownership = payloadFromClient.ownershipPercentage;
-      }
+      if (hasRequiredPersonData) {
+        const personRelationship: Stripe.AccountCreatePersonParams['relationship'] = {
+          representative: true,
+          director: payloadFromClient.isActualDirector,
+          owner: payloadFromClient.isActualOwner,
+          executive: payloadFromClient.isActualExecutive,
+          title: payloadFromClient.actualRepresentativeTitle,
+        };
 
-      const personPayload: Stripe.AccountCreatePersonParams = {
-        first_name: payloadFromClient.firstName!,
-        last_name: payloadFromClient.lastName!,
-        email: payloadFromClient.email!,
-        phone: undefinedIfNull(payloadFromClient.phoneNumber),
-        relationship: personRelationship,
-        verification: { document: { front: payloadFromClient.identityFrontFileId!, back: payloadFromClient.identityBackFileId! } },
-        dob: { day: dayDob, month: monthDob, year: yearDob },
-        address: {
-          line1: `${payloadFromClient.personalStreet!} ${payloadFromClient.personalHouseNumber ?? ''}`.trim(),
-          postal_code: payloadFromClient.personalPostalCode!,
-          city: payloadFromClient.personalCity!,
-          country: payloadFromClient.personalCountry!,
-        },
-      };
+        if (payloadFromClient.isManagingDirectorOwner) {
+          personRelationship.owner = true;
+          personRelationship.director = true;
+          personRelationship.executive = true;
+          personRelationship.title = "Geschäftsführender Gesellschafter";
+          personRelationship.percent_ownership = payloadFromClient.ownershipPercentage;
+        }
 
-      try {
-        const person = await localStripe.accounts.createPerson(account.id, personPayload);
-        await userDocRef.update({ stripeRepresentativePersonId: person.id });
-      } catch (e: any) {
-        await localStripe.accounts.del(account.id);
-        throw new HttpsError("internal", e.raw?.message || "Fehler beim Erstellen der Personendaten bei Stripe.");
+        const personPayload: Stripe.AccountCreatePersonParams = {
+          first_name: payloadFromClient.firstName!,
+          last_name: payloadFromClient.lastName!,
+          email: payloadFromClient.email!,
+          phone: undefinedIfNull(payloadFromClient.phoneNumber),
+          relationship: personRelationship,
+          verification: { document: { front: payloadFromClient.identityFrontFileId!, back: payloadFromClient.identityBackFileId! } },
+          dob: { day: dayDob, month: monthDob, year: yearDob },
+          address: {
+            line1: `${payloadFromClient.personalStreet!} ${payloadFromClient.personalHouseNumber ?? ''}`.trim(),
+            postal_code: payloadFromClient.personalPostalCode!,
+            city: payloadFromClient.personalCity!,
+            country: payloadFromClient.personalCountry!,
+          },
+        };
+
+        try {
+          loggerV2.info("Versuche, eine Person für das Firmenkonto zu erstellen...", { accountId: account.id });
+          const person = await localStripe.accounts.createPerson(account.id, personPayload);
+          await userDocRef.update({ stripeRepresentativePersonId: person.id });
+          loggerV2.info(`Person ${person.id} erfolgreich für Konto ${account.id} erstellt.`);
+        } catch (e: any) {
+          // Loggen Sie den Fehler, aber fahren Sie fort, anstatt das Konto zu löschen.
+          // Das Konto existiert bereits und das Hinzufügen der Person kann später erneut versucht werden.
+          loggerV2.error(`Fehler beim Erstellen der Personendaten für Konto ${account.id}, aber das Konto wird beibehalten.`, {
+            message: e.raw?.message || e.message,
+            accountId: account.id,
+          });
+          // Optional: Speichern Sie den Fehler im Nutzerdokument, um ihn später zu behandeln.
+          await userDocRef.update({
+            stripeAccountError: `Personen-Erstellung fehlgeschlagen: ${e.raw?.message || e.message}`
+          });
+        }
+      } else {
+        loggerV2.warn(`Überspringe die Erstellung der Person für das Firmenkonto ${account.id}, da erforderliche Daten fehlen.`, {
+          accountId: account.id,
+          missingDataHint: "Überprüfen Sie firstName, lastName, email, dob, identity files, personal address."
+        });
       }
     }
 
@@ -512,8 +551,8 @@ export const createStripeAccountIfComplete = onCall(
 );
 
 // --- HIER WIRD DIE FUNKTION getOrCreateStripeCustomer HINZUGEFÜGT ---
-export const getOrCreateStripeCustomer = onCall(
-  { region: "europe-west1", cors: corsOptions },
+export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload>(
+  { region: "europe-west1", cors: allowedOrigins },
   async (request: CallableRequest<GetOrCreateStripeCustomerPayload>): Promise<GetOrCreateStripeCustomerResult> => {
     loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = getDb();
@@ -621,7 +660,7 @@ export const getOrCreateStripeCustomer = onCall(
   });
 
 export const updateStripeCompanyDetails = onCall(
-  { region: "europe-west1", cors: corsOptions },
+  { region: "europe-west1", cors: allowedOrigins },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     const db = getDb();
@@ -856,7 +895,7 @@ export const updateStripeCompanyDetails = onCall(
  * bevor sie die Daten zurückgibt.
  */
 export const getOrderParticipantDetails = onCall(
-  { region: "europe-west1", cors: corsOptions },
+  { region: "europe-west1", cors: allowedOrigins },
   async (request: CallableRequest<{ orderId: string }>): Promise<{ provider: ParticipantDetails, customer: ParticipantDetails }> => {
     const { orderId } = request.data;
     loggerV2.info(`[getOrderParticipantDetails] Called for orderId: ${orderId} by user: ${request.auth?.uid}`);
@@ -893,8 +932,8 @@ export const getOrderParticipantDetails = onCall(
 );
 
 export const createSetupIntent = onCall(
-  { region: "europe-west1", cors: corsOptions },
-  async (request: CallableRequest<{ firebaseUserId?: string }>): Promise<{ clientSecret: string | null }> => {
+  { region: "europe-west1", cors: allowedOrigins },
+  async (request: CallableRequest<{ customerId: string, paymentMethodTypes?: string[] }>): Promise<{ client_secret: string | null }> => {
     loggerV2.info("[createSetupIntent] Aufgerufen.");
     const db = getDb();
 
@@ -929,7 +968,7 @@ export const createSetupIntent = onCall(
       });
 
       loggerV2.info(`[createSetupIntent] SetupIntent ${setupIntent.id} für Nutzer ${firebaseUserId} erstellt.`);
-      return { clientSecret: setupIntent.client_secret! };
+      return { client_secret: setupIntent.client_secret! };
 
     } catch (e: any) {
       loggerV2.error(`[createSetupIntent] Fehler für Nutzer ${firebaseUserId}:`, e);
@@ -941,179 +980,139 @@ export const createSetupIntent = onCall(
   }
 );
 
-export const getSavedPaymentMethods = onCall(
-  { region: "europe-west1", cors: corsOptions },
-  async (request: CallableRequest<Record<string, never>>): Promise<{ savedPaymentMethods: UserProfile['savedPaymentMethods'] }> => {
-    loggerV2.info("[getSavedPaymentMethods] Aufgerufen.");
+export const detachPaymentMethod = onCall(
+  { region: "europe-west1", cors: allowedOrigins },
+  async (request: CallableRequest<{ paymentMethodId: string }>): Promise<{ success: boolean }> => {
+    loggerV2.info("[detachPaymentMethod] Aufgerufen.");
     const db = getDb();
-    // Authentifizierung ist hier korrekt
+
     if (!request.auth?.uid) {
-      loggerV2.warn("[getSavedPaymentMethods] Unauthentifizierter Aufruf.");
+      loggerV2.warn("[detachPaymentMethod] Unauthentifizierter Aufruf.");
       throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     }
 
     const firebaseUserId = request.auth.uid;
+    const stripeKey = STRIPE_SECRET_KEY.value();
+    const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
 
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
       const userDoc = await userDocRef.get();
 
       if (!userDoc.exists) {
-        loggerV2.error(`[getSavedPaymentMethods] Nutzerprofil ${firebaseUserId} nicht gefunden.`);
+        loggerV2.error(`[detachPaymentMethod] Nutzerprofil ${firebaseUserId} nicht gefunden.`);
         throw new HttpsError("not-found", "Nutzerprofil nicht gefunden.");
       }
 
       const userData = userDoc.data() as UserProfile;
 
-      const savedMethods = userData.savedPaymentMethods || [];
-      loggerV2.info(`[getSavedPaymentMethods] ${savedMethods.length} PaymentMethods aus Firestore für Nutzer ${firebaseUserId} geladen.`);
-      return { savedPaymentMethods: savedMethods };
+      if (!userData.stripeCustomerId) {
+        loggerV2.error(`[detachPaymentMethod] Stripe Customer ID fehlt für Nutzer ${firebaseUserId}.`);
+        throw new HttpsError("failed-precondition", "Stripe Customer ID fehlt. Bitte erstellen Sie zuerst einen Kunden.");
+      }
+
+      const paymentMethodId = request.data.paymentMethodId;
+
+      // Detach the payment method from the customer
+      await localStripe.paymentMethods.detach(paymentMethodId);
+
+      // Optionally, you can also update the user's profile in Firestore if needed
+      // For example, removing the payment method from savedPaymentMethods array
+
+      loggerV2.info(`[detachPaymentMethod] Zahlungsmethode ${paymentMethodId} erfolgreich getrennt für Nutzer ${firebaseUserId}.`);
+      return { success: true };
 
     } catch (e: any) {
-      loggerV2.error(`[getSavedPaymentMethods] Fehler für Nutzer ${firebaseUserId}:`, e);
+      loggerV2.error(`[detachPaymentMethod] Fehler für Nutzer ${firebaseUserId}:`, e);
       if (e instanceof HttpsError) {
         throw e;
       }
-      throw new HttpsError("internal", "Fehler beim Abrufen der gespeicherten Zahlungsmethoden.", e.message);
+      throw new HttpsError("internal", "Fehler beim Trennen der Zahlungsmethode.", e.message);
     }
   }
 );
 
+interface GetStripeAccountStatusResult {
+  success: boolean; message?: string; accountId?: string | null;
+  detailsSubmitted?: boolean | null; chargesEnabled?: boolean | null;
+  payoutsEnabled?: boolean | null;
+  requirements?: Stripe.Account.Requirements | null;
+  accountLinkUrl?: string;
+  missingFields?: string[];
+}
+
 export const getStripeAccountStatus = onCall(
-  { region: "europe-west1", cors: corsOptions },
-  async (request: CallableRequest<Record<string, never>>): Promise<GetStripeAccountStatusResult> => {
-    loggerV2.info("[getStripeAccountStatus] Aufgerufen.");
-    const db = getDb(); // Firestore-Instanz
-    const stripeKey = STRIPE_SECRET_KEY.value(); // Secret-Zugriff
-    const frontendUrlValue = FRONTEND_URL_PARAM.value(); // String-Parameter-Zugriff
-    if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer muss angemeldet sein."); }
-    const userId = request.auth.uid;
-    const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
+  { region: "europe-west1", cors: allowedOrigins },
+  async (request: CallableRequest<{ userId: string }>): Promise<GetStripeAccountStatusResult> => {
+    const { userId } = request.data;
+    if (!userId) {
+      throw new HttpsError("invalid-argument", "Die Nutzer-ID ist erforderlich.");
+    }
+
+    const db = getDb();
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+    const accountId = userData?.stripeAccountId;
+
+    if (!accountId) {
+      return { success: false, message: "Keine Stripe-Konto-ID für diesen Nutzer gefunden." };
+    }
+
     try {
-      const userDoc = await db.collection("users").doc(userId).get();
-      if (!userDoc.exists) throw new HttpsError("not-found", "Nutzerdokument nicht gefunden.");
-      const userData = userDoc.data() as any;
-      if (userData?.user_type !== "firma") throw new HttpsError("permission-denied", "Nur Firmen können Status abrufen.");
+      const stripe = getStripeInstance(STRIPE_SECRET_KEY.value());
+      const account = await stripe.accounts.retrieve(accountId);
 
-      const stripeAccountId = userData.stripeAccountId as string | undefined;
-      if (!stripeAccountId?.startsWith("acct_")) {
-        return {
-          success: false, message: "Kein Stripe-Konto verknüpft oder ID ungültig.",
-          accountId: null, detailsSubmitted: null, chargesEnabled: null,
-          payoutsEnabled: null, requirements: null, accountLinkUrl: undefined,
-          missingFields: ["Kein Stripe-Konto vorhanden oder verknüpft."]
-        };
-      }
-      const account = await localStripe.accounts.retrieve(stripeAccountId);
-
-      const currentMissingFields: string[] = [];
-      (account.requirements?.currently_due || []).forEach((req: string) => currentMissingFields.push(translateStripeRequirement(req)));
-      (account.requirements?.eventually_due || []).forEach((req: string) => currentMissingFields.push(`Benötigt (später): ${translateStripeRequirement(req)}`));
-
-      if (!account.details_submitted && currentMissingFields.length === 0 && (account.requirements?.currently_due?.length === 0)) {
-        currentMissingFields.push("Allgemeine Kontodetails bei Stripe vervollständigen oder initiale Anforderungen prüfen.");
-      }
-      if (account.requirements?.errors && account.requirements.errors.length > 0) {
-        account.requirements.errors.forEach((err: Stripe.Account.Requirements.Error) => {
-          currentMissingFields.push(`Fehler von Stripe: ${err.reason} (betrifft: ${translateStripeRequirement(err.requirement)})`);
-        });
-      }
-      const uniqueMissingFields = [...new Set(currentMissingFields)];
-
-      let accountLinkUrl: string | undefined = undefined;
-      const needsStripeUIIntervention = (account.requirements?.errors?.length ?? 0) > 0 ||
-        ((account.requirements?.currently_due?.length ?? 0) > 0 && !account.charges_enabled);
-
-      if (needsStripeUIIntervention) {
-        try {
-          const accLinkParams: Stripe.AccountLinkCreateParams = {
-            account: stripeAccountId,
-            refresh_url: `${getEmulatorCallbackFrontendURL(frontendUrlValue)}/dashboard/company/${userId}/settings?stripe_refresh=true`, // <-- Parameter übergeben
-            return_url: `${getEmulatorCallbackFrontendURL(frontendUrlValue)}/dashboard/company/${userId}/settings?stripe_return=true`, // <-- Parameter übergeben
-            type: "account_update",
-            collect: "currently_due",
-          };
-          const accLink = await localStripe.accountLinks.create(accLinkParams);
-          accountLinkUrl = accLink.url;
-        } catch (linkError: any) {
-          loggerV2.error(`[getStripeAccountStatus] Fehler Account Link für ${stripeAccountId}:`, { message: linkError.message, type: linkError.type });
-        }
-      }
       return {
         success: true,
         accountId: account.id,
         detailsSubmitted: account.details_submitted,
         chargesEnabled: account.charges_enabled,
         payoutsEnabled: account.payouts_enabled,
-        requirements: account.requirements || null,
-        accountLinkUrl: accountLinkUrl,
-        missingFields: uniqueMissingFields
+        requirements: account.requirements,
       };
-    } catch (e: any) {
-      loggerV2.error(`Fehler getStripeAccountStatus für ${userId}:`, { message: e.message, code: e.code, type: e.type });
-      if (e.code === "resource_missing" && e.param === "account") {
-        try { await db.collection("users").doc(userId).update({ stripeAccountId: FieldValue.delete(), stripeAccountError: "Stripe-Konto nicht gefunden." }); }
-        catch (dbErr: any) { loggerV2.error("Fehler Löschen ungültige Stripe ID:", dbErr.message); }
-        return {
-          success: false, message: "Zugehöriges Stripe-Konto nicht gefunden.",
-          accountId: null,
-          detailsSubmitted: null,
-          chargesEnabled: null,
-          payoutsEnabled: null,
-          requirements: null, accountLinkUrl: undefined,
-          missingFields: ["Stripe-Konto nicht gefunden."]
-        };
-      }
-      if (e instanceof HttpsError) throw e;
-      throw new HttpsError("internal", e.message || "Fehler Abruf Stripe-Status.", e.details);
+    } catch (error: any) {
+      loggerV2.error(`Fehler beim Abrufen des Stripe-Kontostatus für ${userId}:`, error);
+      throw new HttpsError("internal", "Fehler beim Abrufen des Stripe-Kontostatus.", { stripeError: error.message });
     }
-  }
-);
+  });
+
+export const getSavedPaymentMethods = onCall(
+  { region: "europe-west1", cors: allowedOrigins },
+  async (request: CallableRequest<{ customerId: string }>): Promise<Stripe.PaymentMethod[]> => {
+    const { customerId } = request.data;
+    if (!customerId) {
+      throw new HttpsError('invalid-argument', 'Die Kunden-ID ist erforderlich.');
+    }
+    try {
+      const stripe = getStripeInstance(STRIPE_SECRET_KEY.value());
+      const paymentMethods = await stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'card',
+      });
+      return paymentMethods.data;
+    } catch (error: any) {
+      loggerV2.error(`Fehler beim Abrufen der Zahlungsmethoden für Kunde ${customerId}:`, error);
+      throw new HttpsError('internal', 'Zahlungsmethoden konnten nicht abgerufen werden.');
+    }
+  });
 
 export const getProviderStripeAccountId = onCall(
-  { region: "europe-west1", cors: corsOptions },
-  async (request: CallableRequest<{ providerUid: string }>): Promise<{ stripeAccountId: string }> => {
-    loggerV2.info("[getProviderStripeAccountId] Aufgerufen.");
-    const db = getDb(); // Firestore-Instanz
-    if (!request.auth?.uid) {
-      loggerV2.warn("[getProviderStripeAccountId] Unauthentifizierter Aufruf.");
-      throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+  { region: "europe-west1", cors: allowedOrigins },
+  async (request: CallableRequest<{ providerId: string }>): Promise<{ accountId: string | null }> => {
+    const { providerId } = request.data;
+    if (!providerId) {
+      throw new HttpsError('invalid-argument', 'Die Anbieter-ID ist erforderlich.');
     }
-
-    const providerUid = request.data.providerUid;
-    if (!providerUid || typeof providerUid !== 'string') {
-      loggerV2.warn("[getProviderStripeAccountId] Ungültige providerUid bereitgestellt.");
-      throw new HttpsError("invalid-argument", "Eine gültige providerUid ist erforderlich.");
-    }
-
     try {
-      const providerDoc = await db.collection("users").doc(providerUid).get();
-
-      if (!providerDoc.exists) {
-        loggerV2.error(`[getProviderStripeAccountId] Anbieterprofil ${providerUid} nicht gefunden.`);
-        throw new HttpsError("not-found", "Anbieterprofil nicht gefunden.");
+      const db = getDb();
+      const userDoc = await db.collection('users').doc(providerId).get();
+      if (!userDoc.exists) {
+        return { accountId: null };
       }
-
-      const providerData = providerDoc.data();
-      const stripeAccountId = providerData?.stripeAccountId;
-
-      if (!stripeAccountId || typeof stripeAccountId !== 'string' || !stripeAccountId.startsWith('acct_')) {
-        loggerV2.error(`[getProviderStripeAccountId] Stripe Connected Account ID für Anbieter ${providerUid} nicht gefunden oder ungültig:`, stripeAccountId);
-        throw new HttpsError(
-          'not-found',
-          'Stripe Connected Account ID für diesen Anbieter nicht gefunden oder ungültig.'
-        );
-      }
-
-      loggerV2.info(`[getProviderStripeAccountId] Stripe Account ID für ${providerUid} erfolgreich abgerufen: ${stripeAccountId}`);
-      return { stripeAccountId: stripeAccountId };
-
-    } catch (e: any) {
-      loggerV2.error(`[getProviderStripeAccountId] Fehler beim Abrufen der Stripe Account ID für ${request.data?.providerUid}:`, e);
-      if (e instanceof HttpsError) {
-        throw e;
-      }
-      throw new HttpsError("internal", "Fehler beim Abrufen der Anbieter-Stripe-ID.", e.message);
+      const userData = userDoc.data();
+      return { accountId: userData?.stripeAccountId || null };
+    } catch (error) {
+      loggerV2.error(`Fehler beim Abrufen der Stripe-Konto-ID für Anbieter ${providerId}:`, error);
+      throw new HttpsError('internal', 'Konto-ID konnte nicht abgerufen werden.');
     }
-  }
-);
+  });
