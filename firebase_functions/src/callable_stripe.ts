@@ -213,7 +213,7 @@ export const createStripeAccountIfComplete = onCall(
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
     
     const stripeKey = STRIPE_SECRET_KEY.value();
-    const frontendUrlValue = FRONTEND_URL_PARAM.value();
+    const frontendUrlValue = FRONTEND_URL_PARAM.value().trim();
     
     // --- NEUE, STRIKTE PRÜFUNG DER FRONTEND_URL ---
     if (!frontendUrlValue || !frontendUrlValue.startsWith('http')) {
