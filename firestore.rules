@@ -68,9 +68,11 @@ service cloud.firestore {
     match /users/{userId} {
       // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.
       // Ein Benutzer kann sein eigenes Dokument lesen.
-      allow get: if isSupportStaff() || (request.auth != null && request.auth.uid == userId);
-      // Admins/Support dürfen die Benutzerliste abfragen, wenn sie nach 'firma' filtern.
-      allow list: if isSupportStaff() && request.query.get('where')[0][0] == 'user_type';
+      // KORREKTUR: Die Reihenfolge wird geändert, um Rekursion zu vermeiden.
+      // Zuerst wird geprüft, ob der Benutzer sein eigenes Dokument liest.
+      allow get: if (request.auth != null && request.auth.uid == userId) || isSupportStaff();
+      // KORREKTUR: Ein Admin/Support-Mitarbeiter darf die gesamte Benutzerliste ohne Einschränkungen abfragen.
+      allow list: if isSupportStaff();
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
@@ -79,7 +81,8 @@ service cloud.firestore {
       // Admins/Support können jedes Firmendokument lesen.
       // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
       allow get: if isSupportStaff() || request.auth != null;
-      allow list: if request.auth != null;
+      // KORREKTUR: Nur Support-Mitarbeiter dürfen die gesamte Liste der Firmen abrufen.
+      allow list: if isSupportStaff();
 
       // Ein Benutzer kann sein eigenes Firmendokument erstellen.
       allow create: if request.auth != null && request.auth.uid == companyId;

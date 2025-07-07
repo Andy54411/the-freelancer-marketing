@@ -1,23 +1,25 @@
 'use client';
 
+import * as React from 'react';
 import { useTransition } from 'react';
-import { lockAccount, unlockAccount } from './actions';
 import { Button } from '@/components/ui/button';
-import { LoaderCircle } from 'lucide-react';
+import { lockAccount, unlockAccount } from '../actions';
+import { FiLoader, FiLock, FiUnlock } from 'react-icons/fi';
 
-interface ActionButtonsProps {
+export interface ActionButtonsProps {
     companyId: string;
-    status: 'active' | 'locked' | string; // Erlaubt andere Strings für Robustheit
+    isLocked: boolean;
 }
 
-export default function ActionButtons({ companyId, status }: ActionButtonsProps) {
+export default function ActionButtons({ companyId, isLocked }: ActionButtonsProps) {
     const [isPending, startTransition] = useTransition();
 
     const handleLock = () => {
         startTransition(async () => {
             const result = await lockAccount(companyId);
-            if (result?.error) {
-                alert(`Fehler: ${result.error}`); // Später durch eine Toast-Benachrichtigung ersetzen
+            if (result.error) {
+                // Consider using a toast notification library like sonner for better UX
+                alert(`Fehler: ${result.error}`);
             }
         });
     };
@@ -25,20 +27,25 @@ export default function ActionButtons({ companyId, status }: ActionButtonsProps)
     const handleUnlock = () => {
         startTransition(async () => {
             const result = await unlockAccount(companyId);
-            if (result?.error) {
-                alert(`Fehler: ${result.error}`); // Später durch eine Toast-Benachrichtigung ersetzen
+            if (result.error) {
+                alert(`Fehler: ${result.error}`);
             }
         });
     };
 
     return (
-        <div className="flex gap-4 mt-6 border-t pt-6">
-            <Button onClick={handleLock} disabled={isPending || status === 'locked'} variant="destructive">
-                {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />} Account sperren
-            </Button>
-            <Button onClick={handleUnlock} disabled={isPending || status !== 'locked'}>
-                {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />} Account entsperren
-            </Button>
+        <div className="flex items-center gap-2">
+            {isLocked ? (
+                <Button onClick={handleUnlock} disabled={isPending} variant="outline">
+                    {isPending ? <FiLoader className="animate-spin mr-2" /> : <FiUnlock className="mr-2" />}
+                    Konto entsperren
+                </Button>
+            ) : (
+                <Button onClick={handleLock} disabled={isPending} variant="destructive">
+                    {isPending ? <FiLoader className="animate-spin mr-2" /> : <FiLock className="mr-2" />}
+                    Konto sperren
+                </Button>
+            )}
         </div>
     );
 }

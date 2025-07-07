@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { IconDotsVertical } from '@tabler/icons-react';
+import { deactivateCompany } from '../actions'; // Import the server action
 
 export const columns: ColumnDef<CompanyData>[] = [
     {
@@ -47,6 +48,17 @@ export const columns: ColumnDef<CompanyData>[] = [
                 router.push(`/dashboard/admin/companies/${company.id}`);
             };
 
+            const handleDeactivate = async () => {
+                if (confirm(`Möchten Sie das Konto für "${company.companyName}" wirklich deaktivieren?`)) {
+                    const result = await deactivateCompany(company.id);
+                    if (result.error) {
+                        alert(`Fehler: ${result.error}`);
+                    } else {
+                        alert('Konto erfolgreich deaktiviert.');
+                    }
+                }
+            };
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -59,7 +71,7 @@ export const columns: ColumnDef<CompanyData>[] = [
                         <DropdownMenuItem onClick={handleViewDetails}>
                             Details ansehen
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleDeactivate} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                             Account deaktivieren
                         </DropdownMenuItem>
                     </DropdownMenuContent>
