@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!loading && user && !isRedirecting) {
       let targetPath = '';
       if (user.role === 'master' || user.role === 'support') {
-        targetPath = '/admin'; // Admin-Dashboard
+        targetPath = '/dashboard/admin'; // KORRIGIERT: Admin-Dashboard
       } else if (user.role === 'firma') {
         targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
       } else {
