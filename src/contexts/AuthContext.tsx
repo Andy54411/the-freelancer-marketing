@@ -124,6 +124,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  // Effekt für die Weiterleitung nach erfolgreichem Login
+  useEffect(() => {
+    // Nur ausführen, wenn der Ladevorgang abgeschlossen ist, ein Benutzer vorhanden ist und wir nicht bereits weiterleiten
+    if (!loading && user && !isRedirecting) {
+      let targetPath = '';
+      if (user.role === 'master' || user.role === 'support') {
+        targetPath = '/admin'; // Admin-Dashboard
+      } else if (user.role === 'firma') {
+        targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
+      } else {
+        targetPath = `/dashboard/user/${user.uid}`; // Kunden-Dashboard
+      }
+
+      // Nur weiterleiten, wenn wir uns noch nicht am Ziel befinden
+      if (pathname !== targetPath) {
+        setIsRedirecting(true); // Weiterleitungs-Flag setzen
+        router.push(targetPath);
+      }
+    }
+    // Wenn der Ladevorgang abgeschlossen ist und kein Benutzer vorhanden ist, das Flag zurücksetzen
+    else if (!loading && !user) {
+      setIsRedirecting(false);
+    }
+  }, [user, loading, router, pathname, isRedirecting]);
+
   // NEU: Chat-Listener für eingeloggte Benutzer
   useEffect(() => {
     if (!user?.uid) {
