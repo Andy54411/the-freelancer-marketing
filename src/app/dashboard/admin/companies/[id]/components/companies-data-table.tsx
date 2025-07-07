@@ -31,7 +31,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { IconChevronDown } from "@tabler/icons-react"
-import { useRouter } from 'next/navigation';
 
 interface CompaniesDataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -52,18 +51,8 @@ export function CompaniesDataTable<TData, TValue>({
         getCoreRowModel: getCoreRowModel(),
     });
 
-    const router = useRouter();
-
-    const handleMenuItemClick = (e: React.MouseEvent) => {
-        const target = e.target as HTMLElement;
-        const companyId = target.getAttribute('data-id');
-        if (companyId) {
-            router.push(`/dashboard/admin/companies/${companyId}`);
-        }
-    };
-
     return (
-        <div className="rounded-md border" onClick={handleMenuItemClick}>
+        <div className="rounded-md border">
             <Table>
                 <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (

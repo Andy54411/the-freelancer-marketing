@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ColumnDef } from '@tanstack/react-table';
 import type { CompanyListData as CompanyData } from '@/lib/companies-list-data';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +40,13 @@ export const columns: ColumnDef<CompanyData>[] = [
     {
         id: 'actions',
         cell: ({ row }) => {
+            const router = useRouter();
             const company = row.original;
+
+            const handleViewDetails = () => {
+                router.push(`/dashboard/admin/companies/${company.id}`);
+            };
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -49,8 +56,7 @@ export const columns: ColumnDef<CompanyData>[] = [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        {/* The navigation is now handled by the parent component */}
-                        <DropdownMenuItem data-id={company.id}>
+                        <DropdownMenuItem onClick={handleViewDetails}>
                             Details ansehen
                         </DropdownMenuItem>
                         <DropdownMenuItem>

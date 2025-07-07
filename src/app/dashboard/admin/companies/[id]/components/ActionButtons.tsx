@@ -1,44 +1,43 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { useTransition } from "react";
-import { lockAccount, unlockAccount } from "../actions";
+import { useTransition } from 'react';
+import { lockAccount, unlockAccount } from './actions';
+import { Button } from '@/components/ui/button';
+import { LoaderCircle } from 'lucide-react';
 
 interface ActionButtonsProps {
     companyId: string;
-    isLocked: boolean;
+    status: 'active' | 'locked' | string; // Erlaubt andere Strings für Robustheit
 }
 
-export function ActionButtons({ companyId, isLocked }: ActionButtonsProps) {
+export default function ActionButtons({ companyId, status }: ActionButtonsProps) {
     const [isPending, startTransition] = useTransition();
 
-    const handleToggleLock = () => {
+    const handleLock = () => {
         startTransition(async () => {
-            const action = isLocked ? unlockAccount : lockAccount;
-            const result = await action(companyId);
+            const result = await lockAccount(companyId);
             if (result?.error) {
-                // In einer echten App würden Sie hier ein Toast-Feedback verwenden
-                alert(result.error);
+                alert(`Fehler: ${result.error}`); // Später durch eine Toast-Benachrichtigung ersetzen
             }
         });
     };
 
-    const handleRequestVerification = () => {
-        // TODO: Implementiere Server Action zum Anfordern der Verifizierung
-        alert(`Fordere Verifizierung an für: ${companyId}`);
+    const handleUnlock = () => {
+        startTransition(async () => {
+            const result = await unlockAccount(companyId);
+            if (result?.error) {
+                alert(`Fehler: ${result.error}`); // Später durch eine Toast-Benachrichtigung ersetzen
+            }
+        });
     };
 
     return (
-        <div className="flex gap-2">
-            <Button
-                variant={isLocked ? "secondary" : "destructive"}
-                onClick={handleToggleLock}
-                disabled={isPending}
-            >
-                {isPending ? (isLocked ? "Wird entsperrt..." : "Wird gesperrt...") : (isLocked ? "Account entsperren" : "Account sperren")}
+        <div className="flex gap-4 mt-6 border-t pt-6">
+            <Button onClick={handleLock} disabled={isPending || status === 'locked'} variant="destructive">
+                {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />} Account sperren
             </Button>
-            <Button onClick={handleRequestVerification}>
-                Verifizierung anfordern
+            <Button onClick={handleUnlock} disabled={isPending || status !== 'locked'}>
+                {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />} Account entsperren
             </Button>
         </div>
     );
