@@ -90,11 +90,30 @@ service cloud.firestore {
 
     // --- auftraege Collection ---
     match /auftraege/{auftragId} {
-      allow read: if request.auth != null && resource != null && (
-        resource.data.kundeId == request.auth.uid ||
+      allow get: if request.auth != null && resource != null && (
+        resource.data.customerFirebaseUid == request.auth.uid ||
         resource.data.selectedAnbieterId == request.auth.uid ||
         isSupportStaff()
       );
+
+      // Explizite Regel für Listenabfragen, um die Sicherheit zu erhöhen.
+      // Erlaubt Abfragen (`list`) nur, wenn sie explizit nach der UID des Anbieters
+      // oder Kunden filtern. Dies ist entscheidend für die `getProviderOrders`-Funktion.
+      allow list: if request.auth != null &&
+                   (
+                     (
+                       request.query.where[0].path == 'selectedAnbieterId' &&
+                       request.query.where[0].op == '==' &&
+                       request.query.where[0].value == request.auth.uid
+                     ) ||
+                     (
+                       request.query.where[0].path == 'customerFirebaseUid' &&
+                       request.query.where[0].op == '==' &&
+                       request.query.where[0].value == request.auth.uid
+                     ) ||
+                     isSupportStaff()
+                   );
+
       allow create,
             update,
             delete: if false;
