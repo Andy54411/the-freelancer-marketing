@@ -69,7 +69,8 @@ service cloud.firestore {
       // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.
       // Ein Benutzer kann sein eigenes Dokument lesen.
       allow get: if isSupportStaff() || (request.auth != null && request.auth.uid == userId);
-      allow list: if isSupportStaff(); // Nur Admins/Support dürfen die Benutzerliste abfragen
+      // Admins/Support dürfen die Benutzerliste abfragen, wenn sie nach 'firma' filtern.
+      allow list: if isSupportStaff() && request.query.get('where')[0][0] == 'user_type';
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 

@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { IconDotsVertical } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
 
 export const columns: ColumnDef<CompanyData>[] = [
     {
@@ -39,14 +38,8 @@ export const columns: ColumnDef<CompanyData>[] = [
     },
     {
         id: 'actions',
-        cell: function Cell({ row }) {
+        cell: ({ row }) => {
             const company = row.original;
-            const router = useRouter();
-
-            const handleDetailsClick = () => {
-                router.push(`/dashboard/admin/companies/${company.id}`);
-            };
-
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -56,7 +49,8 @@ export const columns: ColumnDef<CompanyData>[] = [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleDetailsClick}>
+                        {/* The navigation is now handled by the parent component */}
+                        <DropdownMenuItem data-id={company.id}>
                             Details ansehen
                         </DropdownMenuItem>
                         <DropdownMenuItem>

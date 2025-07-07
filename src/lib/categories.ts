@@ -55,7 +55,7 @@ export const categories: Category[] = [
     {
         title: "Finanzen & Recht",
         subcategories: [
-            "Buchhaltung", "Hofrechnungsstelle (freiberuflich)", "Rechtsberatung (freiberuflich)", // Updated from "Steuerberatung (freiberuflich)"
+            "Buchhaltung", "Steuerberatung (freiberuflich)", "Rechtsberatung (freiberuflich)",
             "Finanzberatung", "Versicherungsberatung", "Übersetzungen (juristisch/wirtschaftlich)",
             "Lektorat (juristisch/wirtschaftlich)"
         ]
