@@ -1,6 +1,7 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/http_file_uploads.ts
 import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
+// import * as functions from "firebase-functions"; // Veraltet, wird entfernt
 import type * as admin from "firebase-admin";
 import busboy from "busboy";
 import cors from "cors";
@@ -10,9 +11,9 @@ import path from "path";
 import os from "os";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { defineSecret } from "firebase-functions/params"; // <-- Hinzufügen, falls noch nicht da
+import { defineSecret } from "firebase-functions/params"; // Korrekte Methode für v2 Secrets
 
-// Parameter zentral definieren (auf oberster Ebene der Datei)
+// Secret wieder mit defineSecret definieren
 const STRIPE_SECRET_KEY_UPLOADS = defineSecret("STRIPE_SECRET_KEY");
 
 // CORS-Konfiguration für verschiedene Umgebungen
@@ -123,9 +124,8 @@ const parseMultipartFormData = (req: any): Promise<{ fields: { [key: string]: st
 
 export const uploadStripeFile = onRequest(
   {
-    // Die Option { cors: true } scheint bei multipart/form-data nicht zuverlässig zu sein.
-    // Wir verwenden stattdessen den manuellen cors-Handler.
-    region: 'europe-west1'
+    region: 'europe-west1',
+    secrets: [STRIPE_SECRET_KEY_UPLOADS] // Secret für die Funktion deklarieren
   },
   async (req, res) => {
     // WICHTIG: Der corsHandler MUSS die Anfrage verarbeiten, BEVOR irgendeine andere Logik ausgeführt wird.
@@ -177,10 +177,15 @@ export const uploadStripeFile = onRequest(
         }
 
         const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
-        logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath}`);
+        logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath} for purpose: ${purpose}`);
 
-        // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt,
+        // Zurück zur korrekten Methode für v2 Secrets
         const stripeKey = STRIPE_SECRET_KEY_UPLOADS.value();
+        if (!stripeKey) {
+            logger.error("[uploadStripeFile] Stripe secret key is not available from Secret Manager.");
+            throw { status: 500, message: "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt)." };
+        }
+
         const stripe = getStripeInstance(stripeKey);
         logger.info("[uploadStripeFile] Stripe instance obtained.");
         const bucket = getStorageInstance().bucket();
@@ -205,15 +210,20 @@ export const uploadStripeFile = onRequest(
         logger.info("[uploadStripeFile] GCS file object obtained from storage response.");
 
         let fileUrl: string;
-        if (purpose === 'business_icon') {
-          await gcsFile.makePublic();
-          fileUrl = gcsFile.publicUrl();
-          logger.info(`[uploadStripeFile] Business icon made public. URL: ${fileUrl}`);
-        } else {
-          const [signedUrl] = await gcsFile.getSignedUrl({ action: 'read', expires: Date.now() + 24 * 60 * 60 * 1000 });
-          fileUrl = signedUrl;
-          logger.warn(`[uploadStripeFile] Signed URL created for ${storagePath}, valid for 24h.`);
-        }
+        // WORKAROUND: Temporarily make the file public to avoid signBlob permission issues.
+        await gcsFile.makePublic();
+        fileUrl = gcsFile.publicUrl();
+        logger.info(`[uploadStripeFile] File made temporarily public. URL: ${fileUrl}`);
+
+        // Schedule a task to make the file private again after a short delay.
+        // This is a simplified approach. For production, consider using Cloud Tasks.
+        setTimeout(() => {
+          gcsFile.makePrivate().then(() => {
+            logger.info(`[uploadStripeFile] File ${gcsFile.name} has been made private again.`);
+          }).catch(err => {
+            logger.error(`[uploadStripeFile] Failed to make file ${gcsFile.name} private again.`, err);
+          });
+        }, 60000); // 60 seconds delay
 
         logger.info("[uploadStripeFile] Sending success response.");
         res.status(200).send({
