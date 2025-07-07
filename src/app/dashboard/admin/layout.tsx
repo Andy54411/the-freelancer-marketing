@@ -12,15 +12,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && user) {
-            // Nur 'master' und 'support' dürfen auf das Admin-Dashboard zugreifen.
-            if (user.role !== 'master' && user.role !== 'support') {
-                console.warn(`[AdminLayout] Unbefugter Zugriff von Benutzer ${user.uid} mit Rolle '${user.role}'. Leite weiter...`);
-                router.replace('/dashboard'); // Leite zu einem sicheren Standard-Dashboard weiter.
+        // Diese Logik wird nur ausgeführt, wenn der Ladevorgang abgeschlossen ist.
+        if (!loading) {
+            if (user) {
+                // HILFREICHES LOGGING: Zeigt den aktuellen Benutzer und seine Rolle in der Konsole an.
+                console.log(`[AdminLayout] Auth-Prüfung: Benutzer ${user.uid} ist eingeloggt mit Rolle: '${user.role}'`);
+                if (user.role !== 'master' && user.role !== 'support') {
+                    console.warn(`[AdminLayout] Unbefugter Zugriff. Leite weiter...`);
+                    router.replace('/dashboard');
+                }
+            } else {
+                console.log('[AdminLayout] Auth-Prüfung: Kein Benutzer gefunden. Leite zum Login weiter.');
+                router.replace('/login');
             }
-        } else if (!loading && !user) {
-            // Wenn nicht eingeloggt, zum Login weiterleiten.
-            router.replace('/login');
         }
     }, [user, loading, router]);
 
