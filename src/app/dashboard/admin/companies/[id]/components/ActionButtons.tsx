@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { lockAccount, unlockAccount } from '../actions';
+import { lockAccount, unlockAccount } from '../lib/actions';
 import { FiLoader, FiLock, FiUnlock } from 'react-icons/fi';
 
 export interface ActionButtonsProps {

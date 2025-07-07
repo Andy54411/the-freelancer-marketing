@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { DocumentViewer } from './DocumentViewer';
 import ActionButtons from './ActionButtons';
-import type { CompanyDetailData } from '../types';
+import type { CompanyDetailData } from '../lib/types';
 
 // Hilfsfunktion, um einen Link zum Stripe-Dashboard zu erstellen
 const getStripeDashboardLink = (stripeAccountId: string) => {

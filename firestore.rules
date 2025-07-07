@@ -4,21 +4,15 @@ service cloud.firestore {
 
     // 🔁 Rollen anhand des user_type im Firestore-Dokument des Benutzers prüfen
     function isCompany() {
-      // KORREKTUR: Liest die Rolle direkt aus dem Firestore-Dokument des Benutzers.
-      // Dies ist zwar weniger performant als Custom Claims, stellt aber die Konsistenz
-      // mit der aktuellen Client-Logik im AuthContext sicher.
-      return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'firma';
+      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen (via Custom Claims).
+      // Dies ist performanter und vermeidet fehleranfällige Lesezugriffe innerhalb von Regeln.
+      return request.auth != null && request.auth.token.role == 'firma';
     }
     // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
     function isSupportStaff() {
-      // KORREKTUR: Liest die Rolle direkt aus dem Firestore-Dokument des Benutzers.
-      // Dies behebt den Fehler, da die Client-Logik ebenfalls aus diesem Dokument liest.
-      return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'master' ||
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'support');
+      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen.
+      // Die Cloud Function `syncUserRoleWithCustomClaims` stellt sicher, dass das Token aktuell ist.
+      return request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'support');
     }
 
     // --- Helper-Funktionen für Chat-Nachrichten ---
