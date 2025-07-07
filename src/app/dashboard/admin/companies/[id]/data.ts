@@ -1,5 +1,5 @@
 import { db, admin } from '@/firebase/server';
-import type { CompanyDetailData } from '../types';
+import type { CompanyDetailData } from './types';
 
 async function listUserDocuments(companyId: string): Promise<{ files: { name: string; url: string }[] }> {
     try {

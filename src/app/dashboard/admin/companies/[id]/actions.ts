@@ -3,6 +3,7 @@
 import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
+import { verifyAdmin } from '@/lib/server-auth';
 
 /**
  * Updates the status of a company account in both 'users' and 'companies' collections for consistency.
@@ -40,16 +41,28 @@ async function updateAccountStatus(companyId: string, status: 'active' | 'locked
 }
 
 export async function lockAccount(companyId: string) {
-    // TODO: Implement authorization check to ensure only admins can call this.
-    return updateAccountStatus(companyId, 'locked');
+    try {
+        await verifyAdmin();
+        return await updateAccountStatus(companyId, 'locked');
+    } catch (error: any) {
+        return { error: error.message };
+    }
 }
 
 export async function unlockAccount(companyId: string) {
-    // TODO: Implement authorization check.
-    return updateAccountStatus(companyId, 'active');
+    try {
+        await verifyAdmin();
+        return await updateAccountStatus(companyId, 'active');
+    } catch (error: any) {
+        return { error: error.message };
+    }
 }
 
 export async function deactivateCompany(companyId: string) {
-    // TODO: Implement authorization check.
-    return updateAccountStatus(companyId, 'deactivated');
+    try {
+        await verifyAdmin();
+        return await updateAccountStatus(companyId, 'deactivated');
+    } catch (error: any) {
+        return { error: error.message };
+    }
 }

@@ -1,52 +1,20 @@
 rules_version = '2';
+
 service firebase.storage {
-  function isAdmin() {
-    // Checks if the user has the 'admin' role in their custom claims.
-    return request.auth != null && request.auth.token.role == 'admin';
-  }
   match /b/{bucket}/o {
-
-    // KORREKTUR: Leserechte auf public setzen, damit Avatare in Chats etc. angezeigt werden können.
-    // Schreibrechte bleiben auf den Eigentümer beschränkt.
-    match /profilePictures/{userId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Helper-Funktion, um Admin/Support-Rollen über Custom Claims zu prüfen.
+    function isSupportStaff() {
+      return request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'support');
     }
 
-    // KORREKTUR: Leserechte auf public setzen, damit Firmenlogos öffentlich angezeigt werden können.
-    match /logos/{userId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Admins können jede Datei lesen. Dies ist entscheidend, damit das Admin-Dashboard Benutzerdokumente anzeigen kann.
+    match /{allPaths=**} {
+      allow read: if isSupportStaff();
     }
 
-    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
-    match /businessLicenses/{userId}/{fileName} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
-    match /masterCraftsmanCertificates/{userId}/{fileName} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Aktuelle Regel: Nur der Eigentümer kann lesen und schreiben
-    // Wenn diese öffentlich lesbar sein sollen, muss 'allow read;' hinzugefügt/geändert werden.
-    match /projectImages/{userId}/{fileName} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Regel für allgemeine Benutzer-Uploads (z.B. durch uploadStripeFile Funktion)
+    // Ein Benutzer kann seine eigenen Dateien lesen und schreiben.
     match /user_uploads/{userId}/{allPaths=**} {
-      // JEDER darf lesen, damit die Bilder öffentlich angezeigt werden können.
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Standardregel für alle anderen Pfade (falls nicht spezifisch abgedeckt)
-    // ACHTUNG: Diese Regel ist sehr breit und sollte an Ihre Sicherheitsanforderungen angepasst werden!
-    // Im aktuellen Zustand ist sie nicht vorhanden, was bedeutet, dass alles, was nicht explizit erlaubt ist, verboten ist.
-    // match /{allPaths=**} {
-    //   allow read, write: if request.auth != null;
-    // }
   }
 }

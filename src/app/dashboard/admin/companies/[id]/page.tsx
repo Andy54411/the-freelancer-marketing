@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getCompanyDetails } from './lib/data';
+import { getCompanyDetails } from './data';
 import { CompanyDetailClientPage } from './components/CompanyDetailClientPage';
 
 export const dynamic = 'force-dynamic';

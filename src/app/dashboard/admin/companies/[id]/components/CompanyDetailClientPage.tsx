@@ -12,19 +12,6 @@ const getStripeDashboardLink = (stripeAccountId: string) => {
     return `https://dashboard.stripe.com/accounts/${stripeAccountId}`;
 };
 
-// Hilfsfunktion für den sicheren Zugriff auf verschachtelte Objekteigenschaften
-const get = (data: Record<string, any>, path: string, fallback: any = 'N/A') => {
-    const keys = path.split('.');
-    let current: any = data;
-    for (const key of keys) {
-        if (current === undefined || current === null || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, key)) {
-            return fallback;
-        }
-        current = current[key];
-    }
-    return current ?? fallback;
-};
-
 // Erzeugt ein benutzerfreundliches Label aus dem Dateinamen des Dokuments
 const getDocumentLabel = (fileName: string): string => {
     const nameOnly = fileName.substring(fileName.lastIndexOf('/') + 1);
@@ -44,17 +31,16 @@ interface CompanyDetailClientPageProps {
 }
 
 export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailClientPageProps) {
-    const createdAtString = get(combinedData, 'createdAt', null);
-    const createdAt = createdAtString
-        ? new Date(createdAtString).toLocaleDateString('de-DE', {
+    const createdAt = combinedData.createdAt
+        ? new Date(combinedData.createdAt).toLocaleDateString('de-DE', {
             day: '2-digit', month: '2-digit', year: 'numeric'
         })
         : 'N/A'; // Fallback, falls das Datum null oder ungültig ist
 
-    const stripeAccountId = get(combinedData, 'stripeAccountId', null);
-    const isLocked = get(combinedData, 'status') === 'locked';
+    const stripeAccountId = combinedData.stripeAccountId;
+    const isLocked = combinedData.status === 'locked';
     const companyId = combinedData.id;
-    const documents = get(combinedData, 'documents', []);
+    const documents = combinedData.documents ?? [];
 
     return (
         <div className="space-y-8">
@@ -62,7 +48,7 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
                     <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{get(combinedData, 'companyName')}</h1>
+                        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{combinedData.companyName ?? 'Unbenannte Firma'}</h1>
                         {isLocked && <Badge variant="destructive">Gesperrt</Badge>}
                     </div>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">ID: {companyId}</p>
@@ -80,11 +66,11 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
                             <FiBriefcase /> Firmendetails
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div><span className="font-medium text-gray-500">Firma:</span> {get(combinedData, 'companyName')}</div>
-                            <div><span className="font-medium text-gray-500">Rechtsform:</span> {get(combinedData, 'legalForm', 'N/A')}</div>
-                            <div><span className="font-medium text-gray-500">Adresse:</span> {`${get(combinedData, 'companyStreet', '')} ${get(combinedData, 'companyHouseNumber', '')}, ${get(combinedData, 'companyPostalCode', '')} ${get(combinedData, 'companyCity', '')}`}</div>
-                            <div><span className="font-medium text-gray-500">Webseite:</span> <a href={get(combinedData, 'companyWebsite', '#')} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">{get(combinedData, 'companyWebsite', 'N/A')}</a></div>
-                            <div><span className="font-medium text-gray-500">Telefon:</span> {get(combinedData, 'companyPhoneNumber', 'N/A')}</div>
+                            <div><span className="font-medium text-gray-500">Firma:</span> {combinedData.companyName ?? 'N/A'}</div>
+                            <div><span className="font-medium text-gray-500">Rechtsform:</span> {combinedData.legalForm ?? 'N/A'}</div>
+                            <div><span className="font-medium text-gray-500">Adresse:</span> {`${combinedData.companyStreet ?? ''} ${combinedData.companyHouseNumber ?? ''}, ${combinedData.companyPostalCode ?? ''} ${combinedData.companyCity ?? ''}`}</div>
+                            <div><span className="font-medium text-gray-500">Webseite:</span> <a href={combinedData.companyWebsite ?? '#'} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">{combinedData.companyWebsite ?? 'N/A'}</a></div>
+                            <div><span className="font-medium text-gray-500">Telefon:</span> {combinedData.companyPhoneNumber ?? 'N/A'}</div>
                             <div><span className="font-medium text-gray-500">Registriert seit:</span> {createdAt}</div>
                         </div>
                     </div>
@@ -95,9 +81,9 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
                             <FiUser /> Ansprechpartner
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div><span className="font-medium text-gray-500">Name:</span> {`${get(combinedData, 'firstName', '')} ${get(combinedData, 'lastName', '')}`}</div>
-                            <div><span className="font-medium text-gray-500">E-Mail:</span> <a href={`mailto:${get(combinedData, 'email')}`} className="text-teal-600 hover:underline">{get(combinedData, 'email')}</a></div>
-                            <div><span className="font-medium text-gray-500">Telefon (privat):</span> {get(combinedData, 'phoneNumber', 'N/A')}</div>
+                            <div><span className="font-medium text-gray-500">Name:</span> {`${combinedData.firstName ?? ''} ${combinedData.lastName ?? ''}`}</div>
+                            <div><span className="font-medium text-gray-500">E-Mail:</span> <a href={`mailto:${combinedData.email}`} className="text-teal-600 hover:underline">{combinedData.email}</a></div>
+                            <div><span className="font-medium text-gray-500">Telefon (privat):</span> {combinedData.phoneNumber ?? 'N/A'}</div>
                         </div>
                     </div>
 

@@ -3,8 +3,9 @@
 import * as React from 'react';
 import { useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { lockAccount, unlockAccount } from '../lib/actions';
+import { lockAccount, unlockAccount } from '../actions';
 import { FiLoader, FiLock, FiUnlock } from 'react-icons/fi';
+import { toast } from 'sonner';
 
 export interface ActionButtonsProps {
     companyId: string;
@@ -18,8 +19,9 @@ export default function ActionButtons({ companyId, isLocked }: ActionButtonsProp
         startTransition(async () => {
             const result = await lockAccount(companyId);
             if (result.error) {
-                // Consider using a toast notification library like sonner for better UX
-                alert(`Fehler: ${result.error}`);
+                toast.error('Sperren fehlgeschlagen', { description: result.error });
+            } else {
+                toast.success('Konto erfolgreich gesperrt.');
             }
         });
     };
@@ -28,7 +30,9 @@ export default function ActionButtons({ companyId, isLocked }: ActionButtonsProp
         startTransition(async () => {
             const result = await unlockAccount(companyId);
             if (result.error) {
-                alert(`Fehler: ${result.error}`);
+                toast.error('Entsperren fehlgeschlagen', { description: result.error });
+            } else {
+                toast.success('Konto erfolgreich entsperrt.');
             }
         });
     };

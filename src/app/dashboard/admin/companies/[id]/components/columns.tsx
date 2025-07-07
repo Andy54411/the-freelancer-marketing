@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { IconDotsVertical } from '@tabler/icons-react';
-import { deactivateCompany } from '../lib/actions'; // Import the server action
+import { deactivateCompany } from '../actions'; // Import the server action
 
 export const columns: ColumnDef<CompanyData>[] = [
     {
