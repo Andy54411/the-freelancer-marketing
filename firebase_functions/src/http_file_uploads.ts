@@ -4,7 +4,7 @@ import { logger } from "firebase-functions/v2";
 // import * as functions from "firebase-functions"; // Veraltet, wird entfernt
 import type * as admin from "firebase-admin";
 import busboy from "busboy";
-import cors from "cors";
+import { corsHandler } from "./shared/cors";
 import Stripe from "stripe";
 import { getStripeInstance, getStorageInstance, getAuthInstance } from "./helpers";
 import path from "path";
@@ -16,27 +16,7 @@ import { defineSecret } from "firebase-functions/params"; // Korrekte Methode f�
 // Secret wieder mit defineSecret definieren
 const STRIPE_SECRET_KEY_UPLOADS = defineSecret("STRIPE_SECRET_KEY");
 
-// CORS-Konfiguration für verschiedene Umgebungen
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://tasko-rho.vercel.app',
-  'https://tasko-zh8k.vercel.app',
-  'https://tilvo-f142f.web.app'
-];
-
-const corsHandler = cors({ 
-  origin: (origin, callback) => {
-    // `origin` ist `undefined` für Server-zu-Server-Anfragen oder wenn der Client den Origin-Header nicht sendet (z.B. curl)
-    // In diesen Fällen oder wenn die Herkunft erlaubt ist, den Zugriff gewähren.
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      logger.warn(`[CORS] Blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-});
+// CORS-Konfiguration wird jetzt aus shared/cors.ts importiert
 
 const authenticateRequest = async (req: any): Promise<admin.auth.DecodedIdToken> => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
