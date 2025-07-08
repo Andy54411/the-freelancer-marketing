@@ -16,6 +16,7 @@ import {
 import { FiTrash2, FiSlash, FiLoader, FiLock, FiUnlock, FiCheck } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { lockAccount, unlockAccount, deactivateCompany, deleteCompany } from '../actions';
+import { getSessionCookie } from '@/lib/get-session-cookie';
 
 
 interface ActionButtonsProps {
@@ -54,16 +55,20 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
     };
 
     const handleDelete = () => {
-        startTransition(() => {
-            deleteCompany(companyId).then((result) => {
-                if (result.error) {
-                    toast.error("Fehler", { description: result.error });
-                } else {
-                    toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
-                    // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
-                    window.location.href = '/dashboard/admin/companies';
-                }
-            });
+        startTransition(async () => {
+            const sessionCookie = await getSessionCookie();
+            if (!sessionCookie) {
+                toast.error("Fehler", { description: "Sitzung nicht gefunden. Bitte neu anmelden." });
+                return;
+            }
+            const result = await deleteCompany(companyId, sessionCookie);
+            if (result.error) {
+                toast.error("Fehler", { description: result.error });
+            } else {
+                toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
+                // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
+                window.location.href = '/dashboard/admin/companies';
+            }
         });
     };
 

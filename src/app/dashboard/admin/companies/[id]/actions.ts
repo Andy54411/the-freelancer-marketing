@@ -68,10 +68,10 @@ export async function deactivateCompany(companyId: string, shouldDeactivate: boo
     }
 }
 
-export async function deleteCompany(companyId: string) {
+export async function deleteCompany(companyId: string, sessionCookie?: string) {
     console.log(`[Action] Starte Löschvorgang für Firma: ${companyId}`);
     try {
-        await verifyAdmin();
+        await verifyAdmin(sessionCookie);
 
         if (!companyId) {
             console.error('[Action] Abbruch: Keine Firmen-ID angegeben.');
