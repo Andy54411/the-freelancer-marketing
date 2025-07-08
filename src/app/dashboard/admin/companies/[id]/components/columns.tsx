@@ -4,10 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ColumnDef } from '@tanstack/react-table';
 import type { CompanyListData as CompanyData } from '@/lib/companies-list-data';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { IconDotsVertical } from '@tabler/icons-react';
-import { deactivateCompany } from '../actions'; // Import the server action
 
 export const columns: ColumnDef<CompanyData>[] = [
     {
@@ -48,34 +45,10 @@ export const columns: ColumnDef<CompanyData>[] = [
                 router.push(`/dashboard/admin/companies/${company.id}`);
             };
 
-            const handleDeactivate = async () => {
-                if (confirm(`Möchten Sie das Konto für "${company.companyName}" wirklich deaktivieren?`)) {
-                    const result = await deactivateCompany(company.id, true);
-                    if (result.error) {
-                        alert(`Fehler: ${result.error}`);
-                    } else {
-                        alert('Konto erfolgreich deaktiviert.');
-                    }
-                }
-            };
-
             return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Menü öffnen</span>
-                            <IconDotsVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleViewDetails}>
-                            Details ansehen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDeactivate} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                            Account deaktivieren
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="outline" size="sm" onClick={handleViewDetails}>
+                    Details ansehen
+                </Button>
             );
         },
     },
