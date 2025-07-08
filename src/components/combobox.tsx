@@ -33,7 +33,12 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
         </Button>
       </PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent className="w-full p-0 z-50" side="bottom" align="start">
+        <PopoverContent
+          className="p-0 z-50"
+          style={{ width: 'var(--radix-popover-trigger-width)' }}
+          side="bottom"
+          align="start"
+        >
           <Command>
             <CommandInput placeholder="Suchen..." />
             <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
