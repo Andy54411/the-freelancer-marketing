@@ -4,7 +4,16 @@ import { getDb, FieldValue, getUserDisplayName, getAuthInstance } from './helper
 import { UNKNOWN_PROVIDER_NAME, UNNAMED_COMPANY } from './constants';
 import { geohashForLocation } from 'geofire-common';
 
-export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
+// Definiere die erlaubten Ursprünge für CORS
+const allowedOrigins = [
+    "https://tasko-rho.vercel.app", // Vercel Frontend
+    "http://localhost:3000",      // Lokale Entwicklung (Next.js)
+    "http://localhost:4000",      // Lokale Entwicklung (Firebase Emulator UI)
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:4000",
+];
+
+export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: allowedOrigins, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
   // --- NEU: Authentifizierung und Autorisierung ---
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
     loggerV2.warn("[migrateExistingUsersToCompanies] Unauthenticated access attempt.");
@@ -107,7 +116,7 @@ export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1
   }
 });
 
-export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
+export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: allowedOrigins }, async (req, res) => {
   const db = getDb();
   try { // <-- This try-catch block is already present, which is good. No changes needed here.
     const { id, postalCode, selectedSubcategory, minPrice, maxPrice, geohash } = req.query as { [key: string]: string | undefined };
@@ -200,7 +209,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
   }
 });
 
-export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
+export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: allowedOrigins }, async (req, res) => {
   if (req.method !== "GET") {
     res.status(405).send("Method Not Allowed");
     return;
@@ -272,7 +281,7 @@ export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: t
   }
 });
 
-export const createJobPosting = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
+export const createJobPosting = onRequest({ region: "europe-west1", cors: allowedOrigins }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
     return;

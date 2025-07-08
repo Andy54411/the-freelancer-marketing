@@ -20,6 +20,7 @@ import {
   PAGE_WARN,
   PAGE_ERROR,
   TRUST_AND_SUPPORT_FEE_EUR,
+  FIREBASE_FUNCTIONS_BASE_URL,
 } from '@/lib/constants';
 
 import {
@@ -198,8 +199,7 @@ export default function AnbieterDetailsFetcher({
       try {
         // FIX: Use the environment variable for the API base URL to ensure the correct region is called.
         // This was previously calling us-central1, causing a 404.
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
-        const url = `${apiBaseUrl}/searchCompanyProfiles?id=${encodeURIComponent(anbieterId)}`;
+        const url = `${FIREBASE_FUNCTIONS_BASE_URL}/searchCompanyProfiles?id=${encodeURIComponent(anbieterId)}`;
 
         const response = await fetch(url);
         if (!response.ok) {
