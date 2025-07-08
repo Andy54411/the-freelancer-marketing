@@ -55,13 +55,19 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
     };
 
     const handleDelete = () => {
+        console.log("[handleDelete] Delete button clicked for companyId:", companyId);
         startTransition(() => {
+            console.log("[handleDelete] Starting transition...");
             getSessionCookie().then((sessionCookie) => {
+                console.log("[handleDelete] Got session cookie:", sessionCookie ? "found" : "not found");
                 if (!sessionCookie) {
                     toast.error("Fehler", { description: "Sitzung nicht gefunden. Bitte neu anmelden." });
+                    console.error("[handleDelete] Session cookie not found.");
                     return;
                 }
+                console.log("[handleDelete] Calling deleteCompany server action...");
                 deleteCompany(companyId, sessionCookie).then((result) => {
+                    console.log("[handleDelete] deleteCompany result:", result);
                     if (result.error) {
                         toast.error("Fehler", { description: result.error });
                     } else {
