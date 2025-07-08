@@ -2,10 +2,9 @@
 
 import Image from 'next/image'; // Import next/image
 import React, { useState, useEffect } from "react";
-import { getAuth } from "firebase/auth";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db } from "@/firebase/clients";
+import { db, auth } from "@/firebase/clients"; // Importiere auth von hier
 import { FiAlertCircle, FiCheckCircle } from "react-icons/fi";
 import QRCode from "react-qr-code"; // Verwende 'react-qr-code'
 
@@ -24,7 +23,6 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
   const [identityFrontPreview, setIdentityFrontPreview] = useState<string | null>(null); // Vorschau Vorderseite
   const [identityBackPreview, setIdentityBackPreview] = useState<string | null>(null); // Vorschau Rückseite
 
-  const auth = getAuth();
   const user = auth.currentUser;
   const uid = user?.uid || "";
 

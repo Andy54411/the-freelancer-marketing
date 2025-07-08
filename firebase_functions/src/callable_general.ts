@@ -1,23 +1,19 @@
 // functions/src/callable_general.ts
 
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
-import { logger as loggerV2 } from 'firebase-functions/v2';
-import { getDb, getUserDisplayName } from './helpers'; // getUserDisplayName hinzugefügt, getStripeInstance entfernt
+import { logger } from "firebase-functions/v2";
+import { getDb, getUserDisplayName, deleteCollection, verifyAdmin } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
-import * as admin from "firebase-admin"; // <-- Hinzufügen, falls nicht da
-import { defineSecret } from 'firebase-functions/params';
-import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from './constants'; // Konstanten importieren
-
-// Parameter zentral definieren (auf oberster Ebene der Datei)
-const STRIPE_SECRET_KEY_GENERAL = defineSecret("STRIPE_SECRET_KEY");
+import * as admin from "firebase-admin";
+import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from './constants';
 
 // Konsolen-Logs anpassen für Klarheit
-loggerV2.info("Lade callable_general.ts..."); // Nutze loggerV2 konsistent
+logger.info("Lade callable_general.ts...");
 
 try {
-  loggerV2.info("callable_general.ts: Globale Initialisierung erfolgreich.");
+  logger.info("callable_general.ts: Globale Initialisierung erfolgreich.");
 } catch (error: any) {
-  loggerV2.error("callable_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
+  logger.error("callable_general.ts: Fehler bei globaler Initialisierung!", { error: error.message, stack: error.stack });
   throw error;
 }
 
@@ -50,15 +46,6 @@ interface TemporaryJobDraftResult {
 // CustomerAddress, GetOrCreateStripeCustomerPayload, GetOrCreateStripeCustomerResult
 // sind hier nicht mehr direkt für die Funktionen in dieser Datei notwendig,
 // da getOrCreateStripeCustomer verschoben wird.
-
-interface DeleteCompanyAccountData {
-  companyId: string;
-}
-
-interface DeleteCompanyAccountResult {
-  success: boolean;
-  message: string;
-}
 
 // --- Cloud Functions ---
 
@@ -115,13 +102,13 @@ export const getClientIp = onCall({ cors: true }, (request) => {
   }
 
   if (clientIp === "IP_NOT_DETERMINED" || clientIp.length < 7) {
-    loggerV2.warn(`[getClientIp] Konnte keine gültige IP ermitteln. Headers: ${JSON.stringify(request.rawRequest.headers)}`);
+    logger.info(`[getClientIp] Konnte keine gültige IP ermitteln. Headers: ${JSON.stringify(request.rawRequest.headers)}`);
     // Anstatt einen Fehler zu werfen, der den Client blockiert, geben wir einen klaren Status zurück.
     // Der Client kann dann entscheiden, ob er den Fallback (ipify) nutzen möchte.
     return { ip: 'IP_NOT_DETERMINED' };
   }
 
-  loggerV2.info(`[getClientIp] Ermittelte IP: ${clientIp}`);
+  logger.info(`[getClientIp] Ermittelte IP: ${clientIp}`);
   return { ip: clientIp };
 });
 
@@ -131,7 +118,7 @@ export const createTemporaryJobDraft = onCall(
   },
   async (request: CallableRequest<TemporaryJobDraftData>): Promise<TemporaryJobDraftResult> => {
     try {
-      loggerV2.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+      logger.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
 
       if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Nutzer muss authentifiziert sein.');
@@ -168,19 +155,19 @@ export const createTemporaryJobDraft = onCall(
             customerInfo.lastName = data.lastName || '';
             customerInfo.email = data.email || customerInfo.email;
           }
-          loggerV2.info(`[createTemporaryJobDraft] Kundendaten für ${kundeId} geladen.`);
+          logger.info(`[createTemporaryJobDraft] Kundendaten für ${kundeId} geladen.`);
         } else {
-          loggerV2.warn(`[createTemporaryJobDraft] Konnte kein User-Dokument für Kunde ${kundeId} finden.`);
+          logger.warn(`[createTemporaryJobDraft] Konnte kein User-Dokument für Kunde ${kundeId} finden.`);
         }
       } catch (e: any) {
-        loggerV2.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
+        logger.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
       }
 
       let anbieterStripeAccountId: string;
       let providerName: string = UNKNOWN_PROVIDER_NAME;
 
       if (!jobDetails.selectedAnbieterId) {
-        loggerV2.error("[createTemporaryJobDraft] selectedAnbieterId ist leer."); // Added log
+        logger.error("[createTemporaryJobDraft] selectedAnbieterId ist leer."); // Added log
         throw new HttpsError('invalid-argument', "Die ID des ausgewählten Anbieters ist erforderlich.");
       }
 
@@ -190,14 +177,14 @@ export const createTemporaryJobDraft = onCall(
 
       if (!anbieterUserDoc.exists) {
         // This is a critical error. The provider selected by the client does not exist in our system.
-        loggerV2.error(`[createTemporaryJobDraft] Anbieter-Nutzerdokument für ID ${jobDetails.selectedAnbieterId} nicht gefunden. Auftrag kann nicht erstellt werden.`);
+        logger.error(`[createTemporaryJobDraft] Anbieter-Nutzerdokument für ID ${jobDetails.selectedAnbieterId} nicht gefunden. Auftrag kann nicht erstellt werden.`);
         throw new HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.");
       }
 
       const anbieterData = anbieterUserDoc.data();
       if (anbieterData?.user_type !== 'firma') {
         // The user exists but is not a company, which is a precondition for creating a job draft against them.
-        loggerV2.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} ist kein Firmenkonto. user_type: ${anbieterData?.user_type}`);
+        logger.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} ist kein Firmenkonto. user_type: ${anbieterData?.user_type}`);
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
 
@@ -206,7 +193,7 @@ export const createTemporaryJobDraft = onCall(
       // so we handle this gracefully.
       const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
       if (!anbieterCompanyDoc.exists) {
-        loggerV2.warn(`[createTemporaryJobDraft] Firmenprofil für Anbieter ${jobDetails.selectedAnbieterId} nicht in 'companies' gefunden. Dies deutet auf eine Replikationsverzögerung hin. Fahre mit Daten aus 'users' fort.`);
+        logger.warn(`[createTemporaryJobDraft] Firmenprofil für Anbieter ${jobDetails.selectedAnbieterId} nicht in 'companies' gefunden. Dies deutet auf eine Replikationsverzögerung hin. Fahre mit Daten aus 'users' fort.`);
       }
 
       // Logik zur Namensfindung: Priorisiere Daten aus dem 'companies'-Dokument (die öffentliche Ansicht),
@@ -217,7 +204,7 @@ export const createTemporaryJobDraft = onCall(
       if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
         anbieterStripeAccountId = anbieterData.stripeAccountId;
       } else {
-        loggerV2.error(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht gefunden.`);
+        logger.error(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht gefunden.`);
         throw new HttpsError('failed-precondition', "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
       }
 
@@ -249,7 +236,7 @@ export const createTemporaryJobDraft = onCall(
       };
 
       const docRef = await db.collection("temporaryJobDrafts").add(draftDataToSave);
-      loggerV2.info(`[createTemporaryJobDraft] Draft ${docRef.id} für Kunde ${kundeId} erstellt.`);
+      logger.info(`[createTemporaryJobDraft] Draft ${docRef.id} für Kunde ${kundeId} erstellt.`);
 
       // Return the result in the format expected by the onCall client
       return {
@@ -258,7 +245,7 @@ export const createTemporaryJobDraft = onCall(
       };
 
     } catch (error: any) {
-      loggerV2.error(`[createTemporaryJobDraft] Unerwarteter Fehler:`, error);
+      logger.error(`[createTemporaryJobDraft] Unerwarteter Fehler:`, error);
       if (error instanceof HttpsError) throw error;
       throw new HttpsError('internal', error.message || "Ein interner Serverfehler ist aufgetreten.");
     }
@@ -268,7 +255,7 @@ export const createTemporaryJobDraft = onCall(
 export const submitReview = onCall(
   { region: "europe-west1" },
   async (request: CallableRequest<SubmitReviewData>): Promise<SubmitReviewResult> => {
-    loggerV2.info("[submitReview] Called with data:", request.data);
+    logger.info("[submitReview] Called with data:", request.data);
 
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
@@ -298,10 +285,10 @@ export const submitReview = onCall(
         erstellungsdatum: new Date(),
       };
       const docRef = await db.collection("reviews").add(newReviewData);
-      loggerV2.info(`[submitReview] Review ${docRef.id} created successfully.`);
+      logger.info(`[submitReview] Review ${docRef.id} created successfully.`);
       return { message: "Review submitted", reviewId: docRef.id };
     } catch (error: any) {
-      loggerV2.error("[submitReview] Error saving review to Firestore:", error);
+      logger.error("[submitReview] Error saving review to Firestore:", error);
       throw new HttpsError('internal', 'Failed to save the review.', error.message);
     }
   }
@@ -310,7 +297,7 @@ export const submitReview = onCall(
 export const getReviewsByProvider = onCall(
   { region: "europe-west1" },
   async (request: CallableRequest<{ anbieterId: string }>): Promise<ReviewData[]> => {
-    loggerV2.info("[getReviewsByProvider] Called for provider:", request.data.anbieterId);
+    logger.info("[getReviewsByProvider] Called for provider:", request.data.anbieterId);
 
     const { anbieterId } = request.data;
     if (!anbieterId) {
@@ -336,130 +323,99 @@ export const getReviewsByProvider = onCall(
       });
       return reviews;
     } catch (error: any) {
-      loggerV2.error("[getReviewsByProvider] Error fetching reviews from Firestore:", error);
+      logger.error("[getReviewsByProvider] Error fetching reviews from Firestore:", error);
       throw new HttpsError('internal', 'Failed to fetch reviews.', error.message);
     }
   }
 );
 
 // --- getOrCreateStripeCustomer wurde aus dieser Datei verschoben nach callable_stripe.ts ---
-// --- deleteCompanyAccount wird beibehalten ---
 
-export const deleteCompanyAccount = onCall({ 
-    secrets: [STRIPE_SECRET_KEY_GENERAL], 
-    cors: ["https://tasko-rho.vercel.app", "/tasko-rho\.vercel\.app$/"], // Explizite Freigabe für Ihre Vercel-Domain
-    region: "europe-west1" // Konsistente Region
-}, async (request: CallableRequest<DeleteCompanyAccountData>): Promise<DeleteCompanyAccountResult> => {
-  loggerV2.info("[Callable] Start: deleteCompanyAccount", { data: request.data });
+export const deleteCompanyAccount = onCall(
+  {
+    region: "europe-west1",
+    // Erlaube Anfragen von der Vercel-Produktionsumgebung und vom lokalen Emulator.
+    cors: ["https://tasko-rho.vercel.app", "http://localhost:3000"],
+  },
+  async (request: CallableRequest<{ companyId: string }>): Promise<{ success: boolean; message: string; }> => {
+    logger.info(`[Action] Aufruf zum Löschen der Firma empfangen für: ${request.data.companyId}`);
 
-  // 1. Authentifizierung und Autorisierung des Admins
-  if (!request.auth) {
-    loggerV2.error("[Callable] Fehler: Nicht authentifizierter Aufruf.");
-    throw new HttpsError("unauthenticated", "Der Benutzer ist nicht authentifiziert.");
-  }
-
-  const adminUid = request.auth.uid;
-  try {
-    const adminUser = await admin.auth().getUser(adminUid);
-    const customClaims = adminUser.customClaims || {};
-    if (customClaims.role !== 'admin' && customClaims.role !== 'master') {
-      loggerV2.error(`[Callable] Fehler: Benutzer ${adminUid} hat nicht die erforderliche Admin-Rolle.`);
-      throw new HttpsError("permission-denied", "Nur Administratoren dürfen diese Aktion ausführen.");
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Benutzer muss für diese Aktion authentifiziert sein.");
     }
-    loggerV2.info(`[Callable] Admin-Benutzer ${adminUid} erfolgreich verifiziert.`);
-  } catch (error) {
-    loggerV2.error(`[Callable] Fehler bei der Überprüfung des Admin-Status für UID: ${adminUid}`, { error });
-    throw new HttpsError("internal", "Fehler bei der Überprüfung der Administratorrechte.");
-  }
 
-  // 2. Validierung der Eingabedaten
-  const { companyId } = request.data;
-  if (!companyId) {
-    loggerV2.error("[Callable] Fehler: companyId wurde nicht im Request-Body übergeben.");
-    throw new HttpsError("invalid-argument", "Die Firmen-ID (companyId) ist erforderlich.");
-  }
+    const adminUid = request.auth.uid;
+    const { companyId } = request.data;
 
-  loggerV2.info(`[Callable] Starte Löschvorgang für Firma: ${companyId}`);
-  const db = getDb();
-  const userRef = db.collection('users').doc(companyId);
-  const companyRef = db.collection('companies').doc(companyId);
+    const isAdmin = await verifyAdmin(adminUid);
+    if (!isAdmin) {
+      throw new HttpsError(
+        "permission-denied",
+        "Zugriff verweigert. Nur Administratoren können diese Aktion ausführen."
+      );
+    }
 
-  try {
-    // 3. Firestore-Dokumente und -Unterkollektionen in einer Transaktion löschen
-    loggerV2.info('[Callable] Starte Firestore-Transaktion...');
-    await db.runTransaction(async (transaction) => {
-      const collectionsToDelete = [
-        { ref: userRef, name: 'user' },
-        { ref: companyRef, name: 'company' },
-      ];
+    if (!companyId || typeof companyId !== "string") {
+      throw new HttpsError(
+        "invalid-argument",
+        "Die `companyId` ist erforderlich und muss ein String sein."
+      );
+    }
 
-      for (const { ref, name } of collectionsToDelete) {
-        const subcollections = await ref.listCollections();
-        for (const subcollection of subcollections) {
-          loggerV2.info(`[Callable] Lösche Dokumente in ${name}-Unter-Sammlung: ${subcollection.id}`);
-          const allDocs = await subcollection.get();
-          allDocs.forEach(doc => transaction.delete(doc.ref));
-        }
-      }
-      loggerV2.info(`[Callable] Lösche Hauptdokumente für User und Company: ${companyId}`);
-      transaction.delete(userRef);
-      transaction.delete(companyRef);
-    });
-    loggerV2.info('[Callable] Firestore-Transaktion erfolgreich abgeschlossen.');
-
-    // 4. Firebase Auth-Benutzer löschen
-    loggerV2.info(`[Callable] Lösche Auth-Benutzer: ${companyId}`);
+    const db = getDb();
     try {
-      await admin.auth().deleteUser(companyId);
-      loggerV2.info(`[Callable] Auth-Benutzer ${companyId} erfolgreich gelöscht.`);
-    } catch (authError: any) {
-      if (authError.code !== 'auth/user-not-found') {
-        loggerV2.error(`[Callable] Fehler beim Löschen des Auth-Benutzers ${companyId}:`, authError);
-        throw authError; // Wirft den Fehler, um die äußere catch-Klausel auszulösen
+      logger.info(`[Action] Admin ${adminUid} startet Löschvorgang für Firma ${companyId}.`);
+
+      const companyRef = db.collection("companies").doc(companyId);
+      const companyDoc = await companyRef.get();
+
+      if (!companyDoc.exists) {
+        throw new HttpsError("not-found", `Firma mit ID ${companyId} nicht gefunden.`);
       }
-      loggerV2.warn(`[Callable] Auth-Benutzer ${companyId} wurde nicht gefunden, was in diesem Fall ignoriert wird.`);
+
+      const companyData = companyDoc.data();
+      const ownerUid = companyData?.ownerUid;
+
+      // 1. Alle Subkollektionen und Dokumente in Firestore löschen
+      await deleteCollection(db, `companies/${companyId}/documents`, 100);
+      await deleteCollection(db, `companies/${companyId}/inviteCodes`, 100);
+      await deleteCollection(db, `companies/${companyId}/orders`, 100);
+      await deleteCollection(db, `companies/${companyId}/reviews`, 100);
+      await deleteCollection(db, `companies/${companyId}/services`, 100);
+      await deleteCollection(db, `companies/${companyId}/stripe_customers`, 100);
+      logger.info(`[Action] Alle Subkollektionen für Firma ${companyId} gelöscht.`);
+
+      // 2. Das Haupt-Firmendokument löschen
+      await companyRef.delete();
+      logger.info(`[Action] Hauptdokument für Firma ${companyId} gelöscht.`);
+
+      // 3. Den zugehörigen Firebase Auth Benutzer löschen (falls vorhanden)
+      if (ownerUid) {
+        try {
+          await admin.auth().deleteUser(ownerUid);
+          logger.info(`[Action] Firebase Auth Benutzer ${ownerUid} für Firma ${companyId} gelöscht.`);
+        } catch (authError: any) {
+          if (authError.code === "auth/user-not-found") {
+            logger.warn(`[Action] Firebase Auth Benutzer ${ownerUid} wurde bereits gelöscht.`);
+          } else {
+            logger.error(`[Action] Fehler beim Löschen des Auth-Benutzers ${ownerUid}:`, authError);
+          }
+        }
+      } else {
+        logger.warn(`[Action] Kein 'ownerUid' für Firma ${companyId} gefunden. Auth-Benutzer nicht gelöscht.`);
+      }
+
+      logger.info(`[Action] Löschvorgang für Firma ${companyId} erfolgreich abgeschlossen.`);
+      return { success: true, message: "Firma erfolgreich gelöscht." };
+
+    } catch (error: any) {
+      logger.error(`[Action] Fehler beim Löschen der Firma ${companyId}:`, error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", "Ein interner Fehler ist beim Löschen der Firma aufgetreten.", error.message);
     }
-
-    loggerV2.info(`[Callable] Löschvorgang für ${companyId} erfolgreich abgeschlossen.`);
-    return { success: true, message: "Firma und alle zugehörigen Daten wurden endgültig gelöscht." };
-
-  } catch (error: any) {
-    loggerV2.error(`[Callable] Schwerwiegender Fehler beim Löschen der Firma ${companyId}:`, { error: error.message, stack: error.stack });
-    throw new HttpsError("internal", `Der Löschvorgang konnte nicht abgeschlossen werden. Fehler: ${error.message}`);
   }
-});
-
-export const fixOrderProviderUid = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "User must be authenticated.");
-  }
-  const db = getDb();
-  const ordersRef = db.collection("orders");
-  const snapshot = await ordersRef.get();
-
-  if (snapshot.empty) {
-    console.log("No orders found.");
-    return { message: "No orders found to process." };
-  }
-
-  const batch = db.batch();
-  let processedCount = 0;
-
-  snapshot.forEach(doc => {
-    const order = doc.data();
-    if (order.anbieterId && !order.providerUid) {
-      batch.update(doc.ref, { providerUid: order.anbieterId });
-      processedCount++;
-    }
-  });
-
-  if (processedCount > 0) {
-    await batch.commit();
-    return { message: `Successfully updated ${processedCount} orders.` };
-  }
-
-  return { message: "No orders needed updating." };
-});
-
+);
 
 // --- Cloud Functions ---

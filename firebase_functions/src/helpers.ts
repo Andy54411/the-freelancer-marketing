@@ -242,5 +242,53 @@ export function getStripeWebhookSecret(webhookSecretFromParams: string | undefin
   }
 }
 
+/**
+ * Verifiziert, ob ein Benutzer in der 'admins'-Sammlung existiert.
+ * @param {string} uid - Die UID des zu überprüfenden Benutzers.
+ * @returns {Promise<boolean>} - Wahr, wenn der Benutzer ein Administrator ist, andernfalls falsch.
+ */
+export async function verifyAdmin(uid: string): Promise<boolean> {
+  const db = getDb();
+  const adminDoc = await db.collection("admins").doc(uid).get();
+  return adminDoc.exists;
+}
+
+/**
+ * Löscht eine Sammlung in Firestore in Batches.
+ * WICHTIG: Löscht keine Subkollektionen rekursiv.
+ * @param db Die Firestore-Instanz.
+ * @param collectionPath Der Pfad zur Sammlung.
+ * @param batchSize Die Größe der Batches, die gelöscht werden sollen.
+ */
+export async function deleteCollection(db: Firestore, collectionPath: string, batchSize: number): Promise<void> {
+  const collectionRef = db.collection(collectionPath);
+  const query = collectionRef.orderBy("__name__").limit(batchSize);
+
+  return new Promise((resolve, reject) => {
+    deleteQueryBatch(db, query, resolve).catch(reject);
+  });
+}
+
+async function deleteQueryBatch(db: Firestore, query: admin.firestore.Query, resolve: () => void): Promise<void> {
+  const snapshot = await query.get();
+
+  const batchSize = snapshot.size;
+  if (batchSize === 0) {
+    resolve();
+    return;
+  }
+
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
+
+  process.nextTick(() => {
+    deleteQueryBatch(db, query, resolve);
+  });
+}
+
+
 // --- Hilfstypen und Admin-Export ---
 export { FieldValue, Timestamp, admin };
