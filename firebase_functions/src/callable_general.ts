@@ -295,7 +295,10 @@ export const submitReview = onCall(
 );
 
 export const getReviewsByProvider = onCall(
-  { region: "europe-west1" },
+  {
+    region: "europe-west1",
+    cors: ["https://tasko-rho.vercel.app", "http://localhost:3000"],
+  },
   async (request: CallableRequest<{ anbieterId: string }>): Promise<ReviewData[]> => {
     logger.info("[getReviewsByProvider] Called for provider:", request.data.anbieterId);
 

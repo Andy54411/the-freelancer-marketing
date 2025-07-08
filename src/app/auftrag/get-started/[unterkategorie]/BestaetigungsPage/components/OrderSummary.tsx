@@ -13,6 +13,7 @@ import type {
   TaskDetails,
 } from '@/types/types';
 import { TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
+import { getFirebaseImageUrl } from '@/lib/getFirebaseImageUrl';
 
 export interface OrderSummaryProps {
   anbieterDetails: AnbieterDetails | null;
@@ -66,7 +67,7 @@ export function OrderSummary({
       <div>
         <div className="flex items-center mb-4">
           <Image
-            src={anbieterDetails.profilePictureURL || '/default-avatar.jpg'}
+            src={anbieterDetails.profilePictureURL ? getFirebaseImageUrl(anbieterDetails.profilePictureURL) : '/default-avatar.jpg'}
             alt={anbieterDetails.companyName || 'Anbieter'}
             className="w-12 h-12 rounded-full border object-cover mr-4"
             width={48}
