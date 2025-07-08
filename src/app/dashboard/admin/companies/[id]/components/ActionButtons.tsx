@@ -54,12 +54,17 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
     };
 
     const handleDelete = () => {
+        console.log("[handleDelete] Delete button clicked for companyId:", companyId);
         startTransition(() => {
+            console.log("[handleDelete] Starting transition...");
             deleteCompany(companyId).then((result) => {
+                console.log("[handleDelete] deleteCompany result:", result);
                 if (result.error) {
                     toast.error("Fehler", { description: result.error });
+                    console.error("[handleDelete] Error from server action:", result.error);
                 } else {
                     toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
+                    console.log("[handleDelete] Success! Redirecting...");
                     // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
                     window.location.href = '/dashboard/admin/companies';
                 }
