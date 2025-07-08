@@ -21,8 +21,10 @@ export async function verifyAdmin() {
         if (decodedToken.role !== 'master' && decodedToken.role !== 'support') {
             throw new Error('Nicht autorisiert. Sie haben keine Berechtigung für diese Aktion.');
         }
+        
         return { uid: decodedToken.uid, role: decodedToken.role as string };
     } catch (error) {
+        console.error('[verifyAdmin] Fehler bei der Sitzungsüberprüfung:', error);
         throw new Error('Sitzung ungültig oder abgelaufen. Bitte melden Sie sich erneut an.');
     }
 }

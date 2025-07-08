@@ -43,3 +43,4 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 /Users/andystaudinger/Tasko/firebase-emulator-data
+.vercel
