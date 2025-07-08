@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner'; // Geändert von use-toast zu sonner
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '@/contexts/AuthContext';
+import { functions } from '@/firebase/clients';
 
 
 interface ActionButtonsProps {
@@ -30,7 +31,6 @@ export default function ActionButtons({ companyId, companyName }: ActionButtonsP
 
         setIsDeleting(true);
         try {
-            const functions = getFunctions();
             const deleteCompanyAccount = httpsCallable(functions, 'deleteCompanyAccount');
 
             console.log(`[ActionButtons] Aufruf der Cloud Function 'deleteCompanyAccount' für companyId: ${companyId}`);
