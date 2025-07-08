@@ -76,34 +76,37 @@ export async function deleteCompany(companyId: string) {
             return { error: 'Firmen-ID ist erforderlich.' };
         }
 
-        // Delete subcollections first
-        const collections = await db.collection('users').doc(companyId).listCollections();
-        for (const collection of collections) {
-            const docs = await collection.get();
-            const batch = db.batch();
-            docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-        }
-
         const userRef = db.collection('users').doc(companyId);
         const companyRef = db.collection('companies').doc(companyId);
+        const privateInfoRef = userRef.collection('private_info').doc('details');
 
+        // Atomarer Batch-Vorgang für alle Firestore-Löschungen
         const batch = db.batch();
+        batch.delete(privateInfoRef); // Zuerst Unter-Sammlungen
         batch.delete(userRef);
         batch.delete(companyRef);
+
+        // Zuerst die Datenbank-Operationen ausführen
         await batch.commit();
 
-        // This should be the last step
+        // Nach erfolgreicher DB-Löschung den Auth-Benutzer löschen
         await auth.deleteUser(companyId);
 
         revalidatePath('/dashboard/admin/companies');
-
-        return { success: true, message: `Firma erfolgreich gelöscht.` };
+        return { success: true, message: 'Firma und zugehöriger Benutzer wurden endgültig gelöscht.' };
     } catch (error: any) {
-        console.error(`Fehler beim Löschen der Firma ${companyId}:`, error);
+        console.error(`[actions.ts] Fehler beim Löschen der Firma ${companyId}:`, error);
+
+        // Detailliertere Fehlermeldung für den Client
+        let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
         if (error.code === 'auth/user-not-found') {
-            return { error: 'Der Authentifizierungs-Benutzer wurde nicht gefunden. Möglicherweise wurde er bereits gelöscht.' };
+            errorMessage = 'Der Authentifizierungs-Benutzer wurde nicht gefunden, die Datenbankeinträge wurden aber möglicherweise bereits gelöscht.';
+        } else if (error.code === 5) { // Firestore NOT_FOUND
+            errorMessage = 'Das zu löschende Dokument wurde in der Datenbank nicht gefunden.';
+        } else {
+            errorMessage = error.message || 'Der Löschvorgang konnte nicht abgeschlossen werden.';
         }
-        return { error: `Die Firma konnte nicht gelöscht werden.` };
+
+        return { error: errorMessage };
     }
 }
