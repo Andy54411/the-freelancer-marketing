@@ -54,7 +54,7 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
                     </div>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">ID: {companyId}</p>
                 </div>
-                <ActionButtons companyId={companyId} isLocked={isLocked} status={status} />
+                <ActionButtons companyId={companyId} companyName={combinedData.companyName ?? 'Unbenannte Firma'} />
             </div>
 
             {/* Haupt-Grid */}

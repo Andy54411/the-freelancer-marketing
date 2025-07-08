@@ -43,7 +43,7 @@ export default function CompanyDetailClient({ companyData, id }: { companyData: 
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <DataRow label="E-Mail" value={email} />
-                    <ActionButtons companyId={id} isLocked={status === 'locked'} status={status} />
+                    <ActionButtons companyId={id} companyName={displayName} />
                 </CardContent>
             </Card>
             {documents.length > 0 && (
