@@ -65,7 +65,7 @@ service cloud.firestore {
       // KORREKTUR: Die Reihenfolge wird geändert, um Rekursion zu vermeiden.
       // Zuerst wird geprüft, ob der Benutzer sein eigenes Dokument liest.
       allow get: if (request.auth != null && request.auth.uid == userId) || isSupportStaff();
-      // KORREKTUR: Ein Admin/Support-Mitarbeiter darf die gesamte Benutzerliste ohne Einschränkungen abfragen.
+      // KORREKTUR: Ein Admin/Supporpt-Mitarbeiter darf die gesamte Benutzerliste ohne Einschränkungen abfragen.
       allow list: if isSupportStaff();
       allow write: if request.auth != null && request.auth.uid == userId;
     }
@@ -138,30 +138,23 @@ service cloud.firestore {
     match /temporaryJobDrafts/{draftId} {
       allow create: if request.auth != null
                      && request.resource.data.customerFirebaseUid == request.auth.uid;
-      allow read, update, delete: if request.auth != null
+      // KORREKTUR: Support-Mitarbeiter dürfen Entwürfe lesen, aktualisieren und löschen, um zu helfen.
+      allow read, update, delete: if (request.auth != null
                                    && resource != null
-                                   && resource.data.customerFirebaseUid == request.auth.uid;
+                                   && resource.data.customerFirebaseUid == request.auth.uid) || isSupportStaff();
+      // KORREKTUR: Support-Mitarbeiter dürfen Entwürfe auflisten (z.B. für einen bestimmten Benutzer).
+      allow list: if isSupportStaff();
     }
 
     // --- supportChats Collection ---
     // Hier ebenfalls: jede Nachricht im Unterdokument `messages` braucht `chatUsers`.
     match /supportChats/{chatId} {
-      allow create: if request.auth != null
-                     && request.resource.data.userId == request.auth.uid;
-      // KORREKTUR: Erlaube das Lesen, wenn die Chat-ID dem Muster entspricht.
-      // Dies löst das "Huhn-Ei-Problem", bei dem man nicht lesen kann, um zu prüfen,
-      // ob ein Dokument existiert, weil die Leseregel das existierende Dokument erfordert.
-      // NEU: Support-Mitarbeiter dürfen auch jedes einzelne Chat-Dokument lesen.
-      allow read: if (request.auth != null && chatId == "support_chat_" + request.auth.uid) || isSupportStaff();
-      // KORREKTUR: Erlaube dem Benutzer, sein eigenes Support-Chat-Dokument zu aktualisieren (z.B. für lastMessage).
-      // NEU: Erlaube Support-Mitarbeitern, alle Support-Chats aufzulisten.
-      // Dies ist der Schlüssel zur Behebung des "false for 'list'"-Fehlers im Admin-Dashboard.
+      // KORREKTUR: Die Regeln werden zusammengefasst und vereinfacht.
+      // Support-Mitarbeiter haben vollen Lese- und Schreibzugriff auf alle Support-Chats.
+      // Ein normaler Benutzer kann seinen eigenen Chat erstellen und lesen/aktualisieren.
+      allow read, update: if isSupportStaff() || (request.auth != null && resource.data.userId == request.auth.uid);
       allow list: if isSupportStaff();
-      // NEU: Support-Mitarbeiter dürfen ein Chat-Dokument aktualisieren (z.B. um es als gelesen zu markieren oder den Status zu ändern).
-      // Der Chatbot (Cloud Function) wird mit Admin-Rechten ausgeführt und kann den Status ebenfalls ändern.
-      allow update: if request.auth != null && resource != null && (
-                      resource.data.userId == request.auth.uid || isSupportStaff()
-                    );
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow delete: if false;
 
       match /messages/{messageId} {
@@ -181,8 +174,9 @@ service cloud.firestore {
     // Auch hier: jede Nachricht braucht `chatUsers`.
     match /chats/{chatId} {
       // Ein Benutzer kann einen Chat lesen, wenn er Teilnehmer ist.
-      // Ein Admin/Support-Mitarbeiter kann jeden Chat lesen (z.B. für das Admin-Dashboard).
+      // Ein Admin/Support-Mitarbeiter kann jeden Chat lesen oder auflisten.
       allow read: if (request.auth.uid in resource.data.users) || isSupportStaff();
+      allow list: if isSupportStaff();
 
       // Allow users to create and update their own chats
       allow write: if request.auth.uid in resource.data.users;
@@ -221,18 +215,15 @@ service cloud.firestore {
         (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
       );
 
-      // list: Support-Mitarbeiter dürfen alle Benachrichtigungen auflisten.
-      // Normale Benutzer dürfen nur ihre eigenen Benachrichtigungen auflisten, indem sie ihre UID filtern.
-      // KORREKTUR: Die übermäßig komplexe Hilfsfunktion wird entfernt. Stattdessen wird die
-      // Regel direkt und analog zur 'chats'-Sammlung implementiert. Dies ist robuster und
-      // weniger fehleranfällig.
-      allow list: if isSupportStaff() ||
-                  (request.auth.uid != null &&
-                   // The query MUST filter by the user's own UID.
-                   // Removing the size check makes the rule more robust and allows for `orderBy`.
+      // list: Erlaubt das Abfragen von Benachrichtigungen.
+      // Die Abfrage MUSS nach 'userId' filtern.
+      // Ein normaler Benutzer kann nur seine eigenen Benachrichtigungen abfragen.
+      // Ein Support-Mitarbeiter kann die Benachrichtigungen jedes Benutzers abfragen, wenn er nach userId filtert.
+      allow list: if request.auth != null &&
+                   request.query.where.size() > 0 &&
                    request.query.where[0].path == 'userId' &&
                    request.query.where[0].op == '==' &&
-                   request.query.where[0].value == request.auth.uid);
+                   (request.query.where[0].value == request.auth.uid || isSupportStaff());
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
       // Ein Admin darf ebenfalls jede Benachrichtigung aktualisieren.

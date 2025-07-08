@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ProgressBar from '@/components/ProgressBar';
 import { FiInfo, FiX, FiCheck } from 'react-icons/fi';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { app } from '@/firebase/clients';
-import { categories, Category } from '@/lib/categoriesData'; // Importiere Kategorien aus der zentralen Datei
+import { categories, type Category } from '@/lib/categoriesData'; // Importiere Kategorien aus der zentralen Datei
 import { useRegistration } from '@/contexts/Registration-Context';
 
 const auth = getAuth(app);
