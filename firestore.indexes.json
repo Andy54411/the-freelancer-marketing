@@ -87,6 +87,28 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "companies",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "user_type",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "companyPostalCodeForBackend",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "selectedSubcategory",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "hourlyRate",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
