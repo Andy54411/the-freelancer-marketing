@@ -81,6 +81,18 @@ export function OrderSummary({
             className="w-12 h-12 rounded-full border object-cover mr-4"
             width={48}
             height={48}
+            onError={(e) => {
+              // eslint-disable-next-line no-console
+              console.error('Image-Load-Error:', imageUrl, e);
+              const img = e.target as HTMLImageElement;
+              if (img && img.style) {
+                img.style.border = '2px solid red';
+              }
+            }}
+            onLoad={() => {
+              // eslint-disable-next-line no-console
+              console.log('Image loaded successfully:', imageUrl);
+            }}
           />
           <div>
             <p className="text-xs text-gray-500 mb-0.5">
