@@ -345,116 +345,120 @@ export const getReviewsByProvider = onCall(
 // --- getOrCreateStripeCustomer wurde aus dieser Datei verschoben nach callable_stripe.ts ---
 // --- deleteCompanyAccount wird beibehalten ---
 
-export const deleteCompanyAccount = onCall({ secrets: [STRIPE_SECRET_KEY_GENERAL], cors: true }, async (request: CallableRequest<DeleteCompanyAccountData>): Promise<DeleteCompanyAccountResult> => {
-    loggerV2.info("[Callable] Start: deleteCompanyAccount", { data: request.data });
+export const deleteCompanyAccount = onCall({ 
+    secrets: [STRIPE_SECRET_KEY_GENERAL], 
+    cors: ["https://tasko-rho.vercel.app", "/tasko-rho\.vercel\.app$/"], // Explizite Freigabe für Ihre Vercel-Domain
+    region: "europe-west1" // Konsistente Region
+}, async (request: CallableRequest<DeleteCompanyAccountData>): Promise<DeleteCompanyAccountResult> => {
+  loggerV2.info("[Callable] Start: deleteCompanyAccount", { data: request.data });
 
-    // 1. Authentifizierung und Autorisierung des Admins
-    if (!request.auth) {
-        loggerV2.error("[Callable] Fehler: Nicht authentifizierter Aufruf.");
-        throw new HttpsError("unauthenticated", "Der Benutzer ist nicht authentifiziert.");
+  // 1. Authentifizierung und Autorisierung des Admins
+  if (!request.auth) {
+    loggerV2.error("[Callable] Fehler: Nicht authentifizierter Aufruf.");
+    throw new HttpsError("unauthenticated", "Der Benutzer ist nicht authentifiziert.");
+  }
+
+  const adminUid = request.auth.uid;
+  try {
+    const adminUser = await admin.auth().getUser(adminUid);
+    const customClaims = adminUser.customClaims || {};
+    if (customClaims.role !== 'admin' && customClaims.role !== 'master') {
+      loggerV2.error(`[Callable] Fehler: Benutzer ${adminUid} hat nicht die erforderliche Admin-Rolle.`);
+      throw new HttpsError("permission-denied", "Nur Administratoren dürfen diese Aktion ausführen.");
     }
+    loggerV2.info(`[Callable] Admin-Benutzer ${adminUid} erfolgreich verifiziert.`);
+  } catch (error) {
+    loggerV2.error(`[Callable] Fehler bei der Überprüfung des Admin-Status für UID: ${adminUid}`, { error });
+    throw new HttpsError("internal", "Fehler bei der Überprüfung der Administratorrechte.");
+  }
 
-    const adminUid = request.auth.uid;
-    try {
-        const adminUser = await admin.auth().getUser(adminUid);
-        const customClaims = adminUser.customClaims || {};
-        if (customClaims.role !== 'admin' && customClaims.role !== 'master') {
-            loggerV2.error(`[Callable] Fehler: Benutzer ${adminUid} hat nicht die erforderliche Admin-Rolle.`);
-            throw new HttpsError("permission-denied", "Nur Administratoren dürfen diese Aktion ausführen.");
+  // 2. Validierung der Eingabedaten
+  const { companyId } = request.data;
+  if (!companyId) {
+    loggerV2.error("[Callable] Fehler: companyId wurde nicht im Request-Body übergeben.");
+    throw new HttpsError("invalid-argument", "Die Firmen-ID (companyId) ist erforderlich.");
+  }
+
+  loggerV2.info(`[Callable] Starte Löschvorgang für Firma: ${companyId}`);
+  const db = getDb();
+  const userRef = db.collection('users').doc(companyId);
+  const companyRef = db.collection('companies').doc(companyId);
+
+  try {
+    // 3. Firestore-Dokumente und -Unterkollektionen in einer Transaktion löschen
+    loggerV2.info('[Callable] Starte Firestore-Transaktion...');
+    await db.runTransaction(async (transaction) => {
+      const collectionsToDelete = [
+        { ref: userRef, name: 'user' },
+        { ref: companyRef, name: 'company' },
+      ];
+
+      for (const { ref, name } of collectionsToDelete) {
+        const subcollections = await ref.listCollections();
+        for (const subcollection of subcollections) {
+          loggerV2.info(`[Callable] Lösche Dokumente in ${name}-Unter-Sammlung: ${subcollection.id}`);
+          const allDocs = await subcollection.get();
+          allDocs.forEach(doc => transaction.delete(doc.ref));
         }
-        loggerV2.info(`[Callable] Admin-Benutzer ${adminUid} erfolgreich verifiziert.`);
-    } catch (error) {
-        loggerV2.error(`[Callable] Fehler bei der Überprüfung des Admin-Status für UID: ${adminUid}`, { error });
-        throw new HttpsError("internal", "Fehler bei der Überprüfung der Administratorrechte.");
-    }
+      }
+      loggerV2.info(`[Callable] Lösche Hauptdokumente für User und Company: ${companyId}`);
+      transaction.delete(userRef);
+      transaction.delete(companyRef);
+    });
+    loggerV2.info('[Callable] Firestore-Transaktion erfolgreich abgeschlossen.');
 
-    // 2. Validierung der Eingabedaten
-    const { companyId } = request.data;
-    if (!companyId) {
-        loggerV2.error("[Callable] Fehler: companyId wurde nicht im Request-Body übergeben.");
-        throw new HttpsError("invalid-argument", "Die Firmen-ID (companyId) ist erforderlich.");
-    }
-
-    loggerV2.info(`[Callable] Starte Löschvorgang für Firma: ${companyId}`);
-    const db = getDb();
-    const userRef = db.collection('users').doc(companyId);
-    const companyRef = db.collection('companies').doc(companyId);
-
+    // 4. Firebase Auth-Benutzer löschen
+    loggerV2.info(`[Callable] Lösche Auth-Benutzer: ${companyId}`);
     try {
-        // 3. Firestore-Dokumente und -Unterkollektionen in einer Transaktion löschen
-        loggerV2.info('[Callable] Starte Firestore-Transaktion...');
-        await db.runTransaction(async (transaction) => {
-            const collectionsToDelete = [
-                { ref: userRef, name: 'user' },
-                { ref: companyRef, name: 'company' },
-            ];
-
-            for (const { ref, name } of collectionsToDelete) {
-                const subcollections = await ref.listCollections();
-                for (const subcollection of subcollections) {
-                    loggerV2.info(`[Callable] Lösche Dokumente in ${name}-Unter-Sammlung: ${subcollection.id}`);
-                    const allDocs = await subcollection.get();
-                    allDocs.forEach(doc => transaction.delete(doc.ref));
-                }
-            }
-            loggerV2.info(`[Callable] Lösche Hauptdokumente für User und Company: ${companyId}`);
-            transaction.delete(userRef);
-            transaction.delete(companyRef);
-        });
-        loggerV2.info('[Callable] Firestore-Transaktion erfolgreich abgeschlossen.');
-
-        // 4. Firebase Auth-Benutzer löschen
-        loggerV2.info(`[Callable] Lösche Auth-Benutzer: ${companyId}`);
-        try {
-            await admin.auth().deleteUser(companyId);
-            loggerV2.info(`[Callable] Auth-Benutzer ${companyId} erfolgreich gelöscht.`);
-        } catch (authError: any) {
-            if (authError.code !== 'auth/user-not-found') {
-                loggerV2.error(`[Callable] Fehler beim Löschen des Auth-Benutzers ${companyId}:`, authError);
-                throw authError; // Wirft den Fehler, um die äußere catch-Klausel auszulösen
-            }
-            loggerV2.warn(`[Callable] Auth-Benutzer ${companyId} wurde nicht gefunden, was in diesem Fall ignoriert wird.`);
-        }
-
-        loggerV2.info(`[Callable] Löschvorgang für ${companyId} erfolgreich abgeschlossen.`);
-        return { success: true, message: "Firma und alle zugehörigen Daten wurden endgültig gelöscht." };
-
-    } catch (error: any) {
-        loggerV2.error(`[Callable] Schwerwiegender Fehler beim Löschen der Firma ${companyId}:`, { error: error.message, stack: error.stack });
-        throw new HttpsError("internal", `Der Löschvorgang konnte nicht abgeschlossen werden. Fehler: ${error.message}`);
+      await admin.auth().deleteUser(companyId);
+      loggerV2.info(`[Callable] Auth-Benutzer ${companyId} erfolgreich gelöscht.`);
+    } catch (authError: any) {
+      if (authError.code !== 'auth/user-not-found') {
+        loggerV2.error(`[Callable] Fehler beim Löschen des Auth-Benutzers ${companyId}:`, authError);
+        throw authError; // Wirft den Fehler, um die äußere catch-Klausel auszulösen
+      }
+      loggerV2.warn(`[Callable] Auth-Benutzer ${companyId} wurde nicht gefunden, was in diesem Fall ignoriert wird.`);
     }
+
+    loggerV2.info(`[Callable] Löschvorgang für ${companyId} erfolgreich abgeschlossen.`);
+    return { success: true, message: "Firma und alle zugehörigen Daten wurden endgültig gelöscht." };
+
+  } catch (error: any) {
+    loggerV2.error(`[Callable] Schwerwiegender Fehler beim Löschen der Firma ${companyId}:`, { error: error.message, stack: error.stack });
+    throw new HttpsError("internal", `Der Löschvorgang konnte nicht abgeschlossen werden. Fehler: ${error.message}`);
+  }
 });
 
 export const fixOrderProviderUid = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError("unauthenticated", "User must be authenticated.");
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "User must be authenticated.");
+  }
+  const db = getDb();
+  const ordersRef = db.collection("orders");
+  const snapshot = await ordersRef.get();
+
+  if (snapshot.empty) {
+    console.log("No orders found.");
+    return { message: "No orders found to process." };
+  }
+
+  const batch = db.batch();
+  let processedCount = 0;
+
+  snapshot.forEach(doc => {
+    const order = doc.data();
+    if (order.anbieterId && !order.providerUid) {
+      batch.update(doc.ref, { providerUid: order.anbieterId });
+      processedCount++;
     }
-    const db = getDb();
-    const ordersRef = db.collection("orders");
-    const snapshot = await ordersRef.get();
+  });
 
-    if (snapshot.empty) {
-        console.log("No orders found.");
-        return { message: "No orders found to process." };
-    }
+  if (processedCount > 0) {
+    await batch.commit();
+    return { message: `Successfully updated ${processedCount} orders.` };
+  }
 
-    const batch = db.batch();
-    let processedCount = 0;
-
-    snapshot.forEach(doc => {
-        const order = doc.data();
-        if (order.anbieterId && !order.providerUid) {
-            batch.update(doc.ref, { providerUid: order.anbieterId });
-            processedCount++;
-        }
-    });
-
-    if (processedCount > 0) {
-        await batch.commit();
-        return { message: `Successfully updated ${processedCount} orders.` };
-    }
-
-    return { message: "No orders needed updating." };
+  return { message: "No orders needed updating." };
 });
 
 

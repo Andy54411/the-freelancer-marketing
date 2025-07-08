@@ -23,7 +23,7 @@ export async function verifyAdmin(sessionCookieValue?: string) {
         if (decodedToken.role !== 'master' && decodedToken.role !== 'support') {
             throw new Error('Nicht autorisiert. Sie haben keine Berechtigung für diese Aktion.');
         }
-        
+
         return { uid: decodedToken.uid, role: decodedToken.role as string };
     } catch (error) {
         console.error('[verifyAdmin] Fehler bei der Sitzungsüberprüfung:', error);

@@ -32,7 +32,7 @@ export default function ActionButtons({ companyId, companyName }: ActionButtonsP
         try {
             const functions = getFunctions();
             const deleteCompanyAccount = httpsCallable(functions, 'deleteCompanyAccount');
-            
+
             console.log(`[ActionButtons] Aufruf der Cloud Function 'deleteCompanyAccount' für companyId: ${companyId}`);
             await deleteCompanyAccount({ companyId: companyId });
             console.log('[ActionButtons] Cloud Function erfolgreich aufgerufen');
