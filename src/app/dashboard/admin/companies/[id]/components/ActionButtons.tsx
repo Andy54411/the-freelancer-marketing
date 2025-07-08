@@ -55,20 +55,22 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
     };
 
     const handleDelete = () => {
-        startTransition(async () => {
-            const sessionCookie = await getSessionCookie();
-            if (!sessionCookie) {
-                toast.error("Fehler", { description: "Sitzung nicht gefunden. Bitte neu anmelden." });
-                return;
-            }
-            const result = await deleteCompany(companyId, sessionCookie);
-            if (result.error) {
-                toast.error("Fehler", { description: result.error });
-            } else {
-                toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
-                // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
-                window.location.href = '/dashboard/admin/companies';
-            }
+        startTransition(() => {
+            getSessionCookie().then((sessionCookie) => {
+                if (!sessionCookie) {
+                    toast.error("Fehler", { description: "Sitzung nicht gefunden. Bitte neu anmelden." });
+                    return;
+                }
+                deleteCompany(companyId, sessionCookie).then((result) => {
+                    if (result.error) {
+                        toast.error("Fehler", { description: result.error });
+                    } else {
+                        toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
+                        // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
+                        window.location.href = '/dashboard/admin/companies';
+                    }
+                });
+            });
         });
     };
 
@@ -84,7 +86,7 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant={isDeactivated ? "default" : "secondary"} disabled={isPending}>
-                        {isPending ? <FiLoader className="animate-spin mr-2" /> : (isDeactivated ? <FiCheck className="mr-2" /> : <FiSlash className="mr-2" />) }
+                        {isPending ? <FiLoader className="animate-spin mr-2" /> : (isDeactivated ? <FiCheck className="mr-2" /> : <FiSlash className="mr-2" />)}
                         {isDeactivated ? 'Reaktivieren' : 'Deaktivieren'}
                     </Button>
                 </AlertDialogTrigger>
@@ -107,7 +109,7 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={isPending}>
-                        {isPending ? <FiLoader className="animate-spin mr-2" /> : <FiTrash2 className="mr-2" /> }
+                        {isPending ? <FiLoader className="animate-spin mr-2" /> : <FiTrash2 className="mr-2" />}
                         Löschen
                     </Button>
                 </AlertDialogTrigger>
