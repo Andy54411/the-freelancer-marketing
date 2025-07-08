@@ -166,7 +166,7 @@ export default function GetStartedPage() {
           </div>
 
           {isClientMounted && customerType && (
-            <div className="mt-6 w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-6 w-full">
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Hauptkategorie
               </Label>
@@ -180,7 +180,7 @@ export default function GetStartedPage() {
           )}
 
           {isClientMounted && selectedCategory && (
-            <div className="mt-6 w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-6 w-full">
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Unterkategorie
               </Label>
