@@ -15,17 +15,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FiTrash2, FiSlash, FiLoader, FiLock, FiUnlock, FiCheck } from 'react-icons/fi';
 import { toast } from 'sonner';
-import { lockAccount, unlockAccount, deactivateCompany, deleteCompany } from '../actions';
+import { lockAccount, unlockAccount, deactivateCompany } from '../actions';
+import { useRouter } from 'next/navigation';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
 
 interface ActionButtonsProps {
     companyId: string;
     isLocked: boolean;
     status: 'active' | 'locked' | 'deactivated' | 'unknown';
+    companyName: string;
 }
 
-export default function ActionButtons({ companyId, isLocked, status }: ActionButtonsProps) {
+export default function ActionButtons({ companyId, isLocked, status, companyName }: ActionButtonsProps) {
     const [isPending, startTransition] = useTransition();
+    const [isDeleting, setIsDeleting] = useState(false);
+    const router = useRouter();
+    const { user } = useAuth(); // Get the current user
 
     const handleToggleLock = () => {
         startTransition(() => {
@@ -53,23 +60,45 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
         });
     };
 
-    const handleDelete = () => {
-        console.log("[handleDelete] Delete button clicked for companyId:", companyId);
-        startTransition(() => {
-            console.log("[handleDelete] Starting transition...");
-            deleteCompany(companyId).then((result) => {
-                console.log("[handleDelete] deleteCompany result:", result);
-                if (result.error) {
-                    toast.error("Fehler", { description: result.error });
-                    console.error("[handleDelete] Error from server action:", result.error);
-                } else {
-                    toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
-                    console.log("[handleDelete] Success! Redirecting...");
-                    // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
-                    window.location.href = '/dashboard/admin/companies';
-                }
+    const handleDelete = async () => {
+        if (!user) {
+            toast({
+                title: 'Fehler',
+                description: 'Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.',
+                variant: 'destructive',
             });
-        });
+            return;
+        }
+
+        if (!confirm(`Sind Sie sicher, dass Sie die Firma "${companyName}" und alle zugehörigen Daten endgültig löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            const functions = getFunctions();
+            const deleteCompanyAccount = httpsCallable(functions, 'deleteCompanyAccount');
+            
+            console.log(`[ActionButtons] Aufruf der Cloud Function 'deleteCompanyAccount' für companyId: ${companyId}`);
+            const result = await deleteCompanyAccount({ companyId: companyId });
+            console.log('[ActionButtons] Cloud Function erfolgreich aufgerufen', result);
+
+            toast({
+                title: 'Erfolg',
+                description: `Die Firma "${companyName}" wurde erfolgreich gelöscht.`,
+            });
+            router.push('/dashboard/admin/companies');
+            router.refresh();
+        } catch (error: any) {
+            console.error('[ActionButtons] Fehler beim Löschen der Firma:', error);
+            toast({
+                title: 'Fehler beim Löschen',
+                description: error.message || 'Ein unbekannter Fehler ist aufgetreten.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const isDeactivated = status === 'deactivated';
@@ -120,8 +149,8 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-red-600 hover:bg-red-700">
-                            {isPending ? <FiLoader className="animate-spin" /> : 'Endgültig löschen'}
+                        <AlertDialogAction onClick={handleDelete} disabled={isPending || isDeleting} className="bg-red-600 hover:bg-red-700">
+                            {isPending || isDeleting ? <FiLoader className="animate-spin" /> : 'Endgültig löschen'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
