@@ -44,3 +44,4 @@ yarn-debug.log*
 yarn-error.log*
 /Users/andystaudinger/Tasko/firebase-emulator-data
 .vercel
+.env.local

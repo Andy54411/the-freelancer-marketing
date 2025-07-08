@@ -7,6 +7,7 @@ import { OrderSummary } from './OrderSummary';
 import { DateTimeSelectionPopup } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { FIREBASE_FUNCTIONS_BASE_URL } from '@/lib/constants';
 
 import type {
   Company as AnbieterDetailsType,
@@ -196,9 +197,8 @@ export default function AnbieterDetailsFetcher({
       setIsLoading(true);
       setError(null);
       try {
-        // FIX: Use the environment variable for the API base URL to ensure the correct region is called.
-        // This was previously calling us-central1, causing a 404.
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
+        // FIX: Benutze die zentrale Konstante für die API-Base-URL, damit immer die richtige Umgebung verwendet wird.
+        const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
         const url = `${apiBaseUrl}/searchCompanyProfiles?id=${encodeURIComponent(anbieterId)}`;
 
         const response = await fetch(url);

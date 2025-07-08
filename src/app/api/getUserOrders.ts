@@ -1,7 +1,10 @@
 // src/api/getUserOrders.ts
+import { FIREBASE_FUNCTIONS_BASE_URL } from '@/lib/constants';
 
 export const getUserOrders = async (userId: string, idToken: string) => {
-    const response = await fetch('http://127.0.0.1:5001/tilvo-f142f/europe-west1/getUserOrders', {
+    const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
+
+    const response = await fetch(`${apiBaseUrl}/getUserOrders`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

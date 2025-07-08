@@ -1,4 +1,3 @@
-
 // /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/page.tsx
 'use client';
 
@@ -20,6 +19,7 @@ import { app, db } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { getBookingCharacteristics } from './components/lib/utils';
 import { categories } from '@/lib/categories';
+import { FIREBASE_FUNCTIONS_BASE_URL } from '@/lib/constants';
 
 
 const auth = getAuth(app);
@@ -171,7 +171,7 @@ export default function AddressPage() {
     }
     setLoadingSubcategoryData(true);
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
+      const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
       const res = await fetch(`${apiBaseUrl}/getDataForSubcategory?subcategory=${encodeURIComponent(subcategory)}`);
       if (!res.ok) {
         const errorText = await res.text(); console.error(`${PAGE_ERROR} API getDataForSubcategory FAILED: ${res.status} ${res.statusText}. Response: ${errorText}`); throw new Error(`API Error ${res.status}`);
@@ -190,7 +190,7 @@ export default function AddressPage() {
     if (!postalCode || !selectedSubcategory) { setCompanyProfiles([]); return; }
     setLoadingProfiles(true); setError(null);
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
+      const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
       let apiUrl = `${apiBaseUrl}/searchCompanyProfiles?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(selectedSubcategory)}&minPrice=${dynamicSliderMin}&maxPrice=${currentMaxPrice}`;
       if (finalSelectedDateRange?.from && isValid(finalSelectedDateRange.from)) {
         apiUrl += `&dateFrom=${format(finalSelectedDateRange.from, "yyyy-MM-dd")}`;
