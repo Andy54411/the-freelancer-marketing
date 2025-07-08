@@ -461,3 +461,5 @@ export default function AddressPage() {
     </Suspense>
   );
 }
+
+// gcloud run services add-iam-policy-binding searchCompanyProfiles --member="allUsers" --role="roles/run.invoker" --region=europe-west1 --project=tilvo-f142f

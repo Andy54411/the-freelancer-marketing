@@ -160,35 +160,48 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: a
     // Wir fügen `where("user_type", "==", "firma")` hinzu, um sicherzustellen, dass wir nur aktive
     // Firmenkonten abrufen. Dies macht die zweite Abfrage der 'users'-Collection überflüssig,
     // was die Funktion beschleunigt und die Komplexität reduziert.
+    // Wir können nicht nach mehreren Feldern filtern, wenn wir keinen zusammengesetzten Index haben.
+    // Um den 500-Fehler zu vermeiden, filtern wir zuerst nach der Unterkategorie
+    // und wenden die restlichen Filter im Code an.
     let query: FirebaseFirestore.Query = db.collection("companies");
 
-    // Wende die obligatorischen Filter an.
+    // Wende den wichtigsten Filter an, der die Ergebnismenge am wahrscheinlichsten einschränkt.
     query = query
-      .where("user_type", "==", "firma") // Stellt sicher, dass es sich um ein Firmenprofil handelt.
-      .where("companyPostalCodeForBackend", "==", postalCode as string) // KORREKTUR: Das Feld 'postalCode' existiert nicht. Verwende das korrekte Feld 'companyPostalCodeForBackend'.
-      .where("selectedSubcategory", "==", selectedSubcategory as string);
-
-    // Wende die optionalen Preisfilter an.
-    const numMinPrice = Number(minPrice);
-    const numMaxPrice = Number(maxPrice);
-    if (!isNaN(numMinPrice) && minPrice !== undefined) query = query.where("hourlyRate", ">=", numMinPrice);
-    if (!isNaN(numMaxPrice) && maxPrice !== undefined) query = query.where("hourlyRate", "<=", numMaxPrice);
+      .where("selectedSubcategory", "==", selectedSubcategory as string)
+      .where("user_type", "==", "firma"); // Stellt sicher, dass es sich um ein Firmenprofil handelt.
 
     const querySnapshot = await query.get();
+
     if (querySnapshot.empty) {
-      // --- Hinzugefügtes Logging für den "Nichts gefunden"-Fall ---
-      loggerV2.warn(`[searchCompanyProfiles] Keine Profile für die Abfrage gefunden.`, { postalCode, selectedSubcategory, minPrice, maxPrice });
-      // --- Ende Logging ---
+      loggerV2.warn(`[searchCompanyProfiles] Keine Profile für die Unterkategorie gefunden.`, { selectedSubcategory });
       res.status(200).json([]);
       return;
     }
 
+    // Wende die restlichen Filter serverseitig an.
+    const numMinPrice = Number(minPrice);
+    const numMaxPrice = Number(maxPrice);
+
     const profiles = querySnapshot.docs
-      .map((doc) => {
-        const data = doc.data();
+      .map(doc => ({ id: doc.id, data: doc.data() }))
+      .filter(({ data }) => {
+        // PLZ-Filter
+        if (data.companyPostalCodeForBackend !== postalCode) {
+          return false;
+        }
+        // Preisfilter
+        if (!isNaN(numMinPrice) && minPrice !== undefined && data.hourlyRate < numMinPrice) {
+          return false;
+        }
+        if (!isNaN(numMaxPrice) && maxPrice !== undefined && data.hourlyRate > numMaxPrice) {
+          return false;
+        }
+        return true;
+      })
+      .map(({ id, data }) => {
         return {
           // WICHTIG: Dies ist die Struktur für die Ergebnisliste
-          id: doc.id,
+          id: id,
           companyName: getUserDisplayName(data, UNKNOWN_PROVIDER_NAME),
           profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
           hourlyRate: data.hourlyRate,
@@ -196,6 +209,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: a
           stripeAccountId: data.stripeAccountId,
         };
       });
+
 
     // --- Hinzugefügtes Logging für erfolgreiche Suche ---
     loggerV2.info(`[searchCompanyProfiles] ${profiles.length} Profile gefunden und zurückgegeben.`);
