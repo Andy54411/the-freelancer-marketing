@@ -58,8 +58,8 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
                 toast.error("Fehler", { description: result.error });
             } else {
                 toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
-                // Note: Consider a redirect after deletion
-                // window.location.href = '/dashboard/admin/companies';
+                // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
+                window.location.href = '/dashboard/admin/companies';
             }
         });
     };
