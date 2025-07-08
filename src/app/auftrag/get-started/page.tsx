@@ -28,13 +28,22 @@ const TOTAL_STEPS = steps.length;
 
 export default function GetStartedPage() {
   const router = useRouter();
-  const registration = useRegistration();
+  const {
+    customerType,
+    setCustomerType,
+    selectedCategory,
+    setSelectedCategory,
+    selectedSubcategory,
+    setSelectedSubcategory,
+    description,
+    setDescription,
+  } = useRegistration();
 
   // Initialize with server-safe defaults
-  const [selectedType, setSelectedTypeState] = useState<'private' | 'business' | null>(null);
-  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(null);
-  const [selectedSubcategoryState, setSelectedSubcategoryState] = useState<string | null>(null);
-  const [description, setDescriptionState] = useState('');
+  // const [selectedType, setSelectedTypeState] = useState<'private' | 'business' | null>(null);
+  // const [selectedCategory, setSelectedCategoryState] = useState<string | null>(null);
+  // const [selectedSubcategoryState, setSelectedSubcategoryState] = useState<string | null>(null);
+  // const [description, setDescriptionState] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,74 +54,74 @@ export default function GetStartedPage() {
     setIsClientMounted(true);
 
     // Load initial values from context into local state
-    setSelectedTypeState(registration.customerType || null);
-    setSelectedCategoryState(registration.selectedCategory || null);
-    setSelectedSubcategoryState(registration.selectedSubcategory || null);
-    setDescriptionState(registration.description || '');
+    // setSelectedTypeState(registration.customerType || null);
+    // setSelectedCategoryState(registration.selectedCategory || null);
+    // setSelectedSubcategoryState(registration.selectedSubcategory || null);
+    // setDescriptionState(registration.description || '');
 
     const unsubscribe = onAuthStateChanged(auth, (_user: User | null) => {
       // Auth logic if needed
     });
     return () => unsubscribe();
   }, [
-    registration.customerType,
-    registration.selectedCategory,
-    registration.selectedSubcategory,
-    registration.description
+    // registration.customerType,
+    // registration.selectedCategory,
+    // registration.selectedSubcategory,
+    // registration.description
     // Removed registration from dependencies to avoid re-running if the whole object changes
     // but only specific fields are relevant for initial load.
   ]);
 
   const logicalCurrentStep = useMemo(() => {
     const stepsCompleted = [
-      !!selectedType,
+      !!customerType,
       !!selectedCategory,
-      !!selectedSubcategoryState,
+      !!selectedSubcategory,
       description.trim().length > 0,
     ];
     return stepsCompleted.filter(Boolean).length;
-  }, [selectedType, selectedCategory, selectedSubcategoryState, description]);
+  }, [customerType, selectedCategory, selectedSubcategory, description]);
 
   // Determine the step to display, ensuring server and initial client render match
   const stepForDisplay = isClientMounted ? logicalCurrentStep : 0;
 
   const handleCustomerTypeChange = (type: 'private' | 'business') => {
-    setSelectedTypeState(type);
-    registration.setCustomerType(type);
+    // setSelectedTypeState(type);
+    setCustomerType(type);
   };
 
   const handleCategoryChange = (categoryValue: string) => {
-    setSelectedCategoryState(categoryValue);
-    registration.setSelectedCategory(categoryValue);
-    setSelectedSubcategoryState(null);
-    registration.setSelectedSubcategory(null);
+    // setSelectedCategoryState(categoryValue);
+    setSelectedCategory(categoryValue);
+    // setSelectedSubcategoryState(null);
+    setSelectedSubcategory(null);
   };
 
   const handleSubcategoryChange = (subcategoryValue: string) => {
-    setSelectedSubcategoryState(subcategoryValue);
-    registration.setSelectedSubcategory(subcategoryValue);
+    // setSelectedSubcategoryState(subcategoryValue);
+    setSelectedSubcategory(subcategoryValue);
     // localStorage.setItem('selectedSubcategory', subcategoryValue); // Context handles persistence
   };
 
   const handleDescriptionChange = (descValue: string) => {
-    setDescriptionState(descValue);
-    registration.setDescription(descValue);
+    // setDescriptionState(descValue);
+    setDescription(descValue);
   };
 
   const availableSubcategories =
     categories.find((cat) => cat.title === selectedCategory)?.subcategories || [];
 
   const showDescriptionField =
-    selectedType && selectedCategory && selectedSubcategoryState;
+    customerType && selectedCategory && selectedSubcategory;
 
   const handleNextClick = () => {
     setError(null);
 
     // Use local component state for validation as it's the source of truth for the current form
     if (
-      !selectedType ||
+      !customerType ||
       !selectedCategory ||
-      !selectedSubcategoryState ||
+      !selectedSubcategory ||
       description.trim().length === 0
     ) {
       setError('Bitte füllen Sie alle Felder aus.');
@@ -121,13 +130,13 @@ export default function GetStartedPage() {
 
     console.log('GetStartedPage: Daten im Context sind aktuell. Navigiere zu Adresse-Seite.');
     console.log('Context Daten für nächste Seite:', {
-      customerType: registration.customerType,
-      selectedCategory: registration.selectedCategory,
-      selectedSubcategory: registration.selectedSubcategory,
-      description: registration.description
+      customerType: customerType,
+      selectedCategory: selectedCategory,
+      selectedSubcategory: selectedSubcategory,
+      description: description
     });
 
-    const encodedSubcategory = encodeURIComponent(selectedSubcategoryState!);
+    const encodedSubcategory = encodeURIComponent(selectedSubcategory!);
     const encodedDescription = encodeURIComponent(description); // Beschreibung kodieren
 
     router.push(`/auftrag/get-started/${encodedSubcategory}/adresse?description=${encodedDescription}`);
@@ -163,7 +172,7 @@ export default function GetStartedPage() {
             <button
               onClick={() => handleCustomerTypeChange('private')}
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
-                ${selectedType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                ${customerType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <h2 className="text-xl font-semibold text-primary">Ich bin Privatkunde</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -174,7 +183,7 @@ export default function GetStartedPage() {
             <button
               onClick={() => handleCustomerTypeChange('business')}
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
-                ${selectedType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                ${customerType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <h2 className="text-xl font-semibold text-primary">Ich bin ein Unternehmen</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -183,7 +192,7 @@ export default function GetStartedPage() {
             </button>
           </div>
 
-          {selectedType && (
+          {customerType && (
             <div className="mt-6 w-full">
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Hauptkategorie
@@ -205,7 +214,7 @@ export default function GetStartedPage() {
               <Combobox
                 options={availableSubcategories}
                 placeholder="z. B. Elektriker, Umzugshelfer …"
-                selected={selectedSubcategoryState}
+                selected={selectedSubcategory}
                 onChange={handleSubcategoryChange}
               />
             </div>

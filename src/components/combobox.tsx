@@ -41,22 +41,22 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
         onOpenAutoFocus={e => e.preventDefault()}
       >
         <Command>
-          <CommandInput placeholder="Suchen..." className="h-9" />
+          <CommandInput placeholder="Suchen..." />
           <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
           <CommandGroup>
             {options.map((option) => (
               <CommandItem
                 key={option}
                 value={option}
-                onSelect={() => {
-                  onChange(option)
-                  setOpen(false)
+                onSelect={(currentValue) => {
+                  onChange(currentValue === selected ? "" : currentValue);
+                  setOpen(false);
                 }}
               >
                 <Check
                   className={cn(
-                    'mr-2 h-4 w-4',
-                    selected === option ? 'opacity-100' : 'opacity-0'
+                    "mr-2 h-4 w-4",
+                    selected === option ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {option}
