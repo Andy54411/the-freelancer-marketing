@@ -334,6 +334,7 @@ export const getReviewsByProvider = onCall(
 export const deleteCompanyAccount = onCall(
   {
     region: "europe-west1",
+    memory: "512MiB", // Speicher auf 512 MB erhöht
     // Erlaube Anfragen von der Vercel-Produktionsumgebung und vom lokalen Emulator.
     cors: ["https://tasko-rho.vercel.app", "http://localhost:3000"],
   },
@@ -389,7 +390,12 @@ export const deleteCompanyAccount = onCall(
       await companyRef.delete();
       logger.info(`[Action] Hauptdokument für Firma ${companyId} gelöscht.`);
 
-      // 3. Den zugehörigen Firebase Auth Benutzer löschen (falls vorhanden)
+      // 3. Das zugehörige User-Dokument löschen
+      const userRef = db.collection("users").doc(companyId);
+      await userRef.delete();
+      logger.info(`[Action] User-Dokument ${companyId} aus 'users' gelöscht.`);
+
+      // 4. Den zugehörigen Firebase Auth Benutzer löschen (falls vorhanden)
       if (ownerUid) {
         try {
           await admin.auth().deleteUser(ownerUid);

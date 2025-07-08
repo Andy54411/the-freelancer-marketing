@@ -41,10 +41,19 @@ export default function ActionButtons({ companyId, companyName }: ActionButtonsP
             router.push('/dashboard/admin/companies');
             router.refresh();
         } catch (error: any) {
-            console.error('[ActionButtons] Fehler beim Löschen der Firma:', error);
-            toast.error('Fehler beim Löschen', {
-                description: error.message || 'Ein unbekannter Fehler ist aufgetreten.',
-            });
+            // Wenn der Fehler "nicht gefunden" lautet, bedeutet das, dass die Firma bereits gelöscht wurde.
+            // Wir behandeln dies als Erfolg, um die Benutzeroberfläche zu aktualisieren.
+            if (error.code === 'functions/not-found') {
+                console.log('[ActionButtons] Firma war bereits gelöscht oder wurde gerade erfolgreich gelöscht. Behandle als Erfolg.');
+                toast.success(`Die Firma "${companyName}" wurde erfolgreich gelöscht.`);
+                router.push('/dashboard/admin/companies');
+                router.refresh();
+            } else {
+                console.error('[ActionButtons] Fehler beim Löschen der Firma:', error);
+                toast.error('Fehler beim Löschen', {
+                    description: error.message || 'Ein unbekannter Fehler ist aufgetreten.',
+                });
+            }
         } finally {
             setIsDeleting(false);
         }

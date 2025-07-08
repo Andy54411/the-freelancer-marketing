@@ -249,8 +249,40 @@ export function getStripeWebhookSecret(webhookSecretFromParams: string | undefin
  */
 export async function verifyAdmin(uid: string): Promise<boolean> {
   const db = getDb();
-  const adminDoc = await db.collection("admins").doc(uid).get();
-  return adminDoc.exists;
+  try {
+    logger.info(`[verifyAdmin] Überprüfe Admin-Status für UID: ${uid}`);
+
+    // 1. Überprüfe Custom Claim
+    const userRecord = await getAuthInstance().getUser(uid);
+    if (userRecord.customClaims && userRecord.customClaims.admin === true) {
+      logger.info(`[verifyAdmin] Admin-Status für ${uid} durch Custom Claim bestätigt.`);
+      return true;
+    }
+    logger.info(`[verifyAdmin] Kein Admin-Custom-Claim für ${uid} gefunden.`);
+
+    // 2. Fallback: Überprüfe Firestore 'users'-Dokument
+    const userDoc = await db.collection("users").doc(uid).get();
+    if (userDoc.exists && userDoc.data()?.user_type === 'master') {
+      logger.info(`[verifyAdmin] Admin-Status für ${uid} durch Firestore-Dokument (user_type: master) bestätigt.`);
+      return true;
+    }
+    logger.info(`[verifyAdmin] Kein Admin-Status für ${uid} im Firestore-Dokument gefunden.`);
+
+    // 3. Fallback: Überprüfe die alte 'admins'-Sammlung (optional, für Abwärtskompatibilität)
+    const adminDoc = await db.collection("admins").doc(uid).get();
+    if (adminDoc.exists) {
+      logger.info(`[verifyAdmin] Admin-Status für ${uid} durch 'admins'-Sammlung bestätigt.`);
+      return true;
+    }
+    logger.info(`[verifyAdmin] Kein Admin-Status für ${uid} in der 'admins'-Sammlung gefunden.`);
+
+    logger.warn(`[verifyAdmin] Admin-Prüfung für ${uid} fehlgeschlagen. Benutzer ist kein Admin.`);
+    return false;
+
+  } catch (error: any) {
+    logger.error(`[verifyAdmin] Fehler bei der Überprüfung des Admin-Status für UID ${uid}:`, error);
+    return false; // Im Fehlerfall immer den Zugriff verweigern
+  }
 }
 
 /**
