@@ -81,6 +81,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       try {
         if (fbUser) {
+          // Force a refresh of the user's ID token to get the latest custom claims.
+          await fbUser.getIdToken(true);
           setFirebaseUser(fbUser);
           // HINZUGEFÜGT: Sicherheitsprüfung, um sicherzustellen, dass die DB-Instanz initialisiert ist.
           // Dies verhindert den Absturz, falls der Hook ausgeführt wird, bevor Firebase bereit ist.
