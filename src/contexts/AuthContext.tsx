@@ -1,6 +1,6 @@
 "use client";
 
-import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
+import { type User as FirebaseUser, onAuthStateChanged, signOut } from "@/firebase/clients";
 import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -13,7 +13,6 @@ import {
 } from "firebase/firestore";
 import { orderBy, limit } from "firebase/firestore"; // NEU: orderBy und limit importieren
 import { auth, db } from '@/firebase/clients';
-import { signOut } from "firebase/auth"; // NEU: signOut importieren
 
 /**
  * Definiert ein einheitliches Benutzerprofil, das Daten aus Firebase Auth
@@ -78,14 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
       try {
         if (fbUser) {
-          // Force a refresh of the user's ID token to get the latest custom claims.
-          await fbUser.getIdToken(true);
+          // Token aktualisieren, um die neuesten Claims zu erhalten.
+          const idTokenResult = await fbUser.getIdTokenResult(true);
           setFirebaseUser(fbUser);
-          // HINZUGEFÜGT: Sicherheitsprüfung, um sicherzustellen, dass die DB-Instanz initialisiert ist.
-          // Dies verhindert den Absturz, falls der Hook ausgeführt wird, bevor Firebase bereit ist.
+
           if (!db) {
             throw new Error("Firestore DB-Instanz ist nicht initialisiert.");
           }
@@ -94,20 +92,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           if (userDocSnap.exists()) {
             const profileData = userDocSnap.data();
+
+            // Rollenbestimmung: Custom Claim hat Vorrang.
+            const roleFromClaim = idTokenResult.claims.admin ? 'master' : null;
+            const roleFromDb = (profileData.user_type as UserProfile['role']) || 'kunde';
+
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              role: (profileData.user_type as UserProfile['role']) || 'kunde',
+              role: roleFromClaim || roleFromDb, // Claim verwenden, sonst DB.
               firstName: profileData.firstName,
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
             });
           } else {
-            console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden. Dies ist während der Registrierung zu erwarten. Es wird ein temporäres Profil verwendet.`);
+            console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`);
+            // Auch hier den Claim berücksichtigen, falls das DB-Dokument fehlt.
+            const roleFromClaim = idTokenResult.claims.admin ? 'master' : 'kunde';
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              role: 'kunde',
+              role: roleFromClaim,
             });
           }
         } else {
