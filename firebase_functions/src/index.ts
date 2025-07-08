@@ -50,6 +50,7 @@ export const getClientIp = callableGeneral.getClientIp;
 export const createTemporaryJobDraft = callableGeneral.createTemporaryJobDraft;
 export const submitReview = callableGeneral.submitReview;
 export const getReviewsByProvider = callableGeneral.getReviewsByProvider;
+export const deleteCompanyAccount = callableGeneral.deleteCompanyAccount;
 
 // HTTP General Requests
 export const migrateExistingUsersToCompanies = httpGeneral.migrateExistingUsersToCompanies;
