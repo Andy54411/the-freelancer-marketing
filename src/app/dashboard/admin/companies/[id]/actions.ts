@@ -4,6 +4,7 @@ import { db, auth } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { verifyAdmin } from '@/lib/server-auth';
+import { cookies } from 'next/headers';
 
 /**
  * Updates the status of a company account in both 'users' and 'companies' collections for consistency.
@@ -68,8 +69,15 @@ export async function deactivateCompany(companyId: string, shouldDeactivate: boo
     }
 }
 
-export async function deleteCompany(companyId: string, sessionCookie?: string) {
+export async function deleteCompany(companyId: string) {
     console.log(`[Action] Starte Löschvorgang für Firma: ${companyId}`);
+    
+    const sessionCookie = cookies().get('__session')?.value;
+    if (!sessionCookie) {
+        console.error('[Action] Abbruch: Kein Session-Cookie gefunden.');
+        return { error: 'Authentifizierung fehlgeschlagen. Bitte neu anmelden.' };
+    }
+
     try {
         await verifyAdmin(sessionCookie);
 
