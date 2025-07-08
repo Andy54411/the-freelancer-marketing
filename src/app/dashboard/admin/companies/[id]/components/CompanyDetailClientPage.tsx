@@ -41,6 +41,7 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
     const isLocked = combinedData.status === 'locked';
     const companyId = combinedData.id;
     const documents = combinedData.documents ?? [];
+    const status = combinedData.status || 'unknown';
 
     return (
         <div className="space-y-8">
@@ -53,7 +54,7 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
                     </div>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">ID: {companyId}</p>
                 </div>
-                <ActionButtons companyId={companyId} isLocked={isLocked} />
+                <ActionButtons companyId={companyId} isLocked={isLocked} status={status} />
             </div>
 
             {/* Haupt-Grid */}

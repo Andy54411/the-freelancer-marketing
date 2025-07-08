@@ -50,7 +50,7 @@ export const columns: ColumnDef<CompanyData>[] = [
 
             const handleDeactivate = async () => {
                 if (confirm(`Möchten Sie das Konto für "${company.companyName}" wirklich deaktivieren?`)) {
-                    const result = await deactivateCompany(company.id);
+                    const result = await deactivateCompany(company.id, true);
                     if (result.error) {
                         alert(`Fehler: ${result.error}`);
                     } else {

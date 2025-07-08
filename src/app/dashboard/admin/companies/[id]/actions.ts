@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@/firebase/server';
+import { db, auth } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { verifyAdmin } from '@/lib/server-auth';
@@ -58,11 +58,52 @@ export async function unlockAccount(companyId: string) {
     }
 }
 
-export async function deactivateCompany(companyId: string) {
+export async function deactivateCompany(companyId: string, shouldDeactivate: boolean) {
     try {
         await verifyAdmin();
-        return await updateAccountStatus(companyId, 'deactivated');
+        const newStatus = shouldDeactivate ? 'deactivated' : 'active';
+        return await updateAccountStatus(companyId, newStatus);
     } catch (error: any) {
         return { error: error.message };
+    }
+}
+
+export async function deleteCompany(companyId: string) {
+    try {
+        await verifyAdmin();
+
+        if (!companyId) {
+            return { error: 'Firmen-ID ist erforderlich.' };
+        }
+
+        // Delete subcollections first
+        const collections = await db.collection('users').doc(companyId).listCollections();
+        for (const collection of collections) {
+            const docs = await collection.get();
+            const batch = db.batch();
+            docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        }
+
+        const userRef = db.collection('users').doc(companyId);
+        const companyRef = db.collection('companies').doc(companyId);
+
+        const batch = db.batch();
+        batch.delete(userRef);
+        batch.delete(companyRef);
+        await batch.commit();
+
+        // This should be the last step
+        await auth.deleteUser(companyId);
+
+        revalidatePath('/dashboard/admin/companies');
+
+        return { success: true, message: `Firma erfolgreich gelöscht.` };
+    } catch (error: any) {
+        console.error(`Fehler beim Löschen der Firma ${companyId}:`, error);
+        if (error.code === 'auth/user-not-found') {
+            return { error: 'Der Authentifizierungs-Benutzer wurde nicht gefunden. Möglicherweise wurde er bereits gelöscht.' };
+        }
+        return { error: `Die Firma konnte nicht gelöscht werden.` };
     }
 }
