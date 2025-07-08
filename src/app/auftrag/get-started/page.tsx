@@ -192,7 +192,7 @@ export default function GetStartedPage() {
             </button>
           </div>
 
-          {customerType && (
+          {isClientMounted && customerType && (
             <div className="mt-6 w-full">
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Hauptkategorie
@@ -206,7 +206,7 @@ export default function GetStartedPage() {
             </div>
           )}
 
-          {selectedCategory && (
+          {isClientMounted && selectedCategory && (
             <div className="mt-6 w-full">
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Unterkategorie
@@ -220,7 +220,7 @@ export default function GetStartedPage() {
             </div>
           )}
 
-          {showDescriptionField && (
+          {isClientMounted && showDescriptionField && (
             <div className="mt-6 w-full">
               <Label htmlFor="auftragBeschreibung" className="text-base font-medium text-gray-800 dark:text-white">
                 Beschreiben Sie Ihren Auftrag
