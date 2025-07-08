@@ -61,13 +61,15 @@ export function OrderSummary({
       ? `${anbieterDetails.hourlyRate.toFixed(2)} €/Std.`
       : anbieterDetails.hourlyRate?.toString() || 'Preis n/a';
 
-  // Debug: Logge die Bild-URL für Fehlersuche
+  // Debug: Logge die Bild-URL und den Wert von profilePictureURL für Fehlersuche
   const imageUrl = anbieterDetails.profilePictureURL
     ? getFirebaseImageUrl(anbieterDetails.profilePictureURL)
     : '/default-avatar.jpg';
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line no-console
     console.log('Image-URL:', imageUrl);
+    // eslint-disable-next-line no-console
+    console.log('profilePictureURL:', anbieterDetails.profilePictureURL, typeof anbieterDetails.profilePictureURL);
   }
 
   return (
