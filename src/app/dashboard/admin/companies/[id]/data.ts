@@ -53,13 +53,14 @@ export async function getCompanyDetails(companyId: string): Promise<CompanyDetai
         ]);
         console.log(`[data.ts] B. getCompanyDetails: Parallele Abfragen (User, Company, Docs) abgeschlossen.`);
 
-        if (!userDoc.exists) {
-            console.warn(`[data.ts] C. getCompanyDetails: User mit ID ${companyId} nicht in Firestore gefunden.`);
+        // Wenn weder User- noch Firmen-Dokument existiert, können wir nichts anzeigen.
+        if (!userDoc.exists && !companyDoc.exists) {
+            console.warn(`[data.ts] C. getCompanyDetails: Weder User noch Company mit ID ${companyId} in Firestore gefunden.`);
             return null;
         }
-        console.log(`[data.ts] C. getCompanyDetails: User-Dokument gefunden.`);
+        console.log(`[data.ts] C. getCompanyDetails: Mindestens ein Dokument (User oder Company) gefunden.`);
 
-        const userData = userDoc.data()!;
+        const userData = userDoc.exists ? userDoc.data()! : {};
         const companyData = companyDoc.exists ? companyDoc.data()! : {};
 
         const combinedDataRaw: { [key: string]: any } = { ...userData, ...companyData, id: companyId, documents: documentsResult.files };

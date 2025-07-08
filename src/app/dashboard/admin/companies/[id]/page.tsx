@@ -18,7 +18,7 @@ export default async function CompanyDetailPage({
 
     const companyDetails = await getCompanyDetails(id);
     if (!companyDetails) {
-        notFound();
+        return <div>Firma mit ID {id} konnte nicht gefunden werden. Überprüfen Sie die Server-Logs für weitere Details.</div>;
     }
 
     return <CompanyDetailClientPage data={companyDetails} />;
