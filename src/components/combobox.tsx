@@ -7,6 +7,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { PopoverPortal } from '@radix-ui/react-popover'
 
 interface ComboboxProps {
   options: string[]
@@ -31,32 +32,34 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-50" side="bottom" align="start">
-        <Command>
-          <CommandInput placeholder="Suchen..." />
-          <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
-          <CommandGroup>
-            {options.map((option) => (
-              <CommandItem
-                key={option}
-                value={option}
-                onSelect={(currentValue) => {
-                  onChange(currentValue === selected ? "" : currentValue);
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selected === option ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {option}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
+      <PopoverPortal>
+        <PopoverContent className="w-full p-0 z-50" side="bottom" align="start">
+          <Command>
+            <CommandInput placeholder="Suchen..." />
+            <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option}
+                  value={option}
+                  onSelect={(currentValue) => {
+                    onChange(currentValue === selected ? "" : currentValue);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selected === option ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </PopoverPortal>
     </Popover>
   )
 }
