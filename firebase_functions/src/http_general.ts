@@ -4,16 +4,7 @@ import { getDb, FieldValue, getUserDisplayName, getAuthInstance } from './helper
 import { UNKNOWN_PROVIDER_NAME, UNNAMED_COMPANY } from './constants';
 import { geohashForLocation } from 'geofire-common';
 
-// Definiere die erlaubten Ursprünge für CORS
-const allowedOrigins = [
-    "https://tasko-rho.vercel.app", // Vercel Frontend
-    "http://localhost:3000",      // Lokale Entwicklung (Next.js)
-    "http://localhost:4000",      // Lokale Entwicklung (Firebase Emulator UI)
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:4000",
-];
-
-export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: allowedOrigins, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
+export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
   // --- NEU: Authentifizierung und Autorisierung ---
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
     loggerV2.warn("[migrateExistingUsersToCompanies] Unauthenticated access attempt.");
@@ -116,7 +107,7 @@ export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1
   }
 });
 
-export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: allowedOrigins }, async (req, res) => {
+export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   const db = getDb();
   try { // <-- This try-catch block is already present, which is good. No changes needed here.
     const { id, postalCode, selectedSubcategory, minPrice, maxPrice, geohash } = req.query as { [key: string]: string | undefined };
@@ -160,48 +151,35 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: a
     // Wir fügen `where("user_type", "==", "firma")` hinzu, um sicherzustellen, dass wir nur aktive
     // Firmenkonten abrufen. Dies macht die zweite Abfrage der 'users'-Collection überflüssig,
     // was die Funktion beschleunigt und die Komplexität reduziert.
-    // Wir können nicht nach mehreren Feldern filtern, wenn wir keinen zusammengesetzten Index haben.
-    // Um den 500-Fehler zu vermeiden, filtern wir zuerst nach der Unterkategorie
-    // und wenden die restlichen Filter im Code an.
     let query: FirebaseFirestore.Query = db.collection("companies");
 
-    // Wende den wichtigsten Filter an, der die Ergebnismenge am wahrscheinlichsten einschränkt.
+    // Wende die obligatorischen Filter an.
     query = query
-      .where("selectedSubcategory", "==", selectedSubcategory as string)
-      .where("user_type", "==", "firma"); // Stellt sicher, dass es sich um ein Firmenprofil handelt.
+      .where("user_type", "==", "firma") // Stellt sicher, dass es sich um ein Firmenprofil handelt.
+      .where("companyPostalCodeForBackend", "==", postalCode as string) // KORREKTUR: Das Feld 'postalCode' existiert nicht. Verwende das korrekte Feld 'companyPostalCodeForBackend'.
+      .where("selectedSubcategory", "==", selectedSubcategory as string);
+
+    // Wende die optionalen Preisfilter an.
+    const numMinPrice = Number(minPrice);
+    const numMaxPrice = Number(maxPrice);
+    if (!isNaN(numMinPrice) && minPrice !== undefined) query = query.where("hourlyRate", ">=", numMinPrice);
+    if (!isNaN(numMaxPrice) && maxPrice !== undefined) query = query.where("hourlyRate", "<=", numMaxPrice);
 
     const querySnapshot = await query.get();
-
     if (querySnapshot.empty) {
-      loggerV2.warn(`[searchCompanyProfiles] Keine Profile für die Unterkategorie gefunden.`, { selectedSubcategory });
+      // --- Hinzugefügtes Logging für den "Nichts gefunden"-Fall ---
+      loggerV2.warn(`[searchCompanyProfiles] Keine Profile für die Abfrage gefunden.`, { postalCode, selectedSubcategory, minPrice, maxPrice });
+      // --- Ende Logging ---
       res.status(200).json([]);
       return;
     }
 
-    // Wende die restlichen Filter serverseitig an.
-    const numMinPrice = Number(minPrice);
-    const numMaxPrice = Number(maxPrice);
-
     const profiles = querySnapshot.docs
-      .map(doc => ({ id: doc.id, data: doc.data() }))
-      .filter(({ data }) => {
-        // PLZ-Filter
-        if (data.companyPostalCodeForBackend !== postalCode) {
-          return false;
-        }
-        // Preisfilter
-        if (!isNaN(numMinPrice) && minPrice !== undefined && data.hourlyRate < numMinPrice) {
-          return false;
-        }
-        if (!isNaN(numMaxPrice) && maxPrice !== undefined && data.hourlyRate > numMaxPrice) {
-          return false;
-        }
-        return true;
-      })
-      .map(({ id, data }) => {
+      .map((doc) => {
+        const data = doc.data();
         return {
           // WICHTIG: Dies ist die Struktur für die Ergebnisliste
-          id: id,
+          id: doc.id,
           companyName: getUserDisplayName(data, UNKNOWN_PROVIDER_NAME),
           profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
           hourlyRate: data.hourlyRate,
@@ -209,7 +187,6 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: a
           stripeAccountId: data.stripeAccountId,
         };
       });
-
 
     // --- Hinzugefügtes Logging für erfolgreiche Suche ---
     loggerV2.info(`[searchCompanyProfiles] ${profiles.length} Profile gefunden und zurückgegeben.`);
@@ -223,7 +200,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: a
   }
 });
 
-export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: allowedOrigins }, async (req, res) => {
+export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   if (req.method !== "GET") {
     res.status(405).send("Method Not Allowed");
     return;
@@ -295,7 +272,7 @@ export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: a
   }
 });
 
-export const createJobPosting = onRequest({ region: "europe-west1", cors: allowedOrigins }, async (req, res) => {
+export const createJobPosting = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
     return;

@@ -2,9 +2,6 @@ import path from 'path';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV,
-  },
   // Webpack-Konfiguration, um den functions-Ordner zu ignorieren
   webpack: (config, { isServer }) => {
     config.externals = config.externals || [];

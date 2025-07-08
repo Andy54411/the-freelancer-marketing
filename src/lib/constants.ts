@@ -1,15 +1,8 @@
 // src/lib/constants.ts
 
-// Ermitteln, ob die Anwendung in einer Produktionsumgebung läuft
-const isProduction = process.env.NODE_ENV === 'production';
-
 // Die Basis-URL für Firebase Functions, die von der Umgebungsvariable kommt
 // oder auf die Produktions-URL zurückfällt.
-export const FIREBASE_FUNCTIONS_BASE_URL =
-  process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL ||
-  (process.env.NEXT_PUBLIC_VERCEL_ENV === 'production'
-    ? 'https://europe-west1-tilvo-f142f.cloudfunctions.net'
-    : 'http://127.0.0.1:5001/tilvo-f142f/europe-west1');
+export const FIREBASE_FUNCTIONS_BASE_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL || "https://europe-west1-tilvo-f142f.cloudfunctions.net";
 
 export const PAGE_ERROR = "[PAGE_ERROR]";
 export const PAGE_LOG = "[PAGE_LOG]";

@@ -1,3 +1,4 @@
+
 // /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/page.tsx
 'use client';
 
@@ -10,7 +11,7 @@ import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from './component
 import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/types/types';
 import { DateRange, DayPicker } from 'react-day-picker';
 import { format, isValid, parseISO, differenceInCalendarDays } from 'date-fns';
-import { GLOBAL_FALLBACK_MIN_PRICE, GLOBAL_FALLBACK_MAX_PRICE, PAGE_ERROR, PAGE_LOG, PAGE_WARN, TRUST_AND_SUPPORT_FEE_EUR, FIREBASE_FUNCTIONS_BASE_URL } from '../../../../../lib/constants';
+import { GLOBAL_FALLBACK_MIN_PRICE, GLOBAL_FALLBACK_MAX_PRICE, PAGE_ERROR, PAGE_LOG, PAGE_WARN, TRUST_AND_SUPPORT_FEE_EUR } from '../../../../../lib/constants';
 import SidebarFilters from './components/SidebarFilters';
 import CompanyResultsList from './components/CompanyResultsList';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
@@ -170,7 +171,8 @@ export default function AddressPage() {
     }
     setLoadingSubcategoryData(true);
     try {
-      const res = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/getDataForSubcategory?subcategory=${encodeURIComponent(subcategory)}`);
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
+      const res = await fetch(`${apiBaseUrl}/getDataForSubcategory?subcategory=${encodeURIComponent(subcategory)}`);
       if (!res.ok) {
         const errorText = await res.text(); console.error(`${PAGE_ERROR} API getDataForSubcategory FAILED: ${res.status} ${res.statusText}. Response: ${errorText}`); throw new Error(`API Error ${res.status}`);
       }
@@ -188,7 +190,8 @@ export default function AddressPage() {
     if (!postalCode || !selectedSubcategory) { setCompanyProfiles([]); return; }
     setLoadingProfiles(true); setError(null);
     try {
-      let apiUrl = `${FIREBASE_FUNCTIONS_BASE_URL}/searchCompanyProfiles?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(selectedSubcategory)}&minPrice=${dynamicSliderMin}&maxPrice=${currentMaxPrice}`;
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
+      let apiUrl = `${apiBaseUrl}/searchCompanyProfiles?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(selectedSubcategory)}&minPrice=${dynamicSliderMin}&maxPrice=${currentMaxPrice}`;
       if (finalSelectedDateRange?.from && isValid(finalSelectedDateRange.from)) {
         apiUrl += `&dateFrom=${format(finalSelectedDateRange.from, "yyyy-MM-dd")}`;
         if (finalSelectedDateRange.to && finalSelectedDateRange.to.getTime() !== finalSelectedDateRange.from.getTime() && isValid(finalSelectedDateRange.to)) {
@@ -461,5 +464,3 @@ export default function AddressPage() {
     </Suspense>
   );
 }
-
-// gcloud run services add-iam-policy-binding searchCompanyProfiles --member="allUsers" --role="roles/run.invoker" --region=europe-west1 --project=tilvo-f142f
