@@ -1,33 +1,26 @@
 const admin = require('firebase-admin');
+const serviceAccount = require('./firebase-service-account-key.json');
 
 // --- Configuration ---
-// The UID of the user you want to modify.
-const uid = 'nPcQhCqrROOcThDtthMPNHDpCZ8m';
-// The role you want to assign. Can be 'company' or 'admin'.
-const roleToSet = 'company';
+// Get UID and role from command-line arguments
+const [uid, roleToSet] = process.argv.slice(2);
+
+if (!uid || !roleToSet) {
+    console.error('Usage: node set-custom-claim.js <uid> <role>');
+    process.exit(1);
+}
 // --- End Configuration ---
 
-// IMPORTANT: Replace this with your actual Firebase project ID.
-// You can find it in your Firebase project settings or firebase.json.
-const projectId = 'tasko-andy'; // <-- Ersetze 'tasko-andy' mit deiner echten Projekt-ID
-
-// Set this environment variable to connect to the Auth emulator
-process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
-
-// Initialize the Admin SDK.
-// No credentials needed when running against the emulator.
-admin.initializeApp({ projectId });
+// Initialize the Admin SDK for the live environment.
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+});
 
 async function setClaim() {
-    if (!uid || !roleToSet || projectId === 'your-firebase-project-id') {
-        console.error('Error: Please provide a UID and a role in the configuration section, and update the projectId.');
-        return;
-    }
-
     try {
         // Set the custom claim for the user
         await admin.auth().setCustomUserClaims(uid, { role: roleToSet });
-        console.log(`✅ Successfully set custom claim for user ${uid}.`);
+        console.log(`✅ Successfully set role '${roleToSet}' for user ${uid}.`);
 
         // Verify the claim was set
         const userRecord = await admin.auth().getUser(uid);
