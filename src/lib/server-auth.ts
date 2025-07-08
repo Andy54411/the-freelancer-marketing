@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { admin } from '@/firebase/server';
+import { revalidatePath } from 'next/cache';
 
 /**
  * Verifiziert das Session-Cookie aus dem Request und prüft, ob der Benutzer
@@ -11,6 +12,7 @@ import { admin } from '@/firebase/server';
  * @returns {Promise<{uid: string, role: string}>} Die UID und Rolle des verifizierten Admin-Benutzers.
  */
 export async function verifyAdmin() {
+    revalidatePath('/', 'layout'); // Erzwingt die Neuvalidierung des Caches
     try {
         const sessionCookie = cookies().get('__session')?.value;
         if (!sessionCookie) {
