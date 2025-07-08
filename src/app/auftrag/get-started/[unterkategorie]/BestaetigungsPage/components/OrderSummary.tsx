@@ -61,13 +61,22 @@ export function OrderSummary({
       ? `${anbieterDetails.hourlyRate.toFixed(2)} €/Std.`
       : anbieterDetails.hourlyRate?.toString() || 'Preis n/a';
 
+  // Debug: Logge die Bild-URL für Fehlersuche
+  const imageUrl = anbieterDetails.profilePictureURL
+    ? getFirebaseImageUrl(anbieterDetails.profilePictureURL)
+    : '/default-avatar.jpg';
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line no-console
+    console.log('Image-URL:', imageUrl);
+  }
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 lg:p-8 space-y-6 text-sm text-gray-700 h-full flex flex-col justify-between">
       {/* Anbieter Info */}
       <div>
         <div className="flex items-center mb-4">
           <Image
-            src={anbieterDetails.profilePictureURL ? getFirebaseImageUrl(anbieterDetails.profilePictureURL) : '/default-avatar.jpg'}
+            src={imageUrl}
             alt={anbieterDetails.companyName || 'Anbieter'}
             className="w-12 h-12 rounded-full border object-cover mr-4"
             width={48}
