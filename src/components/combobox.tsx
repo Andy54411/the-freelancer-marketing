@@ -3,11 +3,14 @@
 
 import * as React from 'react'
 import { Check, ChevronsUpDown } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PopoverPortal } from '@radix-ui/react-popover'
 
 interface ComboboxProps {
   options: string[]
@@ -20,8 +23,8 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
   const [open, setOpen] = React.useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
@@ -31,40 +34,33 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
           {selected || placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
-      <PopoverPortal>
-        <PopoverContent
-          className="p-0 z-50"
-          style={{ width: 'var(--radix-popover-trigger-width)' }}
-          side="bottom"
-          align="start"
-        >
-          <Command>
-            <CommandInput placeholder="Suchen..." />
-            <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue === selected ? "" : currentValue);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected === option ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </PopoverPortal>
-    </Popover>
+      </DialogTrigger>
+      <DialogContent className="p-0">
+        <Command>
+          <CommandInput placeholder="Suchen..." />
+          <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
+          <CommandGroup>
+            {options.map((option) => (
+              <CommandItem
+                key={option}
+                value={option}
+                onSelect={(currentValue) => {
+                  onChange(currentValue === selected ? "" : currentValue);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    selected === option ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {option}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </DialogContent>
+    </Dialog>
   )
 }
