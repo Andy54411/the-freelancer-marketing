@@ -14,7 +14,7 @@ setGlobalOptions({
     memory: '128MiB', // <-- EXTREM REDUZIERT: Speicher auf 128MiB gesenkt als letzter Versuch, Quota-Probleme zu beheben.
     cpu: 0.1, // <-- NOCHMALS REDUZIERT: CPU-Anforderung weiter gesenkt, um das Quota-Limit sicher einzuhalten.
     concurrency: 1, // <-- Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
-    secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "FRONTEND_URL"],
+    secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
 });
 
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.

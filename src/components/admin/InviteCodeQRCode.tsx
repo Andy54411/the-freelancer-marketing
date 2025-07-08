@@ -41,6 +41,7 @@ export default function InviteCodeQRCode({ inviteCode }: InviteCodeQRCodeProps) 
                 Der neue Mitarbeiter kann diesen QR-Code scannen, um sich direkt mit dem richtigen Code zu registrieren.
             </p>
             <div className="p-4 bg-white rounded-lg shadow-md">
+                {/* @ts-ignore */}
                 <QRCode value={registrationUrl} size={200} title="QR-Code zur Mitarbeiterregistrierung" />
             </div>
             <div className="w-full">

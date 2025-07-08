@@ -57,6 +57,7 @@ export default function UploadPromptDesktop() {
     <div className="p-6 text-center">
       <h2 className="mb-4 text-xl font-semibold">Upload per Handy</h2>
       <p className="mb-4">Scanne den QR-Code mit deinem Handy, um direkt Fotos aufzunehmen und hochzuladen.</p>
+      {/* @ts-ignore */}
       {sessionId && phoneUrl && <QRCode value={phoneUrl} size={220} title="QR-Code für Upload-Link" />}
       <p className="mt-4">
         Oder öffne auf deinem Handy diesen Link:

@@ -8,7 +8,7 @@ import { verifyAdmin } from '@/lib/server-auth';
 /**
  * Updates the status of a company account in both 'users' and 'companies' collections for consistency.
  * @param companyId The ID of the company.
- * @param status The new status to set ('active', 'locked', or 'deactivated').
+ * @param status The new status to set ('active', 'locked' | 'deactivated').
  */
 async function updateAccountStatus(companyId: string, status: 'active' | 'locked' | 'deactivated') {
     if (!companyId) {
@@ -69,35 +69,65 @@ export async function deactivateCompany(companyId: string, shouldDeactivate: boo
 }
 
 export async function deleteCompany(companyId: string) {
+    console.log(`[Action] Starte Löschvorgang für Firma: ${companyId}`);
     try {
         await verifyAdmin();
 
         if (!companyId) {
+            console.error('[Action] Abbruch: Keine Firmen-ID angegeben.');
             return { error: 'Firmen-ID ist erforderlich.' };
         }
 
         const userRef = db.collection('users').doc(companyId);
         const companyRef = db.collection('companies').doc(companyId);
-        const privateInfoRef = userRef.collection('private_info').doc('details');
 
-        // Atomarer Batch-Vorgang für alle Firestore-Löschungen
-        const batch = db.batch();
-        batch.delete(privateInfoRef); // Zuerst Unter-Sammlungen
-        batch.delete(userRef);
-        batch.delete(companyRef);
+        console.log('[Action] Starte Firestore-Transaktion...');
+        await db.runTransaction(async (transaction) => {
+            // Schritt 1: Alle Unter-Sammlungen von 'users' löschen
+            console.log(`[Action] Lade Unter-Sammlungen für User: ${companyId}`);
+            const userSubcollections = await userRef.listCollections();
+            for (const subcollection of userSubcollections) {
+                console.log(`[Action] Lösche Dokumente in User-Unter-Sammlung: ${subcollection.id}`);
+                const allDocs = await subcollection.get();
+                allDocs.forEach(doc => transaction.delete(doc.ref));
+            }
 
-        // Zuerst die Datenbank-Operationen ausführen
-        await batch.commit();
+            // Schritt 2: Alle Unter-Sammlungen von 'companies' löschen
+            console.log(`[Action] Lade Unter-Sammlungen für Company: ${companyId}`);
+            const companySubcollections = await companyRef.listCollections();
+            for (const subcollection of companySubcollections) {
+                console.log(`[Action] Lösche Dokumente in Company-Unter-Sammlung: ${subcollection.id}`);
+                const allDocs = await subcollection.get();
+                allDocs.forEach(doc => transaction.delete(doc.ref));
+            }
 
-        // Nach erfolgreicher DB-Löschung den Auth-Benutzer löschen
-        await auth.deleteUser(companyId);
+            // Schritt 3: Die Hauptdokumente löschen
+            console.log(`[Action] Lösche Hauptdokumente für User und Company: ${companyId}`);
+            transaction.delete(userRef);
+            transaction.delete(companyRef);
+        });
+        console.log('[Action] Firestore-Transaktion erfolgreich abgeschlossen.');
+
+        // Schritt 4: Nach erfolgreicher DB-Löschung den Auth-Benutzer löschen
+        console.log(`[Action] Lösche Auth-Benutzer: ${companyId}`);
+        try {
+            await auth.deleteUser(companyId);
+            console.log(`[Action] Auth-Benutzer ${companyId} erfolgreich gelöscht.`);
+        } catch (authError: any) {
+            if (authError.code !== 'auth/user-not-found') {
+                console.error(`[Action] Fehler beim Löschen des Auth-Benutzers ${companyId}:`, authError);
+                throw authError;
+            }
+            console.log(`[Action] Auth-Benutzer ${companyId} wurde nicht gefunden, was in diesem Fall in Ordnung ist.`);
+        }
 
         revalidatePath('/dashboard/admin/companies');
-        return { success: true, message: 'Firma und zugehöriger Benutzer wurden endgültig gelöscht.' };
+        console.log(`[Action] Pfad /dashboard/admin/companies revalidiert. Löschvorgang für ${companyId} abgeschlossen.`);
+        return { success: true, message: 'Firma und alle zugehörigen Daten wurden endgültig gelöscht.' };
+
     } catch (error: any) {
         console.error(`[actions.ts] Fehler beim Löschen der Firma ${companyId}:`, error);
 
-        // Detailliertere Fehlermeldung für den Client
         let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
         if (error.code === 'auth/user-not-found') {
             errorMessage = 'Der Authentifizierungs-Benutzer wurde nicht gefunden, die Datenbankeinträge wurden aber möglicherweise bereits gelöscht.';

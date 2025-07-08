@@ -28,39 +28,42 @@ export default function ActionButtons({ companyId, isLocked, status }: ActionBut
     const [isPending, startTransition] = useTransition();
 
     const handleToggleLock = () => {
-        startTransition(async () => {
+        startTransition(() => {
             const action = isLocked ? unlockAccount : lockAccount;
-            const result = await action(companyId);
-            if (result.error) {
-                toast.error("Fehler", { description: result.error });
-            } else {
-                toast.success("Erfolg", { description: `Konto wurde erfolgreich ${isLocked ? 'entsperrt' : 'gesperrt'}.` });
-            }
+            action(companyId).then((result) => {
+                if (result.error) {
+                    toast.error("Fehler", { description: result.error });
+                } else {
+                    toast.success("Erfolg", { description: `Konto wurde erfolgreich ${isLocked ? 'entsperrt' : 'gesperrt'}.` });
+                }
+            });
         });
     };
 
     const handleDeactivate = () => {
-        startTransition(async () => {
+        startTransition(() => {
             const shouldDeactivate = status !== 'deactivated';
-            const result = await deactivateCompany(companyId, shouldDeactivate);
-            if (result.error) {
-                toast.error("Fehler", { description: result.error });
-            } else {
-                toast.success("Erfolg", { description: `Konto wurde erfolgreich ${shouldDeactivate ? 'deaktiviert' : 'reaktiviert'}.` });
-            }
+            deactivateCompany(companyId, shouldDeactivate).then((result) => {
+                if (result.error) {
+                    toast.error("Fehler", { description: result.error });
+                } else {
+                    toast.success("Erfolg", { description: `Konto wurde erfolgreich ${shouldDeactivate ? 'deaktiviert' : 'reaktiviert'}.` });
+                }
+            });
         });
     };
 
     const handleDelete = () => {
-        startTransition(async () => {
-            const result = await deleteCompany(companyId);
-            if (result.error) {
-                toast.error("Fehler", { description: result.error });
-            } else {
-                toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
-                // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
-                window.location.href = '/dashboard/admin/companies';
-            }
+        startTransition(() => {
+            deleteCompany(companyId).then((result) => {
+                if (result.error) {
+                    toast.error("Fehler", { description: result.error });
+                } else {
+                    toast.success("Erfolg", { description: "Das Firmenkonto wurde endgültig gelöscht." });
+                    // Leitet den Benutzer nach erfolgreicher Löschung zur Übersichtsseite weiter.
+                    window.location.href = '/dashboard/admin/companies';
+                }
+            });
         });
     };
 
