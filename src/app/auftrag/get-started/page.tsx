@@ -196,7 +196,7 @@ export default function GetStartedPage() {
           {isClientMounted && showDescriptionField && (
             <div className="mt-6 w-full">
               <Label htmlFor="auftragBeschreibung" className="text-base font-medium text-gray-800 dark:text-white">
-                Beschreiben Sie Ihren Auftrag
+                Beschreiben Sie Ihren Auftrag!
               </Label>
               <Textarea
                 id="auftragBeschreibung"
