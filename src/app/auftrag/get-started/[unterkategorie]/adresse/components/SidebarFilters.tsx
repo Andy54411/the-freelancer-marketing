@@ -2,9 +2,8 @@
 'use client';
 
 import { Label } from '@/components/ui/label';
-import { Autocomplete } from '@react-google-maps/api';
 import { DateRange } from 'react-day-picker';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 
 
 // Importiere die spezifischen Komponenten
@@ -78,6 +77,26 @@ export default function SidebarFilters({
     return selectedSubcategory !== null && subcategoriesToShowDateTimeFilters.has(selectedSubcategory);
   }, [selectedSubcategory, subcategoriesToShowDateTimeFilters]);
 
+  const autocompleteInputRef = useRef<HTMLInputElement>(null);
+
+  // Effekt zum Initialisieren der Autocomplete-Instanz
+  useEffect(() => {
+    if (isLoaded && autocompleteInputRef.current) {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        autocompleteInputRef.current,
+        {
+          componentRestrictions: { country: ["de", "at", "ch"] },
+          fields: ["address_components", "geometry", "formatted_address", "name"],
+        }
+      );
+      onLoad(autocomplete);
+      autocomplete.addListener('place_changed', onPlaceChanged);
+
+      return () => {
+        window.google.maps.event.clearInstanceListeners(autocomplete);
+      };
+    }
+  }, [isLoaded, onLoad, onPlaceChanged]);
 
   return (
     <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 flex-shrink-0 self-start">
@@ -85,18 +104,14 @@ export default function SidebarFilters({
       <div>
         <Label className="text-base font-medium text-gray-800 dark:text-white">Ort oder Adresse</Label>
         {isLoaded ? (
-          <Autocomplete
-            onLoad={onLoad}
-            onPlaceChanged={onPlaceChanged}
-          >
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Adresse, Stadt oder Land"
-              className="w-full rounded-md border p-2 mt-2"
-            />
-          </Autocomplete>
+          <input
+            ref={autocompleteInputRef}
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Adresse, Stadt oder Land"
+            className="w-full rounded-md border p-2 mt-2"
+          />
         ) : (
           <input
             type="text"

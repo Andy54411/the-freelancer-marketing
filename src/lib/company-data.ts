@@ -8,7 +8,7 @@ export interface CompanyData {
 export async function getAllCompanies() {
     try {
         const companiesSnapshot = await db.collection('companies').get();
-        const companies = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const companies = companiesSnapshot.docs.map((doc: admin.firestore.QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() }));
         return companies;
     } catch (error) {
         // Logging mit Kontext für Debugging
@@ -64,5 +64,5 @@ export async function getAllCompanyIds(): Promise<{ id: string }[]> {
         return [];
     }
 
-    return snapshot.docs.map(doc => ({ id: doc.id }));
+    return snapshot.docs.map((doc: admin.firestore.QueryDocumentSnapshot) => ({ id: doc.id }));
 }
