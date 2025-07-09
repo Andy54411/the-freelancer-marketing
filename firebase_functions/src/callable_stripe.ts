@@ -9,6 +9,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'http://localhost:5002',
+  'http://127.0.0.1:5002',
   'https://tasko-rho.vercel.app',
   'https://tasko-zh8k.vercel.app',
   'https://tilvo-f142f.web.app'
@@ -715,7 +717,10 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
   });
 
 export const updateStripeCompanyDetails = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  { 
+    region: "europe-west1", 
+    cors: true  // Erlaube alle Origins in der Entwicklung
+  },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     const db = getDb();
