@@ -322,5 +322,45 @@ async function deleteQueryBatch(db: Firestore, query: admin.firestore.Query, res
 }
 
 
+// --- UMGEBUNGS-HELPER FUNKTIONEN ---
+
+/**
+ * Bestimmt ob die Anwendung im Firebase Emulator läuft
+ * @returns {boolean} True wenn im Emulator, false in Produktion
+ */
+export function isEmulator(): boolean {
+  // Prüfe verschiedene Emulator-Indikatoren
+  return !!(
+    process.env.FUNCTIONS_EMULATOR === 'true' ||
+    process.env.FIRESTORE_EMULATOR_HOST ||
+    process.env.FIREBASE_AUTH_EMULATOR_HOST ||
+    process.env.STORAGE_EMULATOR_HOST
+  );
+}
+
+/**
+ * Gibt die korrekten URLs für die aktuelle Umgebung zurück
+ * @returns {object} Objekt mit frontend_url und stripe_return_url
+ */
+export function getEnvironmentUrls(): { frontend_url: string; stripe_return_url: string } {
+  const isEmulatorEnv = isEmulator();
+  
+  if (isEmulatorEnv) {
+    // Im Emulator verwenden wir die öffentliche Firebase-URL für Stripe
+    const publicUrl = "https://tilvo-f142f.web.app";
+    return {
+      frontend_url: publicUrl,
+      stripe_return_url: `${publicUrl}/dashboard`
+    };
+  } else {
+    // In Produktion verwenden wir die echte Frontend-URL
+    const frontendUrl = process.env.FRONTEND_URL || "https://tilvo-f142f.web.app";
+    return {
+      frontend_url: frontendUrl,
+      stripe_return_url: `${frontendUrl}/dashboard`
+    };
+  }
+}
+
 // --- Hilfstypen und Admin-Export ---
 export { FieldValue, Timestamp, admin };

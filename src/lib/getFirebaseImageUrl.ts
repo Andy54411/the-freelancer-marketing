@@ -8,15 +8,9 @@
 export function getFirebaseImageUrl(storagePathOrUrl: string): string {
     if (!storagePathOrUrl) return '/default-avatar.jpg';
     if (storagePathOrUrl.startsWith('http')) return storagePathOrUrl;
-
-    // Korrektur: Der Pfad muss korrekt für die Firebase Storage URL kodiert werden.
-    // `encodeURIComponent` kodiert auch Slashes ('/'), was hier falsch ist.
-    // Wir müssen jedes Pfadsegment einzeln kodieren und sie dann wieder mit Slashes verbinden.
-    const encodedPath = storagePathOrUrl
-        .split('/')
-        .map(segment => encodeURIComponent(segment))
-        .join('/');
-
+    // Nur kodieren, wenn noch nicht kodiert
+    const needsEncoding = !storagePathOrUrl.includes('%2F');
+    const encodedPath = needsEncoding ? encodeURIComponent(storagePathOrUrl) : storagePathOrUrl;
     const bucket = "tilvo-f142f.firebasestorage.app";
     return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
 }

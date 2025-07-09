@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { type LucideIcon as Icon } from "lucide-react"
 
 import {
   SidebarGroup,
@@ -17,7 +18,7 @@ export function NavSecondary({
   items: {
     title: string
     url: string
-    icon: React.ElementType
+    icon: Icon
     onClick?: () => void
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
@@ -48,3 +49,4 @@ export function NavSecondary({
     </SidebarGroup>
   )
 }
+

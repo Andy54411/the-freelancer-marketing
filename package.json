@@ -15,7 +15,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "emulators": "cd firebase_functions && npm run start:emulators",
+    "emulators": "cd firebase_functions && npm run serve",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -54,6 +54,7 @@
     "@stripe/stripe-js": "^4.0.0",
     "@tabler/icons-react": "^3.34.0",
     "@tanstack/react-table": "^8.21.3",
+    "@types/lodash": "^4.17.20",
     "@vis.gl/react-google-maps": "^1.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -63,6 +64,7 @@
     "firebase-admin": "^12.2.0",
     "framer-motion": "^12.19.2",
     "geofire-common": "^6.0.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.511.0",
     "micro": "^10.0.1",
     "next": "14.2.4",

@@ -206,6 +206,30 @@ const mapLegalFormToStripeBusinessInfo = (
   return { businessType: 'company', companyStructure: undefined };
 };
 
+// Helper-Funktion für Umgebungs-URLs
+const getEnvironmentUrls = (configuredFrontendUrl: string) => {
+  const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+  
+  loggerV2.info(`[getEnvironmentUrls] Umgebung erkannt: ${isEmulator ? 'Emulator' : 'Produktion'}`);
+  loggerV2.info(`[getEnvironmentUrls] Konfigurierte Frontend-URL: ${configuredFrontendUrl}`);
+  
+  if (isEmulator) {
+    // Im Emulator: Verwende für Stripe eine der erlaubten URLs anstatt example.com
+    return {
+      stripeBusinessProfileUrl: 'https://tilvo-f142f.web.app', // Gültige Produktions-URL für Stripe
+    };
+  } else {
+    // In Produktion: Verwende die konfigurierte URL für alles
+    if (!configuredFrontendUrl || !configuredFrontendUrl.startsWith('http') || configuredFrontendUrl.includes('localhost')) {
+      loggerV2.error(`[getEnvironmentUrls] FEHLER: Ungültige Produktions-URL: ${configuredFrontendUrl}`);
+      throw new Error("Produktions-Frontend-URL ist ungültig oder fehlt");
+    }
+    return {
+      stripeBusinessProfileUrl: configuredFrontendUrl,
+    };
+  }
+};
+
 export const createStripeAccountIfComplete = onCall(
   // Force redeploy by adding a comment
   { region: "europe-west1", cors: allowedOrigins },
@@ -329,31 +353,28 @@ export const createStripeAccountIfComplete = onCall(
     loggerV2.info('[DEBUG] Alle Validierungen bestanden. Fahre fort mit Kontoerstellung.');
 
     const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
-    const undefinedIfNull = <T>(val: T | null | undefined): T | undefined => val === null ? undefined : val;
+    // Helper, um leere Strings, null oder undefined in 'undefined' umzuwandeln, damit Stripe sie ignoriert.
+    const sanitizeForStripe = <T>(val: T | null | undefined | ""): T | undefined => {
+      if (val === null || val === undefined || val === "") return undefined;
+      return val;
+    };
 
     // The platformProfileUrl for Stripe's business_profile MUST be a public, non-localhost URL.
     // We will always use the production frontend URL for this, which is correctly
     // sourced from the FRONTEND_URL parameter.
-    const platformProfileUrl = `${frontendUrlValue}/profil/${userId}`;
-
-    // This block now serves as a final safety net and warning.
-    // If this log appears, it means the FRONTEND_URL parameter is misconfigured.
-    if (platformProfileUrl.startsWith("http://localhost")) {
-      loggerV2.error(`[createStripeAccountIfComplete] CRITICAL: The configured FRONTEND_URL parameter is a localhost URL ('${platformProfileUrl}'). This is invalid for Stripe. Please configure the production URL for the FRONTEND_URL parameter.`);
-      throw new HttpsError("internal", "Server configuration error: Invalid frontend URL for Stripe.");
-    }
+    const { stripeBusinessProfileUrl } = getEnvironmentUrls(frontendUrlValue);
 
     const accountParams: Stripe.AccountCreateParams = {
       type: "custom",
-      country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry)! : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+      country: businessType === 'company' ? sanitizeForStripe(payloadFromClient.companyCountry)! : sanitizeForStripe(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
       email: payloadFromClient.email!,
       business_type: businessType,
       capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-      metadata: { internal_user_id: userId, created_by_callable: "true", legal_form_provided: undefinedIfNull(payloadFromClient.legalForm) || 'N/A' },
+      metadata: { internal_user_id: userId, created_by_callable: "true", legal_form_provided: sanitizeForStripe(payloadFromClient.legalForm) || 'N/A' },
       tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: clientIp, user_agent: userAgent },
       business_profile: {
         mcc: payloadFromClient.mcc!,
-        url: platformProfileUrl,
+        url: stripeBusinessProfileUrl,
       },
     };
 
@@ -364,12 +385,12 @@ export const createStripeAccountIfComplete = onCall(
           line1: payloadFromClient.companyAddressLine1!,
           city: payloadFromClient.companyCity!,
           postal_code: payloadFromClient.companyPostalCode!,
-          country: undefinedIfNull(payloadFromClient.companyCountry)!,
+          country: sanitizeForStripe(payloadFromClient.companyCountry)!,
         },
-        phone: undefinedIfNull(payloadFromClient.companyPhoneNumber || payloadFromClient.phoneNumber),
-        registration_number: undefinedIfNull(payloadFromClient.companyRegister),
-        tax_id: undefinedIfNull(payloadFromClient.taxNumber),
-        vat_id: undefinedIfNull(payloadFromClient.vatId),
+        phone: sanitizeForStripe(payloadFromClient.companyPhoneNumber || payloadFromClient.phoneNumber),
+        registration_number: sanitizeForStripe(payloadFromClient.companyRegister),
+        tax_id: sanitizeForStripe(payloadFromClient.taxNumber),
+        vat_id: sanitizeForStripe(payloadFromClient.vatId),
         structure: companyStructure,
       };
       if (payloadFromClient.businessLicenseFileId && accountParams.company) {
@@ -377,19 +398,19 @@ export const createStripeAccountIfComplete = onCall(
         accountParams.company.verification.document = { front: payloadFromClient.businessLicenseFileId };
       }
     } else {
-      const personalStreet = undefinedIfNull(payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim());
-      const personalHouse = undefinedIfNull(payloadFromClient.personalHouseNumber?.trim());
+      const personalStreet = sanitizeForStripe(payloadFromClient.personalStreet?.trim() || payloadFromClient.companyAddressLine1?.trim());
+      const personalHouse = sanitizeForStripe(payloadFromClient.personalHouseNumber?.trim());
       accountParams.individual = {
         first_name: payloadFromClient.firstName,
         last_name: payloadFromClient.lastName,
         email: payloadFromClient.email,
-        phone: undefinedIfNull(payloadFromClient.phoneNumber),
+        phone: sanitizeForStripe(payloadFromClient.phoneNumber),
         dob: { day: dayDob, month: monthDob, year: yearDob },
         address: {
-          line1: personalStreet ? `${personalStreet} ${personalHouse ?? ''}`.trim() : undefinedIfNull(payloadFromClient.companyAddressLine1)!,
-          postal_code: undefinedIfNull(payloadFromClient.personalPostalCode || payloadFromClient.companyPostalCode)!,
-          city: undefinedIfNull(payloadFromClient.personalCity || payloadFromClient.companyCity)!,
-          country: undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+          line1: personalStreet ? `${personalStreet} ${personalHouse ?? ''}`.trim() : sanitizeForStripe(payloadFromClient.companyAddressLine1)!,
+          postal_code: sanitizeForStripe(payloadFromClient.personalPostalCode || payloadFromClient.companyPostalCode)!,
+          city: sanitizeForStripe(payloadFromClient.personalCity || payloadFromClient.companyCity)!,
+          country: sanitizeForStripe(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
         },
         verification: {
           document: {
@@ -403,7 +424,7 @@ export const createStripeAccountIfComplete = onCall(
     if (payloadFromClient.iban && payloadFromClient.accountHolder) {
       accountParams.external_account = {
         object: "bank_account",
-        country: businessType === 'company' ? undefinedIfNull(payloadFromClient.companyCountry)! : undefinedIfNull(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+        country: businessType === 'company' ? sanitizeForStripe(payloadFromClient.companyCountry)! : sanitizeForStripe(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
         currency: "eur",
         account_number: (payloadFromClient.iban).replace(/\s/g, ""),
         account_holder_name: payloadFromClient.accountHolder,
@@ -476,7 +497,7 @@ export const createStripeAccountIfComplete = onCall(
           director: payloadFromClient.isActualDirector,
           owner: payloadFromClient.isActualOwner,
           executive: payloadFromClient.isActualExecutive,
-          title: payloadFromClient.actualRepresentativeTitle,
+          title: sanitizeForStripe(payloadFromClient.actualRepresentativeTitle),
         };
 
         if (payloadFromClient.isManagingDirectorOwner) {
@@ -491,7 +512,7 @@ export const createStripeAccountIfComplete = onCall(
           first_name: payloadFromClient.firstName!,
           last_name: payloadFromClient.lastName!,
           email: payloadFromClient.email!,
-          phone: undefinedIfNull(payloadFromClient.phoneNumber),
+          phone: sanitizeForStripe(payloadFromClient.phoneNumber),
           relationship: personRelationship,
           verification: { document: { front: payloadFromClient.identityFrontFileId!, back: payloadFromClient.identityBackFileId! } },
           dob: { day: dayDob, month: monthDob, year: yearDob },
