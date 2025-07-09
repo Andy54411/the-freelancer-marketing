@@ -105,6 +105,16 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     setUploadError(null);
     setUploadSuccess(false);
 
+    // Validierung der Dateitypen
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    const invalidFiles = Array.from(files).filter(file => !allowedTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      const invalidFileNames = invalidFiles.map(file => file.name).join(', ');
+      setUploadError(`Nicht unterstützte Dateitypen: ${invalidFileNames}. Nur JPEG, PNG, WebP und GIF sind erlaubt.`);
+      return;
+    }
+
     const storageInstance = getStorage();
     const folderRef = ref(storageInstance, `projectImages/${uid}`);
 
@@ -244,7 +254,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           <input
             id="project-images-upload"
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
             multiple
             onChange={handleProjectUpload}
             className="hidden"

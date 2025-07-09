@@ -4,7 +4,32 @@ service firebase.storage {
   match /b/{bucket}/o {
     // Helper-Funktion, um Admin/Support-Rollen über Custom Claims zu prüfen.
     function isSupportStaff() {
-      return request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'support');
+      return request.auth != null && 
+             request.auth.token != null &&
+             ('role' in request.auth.token) &&
+             (request.auth.token.role == 'master' || request.auth.token.role == 'support');
+    }
+
+    // Helper-Funktion, um erlaubte Dateitypen zu prüfen (nur für Uploads)
+    function isValidImageType() {
+      return request.resource != null &&
+             request.resource.contentType != null &&
+             (
+               request.resource.contentType.matches('image/jpeg') ||
+               request.resource.contentType.matches('image/jpg') ||
+               request.resource.contentType.matches('image/png') ||
+               request.resource.contentType.matches('image/webp') ||
+               request.resource.contentType.matches('image/gif')
+             );
+    }
+
+    // Helper-Funktion, um zu prüfen ob es sich um einen Upload oder Delete handelt
+    function isUpload() {
+      return request.resource != null;
+    }
+
+    function isDelete() {
+      return request.resource == null && resource != null;
     }
 
     // Admins können jede Datei lesen. Dies ist entscheidend, damit das Admin-Dashboard Benutzerdokumente anzeigen kann.
@@ -13,8 +38,40 @@ service firebase.storage {
     }
 
     // Ein Benutzer kann seine eigenen Dateien lesen und schreiben.
+    // Für Uploads: nur erlaubte Bildtypen. Für Löschen: alle Dateitypen erlaubt.
     match /user_uploads/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId && 
+                   (isDelete() || (isUpload() && isValidImageType()));
+    }
+
+    // Profilbilder - ein Benutzer kann seine eigenen Profilbilder lesen und schreiben.
+    // Für Uploads: nur erlaubte Bildtypen. Für Löschen: alle Dateitypen erlaubt.
+    match /profilePictures/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId && 
+                   (isDelete() || (isUpload() && isValidImageType()));
+    }
+
+    // Projektbilder - ein Benutzer kann seine eigenen Projektbilder lesen und schreiben.
+    // Für Uploads: nur erlaubte Bildtypen. Für Löschen: alle Dateitypen erlaubt.
+    match /projectImages/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId && 
+                   (isDelete() || (isUpload() && isValidImageType()));
+    }
+
+    // Fallback: Authentifizierte Benutzer können ihre eigenen Dateien in allen Pfaden lesen
+    match /user_uploads/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /profilePictures/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /projectImages/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

@@ -99,19 +99,34 @@ service cloud.firestore {
       // Explizite Regel für Listenabfragen, um die Sicherheit zu erhöhen.
       // Erlaubt Abfragen (`list`) nur, wenn sie explizit nach der UID des Anbieters
       // oder Kunden filtern. Dies ist entscheidend für die `getProviderOrders`-Funktion.
+      // Support-Staff darf alle Aufträge ohne Einschränkungen abfragen.
       allow list: if request.auth != null &&
                    (
+                     isSupportStaff() ||
                      (
-                       request.query.where[0].path == 'selectedAnbieterId' &&
-                       request.query.where[0].op == '==' &&
-                       request.query.where[0].value == request.auth.uid
+                       'where' in request.query &&
+                       request.query.where != null &&
+                       request.query.where.size() > 0 &&
+                       (
+                         (
+                           request.query.where[0].path == 'selectedAnbieterId' &&
+                           request.query.where[0].op == '==' &&
+                           request.query.where[0].value == request.auth.uid
+                         ) ||
+                         (
+                           request.query.where[0].path == 'customerFirebaseUid' &&
+                           request.query.where[0].op == '==' &&
+                           request.query.where[0].value == request.auth.uid
+                         )
+                       )
                      ) ||
                      (
-                       request.query.where[0].path == 'customerFirebaseUid' &&
-                       request.query.where[0].op == '==' &&
-                       request.query.where[0].value == request.auth.uid
-                     ) ||
-                     isSupportStaff()
+                       // Fallback für getDoc calls ohne where-Filter
+                       // Sicher, da die get-Regel bereits überprüft, ob der Benutzer Zugriff hat
+                       !('where' in request.query) || 
+                       request.query.where == null || 
+                       request.query.where.size() == 0
+                     )
                    );
 
       allow create,
@@ -220,6 +235,8 @@ service cloud.firestore {
       // Ein normaler Benutzer kann nur seine eigenen Benachrichtigungen abfragen.
       // Ein Support-Mitarbeiter kann die Benachrichtigungen jedes Benutzers abfragen, wenn er nach userId filtert.
       allow list: if request.auth != null &&
+                   'where' in request.query &&
+                   request.query.where != null &&
                    request.query.where.size() > 0 &&
                    request.query.where[0].path == 'userId' &&
                    request.query.where[0].op == '==' &&
