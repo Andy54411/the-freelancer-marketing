@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { FiLoader, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, ArrowLeft as FiArrowLeft } from 'lucide-react';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
 import CompanyProfileDetail from './components/CompanyProfileDetail';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from './components/DateTimeSelectionPopup';

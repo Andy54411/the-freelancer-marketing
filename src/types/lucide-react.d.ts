@@ -125,6 +125,8 @@ declare module 'lucide-react' {
   export const FiCalendar: LucideIcon;
   export const FiGrid: LucideIcon;
   export const FiSearch: LucideIcon;
+  export const MapPin: LucideIcon;
+  export const CreditCard: LucideIcon;
 
 
 

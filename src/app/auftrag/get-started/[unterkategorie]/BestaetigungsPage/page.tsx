@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { FiLoader, FiAlertCircle, FiMapPin, FiCreditCard } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, MapPin as FiMapPin, CreditCard as FiCreditCard } from 'lucide-react';
 import BestaetigungsContent from './components/BestaetigungsContent';
 import { StripeCardCheckout } from '@/components/CheckoutForm';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react'; // useMemo entfernt
-import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import { OrderSummary } from './OrderSummary';
 import { DateTimeSelectionPopup } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
 import { Textarea } from '@/components/ui/textarea';

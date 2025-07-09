@@ -3,7 +3,7 @@
 
 import { useSearchParams, useParams } from 'next/navigation';
 import React, { useState, useMemo, useCallback } from 'react';
-import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import AnbieterDetailsFetcher from './AnbieterDetailsFetcher';
 import { PAGE_LOG, PAGE_WARN, PAGE_ERROR, TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
 // FEHLER BEHOBEN: 'format' zu den Importen hinzugefügt
