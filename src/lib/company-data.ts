@@ -6,9 +6,19 @@ export interface CompanyData {
 }
 
 export async function getAllCompanies() {
-    const companiesSnapshot = await db.collection('companies').get();
-    const companies = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return companies;
+    try {
+        const companiesSnapshot = await db.collection('companies').get();
+        const companies = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return companies;
+    } catch (error) {
+        // Logging mit Kontext für Debugging
+        console.error('[getAllCompanies] Fehler beim Laden der Firmen:', {
+            error,
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString(),
+        });
+        throw error;
+    }
 }
 
 export async function getCompanyData(id: string): Promise<CompanyData | null> {
