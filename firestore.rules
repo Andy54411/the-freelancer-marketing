@@ -72,9 +72,12 @@ service cloud.firestore {
     // --- companies Collection ---
     match /companies/{companyId} {
       // Admins/Support können jedes Firmendokument lesen.
-      // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
-      allow get: if isSupportStaff() || request.auth != null;
-      // Firmenliste darf von allen eingeloggten Nutzern abgerufen werden
+      // HINWEIS: Die Regel `isSupportStaff()` impliziert bereits `request.auth != null`.
+      // Die Regel wurde vereinfacht. JEDER eingeloggte Nutzer kann Firmendetails lesen.
+      // Für einen öffentlichen Logo-Slider (ohne Login) müsste die Regel `allow get: if true;` lauten
+      // oder auf ein öffentliches Feld prüfen, z.B. `resource.data.isPublic == true`.
+      allow get: if request.auth != null;
+      // Firmenliste darf von allen eingeloggten Nutzern abgerufen werden.
       allow list: if request.auth != null;
 
       // Ein Benutzer kann sein eigenes Firmendokument erstellen.
