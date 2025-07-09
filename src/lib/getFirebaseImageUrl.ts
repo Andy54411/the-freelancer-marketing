@@ -8,9 +8,9 @@
 export function getFirebaseImageUrl(storagePathOrUrl: string): string {
     if (!storagePathOrUrl) return '/default-avatar.jpg';
     if (storagePathOrUrl.startsWith('http')) return storagePathOrUrl;
-    // Nur kodieren, wenn noch nicht kodiert
-    const needsEncoding = !storagePathOrUrl.includes('%2F');
-    const encodedPath = needsEncoding ? encodeURIComponent(storagePathOrUrl) : storagePathOrUrl;
+    // Nur kodieren, wenn noch nicht kodiert (keine doppelten %2F)
+    const decodedPath = decodeURIComponent(storagePathOrUrl);
+    const encodedPath = encodeURIComponent(decodedPath);
     const bucket = "tilvo-f142f.firebasestorage.app";
     return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
 }

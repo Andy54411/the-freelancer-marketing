@@ -62,9 +62,11 @@ export function OrderSummary({
       : anbieterDetails.hourlyRate?.toString() || 'Preis n/a';
 
   // Debug: Logge die Bild-URL und den Wert von profilePictureURL für Fehlersuche
-  const imageUrl = anbieterDetails.profilePictureURL
-    ? getFirebaseImageUrl(anbieterDetails.profilePictureURL)
-    : '/default-avatar.jpg';
+  // Bild-URL: Immer vollständige URL an <Image> übergeben
+  const imageUrl =
+    anbieterDetails.profilePictureURL && anbieterDetails.profilePictureURL.startsWith('http')
+      ? anbieterDetails.profilePictureURL
+      : getFirebaseImageUrl(anbieterDetails.profilePictureURL);
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line no-console
     console.log('Image-URL:', imageUrl);
