@@ -4,7 +4,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiUser } from 'react-icons/fi';
+import { User as FiUser } from 'lucide-react';
 
 interface CustomerInfoCardProps {
     customerName: string;

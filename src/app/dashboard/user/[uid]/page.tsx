@@ -7,7 +7,7 @@ import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, orderBy, documentId } from 'firebase/firestore';
 import { db, functions, auth, onAuthStateChanged, signOut, type User as FirebaseUser } from '@/firebase/clients';
 import { WelcomeBox } from './components/WelcomeBox';
-import { FiLoader, FiAlertCircle, FiMessageSquare, FiPlusCircle, FiHelpCircle } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, MessageSquare as FiMessageSquare, PlusCircle as FiPlusCircle, HelpCircle as FiHelpCircle } from 'lucide-react';
 import Modal from './components/Modal';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';

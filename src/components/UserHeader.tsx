@@ -7,11 +7,11 @@ import Link from 'next/link'; // Importiere Link
 import { User, getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
 import { app, storage, db } from '@/firebase/clients';
 import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; // Firebase Storage Functions
-import { doc, getDoc, collection, query, where, onSnapshot, QuerySnapshot, orderBy, limit, updateDoc, Timestamp } from 'firebase/firestore'; // Query-Imports werden für Notifications noch gebraucht
+import { doc, getDoc, collection, query, where, onSnapshot, QuerySnapshot, orderBy, limit, updateDoc, Timestamp } from 'firebase/firestore';
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
 import { Logo } from '@/components/logo'; // Logo component
 import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
-import { FiSearch, FiBell, FiMail, FiHelpCircle, FiChevronDown, FiGrid, FiBriefcase, FiUsers, FiAward, FiSettings, FiLogOut, FiFilePlus, FiInbox, FiCheckSquare, FiUser, FiPackage, FiInfo } from 'react-icons/fi'; // Icons, added FiPackage, FiInfo
+import { Search as FiSearch, Bell as FiBell, Mail as FiMail, HelpCircle as FiHelpCircle, ChevronDown as FiChevronDown, Grid as FiGrid, Briefcase as FiBriefcase, Users as FiUsers, Award as FiAward, Settings as FiSettings, LogOut as FiLogOut, FilePlus as FiFilePlus, Inbox as FiInbox, CheckSquare as FiCheckSquare, User as FiUser, Package as FiPackage, Info as FiInfo } from 'lucide-react';
 import { useAuth, HeaderChatPreview } from '@/contexts/AuthContext'; // HeaderChatPreview aus dem Context importieren
 const auth = getAuth(app);
 

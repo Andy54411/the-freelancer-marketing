@@ -1,6 +1,13 @@
 "use client";
 
-import { FiBriefcase, FiUser, FiCreditCard, FiCheckCircle, FiAlertCircle, FiShield } from 'react-icons/fi';
+import {
+    Briefcase as FiBriefcase,
+    User as FiUser,
+    CreditCard as FiCreditCard,
+    CheckCircle as FiCheckCircle,
+    AlertCircle as FiAlertCircle,
+    Shield as FiShield
+} from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { DocumentViewer } from './DocumentViewer';

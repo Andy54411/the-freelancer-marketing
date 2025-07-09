@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FiFilter, FiMoreVertical, FiPackage, FiClock, FiSearch, FiChevronDown, FiInbox, FiLoader, FiFolder, FiUser } from 'react-icons/fi';
+import { Filter as FiFilter, MoreVertical as FiMoreVertical, Package as FiPackage, Clock as FiClock, Search as FiSearch, ChevronDown as FiChevronDown, Inbox as FiInbox, Loader2 as FiLoader, Folder as FiFolder, User as FiUser } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { httpsCallable } from 'firebase/functions';

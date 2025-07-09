@@ -13,7 +13,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "@/firebase/clients";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
-import { FiGrid, FiCalendar } from "react-icons/fi";
+import { Grid as FiGrid, Calendar as FiCalendar } from "lucide-react";
 import { OrderSummaryDrawer } from "@/components/OrderSummaryDrawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CompanyCalendar from "@/components/CompanyCalendar";

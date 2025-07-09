@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 
-import { FiLoader } from 'react-icons/fi';
+import { Loader2 as FiLoader } from 'lucide-react';
 import CompanyCard from './CompanyCard';
 import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/types/types';
 

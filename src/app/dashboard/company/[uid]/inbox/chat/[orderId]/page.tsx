@@ -9,7 +9,7 @@ import { db, functions } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Icons
-import { FiLoader, FiAlertCircle, FiArrowLeft, FiFileText, FiCalendar, FiDollarSign, FiClock, FiSlash } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, ArrowLeft as FiArrowLeft, FileText as FiFileText, Calendar as FiCalendar, DollarSign as FiDollarSign, Clock as FiClock, Slash as FiSlash } from 'lucide-react';
 
 import UserInfoCard from '@/components/UserInfoCard';
 import ChatComponent from '@/components/ChatComponent';

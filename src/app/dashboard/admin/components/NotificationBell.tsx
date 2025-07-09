@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiBell, FiMail } from 'react-icons/fi';
+import { Bell as FiBell, Mail as FiMail } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,

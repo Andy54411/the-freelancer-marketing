@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { FiLoader } from 'react-icons/fi';
+import { Loader2 as FiLoader } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();

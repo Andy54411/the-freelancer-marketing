@@ -5,7 +5,7 @@ import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions';
 import { app } from '@/firebase/clients';
-import { FiLoader, FiAlertCircle, FiUser } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, User as FiUser } from 'lucide-react';
 
 // --- Functions Initialisierung (jetzt wird getReviewsCallable nur bei Bedarf genutzt) ---
 // Wir initialisieren hier NUR die functionsInstance, um sie später zu nutzen.

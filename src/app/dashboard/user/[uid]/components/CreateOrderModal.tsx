@@ -12,7 +12,7 @@ import { app } from '@/firebase/clients'; // Stellen Sie sicher, dass Ihre Fireb
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { FiCheckCircle } from 'react-icons/fi';
+import { CheckCircle as FiCheckCircle } from 'lucide-react';
 
 import { SimpleSelect } from './SimpleSelect';
 import OrderAddressSelection from './OrderAddressSelection';

@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard'; // Hook zum Abrufen der Unternehmensdaten und des Zustands
-import { FiLoader } from 'react-icons/fi'; // Lade-Symbol
+import { Loader2 as FiLoader } from 'lucide-react'; // Lade-Symbol
 
 const isNonEmptyString = (val: unknown): val is string =>
     typeof val === "string" && val.trim() !== "";

@@ -1,12 +1,12 @@
 'use client'
 
 import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react"
+  CreditCard as IconCreditCard,
+  MoreVertical as IconDotsVertical,
+  LogOut as IconLogout,
+  Bell as IconNotification,
+  UserCircle as IconUserCircle,
+} from "lucide-react"
 
 import {
   Avatar,

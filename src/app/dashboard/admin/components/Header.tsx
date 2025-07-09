@@ -2,7 +2,7 @@
 
 import React from "react";
 import NotificationBell from "./NotificationBell";
-import { FiLogOut } from "react-icons/fi";
+import { LogOut as FiLogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";

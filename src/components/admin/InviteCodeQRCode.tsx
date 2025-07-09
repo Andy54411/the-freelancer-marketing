@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Button } from '@/components/ui/button';
-import { FiCopy, FiCheck } from 'react-icons/fi';
+import { Copy as FiCopy, Check as FiCheck } from 'lucide-react';
 
 interface InviteCodeQRCodeProps {
     inviteCode: string;

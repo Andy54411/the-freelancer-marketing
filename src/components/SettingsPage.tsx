@@ -9,7 +9,7 @@ import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
 import LogoForm from '@/components/dashboard_setting/logo';
 import { PAGE_ERROR } from '@/lib/constants'; // Stellen Sie sicher, dass dies korrekt ist
-import { FiLoader, FiSave, FiX } from 'react-icons/fi';
+import { Loader2 as FiLoader, Save as FiSave, X as FiX } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
 import Stripe from 'stripe';

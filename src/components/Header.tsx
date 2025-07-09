@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'; // Import memo
 import AppHeaderNavigation from './AppHeaderNavigation'; // Pfad anpassen, falls nötig
 import Link from 'next/link'; // Importiere Link
-import { FiSearch, FiBell, FiMail, FiHelpCircle, FiChevronDown, FiGrid, FiBriefcase, FiUsers, FiAward, FiSettings, FiLogOut, FiFilePlus, FiInbox, FiCheckSquare, FiUser } from 'react-icons/fi'; // FiUser hinzugefügt
+import { Search as FiSearch, Bell as FiBell, Mail as FiMail, HelpCircle as FiHelpCircle, ChevronDown as FiChevronDown, Grid as FiGrid, Briefcase as FiBriefcase, Users as FiUsers, Award as FiAward, Settings as FiSettings, LogOut as FiLogOut, FilePlus as FiFilePlus, Inbox as FiInbox, CheckSquare as FiCheckSquare, User as FiUser } from 'lucide-react'; // FiUser hinzugefügt
 import { User, getAuth, signOut } from 'firebase/auth'; // Für Benutzer-Infos und Logout
 import { app, storage, db } from '@/firebase/clients'; // Firebase App-Instanz, Storage und Firestore DB
 import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen

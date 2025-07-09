@@ -5,11 +5,11 @@ import { useAuth } from '@/contexts/AuthContext'; // useAuth importieren
 import { collection, query, where, getDocs } from 'firebase/firestore'; // onSnapshot, doc, getDoc entfernt
 import { db } from '@/firebase/clients';
 import {
-  IconTrendingUp,
-  IconPackage,
-  IconMail,
-  IconCurrencyEuro,
-} from "@tabler/icons-react"
+  TrendingUp as IconTrendingUp,
+  Package as IconPackage,
+  Mail as IconMail,
+  Euro as IconCurrencyEuro,
+} from "lucide-react"
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge"
 import {

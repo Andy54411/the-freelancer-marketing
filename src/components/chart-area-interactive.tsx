@@ -7,7 +7,7 @@ import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { functions } from "@/firebase/clients"
 import { useAuth } from "@/contexts/AuthContext"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { FiAlertCircle, FiLoader } from "react-icons/fi"
+import { AlertCircle as FiAlertCircle, Loader2 as FiLoader } from "lucide-react"
 import {
   Card,
   CardAction,

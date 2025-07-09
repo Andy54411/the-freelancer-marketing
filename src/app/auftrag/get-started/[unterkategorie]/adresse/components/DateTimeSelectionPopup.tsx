@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { FiX, FiMessageCircle } from 'react-icons/fi';
+import { X as FiX, MessageSquare as FiMessageCircle } from 'lucide-react';
 import { DateRange, SelectSingleEventHandler, SelectRangeEventHandler } from 'react-day-picker';
 import { format, isValid, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';

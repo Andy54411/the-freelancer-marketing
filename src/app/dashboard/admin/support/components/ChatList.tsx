@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { FiUser, FiLoader, FiCpu } from 'react-icons/fi'; // FiCpu für Bot-Icon
+import { User as FiUser, Loader2 as FiLoader, Cpu as FiCpu } from 'lucide-react'; // FiCpu für Bot-Icon
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -54,7 +54,9 @@ const ChatList: React.FC<ChatListProps> = ({ chats, selectedChatId, onSelectChat
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <p className={`text-sm truncate ${chat.lastMessage && !chat.lastMessage.isReadBySupport && chat.lastMessage.senderId !== user?.uid ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>{chat.lastMessage?.text}</p>
-                                    {chat.status === 'bot' && <FiCpu className="text-teal-500 ml-2 flex-shrink-0" title="Wird von Bot bearbeitet" />}
+                                    {chat.status === 'bot' && (
+                                        <span title="Wird von Bot bearbeitet"><FiCpu className="text-teal-500 ml-2 flex-shrink-0" /></span>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -3,9 +3,13 @@
 
 import Image from 'next/image';
 import {
-  FiStar, FiTool, FiTruck, FiMessageCircle,
-  FiChevronDown, FiChevronUp
-} from 'react-icons/fi';
+  Star as FiStar,
+  Wrench as FiTool,
+  Truck as FiTruck,
+  MessageSquare as FiMessageCircle,
+  ChevronDown as FiChevronDown,
+  ChevronUp as FiChevronUp,
+} from 'lucide-react';
 import LanguageTags from '@/components/LanguageTags';
 import { renderStars } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/utils';
 

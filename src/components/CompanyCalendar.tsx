@@ -11,7 +11,7 @@ import deLocale from '@fullcalendar/core/locales/de';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,

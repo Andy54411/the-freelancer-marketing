@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
+import { X as FiX } from 'lucide-react';
 import { useRegistration } from '@/contexts/Registration-Context'; // Pfad anpassen
 
 interface RepresentativePersonalDataModalProps {

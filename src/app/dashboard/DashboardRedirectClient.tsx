@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
-import { FiLoader } from "react-icons/fi";
+import { Loader2 as FiLoader } from "lucide-react";
 
 export default function DashboardRedirectClient() {
   const { user, loading } = useAuth();

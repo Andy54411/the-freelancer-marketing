@@ -19,7 +19,7 @@ import {
     setDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiSend, FiLoader } from 'react-icons/fi';
+import { Send as FiSend, Loader2 as FiLoader } from 'lucide-react';
 import { Badge } from '@/components/ui/badge'; // Badge für Statusanzeige importieren
 
 // Interface für ein Chat-Nachrichten-Dokument in Firestore

@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { FiCheckCircle, FiXCircle, FiExternalLink } from "react-icons/fi";
+import { CheckCircle as FiCheckCircle, XCircle as FiXCircle, ExternalLink as FiExternalLink } from "lucide-react";
 import Link from "next/link";
 
 interface DocumentViewerProps {

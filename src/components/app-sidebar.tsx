@@ -6,22 +6,22 @@ import { getDoc, doc } from "firebase/firestore";
 import { listAll, getDownloadURL, ref } from "firebase/storage";
 import { db, storage } from "../firebase/clients";
 import {
-  IconCamera,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-react";
+  Camera as IconCamera,
+  BarChart as IconChartBar,
+  LayoutDashboard as IconDashboard,
+  Database as IconDatabase,
+  FileJson2 as IconFileAi,
+  FileText as IconFileDescription,
+  FileText as IconFileWord,
+  Folder as IconFolder,
+  HelpCircle as IconHelp,
+  PanelTop as IconInnerShadowTop,
+  History as IconListDetails,
+  FileBarChart as IconReport,
+  Search as IconSearch,
+  Settings as IconSettings,
+  Users as IconUsers,
+} from "lucide-react";
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -193,10 +193,9 @@ export function AppSidebar({ setView, activeView = "dashboard", ...sidebarProps 
         url: "#",
         icon: IconSettings,
         onClick: () => setView?.("settings"),
-        isActive: activeView === "settings",
       },
-      { title: "Get Help", url: "#", icon: IconHelp, isActive: false },
-      { title: "Search", url: "#", icon: IconSearch, isActive: false },
+      { title: "Get Help", url: "#", icon: IconHelp },
+      { title: "Search", url: "#", icon: IconSearch },
     ],
     documents: [
       { name: "Data Library", url: "#", icon: IconDatabase },

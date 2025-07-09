@@ -4,8 +4,8 @@ import Image from 'next/image'; // Import next/image
 import React, { useState, useEffect } from "react";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db, auth } from "@/firebase/clients"; // Importiere auth von hier
-import { FiAlertCircle, FiCheckCircle } from "react-icons/fi";
+import { db, auth } from "@/firebase/clients";
+import { AlertCircle as FiAlertCircle, CheckCircle as FiCheckCircle } from "lucide-react";
 import QRCode from "react-qr-code"; // Verwende 'react-qr-code'
 
 interface PopupWithUploadProps {

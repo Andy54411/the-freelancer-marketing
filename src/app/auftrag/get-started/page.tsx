@@ -8,7 +8,7 @@ import { Combobox } from '@/components/combobox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ProgressBar from '@/components/ProgressBar';
-import { FiInfo, FiX, FiCheck } from 'react-icons/fi';
+import { Info as FiInfo, X as FiX, Check as FiCheck } from 'lucide-react';
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { app } from '@/firebase/clients';
 import { categories, type Category } from '@/lib/categoriesData'; // Importiere Kategorien aus der zentralen Datei

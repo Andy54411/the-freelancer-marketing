@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiLoader, FiSend } from 'react-icons/fi';
+import { Loader2 as FiLoader, Send as FiSend } from 'lucide-react';
 import ChatMessageBubble from '@/app/dashboard/user/[uid]/components/Support/ChatMessageBubble';
 import type { ChatMessage } from '@/app/dashboard/user/[uid]/components/Support/SupportChatInterface';
 

@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  FiCalendar,
-  FiClock,
-  FiUser,
-  FiTruck,
-  FiLoader,
-} from 'react-icons/fi';
+  Calendar as FiCalendar,
+  Clock as FiClock,
+  User as FiUser,
+  Truck as FiTruck,
+  Loader2 as FiLoader,
+} from 'lucide-react';
 import Image from 'next/image';
 import type {
   Company as AnbieterDetails,

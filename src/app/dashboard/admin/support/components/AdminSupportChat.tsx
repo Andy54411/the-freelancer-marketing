@@ -6,7 +6,7 @@ import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestor
 import { db } from '@/firebase/clients';
 import ChatList from './ChatList';
 import { ChatWindow } from './ChatWindow';
-import { FiMessageSquare, FiLoader } from 'react-icons/fi';
+import { MessageSquare as FiMessageSquare, Loader2 as FiLoader } from 'lucide-react';
 
 export interface ChatSession {
     id: string;

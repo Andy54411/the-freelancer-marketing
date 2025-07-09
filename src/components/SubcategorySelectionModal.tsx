@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { FiX, FiChevronRight } from 'react-icons/fi';
+import { X as FiX, ChevronRight as FiChevronRight } from 'lucide-react';
 
 interface SubcategorySelectionModalProps {
     isOpen: boolean;

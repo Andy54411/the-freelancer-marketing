@@ -12,7 +12,7 @@ import {
   StripePaymentElementOptions,
   StripeAddressElementChangeEvent
 } from '@stripe/stripe-js';
-import { FiLoader, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { Loader2 as FiLoader, CheckCircle as FiCheckCircle, XCircle as FiXCircle } from 'lucide-react';
 import { PAGE_LOG, PAGE_ERROR } from '@/lib/constants';
 import { Label } from '@/components/ui/label'; // Label-Komponente importiert
 

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { FiRefreshCcw, FiLoader } from 'react-icons/fi';
+import { RefreshCcw as FiRefreshCcw, Loader2 as FiLoader } from 'lucide-react';
 import { PRICE_STEP } from '@/lib/constants'; // Stelle sicher, dass PRICE_STEP importiert wird
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 

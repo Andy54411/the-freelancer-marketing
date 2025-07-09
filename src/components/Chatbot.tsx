@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { FiMessageSquare, FiX, FiSend, FiLoader, FiUser, FiCpu } from 'react-icons/fi';
+import { MessageSquare as FiMessageSquare, X as FiX, Send as FiSend, Loader2 as FiLoader, User as FiUser, Cpu as FiCpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
 

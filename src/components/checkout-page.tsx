@@ -9,7 +9,7 @@ import {
   AddressElement
 } from '@stripe/react-stripe-js';
 import { StripePaymentElementOptions, StripeError, PaymentIntent } from '@stripe/stripe-js'; // PaymentIntent importieren
-import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 
 interface StripeCardCheckoutProps {
   taskAmount: number;

@@ -4,12 +4,12 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { useAuth, UserProfile } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { db, functions } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
 
 // Icons für UI
-import { FiLoader, FiAlertCircle, FiMessageSquare, FiArrowLeft, FiUser, FiAlertTriangle, FiSlash } from 'react-icons/fi';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, MessageSquare as FiMessageSquare, ArrowLeft as FiArrowLeft, AlertTriangle as FiAlertTriangle, Slash as FiSlash } from 'lucide-react';
 
 // Komponenten
 import UserInfoCard from '@/components/UserInfoCard';

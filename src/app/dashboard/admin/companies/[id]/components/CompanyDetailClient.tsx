@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { processCompanyData } from '@/lib/company-utils';
 import ActionButtons from './ActionButtons';
-import { FiFileText, FiExternalLink, FiImage } from 'react-icons/fi';
+import { FileText as FiFileText, ExternalLink as FiExternalLink, Image as FiImage } from 'lucide-react';
 
 const DataRow = ({ label, value }: { label: string; value: unknown }) => {
     if (value === null || value === undefined || value === '') return null;

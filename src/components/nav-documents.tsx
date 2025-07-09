@@ -1,12 +1,12 @@
 "use client"
 
 import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react"
+  MoreHorizontal as IconDots,
+  Folder as IconFolder,
+  Share2 as IconShare3,
+  Trash2 as IconTrash,
+  type LucideIcon as Icon,
+} from "lucide-react"
 
 import {
   DropdownMenu,

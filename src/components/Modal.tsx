@@ -2,7 +2,7 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { FiX } from 'react-icons/fi';
+import { X as FiX } from 'lucide-react';
 
 interface ModalProps {
     onClose: () => void;

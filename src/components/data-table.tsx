@@ -34,8 +34,18 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { CSS } from "@dnd-kit/utilities" // FiLoader importiert für Ladeanzeige
-import { IconGripVertical, IconLayoutColumns, IconChevronDown, IconPlus, IconChevronsLeft, IconChevronLeft, IconChevronRight, IconChevronsRight } from "@tabler/icons-react"
+import { CSS } from "@dnd-kit/utilities"
+import {
+  GripVertical as IconGripVertical,
+  Columns as IconLayoutColumns,
+  ChevronDown as IconChevronDown,
+  Plus as IconPlus,
+  ChevronsLeft as IconChevronsLeft,
+  ChevronLeft as IconChevronLeft,
+  ChevronRight as IconChevronRight,
+  ChevronsRight as IconChevronsRight,
+  Loader2 as FiLoader,
+} from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -74,7 +84,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
-import { FiLoader } from "react-icons/fi"
 
 // Create a separate component for the drag handle
 function DragHandle<TData>({ row }: { row: Row<TData> }) {
