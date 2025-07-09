@@ -66,7 +66,7 @@ export function OrderSummary({
   const imageUrl =
     anbieterDetails.profilePictureURL && anbieterDetails.profilePictureURL.startsWith('http')
       ? anbieterDetails.profilePictureURL
-      : getFirebaseImageUrl(anbieterDetails.profilePictureURL);
+      : getFirebaseImageUrl(anbieterDetails.profilePictureURL ?? '');
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line no-console
     console.log('Image-URL:', imageUrl);
