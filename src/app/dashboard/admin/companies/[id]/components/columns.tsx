@@ -38,18 +38,22 @@ export const columns: ColumnDef<CompanyData>[] = [
     {
         id: 'actions',
         cell: ({ row }) => {
-            const router = useRouter();
             const company = row.original;
-
-            const handleViewDetails = () => {
-                router.push(`/dashboard/admin/companies/${company.id}`);
-            };
-
-            return (
-                <Button variant="outline" size="sm" onClick={handleViewDetails}>
-                    Details ansehen
-                </Button>
-            );
+            return <ActionCell company={company} />;
         },
     },
 ];
+
+function ActionCell({ company }: { company: any }) {
+    const router = useRouter();
+
+    const handleViewDetails = () => {
+        router.push(`/dashboard/admin/companies/${company.id}`);
+    };
+
+    return (
+        <Button variant="outline" size="sm" onClick={handleViewDetails}>
+            Details ansehen
+        </Button>
+    );
+}

@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore"; // NEU: Direkter Import von FieldValue
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { getSystemInstruction } from "./shared/chatbot-utils";
+import { analyzeQuestion, checkEscalationTriggers, generateEscalationMessage, recordQuestion } from "./shared/learning-utils";
 
 // Initialisiere die Admin-App, falls noch nicht geschehen
 if (admin.apps.length === 0) {
@@ -56,9 +57,79 @@ export const handleSupportMessage = onDocumentCreated("supportChats/{chatId}/mes
     }
 
     try {
-        // Lade die dynamische Systemanweisung und den Chatverlauf
-        // KORREKTUR: Verwende die geteilte Funktion und übergebe die DB-Instanz und den Logger.
-        const systemInstruction = await getSystemInstruction(db, logger.error);
+        // Sammle Chat-Historie für Kontext
+        const messagesQuery = await chatRef.collection("messages")
+            .orderBy("timestamp", "asc")
+            .get();
+
+        const history = messagesQuery.docs.map(doc => {
+            const data = doc.data();
+            return data.text;
+        });
+
+        // Analysiere die Nachricht für Lernen und Eskalation
+        const userMessage = messageData.text;
+        const analysis = analyzeQuestion(userMessage);
+
+        // Prüfe Eskalationskriterien
+        const customerMessageCount = messagesQuery.docs.filter(doc =>
+            doc.data().senderType === 'kunde'
+        ).length;
+
+        const escalationCheck = await checkEscalationTriggers(
+            db,
+            userMessage,
+            analysis.category,
+            analysis.complexity,
+            analysis.sentiment,
+            customerMessageCount,
+            logger.error
+        );
+
+        // Wenn Eskalation nötig ist, sende Eskalationsnachricht
+        if (escalationCheck.shouldEscalate) {
+            const escalationMessage = generateEscalationMessage(escalationCheck.reason!);
+
+            // Speichere Eskalationsnachricht
+            await chatRef.collection("messages").add({
+                text: escalationMessage,
+                timestamp: FieldValue.serverTimestamp(),
+                senderType: "bot",
+                senderName: "Tasko KI-Support",
+                messageType: "escalation_notice",
+                escalationReason: escalationCheck.reason
+            });
+
+            // Markiere Chat als eskaliert
+            await chatRef.update({
+                status: "escalated",
+                escalationReason: escalationCheck.reason,
+                escalationTime: FieldValue.serverTimestamp()
+            });
+
+            // Benachrichtige Support-Team
+            await db.collection('support_notifications').add({
+                type: 'escalation_requested',
+                chatId: chatId,
+                reason: escalationCheck.reason,
+                priority: 'high',
+                status: 'pending',
+                customerMessage: userMessage,
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            logger.log(`Chat ${chatId} eskaliert: ${escalationCheck.reason}`);
+            return null;
+        }
+
+        // Lade die dynamische Systemanweisung und übergebe die aktuelle Nachricht und Historie
+        const systemInstruction = await getSystemInstruction(
+            db,
+            logger.error,
+            messageData.text,
+            history
+        );
+
         const model = getGenAIClient().getGenerativeModel({
             model: "gemini-1.5-flash",
             systemInstruction: systemInstruction,
@@ -68,11 +139,7 @@ export const handleSupportMessage = onDocumentCreated("supportChats/{chatId}/mes
             ]
         });
 
-        const messagesQuery = await chatRef.collection("messages")
-            .orderBy("timestamp", "asc")
-            .get();
-
-        const history = messagesQuery.docs.map(doc => {
+        const geminiHistory = messagesQuery.docs.map(doc => {
             const data = doc.data();
             // Konvertiere Firestore-Nachrichten in das von Gemini erwartete Format
             return {
@@ -82,9 +149,9 @@ export const handleSupportMessage = onDocumentCreated("supportChats/{chatId}/mes
         });
 
         // Die letzte Nachricht ist die aktuelle Benutzernachricht, die nicht in der Historie sein sollte.
-        history.pop();
+        geminiHistory.pop();
 
-        const chatSession = model.startChat({ history });
+        const chatSession = model.startChat({ history: geminiHistory });
         const result = await chatSession.sendMessage(messageData.text);
         const botResponseText = result.response.text();
 
@@ -129,6 +196,23 @@ export const handleSupportMessage = onDocumentCreated("supportChats/{chatId}/mes
         }
 
         await chatRef.update(updatePayload);
+
+        // Speichere Analytics für die Frage (nach erfolgreicher Antwort)
+        try {
+            const resolutionTime = Date.now() - (messageData.timestamp?.toMillis() || Date.now());
+
+            await recordQuestion(
+                db,
+                userMessage,
+                analysis.category,
+                resolutionTime / 1000, // In Sekunden
+                shouldEscalate,
+                [], // Order IDs werden bereits in getSystemInstruction extrahiert
+                logger.error
+            );
+        } catch (analyticsError) {
+            logger.error("Fehler beim Speichern der Analytics:", analyticsError);
+        }
 
         return logger.log(`Bot-Antwort für Chat ${chatId} gesendet.`);
     } catch (error) {

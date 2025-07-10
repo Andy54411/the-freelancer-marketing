@@ -4,20 +4,17 @@
 import { Label } from '@/components/ui/label';
 import { DateRange } from 'react-day-picker';
 import React, { useMemo, useRef, useEffect } from 'react';
-
+import { Autocomplete } from '@react-google-maps/api';
 
 // Importiere die spezifischen Komponenten
 import DateSelector from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters_components/DateSelector';
 import DateTimeSelector from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters_components/DateTimeSelector';
-import PriceFilter from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters_components/PriceFilter'; // NEU: Importiere PriceFilter
+import PriceFilter from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters_components/PriceFilter';
 import { categories } from '@/lib/categories';
 
-// NEU: Importiere PriceDistributionData von PriceFilter.tsx
+// Importiere PriceDistributionData von PriceFilter.tsx
 import type { PriceDistributionData } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters_components/PriceFilter';
 
-
-// renderPriceHistogram wird jetzt in PriceFilter.tsx definiert, also hier entfernt
-// const renderPriceHistogram = (data: PriceDistributionData[], loading: boolean) => { /* ... */ };
 
 interface SidebarFiltersProps {
   city: string;
@@ -38,7 +35,7 @@ interface SidebarFiltersProps {
   resetPriceFilter: () => void;
   loadingSubcategoryData: boolean;
   averagePriceForSubcategory: number | null;
-  priceDistribution: PriceDistributionData[] | null; // Dieser Typ ist jetzt importiert
+  priceDistribution: PriceDistributionData[] | null;
   selectedSubcategory: string | null;
   setFinalSelectedTime: (time: string) => void;
 }
@@ -79,24 +76,103 @@ export default function SidebarFilters({
 
   const autocompleteInputRef = useRef<HTMLInputElement>(null);
 
-  // Effekt zum Initialisieren der Autocomplete-Instanz
-  useEffect(() => {
-    if (isLoaded && autocompleteInputRef.current) {
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        autocompleteInputRef.current,
-        {
-          componentRestrictions: { country: ["de", "at", "ch"] },
-          fields: ["address_components", "geometry", "formatted_address", "name"],
+  // Lokaler Event-Handler für place_changed mit direkter Postleitzahl-Aktualisierung
+  const handlePlaceChanged = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    const place = autocompleteInstance.getPlace();
+
+    if (place && place.address_components) {
+      let foundCity = '';
+      let foundPostalCode = '';
+
+      // Extrahiere Stadt und Postleitzahl aus den Adresskomponenten
+      place.address_components.forEach((component) => {
+        const types = component.types;
+
+        // Stadt/Ort
+        if (types.includes('locality')) {
+          foundCity = component.long_name;
+        } else if (types.includes('postal_town') && !foundCity) {
+          foundCity = component.long_name;
+        } else if (types.includes('sublocality') && !foundCity) {
+          foundCity = component.long_name;
+        } else if (types.includes('administrative_area_level_2') && !foundCity) {
+          foundCity = component.long_name;
         }
-      );
-      onLoad(autocomplete);
-      autocomplete.addListener('place_changed', onPlaceChanged);
+
+        // Postleitzahl
+        if (types.includes('postal_code')) {
+          foundPostalCode = component.long_name;
+        }
+      });
+
+      // Aktualisiere die lokalen Felder direkt
+      if (foundCity && foundCity !== city) {
+        setCity(foundCity);
+      }
+
+      if (foundPostalCode && foundPostalCode !== postalCode) {
+        setPostalCode(foundPostalCode);
+      }
+    }
+
+    // Rufe auch den übergeordneten Callback auf
+    onPlaceChanged();
+  };
+
+  // Effekt zum Initialisieren der Autocomplete-Instanz - VOLLSTÄNDIG STABILISIERT
+  useEffect(() => {
+    if (isLoaded && autocompleteInputRef.current && window.google?.maps?.places?.Autocomplete) {
+      let autocompleteInstance: google.maps.places.Autocomplete | null = null;
+
+      try {
+        // Unterdrücke Google Maps Autocomplete Deprecation-Warnungen temporär
+        const originalConsoleWarn = console.warn;
+        console.warn = (...args) => {
+          const message = args.join(' ');
+          if (message.includes('google.maps.places.Autocomplete is not available to new customers') ||
+            message.includes('PlaceAutocompleteElement')) {
+            return; // Ignoriere diese spezifische Warnung
+          }
+          originalConsoleWarn.apply(console, args);
+        };
+
+        autocompleteInstance = new window.google.maps.places.Autocomplete(
+          autocompleteInputRef.current,
+          {
+            componentRestrictions: { country: ["de", "at", "ch"] },
+            fields: ["address_components", "geometry", "formatted_address", "name"],
+          }
+        );
+
+        // Rufe onLoad direkt auf, um das autocomplete-Objekt zu setzen (ohne useCallback-Wrapper)
+        onLoad(autocompleteInstance);
+
+        // Event-Listener mit lokalem Handler für direkte Postleitzahl-Aktualisierung
+        const placeChangedListener = () => {
+          if (autocompleteInstance) {
+            handlePlaceChanged(autocompleteInstance);
+          }
+        };
+        autocompleteInstance.addListener('place_changed', placeChangedListener);
+
+        // console.warn wiederherstellen
+        console.warn = originalConsoleWarn;
+
+      } catch (error) {
+        console.error('Fehler beim Initialisieren der Autocomplete-Instanz:', error);
+      }
 
       return () => {
-        window.google.maps.event.clearInstanceListeners(autocomplete);
+        // Cleanup: Entferne alle Event Listener
+        if (autocompleteInstance && window.google?.maps?.event) {
+          window.google.maps.event.clearInstanceListeners(autocompleteInstance);
+        }
       };
     }
-  }, [isLoaded, onLoad, onPlaceChanged]);
+    // ESLint-disable um die Endlosschleife zu vermeiden - onLoad und onPlaceChanged werden als stabil angenommen
+    // handlePlaceChanged nutzt setCity und setPostalCode, aber diese sind stabil von der übergeordneten Komponente
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded]); // NUR isLoaded als Abhängigkeit
 
   return (
     <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 flex-shrink-0 self-start">
@@ -151,7 +227,7 @@ export default function SidebarFilters({
         </>
       )}
 
-      {/* Hier wird der gesamte Preisfilter-Bereich durch die neue Komponente ersetzt */}
+      {/* Preisfilter-Komponente */}
       <PriceFilter
         currentMaxPrice={currentMaxPrice}
         dynamicSliderMin={dynamicSliderMin}

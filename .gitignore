@@ -45,3 +45,7 @@ yarn-error.log*
 /Users/andystaudinger/Tasko/firebase-emulator-data
 .vercel
 .env.local
+.env.production
+.env.local
+firebase_functions/.env.tilvo-f142f
+.env.local

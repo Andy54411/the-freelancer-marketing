@@ -61,13 +61,14 @@ export function OrderSummary({
       ? `${anbieterDetails.hourlyRate.toFixed(2)} €/Std.`
       : anbieterDetails.hourlyRate?.toString() || 'Preis n/a';
 
-  // Debug: Logge die Bild-URL und den Wert von profilePictureURL für Fehlersuche
   // Bild-URL: Immer vollständige URL an <Image> übergeben
   const imageUrl =
     anbieterDetails.profilePictureURL && anbieterDetails.profilePictureURL.startsWith('http')
       ? anbieterDetails.profilePictureURL
       : getFirebaseImageUrl(anbieterDetails.profilePictureURL ?? '');
-  if (typeof window !== 'undefined') {
+
+  // Nur in Development-Modus loggen
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
     console.log('Image-URL:', imageUrl);
     // eslint-disable-next-line no-console
@@ -86,16 +87,20 @@ export function OrderSummary({
             width={48}
             height={48}
             onError={(e) => {
-              // eslint-disable-next-line no-console
-              console.error('Image-Load-Error:', imageUrl, e);
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.error('Image-Load-Error:', imageUrl, e);
+              }
               const img = e.target as HTMLImageElement;
               if (img && img.style) {
                 img.style.border = '2px solid red';
               }
             }}
             onLoad={() => {
-              // eslint-disable-next-line no-console
-              console.log('Image loaded successfully:', imageUrl);
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.log('Image loaded successfully:', imageUrl);
+              }
             }}
           />
           <div>

@@ -34,6 +34,18 @@ const nextConfig = {
         pathname: '/v0/b/**',
       },
       {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tilvo-f142f.firebasestorage.app',
+        port: '',
+        pathname: '/**',
+      },
+      {
         protocol: 'http',
         hostname: '127.0.0.1',
         port: '9199',

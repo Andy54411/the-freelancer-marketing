@@ -17,7 +17,7 @@ import type {
 } from '@/types/types';
 
 import {
-  // PAGE_LOG, // Nicht verwendet
+  PAGE_LOG, // Wird für Debug-Logs verwendet
   PAGE_WARN,
   PAGE_ERROR,
   TRUST_AND_SUPPORT_FEE_EUR,
@@ -96,11 +96,18 @@ export default function AnbieterDetailsFetcher({
     taskDescVal: string
   ): { displayDuration: string, totalHours: number, finalPriceInCents: number, formattedAnbieterData: AnbieterDetailsType | null } => {
 
+    console.log(PAGE_LOG, "AnbieterDetailsFetcher: calculateAndReportPrice gestartet mit:", {
+      anbieterHourlyRate: fetchedAnbieterData?.hourlyRate,
+      dateF,
+      dateT,
+      timeVal,
+      durationStr,
+      taskDescVal
+    });
+
     if (!fetchedAnbieterData?.hourlyRate) {
       const errorMsg = "Stundensatz des Anbieters nicht verfügbar für Preisberechnung.";
       console.error(PAGE_ERROR, errorMsg, fetchedAnbieterData);
-      setError(errorMsg);
-      onPriceCalculated(0);
       return { displayDuration: "Fehler", totalHours: 0, finalPriceInCents: 0, formattedAnbieterData: fetchedAnbieterData };
     }
 
@@ -129,12 +136,10 @@ export default function AnbieterDetailsFetcher({
     }
 
     if (localDurationError) {
-      setError(localDurationError);
-      onPriceCalculated(0);
+      console.error(PAGE_ERROR, "Preisberechnungsfehler:", localDurationError);
       const updatedAnbieterDetailsOnError = fetchedAnbieterData ?
         { ...fetchedAnbieterData, estimatedDuration: "Fehler", totalCalculatedPrice: 0, description: taskDescVal }
         : null;
-      if (updatedAnbieterDetailsOnError) setAnbieterDetails(updatedAnbieterDetailsOnError);
       return { displayDuration: "Fehler", totalHours: 0, finalPriceInCents: 0, formattedAnbieterData: updatedAnbieterDetailsOnError };
     }
 
@@ -154,12 +159,10 @@ export default function AnbieterDetailsFetcher({
     }
 
     if (totalCalculatedHours <= 0) {
-      setError("Die berechnete Gesamtdauer ist ungültig.");
-      onPriceCalculated(0);
+      console.error(PAGE_ERROR, "Die berechnete Gesamtdauer ist ungültig.");
       const updatedAnbieterDetailsOnDurationError = fetchedAnbieterData ?
         { ...fetchedAnbieterData, estimatedDuration: "Dauer ungültig", totalCalculatedPrice: 0, description: taskDescVal }
         : null;
-      if (updatedAnbieterDetailsOnDurationError) setAnbieterDetails(updatedAnbieterDetailsOnDurationError);
       return { displayDuration: "Dauer ungültig", totalHours: 0, finalPriceInCents: 0, formattedAnbieterData: updatedAnbieterDetailsOnDurationError };
     }
 
@@ -168,6 +171,14 @@ export default function AnbieterDetailsFetcher({
     // KORREKTUR: Die Servicegebühr wird jetzt serverseitig berechnet und vom Anbieterguthaben abgezogen.
     // Der Kunde zahlt nur den reinen Dienstleistungspreis.
     const finalPriceInCents = Math.round(servicePrice * 100);
+
+    console.log(PAGE_LOG, "AnbieterDetailsFetcher: Preisberechnung abgeschlossen:", {
+      anbieterStundensatz,
+      totalCalculatedHours,
+      servicePrice,
+      finalPriceInCents,
+      displayDuration
+    });
 
     const anbieterDataForDisplay: AnbieterDetailsType = {
       ...fetchedAnbieterData,
@@ -180,11 +191,12 @@ export default function AnbieterDetailsFetcher({
     };
 
     if (onPriceCalculated) {
+      console.log(PAGE_LOG, "AnbieterDetailsFetcher: Rufe onPriceCalculated auf mit:", finalPriceInCents);
       onPriceCalculated(finalPriceInCents);
     }
     return { displayDuration, totalHours: totalCalculatedHours, finalPriceInCents, formattedAnbieterData: anbieterDataForDisplay };
 
-  }, [anbieterId, postalCodeJob, unterkategorie, onPriceCalculated, setError]);
+  }, [anbieterId, postalCodeJob, unterkategorie, onPriceCalculated]);
 
 
   useEffect(() => {
@@ -194,6 +206,19 @@ export default function AnbieterDetailsFetcher({
         setIsLoading(false);
         return;
       }
+
+      console.log(PAGE_LOG, "AnbieterDetailsFetcher: Starte Datenabfrage für Anbieter:", anbieterId);
+      console.log(PAGE_LOG, "AnbieterDetailsFetcher: Empfangene Props:", {
+        anbieterId,
+        unterkategorie,
+        postalCodeJob,
+        initialJobDateFrom,
+        initialJobDateTo,
+        initialJobTime,
+        initialJobDescription,
+        initialJobDurationString
+      });
+
       setIsLoading(true);
       setError(null);
       try {
@@ -201,18 +226,26 @@ export default function AnbieterDetailsFetcher({
         const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
         const url = `${apiBaseUrl}/searchCompanyProfiles?id=${encodeURIComponent(anbieterId)}`;
 
+        console.log(PAGE_LOG, "AnbieterDetailsFetcher: Rufe API auf:", url);
+
         const response = await fetch(url);
         if (!response.ok) {
-          const errData = await response.json().catch(() => ({ message: `Anbieterdetails nicht geladen (Status: ${response.status})` }));
-          throw new Error(errData.message);
+          if (response.status === 404) {
+            throw new Error(`Anbieter mit ID '${anbieterId}' nicht gefunden.`);
+          } else {
+            const errData = await response.json().catch(() => ({ message: `Anbieterdetails nicht geladen (Status: ${response.status})` }));
+            throw new Error(errData.message);
+          }
         }
 
         const fetchedProviderData: AnbieterDetailsType = await response.json();
+        console.log(PAGE_LOG, "AnbieterDetailsFetcher: API-Antwort erhalten:", fetchedProviderData);
+
         if (!fetchedProviderData || !fetchedProviderData.id) {
           throw new Error('Anbieter mit der angegebenen ID nicht gefunden oder API-Antwort unerwartet.');
         }
 
-        const { formattedAnbieterData } = calculateAndReportPrice(
+        const result = calculateAndReportPrice(
           fetchedProviderData,
           currentDateFrom,
           currentDateTo,
@@ -220,7 +253,20 @@ export default function AnbieterDetailsFetcher({
           currentAuftragsDauerString,
           currentTaskDesc
         );
-        setAnbieterDetails(formattedAnbieterData);
+
+        // Fehlerbehandlung basierend auf dem Ergebnis der Preisberechnung
+        if (result.finalPriceInCents === 0 && result.displayDuration === "Fehler") {
+          setError("Fehler bei der Preisberechnung. Bitte überprüfen Sie Ihre Eingaben.");
+        } else if (result.finalPriceInCents === 0 && result.displayDuration === "Dauer ungültig") {
+          setError("Die berechnete Gesamtdauer ist ungültig.");
+        } else if (!fetchedProviderData?.hourlyRate) {
+          setError("Stundensatz des Anbieters nicht verfügbar für Preisberechnung.");
+        } else {
+          setError(null); // Kein Fehler
+        }
+
+        console.log(PAGE_LOG, "AnbieterDetailsFetcher: Preisberechnung abgeschlossen, setze Anbieterdetails");
+        setAnbieterDetails(result.formattedAnbieterData);
 
       } catch (err: unknown) {
         console.error(PAGE_ERROR, "Fehler in AnbieterDetailsFetcher fetchDataAndCalc:", err);
@@ -236,7 +282,10 @@ export default function AnbieterDetailsFetcher({
       }
     };
 
-    fetchDataAndCalc();
+    // Nur ausführen wenn noch nicht geladen oder wichtige Parameter sich geändert haben
+    if (!anbieterDetails || error) {
+      fetchDataAndCalc();
+    }
   }, [
     anbieterId,
     currentDateFrom,
@@ -246,6 +295,7 @@ export default function AnbieterDetailsFetcher({
     currentTaskDesc,
     calculateAndReportPrice,
     onPriceCalculated,
+    // Entferne anbieterDetails und error aus den Dependencies um Endlosschleife zu vermeiden
     // unterkategorie und postalCodeJob sind schon in calculateAndReportPrice als Dependencies
   ]);
 
@@ -289,7 +339,15 @@ export default function AnbieterDetailsFetcher({
 
     const finalTime = newTimeProp !== undefined ? newTimeProp : currentTime;
     const finalAuftragsDauerString = newDurationStringProp !== undefined ? newDurationStringProp : currentAuftragsDauerString;
-    const finalTaskDesc = editDescription;
+    const finalTaskDesc = editDescription; // Verwende die aktuelle Beschreibung aus dem State
+
+    console.log(PAGE_LOG, "AnbieterDetailsFetcher: handleConfirmEditsFromModal mit Werten:", {
+      finalDateFrom,
+      finalDateTo,
+      finalTime,
+      finalAuftragsDauerString,
+      finalTaskDesc
+    });
 
     setCurrentDateFrom(finalDateFrom);
     setCurrentDateTo(finalDateTo);
@@ -312,7 +370,9 @@ export default function AnbieterDetailsFetcher({
       registration.setJobDateFrom(finalDateFrom || null);
       registration.setJobDateTo(finalDateTo || null);
       registration.setJobTimePreference(finalTime || null);
-      registration.setJobDurationString(finalAuftragsDauerString);
+      registration.setJobDurationString(finalAuftragsDauerString || '');
+
+      console.log(PAGE_LOG, "AnbieterDetailsFetcher: Context wird aktualisiert mit jobDurationString:", finalAuftragsDauerString);
 
       if (typeof registration.setJobTotalCalculatedHours === 'function') {
         registration.setJobTotalCalculatedHours(totalHours);
@@ -423,13 +483,6 @@ export default function AnbieterDetailsFetcher({
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
               >
                 Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={() => handleConfirmEditsFromModal(editSelection, editTime, editDuration)}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] border border-transparent rounded-md shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600"
-              >
-                Änderungen übernehmen
               </button>
             </div>
           </div>

@@ -316,7 +316,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                             </ul>
                                         </div>
                                     ))}
-                                    {filteredCategories.length === 0 && searchTerm.trim() && <p className="p-4 text-sm text-gray-500">Keine Übereinstimmungen für "{searchTerm}" gefunden.</p>}
+                                    {filteredCategories.length === 0 && searchTerm.trim() && <p className="p-4 text-sm text-gray-500">Keine Übereinstimmungen für &ldquo;{searchTerm}&rdquo; gefunden.</p>}
                                 </div>
                             )}
                         </div>

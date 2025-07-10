@@ -78,7 +78,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         const getProviderOrders = httpsCallable<
           { providerId: string },
           { orders: OrderData[] }
-        >(functions, "getProviderOrders")
+        >(functions, "getProviderOrdersFixed")
         const result = await getProviderOrders({ providerId: companyUid })
         setOrders(result.data.orders || [])
       } catch (err: any) {

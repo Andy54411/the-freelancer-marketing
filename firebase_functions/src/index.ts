@@ -14,7 +14,6 @@ setGlobalOptions({
     memory: '128MiB', // <-- EXTREM REDUZIERT: Speicher auf 128MiB gesenkt als letzter Versuch, Quota-Probleme zu beheben.
     cpu: 0.1, // <-- NOCHMALS REDUZIERT: CPU-Anforderung weiter gesenkt, um das Quota-Limit sicher einzuhalten.
     concurrency: 1, // <-- Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
-    secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
 });
 
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.
@@ -34,6 +33,7 @@ import * as invites from './invites';
 import * as triggersAuth from './triggers_auth';
 import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
+import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
 
 // Stripe Callables
 export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
@@ -86,3 +86,11 @@ export const deleteInviteCode = invites.deleteInviteCode;
 export const syncUserRoleWithCustomClaims = triggersAuth.syncUserRoleWithCustomClaims;
 export const searchAvailableProviders = onCallFunctions.searchAvailableProviders;
 export const handleSupportMessage = chatbot.handleSupportMessage;
+
+// Enhanced Chatbot APIs
+export const enhancedChatbot = enhancedChatbotAPI.enhancedChatbotAPI;
+export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
+
+// Fixed version of getProviderOrders with proper CORS support
+import { getProviderOrdersFixed } from './getProviderOrdersFixed';
+export { getProviderOrdersFixed };

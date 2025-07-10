@@ -9,7 +9,6 @@ import { db, functions, auth, onAuthStateChanged, signOut, type User as Firebase
 import { WelcomeBox } from './components/WelcomeBox';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, MessageSquare as FiMessageSquare, PlusCircle as FiPlusCircle, HelpCircle as FiHelpCircle } from 'lucide-react';
 import Modal from './components/Modal';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import AddPaymentMethodForm from './components/AddPaymentMethodForm';
 import AddressForm from './components/AddressForm';
@@ -25,7 +24,7 @@ import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 
 
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+import { stripePromise } from '@/lib/stripe';
 
 const PAGE_LOG = "UserDashboardPage:"; // Für Logging
 
@@ -99,8 +98,20 @@ export default function UserDashboardPage() {
 
       const querySnapshot = await getDocs(q);
       const ordersData = querySnapshot.docs.map(doc => {
-        const data = doc.data() as Omit<OrderListItem, 'id'> & { selectedAnbieterId?: string };
-        return { id: doc.id, ...data };
+        const data = doc.data() as any; // Temporär any verwenden für Debugging
+        console.log("Order data from Firestore:", data); // Debug-Log hinzufügen
+
+        // Mapping der korrekten Felder
+        return {
+          id: doc.id,
+          selectedSubcategory: data.selectedSubcategory || 'Unbekannt',
+          status: data.status || 'unbekannt',
+          totalPriceInCents: data.jobCalculatedPriceInCents || data.totalPriceInCents || 0,
+          jobDateFrom: data.jobDateFrom || null,
+          jobTimePreference: data.jobTimePreference || null,
+          selectedAnbieterId: data.selectedAnbieterId || null,
+          providerName: data.providerName || null
+        } as OrderListItem & { selectedAnbieterId?: string };
       });
 
       // 1. Collect all unique provider IDs that don't already have a providerName
@@ -474,7 +485,13 @@ export default function UserDashboardPage() {
 
                               {/* Rechte Spalte: Preis und Status */}
                               <div className="flex flex-col sm:items-end mt-2 sm:mt-0">
-                                <p className="text-sm text-gray-700 font-medium">Preis: {(order.totalPriceInCents / 100).toFixed(2)} EUR</p>
+                                <p className="text-sm text-gray-700 font-medium">
+                                  Preis: {
+                                    order.totalPriceInCents && !isNaN(order.totalPriceInCents)
+                                      ? (order.totalPriceInCents / 100).toFixed(2)
+                                      : '0.00'
+                                  } EUR
+                                </p>
                                 <div className="mt-1">
                                   <span
                                     className={`px-2 py-0.5 rounded-full text-xs font-semibold inline-block ${order.status === 'bezahlt' || order.status === 'Zahlung_erhalten_clearing' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'

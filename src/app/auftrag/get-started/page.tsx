@@ -145,7 +145,7 @@ export default function GetStartedPage() {
             <button
               onClick={() => handleCustomerTypeChange('private')}
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
-                ${customerType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                ${isClientMounted && customerType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <h2 className="text-xl font-semibold text-primary">Ich bin Privatkunde</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -156,7 +156,7 @@ export default function GetStartedPage() {
             <button
               onClick={() => handleCustomerTypeChange('business')}
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
-                ${customerType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                ${isClientMounted && customerType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <h2 className="text-xl font-semibold text-primary">Ich bin ein Unternehmen</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">

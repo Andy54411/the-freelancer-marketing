@@ -12,13 +12,13 @@ import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 import { findCategoryBySubcategory } from '@/lib/categoriesData';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import { stripePromise } from '@/lib/stripe';
+import { getOptimizedStripeElementsOptions } from '@/lib/stripeErrorHandler';
 import { PaymentElement } from '@stripe/react-stripe-js';
 import { doc, getDoc } from 'firebase/firestore';
 
 
 // HIER WIRD DER STRIPE PUBLISHABLE KEY AKTUALISIERT
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUG6cmYphSWfdTpsjMzieGY1n513cwTd8wUG6cmYphSWfdTpsK00N3Rtf7Dk');
 
 const auth = getAuth(app);
 
@@ -141,18 +141,170 @@ export default function BestaetigungsPage() {
   const pathParams = useParams();
   const registration = useRegistration();
 
+  // Ref um sicherzustellen, dass URL-Parameter nur einmal geladen werden
+  const urlParamsLoaded = useRef(false);
+
+  // =================================================================================================
+  // EFFECT 0: Load URL parameters into RegistrationContext to ensure data persistence
+  // =================================================================================================
+  React.useEffect(() => {
+    if (urlParamsLoaded.current) {
+      console.log(PAGE_LOG, "BestaetigungsPage: URL-Parameter bereits geladen, überspringe.");
+      return;
+    }
+
+    console.log(PAGE_LOG, "BestaetigungsPage: Loading URL parameters into RegistrationContext");
+    console.log(PAGE_LOG, "BestaetigungsPage: searchParams object:", searchParams);
+    console.log(PAGE_LOG, "BestaetigungsPage: pathParams object:", pathParams);
+    console.log(PAGE_LOG, "BestaetigungsPage: window.location.href:", typeof window !== 'undefined' ? window.location.href : 'undefined');
+
+    // Hole alle URL-Parameter
+    const anbieterIdFromUrl = searchParams?.get('anbieterId') ?? '';
+    const unterkategorieAusPfad = typeof pathParams?.unterkategorie === 'string' ? decodeURIComponent(pathParams.unterkategorie as string) : '';
+    const postalCodeFromUrl = searchParams?.get('postalCode') ?? '';
+
+    // KORRIGIERT: Unterstütze sowohl neue (additionalData) als auch alte Parameter-Namen
+    const dateFromUrl = (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
+    const timeUrl = (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
+    const auftragsDauerUrl = (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ?? '';
+    const descriptionFromUrl = searchParams?.get('description') ?? '';
+
+    // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
+    const priceFromUrl = (() => {
+      const totalCostString = searchParams?.get('additionalData[totalcost]');
+      const priceString = searchParams?.get('price');
+
+      if (totalCostString) {
+        // totalcost ist bereits in Cents, wenn es vom Frontend kommt
+        const totalCents = parseInt(totalCostString, 10);
+        return isNaN(totalCents) ? null : totalCents;
+      } else if (priceString) {
+        // price ist in Euro, konvertiere zu Cents
+        return Math.round(parseFloat(priceString) * 100);
+      }
+      return null;
+    })();
+
+    // DEBUG: Log aller URL-Parameter
+    console.log(PAGE_LOG, "BestaetigungsPage: URL-Parameter gefunden:", {
+      anbieterIdFromUrl,
+      unterkategorieAusPfad,
+      postalCodeFromUrl,
+      dateFromUrl,
+      timeUrl,
+      auftragsDauerUrl,
+      descriptionFromUrl,
+      priceFromUrl
+    });
+
+    // KORREKTUR: Lade Parameter in den Context, auch wenn der Context bereits Werte hat
+    // Dies ist wichtig, da die URL die "source of truth" für diese Seite ist
+
+    // Unterkategorie aus dem Pfad
+    if (unterkategorieAusPfad) {
+      registration.setSelectedSubcategory?.(unterkategorieAusPfad);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set selectedSubcategory: ${unterkategorieAusPfad}`);
+    }
+
+    // HINZUGEFÜGT: selectedCategory aus URL-Parameter, falls verfügbar
+    const selectedCategoryFromUrl = searchParams?.get('selectedCategory');
+    if (selectedCategoryFromUrl) {
+      registration.setSelectedCategory?.(decodeURIComponent(selectedCategoryFromUrl));
+      console.log(PAGE_LOG, `BestaetigungsPage: Set selectedCategory from URL: ${selectedCategoryFromUrl}`);
+    }
+
+    if (anbieterIdFromUrl) {
+      registration.setSelectedAnbieterId?.(anbieterIdFromUrl);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set selectedAnbieterId: ${anbieterIdFromUrl}`);
+    }
+
+    if (postalCodeFromUrl) {
+      registration.setJobPostalCode?.(postalCodeFromUrl);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set jobPostalCode: ${postalCodeFromUrl}`);
+    }
+
+    if (dateFromUrl) {
+      registration.setJobDateFrom?.(dateFromUrl);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set jobDateFrom: ${dateFromUrl}`);
+    }
+
+    if (timeUrl) {
+      registration.setJobTimePreference?.(timeUrl);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set jobTimePreference: ${timeUrl}`);
+    }
+
+    if (auftragsDauerUrl) {
+      registration.setJobDurationString?.(auftragsDauerUrl);
+      const totalHours = parseInt(auftragsDauerUrl, 10);
+      if (!isNaN(totalHours) && registration.setJobTotalCalculatedHours) {
+        registration.setJobTotalCalculatedHours(totalHours);
+      }
+      console.log(PAGE_LOG, `BestaetigungsPage: Set jobDurationString: ${auftragsDauerUrl}, totalHours: ${totalHours}`);
+    }
+
+    if (descriptionFromUrl) {
+      try {
+        const decodedDescription = decodeURIComponent(descriptionFromUrl);
+        registration.setDescription?.(decodedDescription);
+        console.log(PAGE_LOG, `BestaetigungsPage: Set description: ${decodedDescription}`);
+      } catch (e) {
+        console.error(PAGE_ERROR, "Error decoding description from URL:", e);
+        registration.setDescription?.(descriptionFromUrl);
+        console.log(PAGE_LOG, `BestaetigungsPage: Set description (fallback): ${descriptionFromUrl}`);
+      }
+    }
+
+    if (priceFromUrl) {
+      registration.setJobCalculatedPriceInCents?.(priceFromUrl);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set jobCalculatedPriceInCents: ${priceFromUrl}`);
+    }
+
+    // Versuche, die Kategorie aus der Unterkategorie abzuleiten
+    if (unterkategorieAusPfad) {
+      const foundCategory = findCategoryBySubcategory(unterkategorieAusPfad);
+      if (foundCategory) {
+        registration.setSelectedCategory?.(foundCategory);
+        console.log(PAGE_LOG, `BestaetigungsPage: Set selectedCategory: ${foundCategory}`);
+      }
+    }
+
+    // HINZUGEFÜGT: Setze customerType auf 'private' als Default, falls nicht gesetzt
+    if (!registration.customerType) {
+      registration.setCustomerType?.('private');
+      console.log(PAGE_LOG, `BestaetigungsPage: Set customerType default: private`);
+    }
+
+    urlParamsLoaded.current = true;
+    console.log(PAGE_LOG, "BestaetigungsPage: URL-Parameter erfolgreich geladen und markiert.");
+
+  }, [searchParams, pathParams]);
+
   // --- NEU: Frühe Pflichtdaten-Prüfung und Redirect, bevor irgendetwas anderes passiert ---
   React.useEffect(() => {
     // Hilfsfunktionen für Pflichtdaten aus Context/URL
     const unterkategorieAusPfad = typeof pathParams?.unterkategorie === 'string' ? decodeURIComponent(pathParams.unterkategorie as string) : '';
     const anbieterIdFromUrl = searchParams?.get('anbieterId') ?? '';
     const postalCodeFromUrl = searchParams?.get('postalCode') ?? '';
-    const dateFromUrl = searchParams?.get('dateFrom') ?? '';
-    const timeUrl = searchParams?.get('time') ?? '';
-    const auftragsDauerUrl = searchParams?.get('auftragsDauer') ?? '';
+
+    // KORRIGIERT: Unterstütze sowohl neue (additionalData) als auch alte Parameter-Namen
+    const dateFromUrl = (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
+    const timeUrl = (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
+    const auftragsDauerUrl = (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ?? '';
+
+    // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
     const priceFromUrl = (() => {
+      const totalCostString = searchParams?.get('additionalData[totalcost]');
       const priceString = searchParams?.get('price');
-      return priceString ? Math.round(parseFloat(priceString) * 100) : null;
+
+      if (totalCostString) {
+        // totalcost ist bereits in Cents, wenn es vom Frontend kommt
+        const totalCents = parseInt(totalCostString, 10);
+        return isNaN(totalCents) ? null : totalCents;
+      } else if (priceString) {
+        // price ist in Euro, konvertiere zu Cents
+        return Math.round(parseFloat(priceString) * 100);
+      }
+      return null;
     })();
     const descriptionFromUrl = searchParams?.get('description') ?? '';
 
@@ -210,12 +362,26 @@ export default function BestaetigungsPage() {
   const anbieterIdFromUrl = useMemo(() => searchParams?.get('anbieterId') ?? '', [searchParams]);
   const unterkategorieAusPfad = useMemo(() => typeof pathParams?.unterkategorie === 'string' ? decodeURIComponent(pathParams.unterkategorie as string) : '', [pathParams]);
   const postalCodeFromUrl = useMemo(() => searchParams?.get('postalCode') ?? '', [searchParams]);
-  const dateFromUrl = useMemo(() => searchParams?.get('dateFrom') ?? '', [searchParams]);
-  const timeUrl = useMemo(() => searchParams?.get('time') ?? '', [searchParams]);
-  const auftragsDauerUrl = useMemo(() => searchParams?.get('auftragsDauer') ?? '', [searchParams]);
+
+  // KORRIGIERT: Unterstütze sowohl neue (additionalData) als auch alte Parameter-Namen
+  const dateFromUrl = useMemo(() => (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '', [searchParams]);
+  const timeUrl = useMemo(() => (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '', [searchParams]);
+  const auftragsDauerUrl = useMemo(() => (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ?? '', [searchParams]);
+
+  // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
   const priceFromUrl = useMemo(() => {
+    const totalCostString = searchParams?.get('additionalData[totalcost]');
     const priceString = searchParams?.get('price');
-    return priceString ? Math.round(parseFloat(priceString) * 100) : null;
+
+    if (totalCostString) {
+      // totalcost ist bereits in Cents, wenn es vom Frontend kommt
+      const totalCents = parseInt(totalCostString, 10);
+      return isNaN(totalCents) ? null : totalCents;
+    } else if (priceString) {
+      // price ist in Euro, konvertiere zu Cents
+      return Math.round(parseFloat(priceString) * 100);
+    }
+    return null;
   }, [searchParams]);
   const tempDraftIdFromUrl = useMemo(() => searchParams?.get('tempDraftId') ?? '', [searchParams]);
   const descriptionFromUrl = useMemo(() => searchParams?.get('description') ?? '', [searchParams]);
@@ -727,8 +893,8 @@ export default function BestaetigungsPage() {
         },
       },
     },
-    // Optional: Layout anpassen
-    layout: 'tabs' as const,
+    // Layout und Styling-Optionen
+    layout: 'tabs' as const
   }), [billingAddressDetails]);
 
   if (isLoadingOverall) {
@@ -838,7 +1004,14 @@ export default function BestaetigungsPage() {
 
             {/* Fall 1: Alles bereit, clientSecret vorhanden -> Formular anzeigen */}
             {clientSecret && dataIsReadyForCheckoutForm ? (
-              <Elements stripe={stripePromise} options={{ clientSecret }} key={clientSecret}>
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  ...getOptimizedStripeElementsOptions()
+                }}
+                key={clientSecret}
+              >
                 <div> {/* Wrapper für PaymentElement und StripeCardCheckout */}
                   {/* Eingabe der Zahlungsmethode */}
                   <div className="mb-6 p-4 border rounded-md bg-white">

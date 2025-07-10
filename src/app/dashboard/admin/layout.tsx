@@ -7,6 +7,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Loader2 as FiLoader } from 'lucide-react';
 
+export const dynamic = "force-dynamic";
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
     const router = useRouter();

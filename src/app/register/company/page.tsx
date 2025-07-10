@@ -160,17 +160,17 @@ export default function Step1() {
               <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="phoneNumber">
                 Telefonnummer
               </label>
-              <div className="flex">
+              <div className="flex gap-2 w-full">
                 <select
-                  className="w-24 mr-2 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
+                  className="w-20 flex-shrink-0 px-2 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800 text-sm"
                   value={localPhoneNumber.substring(0, localPhoneNumber.indexOf(' ') + 1).trim()}
                   onChange={(e) =>
                     setLocalPhoneNumber(e.target.value + localPhoneNumber.substring(localPhoneNumber.indexOf(' ') + 1))
                   }
                 >
-                  <option value="+49">+49 (Deutschland)</option>
-                  <option value="+41">+41 (Schweiz)</option>
-                  <option value="+43">+43 (Österreich)</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+41">🇨🇭 +41</option>
+                  <option value="+43">🇦🇹 +43</option>
                   {/* Füge hier weitere Ländercodes hinzu */}
                 </select>
                 <input
@@ -182,7 +182,7 @@ export default function Step1() {
                   }
                   required
                   placeholder="Deine Nummer"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
+                  className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
                 />
               </div>
             </div>

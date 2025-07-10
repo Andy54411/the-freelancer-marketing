@@ -18,7 +18,10 @@ import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from "./constants";
 // Dies sollte nur die erlaubten Origins enthalten. Die Region wird pro Funktion definiert.
 export const corsOptions: string[] = [
   "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
-  "https://tilvo-f142f.web.app", "http://localhost:5002"
+  "https://tilvo-f142f.web.app", "http://localhost:5002",
+  "https://tasko-rho.vercel.app",
+  "https://tasko-zh8k.vercel.app",
+  "https://tasko-live.vercel.app"
 ];
 
 let dbInstance: Firestore;

@@ -108,7 +108,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     // Validierung der Dateitypen
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     const invalidFiles = Array.from(files).filter(file => !allowedTypes.includes(file.type));
-    
+
     if (invalidFiles.length > 0) {
       const invalidFileNames = invalidFiles.map(file => file.name).join(', ');
       setUploadError(`Nicht unterstützte Dateitypen: ${invalidFileNames}. Nur JPEG, PNG, WebP und GIF sind erlaubt.`);

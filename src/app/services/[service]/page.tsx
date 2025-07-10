@@ -12,7 +12,7 @@ const ServicePage: React.FC<ServicePageProps> = ({ params }) => {
   return (
     <div>
       <h1>Service: {serviceName}</h1>
-      <p>Details for the service "{serviceName}" will be displayed here.</p>
+      <p>Details for the service &ldquo;{serviceName}&rdquo; will be displayed here.</p>
     </div>
   );
 };

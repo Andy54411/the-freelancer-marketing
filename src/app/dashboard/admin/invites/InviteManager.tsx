@@ -218,7 +218,7 @@ export default function InviteManager({ initialCodes }: InviteManagerProps) {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Diese Aktion kann nicht rückgängig gemacht werden. Der Einladungscode "{c.code}" wird dauerhaft gelöscht.
+                                                    Diese Aktion kann nicht rückgängig gemacht werden. Der Einladungscode &ldquo;{c.code}&rdquo; wird dauerhaft gelöscht.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>

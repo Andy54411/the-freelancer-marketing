@@ -57,14 +57,18 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             return () => { };
         }
 
+        console.log(`[UserHeader] Subscribing to notifications for user: ${uid}`);
+
+        // KORREKTUR: Explizite where-Klausel hinzufügen, um den Firestore-Sicherheitsregeln zu entsprechen
         const notificationsQuery = query(
             collection(db, 'notifications'),
-            where('userId', '==', uid),
-            orderBy('createdAt', 'desc'),
+            where('userId', '==', uid), // WICHTIG: Diese where-Klausel ist für die Firestore-Regel erforderlich
+            orderBy('createdAt', 'desc'), // Index ist jetzt verfügbar
             limit(10) // Die 10 neuesten Benachrichtigungen
         );
 
         const unsubscribe = onSnapshot(notificationsQuery, (snapshot: QuerySnapshot) => {
+            console.log(`[UserHeader] Benachrichtigungen erfolgreich geladen für User: ${uid}, Anzahl: ${snapshot.size}`);
             const fetchedNotifications = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -73,7 +77,35 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             const unreadCount = fetchedNotifications.filter(n => !n.isRead).length;
             setNotifications(fetchedNotifications);
             setUnreadNotificationsCount(unreadCount);
-        }, (error) => console.error("[UserHeader] Fehler beim Laden der Benachrichtigungen:", error));
+        }, (error) => {
+            console.error("[UserHeader] Fehler beim Laden der Benachrichtigungen:", error);
+            console.error("[UserHeader] Detaillierte Fehleranalyse:", {
+                code: error.code,
+                message: error.message,
+                uid: uid,
+                isAuthenticated: !!auth.currentUser,
+                currentUserUid: auth.currentUser?.uid,
+                queryPath: 'notifications',
+                queryConstraints: [
+                    `where('userId', '==', '${uid}')`,
+                    `orderBy('createdAt', 'desc')`,
+                    `limit(10)`
+                ]
+            });
+
+            // Zusätzliche Diagnostik für Firestore Rules
+            if (error.code === 'permission-denied') {
+                console.warn("[UserHeader] Permission Denied - mögliche Ursachen:");
+                console.warn("1. Firestore Rules erlauben keine 'list'-Operation für notifications");
+                console.warn("2. User ist nicht authentifiziert oder Auth-Token ist abgelaufen");
+                console.warn("3. Where-Klausel stimmt nicht mit den Firestore Rules überein");
+                console.warn("4. Index fehlt für die Query");
+            }
+
+            // Fallback: Setze leere Arrays bei Fehlern
+            setNotifications([]);
+            setUnreadNotificationsCount(0);
+        });
 
         return () => unsubscribe();
     }, []);
@@ -303,7 +335,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                             </ul>
                                         </div>
                                     ))}
-                                    {filteredCategories.length === 0 && searchTerm.trim() && <p className="p-4 text-sm text-gray-500">Keine Übereinstimmungen für "{searchTerm}" gefunden.</p>}
+                                    {filteredCategories.length === 0 && searchTerm.trim() && <p className="p-4 text-sm text-gray-500">Keine Übereinstimmungen für &ldquo;{searchTerm}&rdquo; gefunden.</p>}
                                 </div>
                             )}
                         </div>
@@ -333,7 +365,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                             <ul>
                                                 {notifications.map(notification => (
                                                     <li key={notification.id}>
-                                                        <Link href={notification.link} onClick={() => handleNotificationClick(notification.id)} className={`block p-3 hover:bg-gray-100 ${!notification.isRead ? 'bg-blue-50' : ''}`}>
+                                                        <Link
+                                                            href={notification.link || '#'}
+                                                            onClick={() => handleNotificationClick(notification.id)}
+                                                            className={`block p-3 hover:bg-gray-100 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                        >
                                                             <div className="flex items-start gap-3">
                                                                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
                                                                     {notification.type === 'order' && <FiPackage className="text-gray-600" />}
@@ -379,7 +415,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                             <ul>
                                                 {recentChats.map(chat => (
                                                     <li key={chat.id}>
-                                                        <Link href={chat.link} onClick={() => setIsInboxDropdownOpen(false)} className={`block p-3 hover:bg-gray-100 ${chat.isUnread ? 'bg-teal-50' : ''}`}>
+                                                        <Link
+                                                            href={chat.link || '#'}
+                                                            onClick={() => setIsInboxDropdownOpen(false)}
+                                                            className={`block p-3 hover:bg-gray-100 ${chat.isUnread ? 'bg-teal-50' : ''}`}
+                                                        >
                                                             <div className="flex items-center gap-3">
                                                                 {chat.otherUserAvatarUrl ? (
                                                                     <img src={chat.otherUserAvatarUrl} alt={chat.otherUserName} className="w-10 h-10 rounded-full object-cover" />

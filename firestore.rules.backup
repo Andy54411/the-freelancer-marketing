@@ -1,0 +1,257 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🔁 Rollen anhand des user_type im Firestore-Dokument des Benutzers prüfen
+    function isCompany() {
+      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen (via Custom Claims).
+      // Dies ist performanter und vermeidet fehleranfällige Lesezugriffe innerhalb von Regeln.
+      return request.auth != null && request.auth.token.role == 'firma';
+    }
+    // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
+    function isSupportStaff() {
+      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen.
+      // Die Cloud Function `syncUserRoleWithCustomClaims` stellt sicher, dass das Token aktuell ist.
+      return request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'support');
+    }
+
+    // --- Helper-Funktionen für Chat-Nachrichten ---
+    function isChatParticipant() {
+      // Prüft, ob der anfragende Benutzer in der 'chatUsers'-Liste der Nachricht ist.
+      return request.auth != null && resource != null && 'chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers;
+    }
+
+    function canReadMessage() {
+      // Erlaubt das Lesen einer Nachricht, wenn der Benutzer Teilnehmer, Firma oder Admin ist.
+      return request.auth != null && (isChatParticipant() || isSupportStaff());
+    }
+
+    function canCreateMessage(requiredFields) {
+      // Validiert das Erstellen einer neuen Nachricht.
+      return request.auth != null
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.keys().hasAll(requiredFields)
+        && request.resource.data.timestamp == request.time
+        // Zusätzliche Validierung für Datenintegrität:
+        && request.resource.data.chatUsers is list
+        && request.resource.data.chatUsers.size() == 2
+        && request.auth.uid in request.resource.data.chatUsers; // Der Sender muss selbst Teilnehmer sein
+    }
+
+    // --- NEUE HELFER-FUNKTIONEN für Listen-Berechtigungen ---
+    function isAuftragParticipant(auftragId) {
+      // KORRIGIERT: Die gesamte Logik muss in einem einzigen return-Statement sein.
+      // Der exists()-Check verhindert, dass get() auf ein nicht-existierendes Dokument zugreift.
+      // Der 'in'-Check verhindert den Zugriff auf ein nicht-existierendes Feld.
+      return exists(/databases/$(database)/documents/auftraege/$(auftragId)) &&
+             (
+               ('kundeId' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
+                get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid) ||
+               ('selectedAnbieterId' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
+                get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid)
+             );
+    }
+
+    function isSupportChatParticipant(chatId) {
+      // Diese Regel ist sicher, da die Chat-ID direkt von der UID des authentifizierten
+      // Benutzers abgeleitet wird. Sie benötigt keinen Lesezugriff auf das Dokument selbst.
+      return request.auth != null && chatId == "support_chat_" + request.auth.uid;
+    }
+
+    // --- users Collection ---
+    match /users/{userId} {
+      // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.
+      // Ein Benutzer kann sein eigenes Dokument lesen.
+      // KORREKTUR: Die Reihenfolge wird geändert, um Rekursion zu vermeiden.
+      // Zuerst wird geprüft, ob der Benutzer sein eigenes Dokument liest.
+      allow get: if (request.auth != null && request.auth.uid == userId) || isSupportStaff();
+      // KORREKTUR: Ein Admin/Supporpt-Mitarbeiter darf die gesamte Benutzerliste ohne Einschränkungen abfragen.
+      allow list: if isSupportStaff();
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // --- companies Collection ---
+    match /companies/{companyId} {
+      // Admins/Support können jedes Firmendokument lesen.
+      // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
+      allow get: if isSupportStaff() || request.auth != null;
+      // KORREKTUR: Öffentlicher Lesezugriff für Hero-Section und Anbietersuche.
+      // Begrenzt auf 50 Dokumente für Performance und Sicherheit.
+      allow list: if isSupportStaff() || 
+                   (request.query.limit <= 50);
+
+      // Ein Benutzer kann sein eigenes Firmendokument erstellen.
+      allow create: if request.auth != null && request.auth.uid == companyId;
+
+      // Ein Benutzer kann sein eigenes Firmendokument aktualisieren, wenn er die Rolle "firma" hat.
+      // Ein Admin/Support kann jedes Firmendokument aktualisieren.
+      allow update: if (request.auth != null && request.auth.uid == companyId && isCompany()) || isSupportStaff();
+
+      allow delete: if false; // Löschen zur Sicherheit explizit verweigern.
+    }
+
+    // --- auftraege Collection ---
+    match /auftraege/{auftragId} {
+      allow get: if request.auth != null && resource != null && (
+        resource.data.customerFirebaseUid == request.auth.uid ||
+        resource.data.selectedAnbieterId == request.auth.uid ||
+        isSupportStaff()
+      );
+
+      // Explizite Regel für Listenabfragen, um die Sicherheit zu erhöhen.
+      // Erlaubt Abfragen (`list`) nur, wenn sie explizit nach der UID des Anbieters
+      // oder Kunden filtern. Dies ist entscheidend für die `getProviderOrders`-Funktion.
+      // Support-Staff darf alle Aufträge ohne Einschränkungen abfragen.
+      allow list: if request.auth != null &&
+                   (
+                     isSupportStaff() ||
+                     (
+                       'where' in request.query &&
+                       request.query.where != null &&
+                       request.query.where.size() > 0 &&
+                       (
+                         (
+                           request.query.where[0].path == 'selectedAnbieterId' &&
+                           request.query.where[0].op == '==' &&
+                           request.query.where[0].value == request.auth.uid
+                         ) ||
+                         (
+                           request.query.where[0].path == 'customerFirebaseUid' &&
+                           request.query.where[0].op == '==' &&
+                           request.query.where[0].value == request.auth.uid
+                         )
+                       )
+                     ) ||
+                     (
+                       // Fallback für getDoc calls ohne where-Filter
+                       // Sicher, da die get-Regel bereits überprüft, ob der Benutzer Zugriff hat
+                       !('where' in request.query) || 
+                       request.query.where == null || 
+                       request.query.where.size() == 0
+                     )
+                   );
+
+      allow create,
+            update,
+            delete: if false;
+
+      // Sub-Collection: nachrichten
+      // Hier muss jedes Nachricht-Dokument ein Feld `chatUsers` (Array) enthalten,
+      // das alle teilnehmenden UIDs angibt (kunde + anbieter).
+      match /nachrichten/{nachrichtId} {
+        // 'get' erlaubt Admins/Firmen, eine einzelne Nachricht zu lesen, wenn sie die ID kennen.
+        allow get: if canReadMessage();
+        // KORRIGIERT: Die komplexe Logik wird in eine wiederverwendbare und sichere Funktion ausgelagert.
+        allow list: if request.auth != null && isAuftragParticipant(auftragId);
+        allow create: if canCreateMessage([
+          "senderId", "senderName", "text", "timestamp", "senderType", "chatUsers"
+        ]);
+        allow update, delete: if false;
+      }
+    }
+
+    // --- temporaryJobDrafts Collection ---
+    // Diese Dokumente müssen ein Feld `customerFirebaseUid` enthalten.
+    match /temporaryJobDrafts/{draftId} {
+      allow create: if request.auth != null
+                     && request.resource.data.customerFirebaseUid == request.auth.uid;
+      // KORREKTUR: Support-Mitarbeiter dürfen Entwürfe lesen, aktualisieren und löschen, um zu helfen.
+      allow read, update, delete: if (request.auth != null
+                                   && resource != null
+                                   && resource.data.customerFirebaseUid == request.auth.uid) || isSupportStaff();
+      // KORREKTUR: Support-Mitarbeiter dürfen Entwürfe auflisten (z.B. für einen bestimmten Benutzer).
+      allow list: if isSupportStaff();
+    }
+
+    // --- supportChats Collection ---
+    // Hier ebenfalls: jede Nachricht im Unterdokument `messages` braucht `chatUsers`.
+    match /supportChats/{chatId} {
+      // KORREKTUR: Die Regeln werden zusammengefasst und vereinfacht.
+      // Support-Mitarbeiter haben vollen Lese- und Schreibzugriff auf alle Support-Chats.
+      // Ein normaler Benutzer kann seinen eigenen Chat erstellen und lesen/aktualisieren.
+      allow read, update: if isSupportStaff() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow list: if isSupportStaff();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
+        allow get: if canReadMessage();
+        // KORREKTUR: Vereinfachte und sichere Regel. Ein Benutzer darf die Nachrichten
+        // in seinem eigenen Support-Chat auflisten. Dies vermeidet den fehleranfälligen `get()`-Aufruf.
+        allow list: if isSupportChatParticipant(chatId) || isSupportStaff();
+        allow create: if canCreateMessage([
+          "senderId", "text", "timestamp", "chatUsers"
+        ]);
+        allow update, delete: if false;
+      }
+    }
+
+    // --- chats Collection (Allgemeine Chats) ---
+    // Auch hier: jede Nachricht braucht `chatUsers`.
+    match /chats/{chatId} {
+      // Ein Benutzer kann einen Chat lesen, wenn er Teilnehmer ist.
+      // Ein Admin/Support-Mitarbeiter kann jeden Chat lesen oder auflisten.
+      allow read: if (request.auth.uid in resource.data.users) || isSupportStaff();
+      allow list: if isSupportStaff();
+
+      // Allow users to create and update their own chats
+      allow write: if request.auth.uid in resource.data.users;
+      allow create: if request.auth.uid in request.resource.data.users;
+    }
+
+    // --- NEU: Regel für die 'messages' Collection Group ---
+    // Erlaubt Admins, alle Nachrichten über alle Chats hinweg abzufragen (z.B. für Dashboard-Statistiken).
+    match /{path=**}/messages/{messageId} {
+      allow list: if isSupportStaff();
+    }
+
+    // Rules for subcollections within a chat
+    match /chats/{chatId}/messages/{messageId} {
+      // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
+      allow get: if canReadMessage();
+      // KORREKTUR: Für 'list' (Abfragen) ist 'resource' nicht verfügbar.
+      // Wir müssen die Berechtigung über einen 'get'-Aufruf auf das Elterndokument prüfen.
+      allow list: if request.auth != null
+                   && exists(/databases/$(database)/documents/chats/$(chatId))
+                   // KORREKTUR: Prüfe, ob 'users' ein Array (list) ist, bevor darauf zugegriffen wird.
+                   // Dies ist sicherer als `('users' in ...)` und verhindert Auswertungsfehler,
+                   // falls das Feld nicht existiert oder kein Array ist.
+                   && get(/databases/$(database)/documents/chats/$(chatId)).data.users is list
+                   && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.users;
+      allow create: if canCreateMessage([
+        "senderId", "text", "timestamp", "chatUsers"
+      ]);
+      allow update, delete: if false;
+    }
+
+    // NEU: Regeln für die Benachrichtigungs-Sammlung
+    match /notifications/{notificationId} {
+      // get: Ein Benutzer darf seine eigene Benachrichtigung lesen. Ein Admin darf jede lesen.
+      allow get: if request.auth != null && (
+        (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
+      );
+
+      // list: Ein Benutzer darf seine eigenen Benachrichtigungen auflisten.
+      // Robuste Regel mit korrekter where-Klausel-Validierung
+      allow list: if request.auth != null && 
+        // Prüfe, ob die Query eine where-Klausel für userId enthält
+        request.query.where.hasAny([
+          ['userId', '==', request.auth.uid]
+        ]);
+
+      // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
+      // Ein Admin darf ebenfalls jede Benachrichtigung aktualisieren.
+      allow update: if request.auth != null && resource != null && (
+        resource.data.userId == request.auth.uid || isSupportStaff()
+      );
+
+      // create: Wird vom Backend (Cloud Function) mit Admin-Rechten erledigt.
+      allow create: if false;
+
+      // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu löschen.
+      allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+    }
+    // ...weitere Regeln...
+  }
+}

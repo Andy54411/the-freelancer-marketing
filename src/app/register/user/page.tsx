@@ -135,8 +135,15 @@ function UserRegisterFormContent() {
   // Dies entkoppelt die Weiterleitung von der Registrierungslogik und macht den Prozess robuster.
   useEffect(() => {
     if (registrationSuccess) {
-      const finalRedirectUrl = redirectToFromParams || `/dashboard/user/${auth.currentUser?.uid}`;
+      const finalRedirectUrl = redirectToFromParams || `/auftrag/get-started`;
       console.log(PAGE_LOG, `Weiterleitung nach erfolgreicher Registrierung in 2 Sekunden zu: ${finalRedirectUrl}`);
+      console.log(PAGE_LOG, `redirectToFromParams Inhalt:`, redirectToFromParams);
+
+      // KORREKTUR: Speichere die Ziel-URL im sessionStorage für den AuthContext
+      if (redirectToFromParams) {
+        sessionStorage.setItem('registrationRedirectTo', redirectToFromParams);
+        console.log(PAGE_LOG, `Ziel-URL für AuthContext gespeichert: ${redirectToFromParams}`);
+      }
 
       const timer = setTimeout(() => {
         window.location.assign(finalRedirectUrl);
@@ -245,10 +252,10 @@ function UserRegisterFormContent() {
         finalRedirectUrl = urlObj.toString(); // Sicherstellen, dass alle bestehenden Parameter erhalten bleiben
       } catch (urlParseError) {
         console.error(PAGE_ERROR, "Fehler beim Parsen der redirectTo URL nach Popup-Login:", urlParseError);
-        finalRedirectUrl = `/dashboard/user/${loggedInUser.uid}`; // Fallback
+        finalRedirectUrl = `/auftrag/get-started`; // Fallback
       }
     } else {
-      finalRedirectUrl = `/dashboard/user/${loggedInUser.uid}`;
+      finalRedirectUrl = `/auftrag/get-started`;
     }
 
     console.log(PAGE_LOG, `Weiterleitung nach Popup-Login zu: ${finalRedirectUrl}`);
@@ -286,6 +293,7 @@ function UserRegisterFormContent() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
+                    autoComplete="email" // Hinzugefügt für Browser-Hinweis
                   />
                 </div>
                 <div className="grid gap-1.5">
@@ -425,6 +433,7 @@ function UserRegisterFormContent() {
                       required
                       placeholder="123456789"
                       className="px-3 py-2 border rounded-r-md focus:ring-2 focus:ring-[#14ad9f] flex-1 h-10 text-sm"
+                      autoComplete="tel-national"
                     />
                   </div>
                 </div>

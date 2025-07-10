@@ -150,7 +150,7 @@ export default function Page() {
         setLoadingOrders(true);
         try {
           // Add types for the callable function for type safety.
-          const getProviderOrders = httpsCallable<{ providerId: string }, { orders: OrderData[] }>(functions, 'getProviderOrders');
+          const getProviderOrders = httpsCallable<{ providerId: string }, { orders: OrderData[] }>(functions, 'getProviderOrdersFixed');
           const result = await getProviderOrders({ providerId: uid });
           // The @ts-ignore is no longer needed as the backend now returns the correct data structure.
           setOrders(result.data.orders || []);

@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { updateConfig, type FormState } from './actions'; // Assuming actions.ts is correct
 import type { AiConfig } from '@/lib/ai-config-data'; // Import the new type
 
 type AiConfigFormProps = { config: AiConfig };
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
+type FormState = {
+    message: string;
+    isError: boolean;
+};
+
+function SubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
     return (
         <button
             type="submit"
-            disabled={pending}
+            disabled={isSubmitting}
             className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-            {pending ? 'Speichern...' : 'Konfiguration Speichern'}
+            {isSubmitting ? 'Speichern...' : 'Konfiguration Speichern'}
         </button>
     );
 }
@@ -23,6 +25,7 @@ function SubmitButton() {
 export default function AiConfigForm({ config }: AiConfigFormProps) {
     const initialState: FormState = { message: '', isError: false };
     const [state, setState] = useState<FormState>(initialState);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const faqsString = JSON.stringify(config.faqs || [], null, 2);
     const rulesString = (config.rules || []).join('\n');
@@ -30,9 +33,50 @@ export default function AiConfigForm({ config }: AiConfigFormProps) {
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const result = await updateConfig(state, formData);
-        setState(result);
+        setIsSubmitting(true);
+        try {
+            const formData = new FormData(event.currentTarget);
+
+            // Daten aus dem Formular extrahieren
+            const persona = formData.get('persona') as string;
+            const context = formData.get('context') as string;
+            const faqsString = formData.get('faqs') as string;
+            const rulesString = formData.get('rules') as string;
+            const coreProcessesString = formData.get('coreProcesses') as string;
+
+            let faqs;
+            try {
+                faqs = JSON.parse(faqsString);
+                if (!Array.isArray(faqs)) throw new Error("FAQs müssen ein gültiges JSON-Array sein.");
+            } catch (e) {
+                setState({ message: 'Fehler: Die FAQs sind kein gültiges JSON-Format.', isError: true });
+                return;
+            }
+
+            const rules = rulesString.split('\n').map(rule => rule.trim()).filter(Boolean);
+            const coreProcesses = coreProcessesString.split('\n').map(process => process.trim()).filter(Boolean);
+
+            // API-Aufruf
+            const response = await fetch('/api/ai-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ persona, context, faqs, rules, coreProcesses })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            setState({ message: "Konfiguration erfolgreich gespeichert!", isError: false });
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+            setState({ message: `Fehler beim Speichern: ${errorMessage}`, isError: true });
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     return (
@@ -40,7 +84,7 @@ export default function AiConfigForm({ config }: AiConfigFormProps) {
             <div>
                 <label htmlFor="persona" className="block text-sm font-medium text-gray-700">Persona</label>
                 <input type="text" name="persona" id="persona" defaultValue={config.persona} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                <p className="mt-2 text-xs text-gray-500">Beschreibe, wer der Chatbot ist (z.B. "Du bist Tasko-GPT, ein freundlicher und kompetenter Support-Assistent...").</p>
+                <p className="mt-2 text-xs text-gray-500">Beschreibe, wer der Chatbot ist (z.B. &ldquo;Du bist Tasko-GPT, ein freundlicher und kompetenter Support-Assistent...&rdquo;).</p>
             </div>
 
             <div>
@@ -58,7 +102,7 @@ export default function AiConfigForm({ config }: AiConfigFormProps) {
             <div>
                 <label htmlFor="rules" className="block text-sm font-medium text-gray-700">Regeln</label>
                 <textarea name="rules" id="rules" rows={5} defaultValue={rulesString} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                <p className="mt-2 text-xs text-gray-500">Eine Regel pro Zeile. Diese Regeln definieren das Verhalten des Bots (z.B. "Antworte immer auf Deutsch.").</p>
+                <p className="mt-2 text-xs text-gray-500">Eine Regel pro Zeile. Diese Regeln definieren das Verhalten des Bots (z.B. &ldquo;Antworte immer auf Deutsch.&rdquo;).</p>
             </div>
 
             <div>
@@ -67,7 +111,7 @@ export default function AiConfigForm({ config }: AiConfigFormProps) {
                 <p className="mt-2 text-xs text-gray-500">Eine Anweisung pro Zeile. Beschreibe, wie der Bot bei spezifischen Anfragen (z.B. Stornierung) reagieren soll.</p>
             </div>
 
-            <SubmitButton />
+            <SubmitButton isSubmitting={isSubmitting} />
             {state.isError && <p className="text-red-600 mt-2">{state.message}</p>}
             {!state.isError && state.message && <p className="text-green-600 mt-2">{state.message}</p>}
         </form>

@@ -7,10 +7,13 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { VisuallyHidden } from '@/components/ui/visually-hidden'
 
 interface ComboboxProps {
   options: string[]
@@ -36,6 +39,12 @@ export function Combobox({ options, placeholder = 'Wähle eine Option', selected
         </Button>
       </DialogTrigger>
       <DialogContent className="p-0">
+        <VisuallyHidden>
+          <DialogTitle>Option auswählen</DialogTitle>
+          <DialogDescription>
+            Wählen Sie eine Option aus der Liste aus.
+          </DialogDescription>
+        </VisuallyHidden>
         <Command>
           <CommandInput placeholder="Suchen..." />
           <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>

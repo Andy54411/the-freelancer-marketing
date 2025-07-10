@@ -13,12 +13,27 @@ const allowedOrigins = [
   'http://127.0.0.1:5002',
   'https://tasko-rho.vercel.app',
   'https://tasko-zh8k.vercel.app',
+  'https://tasko-live.vercel.app',
   'https://tilvo-f142f.web.app'
 ];
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const FRONTEND_URL_PARAM = defineString("FRONTEND_URL");
+
+// Hilfsfunktion für Stripe-Key in Emulator vs Production
+function getStripeSecretKey(): string {
+  // Im Emulator: Verwende process.env
+  if (process.env.FUNCTIONS_EMULATOR === 'true') {
+    const emulatorKey = process.env.STRIPE_SECRET_KEY;
+    if (!emulatorKey) {
+      throw new Error("STRIPE_SECRET_KEY nicht in Emulator-Umgebung gefunden");
+    }
+    return emulatorKey;
+  }
+  // In Production: Verwende Firebase Secret
+  return STRIPE_SECRET_KEY.value();
+}
 // Log für den Ladevorgang der Datei
 loggerV2.info("Lade callable_stripe.ts...");
 
@@ -211,10 +226,10 @@ const mapLegalFormToStripeBusinessInfo = (
 // Helper-Funktion für Umgebungs-URLs
 const getEnvironmentUrls = (configuredFrontendUrl: string) => {
   const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
-  
+
   loggerV2.info(`[getEnvironmentUrls] Umgebung erkannt: ${isEmulator ? 'Emulator' : 'Produktion'}`);
   loggerV2.info(`[getEnvironmentUrls] Konfigurierte Frontend-URL: ${configuredFrontendUrl}`);
-  
+
   if (isEmulator) {
     // Im Emulator: Verwende für Stripe eine der erlaubten URLs anstatt example.com
     return {
@@ -613,7 +628,7 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
   async (request: CallableRequest<GetOrCreateStripeCustomerPayload>): Promise<GetOrCreateStripeCustomerResult> => {
     loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = getDb();
-    const stripeKey = STRIPE_SECRET_KEY.value();
+    const stripeKey = getStripeSecretKey(); // Verwende die neue Hilfsfunktion
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
 
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
@@ -653,7 +668,7 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
             country: payload.address.country,
             isDefault: true,
             type: 'billing',
-            savedAt: FieldValue.serverTimestamp(),
+            savedAt: new Date().toISOString(),
           }] : [],
         };
 
@@ -717,8 +732,8 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
   });
 
 export const updateStripeCompanyDetails = onCall(
-  { 
-    region: "europe-west1", 
+  {
+    region: "europe-west1",
     cors: true  // Erlaube alle Origins in der Entwicklung
   },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
@@ -1138,20 +1153,38 @@ export const getStripeAccountStatus = onCall(
 
 export const getSavedPaymentMethods = onCall(
   { region: "europe-west1", cors: allowedOrigins },
-  async (request: CallableRequest<{ customerId: string }>): Promise<Stripe.PaymentMethod[]> => {
-    const { customerId } = request.data;
-    if (!customerId) {
-      throw new HttpsError('invalid-argument', 'Die Kunden-ID ist erforderlich.');
+  async (request: CallableRequest<Record<string, never>>): Promise<{ savedPaymentMethods: Stripe.PaymentMethod[] }> => {
+    // User must be authenticated
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Benutzer ist nicht angemeldet.');
     }
+
     try {
-      const stripe = getStripeInstance(STRIPE_SECRET_KEY.value());
+      const db = getDb();
+      const userDoc = await db.collection('users').doc(request.auth.uid).get();
+
+      if (!userDoc.exists) {
+        loggerV2.info(`Benutzer ${request.auth.uid} existiert nicht in der Datenbank.`);
+        return { savedPaymentMethods: [] };
+      }
+
+      const userData = userDoc.data();
+      const stripeCustomerId = userData?.stripeCustomerId;
+
+      if (!stripeCustomerId) {
+        loggerV2.info(`Benutzer ${request.auth.uid} hat noch keine Stripe Customer ID.`);
+        return { savedPaymentMethods: [] };
+      }
+
+      const stripe = getStripeInstance(getStripeSecretKey());
       const paymentMethods = await stripe.paymentMethods.list({
-        customer: customerId,
+        customer: stripeCustomerId,
         type: 'card',
       });
-      return paymentMethods.data;
+
+      return { savedPaymentMethods: paymentMethods.data };
     } catch (error: any) {
-      loggerV2.error(`Fehler beim Abrufen der Zahlungsmethoden für Kunde ${customerId}:`, error);
+      loggerV2.error(`Fehler beim Abrufen der Zahlungsmethoden für Benutzer ${request.auth.uid}:`, error);
       throw new HttpsError('internal', 'Zahlungsmethoden konnten nicht abgerufen werden.');
     }
   });

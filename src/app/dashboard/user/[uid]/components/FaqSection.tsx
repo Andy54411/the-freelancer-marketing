@@ -11,7 +11,7 @@ const faqData = [
             <>
                 Alle Informationen, die du zu unseren Tarifen benötigst, findest du auf der Seite{' '}
                 <a href="/pricing" className="text-[#14ad9f] hover:underline">Tarife und Preise</a>.
-                Du kannst darauf zugreifen, indem du auf dein Profilbild klickst und "Abonnement" wählst.
+                Du kannst darauf zugreifen, indem du auf dein Profilbild klickst und &ldquo;Abonnement&rdquo; wählst.
             </>
         ),
     },
@@ -97,7 +97,7 @@ const faqData = [
         answer: (
             <>
                 Tasko bietet verschiedene Zahlungsmethoden an, darunter Kreditkarten, PayPal und weitere, je nach Region.
-                Du kannst deine bevorzugte Zahlungsmethode in deinen Kontoeinstellungen unter "Zahlungsmethoden" festlegen und verwalten.
+                Du kannst deine bevorzugte Zahlungsmethode in deinen Kontoeinstellungen unter &ldquo;Zahlungsmethoden&rdquo; festlegen und verwalten.
             </>
         ),
     },

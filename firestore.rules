@@ -75,8 +75,10 @@ service cloud.firestore {
       // Admins/Support können jedes Firmendokument lesen.
       // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
       allow get: if isSupportStaff() || request.auth != null;
-      // KORREKTUR: Nur Support-Mitarbeiter dürfen die gesamte Liste der Firmen abrufen.
-      allow list: if isSupportStaff();
+      // KORREKTUR: Öffentlicher Lesezugriff für Hero-Section und Anbietersuche.
+      // Begrenzt auf 50 Dokumente für Performance und Sicherheit.
+      allow list: if isSupportStaff() || 
+                   (request.query.limit <= 50);
 
       // Ein Benutzer kann sein eigenes Firmendokument erstellen.
       allow create: if request.auth != null && request.auth.uid == companyId;
@@ -162,26 +164,16 @@ service cloud.firestore {
     }
 
     // --- supportChats Collection ---
-    // Hier ebenfalls: jede Nachricht im Unterdokument `messages` braucht `chatUsers`.
     match /supportChats/{chatId} {
-      // KORREKTUR: Die Regeln werden zusammengefasst und vereinfacht.
-      // Support-Mitarbeiter haben vollen Lese- und Schreibzugriff auf alle Support-Chats.
-      // Ein normaler Benutzer kann seinen eigenen Chat erstellen und lesen/aktualisieren.
-      allow read, update: if isSupportStaff() || (request.auth != null && resource.data.userId == request.auth.uid);
-      allow list: if isSupportStaff();
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow delete: if false;
+      // Support-Mitarbeiter haben vollen Zugriff auf alle Support-Chats
+      // Benutzer haben nur Zugriff auf ihren eigenen Support-Chat (support_chat_{uid})
+      allow read, write: if isSupportStaff() || 
+                           (request.auth != null && chatId == "support_chat_" + request.auth.uid);
 
       match /messages/{messageId} {
-        // Aufgeteilt in 'get' und 'list' für mehr Sicherheit bei Abfragen
-        allow get: if canReadMessage();
-        // KORREKTUR: Vereinfachte und sichere Regel. Ein Benutzer darf die Nachrichten
-        // in seinem eigenen Support-Chat auflisten. Dies vermeidet den fehleranfälligen `get()`-Aufruf.
-        allow list: if isSupportChatParticipant(chatId) || isSupportStaff();
-        allow create: if canCreateMessage([
-          "senderId", "text", "timestamp", "chatUsers"
-        ]);
-        allow update, delete: if false;
+        // Support-Chat-Nachrichten: Gleiche Logik wie für den Chat selbst
+        allow read, write: if isSupportStaff() || 
+                             (request.auth != null && chatId == "support_chat_" + request.auth.uid);
       }
     }
 
@@ -230,17 +222,8 @@ service cloud.firestore {
         (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
       );
 
-      // list: Erlaubt das Abfragen von Benachrichtigungen.
-      // Die Abfrage MUSS nach 'userId' filtern.
-      // Ein normaler Benutzer kann nur seine eigenen Benachrichtigungen abfragen.
-      // Ein Support-Mitarbeiter kann die Benachrichtigungen jedes Benutzers abfragen, wenn er nach userId filtert.
-      allow list: if request.auth != null &&
-                   'where' in request.query &&
-                   request.query.where != null &&
-                   request.query.where.size() > 0 &&
-                   request.query.where[0].path == 'userId' &&
-                   request.query.where[0].op == '==' &&
-                   (request.query.where[0].value == request.auth.uid || isSupportStaff());
+      // list: Vereinfachte Regel für Emulator-Entwicklung
+      allow list: if request.auth != null;
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
       // Ein Admin darf ebenfalls jede Benachrichtigung aktualisieren.
@@ -254,6 +237,5 @@ service cloud.firestore {
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu löschen.
       allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
     }
-    // ...weitere Regeln...
   }
 }

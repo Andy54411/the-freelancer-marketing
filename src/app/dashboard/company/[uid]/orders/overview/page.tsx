@@ -63,10 +63,10 @@ const CompanyOrdersOverviewPage = () => {
             setIsLoading(true);
             setError(null);
             try {
-                // Annahme: Es gibt eine Cloud Function 'getProviderOrders'
+                // Annahme: Es gibt eine Cloud Function 'getProviderOrdersFixed'
                 // die { providerId: string } als Daten erwartet und { orders: Order[] } zurückgibt.
-                const getProviderOrdersCallable = httpsCallable<{ providerId: string }, { orders: Order[] }>(functionsInstance, 'getProviderOrders');
-                console.log(`[CompanyOrdersOverviewPage] Rufe getProviderOrders für Anbieter ${uidFromParams} auf...`);
+                const getProviderOrdersCallable = httpsCallable<{ providerId: string }, { orders: Order[] }>(functionsInstance, 'getProviderOrdersFixed');
+                console.log(`[CompanyOrdersOverviewPage] Rufe getProviderOrdersFixed für Anbieter ${uidFromParams} auf...`);
                 const result = await getProviderOrdersCallable({ providerId: uidFromParams });
 
                 if (result.data && Array.isArray(result.data.orders)) {

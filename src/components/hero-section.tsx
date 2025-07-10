@@ -40,15 +40,28 @@ export default function HeroSection() {
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           // Nur Firmen mit einem Logo und Namen hinzufügen
-          if (data.profilePictureURL && data.companyName) {
-            companies.push({ // ID hinzufügen
+          // ERWEITERT: Akzeptiere auch Firmen ohne Profilbild und verwende ein Fallback
+          if (data.companyName) {
+            companies.push({
               id: doc.id,
               name: data.companyName,
-              profilePictureURL: data.profilePictureURL,
+              profilePictureURL: data.profilePictureURL || '/icon/default-company-logo.png', // Fallback für fehlende Bilder
             });
           }
         });
-        setNewCompanies(companies);
+
+        // NEUE LOGIK: Client-seitige Bildvalidierung überspringen für SSR-Kompatibilität
+        // Filtere nur Firmen mit Profilbildern (nicht Default-Fallback)
+        const companiesWithImages = companies.filter(company =>
+          company.profilePictureURL &&
+          company.profilePictureURL !== '/icon/default-company-logo.png' &&
+          company.profilePictureURL.trim() !== ''
+        );
+
+        // Begrenze auf maximal 10 Firmen für bessere Performance
+        const limitedCompanies = companiesWithImages.slice(0, 10);
+
+        setNewCompanies(limitedCompanies);
       } catch (err) {
         console.error("Fehler beim Laden der neuen Firmen:", err);
         setError("Die neuesten Dienstleister konnten nicht geladen werden."); // Fehlermeldung für den Benutzer setzen
@@ -130,18 +143,43 @@ export default function HeroSection() {
                         <div key={i} className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                       ))
                     ) : (
-                      newCompanies.map((company) => ( // Den eindeutigen Key verwenden
-                        <div key={company.id} className="flex">
-                          <Image
-                            className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
-                            src={company.profilePictureURL}
-                            alt={`${company.name} Logo`}
-                            height={100}
-                            width={200}
-                            style={{ objectFit: "contain" }}
-                          />
-                        </div>
-                      ))
+                      newCompanies
+                        .filter(company => company.profilePictureURL && company.profilePictureURL !== '/icon/default-company-logo.png') // Nur Firmen mit echten Bildern
+                        .map((company) => { // Den eindeutigen Key verwenden
+                          // KORREKTUR: Robuste URL-Behandlung für verschiedene Firebase Storage-Formate
+                          let imageUrl = company.profilePictureURL;
+
+                          // Wenn die URL nicht mit http beginnt, ist es ein relativer Pfad
+                          if (!imageUrl.startsWith('http')) {
+                            // URL-dekodieren falls nötig
+                            const decodedPath = decodeURIComponent(imageUrl);
+                            imageUrl = `https://storage.googleapis.com/tilvo-f142f.firebasestorage.app/${decodedPath}`;
+                          }
+
+                          return (
+                            <div key={company.id} className="flex">
+                              <Image
+                                className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
+                                src={imageUrl}
+                                alt={`${company.name} Logo`}
+                                height={100}
+                                width={200}
+                                style={{ objectFit: "contain" }}
+                                unoptimized={true} // Umgeht Next.js Image Optimization für Firebase Storage
+                                onError={(e) => {
+                                  console.warn(`Failed to load image for ${company.name}:`, imageUrl);
+                                  // Verstecke das Bild und den Container bei Fehlern
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const container = target.closest('.flex') as HTMLElement;
+                                  if (container) {
+                                    container.style.display = 'none';
+                                    container.remove(); // Entferne aus DOM, damit der Slider korrekt funktioniert
+                                  }
+                                }}
+                              />
+                            </div>
+                          );
+                        })
                     )}
                   </InfiniteSlider>
                 )}

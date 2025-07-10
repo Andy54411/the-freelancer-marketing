@@ -87,6 +87,7 @@ export const getProviderOrders = onCall(
             'http://127.0.0.1:3000',
             'https://tasko-rho.vercel.app',
             'https://tasko-zh8k.vercel.app',
+            'https://tasko-live.vercel.app',
             'https://tilvo-f142f.web.app'
         ],
     },

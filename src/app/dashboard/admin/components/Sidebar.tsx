@@ -12,7 +12,7 @@ const navItems = [
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
     { href: '/dashboard/admin/orders', label: 'Aufträge', icon: Briefcase },
     { href: '/dashboard/admin/chats', label: 'Chats', icon: Bot },
-    { href: '/dashboard/admin/ai-config', label: 'AI Konfiguration', icon: Settings },
+    // { href: '/dashboard/admin/ai-config', label: 'AI Konfiguration', icon: Settings }, // Temporär deaktiviert
 ];
 
 export default function Sidebar() {

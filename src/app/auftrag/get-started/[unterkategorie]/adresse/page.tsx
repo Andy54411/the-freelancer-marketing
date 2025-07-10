@@ -2,28 +2,26 @@
 // /Users/andystaudinger/Tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/page.tsx
 'use client';
 
-import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { FiLoader, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
 import CompanyProfileDetail from './components/CompanyProfileDetail';
 import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from './components/DateTimeSelectionPopup';
 import type { Company, RatingMap, ExpandedDescriptionsMap } from '@/types/types';
-import { DateRange, DayPicker } from 'react-day-picker';
+import { DateRange } from 'react-day-picker';
 import { format, isValid, parseISO, differenceInCalendarDays } from 'date-fns';
 import { GLOBAL_FALLBACK_MIN_PRICE, GLOBAL_FALLBACK_MAX_PRICE, PAGE_ERROR, PAGE_LOG, PAGE_WARN, TRUST_AND_SUPPORT_FEE_EUR } from '../../../../../lib/constants';
 import SidebarFilters from './components/SidebarFilters';
 import CompanyResultsList from './components/CompanyResultsList';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { app, db } from '@/firebase/clients';
+import { getAuth } from 'firebase/auth';
+import { app } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { getBookingCharacteristics } from './components/lib/utils';
 import { categories } from '@/lib/categories';
 
 
 const auth = getAuth(app);
-const libraries: ("places")[] = ['places'];
 
 function parseDurationStringToHours(durationStr?: string): number | null {
   if (!durationStr || typeof durationStr !== 'string') return null;
@@ -51,29 +49,89 @@ export default function AddressPage() {
     setAutocomplete(autocompleteInstance);
   }, []);
 
-  const onPlaceChanged = () => {
+  const onPlaceChanged = useCallback(() => {
     if (autocomplete) {
       const place = autocomplete.getPlace();
+
+      if (!place || !place.address_components) {
+        console.warn('Kein gültiger Ort oder keine Adresskomponenten gefunden');
+        return;
+      }
+
       let foundCity = '';
       let foundPostalCode = '';
-      place.address_components?.forEach((component) => {
-        if (component.types.includes('locality')) {
+      let foundCountry = '';
+      let foundStreet = '';
+      let foundStreetNumber = '';
+
+      // Durchlaufe alle Adresskomponenten und extrahiere relevante Informationen
+      place.address_components.forEach((component) => {
+        const types = component.types;
+
+        // Stadt/Ort
+        if (types.includes('locality')) {
           foundCity = component.long_name;
-        } else if (component.types.includes('postal_town') && !foundCity) {
+        } else if (types.includes('postal_town') && !foundCity) {
           foundCity = component.long_name;
-        } else if (component.types.includes('sublocality') && !foundCity) {
+        } else if (types.includes('sublocality') && !foundCity) {
+          foundCity = component.long_name;
+        } else if (types.includes('administrative_area_level_2') && !foundCity) {
           foundCity = component.long_name;
         }
-        if (component.types.includes('postal_code')) {
+
+        // Postleitzahl
+        if (types.includes('postal_code')) {
           foundPostalCode = component.long_name;
         }
+
+        // Land
+        if (types.includes('country')) {
+          foundCountry = component.long_name;
+        }
+
+        // Straße
+        if (types.includes('route')) {
+          foundStreet = component.long_name;
+        }
+
+        // Hausnummer
+        if (types.includes('street_number')) {
+          foundStreetNumber = component.long_name;
+        }
       });
-      setCityState(foundCity);
+
+      // Aktualisiere die Zustände
+      if (foundCity) {
+        setCityState(foundCity);
+        console.log('Stadt gefunden:', foundCity);
+      }
+
       if (foundPostalCode) {
         setPostalCodeState(foundPostalCode);
+        console.log('Postleitzahl gefunden:', foundPostalCode);
       }
+
+      if (foundCountry) {
+        setCountryState(foundCountry);
+      }
+
+      if (foundStreet) {
+        const fullStreet = foundStreetNumber ? `${foundStreet} ${foundStreetNumber}` : foundStreet;
+        setStreetState(fullStreet);
+      }
+
+      // Debug-Ausgabe für bessere Nachverfolgung
+      console.log('Google Places Autocomplete Ergebnis:', {
+        place: place.formatted_address,
+        city: foundCity,
+        postalCode: foundPostalCode,
+        country: foundCountry,
+        street: foundStreet,
+        streetNumber: foundStreetNumber,
+        allComponents: place.address_components
+      });
     }
-  };
+  }, [autocomplete]);
 
   const [companyProfiles, setCompanyProfiles] = useState<Company[]>([]);
   const [selectedCompanyForPopup, setSelectedCompanyForPopup] = useState<Company | null>(null);
@@ -105,8 +163,7 @@ export default function AddressPage() {
   const [editTime, setEditTime] = useState<string>('');
   const [editDuration, setEditDuration] = useState<string>('');
 
-  // DER VORHERIGE useEffect FÜR DIE FRÜHE WEITERLEITUNG WIRD HIER ENTFERNT.
-  // Das auth-check wird nun in handleDateTimeConfirm ausgeführt.
+  // Auth-check wird in handleDateTimeConfirm ausgeführt
 
 
   useEffect(() => {
@@ -124,7 +181,7 @@ export default function AddressPage() {
       }
     } else { console.warn(PAGE_WARN, "Keine initiale Unterkategorie für AddressPage gefunden."); }
 
-    // KORREKTUR: Beschreibung aus URL-Parametern lesen und im Context speichern.
+    // BESCHREIBUNG: Beschreibung aus URL-Parametern lesen und im Context speichern.
     // Dies stellt sicher, dass die Beschreibung auch nach einem Reload oder bei direkter Navigation
     // zur Adress-Seite vorhanden ist und nicht verloren geht.
     const descriptionFromUrl = searchParams?.get('description');
@@ -158,7 +215,6 @@ export default function AddressPage() {
   const shouldShowDateTimeFilters = useMemo(() => {
     return selectedMainCategory === "Handwerk" || selectedMainCategory === "Haushalt & Reinigung";
   }, [selectedMainCategory]);
-
 
   const currentBookingChars = useMemo(() =>
     getBookingCharacteristics(selectedSubcategory),
@@ -206,7 +262,15 @@ export default function AddressPage() {
       const data: Company[] = await res.json();
       setCompanyProfiles(data);
       const newRatingMap: RatingMap = {};
-      for (const company of data) { /* ... hier logik für company.id und ratings ...*/ }
+      for (const company of data) {
+        // TODO: Rating-Logik implementieren
+        // Hier könnte eine separate API-Anfrage für Ratings gemacht werden
+        // oder die Ratings könnten bereits in den Company-Daten enthalten sein
+        newRatingMap[company.id] = {
+          avg: 0, // Standardwert bis Ratings geladen sind
+          count: 0 // Standardwert bis Ratings geladen sind
+        };
+      }
       setRatingMap(newRatingMap);
     } catch (err: unknown) {
       console.error(`${PAGE_ERROR} Critical error in fetchCompanyProfiles:`, err);
@@ -341,12 +405,12 @@ export default function AddressPage() {
       if (finalTimeParam) bestaetigungsPageParams.append('time', finalTimeParam);
       if (finalDurationStringInput) bestaetigungsPageParams.append('auftragsDauer', finalDurationStringInput);
       if (totalPriceInCents) bestaetigungsPageParams.append('price', (totalPriceInCents / 100).toFixed(2));
-      // KORREKTUR: Die Auftragsbeschreibung aus dem Context muss hier an die URL übergeben werden.
+      // AUFTRAGSBESCHREIBUNG: Die Auftragsbeschreibung aus dem Context muss hier an die URL übergeben werden.
       if (registration.description) bestaetigungsPageParams.append('description', registration.description);
 
       const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
 
-      // NEU: Redirection check hier, beim Klick auf Bestätigen von Datum/Uhrzeit
+      // BENUTZER-AUTHENTIFIZIERUNG: Prüfung beim Klick auf Bestätigen von Datum/Uhrzeit
       const user = auth.currentUser;
       if (user) {
         // Wenn der Benutzer bereits eingeloggt ist, leiten Sie ihn direkt zur Bestätigungsseite weiter.
@@ -360,7 +424,7 @@ export default function AddressPage() {
       console.log(`${PAGE_LOG} Nur Datum/Zeit im Filter geändert. Lade Profile neu.`); fetchCompanyProfiles();
     }
     setSelectedCompanyForPopup(null);
-  }, [selectedCompanyForPopup, setFinalSelectedDateRange, setFinalSelectedTimeState, setIsDatePickerOpen, setError, router, postalCode, selectedSubcategory, finalSelectedTime, finalSelectedDateRange, registration, currentBookingChars, fetchCompanyProfiles, street, city, country, db]); // Hinzugefügt: db zu den useCallback-Abhängigkeiten
+  }, [selectedCompanyForPopup, setFinalSelectedDateRange, setFinalSelectedTimeState, setIsDatePickerOpen, setError, router, postalCode, selectedSubcategory, finalSelectedTime, finalSelectedDateRange, registration, currentBookingChars, fetchCompanyProfiles, street, city, country]); // Entfernt: db aus den useCallback-Abhängigkeiten (nicht verwendet)
 
   const isLoadingOverall = loadingProfiles || loadingSubcategoryData;
 

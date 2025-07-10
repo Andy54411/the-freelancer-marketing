@@ -17,8 +17,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt." }, { status: 500 });
         }
 
-        // KORREKTUR: Verwende die geteilte Funktion. Der Standard-Logger (console.error) ist hier ausreichend.
-        const systemInstruction = await getSystemInstruction(db);
+        // Sammle Chat-Historie für Auftragserkennung
+        const chatHistory = history.map((msg: any) => msg.parts[0].text);
+
+        // KORREKTUR: Verwende die geteilte Funktion und übergebe die aktuelle Nachricht und Historie
+        const systemInstruction = await getSystemInstruction(db, console.error, message, chatHistory);
 
         const genAI = new GoogleGenerativeAI(apiKey);
         // Verwende das dedizierte systemInstruction-Feld für besseres Kontextmanagement

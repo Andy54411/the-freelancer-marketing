@@ -72,7 +72,7 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
             setLoading(true);
             setError(null);
             try {
-                const getProviderOrders = httpsCallable<{ providerId: string }, { orders: OrderData[] }>(functions, 'getProviderOrders');
+                const getProviderOrders = httpsCallable<{ providerId: string }, { orders: OrderData[] }>(functions, 'getProviderOrdersFixed');
                 const result = await getProviderOrders({ providerId: companyUid });
                 console.log('[CompanyCalendar] Rohdaten vom Backend erhalten:', result.data.orders);
 

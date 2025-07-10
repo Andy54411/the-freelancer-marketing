@@ -84,6 +84,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const idTokenResult = await fbUser.getIdTokenResult(true);
           setFirebaseUser(fbUser);
 
+          // Debug: Claims loggen
+          console.log('AuthContext: Custom Claims:', idTokenResult.claims);
+
           if (!db) {
             throw new Error("Firestore DB-Instanz ist nicht initialisiert.");
           }
@@ -94,13 +97,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const profileData = userDocSnap.data();
 
             // Rollenbestimmung: Custom Claim hat Vorrang.
-            const roleFromClaim = idTokenResult.claims.admin ? 'master' : null;
+            const roleFromClaim = idTokenResult.claims.admin ? 'master' :
+              idTokenResult.claims.role === 'admin' ? 'master' :
+                idTokenResult.claims.role === 'master' ? 'master' : null;
             const roleFromDb = (profileData.user_type as UserProfile['role']) || 'kunde';
+
+            const finalRole = roleFromClaim || roleFromDb;
+
+            // Debug: Rollen loggen
+            console.log('AuthContext: Role from claim:', roleFromClaim);
+            console.log('AuthContext: Role from DB:', roleFromDb);
+            console.log('AuthContext: Final role:', finalRole);
 
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              role: roleFromClaim || roleFromDb, // Claim verwenden, sonst DB.
+              role: finalRole,
               firstName: profileData.firstName,
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
@@ -108,7 +120,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`);
             // Auch hier den Claim berücksichtigen, falls das DB-Dokument fehlt.
-            const roleFromClaim = idTokenResult.claims.admin ? 'master' : 'kunde';
+            const roleFromClaim = idTokenResult.claims.admin ? 'master' :
+              idTokenResult.claims.role === 'admin' ? 'master' :
+                idTokenResult.claims.role === 'master' ? 'master' : 'kunde';
+
+            console.log('AuthContext: Fallback role from claim:', roleFromClaim);
+
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
@@ -133,20 +150,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {
+    console.log(`AuthContext: Login-Effekt ausgeführt - loading: ${loading}, user: ${user ? user.email : 'null'}, isRedirecting: ${isRedirecting}, pathname: ${pathname}`);
+
     // Nur ausführen, wenn der Ladevorgang abgeschlossen ist, ein Benutzer vorhanden ist und wir nicht bereits weiterleiten
     if (!loading && user && !isRedirecting) {
-      let targetPath = '';
-      if (user.role === 'master' || user.role === 'support') {
-        targetPath = '/dashboard/admin'; // KORRIGIERT: Admin-Dashboard
-      } else if (user.role === 'firma') {
-        targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
-      } else {
-        targetPath = `/dashboard/user/${user.uid}`; // Kunden-Dashboard
+      // KORREKTUR: Überprüfe, ob der Benutzer gerade registriert wurde und eine spezifische Weiterleitung hat
+      const justRegistered = sessionStorage.getItem('justRegistered');
+      const registrationRedirectTo = sessionStorage.getItem('registrationRedirectTo');
+
+      if (justRegistered === 'true' && registrationRedirectTo) {
+        console.log("AuthContext: Benutzer gerade registriert, weiterleiten zu:", registrationRedirectTo);
+        // Cleanup der sessionStorage items
+        sessionStorage.removeItem('justRegistered');
+        sessionStorage.removeItem('registrationRedirectTo');
+        setIsRedirecting(true);
+        // Verwende window.location.assign für vollständige Navigation mit URL-Parametern
+        window.location.assign(registrationRedirectTo);
+        return;
       }
 
-      // Nur weiterleiten, wenn wir uns noch nicht am Ziel befinden
-      if (pathname !== targetPath) {
-        setIsRedirecting(true); // Weiterleitungs-Flag setzen
+      // ERWEITERTE WEITERLEITUNGSLOGIK FÜR ADMIN-USER
+      // Admins sollen immer zum Admin-Dashboard weitergeleitet werden, wenn sie auf der Startseite landen
+      // Andere Benutzer werden nur von Login/Register-Seiten weitergeleitet
+
+      let shouldRedirect = false;
+      let targetPath = '';
+
+      // Admins werden von allen öffentlichen Seiten weitergeleitet
+      if (user.role === 'master' || user.role === 'support') {
+        if (pathname === '/' || pathname === '/login' || pathname === '/register') {
+          shouldRedirect = true;
+          targetPath = '/dashboard/admin'; // Admin-Dashboard
+        }
+      }
+      // Andere Benutzer nur von Login/Register-Seiten
+      else if (pathname === '/login' || pathname === '/register') {
+        shouldRedirect = true;
+        if (user.role === 'firma') {
+          targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
+        } else {
+          targetPath = `/dashboard/user/${user.uid}`; // Kunden-Dashboard
+        }
+      }
+
+      if (shouldRedirect && targetPath) {
+        console.log(`AuthContext: Weiterleitung von ${pathname} zu ${targetPath} für Rolle ${user.role}`);
+        setIsRedirecting(true);
         router.push(targetPath);
       }
     }
