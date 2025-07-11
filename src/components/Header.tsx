@@ -413,8 +413,12 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         {company ? (
                             // --- ANSICHT FÜR COMPANY DASHBOARD ---
                             <div className="flex items-center gap-4">
-                                {/* Das Logo wird jetzt im Benutzer-Dropdown-Button auf der rechten Seite angezeigt */}
-                                <h1 className="text-2xl font-bold text-gray-800">{company.companyName}</h1>
+                                {/* Taskilo Logo auch im Company Dashboard anzeigen */}
+                                <Link href="/" className="text-2xl font-bold text-[#14ad9f]">
+                                    Taskilo
+                                </Link>
+                                <span className="text-gray-400">|</span>
+                                <h1 className="text-xl font-bold text-gray-800">{company.companyName}</h1>
                             </div>
                         ) : (
                             // --- STANDARD-ANSICHT FÜR DIE APP (Logo) ---
