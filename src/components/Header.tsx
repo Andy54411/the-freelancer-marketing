@@ -146,10 +146,19 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
     // Effekt zur Überwachung des Authentifizierungsstatus
     useEffect(() => {
+        console.log('[Header] Setting up auth state listener');
         const unsubscribe = auth.onAuthStateChanged(user => {
+            console.log('[Header] Auth state changed - user:', user ? {
+                uid: user.uid,
+                email: user.email,
+                photoURL: user.photoURL
+            } : null);
             setCurrentUser(user);
         });
-        return () => unsubscribe();
+        return () => {
+            console.log('[Header] Cleaning up auth state listener');
+            unsubscribe();
+        };
     }, []);
 
     // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
@@ -237,10 +246,17 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             return;
         }
         try {
+            console.log('[Header] Loading Firestore user data for UID:', uid);
             const userDocRef = doc(db, "users", uid);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
-                setFirestoreUserData(userDocSnap.data() as FirestoreUserData);
+                const userData = userDocSnap.data() as FirestoreUserData;
+                console.log('[Header] Firestore user data loaded:', {
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    user_type: userData.user_type
+                });
+                setFirestoreUserData(userData);
             } else {
                 console.warn("Header: Firestore-Benutzerdokument nicht gefunden für UID:", uid);
                 setFirestoreUserData(null);
@@ -252,10 +268,13 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     }, []);
 
     useEffect(() => {
+        console.log('[Header] useEffect triggered - currentUser?.uid:', currentUser?.uid);
         if (currentUser?.uid) {
+            console.log('[Header] Calling loadProfilePictureFromStorage and loadFirestoreUserData for UID:', currentUser.uid);
             loadProfilePictureFromStorage(currentUser.uid);
             loadFirestoreUserData(currentUser.uid);
         } else {
+            console.log('[Header] No currentUser UID, clearing profile data');
             setProfilePictureURLFromStorage(null); // Benutzer abgemeldet oder UID nicht vorhanden
             setFirestoreUserData(null);
         }

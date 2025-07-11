@@ -3,27 +3,90 @@
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { Logo } from './logo'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, User, LogOut, Settings, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import React, { Suspense } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { ModeToggle } from './mode-toggle'
 import LoginPopup from '@/components/LoginPopup'
-import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
+import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
+import { app, storage, db } from '@/firebase/clients'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
+interface User {
+  uid: string
+  email: string | null
+  displayName: string | null
+  photoURL: string | null
+}
 
 const menuItems = [
-  { name: 'Startseite', href: '/' },
-  { name: 'Coming Soon', href: '/coming-soon' },
-  { name: 'Vision', href: '#link' },
-  { name: 'Preis', href: '#link' },
-  { name: 'Blog', href: '#link' },
-  { name: 'Über uns', href: '#link' },
-  { name: 'Kontakt', href: '#link' },
-  { name: 'Impressum', href: '#link' },
+  { name: 'Services', href: '/services' },
+  { name: 'Über uns', href: '/about' },
+  { name: 'Kontakt', href: '/contact' },
 ]
 
 export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false)
-  const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false);
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false)
+  const [user, setUser] = React.useState<User | null>(null)
+  const [profilePictureUrl, setProfilePictureUrl] = React.useState<string | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  useEffect(() => {
+    const auth = getAuth(app)
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('HeroHeader: Auth state changed:', user?.uid)
+      
+      if (user) {
+        setUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        })
+        
+        // Load profile picture from Firestore
+        try {
+          const userDocRef = doc(db, 'users', user.uid)
+          const userDoc = await getDoc(userDocRef)
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            console.log('HeroHeader: User data from Firestore:', userData)
+            
+            if (userData.profilePictureFirebaseUrl) {
+              console.log('HeroHeader: Setting profile picture URL:', userData.profilePictureFirebaseUrl)
+              setProfilePictureUrl(userData.profilePictureFirebaseUrl)
+            } else {
+              console.log('HeroHeader: No profilePictureFirebaseUrl found')
+              setProfilePictureUrl(null)
+            }
+          } else {
+            console.log('HeroHeader: User document not found')
+            setProfilePictureUrl(null)
+          }
+        } catch (error) {
+          console.error('HeroHeader: Error loading profile picture:', error)
+          setProfilePictureUrl(null)
+        }
+      } else {
+        setUser(null)
+        setProfilePictureUrl(null)
+      }
+      
+      setIsLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   const handleOpenLoginPopup = () => {
     setIsLoginPopupOpen(true);
@@ -33,16 +96,21 @@ export const HeroHeader = () => {
     setIsLoginPopupOpen(false);
   };
 
-  const handleLoginSuccess = (user: FirebaseUser) => {
-    // Nach erfolgreichem Login wird das Popup geschlossen.
-    // Die AuthProvider-Komponente erkennt die Zustandsänderung und die App
-    // leitet den Benutzer automatisch zum richtigen Dashboard weiter.
-    console.log("Login erfolgreich im Header für User:", user.uid);
-    setIsLoginPopupOpen(false);
-    // Ein Neuladen der Seite stellt sicher, dass alle Kontexte (wie der AuthContext)
-    // neu initialisiert werden und die Weiterleitungslogik greift.
-    window.location.reload();
-  };
+  const handleLoginSuccess = () => {
+    setIsLoginPopupOpen(false)
+    window.location.href = '/dashboard'
+  }
+
+  const handleLogout = async () => {
+    try {
+      const auth = getAuth(app)
+      await signOut(auth)
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
   return (
     <header>
       <nav
@@ -99,18 +167,59 @@ export const HeroHeader = () => {
                 'lg:flex hidden'
               )}
             >
-              {/* Login-Button öffnet jetzt das Popup */}
-              <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
-                <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                  <span>Login</span>
-                </Button>
-                <Button asChild size="sm">
-                  <Link href="/register/company">
-                    <span>Starte mit Taskilo</span>
-                  </Link>
-                </Button>
-                <ModeToggle />
-              </div>
+              {!isLoading && (
+                user ? (
+                  // Authenticated user
+                  <div className="flex items-center gap-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+                          <AvatarImage 
+                            src={profilePictureUrl || undefined} 
+                            alt={user.displayName || user.email || 'Benutzer'} 
+                          />
+                          <AvatarFallback>
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard" className="flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard/profile" className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Profil
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-600">
+                          <LogOut className="h-4 w-4" />
+                          Abmelden
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ModeToggle />
+                  </div>
+                ) : (
+                  // Unauthenticated user
+                  <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
+                    <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
+                      <span>Login</span>
+                    </Button>
+                    <Button asChild size="sm">
+                      <Link href="/register/company">
+                        <span>Starte mit Taskilo</span>
+                      </Link>
+                    </Button>
+                    <ModeToggle />
+                  </div>
+                )
+              )}
             </div>
 
             {/* Mobile Navigation */}
@@ -129,12 +238,47 @@ export const HeroHeader = () => {
                   ))}
                 </ul>
                 <div className="px-6 pb-6 flex flex-col gap-3">
-                  <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                    Login
-                  </Button>
-                  <Button asChild size="sm">
-                    <Link href="/register/company">Starte mit Taskilo</Link>
-                  </Button>
+                  {!isLoading && (
+                    user ? (
+                      // Authenticated user - mobile
+                      <>
+                        <div className="flex items-center gap-3 pb-3 border-b">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage 
+                              src={profilePictureUrl || undefined} 
+                              alt={user.displayName || user.email || 'Benutzer'} 
+                            />
+                            <AvatarFallback>
+                              <User className="h-5 w-5" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{user.displayName || 'Benutzer'}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href="/dashboard">Dashboard</Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href="/dashboard/profile">Profil</Link>
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={handleLogout}>
+                          Abmelden
+                        </Button>
+                      </>
+                    ) : (
+                      // Unauthenticated user - mobile
+                      <>
+                        <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
+                          Login
+                        </Button>
+                        <Button asChild size="sm">
+                          <Link href="/register/company">Starte mit Taskilo</Link>
+                        </Button>
+                      </>
+                    )
+                  )}
                   <ModeToggle />
                 </div>
               </div>
