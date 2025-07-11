@@ -1,4 +1,4 @@
-// /Users/andystaudinger/Tasko/src/app/dashboard/user/userId/components/FaqItem.tsx
+// /Users/andystaudinger/Taskilo/src/app/dashboard/user/userId/components/FaqItem.tsx
 'use client';
 
 import React, { useState } from 'react';

@@ -1,4 +1,4 @@
-// Integration-Beispiel für die Enhanced Chatbot APIs in der Tasko-App
+// Integration-Beispiel für die Enhanced Chatbot APIs in der Taskilo-App
 
 /**
  * Frontend Integration der Enhanced Chatbot APIs
@@ -8,7 +8,7 @@
 const CHATBOT_API_URL = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/enhancedChatbot';
 const DASHBOARD_API_URL = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/supportDashboard';
 
-// Live Frontend URL: https://tasko-live.vercel.app
+// Live Frontend URL: https://taskilo-live.vercel.app
 
 // 2. Chat-Funktion für Kunden
 export async function sendChatMessage(sessionId: string, customerId: string, message: string, customerName?: string, customerEmail?: string) {

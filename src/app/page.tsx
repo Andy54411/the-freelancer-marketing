@@ -6,11 +6,12 @@ import IntegrationsSection1 from '@/components/integrations-8'
 import ContentSection from '@/components/content-5'
 import Testimonial from '@/components/testimonials'
 import CallToAction from '@/components/call-to-action'
-import FooterSection from '@/components/footer'
+import ComingSoonBanner from '@/components/ComingSoonBanner'
 
 export default function Home() {
   return (
     <div>
+      <ComingSoonBanner />
       <HeroSection />
       <CategoryGrid />
       <FeaturesSection />
@@ -19,7 +20,6 @@ export default function Home() {
       <ContentSection />
       <Testimonial />
       <CallToAction />
-      <FooterSection />
     </div>
   )
 }

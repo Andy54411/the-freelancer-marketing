@@ -4,13 +4,12 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { SectionCards } from "@/components/section-cards";
+import { callHttpsFunction } from "@/lib/httpsFunctions";
 import Link from "next/link";
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SettingsPage from "@/components/SettingsPage";
 import { useCompanyDashboard } from "@/hooks/useCompanyDashboard";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "@/firebase/clients";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Grid as FiGrid, Calendar as FiCalendar } from "lucide-react";
@@ -149,11 +148,9 @@ export default function Page() {
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
-          // Add types for the callable function for type safety.
-          const getProviderOrders = httpsCallable<{ providerId: string }, { orders: OrderData[] }>(functions, 'getProviderOrdersFixed');
-          const result = await getProviderOrders({ providerId: uid });
-          // The @ts-ignore is no longer needed as the backend now returns the correct data structure.
-          setOrders(result.data.orders || []);
+          // Verwende die neue HTTP-Funktion
+          const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
+          setOrders(result.orders || []);
         } catch (error) {
           console.error("Fehler beim Laden der Aufträge für die Tabelle:", error);
         } finally {

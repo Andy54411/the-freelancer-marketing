@@ -1,4 +1,4 @@
-// /Users/andystaudinger/tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/components/ProjectGallery.tsx
+// /Users/andystaudinger/taskilo/src/app/auftrag/get-started/[unterkategorie]/adresse/components/ProjectGallery.tsx
 'use client';
 
 import React from 'react';

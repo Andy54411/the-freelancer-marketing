@@ -18,7 +18,7 @@ export default async function CompaniesPage() {
         <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-4">Firmen-Accounts</h1>
             <p className="text-gray-600 mb-6">
-                Verwalte alle registrierten Firmen-Accounts auf Tasko.
+                Verwalte alle registrierten Firmen-Accounts auf Taskilo.
             </p>
             {error ? (
                 <Alert variant="destructive" className="my-4">

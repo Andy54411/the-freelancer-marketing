@@ -485,7 +485,7 @@ export default function Step5CompanyPage() {
       const resolvedCompanyStreet = companyStreet || '';
       const resolvedCompanyHouseNumber = companyHouseNumber || '';
       const fullCompanyAddressForFirestore = `${resolvedCompanyStreet}${resolvedCompanyStreet && resolvedCompanyHouseNumber ? ' ' : ''}${resolvedCompanyHouseNumber}`.trim();
-      const frontendAppUrl = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'https://tasko-zh8k.vercel.app';
+      const frontendAppUrl = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'https://taskilo-zh8k.vercel.app';
 
       const userPrivateData: Record<string, unknown> = {
         uid: currentAuthUserUID, email: email!, user_type: 'firma',

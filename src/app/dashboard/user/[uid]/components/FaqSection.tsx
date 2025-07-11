@@ -1,4 +1,4 @@
-// /Users/andystaudinger/Tasko/src/app/dashboard/user/userId/components/FaqSection.tsx
+// /Users/andystaudinger/Taskilo/src/app/dashboard/user/userId/components/FaqSection.tsx
 'use client';
 
 import React from 'react';
@@ -6,7 +6,7 @@ import FaqItem from './FaqItem'; // Importiere die FaqItem Komponente
 
 const faqData = [
     {
-        question: "Wo kann ich mehr über die verschiedenen Tasko-Tarife erfahren?",
+        question: "Wo kann ich mehr über die verschiedenen Taskilo-Tarife erfahren?",
         answer: (
             <>
                 Alle Informationen, die du zu unseren Tarifen benötigst, findest du auf der Seite{' '}
@@ -20,17 +20,17 @@ const faqData = [
         answer: (
             <>
                 Gemäß den{' '}
-                <a href="/terms-of-service" className="text-[#14ad9f] hover:underline">Nutzungsbedingungen von Tasko</a>
+                <a href="/terms-of-service" className="text-[#14ad9f] hover:underline">Nutzungsbedingungen von Taskilo</a>
                 sind Freelancer dazu verpflichtet, die Vertraulichkeit und Privatsphäre ihrer Kunden zu wahren.
                 Zusätzlich hast du die Möglichkeit, eine Geheimhaltungsvereinbarung (NDA) direkt mit dem Freelancer zu vereinbaren.
             </>
         ),
     },
     {
-        question: "Wie stellt Tasko sicher, dass die Freelancer hochwertige Arbeit liefern?",
+        question: "Wie stellt Taskilo sicher, dass die Freelancer hochwertige Arbeit liefern?",
         answer: (
             <>
-                Tasko-Freelancer werden anhand ihrer Profile, Bewertungen und abgeschlossenen Projekte bewertet.
+                Taskilo-Freelancer werden anhand ihrer Profile, Bewertungen und abgeschlossenen Projekte bewertet.
                 Wir verfügen über Mechanismen zur Überprüfung von Freelancern, wie z.B. Kompetenzbewertungen durch Kunden und Qualitätsprüfungen durch unser Team.
             </>
         ),
@@ -63,7 +63,7 @@ const faqData = [
         ),
     },
     {
-        question: "Was sind die Eigentumsrechte auf Tasko?",
+        question: "Was sind die Eigentumsrechte auf Taskilo?",
         answer: (
             <>
                 Als Kunde bist du in der Regel Eigentümer des Endprodukts und seiner Rechte, es sei denn,
@@ -76,7 +76,7 @@ const faqData = [
         question: "Was ist, wenn bei meinem Auftrag etwas schief geht?",
         answer: (
             <>
-                Tasko ist immer da, um sicherzustellen, dass du zufrieden bist. Solltest du mit deinem Auftrag nicht zufrieden sein,
+                Taskilo ist immer da, um sicherzustellen, dass du zufrieden bist. Solltest du mit deinem Auftrag nicht zufrieden sein,
                 kannst du zunächst versuchen, das Problem direkt mit dem Freelancer zu klären.
                 Sollte dies nicht funktionieren, steht dir unser Support-Team zur Verfügung, um eine Lösung zu finden.
                 Du kannst dies über die Auftragsseite oder den direkten Support-Chat tun.
@@ -84,10 +84,10 @@ const faqData = [
         ),
     },
     {
-        question: "Wie kann ich Tasko als Anbieter hinzufügen?",
+        question: "Wie kann ich Taskilo als Anbieter hinzufügen?",
         answer: (
             <>
-                Informationen dazu, wie du Tasko als Anbieter für deine Buchhaltung einrichten kannst (z.B. für Rechnungen von Tasko),
+                Informationen dazu, wie du Taskilo als Anbieter für deine Buchhaltung einrichten kannst (z.B. für Rechnungen von Taskilo),
                 findest du in unseren Hilfeartikeln oder indem du den Support kontaktierst.
             </>
         ),
@@ -96,7 +96,7 @@ const faqData = [
         question: "Was sind meine Zahlungsoptionen und wie richte ich sie ein?",
         answer: (
             <>
-                Tasko bietet verschiedene Zahlungsmethoden an, darunter Kreditkarten, PayPal und weitere, je nach Region.
+                Taskilo bietet verschiedene Zahlungsmethoden an, darunter Kreditkarten, PayPal und weitere, je nach Region.
                 Du kannst deine bevorzugte Zahlungsmethode in deinen Kontoeinstellungen unter &ldquo;Zahlungsmethoden&rdquo; festlegen und verwalten.
             </>
         ),

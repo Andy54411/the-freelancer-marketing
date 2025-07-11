@@ -118,7 +118,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
                                         </Button>
                                         <Button asChild size="sm">
                                             <Link href="/register/company">
-                                                Starte mit Tasko
+                                                Starte mit Taskilo
                                             </Link>
                                         </Button>
                                     </>
@@ -155,7 +155,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
                                                 <Link href="/login">Login</Link>
                                             </Button>
                                             <Button asChild size="sm">
-                                                <Link href="/register/company">Starte mit Tasko</Link>
+                                                <Link href="/register/company">Starte mit Taskilo</Link>
                                             </Button>
                                         </>
                                     )}

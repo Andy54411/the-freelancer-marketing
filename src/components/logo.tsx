@@ -16,7 +16,7 @@ export const Logo = ({ className }: { className?: string }) => {
         fontFamily="Arial, sans-serif"
         fontWeight="bold"
       >
-        TASKO
+        TASKILO
       </text>
     </svg>
   )

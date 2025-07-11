@@ -1,6 +1,6 @@
-import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb, getUserDisplayName } from "./helpers";
+import { getDb, getUserDisplayName, getAuthInstance } from "./helpers";
 import { Timestamp, FirestoreDataConverter, DocumentData, QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { UNKNOWN_CUSTOMER_NAME } from "./constants";
 
@@ -78,64 +78,93 @@ interface ProviderOrderData {
     jobDateTo?: string;   // WICHTIG: Hinzugefügt für den Kalender
 }
 
-export const getProviderOrders = onCall(
+export const getProviderOrders = onRequest(
     {
-        region: "europe-west1", // Aligned with Firestore (eur3) and Hosting for better performance.
-        // Explicitly allow requests from your local development server and production frontends.
-        cors: [
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            'https://tasko-rho.vercel.app',
-            'https://tasko-zh8k.vercel.app',
-            'https://tasko-live.vercel.app',
-            'https://tilvo-f142f.web.app'
-        ],
+        region: "europe-west1",
+        cors: true,
+        timeoutSeconds: 60,
+        memory: "512MiB",
+        cpu: 0.5
     },
-    async (request: CallableRequest<{ providerId: string }>): Promise<{ orders: ProviderOrderData[] }> => {
-        logger.info(`[getProviderOrders] Called for provider: ${request.data.providerId}`);
-
-        // 1. Authentication Check (handled by onCall wrapper)
-        if (!request.auth) {
-            logger.error("[getProviderOrders] Unauthenticated call.");
-            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
-        }
-
-        // 2. Input Validation
-        const providerId = request.data.providerId;
-        if (!providerId) {
-            logger.error("[getProviderOrders] Missing parameter: providerId.");
-            throw new HttpsError('invalid-argument', 'The function must be called with a "providerId".');
-        }
-
-        // 3. Authorization Check
-        if (request.auth.uid !== providerId) {
-            logger.error(`[getProviderOrders] Security violation: User ${request.auth.uid} tried to access orders for provider ${providerId}.`);
-            throw new HttpsError('permission-denied', 'You are not authorized to view these orders.');
-        }
-
-        const db = getDb();
+    async (request, response): Promise<void> => {
         try {
+            // 1. Authentication Check
+            const authHeader = request.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                logger.error("[getProviderOrders] Unauthenticated call - missing authorization header.");
+                response.status(403).json({ error: 'Unauthorized: Missing authorization header' });
+                return;
+            }
+
+            const idToken = authHeader.split('Bearer ')[1];
+            let decodedToken;
+            try {
+                decodedToken = await getAuthInstance().verifyIdToken(idToken);
+            } catch (error) {
+                logger.error("[getProviderOrders] Token verification failed:", error);
+                response.status(403).json({ error: 'Unauthorized: Invalid token' });
+                return;
+            }
+
+            // 2. Input Validation - Check both query params and body
+            let providerId: string | undefined;
+            
+            // Debug: Log request details
+            logger.info(`[getProviderOrders] Request method: ${request.method}`);
+            logger.info(`[getProviderOrders] Request headers:`, JSON.stringify(request.headers));
+            logger.info(`[getProviderOrders] Request query:`, JSON.stringify(request.query));
+            logger.info(`[getProviderOrders] Request body:`, JSON.stringify(request.body));
+            
+            // For GET requests, check query parameters
+            if (request.method === 'GET') {
+                providerId = request.query.providerId as string;
+            }
+            // For POST requests, check body
+            else if (request.method === 'POST') {
+                const bodyData = request.body;
+                // Support both direct providerId and data.providerId (for compatibility with callable function structure)
+                // Also support the wrapped format {"data": {"providerId": "..."}}
+                providerId = bodyData?.providerId || bodyData?.data?.providerId;
+            }
+
+            if (!providerId) {
+                logger.error("[getProviderOrders] Missing parameter: providerId.");
+                logger.error(`[getProviderOrders] Available data - query: ${JSON.stringify(request.query)}, body: ${JSON.stringify(request.body)}`);
+                response.status(400).json({ error: 'The function must be called with a "providerId" parameter.' });
+                return;
+            }
+
+            logger.info(`[getProviderOrders] Called for provider: ${providerId}`);
+
+            // 3. Authorization Check
+            if (decodedToken.uid !== providerId) {
+                logger.error(`[getProviderOrders] Security violation: User ${decodedToken.uid} tried to access orders for provider ${providerId}.`);
+                response.status(403).json({ error: 'You are not authorized to view these orders.' });
+                return;
+            }
+
+            const db = getDb();
+            
             // 4. Fetch Data
             const ordersCollection = db
                 .collection(FIRESTORE_COLLECTIONS.ORDERS)
-                .withConverter(auftraegeConverter); // Apply the type-safe converter
+                .withConverter(auftraegeConverter);
 
             const ordersSnapshot = await ordersCollection
-                .where('selectedAnbieterId', '==', providerId) // Filter by the provider's UID
-                // By ordering by creation date, we can include all orders, not just paid ones.
-                // This gives the provider a complete overview of all jobs assigned to them.
+                .where('selectedAnbieterId', '==', providerId)
                 .orderBy('createdAt', 'desc')
                 .get();
 
             if (ordersSnapshot.empty) {
                 logger.info(`[getProviderOrders] No orders found for provider ${providerId}.`);
-                return { orders: [] };
+                response.status(200).json({ orders: [] });
+                return;
             }
 
             // 5. Process Data & Batch Fetch Customer Details
             const ordersFromDb = ordersSnapshot.docs.map(doc => ({
                 id: doc.id,
-                ...doc.data(), // No 'as' cast needed, doc.data() is already correctly typed!
+                ...doc.data(),
             }));
 
             const customerIds = [...new Set(ordersFromDb.map(order => order.customerFirebaseUid).filter(Boolean))];
@@ -163,33 +192,27 @@ export const getProviderOrders = onCall(
                     customerName: customerDetails.name,
                     customerAvatarUrl: customerDetails.avatarUrl,
                     status: data.status,
-                    // Use paidAt if it exists, otherwise fall back to createdAt.
-                    // Since the query orders by createdAt, it is guaranteed to exist.
                     orderDate: data.paidAt || data.createdAt,
                     totalAmountPaidByBuyer: data.jobCalculatedPriceInCents || 0,
                     uid: data.selectedAnbieterId,
                     orderedBy: data.customerFirebaseUid,
                     projectId: data.projectId,
-                    // Map projectId to projectName for compatibility with the overview page.
                     projectName: data.projectId,
                     currency: data.currency || 'EUR',
-                    // Hinzugefügte Felder, damit der Kalender die Aufträge anzeigen kann
                     jobDateFrom: data.jobDateFrom,
                     jobDateTo: data.jobDateTo,
                 };
             });
 
             logger.info(`[getProviderOrders] Successfully fetched ${orders.length} orders for provider ${providerId}.`);
-            return { orders };
+            response.status(200).json({ orders });
 
         } catch (error: any) {
-            logger.error(`[getProviderOrders] Database query failed for provider ${providerId}:`, error);
-            // This error often indicates a missing Firestore index. Check the emulator logs for a link to create it.
-            throw new HttpsError(
-                'internal',
-                'An error occurred while fetching the orders. This might be due to a missing database index.',
-                error.message
-            );
+            logger.error(`[getProviderOrders] Database query failed:`, error);
+            response.status(500).json({ 
+                error: 'An error occurred while fetching the orders. This might be due to a missing database index.',
+                details: error.message 
+            });
         }
     }
 );

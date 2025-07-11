@@ -1,10 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { httpsCallable } from "firebase/functions"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
-import { functions } from "@/firebase/clients"
+import { callHttpsFunction } from "@/lib/httpsFunctions"
 import { useAuth } from "@/contexts/AuthContext"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { AlertCircle as FiAlertCircle, Loader2 as FiLoader } from "lucide-react"
@@ -75,12 +74,8 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
       setLoading(true)
       setError(null)
       try {
-        const getProviderOrders = httpsCallable<
-          { providerId: string },
-          { orders: OrderData[] }
-        >(functions, "getProviderOrdersFixed")
-        const result = await getProviderOrders({ providerId: companyUid })
-        setOrders(result.data.orders || [])
+        const result = await callHttpsFunction('getProviderOrders', { providerId: companyUid }, 'GET')
+        setOrders(result.orders || [])
       } catch (err: any) {
         console.error("Fehler beim Laden der Aufträge für den Chart:", err)
         setError(

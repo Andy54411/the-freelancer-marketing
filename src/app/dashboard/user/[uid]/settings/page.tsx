@@ -1,4 +1,4 @@
-// /Users/andystaudinger/Tasko/src/app/dashboard/user/[uid]/settings/page.tsx
+// /Users/andystaudinger/Taskilo/src/app/dashboard/user/[uid]/settings/page.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';

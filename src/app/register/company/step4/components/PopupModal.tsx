@@ -1,4 +1,4 @@
-// /Users/andystaudinger/tasko/src/app/register/company/step4/components/PopupModal.tsx
+// /Users/andystaudinger/taskilo/src/app/register/company/step4/components/PopupModal.tsx
 'use client';
 
 import React, { useEffect, ReactNode } from 'react';

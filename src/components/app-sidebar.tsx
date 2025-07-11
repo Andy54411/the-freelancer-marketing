@@ -212,7 +212,7 @@ export function AppSidebar({ setView, activeView = "dashboard", ...sidebarProps 
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Tasko.</span>
+                <span className="text-base font-semibold">Taskilo.</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

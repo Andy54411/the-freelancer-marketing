@@ -28,6 +28,17 @@
       "source": "/home",
       "destination": "/",
       "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "destination": "https://taskilo.de/$1",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "taskilo-*.vercel.app"
+        }
+      ]
     }
   ],
   "rewrites": [

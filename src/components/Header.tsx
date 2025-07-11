@@ -280,7 +280,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         ) : (
                             // --- STANDARD-ANSICHT FÜR DIE APP (Logo) ---
                             <Link href="/" className="text-3xl font-bold text-[#14ad9f]">
-                                Tasko
+                                Taskilo
                             </Link>
                         )}
 

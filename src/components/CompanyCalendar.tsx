@@ -8,8 +8,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { type EventInput, type EventClickArg, type EventContentArg } from '@fullcalendar/core';
 import deLocale from '@fullcalendar/core/locales/de';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase/clients';
+import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import {
@@ -72,13 +71,12 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
             setLoading(true);
             setError(null);
             try {
-                const getProviderOrders = httpsCallable<{ providerId: string }, { orders: OrderData[] }>(functions, 'getProviderOrdersFixed');
-                const result = await getProviderOrders({ providerId: companyUid });
-                console.log('[CompanyCalendar] Rohdaten vom Backend erhalten:', result.data.orders);
+                const result = await callHttpsFunction('getProviderOrders', { providerId: companyUid }, 'GET');
+                console.log('[CompanyCalendar] Rohdaten vom Backend erhalten:', result.orders);
 
                 // KORREKTUR: Aufträge filtern, die im Kalender angezeigt werden sollen (AKTIV, IN BEARBEITUNG, ABGESCHLOSSEN)
                 // und sicherstellen, dass sie ein Startdatum haben.
-                const relevantOrders = result.data.orders.filter(order => {
+                const relevantOrders = result.orders.filter((order: any) => {
                     const hasValidStatus = ['AKTIV', 'IN BEARBEITUNG', 'ABGESCHLOSSEN'].includes(order.status);
                     const hasStartDate = !!order.jobDateFrom;
                     if (!hasValidStatus || !hasStartDate) {

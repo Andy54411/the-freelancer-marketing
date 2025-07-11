@@ -1,4 +1,4 @@
-// /Users/andystaudinger/tasko/src/app/auftrag/get-started/[unterkategorie]/adresse/components/CompanyProfileDetail.tsx
+// /Users/andystaudinger/taskilo/src/app/auftrag/get-started/[unterkategorie]/adresse/components/CompanyProfileDetail.tsx
 'use client';
 
 import Image from 'next/image';

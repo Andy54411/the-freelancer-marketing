@@ -1,5 +1,24 @@
-"use client"; import { useState, useEffect } from 'react'; import { FiLoader, FiSave } from 'react-icons/fi'; export const dynamic = "force-dynamic"; interface AiConfig { persona: string; context: string; faqs: any[]; rules: string[]; coreProcesses: string[]; }export default function AiConfigPage() {
-    const [config, setConfig] = useState<AiConfig | null>(null); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
+"use client";
+
+import { useState, useEffect, Suspense } from 'react';
+import { FiLoader, FiSave } from 'react-icons/fi';
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+interface AiConfig {
+    persona: string;
+    context: string;
+    faqs: any[];
+    rules: string[];
+    coreProcesses: string[];
+}
+
+function AiConfigContent() {
+    const [config, setConfig] = useState<AiConfig | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
     useEffect(() => {
@@ -125,7 +144,7 @@
                         id="persona"
                         defaultValue={config?.persona || ''}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Du bist Tasko-GPT, ein freundlicher und kompetenter Support-Assistent..."
+                        placeholder="Du bist Taskilo-GPT, ein freundlicher und kompetenter Support-Assistent..."
                     />
                     <p className="mt-1 text-xs text-gray-500">
                         Beschreibe, wer der Chatbot ist und wie er sich verhalten soll.
@@ -142,10 +161,10 @@
                         rows={4}
                         defaultValue={config?.context || ''}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Tasko ist eine Plattform für..."
+                        placeholder="Taskilo ist eine Plattform für..."
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                        Erkläre den Kontext und die Hauptfunktionen von Tasko.
+                        Erkläre den Kontext und die Hauptfunktionen von Taskilo.
                     </p>
                 </div>
 
@@ -159,7 +178,7 @@
                         rows={8}
                         defaultValue={JSON.stringify(config?.faqs || [], null, 2)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-                        placeholder='[{"question": "Wie funktioniert Tasko?", "answer": "Tasko verbindet..."}]'
+                        placeholder='[{&quot;question&quot;: &quot;Wie funktioniert Taskilo?&quot;, &quot;answer&quot;: &quot;Taskilo verbindet...&quot;}]'
                     />
                     <p className="mt-1 text-xs text-gray-500">
                         Häufig gestellte Fragen als JSON-Array mit "question" und "answer" Feldern.
@@ -221,5 +240,16 @@
                 </div>
             </form>
         </div>
+    );
+}
+
+export default function AiConfigPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center h-32">
+            <FiLoader className="animate-spin text-2xl" />
+            <span className="ml-2">Lade Konfiguration...</span>
+        </div>}>
+            <AiConfigContent />
+        </Suspense>
     );
 }

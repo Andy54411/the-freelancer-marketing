@@ -1,4 +1,4 @@
-// /Users/andystaudinger/Tasko/src/lib/stripeErrorHandler.ts
+// /Users/andystaudinger/Taskilo/src/lib/stripeErrorHandler.ts
 /**
  * Utility-Funktionen zur Behandlung von Stripe-Fehlern
  */

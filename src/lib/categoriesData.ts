@@ -1,4 +1,4 @@
-// /Users/andystaudinger/Tasko/src/lib/categoriesData.ts
+// /Users/andystaudinger/Taskilo/src/lib/categoriesData.ts
 
 export interface Category {
     title: string;

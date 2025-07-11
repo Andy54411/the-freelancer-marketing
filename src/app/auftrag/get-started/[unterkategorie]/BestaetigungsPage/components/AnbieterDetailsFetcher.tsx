@@ -1,4 +1,4 @@
-// /Users/andystaudinger/tasko/src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/components/AnbieterDetailsFetcher.tsx
+// /Users/andystaudinger/taskilo/src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/components/AnbieterDetailsFetcher.tsx
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react'; // useMemo entfernt

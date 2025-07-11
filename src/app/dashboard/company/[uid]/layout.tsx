@@ -1,4 +1,4 @@
-// /Users/andystaudinger/Tasko/src/app/dashboard/company/[uid]/layout.tsx
+// /Users/andystaudinger/Taskilo/src/app/dashboard/company/[uid]/layout.tsx
 'use client';
 
 import React, { useMemo, useCallback } from 'react';

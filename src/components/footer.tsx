@@ -1,3 +1,5 @@
+"use client";
+
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -5,132 +7,120 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { ChevronsUpDown } from 'lucide-react'
 import Link from 'next/link'
-
-const links = [
-    {
-        group: 'Product',
-        items: [
-            {
-                title: 'Features',
-                href: '#',
-            },
-            {
-                title: 'Solution',
-                href: '#',
-            },
-            {
-                title: 'Customers',
-                href: '#',
-            },
-            {
-                title: 'Pricing',
-                href: '#',
-            },
-            {
-                title: 'Help',
-                href: '#',
-            },
-            {
-                title: 'About',
-                href: '#',
-            },
-        ],
-    },
-    {
-        group: 'Solution',
-        items: [
-            {
-                title: 'Startup',
-                href: '#',
-            },
-            {
-                title: 'Freelancers',
-                href: '#',
-            },
-            {
-                title: 'Organizations',
-                href: '#',
-            },
-            {
-                title: 'Students',
-                href: '#',
-            },
-            {
-                title: 'Collaboration',
-                href: '#',
-            },
-            {
-                title: 'Design',
-                href: '#',
-            },
-            {
-                title: 'Management',
-                href: '#',
-            },
-        ],
-    },
-    {
-        group: 'Company',
-        items: [
-            {
-                title: 'About',
-                href: '#',
-            },
-            {
-                title: 'Careers',
-                href: '#',
-            },
-            {
-                title: 'Blog',
-                href: '#',
-            },
-            {
-                title: 'Press',
-                href: '#',
-            },
-            {
-                title: 'Contact',
-                href: '#',
-            },
-            {
-                title: 'Help',
-                href: '#',
-            },
-        ],
-    },
-    {
-        group: 'Legal',
-        items: [
-            {
-                title: 'Licence',
-                href: '#',
-            },
-            {
-                title: 'Privacy',
-                href: '#',
-            },
-            {
-                title: 'Cookies',
-                href: '#',
-            },
-            {
-                title: 'Security',
-                href: '#',
-            },
-        ],
-    },
-]
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function FooterSection() {
+    const { language, setLanguage, t } = useLanguage();
+
+    const links = [
+        {
+            group: t('footer.product'),
+            items: [
+                {
+                    title: t('footer.features'),
+                    href: '#features',
+                },
+                {
+                    title: t('footer.comingSoon'),
+                    href: '/coming-soon',
+                },
+                {
+                    title: t('footer.categories'),
+                    href: '#kategorien',
+                },
+                {
+                    title: t('footer.pricing'),
+                    href: '#preise',
+                },
+                {
+                    title: t('footer.help'),
+                    href: '#hilfe',
+                },
+            ],
+        },
+        {
+            group: t('footer.solutions'),
+            items: [
+                {
+                    title: t('footer.forCompanies'),
+                    href: '/register/company',
+                },
+                {
+                    title: t('footer.forFreelancers'),
+                    href: '/register/company',
+                },
+                {
+                    title: t('footer.forCustomers'),
+                    href: '/register/user',
+                },
+                {
+                    title: t('footer.startProject'),
+                    href: '/auftrag/get-started',
+                },
+                {
+                    title: t('footer.becomeProvider'),
+                    href: '/register/company',
+                },
+            ],
+        },
+        {
+            group: t('footer.company'),
+            items: [
+                {
+                    title: t('footer.about'),
+                    href: '/about',
+                },
+                {
+                    title: t('footer.careers'),
+                    href: '/careers',
+                },
+                {
+                    title: t('footer.blog'),
+                    href: '/blog',
+                },
+                {
+                    title: t('footer.press'),
+                    href: '/press',
+                },
+                {
+                    title: t('footer.contact'),
+                    href: '/contact',
+                },
+            ],
+        },
+        {
+            group: t('footer.legal'),
+            items: [
+                {
+                    title: t('footer.imprint'),
+                    href: '/impressum',
+                },
+                {
+                    title: t('footer.privacy'),
+                    href: '/datenschutz',
+                },
+                {
+                    title: t('footer.terms'),
+                    href: '/agb',
+                },
+                {
+                    title: t('footer.cookies'),
+                    href: '/cookies',
+                },
+            ],
+        },
+    ];
+
     return (
-        <footer className="border-b bg-white pt-20 dark:bg-transparent">
-            <div className="mb-8 border-b md:mb-12">
+        <footer className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 text-white pt-20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative z-10 mb-8 border-b border-white/20 md:mb-12">
                 <div className="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-6 px-6 pb-6">
                     <Link
                         href="/"
                         aria-label="go home"
                         className="block size-fit">
-                        <Logo />
+                        <Logo className="text-white" />
                     </Link>
                     <div className="flex flex-wrap justify-center gap-6 text-sm">
                         <Link
@@ -138,7 +128,7 @@ export default function FooterSection() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="X/Twitter"
-                            className="text-muted-foreground hover:text-primary block">
+                            className="text-white/70 hover:text-white block transition-colors">
                             <svg
                                 className="size-6"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -155,7 +145,7 @@ export default function FooterSection() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="LinkedIn"
-                            className="text-muted-foreground hover:text-primary block">
+                            className="text-white/70 hover:text-white block transition-colors">
                             <svg
                                 className="size-6"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -172,7 +162,7 @@ export default function FooterSection() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Facebook"
-                            className="text-muted-foreground hover:text-primary block">
+                            className="text-white/70 hover:text-white block transition-colors">
                             <svg
                                 className="size-6"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -189,7 +179,7 @@ export default function FooterSection() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Threads"
-                            className="text-muted-foreground hover:text-primary block">
+                            className="text-white/70 hover:text-white block transition-colors">
                             <svg
                                 className="size-6"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -211,7 +201,7 @@ export default function FooterSection() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Instagram"
-                            className="text-muted-foreground hover:text-primary block">
+                            className="text-white/70 hover:text-white block transition-colors">
                             <svg
                                 className="size-6"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -228,7 +218,7 @@ export default function FooterSection() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="TikTok"
-                            className="text-muted-foreground hover:text-primary block">
+                            className="text-white/70 hover:text-white block transition-colors">
                             <svg
                                 className="size-6"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -243,69 +233,69 @@ export default function FooterSection() {
                     </div>
                 </div>
             </div>
-            <div className="mx-auto max-w-5xl px-6">
+            <div className="mx-auto max-w-5xl px-6 relative z-10">
                 <div className="grid gap-12 md:grid-cols-5 md:gap-0 lg:grid-cols-4">
                     <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 md:col-span-5 md:row-start-1 lg:col-span-3">
                         {links.map((link, index) => (
                             <div
                                 key={index}
                                 className="space-y-4 text-sm">
-                                <span className="block font-medium">{link.group}</span>
+                                <span className="block font-medium text-white">{link.group}</span>
                                 {link.items.map((item, index) => (
                                     <Link
                                         key={index}
                                         href={item.href}
-                                        className="text-muted-foreground hover:text-primary block duration-150">
+                                        className="text-white/70 hover:text-white block duration-150 transition-colors">
                                         <span>{item.title}</span>
                                     </Link>
                                 ))}
                             </div>
                         ))}
                     </div>
-                    <form className="row-start-1 border-b pb-8 text-sm md:col-span-2 md:border-none lg:col-span-1">
+                    <form className="row-start-1 border-b border-white/20 pb-8 text-sm md:col-span-2 md:border-none lg:col-span-1">
                         <div className="space-y-4">
                             <Label
                                 htmlFor="mail"
-                                className="block font-medium">
-                                Newsletter
+                                className="block font-medium text-white">
+                                {t('footer.newsletter')}
                             </Label>
                             <div className="flex gap-2">
                                 <Input
                                     type="email"
                                     id="mail"
                                     name="mail"
-                                    placeholder="Your email"
-                                    className="h-8 text-sm"
+                                    placeholder={t('footer.emailPlaceholder')}
+                                    className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
                                 />
-                                <Button size="sm">Submit</Button>
+                                <Button size="sm" className="bg-white text-[#14ad9f] hover:bg-white/90">{t('footer.subscribe')}</Button>
                             </div>
-                            <span className="text-muted-foreground block text-sm">Don&apos;t miss any update!</span>
+                            <span className="text-white/70 block text-sm">{t('footer.newsletterText')}</span>
                         </div>
                     </form>
                 </div>
-                <div className="mt-12 flex flex-wrap items-end justify-between gap-6 border-t py-6">
-                    <small className="text-muted-foreground order-last block text-center text-sm md:order-first">© {new Date().getFullYear()} Tailark, All rights reserved</small>
-                    <form action="">
-                        <div className="relative">
-                            <ChevronsUpDown
-                                className="pointer-events-none absolute inset-y-0 right-2 my-auto opacity-75"
-                                size="0.75rem"
-                            />
-                            <select
-                                className={cn(
-                                    'border-input file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground shadow-xs flex h-9 w-full min-w-32 appearance-none rounded-md border bg-transparent px-3 py-1 text-base outline-none transition-[color,box-shadow] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                    'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-                                    'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive'
-                                )}
-                                name="language">
-                                <option value="1">English</option>
-                                <option value="2">Espanol</option>
-                                <option value="3">Français</option>
-                                <option value="4">Swahili</option>
-                                <option value="5">Lingala</option>
-                            </select>
-                        </div>
-                    </form>
+                <div className="mt-12 flex flex-wrap items-end justify-between gap-6 border-t border-white/20 py-6">
+                    <small className="text-white/70 order-last block text-center text-sm md:order-first">
+                        {t('footer.copyright', { year: new Date().getFullYear() })}
+                    </small>
+                    <div className="relative">
+                        <ChevronsUpDown
+                            className="pointer-events-none absolute inset-y-0 right-2 my-auto text-white/70"
+                            size="0.75rem"
+                        />
+                        <select
+                            className={cn(
+                                'bg-white/10 border-white/20 text-white placeholder:text-white/60 shadow-xs flex h-9 w-full min-w-32 appearance-none rounded-md border px-3 py-1 text-base outline-none transition-[color,box-shadow] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                'focus-visible:border-white focus-visible:ring-white/20 focus-visible:ring-[3px]'
+                            )}
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                            name="language">
+                            <option value="de" className="bg-gray-800 text-white">Deutsch</option>
+                            <option value="en" className="bg-gray-800 text-white">English</option>
+                            <option value="fr" className="bg-gray-800 text-white">Français</option>
+                            <option value="es" className="bg-gray-800 text-white">Español</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </footer>

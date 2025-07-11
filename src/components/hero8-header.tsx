@@ -12,6 +12,7 @@ import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
 
 const menuItems = [
   { name: 'Startseite', href: '/' },
+  { name: 'Coming Soon', href: '/coming-soon' },
   { name: 'Vision', href: '#link' },
   { name: 'Preis', href: '#link' },
   { name: 'Blog', href: '#link' },
@@ -52,7 +53,7 @@ export const HeroHeader = () => {
           <div className="flex flex-wrap items-center justify-between py-4">
             {/* Left Section */}
             <div className="flex items-center justify-between w-full lg:w-auto gap-8">
-              <Link href="/" className="flex items-center space-x-2" aria-label="Tasko Home">
+              <Link href="/" className="flex items-center space-x-2" aria-label="Taskilo Home">
                 <Logo />
               </Link>
 
@@ -105,7 +106,7 @@ export const HeroHeader = () => {
                 </Button>
                 <Button asChild size="sm">
                   <Link href="/register/company">
-                    <span>Starte mit Tasko</span>
+                    <span>Starte mit Taskilo</span>
                   </Link>
                 </Button>
                 <ModeToggle />
@@ -132,7 +133,7 @@ export const HeroHeader = () => {
                     Login
                   </Button>
                   <Button asChild size="sm">
-                    <Link href="/register/company">Starte mit Tasko</Link>
+                    <Link href="/register/company">Starte mit Taskilo</Link>
                   </Button>
                   <ModeToggle />
                 </div>

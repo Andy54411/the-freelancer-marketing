@@ -85,12 +85,12 @@ export default function HeroSection() {
                   <span className="block">Finde verlässliche Hilfe</span>
                   <span className="block">für jedes Projekt –</span>
                   <span className="block">
-                    schnell, einfach, <span className="text-[#14ad9f]">Tasko</span>
+                    schnell, einfach, <span className="text-[#14ad9f]">Taskilo</span>
                   </span>
                 </h1>
 
                 <p className="mt-8 max-w-2xl text-pretty text-lg">
-                  Tasko bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!
+                  Taskilo bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!
                 </p>
 
                 <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
@@ -118,7 +118,7 @@ export default function HeroSection() {
                 <Image
                   className="h-auto w-full object-contain"
                   src="/images/AdobeStock_163577338.jpeg"
-                  alt="Tasko Hero"
+                  alt="Taskilo Hero"
                   width={1200}
                   height={800}
                   priority

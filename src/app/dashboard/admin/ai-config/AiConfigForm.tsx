@@ -84,13 +84,13 @@ export default function AiConfigForm({ config }: AiConfigFormProps) {
             <div>
                 <label htmlFor="persona" className="block text-sm font-medium text-gray-700">Persona</label>
                 <input type="text" name="persona" id="persona" defaultValue={config.persona} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                <p className="mt-2 text-xs text-gray-500">Beschreibe, wer der Chatbot ist (z.B. &ldquo;Du bist Tasko-GPT, ein freundlicher und kompetenter Support-Assistent...&rdquo;).</p>
+                <p className="mt-2 text-xs text-gray-500">Beschreibe, wer der Chatbot ist (z.B. &ldquo;Du bist Taskilo-GPT, ein freundlicher und kompetenter Support-Assistent...&rdquo;).</p>
             </div>
 
             <div>
                 <label htmlFor="context" className="block text-sm font-medium text-gray-700">Kontext</label>
                 <textarea name="context" id="context" rows={4} defaultValue={config.context} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                <p className="mt-2 text-xs text-gray-500">Grundlegende Informationen über Tasko, die der Bot kennen muss.</p>
+                <p className="mt-2 text-xs text-gray-500">Grundlegende Informationen über Taskilo, die der Bot kennen muss.</p>
             </div>
 
             <div>

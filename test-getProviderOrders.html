@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test getProviderOrders</title>
+</head>
+<body>
+    <h1>Test getProviderOrders HTTP Function</h1>
+    <button onclick="testFunction()">Test Function</button>
+    <div id="result"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAUdPnWZAVAWFCNEoHYzOcNcPqjD0p_P0I",
+            authDomain: "tilvo-f142f.firebaseapp.com",
+            projectId: "tilvo-f142f",
+            storageBucket: "tilvo-f142f.appspot.com",
+            messagingSenderId: "1051325896767",
+            appId: "1:1051325896767:web:4a6b7c8d9e0f1a2b3c4d5e",
+            measurementId: "G-XXXXXXXXXX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        window.testFunction = async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    resultDiv.innerHTML = 'Please sign in first!';
+                    return;
+                }
+
+                const token = await user.getIdToken();
+                const response = await fetch('https://getproviderorders-d4kdcd73ia-ew.a.run.app/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        providerId: 'mLVDJFKOYhgL5x8HIlnWYV7yUeF3'
+                    })
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        };
+
+        // Auto-sign in for testing
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('User signed in:', user.uid);
+            } else {
+                console.log('User signed out');
+                // Sign in with test user
+                signInWithEmailAndPassword(auth, 'test@example.com', 'password123')
+                    .then((userCredential) => {
+                        console.log('Signed in:', userCredential.user.uid);
+                    })
+                    .catch((error) => {
+                        console.error('Sign in error:', error);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

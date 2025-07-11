@@ -90,7 +90,3 @@ export const handleSupportMessage = chatbot.handleSupportMessage;
 // Enhanced Chatbot APIs
 export const enhancedChatbot = enhancedChatbotAPI.enhancedChatbotAPI;
 export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
-
-// Fixed version of getProviderOrders with proper CORS support
-import { getProviderOrdersFixed } from './getProviderOrdersFixed';
-export { getProviderOrdersFixed };

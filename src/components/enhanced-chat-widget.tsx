@@ -137,7 +137,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
                     const aiResponse: ChatMessage = {
                         id: (Date.now() + 1).toString(),
                         sender: 'ai',
-                        senderName: 'Tasko KI-Support',
+                        senderName: 'Taskilo KI-Support',
                         message: 'Ich habe Ihre Nachricht erhalten und bearbeite sie. Einen Moment bitte...',
                         timestamp: new Date().toISOString(),
                         messageType: 'text'
@@ -248,7 +248,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
         <Card className="w-full max-w-2xl h-96 flex flex-col">
             <div className="border-b px-4 py-3 bg-gray-50">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Tasko Support</h3>
+                    <h3 className="font-semibold text-lg">Taskilo Support</h3>
                     {getStatusIndicator()}
                 </div>
 

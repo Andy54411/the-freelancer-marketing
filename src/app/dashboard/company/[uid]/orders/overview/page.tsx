@@ -5,8 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Filter as FiFilter, MoreVertical as FiMoreVertical, Package as FiPackage, Clock as FiClock, Search as FiSearch, ChevronDown as FiChevronDown, Inbox as FiInbox, Loader2 as FiLoader, Folder as FiFolder, User as FiUser } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { httpsCallable } from 'firebase/functions';
-import { functions as functionsInstance } from '@/firebase/clients'; // Import the configured instance
+import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Vereinfachtes Interface für Auftragsdaten aus Anbietersicht
@@ -63,26 +62,20 @@ const CompanyOrdersOverviewPage = () => {
             setIsLoading(true);
             setError(null);
             try {
-                // Annahme: Es gibt eine Cloud Function 'getProviderOrdersFixed'
-                // die { providerId: string } als Daten erwartet und { orders: Order[] } zurückgibt.
-                const getProviderOrdersCallable = httpsCallable<{ providerId: string }, { orders: Order[] }>(functionsInstance, 'getProviderOrdersFixed');
-                console.log(`[CompanyOrdersOverviewPage] Rufe getProviderOrdersFixed für Anbieter ${uidFromParams} auf...`);
-                const result = await getProviderOrdersCallable({ providerId: uidFromParams });
+                // Verwende die neue HTTP-Funktion
+                const result = await callHttpsFunction('getProviderOrders', { providerId: uidFromParams }, 'GET');
 
-                if (result.data && Array.isArray(result.data.orders)) {
-                    console.log(`[CompanyOrdersOverviewPage] ${result.data.orders.length} Aufträge empfangen.`);
+                if (result && Array.isArray(result.orders)) {
                     // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus, da diese nicht in der Übersicht erscheinen sollen.
-                    const visibleOrders = result.data.orders.filter(
-                        order => order.status !== 'abgelehnt_vom_anbieter'
+                    const visibleOrders = result.orders.filter(
+                        (order: any) => order.status !== 'abgelehnt_vom_anbieter'
                     );
                     setOrders(visibleOrders);
                 } else {
-                    console.warn("[CompanyOrdersOverviewPage] Keine Aufträge im erwarteten Format vom Backend erhalten.", result.data);
                     setOrders([]);
                 }
 
             } catch (err: any) {
-                console.error("Fehler beim Laden der Aufträge:", err);
                 const errorMessage = err.message || "Ein unbekannter Fehler ist aufgetreten.";
                 setError(`Aufträge konnten nicht geladen werden: ${errorMessage}`);
             } finally {
