@@ -38,13 +38,9 @@ export default function CompanyDashboardLayout({
                 : isNonEmptyString(userData?.companyName)
                     ? userData.companyName
                     : 'Unbekannte Firma',
-            logoUrl: isNonEmptyString(userData?.profilePictureFirebaseUrl) // Priorität für die Firebase Storage-URL
-                ? userData.profilePictureFirebaseUrl
-                : isNonEmptyString(userData?.step3?.profilePictureURL)
-                    ? userData.step3.profilePictureURL
-                    : isNonEmptyString(userData?.profilePictureURL)
-                        ? userData.profilePictureURL
-                        : undefined,
+            // Für das company logoUrl verwenden wir nur echte Firmenlogos, nicht Benutzer-Profilbilder
+            // Das Benutzer-Profilbild wird direkt im Header aus der Firestore geladen
+            logoUrl: undefined, // Vorerst kein Firmenlogo, damit das Benutzer-Profilbild angezeigt wird
         };
     }, [uid, userData]);
 

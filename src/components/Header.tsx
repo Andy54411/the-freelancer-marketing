@@ -369,6 +369,14 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             .filter(category => category.subcategories.length > 0); // Nur Kategorien mit passenden Unterkategorien anzeigen
     }, [searchTerm]);
 
+    // Debug: Log company prop
+    console.log('[Header] COMPANY PROP DEBUG:', {
+        company: company,
+        companyLogoUrl: company?.logoUrl,
+        hasCompany: !!company,
+        hasCompanyLogo: !!company?.logoUrl
+    });
+
     return (
         <>
             <header className="bg-white shadow-sm sticky top-0 z-50 md:relative"> {/* added md:relative */}
