@@ -37,42 +37,46 @@ export default function UserServiceSubcategoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
 
-  // Finde die Kategorie basierend auf dem URL-Slug
+  // URL-Parameter dekodieren und Kategorie finden
+  const decodedCategory = decodeURIComponent(category);
+  const decodedSubcategory = decodeURIComponent(subcategory);
+  
+  console.log('[ServicePage] URL-Parameter Debug:', {
+    rawCategory: category,
+    rawSubcategory: subcategory,
+    decodedCategory,
+    decodedSubcategory
+  });
+
+  // Normalisierungsfunktion (gleich wie in Navigation verwendet)
+  const normalizeToSlug = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
+
+  // Finde die Kategorie durch Vergleich der normalisierten Namen
   const categoryInfo = categories.find(cat => {
-    const normalizedCatTitle = cat.title.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
-    const decodedCategory = decodeURIComponent(category);
-    const normalizedDecodedCategory = decodedCategory.toLowerCase().replace(/\s+/g, '-');
+    const expectedSlug = normalizeToSlug(cat.title);
     
-    console.log('[ServicePage] Matching category:', {
-      originalCategory: category,
-      decodedCategory,
-      normalizedDecodedCategory,
-      catTitle: cat.title,
-      normalizedCatTitle,
-      match: normalizedCatTitle === category || normalizedDecodedCategory === cat.title.toLowerCase().replace(/\s+/g, '-')
+    console.log('[ServicePage] Category matching:', {
+      categoryTitle: cat.title,
+      expectedSlug,
+      decodedParam: decodedCategory,
+      matches: expectedSlug === decodedCategory
     });
     
-    return normalizedCatTitle === category || 
-           normalizedDecodedCategory === cat.title.toLowerCase().replace(/\s+/g, '-') ||
-           cat.title.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '-%26-') === category;
+    return expectedSlug === decodedCategory;
   });
   
-  // Finde die Unterkategorie basierend auf dem URL-Slug
+  // Finde die Unterkategorie durch Vergleich der normalisierten Namen
   const subcategoryName = categoryInfo?.subcategories.find(sub => {
-    const normalizedSub = sub.toLowerCase().replace(/\s+/g, '-');
-    const decodedSubcategory = decodeURIComponent(subcategory);
-    const normalizedDecodedSubcategory = decodedSubcategory.toLowerCase().replace(/\s+/g, '-');
+    const expectedSubSlug = normalizeToSlug(sub);
     
-    console.log('[ServicePage] Matching subcategory:', {
-      originalSubcategory: subcategory,
-      decodedSubcategory,
-      normalizedDecodedSubcategory,
-      sub,
-      normalizedSub,
-      match: normalizedSub === subcategory || normalizedDecodedSubcategory === normalizedSub
+    console.log('[ServicePage] Subcategory matching:', {
+      subcategoryName: sub,
+      expectedSubSlug,
+      decodedParam: decodedSubcategory,
+      matches: expectedSubSlug === decodedSubcategory
     });
     
-    return normalizedSub === subcategory || normalizedDecodedSubcategory === normalizedSub;
+    return expectedSubSlug === decodedSubcategory;
   });
 
   useEffect(() => {
