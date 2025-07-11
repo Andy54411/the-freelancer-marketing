@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { HeroHeader } from '@/components/hero8-header';
+import React, { useState, useEffect, Suspense } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { FiGrid, FiUsers, FiArrowRight, FiSearch } from 'react-icons/fi';
 import Link from 'next/link';
+
+// Markiere die Route als dynamisch
+export const dynamic = 'force-dynamic';
 
 interface ServiceCategory {
     name: string;
@@ -16,7 +18,7 @@ interface ServiceCategory {
     icon: string;
 }
 
-const ServicesOverviewPage: React.FC = () => {
+const DashboardServicesPage: React.FC = () => {
     const [categories, setCategories] = useState<ServiceCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ const ServicesOverviewPage: React.FC = () => {
             try {
                 setLoading(true);
                 const usersRef = collection(db, 'users');
-
+                
                 // Query für alle Dienstleister
                 const providersQuery = query(
                     usersRef,
@@ -47,20 +49,20 @@ const ServicesOverviewPage: React.FC = () => {
                     const data = doc.data();
                     const category = data.selectedCategory;
                     const subcategory = data.selectedSubcategory;
-
+                    
                     if (category) {
                         totalCount++;
-
+                        
                         if (!categoriesMap.has(category)) {
                             categoriesMap.set(category, {
                                 providers: [],
                                 subcategories: new Set()
                             });
                         }
-
+                        
                         const categoryData = categoriesMap.get(category)!;
                         categoryData.providers.push(data);
-
+                        
                         if (subcategory) {
                             categoryData.subcategories.add(subcategory);
                         }
@@ -127,7 +129,7 @@ const ServicesOverviewPage: React.FC = () => {
 
     const CategoryCard = ({ category }: { category: ServiceCategory }) => (
         <Link
-            href={`/services/${category.slug}`}
+            href={`/dashboard/services/${category.slug}`}
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
         >
             <div className="p-6">
@@ -143,11 +145,11 @@ const ServicesOverviewPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
-
+                
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                     {category.description}
                 </p>
-
+                
                 <div className="mb-4">
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Verfügbare Services:</h4>
                     <div className="flex flex-wrap gap-1">
@@ -166,7 +168,7 @@ const ServicesOverviewPage: React.FC = () => {
                         )}
                     </div>
                 </div>
-
+                
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">
                         {category.subcategories.length} Kategorien
@@ -182,138 +184,137 @@ const ServicesOverviewPage: React.FC = () => {
 
     if (loading) {
         return (
-            <>
-                <HeroHeader />
-                <div className="min-h-screen bg-gray-50 py-8">
-                    <div className="max-w-7xl mx-auto px-4">
-                        <div className="flex justify-center items-center py-20">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
-                            <span className="ml-3 text-lg">Lade Services...</span>
-                        </div>
+            <div className="min-h-screen bg-gray-50 py-8">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
+                        <span className="ml-3 text-lg">Lade Services...</span>
                     </div>
                 </div>
-            </>
+            </div>
         );
     }
 
     if (error) {
         return (
-            <>
-                <HeroHeader />
-                <div className="min-h-screen bg-gray-50 py-8">
-                    <div className="max-w-7xl mx-auto px-4">
-                        <div className="text-center py-20">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Fehler beim Laden</h2>
-                            <p className="text-gray-600">{error}</p>
-                        </div>
+            <div className="min-h-screen bg-gray-50 py-8">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="text-center py-20">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Fehler beim Laden</h2>
+                        <p className="text-gray-600">{error}</p>
                     </div>
                 </div>
-            </>
+            </div>
         );
     }
 
     return (
-        <>
-            <HeroHeader />
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-7xl mx-auto px-4">
-                    {/* Header */}
-                    <div className="text-center mb-12">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                            Alle Services entdecken
-                        </h1>
-                        <p className="text-xl text-gray-600 mb-8">
-                            Finden Sie den perfekten Dienstleister für Ihr Projekt
-                        </p>
-
-                        {/* Search */}
-                        <div className="max-w-md mx-auto relative">
-                            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Service suchen..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="text-center">
-                                <div className="text-3xl font-bold text-[#14ad9f] mb-2">{totalProviders}</div>
-                                <div className="text-gray-600">Registrierte Dienstleister</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-3xl font-bold text-[#14ad9f] mb-2">{categories.length}</div>
-                                <div className="text-gray-600">Service Kategorien</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-3xl font-bold text-[#14ad9f] mb-2">
-                                    {categories.reduce((sum, cat) => sum + cat.subcategories.length, 0)}
-                                </div>
-                                <div className="text-gray-600">Spezialisierungen</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Categories Grid */}
-                    {filteredCategories.length === 0 ? (
-                        <div className="text-center py-20">
-                            <FiGrid size={48} className="mx-auto text-gray-400 mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                Keine Services gefunden
-                            </h3>
-                            <p className="text-gray-600 mb-6">
-                                {searchTerm ? `Keine Services für "${searchTerm}" gefunden.` : 'Derzeit sind keine Services verfügbar.'}
-                            </p>
-                            {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="bg-[#14ad9f] text-white px-6 py-3 rounded-lg hover:bg-teal-600 transition-colors font-medium"
-                                >
-                                    Alle Services anzeigen
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            {searchTerm && (
-                                <div className="mb-6">
-                                    <p className="text-gray-600">
-                                        {filteredCategories.length} Kategorie{filteredCategories.length !== 1 ? 'n' : ''} für "{searchTerm}" gefunden
-                                    </p>
-                                </div>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredCategories.map((category) => (
-                                    <CategoryCard key={category.slug} category={category} />
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* Call to Action */}
-                    <div className="bg-white rounded-lg shadow-sm p-8 mt-12 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                            Ihr Service ist nicht dabei?
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            Registrieren Sie sich als Dienstleister und erreichen Sie neue Kunden auf unserer Plattform.
-                        </p>
-                        <Link
-                            href="/register/company"
-                            className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg hover:bg-teal-600 transition-colors font-medium inline-block"
-                        >
-                            Als Dienstleister registrieren
-                        </Link>
+        <div className="min-h-screen bg-gray-50 py-8">
+            <div className="max-w-7xl mx-auto px-4">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                        Service Directory
+                    </h1>
+                    <p className="text-xl text-gray-600 mb-8">
+                        Finden Sie den perfekten Dienstleister für Ihr Projekt
+                    </p>
+                    
+                    {/* Search */}
+                    <div className="max-w-md mx-auto relative">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Service suchen..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
+                        />
                     </div>
                 </div>
+
+                {/* Stats */}
+                <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-[#14ad9f] mb-2">{totalProviders}</div>
+                            <div className="text-gray-600">Registrierte Dienstleister</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-[#14ad9f] mb-2">{categories.length}</div>
+                            <div className="text-gray-600">Service Kategorien</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-[#14ad9f] mb-2">
+                                {categories.reduce((sum, cat) => sum + cat.subcategories.length, 0)}
+                            </div>
+                            <div className="text-gray-600">Spezialisierungen</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Categories Grid */}
+                {filteredCategories.length === 0 ? (
+                    <div className="text-center py-20">
+                        <FiGrid size={48} className="mx-auto text-gray-400 mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            Keine Services gefunden
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            {searchTerm ? `Keine Services für "${searchTerm}" gefunden.` : 'Derzeit sind keine Services verfügbar.'}
+                        </p>
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="bg-[#14ad9f] text-white px-6 py-3 rounded-lg hover:bg-teal-600 transition-colors font-medium"
+                            >
+                                Alle Services anzeigen
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        {searchTerm && (
+                            <div className="mb-6">
+                                <p className="text-gray-600">
+                                    {filteredCategories.length} Kategorie{filteredCategories.length !== 1 ? 'n' : ''} für "{searchTerm}" gefunden
+                                </p>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredCategories.map((category) => (
+                                <CategoryCard key={category.slug} category={category} />
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
-        </>
+        </div>
     );
 };
 
-export default ServicesOverviewPage;
+export default function DashboardServicesWrapper() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="animate-pulse">
+                        <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-1/3 mb-4"></div>
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mb-8"></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                    <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-3"></div>
+                                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full mb-4"></div>
+                                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }>
+            <DashboardServicesPage />
+        </Suspense>
+    );
+}

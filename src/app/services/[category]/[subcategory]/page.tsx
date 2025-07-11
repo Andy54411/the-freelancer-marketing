@@ -50,7 +50,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
 
     const category = decodeURIComponent(params.category as string || '');
     const subcategory = decodeURIComponent(params.subcategory as string || '');
-    
+
     // Konvertiere URL-Format zurück zu lesbarem Format
     const categoryName = category.replace(/-/g, ' ').replace(/%26/g, '&');
     const subcategoryName = subcategory.replace(/-/g, ' ').replace(/%26/g, '&');
@@ -60,7 +60,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
             try {
                 setLoading(true);
                 const usersRef = collection(db, 'users');
-                
+
                 // Query für Dienstleister mit der gewählten Unterkategorie
                 const providersQuery = query(
                     usersRef,
@@ -127,14 +127,14 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
         }
     }, [subcategoryName, sortBy]);
 
-    const filteredProviders = providers.filter(provider => 
+    const filteredProviders = providers.filter(provider =>
         provider.hourlyRate >= priceRange[0] && provider.hourlyRate <= priceRange[1]
     );
 
     const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
-        const profileImage = provider.profilePictureFirebaseUrl || 
-                           provider.profilePictureURL || 
-                           '/default-avatar.png';
+        const profileImage = provider.profilePictureFirebaseUrl ||
+            provider.profilePictureURL ||
+            '/default-avatar.png';
 
         return (
             <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -160,7 +160,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                         </span>
                     )}
                 </div>
-                
+
                 <div className="p-4">
                     <div className="flex items-center gap-3 mb-3">
                         <Image
@@ -217,9 +217,9 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
     };
 
     const ListViewCard = ({ provider }: { provider: ServiceProvider }) => {
-        const profileImage = provider.profilePictureFirebaseUrl || 
-                           provider.profilePictureURL || 
-                           '/default-avatar.png';
+        const profileImage = provider.profilePictureFirebaseUrl ||
+            provider.profilePictureURL ||
+            '/default-avatar.png';
 
         return (
             <div className="bg-white rounded-lg shadow-md p-6 flex gap-6 hover:shadow-lg transition-shadow">
@@ -232,7 +232,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                         className="w-20 h-20 rounded-full object-cover"
                     />
                 </div>
-                
+
                 <div className="flex-grow">
                     <div className="flex justify-between items-start mb-2">
                         <div>
@@ -336,7 +336,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                             <span className="mx-2">›</span>
                             <span className="capitalize font-medium">{subcategoryName}</span>
                         </nav>
-                        
+
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             {subcategoryName} Dienstleister
                         </h1>
@@ -363,7 +363,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                                         <option value="responseTime">Antwortzeit</option>
                                     </select>
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Preisspanne (€/Std)
@@ -424,7 +424,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                         </div>
                     ) : (
                         <div className={
-                            viewMode === 'grid' 
+                            viewMode === 'grid'
                                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
                                 : 'space-y-6'
                         }>

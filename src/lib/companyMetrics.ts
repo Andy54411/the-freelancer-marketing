@@ -26,8 +26,8 @@ export async function calculateCompanyMetrics(companyUid: string): Promise<Compa
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // 1. Aufträge laden
-    const ordersRef = collection(db, 'orders');
-    const ordersQuery = query(ordersRef, where('providerId', '==', companyUid));
+    const ordersRef = collection(db, 'auftraege');
+    const ordersQuery = query(ordersRef, where('selectedAnbieterId', '==', companyUid));
     const ordersSnapshot = await getDocs(ordersQuery);
     const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -210,8 +210,8 @@ function getDefaultMetrics(): CompanyMetrics {
 // Zusätzliche Funktion für Order-spezifische Metriken
 export async function calculateOrderMetrics(companyUid: string): Promise<OrderMetrics> {
   try {
-    const ordersRef = collection(db, 'orders');
-    const ordersQuery = query(ordersRef, where('providerId', '==', companyUid));
+    const ordersRef = collection(db, 'auftraege');
+    const ordersQuery = query(ordersRef, where('selectedAnbieterId', '==', companyUid));
     const ordersSnapshot = await getDocs(ordersQuery);
     const orders = ordersSnapshot.docs.map(doc => doc.data());
 

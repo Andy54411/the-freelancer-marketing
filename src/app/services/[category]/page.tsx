@@ -41,7 +41,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
             try {
                 setLoading(true);
                 const usersRef = collection(db, 'users');
-                
+
                 // Query für alle Dienstleister dieser Kategorie
                 const providersQuery = query(
                     usersRef,
@@ -61,10 +61,10 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const subcategory = data.selectedSubcategory;
-                    
+
                     if (subcategory) {
                         totalCount++;
-                        
+
                         if (!subcategoriesMap.has(subcategory)) {
                             subcategoriesMap.set(subcategory, {
                                 providers: [],
@@ -72,7 +72,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                                 minPrice: Infinity
                             });
                         }
-                        
+
                         const subcatData = subcategoriesMap.get(subcategory)!;
                         subcatData.providers.push(data);
                         subcatData.totalRating += (data.averageRating || 0);
@@ -133,16 +133,16 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                     </div>
                 </div>
             </div>
-            
+
             <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {subcategory.name}
                 </h3>
-                
+
                 <p className="text-gray-600 text-sm mb-4">
                     {subcategory.description}
                 </p>
-                
+
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-1">
                         <FiStar className="text-yellow-500 fill-current" size={16} />
@@ -156,7 +156,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                         <p className="text-xs text-gray-500">pro Stunde</p>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">
                         {subcategory.providerCount} Dienstleister
@@ -216,7 +216,7 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                             <span className="mx-2">›</span>
                             <span className="capitalize font-medium">{categoryName}</span>
                         </nav>
-                        
+
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">
                             {categoryName} Services
                         </h1>
@@ -241,8 +241,8 @@ const ServiceCategoryPage: React.FC<ServiceCategoryPageProps> = () => {
                             </div>
                             <div className="text-center">
                                 <div className="text-3xl font-bold text-[#14ad9f] mb-2">
-                                    {subcategories.length > 0 ? 
-                                        (subcategories.reduce((sum, sub) => sum + sub.averageRating, 0) / subcategories.length).toFixed(1) 
+                                    {subcategories.length > 0 ?
+                                        (subcategories.reduce((sum, sub) => sum + sub.averageRating, 0) / subcategories.length).toFixed(1)
                                         : '0.0'
                                     }
                                 </div>

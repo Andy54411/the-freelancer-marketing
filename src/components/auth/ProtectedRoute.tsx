@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FiLoader } from 'react-icons/fi';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -47,4 +47,17 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     // If loading is done and there is no user, render nothing.
     // The useEffect is handling the redirect. This prevents a flash of the children.
     return null;
+}
+
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+                <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
+                <span>Authentifizierung wird geprüft...</span>
+            </div>
+        }>
+            <ProtectedRouteInternal>{children}</ProtectedRouteInternal>
+        </Suspense>
+    );
 }
