@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/logo';
-import { 
-  FiCalendar, 
-  FiMail, 
-  FiStar, 
-  FiTrendingUp, 
-  FiUsers, 
-  FiZap, 
+import {
+  FiCalendar,
+  FiMail,
+  FiStar,
+  FiTrendingUp,
+  FiUsers,
+  FiZap,
   FiCheckCircle,
   FiClock,
   FiArrowRight,
@@ -152,11 +152,11 @@ export default function ComingSoonPage() {
   // Countdown bis zum nächsten großen Feature (KI-Assistent)
   useEffect(() => {
     const targetDate = new Date('2025-01-15T00:00:00Z');
-    
+
     const updateCountdown = () => {
       const now = new Date();
       const difference = targetDate.getTime() - now.getTime();
-      
+
       if (difference > 0) {
         setCountdown({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -182,7 +182,7 @@ export default function ComingSoonPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600">
       <div className="absolute inset-0 bg-black/20"></div>
-      
+
       {/* Header */}
       <header className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">

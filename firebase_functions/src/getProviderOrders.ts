@@ -108,13 +108,13 @@ export const getProviderOrders = onRequest(
 
             // 2. Input Validation - Check both query params and body
             let providerId: string | undefined;
-            
+
             // Debug: Log request details
             logger.info(`[getProviderOrders] Request method: ${request.method}`);
             logger.info(`[getProviderOrders] Request headers:`, JSON.stringify(request.headers));
             logger.info(`[getProviderOrders] Request query:`, JSON.stringify(request.query));
             logger.info(`[getProviderOrders] Request body:`, JSON.stringify(request.body));
-            
+
             // For GET requests, check query parameters
             if (request.method === 'GET') {
                 providerId = request.query.providerId as string;
@@ -144,7 +144,7 @@ export const getProviderOrders = onRequest(
             }
 
             const db = getDb();
-            
+
             // 4. Fetch Data
             const ordersCollection = db
                 .collection(FIRESTORE_COLLECTIONS.ORDERS)
@@ -209,9 +209,9 @@ export const getProviderOrders = onRequest(
 
         } catch (error: any) {
             logger.error(`[getProviderOrders] Database query failed:`, error);
-            response.status(500).json({ 
+            response.status(500).json({
                 error: 'An error occurred while fetching the orders. This might be due to a missing database index.',
-                details: error.message 
+                details: error.message
             });
         }
     }

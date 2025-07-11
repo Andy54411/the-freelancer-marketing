@@ -12,7 +12,7 @@ export async function callHttpsFunction(
 
   const token = await user.getIdToken();
   const baseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';
-  
+
   let url = `${baseUrl}/${functionName}`;
   let options: RequestInit = {
     method,
@@ -37,7 +37,7 @@ export async function callHttpsFunction(
   }
 
   const response = await fetch(url, options);
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`HTTP ${response.status}: ${errorText}`);

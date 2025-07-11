@@ -26,8 +26,8 @@ export default function CookiesPage() {
                             <h2 className="text-2xl font-bold text-gray-900">Was sind Cookies?</h2>
                         </div>
                         <p className="text-gray-700 leading-relaxed mb-4">
-                            Cookies sind kleine Textdateien, die auf Ihrem Gerät gespeichert werden, 
-                            wenn Sie unsere Website besuchen. Sie helfen uns dabei, Ihre Präferenzen 
+                            Cookies sind kleine Textdateien, die auf Ihrem Gerät gespeichert werden,
+                            wenn Sie unsere Website besuchen. Sie helfen uns dabei, Ihre Präferenzen
                             zu speichern und Ihre Nutzererfahrung zu verbessern.
                         </p>
                     </section>
@@ -42,24 +42,24 @@ export default function CookiesPage() {
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Notwendige Cookies</h3>
                                 <p className="text-gray-700">
-                                    Diese Cookies sind für das ordnungsgemäße Funktionieren der Website erforderlich 
-                                    und können nicht deaktiviert werden. Sie speichern beispielsweise Ihre 
+                                    Diese Cookies sind für das ordnungsgemäße Funktionieren der Website erforderlich
+                                    und können nicht deaktiviert werden. Sie speichern beispielsweise Ihre
                                     Anmeldeinformationen und Sicherheitseinstellungen.
                                 </p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytische Cookies</h3>
                                 <p className="text-gray-700">
-                                    Diese Cookies helfen uns zu verstehen, wie Besucher mit unserer Website 
-                                    interagieren, indem sie Informationen anonym sammeln und melden. 
+                                    Diese Cookies helfen uns zu verstehen, wie Besucher mit unserer Website
+                                    interagieren, indem sie Informationen anonym sammeln und melden.
                                     Wir verwenden Vercel Analytics für diese Zwecke.
                                 </p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Funktionale Cookies</h3>
                                 <p className="text-gray-700">
-                                    Diese Cookies ermöglichen es der Website, erweiterte Funktionalität und 
-                                    Personalisierung bereitzustellen, wie z.B. die Speicherung Ihrer 
+                                    Diese Cookies ermöglichen es der Website, erweiterte Funktionalität und
+                                    Personalisierung bereitzustellen, wie z.B. die Speicherung Ihrer
                                     Sprachpräferenzen und Dashboard-Einstellungen.
                                 </p>
                             </div>
@@ -74,12 +74,12 @@ export default function CookiesPage() {
                         </div>
                         <div className="space-y-4">
                             <p className="text-gray-700">
-                                Sie können Cookies in Ihren Browser-Einstellungen verwalten. Beachten Sie jedoch, 
-                                dass die Deaktivierung bestimmter Cookies die Funktionalität unserer Website 
+                                Sie können Cookies in Ihren Browser-Einstellungen verwalten. Beachten Sie jedoch,
+                                dass die Deaktivierung bestimmter Cookies die Funktionalität unserer Website
                                 beeinträchtigen kann.
                             </p>
                             <p className="text-gray-700">
-                                Die meisten Webbrowser akzeptieren Cookies automatisch, aber Sie können Ihre 
+                                Die meisten Webbrowser akzeptieren Cookies automatisch, aber Sie können Ihre
                                 Browser-Einstellungen normalerweise ändern, um Cookies abzulehnen, wenn Sie dies bevorzugen.
                             </p>
                         </div>
@@ -115,8 +115,8 @@ export default function CookiesPage() {
                         <p className="mb-6">
                             Wenn Sie Fragen zu unserer Cookie-Richtlinie haben, kontaktieren Sie uns gerne.
                         </p>
-                        <a 
-                            href="mailto:datenschutz@taskilo.de" 
+                        <a
+                            href="mailto:datenschutz@taskilo.de"
                             className="inline-block bg-white text-[#14ad9f] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
                         >
                             datenschutz@taskilo.de

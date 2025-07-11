@@ -335,13 +335,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const t = (key: string, values?: Record<string, any>) => {
     const langTranslations = translations[language as keyof typeof translations];
     let text = langTranslations[key as keyof typeof langTranslations] || key;
-    
+
     if (values) {
       Object.entries(values).forEach(([key, value]) => {
         text = text.replace(`{${key}}`, value.toString());
       });
     }
-    
+
     return text;
   };
 

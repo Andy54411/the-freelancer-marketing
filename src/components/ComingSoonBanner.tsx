@@ -29,11 +29,11 @@ export default function ComingSoonBanner() {
               {t('banner.text')}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Link href="/coming-soon">
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 variant="secondary"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/30 text-sm"
               >

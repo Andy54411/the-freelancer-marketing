@@ -141,12 +141,12 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
             {formData.step3.profilePictureURL && formData.step3.profilePictureURL !== '/default-avatar.png' ? (
-              <Image 
-                src={formData.step3.profilePictureURL} 
-                alt="Profil" 
-                width={64} 
-                height={64} 
-                className="w-16 h-16 rounded-full object-cover" 
+              <Image
+                src={formData.step3.profilePictureURL}
+                alt="Profil"
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-full object-cover"
               />
             ) : (
               <FiUser size={24} />
@@ -182,11 +182,10 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
             <button
               key={tab.id}
               onClick={() => setActiveSection(tab.id as any)}
-              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                activeSection === tab.id
+              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${activeSection === tab.id
                   ? 'border-[#14ad9f] text-[#14ad9f]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               <tab.icon className="mr-2 h-5 w-5" />
               {tab.label}
@@ -220,8 +219,8 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
             </label>
             <div className="flex flex-wrap gap-2 mb-3">
               {publicProfileData.specialties.map((specialty, index) => (
-                <span 
-                  key={index} 
+                <span
+                  key={index}
                   className="inline-flex items-center gap-1 px-3 py-1 bg-[#14ad9f] text-white rounded-full text-sm"
                 >
                   {specialty}
@@ -335,9 +334,9 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
                 <FiGlobe className="text-[#14ad9f]" />
                 <div className="font-medium">Website</div>
               </div>
-              <a 
-                href={formData.step2.website} 
-                target="_blank" 
+              <a
+                href={formData.step2.website}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#14ad9f] hover:underline"
               >
@@ -352,7 +351,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
         <div className="space-y-6">
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Häufig gestellte Fragen (FAQ)</h4>
-            
+
             {/* Vorhandene FAQs */}
             <div className="space-y-3 mb-6">
               {publicProfileData.faqs.map(faq => (
@@ -411,7 +410,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
           <span className="font-medium">Hinweis:</span>
         </div>
         <p className="text-blue-700 text-sm mt-1">
-          Alle Änderungen werden automatisch mit den allgemeinen Einstellungen gespeichert. 
+          Alle Änderungen werden automatisch mit den allgemeinen Einstellungen gespeichert.
           Klicken Sie unten auf "Änderungen speichern" um alle Profil-Einstellungen zu übernehmen.
         </p>
       </div>

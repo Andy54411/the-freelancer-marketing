@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 
 export const Logo = ({ className, variant = 'white' }: { className?: string, variant?: 'default' | 'white' }) => {
   const isWhite = variant === 'white'
-  
+
   return (
     <div className={cn('flex items-center gap-3', className)}>
       <svg

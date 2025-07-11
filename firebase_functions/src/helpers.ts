@@ -347,7 +347,7 @@ export function isEmulator(): boolean {
  */
 export function getEnvironmentUrls(): { frontend_url: string; stripe_return_url: string } {
   const isEmulatorEnv = isEmulator();
-  
+
   if (isEmulatorEnv) {
     // Im Emulator verwenden wir die öffentliche Firebase-URL für Stripe
     const publicUrl = "https://tilvo-f142f.web.app";

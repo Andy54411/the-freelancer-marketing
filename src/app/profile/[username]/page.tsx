@@ -179,7 +179,7 @@ const UserProfilePage = () => {
                                     {profile.isOnline && <span className="w-3 h-3 bg-green-500 rounded-full"></span>}
                                 </h1>
                                 {profile.user_type === 'firma' && profile.companyName && <p className="text-md text-gray-600">{profile.companyName}</p>}
-                                
+
                                 {/* Badges */}
                                 {profile.badges && profile.badges.length > 0 && (
                                     <div className="flex flex-wrap gap-1 mt-2">
@@ -190,7 +190,7 @@ const UserProfilePage = () => {
                                         ))}
                                     </div>
                                 )}
-                                
+
                                 <p className="text-sm text-gray-500 mt-2">{profile.description?.substring(0, 100) || "Keine Beschreibung vorhanden."}{profile.description && profile.description.length > 100 && "..."}</p>
 
                                 {isOwnProfile ? (
@@ -217,7 +217,7 @@ const UserProfilePage = () => {
                                 <div className="space-y-3 text-sm">
                                     <div className="flex justify-between"><span>Standort:</span> <span className="font-medium text-gray-700 flex items-center gap-1"><FiMapPin size={12} /> {profile.city || 'N/A'}, {profile.country || 'N/A'}</span></div>
                                     <div className="flex justify-between"><span>Mitglied seit:</span> <span className="font-medium text-gray-700">{profile.memberSince ? new Date(profile.memberSince.seconds * 1000).toLocaleDateString('de-DE') : 'N/A'}</span></div>
-                                    
+
                                     {/* Fiverr-ähnliche Metriken */}
                                     {profile.responseTime && (
                                         <div className="flex justify-between"><span>Antwortzeit:</span> <span className="font-medium text-green-600 flex items-center gap-1"><FiClock size={12} /> ~{profile.responseTime}h</span></div>
@@ -228,13 +228,13 @@ const UserProfilePage = () => {
                                     {profile.totalOrders && (
                                         <div className="flex justify-between"><span>Projekte:</span> <span className="font-medium text-gray-700">{profile.totalOrders}</span></div>
                                     )}
-                                    
+
                                     {/* Bewertungsschnitt */}
                                     {reviews.length > 0 && (
                                         <div className="flex justify-between">
-                                            <span>Bewertung:</span> 
+                                            <span>Bewertung:</span>
                                             <span className="font-medium text-yellow-600 flex items-center gap-1">
-                                                <FiStar size={12} className="fill-current" /> 
+                                                <FiStar size={12} className="fill-current" />
                                                 {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)} ({reviews.length})
                                             </span>
                                         </div>
@@ -290,12 +290,12 @@ const UserProfilePage = () => {
                                             <div key={service.id} className="border rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden group">
                                                 {service.imageUrl && (
                                                     <div className="relative h-40 overflow-hidden">
-                                                        <Image 
-                                                            src={service.imageUrl} 
-                                                            alt={service.title} 
-                                                            width={300} 
-                                                            height={200} 
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                                        <Image
+                                                            src={service.imageUrl}
+                                                            alt={service.title}
+                                                            width={300}
+                                                            height={200}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                         />
                                                         <div className="absolute top-2 right-2">
                                                             <span className="bg-white/90 text-[#14ad9f] text-xs px-2 py-1 rounded-full font-semibold">
@@ -308,7 +308,7 @@ const UserProfilePage = () => {
                                                     <h3 className="font-semibold text-[#14ad9f] mb-1 line-clamp-2">{service.title}</h3>
                                                     <p className="text-xs text-gray-500 mb-2">{service.category} › {service.subcategory}</p>
                                                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">{service.description}</p>
-                                                    
+
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1 text-yellow-500">
                                                             <FiStar size={14} className="fill-current" />
@@ -317,9 +317,9 @@ const UserProfilePage = () => {
                                                         </div>
                                                         <p className="font-bold text-gray-800">Ab {(service.price / 100).toFixed(2)} €</p>
                                                     </div>
-                                                    
-                                                    <Link 
-                                                        href={`/services/details/${service.id}`} 
+
+                                                    <Link
+                                                        href={`/services/details/${service.id}`}
                                                         className="mt-3 w-full bg-[#14ad9f] text-white text-center py-2 px-4 rounded-lg hover:bg-teal-600 transition-colors inline-block font-medium"
                                                     >
                                                         Jetzt buchen
@@ -343,12 +343,12 @@ const UserProfilePage = () => {
                                             <div key={index} className="group cursor-pointer">
                                                 {project.imageUrl && (
                                                     <div className="relative h-32 rounded-lg overflow-hidden mb-2">
-                                                        <Image 
-                                                            src={project.imageUrl} 
-                                                            alt={project.title} 
-                                                            width={200} 
-                                                            height={128} 
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                                        <Image
+                                                            src={project.imageUrl}
+                                                            alt={project.title}
+                                                            width={200}
+                                                            height={128}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                         />
                                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                                             <FiEye className="text-white text-xl" />
@@ -378,13 +378,13 @@ const UserProfilePage = () => {
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 {reviews.length > 0 ? (
                                     <>
                                         {/* Bewertungsverteilung */}
                                         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                                             <div className="grid grid-cols-5 gap-2 text-center text-sm">
-                                                {[5,4,3,2,1].map(star => {
+                                                {[5, 4, 3, 2, 1].map(star => {
                                                     const count = reviews.filter(r => r.rating === star).length;
                                                     const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
                                                     return (
@@ -394,9 +394,9 @@ const UserProfilePage = () => {
                                                                 <FiStar size={12} className="fill-current" />
                                                             </div>
                                                             <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                                                                <div 
-                                                                    className="bg-yellow-500 h-2 rounded-full transition-all duration-300" 
-                                                                    style={{width: `${percentage}%`}}
+                                                                <div
+                                                                    className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
+                                                                    style={{ width: `${percentage}%` }}
                                                                 ></div>
                                                             </div>
                                                             <span className="text-xs text-gray-600">{count}</span>
@@ -405,7 +405,7 @@ const UserProfilePage = () => {
                                                 })}
                                             </div>
                                         </div>
-                                        
+
                                         {/* Bewertungsliste */}
                                         <ul className="space-y-4">
                                             {reviews.map(review => (
@@ -419,10 +419,10 @@ const UserProfilePage = () => {
                                                             </div>
                                                             <div className="flex items-center text-yellow-500 mb-2">
                                                                 {[...Array(5)].map((_, i) => (
-                                                                    <FiStar 
-                                                                        key={i} 
+                                                                    <FiStar
+                                                                        key={i}
                                                                         size={14}
-                                                                        className={i < review.rating ? 'fill-current' : 'stroke-current opacity-30'} 
+                                                                        className={i < review.rating ? 'fill-current' : 'stroke-current opacity-30'}
                                                                     />
                                                                 ))}
                                                             </div>
@@ -441,7 +441,7 @@ const UserProfilePage = () => {
                                     </div>
                                 )}
                             </div>
-                            
+
                             {/* FAQ-Sektion */}
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h2 className="text-xl font-semibold text-gray-800 mb-4">Häufig gestellte Fragen</h2>
@@ -465,7 +465,7 @@ const UserProfilePage = () => {
                                         }
                                     ].map((faq, index) => (
                                         <div key={index} className="border rounded-lg">
-                                            <button 
+                                            <button
                                                 className="w-full px-4 py-3 text-left flex justify-between items-center hover:bg-gray-50 transition-colors"
                                                 onClick={() => setExpandedFaq(expandedFaq === index ? -1 : index)}
                                             >

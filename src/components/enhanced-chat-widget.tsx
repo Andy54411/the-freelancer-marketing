@@ -196,10 +196,10 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
             >
                 <div
                     className={`max-w-[80%] rounded-lg px-4 py-2 ${isCustomer
-                            ? 'bg-blue-500 text-white'
-                            : isHuman
-                                ? 'bg-green-100 text-green-800 border-l-4 border-green-500'
-                                : 'bg-gray-100 text-gray-800'
+                        ? 'bg-blue-500 text-white'
+                        : isHuman
+                            ? 'bg-green-100 text-green-800 border-l-4 border-green-500'
+                            : 'bg-gray-100 text-gray-800'
                         }`}
                 >
                     {message.messageType === 'escalation_notice' && (
