@@ -30,7 +30,7 @@ const AppHeaderNavigation: React.FC = () => {
                     >
                         {/* Hauptkategorie-Link (könnte zu einer Übersichtsseite führen) */}
                         <Link
-                            href={`/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}`}
+                            href={`/dashboard/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}`}
                             className="text-gray-700 hover:text-[#14ad9f] px-3 py-2 rounded-md text-sm font-medium" // Zurück zu text-sm und entsprechendem Padding
                         >
                             {category.title}
@@ -45,7 +45,7 @@ const AppHeaderNavigation: React.FC = () => {
                                     {category.subcategories.map((subcategory) => (
                                         <Link
                                             key={subcategory}
-                                            href={`/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`}
+                                            href={`/dashboard/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`}
                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                             role="menuitem"
                                         >
