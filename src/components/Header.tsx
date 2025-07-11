@@ -188,6 +188,16 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                     photoURL: userData.photoURL
                 });
 
+                // TEST: Versuche die URL direkt zu testen
+                const testUrl = userData.profilePictureFirebaseUrl;
+                if (testUrl) {
+                    console.log('[Header] Testing image URL accessibility:', testUrl);
+                    
+                    // Versuche die Firebase Storage URL direkt ohne Encoding zu verwenden
+                    const directUrl = testUrl.replace(/user_uploads%2F/, 'user_uploads/').replace(/%2F/g, '/');
+                    console.log('[Header] Direct URL (decoded):', directUrl);
+                }
+
                 const profilePictureUrl = userData.profilePictureFirebaseUrl ||
                     userData.profilePictureURL ||
                     userData.photoURL;
@@ -195,7 +205,23 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 console.log('[Header] Selected profile picture URL:', profilePictureUrl);
 
                 if (profilePictureUrl) {
-                    // Stelle sicher, dass es sich um eine vollständige URL handelt
+                    // NEUE LOGIK: Verwende die Storage getDownloadURL Methode für bessere Kompatibilität
+                    if (userData.profilePictureURL && !userData.profilePictureURL.startsWith('http')) {
+                        try {
+                            console.log('[Header] Attempting to get download URL for path:', userData.profilePictureURL);
+                            const imageRef = storageRef(storage, userData.profilePictureURL);
+                            const downloadUrl = await getDownloadURL(imageRef);
+                            console.log('[Header] Got download URL from storage reference:', downloadUrl);
+                            setProfilePictureURLFromStorage(downloadUrl);
+                            setImageLoadError(false);
+                            console.log('[Header] Profile picture URL set successfully via storage reference');
+                            return;
+                        } catch (storageError) {
+                            console.log('[Header] Storage reference failed, falling back to direct URL:', storageError);
+                        }
+                    }
+                    
+                    // Fallback: Verwende die direkte URL
                     let finalUrl = profilePictureUrl;
                     if (!profilePictureUrl.startsWith('http')) {
                         // Falls es nur ein Pfad ist, füge die Firebase Storage Base URL hinzu
