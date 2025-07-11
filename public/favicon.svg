@@ -1,0 +1,8 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="transparent"/>
+  <g transform="translate(8, 8)">
+    <!-- T-Form in Weiß -->
+    <rect x="0" y="0" width="16" height="3" fill="white"/>
+    <rect x="6.5" y="0" width="3" height="16" fill="white"/>
+  </g>
+</svg>

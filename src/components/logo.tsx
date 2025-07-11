@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export const Logo = ({ className, variant = 'default' }: { className?: string, variant?: 'default' | 'white' }) => {
+export const Logo = ({ className, variant = 'white' }: { className?: string, variant?: 'default' | 'white' }) => {
   const isWhite = variant === 'white'
   
   return (
@@ -19,10 +19,7 @@ export const Logo = ({ className, variant = 'default' }: { className?: string, v
         <rect x="18" y="8" width="6" height="8" rx="1" fill={isWhite ? "#E5E7EB" : "#6B7280"} />
         <rect x="18" y="18" width="4" height="8" rx="1" fill={isWhite ? "#E5E7EB" : "#6B7280"} />
       </svg>
-      <span className={cn(
-        'text-lg font-bold tracking-wide',
-        isWhite ? 'text-white' : 'text-gray-900 dark:text-white'
-      )}>
+      <span className="text-lg font-bold tracking-wide text-white">
         TASKILO
       </span>
     </div>
@@ -39,11 +36,11 @@ export const LogoIcon = ({ className }: { className?: string }) => {
       xmlns="http://www.w3.org/2000/svg"
       className={cn('w-6 h-6', className)}
     >
-      {/* Vereinfachte Icon-Version */}
-      <rect x="1" y="1" width="22" height="5" rx="1" fill="#14B8A6" />
-      <rect x="9.5" y="6" width="5" height="16" rx="1" fill="#14B8A6" />
-      <rect x="16" y="6" width="5" height="7" rx="1" fill="#6B7280" />
-      <rect x="16" y="15" width="3" height="7" rx="1" fill="#6B7280" />
+      {/* Vereinfachte Icon-Version in Weiß */}
+      <rect x="1" y="1" width="22" height="5" rx="1" fill="#FFFFFF" />
+      <rect x="9.5" y="6" width="5" height="16" rx="1" fill="#FFFFFF" />
+      <rect x="16" y="6" width="5" height="7" rx="1" fill="#E5E7EB" />
+      <rect x="16" y="15" width="3" height="7" rx="1" fill="#E5E7EB" />
     </svg>
   )
 }

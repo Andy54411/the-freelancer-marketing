@@ -187,7 +187,7 @@ export default function ComingSoonPage() {
       <header className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
-            <Logo variant="white" />
+            <Logo />
           </Link>
           <Link href="/dashboard">
             <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
