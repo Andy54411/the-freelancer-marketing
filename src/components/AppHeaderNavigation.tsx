@@ -3,12 +3,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-// Importiere deine Kategorien-Definition. Passe den Pfad ggf. an,
-// falls du sie in eine zentrale Datei auslagerst. // GEÄNDERT: Import aus zentraler Datei
-import { categories, Category } from '@/lib/categoriesData'; // Importiere Category-Interface und Daten
+import { categories, Category } from '@/lib/categoriesData';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AppHeaderNavigation: React.FC = () => {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const { user } = useAuth();
 
     const handleMouseEnter = (categoryTitle: string) => {
         setOpenDropdown(categoryTitle);
@@ -16,6 +16,20 @@ const AppHeaderNavigation: React.FC = () => {
 
     const handleMouseLeave = () => {
         setOpenDropdown(null);
+    };
+
+    // Helper function to get the correct dashboard URL based on user type
+    const getServiceUrl = (category: string, subcategory?: string) => {
+        if (!user?.uid) return '/login';
+        
+        const baseUrl = user.role === 'firma' 
+            ? `/dashboard/company/${user.uid}/services` 
+            : `/dashboard/user/${user.uid}/services`;
+            
+        if (subcategory) {
+            return `${baseUrl}/${category}/${subcategory}`;
+        }
+        return baseUrl;
     };
 
     return (
@@ -30,8 +44,8 @@ const AppHeaderNavigation: React.FC = () => {
                     >
                         {/* Hauptkategorie-Link (könnte zu einer Übersichtsseite führen) */}
                         <Link
-                            href={`/dashboard/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}`}
-                            className="text-gray-700 hover:text-[#14ad9f] px-3 py-2 rounded-md text-sm font-medium" // Zurück zu text-sm und entsprechendem Padding
+                            href={user?.uid ? (user.role === 'firma' ? `/dashboard/company/${user.uid}` : `/dashboard/user/${user.uid}`) : '/login'}
+                            className="text-gray-700 hover:text-[#14ad9f] px-3 py-2 rounded-md text-sm font-medium"
                         >
                             {category.title}
                         </Link>
@@ -45,7 +59,10 @@ const AppHeaderNavigation: React.FC = () => {
                                     {category.subcategories.map((subcategory) => (
                                         <Link
                                             key={subcategory}
-                                            href={`/dashboard/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`}
+                                            href={getServiceUrl(
+                                                encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-')),
+                                                encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))
+                                            )}
                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                             role="menuitem"
                                         >
