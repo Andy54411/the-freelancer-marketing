@@ -120,7 +120,7 @@ export default function FooterSection() {
                         href="/"
                         aria-label="go home"
                         className="block size-fit">
-                        <Logo className="text-white" />
+                        <Logo />
                     </Link>
                     <div className="flex flex-wrap justify-center gap-6 text-sm">
                         <Link
