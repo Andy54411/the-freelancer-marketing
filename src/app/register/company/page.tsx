@@ -210,6 +210,7 @@ export default function Step1() {
               value={localPassword}
               onChange={(e) => setLocalPassword(e.target.value)}
               required
+              autoComplete="new-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
             />
           </div>
@@ -223,6 +224,7 @@ export default function Step1() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              autoComplete="new-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
             />
           </div>

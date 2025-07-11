@@ -1,7 +1,6 @@
 "use client";
 
 import { HeroHeader } from '@/components/hero8-header';
-import FooterSection from '@/components/footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AboutPage() {
@@ -116,7 +115,6 @@ export default function AboutPage() {
           </div>
         </div>
       </main>
-      <FooterSection />
     </>
   );
 }

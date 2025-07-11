@@ -10,7 +10,6 @@ import Image from 'next/image';
 import Link from 'next/link'; // HINZUGEFÜGT: Import für Link
 import { FiMapPin, FiMessageSquare, FiStar, FiAward, FiBriefcase, FiBookOpen, FiHeart, FiPlusCircle, FiEdit3, FiShare2, FiEye, FiLoader, FiAlertCircle } from 'react-icons/fi'; // HINZUGEFÜGT: FiLoader, FiAlertCircle
 import Header from '@/components/Header'; // Dein existierender Header
-import FooterSection from '@/components/footer'; // Dein existierender Footer
 
 const auth = getAuth(app);
 
@@ -270,7 +269,6 @@ const UserProfilePage = () => {
                     </div>
                 </div>
             </main>
-            <FooterSection />
         </>
     );
 };

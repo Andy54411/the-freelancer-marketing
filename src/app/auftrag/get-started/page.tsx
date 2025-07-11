@@ -2,7 +2,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import FooterSection from '@/components/footer';
 import { HeroHeader } from '@/components/hero8-header';
 import { Combobox } from '@/components/combobox';
 import { Label } from '@/components/ui/label';
@@ -246,7 +245,6 @@ export default function GetStartedPage() {
             </div>
           </div>
         )}
-        <FooterSection />
       </main>
     </>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { HeroHeader } from '@/components/hero8-header';
-import FooterSection from '@/components/footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -231,7 +230,6 @@ export default function ContactPage() {
           </div>
         </div>
       </main>
-      <FooterSection />
     </>
   );
 }
