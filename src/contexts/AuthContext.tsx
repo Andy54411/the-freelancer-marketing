@@ -173,28 +173,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // ERWEITERTE WEITERLEITUNGSLOGIK FÜR ADMIN-USER
-      // Admins sollen immer zum Admin-Dashboard weitergeleitet werden, wenn sie auf der Startseite landen
-      // Andere Benutzer werden nur von Login/Register-Seiten weitergeleitet
-
+      // ERWEITERTE WEITERLEITUNGSLOGIK
       let shouldRedirect = false;
       let targetPath = '';
 
-      // Admins werden von allen öffentlichen Seiten weitergeleitet
+      // Master/Support werden von allen öffentlichen Seiten weitergeleitet
       if (user.role === 'master' || user.role === 'support') {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           shouldRedirect = true;
           targetPath = '/dashboard/admin'; // Master/Support-Dashboard
         }
       }
-      // Andere Benutzer nur von Login/Register-Seiten
+      // Firmen werden auch von der Startseite weitergeleitet
+      else if (user.role === 'firma') {
+        if (pathname === '/' || pathname === '/login' || pathname === '/register') {
+          shouldRedirect = true;
+          targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
+        }
+      }
+      // Kunden nur von Login/Register-Seiten
       else if (pathname === '/login' || pathname === '/register') {
         shouldRedirect = true;
-        if (user.role === 'firma') {
-          targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
-        } else {
-          targetPath = `/dashboard/user/${user.uid}`; // Kunden-Dashboard
-        }
+        targetPath = `/dashboard/user/${user.uid}`; // Kunden-Dashboard
       }
 
       if (shouldRedirect && targetPath) {
