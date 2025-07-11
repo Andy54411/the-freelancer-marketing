@@ -48,6 +48,15 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(null);
     const [firestoreUserData, setFirestoreUserData] = useState<FirestoreUserData | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    
+    // Debug: Log state changes
+    useEffect(() => {
+        console.log('[Header] Profile picture state changed:', {
+            profilePictureURLFromStorage,
+            currentUserPhotoURL: currentUser?.photoURL,
+            currentUserUID: currentUser?.uid
+        });
+    }, [profilePictureURLFromStorage, currentUser?.photoURL, currentUser?.uid]);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false); // State für Such-Dropdown
     const [isInboxDropdownOpen, setIsInboxDropdownOpen] = useState(false); // NEU: State für Posteingang-Dropdown
@@ -157,18 +166,38 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             return;
         }
         try {
+            console.log('[Header] Loading profile picture for UID:', uid);
             // Versuche zuerst die Firestore-Benutzerdaten zu laden, um die direkte URL zu bekommen
             const userDocRef = doc(db, "users", uid);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
+                console.log('[Header] User data loaded:', {
+                    profilePictureFirebaseUrl: userData.profilePictureFirebaseUrl,
+                    profilePictureURL: userData.profilePictureURL,
+                    photoURL: userData.photoURL
+                });
+                
                 const profilePictureUrl = userData.profilePictureFirebaseUrl || 
                                         userData.profilePictureURL || 
                                         userData.photoURL;
+                                        
+                console.log('[Header] Selected profile picture URL:', profilePictureUrl);
+                                        
                 if (profilePictureUrl) {
-                    setProfilePictureURLFromStorage(profilePictureUrl);
+                    // Stelle sicher, dass es sich um eine vollständige URL handelt
+                    let finalUrl = profilePictureUrl;
+                    if (!profilePictureUrl.startsWith('http')) {
+                        // Falls es nur ein Pfad ist, füge die Firebase Storage Base URL hinzu
+                        finalUrl = `https://storage.googleapis.com/tilvo-f142f.firebasestorage.app/${encodeURIComponent(profilePictureUrl)}`;
+                        console.log('[Header] Converted relative path to full URL:', finalUrl);
+                    }
+                    setProfilePictureURLFromStorage(finalUrl);
+                    console.log('[Header] Profile picture URL set successfully');
                     return;
                 }
+            } else {
+                console.log('[Header] User document does not exist for UID:', uid);
             }
 
             // Fallback: Suche im Storage (für Rückwärtskompatibilität)
@@ -451,15 +480,28 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                             />
                                         ) : profilePictureURLFromStorage || currentUser.photoURL ? (
                                             <img
-                                                src={profilePictureURLFromStorage || currentUser.photoURL || ''} // Fügt einen leeren String als Fallback hinzu
+                                                src={profilePictureURLFromStorage || currentUser.photoURL || ''}
                                                 alt="Avatar"
                                                 className="w-8 h-8 rounded-full object-cover"
+                                                onError={(e) => {
+                                                    console.log('[Header] Profile image failed to load:', profilePictureURLFromStorage || currentUser.photoURL);
+                                                    e.currentTarget.style.display = 'none';
+                                                    // Zeige Fallback an
+                                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                                    if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                                onLoad={() => {
+                                                    console.log('[Header] Profile image loaded successfully:', profilePictureURLFromStorage || currentUser.photoURL);
+                                                }}
                                             />
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                                <FiUser className="text-gray-500" />
-                                            </div>
-                                        )}
+                                        ) : null}
+                                        {/* Fallback div - wird nur angezeigt wenn das Bild fehlt oder nicht lädt */}
+                                        <div 
+                                            className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                                            style={{ display: (profilePictureURLFromStorage || currentUser.photoURL) ? 'none' : 'flex' }}
+                                        >
+                                            <FiUser className="text-gray-500" />
+                                        </div>
                                         <FiChevronDown className={`ml-1 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
                                     {isProfileDropdownOpen && (
