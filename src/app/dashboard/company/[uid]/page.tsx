@@ -12,12 +12,12 @@ import SettingsPage from "@/components/SettingsPage";
 import { useCompanyDashboard } from "@/hooks/useCompanyDashboard";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
-import { Grid as FiGrid, Calendar as FiCalendar, User as FiUser } from "lucide-react";
+import { Grid as FiGrid, Calendar as FiCalendar, User as FiUser, Settings as FiSettings } from "lucide-react";
 import { OrderSummaryDrawer } from "@/components/OrderSummaryDrawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CompanyCalendar from "@/components/CompanyCalendar";
 import { Button } from "@/components/ui/button";
-import CompanyProfileManager from "./components/CompanyProfileManager";
+import { calculateCompanyMetrics, type CompanyMetrics } from "@/lib/companyMetrics";
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -124,6 +124,9 @@ export default function Page() {
   // NEU: State für Auftragsdaten
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  // NEU: State für automatische Metriken
+  const [companyMetrics, setCompanyMetrics] = useState<CompanyMetrics | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
   // NEU: State für die Sidebar
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -161,6 +164,24 @@ export default function Page() {
       fetchOrders();
     }
   }, [uid]);
+
+  // NEU: Effekt zum Berechnen der Company Metriken
+  useEffect(() => {
+    if (uid) {
+      const fetchMetrics = async () => {
+        setLoadingMetrics(true);
+        try {
+          const metrics = await calculateCompanyMetrics(uid);
+          setCompanyMetrics(metrics);
+        } catch (error) {
+          console.error("Fehler beim Berechnen der Company Metriken:", error);
+        } finally {
+          setLoadingMetrics(false);
+        }
+      };
+      fetchMetrics();
+    }
+  }, [uid]);
   // Effekt, um die Ansicht basierend auf dem URL-Parameter zu synchronisieren
   useEffect(() => {
     const viewFromUrl = searchParams.get('view');
@@ -176,7 +197,7 @@ export default function Page() {
     <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
       {view === 'dashboard' ? (
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:w-fit">
+          <TabsList className="grid w-full grid-cols-4 md:w-fit">
             <TabsTrigger value="dashboard">
               <FiGrid className="mr-2 h-4 w-4" />
               Übersicht
@@ -188,6 +209,10 @@ export default function Page() {
             <TabsTrigger value="profile">
               <FiUser className="mr-2 h-4 w-4" />
               Profil
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <FiSettings className="mr-2 h-4 w-4" />
+              Einstellungen
             </TabsTrigger>
           </TabsList>
 
@@ -219,16 +244,17 @@ export default function Page() {
                   Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ für eine professionelle Präsentation auf Taskilo.
                 </p>
               </div>
-              {userData && (
-                <CompanyProfileManager 
-                  userData={userData}
-                  onDataSaved={() => {
-                    // Optional: Daten neu laden oder Erfolgsmeldung anzeigen
-                    console.log('Company Profile wurde aktualisiert');
-                  }}
-                />
-              )}
+              {/* Platzhalter für zukünftige Profil-Features */}
+              <div className="text-center py-12">
+                <FiUser className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Profil-Management</h3>
+                <p className="mt-1 text-sm text-gray-500">Profil-Features werden hier implementiert.</p>
+              </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            <SettingsPage userData={userData} onDataSaved={() => console.log('Settings updated')} />
           </TabsContent>
         </Tabs>
       ) : (

@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { User as FirebaseUser, getAuth } from 'firebase/auth';
 import CompanyProfileManager from '../components/CompanyProfileManager';
+import { calculateCompanyMetrics, type CompanyMetrics } from "@/lib/companyMetrics";
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
 export default function CompanyProfilePage() {
@@ -14,6 +15,7 @@ export default function CompanyProfilePage() {
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+    const [companyMetrics, setCompanyMetrics] = useState<CompanyMetrics | null>(null);
 
     useEffect(() => {
         const auth = getAuth();
@@ -26,12 +28,16 @@ export default function CompanyProfilePage() {
     useEffect(() => {
         const fetchUserData = async () => {
             if (!uid) return;
-            
+
             try {
                 const userDoc = await getDoc(doc(db, 'users', uid));
                 if (userDoc.exists()) {
                     setUserData({ uid, ...userDoc.data() });
                 }
+
+                // Automatische Metriken laden
+                const metrics = await calculateCompanyMetrics(uid);
+                setCompanyMetrics(metrics);
             } catch (error) {
                 console.error('Fehler beim Laden der Benutzerdaten:', error);
             } finally {
@@ -42,19 +48,20 @@ export default function CompanyProfilePage() {
         fetchUserData();
     }, [uid]);
 
-    const handleDataSaved = () => {
+    const handleDataSaved = async () => {
         // Aktualisiere die Daten nach dem Speichern
-        const fetchUserData = async () => {
-            try {
-                const userDoc = await getDoc(doc(db, 'users', uid));
-                if (userDoc.exists()) {
-                    setUserData({ uid, ...userDoc.data() });
-                }
-            } catch (error) {
-                console.error('Fehler beim Laden der Benutzerdaten:', error);
+        try {
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+                setUserData({ uid, ...userDoc.data() });
             }
-        };
-        fetchUserData();
+
+            // Metriken neu berechnen
+            const metrics = await calculateCompanyMetrics(uid);
+            setCompanyMetrics(metrics);
+        } catch (error) {
+            console.error('Fehler beim Laden der Benutzerdaten:', error);
+        }
     };
 
     if (loading) {
@@ -82,9 +89,10 @@ export default function CompanyProfilePage() {
                     Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ
                 </p>
             </div>
-            
-            <CompanyProfileManager 
+
+            <CompanyProfileManager
                 userData={userData}
+                companyMetrics={companyMetrics}
                 onDataSaved={handleDataSaved}
             />
         </div>
