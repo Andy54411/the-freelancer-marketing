@@ -21,7 +21,7 @@ import { auth, db } from '@/firebase/clients';
 export interface UserProfile {
   uid: string;
   email: string | null;
-  role: 'master' | 'support' | 'firma' | 'kunde'; // Spezifischere Rollen
+  role: 'master' | 'support' | 'firma' | 'kunde'; // Korrekte Rollen-Hierarchie: master ist höchste Berechtigung
   firstName?: string;
   lastName?: string;
   profilePictureURL?: string; // NEU: Avatar-URL für alle Benutzerprofile
@@ -97,9 +97,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const profileData = userDocSnap.data();
 
             // Rollenbestimmung: Custom Claim hat Vorrang.
-            const roleFromClaim = idTokenResult.claims.admin ? 'master' :
-              idTokenResult.claims.role === 'admin' ? 'master' :
-                idTokenResult.claims.role === 'master' ? 'master' : null;
+            const roleFromClaim = idTokenResult.claims.master ? 'master' :
+              idTokenResult.claims.role === 'master' ? 'master' :
+                idTokenResult.claims.role === 'support' ? 'support' :
+                  idTokenResult.claims.role === 'firma' ? 'firma' :
+                    idTokenResult.claims.role === 'kunde' ? 'kunde' : null;
             const roleFromDb = (profileData.user_type as UserProfile['role']) || 'kunde';
 
             const finalRole = roleFromClaim || roleFromDb;
@@ -120,9 +122,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`);
             // Auch hier den Claim berücksichtigen, falls das DB-Dokument fehlt.
-            const roleFromClaim = idTokenResult.claims.admin ? 'master' :
-              idTokenResult.claims.role === 'admin' ? 'master' :
-                idTokenResult.claims.role === 'master' ? 'master' : 'kunde';
+            const roleFromClaim = idTokenResult.claims.master ? 'master' :
+              idTokenResult.claims.role === 'master' ? 'master' :
+                idTokenResult.claims.role === 'support' ? 'support' :
+                  idTokenResult.claims.role === 'firma' ? 'firma' :
+                    idTokenResult.claims.role === 'kunde' ? 'kunde' : 'kunde';
 
             console.log('AuthContext: Fallback role from claim:', roleFromClaim);
 
@@ -180,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user.role === 'master' || user.role === 'support') {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           shouldRedirect = true;
-          targetPath = '/dashboard/admin'; // Admin-Dashboard
+          targetPath = '/dashboard/admin'; // Master/Support-Dashboard
         }
       }
       // Andere Benutzer nur von Login/Register-Seiten
