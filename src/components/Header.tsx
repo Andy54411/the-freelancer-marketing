@@ -77,11 +77,36 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         );
 
         const unsubscribe = onSnapshot(recentChatsQuery,
-            (snapshot: QuerySnapshot) => {
-                const chatsData = snapshot.docs.map(doc => {
-                    const data = doc.data();
+            async (snapshot: QuerySnapshot) => {
+                const chatsData = await Promise.all(snapshot.docs.map(async (docSnap) => {
+                    const data = docSnap.data();
                     const otherUserId = data.users.find((id: string) => id !== uid);
-                    const userDetails = otherUserId ? data.userDetails?.[otherUserId] : null;
+                    
+                    // Lade die Benutzerdaten direkt aus der users-Collection
+                    let otherUserName = 'Unbekannter Benutzer';
+                    let otherUserAvatarUrl = null;
+                    
+                    if (otherUserId) {
+                        try {
+                            const otherUserDocRef = doc(db, 'users', otherUserId);
+                            const otherUserDoc = await getDoc(otherUserDocRef);
+                            if (otherUserDoc.exists()) {
+                                const otherUserData = otherUserDoc.data();
+                                // Verwende firstName + lastName oder displayName oder email als Fallback
+                                otherUserName = otherUserData.firstName && otherUserData.lastName 
+                                    ? `${otherUserData.firstName} ${otherUserData.lastName}`
+                                    : otherUserData.displayName || otherUserData.email || 'Unbekannter Benutzer';
+                                
+                                // Verwende die korrekten Felder für das Profilbild
+                                otherUserAvatarUrl = otherUserData.profilePictureFirebaseUrl || 
+                                                   otherUserData.profilePictureURL || 
+                                                   otherUserData.photoURL || 
+                                                   null;
+                            }
+                        } catch (error) {
+                            console.error('[Header] Fehler beim Laden der Benutzerdaten:', error);
+                        }
+                    }
 
                     // Bestimme den korrekten Link zum Posteingang basierend auf dem Benutzertyp
                     const inboxLink = userType === 'firma'
@@ -89,14 +114,14 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         : `/dashboard/user/${uid}/inbox`;
 
                     return {
-                        id: doc.id,
-                        otherUserName: userDetails?.name || 'Unbekannter Benutzer',
-                        otherUserAvatarUrl: userDetails?.avatarUrl || null,
+                        id: docSnap.id,
+                        otherUserName,
+                        otherUserAvatarUrl,
                         lastMessageText: data.lastMessage?.text || '',
                         isUnread: data.lastMessage?.senderId !== uid && !data.lastMessage?.isRead,
                         link: inboxLink,
                     };
-                });
+                }));
 
                 const unreadCount = chatsData.filter(chat => chat.isUnread).length;
                 setUnreadMessagesCount(unreadCount);
