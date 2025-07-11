@@ -46,6 +46,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardClick }) => {
     const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(null);
+    const [imageLoadError, setImageLoadError] = useState(false); // NEU: Track ob Bild geladen werden konnte
     const [firestoreUserData, setFirestoreUserData] = useState<FirestoreUserData | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -202,6 +203,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         console.log('[Header] Converted relative path to full URL:', finalUrl);
                     }
                     setProfilePictureURLFromStorage(finalUrl);
+                    setImageLoadError(false); // Reset error state when new image is set
                     console.log('[Header] Profile picture URL set successfully');
                     return;
                 }
@@ -499,20 +501,19 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                 <div className="relative" ref={profileDropdownRef}>
                                     <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center">
                                         {/* PRIORITÄT: Benutzer-Profilbild > Firmenlogo > Platzhalter */}
-                                        {profilePictureURLFromStorage || currentUser.photoURL ? (
+                                        {(profilePictureURLFromStorage || currentUser.photoURL) && !imageLoadError ? (
                                             <img
                                                 src={profilePictureURLFromStorage || currentUser.photoURL || ''}
                                                 alt="Avatar"
                                                 className="w-8 h-8 rounded-full object-cover"
                                                 onError={(e) => {
                                                     console.log('[Header] Profile image failed to load:', profilePictureURLFromStorage || currentUser.photoURL);
-                                                    e.currentTarget.style.display = 'none';
-                                                    // Zeige Fallback an
-                                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                                    if (fallback) fallback.style.display = 'flex';
+                                                    console.log('[Header] Setting imageLoadError to true');
+                                                    setImageLoadError(true);
                                                 }}
                                                 onLoad={() => {
                                                     console.log('[Header] Profile image loaded successfully:', profilePictureURLFromStorage || currentUser.photoURL);
+                                                    setImageLoadError(false);
                                                 }}
                                             />
                                         ) : company?.logoUrl ? (
@@ -521,14 +522,12 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                                 alt="Firmenlogo"
                                                 className="w-8 h-8 rounded-md object-cover"
                                             />
-                                        ) : null}
-                                        {/* Fallback div - wird nur angezeigt wenn das Bild fehlt oder nicht lädt */}
-                                        <div
-                                            className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
-                                            style={{ display: (profilePictureURLFromStorage || currentUser.photoURL) ? 'none' : 'flex' }}
-                                        >
-                                            <FiUser className="text-gray-500" />
-                                        </div>
+                                        ) : (
+                                            // Fallback wenn kein Bild vorhanden oder Ladefehler
+                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <FiUser className="text-gray-500" />
+                                            </div>
+                                        )}
                                         <FiChevronDown className={`ml-1 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
                                     {isProfileDropdownOpen && (
