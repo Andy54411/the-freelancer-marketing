@@ -321,17 +321,17 @@ export default function CategoryPage() {
                                             </div>
                                         )}
 
-                    {(provider.rating ?? 0) > 0 && (
-                      <div className="flex items-center gap-1 mt-2">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {(provider.rating ?? 0).toFixed(1)}
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          ({provider.reviewCount} Bewertungen)
-                        </span>
-                      </div>
-                    )}
+                                        {(provider.rating ?? 0) > 0 && (
+                                            <div className="flex items-center gap-1 mt-2">
+                                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {(provider.rating ?? 0).toFixed(1)}
+                                                </span>
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                                    ({provider.reviewCount} Bewertungen)
+                                                </span>
+                                            </div>
+                                        )}
 
                                         {provider.bio && (
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">

@@ -92,7 +92,7 @@ export default function SubcategoryPage() {
   const router = useRouter();
   const category = params.category as string;
   const subcategory = params.subcategory as string;
-  
+
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,7 +109,7 @@ export default function SubcategoryPage() {
   const loadProviders = async () => {
     try {
       setLoading(true);
-      
+
       // Query für Firmen
       const firmCollectionRef = collection(db, 'firma');
       let firmQuery = query(
@@ -172,10 +172,10 @@ export default function SubcategoryPage() {
       });
 
       const allProviders = [...firmProviders, ...userProviders];
-      
+
       // Filter nach Subcategory
-      let filteredProviders = allProviders.filter(provider => 
-        provider.skills?.some(skill => 
+      let filteredProviders = allProviders.filter(provider =>
+        provider.skills?.some(skill =>
           skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
           skill.toLowerCase().includes(subcategory.toLowerCase())
         )
@@ -183,7 +183,7 @@ export default function SubcategoryPage() {
 
       // Suchfilter
       if (searchQuery) {
-        filteredProviders = filteredProviders.filter(provider => 
+        filteredProviders = filteredProviders.filter(provider =>
           (provider.companyName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (provider.userName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (provider.bio?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -217,10 +217,10 @@ export default function SubcategoryPage() {
   };
 
   const getProfileImage = (provider: Provider) => {
-    return provider.profilePictureFirebaseUrl || 
-           provider.profilePictureURL || 
-           provider.photoURL || 
-           '/images/default-avatar.png';
+    return provider.profilePictureFirebaseUrl ||
+      provider.profilePictureURL ||
+      provider.photoURL ||
+      '/images/default-avatar.png';
   };
 
   const getProviderName = (provider: Provider) => {
@@ -349,7 +349,7 @@ export default function SubcategoryPage() {
                       (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                     }}
                   />
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
@@ -361,7 +361,7 @@ export default function SubcategoryPage() {
                             </span>
                           )}
                         </h3>
-                        
+
                         <div className="flex items-center gap-4 mt-2">
                           {provider.location && (
                             <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
@@ -369,7 +369,7 @@ export default function SubcategoryPage() {
                               {provider.location}
                             </div>
                           )}
-                          
+
                           {(provider.rating ?? 0) > 0 && (
                             <div className="flex items-center gap-1">
                               <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -381,7 +381,7 @@ export default function SubcategoryPage() {
                               </span>
                             </div>
                           )}
-                          
+
                           {provider.completedJobs && provider.completedJobs > 0 && (
                             <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                               <Briefcase className="w-4 h-4" />
@@ -390,7 +390,7 @@ export default function SubcategoryPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="text-right">
                         {provider.priceRange && (
                           <div className="text-lg font-semibold text-gray-900 dark:text-white">

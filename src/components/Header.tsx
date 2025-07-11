@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(null);
     const [firestoreUserData, setFirestoreUserData] = useState<FirestoreUserData | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    
+
     // Debug: Log state changes
     useEffect(() => {
         console.log('[Header] Profile picture state changed:', {
@@ -90,11 +90,11 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 const chatsData = await Promise.all(snapshot.docs.map(async (docSnap) => {
                     const data = docSnap.data();
                     const otherUserId = data.users.find((id: string) => id !== uid);
-                    
+
                     // Lade die Benutzerdaten direkt aus der users-Collection
                     let otherUserName = 'Unbekannter Benutzer';
                     let otherUserAvatarUrl = null;
-                    
+
                     if (otherUserId) {
                         try {
                             const otherUserDocRef = doc(db, 'users', otherUserId);
@@ -102,15 +102,15 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                             if (otherUserDoc.exists()) {
                                 const otherUserData = otherUserDoc.data();
                                 // Verwende firstName + lastName oder displayName oder email als Fallback
-                                otherUserName = otherUserData.firstName && otherUserData.lastName 
+                                otherUserName = otherUserData.firstName && otherUserData.lastName
                                     ? `${otherUserData.firstName} ${otherUserData.lastName}`
                                     : otherUserData.displayName || otherUserData.email || 'Unbekannter Benutzer';
-                                
+
                                 // Verwende die korrekten Felder für das Profilbild
-                                otherUserAvatarUrl = otherUserData.profilePictureFirebaseUrl || 
-                                                   otherUserData.profilePictureURL || 
-                                                   otherUserData.photoURL || 
-                                                   null;
+                                otherUserAvatarUrl = otherUserData.profilePictureFirebaseUrl ||
+                                    otherUserData.profilePictureURL ||
+                                    otherUserData.photoURL ||
+                                    null;
                             }
                         } catch (error) {
                             console.error('[Header] Fehler beim Laden der Benutzerdaten:', error);
@@ -186,13 +186,13 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                     profilePictureURL: userData.profilePictureURL,
                     photoURL: userData.photoURL
                 });
-                
-                const profilePictureUrl = userData.profilePictureFirebaseUrl || 
-                                        userData.profilePictureURL || 
-                                        userData.photoURL;
-                                        
+
+                const profilePictureUrl = userData.profilePictureFirebaseUrl ||
+                    userData.profilePictureURL ||
+                    userData.photoURL;
+
                 console.log('[Header] Selected profile picture URL:', profilePictureUrl);
-                                        
+
                 if (profilePictureUrl) {
                     // Stelle sicher, dass es sich um eine vollständige URL handelt
                     let finalUrl = profilePictureUrl;
@@ -220,7 +220,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 // Versuche auch den user_uploads Ordner
                 const userUploadsRef = storageRef(storage, `user_uploads/${uid}`);
                 const userUploadsList = await listAll(userUploadsRef);
-                const imageFiles = userUploadsList.items.filter(item => 
+                const imageFiles = userUploadsList.items.filter(item =>
                     item.name.toLowerCase().includes('business_icon') ||
                     item.name.toLowerCase().includes('profile') ||
                     item.name.toLowerCase().endsWith('.jpg') ||
@@ -490,14 +490,8 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                             {currentUser ? (
                                 <div className="relative" ref={profileDropdownRef}>
                                     <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center">
-                                        {/* NEUE LOGIK: Firmenlogo > Benutzerbild > Platzhalter */}
-                                        {company?.logoUrl ? (
-                                            <img
-                                                src={company.logoUrl}
-                                                alt="Firmenlogo"
-                                                className="w-8 h-8 rounded-md object-cover"
-                                            />
-                                        ) : profilePictureURLFromStorage || currentUser.photoURL ? (
+                                        {/* PRIORITÄT: Benutzer-Profilbild > Firmenlogo > Platzhalter */}
+                                        {profilePictureURLFromStorage || currentUser.photoURL ? (
                                             <img
                                                 src={profilePictureURLFromStorage || currentUser.photoURL || ''}
                                                 alt="Avatar"
@@ -513,9 +507,15 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                                     console.log('[Header] Profile image loaded successfully:', profilePictureURLFromStorage || currentUser.photoURL);
                                                 }}
                                             />
+                                        ) : company?.logoUrl ? (
+                                            <img
+                                                src={company.logoUrl}
+                                                alt="Firmenlogo"
+                                                className="w-8 h-8 rounded-md object-cover"
+                                            />
                                         ) : null}
                                         {/* Fallback div - wird nur angezeigt wenn das Bild fehlt oder nicht lädt */}
-                                        <div 
+                                        <div
                                             className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
                                             style={{ display: (profilePictureURLFromStorage || currentUser.photoURL) ? 'none' : 'flex' }}
                                         >
