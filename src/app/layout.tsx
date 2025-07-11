@@ -8,6 +8,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import Chatbot from '@/components/Chatbot';
 import FooterSection from '@/components/footer';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'TASKILO',
@@ -34,6 +35,7 @@ export default function RootLayout({
               <FooterSection />
               <Chatbot />
               <Analytics />
+              <SpeedInsights />
             </Providers>
           </LanguageProvider>
         </ThemeProvider>
