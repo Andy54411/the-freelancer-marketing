@@ -12,11 +12,12 @@ import SettingsPage from "@/components/SettingsPage";
 import { useCompanyDashboard } from "@/hooks/useCompanyDashboard";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
-import { Grid as FiGrid, Calendar as FiCalendar } from "lucide-react";
+import { Grid as FiGrid, Calendar as FiCalendar, User as FiUser } from "lucide-react";
 import { OrderSummaryDrawer } from "@/components/OrderSummaryDrawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CompanyCalendar from "@/components/CompanyCalendar";
 import { Button } from "@/components/ui/button";
+import CompanyProfileManager from "./components/CompanyProfileManager";
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -175,7 +176,7 @@ export default function Page() {
     <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
       {view === 'dashboard' ? (
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:w-fit">
+          <TabsList className="grid w-full grid-cols-3 md:w-fit">
             <TabsTrigger value="dashboard">
               <FiGrid className="mr-2 h-4 w-4" />
               Übersicht
@@ -183,6 +184,10 @@ export default function Page() {
             <TabsTrigger value="calendar">
               <FiCalendar className="mr-2 h-4 w-4" />
               Kalender
+            </TabsTrigger>
+            <TabsTrigger value="profile">
+              <FiUser className="mr-2 h-4 w-4" />
+              Profil
             </TabsTrigger>
           </TabsList>
 
@@ -204,6 +209,26 @@ export default function Page() {
 
           <TabsContent value="calendar" className="mt-4">
             {uid && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}
+          </TabsContent>
+
+          <TabsContent value="profile" className="mt-4">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Company Profile verwalten</h2>
+                <p className="text-gray-600 mt-2">
+                  Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ für eine professionelle Präsentation auf Taskilo.
+                </p>
+              </div>
+              {userData && (
+                <CompanyProfileManager 
+                  userData={userData}
+                  onDataSaved={() => {
+                    // Optional: Daten neu laden oder Erfolgsmeldung anzeigen
+                    console.log('Company Profile wurde aktualisiert');
+                  }}
+                />
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       ) : (
