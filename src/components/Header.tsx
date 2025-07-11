@@ -157,6 +157,21 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             return;
         }
         try {
+            // Versuche zuerst die Firestore-Benutzerdaten zu laden, um die direkte URL zu bekommen
+            const userDocRef = doc(db, "users", uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                const profilePictureUrl = userData.profilePictureFirebaseUrl || 
+                                        userData.profilePictureURL || 
+                                        userData.photoURL;
+                if (profilePictureUrl) {
+                    setProfilePictureURLFromStorage(profilePictureUrl);
+                    return;
+                }
+            }
+
+            // Fallback: Suche im Storage (für Rückwärtskompatibilität)
             const folderRef = storageRef(storage, `profilePictures/${uid}`);
             const list = await listAll(folderRef);
             if (list.items.length > 0) {
@@ -164,10 +179,25 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 const url = await getDownloadURL(list.items[0]);
                 setProfilePictureURLFromStorage(url);
             } else {
-                setProfilePictureURLFromStorage(null); // Kein Bild im Storage gefunden
+                // Versuche auch den user_uploads Ordner
+                const userUploadsRef = storageRef(storage, `user_uploads/${uid}`);
+                const userUploadsList = await listAll(userUploadsRef);
+                const imageFiles = userUploadsList.items.filter(item => 
+                    item.name.toLowerCase().includes('business_icon') ||
+                    item.name.toLowerCase().includes('profile') ||
+                    item.name.toLowerCase().endsWith('.jpg') ||
+                    item.name.toLowerCase().endsWith('.jpeg') ||
+                    item.name.toLowerCase().endsWith('.png')
+                );
+                if (imageFiles.length > 0) {
+                    const url = await getDownloadURL(imageFiles[0]);
+                    setProfilePictureURLFromStorage(url);
+                } else {
+                    setProfilePictureURLFromStorage(null); // Kein Bild gefunden
+                }
             }
         } catch (error) {
-            console.error("Header: Fehler beim Laden des Profilbilds aus Storage:", error);
+            console.error("Header: Fehler beim Laden des Profilbilds:", error);
             setProfilePictureURLFromStorage(null); // Fehlerfall
         }
     }, []);
