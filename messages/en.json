@@ -1,0 +1,122 @@
+{
+    "Navigation": {
+        "home": "Home",
+        "comingSoon": "Coming Soon",
+        "vision": "Vision",
+        "pricing": "Pricing",
+        "blog": "Blog",
+        "about": "About",
+        "contact": "Contact",
+        "imprint": "Imprint",
+        "login": "Login",
+        "register": "Register",
+        "dashboard": "Dashboard"
+    },
+    "Footer": {
+        "product": "Product",
+        "features": "Features",
+        "comingSoon": "Coming Soon",
+        "categories": "Categories",
+        "pricing": "Pricing",
+        "help": "Help",
+        "solutions": "Solutions",
+        "forCompanies": "For Companies",
+        "forFreelancers": "For Freelancers",
+        "forCustomers": "For Customers",
+        "startProject": "Start Project",
+        "becomeProvider": "Become Provider",
+        "company": "Company",
+        "about": "About",
+        "careers": "Careers",
+        "blog": "Blog",
+        "press": "Press",
+        "contact": "Contact",
+        "legal": "Legal",
+        "imprint": "Imprint",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "cookies": "Cookies",
+        "newsletter": "Newsletter",
+        "emailPlaceholder": "Your email address",
+        "subscribe": "Subscribe",
+        "newsletterText": "Don't miss any updates!",
+        "copyright": "© {year} Taskilo, All rights reserved"
+    },
+    "ComingSoon": {
+        "title": "Coming Soon",
+        "subtitle": "Taskilo is getting even better! Discover the exciting new features we're developing for you.",
+        "launchCountdown": "AI Assistant Launch in:",
+        "days": "Days",
+        "hours": "Hours",
+        "minutes": "Minutes",
+        "seconds": "Seconds",
+        "emailPlaceholder": "Your email address",
+        "notify": "Notify",
+        "thankYou": "Thank you! We'll notify you about new updates.",
+        "whatToExpect": "What to Expect?",
+        "whatToExpectSubtitle": "Innovative features that will revolutionize your experience with Taskilo.",
+        "roadmap": "Roadmap 2025",
+        "roadmapSubtitle": "Our most important milestones for the coming year.",
+        "readyForFuture": "Ready for the Future?",
+        "readyForFutureText": "Use the available features of Taskilo today and look forward to the upcoming innovations.",
+        "startProject": "Start Project",
+        "registerAsProvider": "Register as Provider",
+        "toDashboard": "To Dashboard",
+        "features": {
+            "aiAssistant": {
+                "title": "AI-powered Project Assistant",
+                "description": "Intelligent project suggestions and automatic provider matching"
+            },
+            "mobileApp": {
+                "title": "Mobile App",
+                "description": "Native iOS and Android app for on-the-go"
+            },
+            "ratingSystem": {
+                "title": "Advanced Rating Systems",
+                "description": "Detailed provider reviews and quality assurance"
+            },
+            "teamCollaboration": {
+                "title": "Team Collaboration",
+                "description": "Multiple users per company and project teams"
+            },
+            "automatedBilling": {
+                "title": "Automated Billing",
+                "description": "Integrated accounting and tax management"
+            },
+            "videoConsultation": {
+                "title": "Video Consultation",
+                "description": "Direct video calls with providers for complex projects"
+            }
+        },
+        "status": {
+            "inDevelopment": "In Development",
+            "betaTest": "Beta Test",
+            "planning": "Planning",
+            "concept": "Concept",
+            "prototype": "Prototype"
+        },
+        "milestones": {
+            "aiLaunch": {
+                "title": "AI Assistant Launch",
+                "description": "Fully deployed AI-powered project assistant"
+            },
+            "mobileAppBeta": {
+                "title": "Mobile App Beta",
+                "description": "Beta version of the mobile app for iOS and Android"
+            },
+            "premiumFeatures": {
+                "title": "Premium Features",
+                "description": "Advanced features for business customers"
+            },
+            "apiLaunch": {
+                "title": "API Launch",
+                "description": "Public API for third-party integrations"
+            }
+        }
+    },
+    "Banner": {
+        "text": "🚀 New features coming soon! AI Assistant, Mobile App and more...",
+        "learnMore": "Learn More",
+        "close": "Close Banner"
+    }
+}
