@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
+import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 
 interface Provider {
   id: string;
@@ -24,69 +25,6 @@ interface Provider {
   responseTime?: string;
 }
 
-const serviceCategories = {
-  'webdesign': {
-    name: 'Webdesign',
-    subcategories: {
-      'landing-pages': 'Landing Pages',
-      'e-commerce': 'E-Commerce',
-      'wordpress': 'WordPress',
-      'ui-ux-design': 'UI/UX Design',
-      'mobile-design': 'Mobile Design'
-    }
-  },
-  'grafikdesign': {
-    name: 'Grafikdesign',
-    subcategories: {
-      'logo-design': 'Logo Design',
-      'branding': 'Branding',
-      'print-design': 'Print Design',
-      'illustration': 'Illustration',
-      'packaging': 'Packaging'
-    }
-  },
-  'marketing': {
-    name: 'Marketing',
-    subcategories: {
-      'social-media': 'Social Media',
-      'seo': 'SEO',
-      'content-marketing': 'Content Marketing',
-      'email-marketing': 'Email Marketing',
-      'ppc': 'PPC'
-    }
-  },
-  'programmierung': {
-    name: 'Programmierung',
-    subcategories: {
-      'web-development': 'Web Development',
-      'mobile-apps': 'Mobile Apps',
-      'desktop-software': 'Desktop Software',
-      'api-development': 'API Development',
-      'database': 'Database'
-    }
-  },
-  'schreiben': {
-    name: 'Schreiben',
-    subcategories: {
-      'blog-posts': 'Blog Posts',
-      'copywriting': 'Copywriting',
-      'technical-writing': 'Technical Writing',
-      'translation': 'Translation',
-      'proofreading': 'Proofreading'
-    }
-  },
-  'video': {
-    name: 'Video',
-    subcategories: {
-      'video-editing': 'Video Editing',
-      'animation': 'Animation',
-      'explainer-videos': 'Explainer Videos',
-      'commercial-videos': 'Commercial Videos',
-      'motion-graphics': 'Motion Graphics'
-    }
-  }
-};
-
 export default function SubcategoryPage() {
   const params = useParams();
   const router = useRouter();
@@ -98,8 +36,15 @@ export default function SubcategoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
 
-  const categoryInfo = serviceCategories[category as keyof typeof serviceCategories];
-  const subcategoryName = categoryInfo?.subcategories?.[subcategory as keyof typeof categoryInfo.subcategories] as string;
+  // Finde die Kategorie basierend auf dem URL-Slug
+  const categoryInfo = categories.find(cat => 
+    cat.title.toLowerCase().replace(/\s+/g, '-') === category
+  );
+  
+  // Finde die Unterkategorie basierend auf dem URL-Slug
+  const subcategoryName = categoryInfo?.subcategories.find(sub =>
+    sub.toLowerCase().replace(/\s+/g, '-') === subcategory
+  );
 
   useEffect(() => {
     if (!categoryInfo || !subcategoryName) return;
@@ -260,7 +205,7 @@ export default function SubcategoryPage() {
             </button>
             <div>
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
-                <span>{categoryInfo.name}</span>
+                <span>{categoryInfo.title}</span>
                 <span>/</span>
                 <span>{subcategoryName}</span>
               </div>
@@ -333,7 +278,7 @@ export default function SubcategoryPage() {
               onClick={() => router.push(`/dashboard/services/${category}`)}
               className="text-blue-600 hover:text-blue-700"
             >
-              Alle {categoryInfo.name} Anbieter anzeigen
+              Alle {categoryInfo.title} Anbieter anzeigen
             </button>
           </div>
         ) : (
