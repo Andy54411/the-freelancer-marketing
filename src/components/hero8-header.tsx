@@ -54,7 +54,7 @@ export const HeroHeader = () => {
             {/* Left Section */}
             <div className="flex items-center justify-between w-full lg:w-auto gap-8">
               <Link href="/" className="flex items-center space-x-2" aria-label="Taskilo Home">
-                <Logo />
+                <Logo variant="default" />
               </Link>
 
               {/* Mobile Menu Toggle */}

@@ -19,7 +19,10 @@ export const Logo = ({ className, variant = 'white' }: { className?: string, var
         <rect x="18" y="8" width="6" height="8" rx="1" fill={isWhite ? "#E5E7EB" : "#6B7280"} />
         <rect x="18" y="18" width="4" height="8" rx="1" fill={isWhite ? "#E5E7EB" : "#6B7280"} />
       </svg>
-      <span className="text-lg font-bold tracking-wide text-white">
+      <span className={cn(
+        'text-lg font-bold tracking-wide',
+        isWhite ? 'text-white' : 'text-gray-900 dark:text-white'
+      )}>
         TASKILO
       </span>
     </div>
