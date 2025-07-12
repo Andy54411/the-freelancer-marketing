@@ -64,7 +64,6 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "firebase": "^11.10.0",
-    "firebase-admin": "^12.7.0",
     "framer-motion": "^12.23.3",
     "geofire-common": "^6.0.0",
     "lodash": "^4.17.21",
