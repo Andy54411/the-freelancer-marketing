@@ -1,6 +1,20 @@
 {
     "indexes": [
         {
+            "collectionGroup": "reviews",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "providerId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "date",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "nachrichten",
             "queryScope": "COLLECTION_GROUP",
             "fields": [
