@@ -532,7 +532,10 @@ export default function CompanyServiceSubcategoryPage() {
                       <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                         {t.provider.contactNow}
                       </button>
-                      <button className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                      <button 
+                        onClick={() => router.push(`/provider/${provider.id}`)}
+                        className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
+                      >
                         {t.provider.viewProfile}
                       </button>
                     </div>
