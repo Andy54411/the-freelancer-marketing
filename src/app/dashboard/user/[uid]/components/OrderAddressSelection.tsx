@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { FiMapPin, FiLoader } from 'react-icons/fi';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 
+import AddressForm from './AddressForm';
 import { SavedAddress, UserProfileData, AnbieterDetails, ApiAnbieter, RatingInfo } from '@/types/types';
 
 import { SEARCH_API_URL } from '@/lib/constants';
@@ -123,107 +124,97 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
         setNewAddressDetails({ id: `addr_new_${Date.now()}`, ...newAddress } as SavedAddress);
     };
 
+    const handleCancelNewAddress = useCallback(() => {
+        const firstSavedAddressId = userProfile.savedAddresses?.[0]?.id;
+        if (firstSavedAddressId) {
+            setUseSavedAddress(firstSavedAddressId);
+        }
+    }, [userProfile.savedAddresses, setUseSavedAddress]);
+
     return (
         <>
-            <div className="p-6">
-                <div className="flex items-center mb-6">
-                    <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">2</div>
-                    <h4 className="text-xl font-semibold text-gray-800">Ort des Auftrags</h4>
-                </div>
+            <div className="p-4 border rounded-md bg-gray-50">
+                <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center">
+                    <FiMapPin className="mr-2" /> 2. Ort des Tasks *
+                </h4>
                 
                 {userProfile.savedAddresses && userProfile.savedAddresses.length > 0 ? (
-                    <div className="mb-6 space-y-3">
-                        <Label className="text-sm font-medium text-gray-700">Gespeicherte Adressen wählen:</Label>
+                    <div className="mb-4 space-y-2">
                         {userProfile.savedAddresses.map(addr => (
-                            <label key={addr.id} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <label key={addr.id} className="flex items-center text-gray-700 cursor-pointer">
                                 <Input 
                                     type="radio" 
                                     name="jobAddress" 
                                     value={addr.id} 
                                     checked={useSavedAddress === addr.id} 
                                     onChange={() => { setUseSavedAddress(addr.id); setNewAddressDetails(null); }} 
-                                    className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f] mr-3" 
+                                    className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]" 
                                 />
-                                <div className="flex-1">
-                                    <span className="font-medium text-gray-900">{addr.name}</span>
-                                    <p className="text-sm text-gray-600">{addr.line1}, {addr.postal_code} {addr.city}</p>
-                                </div>
+                                <span className="ml-2">{addr.name} ({addr.line1}, {addr.postal_code} {addr.city})</span>
                             </label>
                         ))}
-                        <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                        <label className="flex items-center text-gray-700 cursor-pointer">
                             <Input 
                                 type="radio" 
                                 name="jobAddress" 
                                 value="new" 
                                 checked={useSavedAddress === 'new'} 
                                 onChange={() => setUseSavedAddress('new')} 
-                                className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f] mr-3" 
+                                className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]" 
                             />
-                            <span className="font-medium text-gray-900">Neue Adresse eingeben</span>
+                            <span className="ml-2">Neue Adresse eingeben</span>
                         </label>
                     </div>
                 ) : (
-                    <div className="mb-6">
-                        <p className="text-sm text-gray-600 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            Sie haben noch keine gespeicherten Adressen. Bitte geben Sie eine neue Adresse ein.
-                        </p>
+                    <div className="mb-4">
+                        <p className="text-sm text-gray-600">Bitte geben Sie eine neue Adresse ein.</p>
                     </div>
                 )}
                 
                 {useSavedAddress === 'new' && (
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="mt-4 border-t pt-4 space-y-4">
                         {isMapsLoaded && (
                             <div>
-                                <Label htmlFor="google-address-autocomplete" className="text-sm font-medium text-gray-700 mb-2 block">
-                                    Adresse suchen
-                                </Label>
+                                <Label htmlFor="google-address-autocomplete">Adresse mit Google suchen</Label>
                                 <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChangedAutocomplete}>
                                     <Input 
                                         id="google-address-autocomplete" 
                                         type="text" 
-                                        placeholder="Straße, PLZ, Ort eingeben..." 
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors" 
+                                        placeholder="Straße, PLZ, Ort..." 
+                                        className="w-full mt-1" 
                                     />
                                 </Autocomplete>
-                                <p className="text-xs text-gray-500 mt-2">Tippen Sie eine Adresse ein und wählen Sie aus den Vorschlägen</p>
                             </div>
                         )}
+                        <div className='text-center text-sm text-gray-500'>oder manuell ausfüllen:</div>
+                        <AddressForm initialData={newAddressDetails || undefined} onChange={setNewAddressDetails} onCancel={handleCancelNewAddress} />
                     </div>
                 )}
             </div>
 
             {activePostalCode && selectedSubcategory && (
-                <div className="border-t border-gray-200 p-6">
-                    <div className="flex items-center mb-6">
-                        <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">3</div>
-                        <h4 className="text-xl font-semibold text-gray-800">Wähle einen Tasker aus</h4>
-                    </div>
+                <div className="p-4 border-t mt-4">
+                    <h4 className="text-lg font-semibold text-gray-700 mb-4">3. Wähle einen Tasker aus</h4>
                     
                     {loadingProfiles && (
-                        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg">
-                            <FiLoader className="animate-spin mr-3 text-[#14ad9f] text-xl" />
-                            <span className="text-gray-600">Lade verfügbare Tasker...</span>
+                        <div className="flex items-center justify-center py-4">
+                            <FiLoader className="animate-spin mr-2" />
+                            Lade verfügbare Tasker...
                         </div>
                     )}
                     
                     {error && (
-                        <div className="text-center py-8">
-                            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg inline-block">
-                                {error}
-                            </div>
-                        </div>
+                        <p className="text-sm text-red-500 text-center py-4">{error}</p>
                     )}
                     
                     {!loadingProfiles && !error && companyProfiles.length === 0 && (
-                        <div className="text-center py-12 bg-gray-50 rounded-lg">
-                            <FiMapPin className="text-4xl text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600 font-medium">Für diese Postleitzahl wurden keine Tasker gefunden.</p>
-                            <p className="text-sm text-gray-500 mt-2">Versuchen Sie eine andere Adresse oder Kategorie.</p>
-                        </div>
+                        <p className="text-sm text-gray-500 text-center py-4">
+                            Für diese Postleitzahl wurden keine Tasker gefunden.
+                        </p>
                     )}
                     
                     {!loadingProfiles && companyProfiles.length > 0 && (
-                        <div className="space-y-4 max-h-[32rem] overflow-y-auto p-1">
+                        <div className="space-y-4 max-h-[28rem] overflow-y-auto p-1">
                             {companyProfiles.map(provider => (
                                 <CompanyCard
                                     key={provider.id}

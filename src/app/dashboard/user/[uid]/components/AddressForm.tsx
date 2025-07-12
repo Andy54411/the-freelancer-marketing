@@ -37,7 +37,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onChange, onCanc
     return (
         <div className="space-y-4">
             <div className="grid gap-1.5">
-                <Label htmlFor="addr-name">Name der Adresse (z.B. &ldquo;Zuhause&rdquo;)</Label>
+                <Label htmlFor="addr-name">Name der Adresse</Label>
                 <Input id="addr-name" name="name" value={address.name || ''} onChange={handleFieldChange} placeholder="Zuhause" />
             </div>
             <div className="grid gap-1.5">
