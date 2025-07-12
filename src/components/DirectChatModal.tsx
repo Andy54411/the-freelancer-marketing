@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, User } from 'lucide-react';
+import { X, Send, MessageCircle, AlertTriangle } from 'lucide-react';
 import { db } from '@/firebase/clients';
 import { 
   collection, 
   query, 
-  where, 
   orderBy, 
   onSnapshot, 
   addDoc, 
@@ -16,7 +15,6 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { ResponseTimeTracker } from '@/lib/responseTimeTracker';
 
 interface DirectChatModalProps {
   isOpen: boolean;
@@ -36,6 +34,143 @@ interface Message {
   timestamp: any;
 }
 
+// Content-Filter für Kontaktdaten
+class ContactDataFilter {
+  private static phonePatterns = [
+    // Deutsche Telefonnummern
+    /(\+49|0049|\+\s*49)[\s\-\.]*\d{2,4}[\s\-\.]*\d{3,8}[\s\-\.]*\d{0,6}/g,
+    /0\d{3,4}[\s\-\.]?\d{3,8}/g,
+    // Internationale Nummern
+    /\+\d{1,4}[\s\-\.]?\d{2,4}[\s\-\.]?\d{3,8}[\s\-\.]?\d{0,6}/g,
+    // Allgemeine Telefonnummer-Muster
+    /\d{3,4}[\s\-\.]\d{3,8}[\s\-\.]\d{0,6}/g,
+    /\d{10,15}/g,
+    // Telefonnummer mit Buchstaben
+    /(?:tel|phone|telefon|handy|mobile)[\s\.:]*[\+\d\s\-\.]{7,20}/gi,
+  ];
+
+  private static emailPatterns = [
+    // E-Mail-Adressen
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    // E-Mail ohne @ (Umgehungsversuche)
+    /[a-zA-Z0-9._%+-]+\s*(at|AT|\[at\]|\(at\))\s*[a-zA-Z0-9.-]+\s*(dot|DOT|\[dot\]|\(dot\))\s*[a-zA-Z]{2,}/g,
+    /[a-zA-Z0-9._%+-]+\s*@\s*[a-zA-Z0-9.-]+\s*\.\s*[a-zA-Z]{2,}/g,
+    // Umschreibungen
+    /(?:e-?mail|email|mail)[\s\.:]*[a-zA-Z0-9._%+-\s@]{5,50}/gi,
+  ];
+
+  private static contactKeywords = [
+    // Deutsche Begriffe
+    'telefon', 'handy', 'mobile', 'nummer', 'anrufen', 'whatsapp', 'signal', 'telegram',
+    'email', 'e-mail', 'mail', 'schreib mir', 'kontaktier mich', 'ruf mich an',
+    'meine nummer', 'mein handy', 'meine mail', 'erreichbar unter',
+    // Englische Begriffe
+    'phone', 'call me', 'contact me', 'reach me', 'my number', 'my phone', 'my email',
+    // Varianten und Umgehungen
+    'tel', 'tel.', 'tel:', 'mob', 'mob.', 'mob:', '@', 'at', 'punkt', 'dot',
+    // Social Media
+    'instagram', 'facebook', 'linkedin', 'xing', 'skype', 'discord'
+  ];
+
+  private static websitePatterns = [
+    // URLs und Websites
+    /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g,
+    /(?:www\.)[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/g,
+    /[a-zA-Z0-9-]+\.(com|de|org|net|eu|co\.uk|at|ch)(?:\/[^\s]*)?/g,
+  ];
+
+  static containsContactData(text: string): { blocked: boolean; reason: string; suggestions: string[] } {
+    const normalizedText = text.toLowerCase().replace(/\s+/g, ' ');
+    
+    // Prüfe Telefonnummern
+    for (const pattern of this.phonePatterns) {
+      if (pattern.test(text)) {
+        return {
+          blocked: true,
+          reason: 'Telefonnummern sind im Chat nicht erlaubt',
+          suggestions: [
+            'Nutzen Sie die Buchungs-Funktion für einen Termin',
+            'Verwenden Sie unser integriertes Nachrichtensystem',
+            'Kontaktdaten können nach der Buchung ausgetauscht werden'
+          ]
+        };
+      }
+    }
+
+    // Prüfe E-Mail-Adressen
+    for (const pattern of this.emailPatterns) {
+      if (pattern.test(text)) {
+        return {
+          blocked: true,
+          reason: 'E-Mail-Adressen sind im Chat nicht erlaubt',
+          suggestions: [
+            'Kommunizieren Sie über unser sicheres Chat-System',
+            'Nach einer Buchung erhalten Sie automatisch die Kontaktdaten',
+            'Nutzen Sie die "Termin buchen" Funktion'
+          ]
+        };
+      }
+    }
+
+    // Prüfe Website/URLs
+    for (const pattern of this.websitePatterns) {
+      if (pattern.test(text)) {
+        return {
+          blocked: true,
+          reason: 'Links und Websites sind im Chat nicht erlaubt',
+          suggestions: [
+            'Beschreiben Sie Ihr Anliegen direkt hier im Chat',
+            'Teilen Sie relevante Informationen als Text',
+            'Nach der Buchung können weitere Details ausgetauscht werden'
+          ]
+        };
+      }
+    }
+
+    // Prüfe Kontakt-Keywords in Kombination mit verdächtigen Mustern
+    const hasContactKeyword = this.contactKeywords.some(keyword => 
+      normalizedText.includes(keyword)
+    );
+
+    if (hasContactKeyword) {
+      // Zusätzliche Prüfung auf Zahlen nach Kontakt-Keywords
+      const hasNumbersAfterKeyword = /(?:telefon|handy|mobile|nummer|phone|call|mail|email|kontakt|reach)[\s\w]*\d{3,}/gi.test(text);
+      if (hasNumbersAfterKeyword) {
+        return {
+          blocked: true,
+          reason: 'Kontaktdaten-Austausch ist im Chat nicht erlaubt',
+          suggestions: [
+            'Nutzen Sie unsere sichere Buchungs-Plattform',
+            'Kontaktdaten werden automatisch nach der Buchung freigegeben',
+            'Beschreiben Sie Ihr Projekt hier im Chat'
+          ]
+        };
+      }
+    }
+
+    return { blocked: false, reason: '', suggestions: [] };
+  }
+
+  static sanitizeMessage(text: string): string {
+    let sanitized = text;
+    
+    // Entferne potentielle Kontaktdaten
+    this.phonePatterns.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '[Telefonnummer entfernt]');
+    });
+    
+    this.emailPatterns.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '[E-Mail entfernt]');
+    });
+    
+    this.websitePatterns.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '[Link entfernt]');
+    });
+    
+    return sanitized;
+  }
+}
+
 export default function DirectChatModal({
   isOpen,
   onClose,
@@ -49,6 +184,7 @@ export default function DirectChatModal({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [chatId, setChatId] = useState<string>('');
+  const [warningMessage, setWarningMessage] = useState<{ reason: string; suggestions: string[] } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Generiere eine eindeutige Chat-ID basierend auf beiden Teilnehmern
@@ -57,26 +193,31 @@ export default function DirectChatModal({
   };
 
   useEffect(() => {
-    if (!isOpen || !companyId || !providerId) return;
+    if (!isOpen || !user || !providerId) return;
 
-    const chatId = generateChatId(companyId, providerId);
+    const currentUserId = user.uid;
+    const chatId = generateChatId(currentUserId, providerId);
     setChatId(chatId);
 
     // Chat-Dokument erstellen falls es nicht existiert
     const initializeChat = async () => {
-      const chatRef = doc(db, 'directChats', chatId);
-      const chatDoc = await getDoc(chatRef);
-      
-      if (!chatDoc.exists()) {
-        await setDoc(chatRef, {
-          participants: [companyId, providerId],
-          companyId,
-          providerId,
-          companyName,
-          providerName,
-          createdAt: serverTimestamp(),
-          lastUpdated: serverTimestamp()
-        });
+      try {
+        const chatRef = doc(db, 'directChats', chatId);
+        const chatDoc = await getDoc(chatRef);
+        
+        if (!chatDoc.exists()) {
+          await setDoc(chatRef, {
+            participants: [currentUserId, providerId],
+            companyId: currentUserId,
+            providerId,
+            companyName,
+            providerName,
+            createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp()
+          });
+        }
+      } catch (error) {
+        console.error('Fehler beim Initialisieren des Chats:', error);
       }
     };
 
@@ -95,23 +236,49 @@ export default function DirectChatModal({
         } as Message);
       });
       setMessages(messagesList);
+    }, (error) => {
+      console.error('Fehler beim Abhören der Nachrichten:', error);
     });
 
     return () => unsubscribe();
-  }, [isOpen, companyId, providerId, companyName, providerName]);
+  }, [isOpen, user, providerId, companyName, providerName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    setNewMessage(text);
+
+    // Live-Validierung während der Eingabe
+    if (text.length > 10) {
+      const filterResult = ContactDataFilter.containsContactData(text);
+      if (filterResult.blocked) {
+        setWarningMessage({ reason: filterResult.reason, suggestions: filterResult.suggestions });
+      } else {
+        setWarningMessage(null);
+      }
+    } else {
+      setWarningMessage(null);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending || !user) return;
 
+    // Finale Validierung vor dem Senden
+    const filterResult = ContactDataFilter.containsContactData(newMessage);
+    if (filterResult.blocked) {
+      setWarningMessage({ reason: filterResult.reason, suggestions: filterResult.suggestions });
+      return;
+    }
+
     setSending(true);
     try {
       const messagesRef = collection(db, 'directChats', chatId, 'messages');
-      const messageDoc = await addDoc(messagesRef, {
+      await addDoc(messagesRef, {
         senderId: user.uid,
         senderName: companyName,
         senderType: 'company',
@@ -119,47 +286,8 @@ export default function DirectChatModal({
         timestamp: serverTimestamp()
       });
 
-      // Start Response Time Tracking für Provider
-      // Hole Provider Garantie-Stunden (Standard: 24h)
-      let guaranteeHours = 24;
-      try {
-        const providerDoc = await getDoc(doc(db, 'firma', providerId));
-        if (providerDoc.exists()) {
-          const providerData = providerDoc.data();
-          guaranteeHours = providerData?.responseTimeGuaranteeHours || 24;
-        } else {
-          // Versuche users Collection
-          const userDoc = await getDoc(doc(db, 'users', providerId));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
-          }
-        }
-      } catch (error) {
-        console.error('Fehler beim Laden der Provider-Garantie:', error);
-      }
-
-      // Starte Response Time Tracking
-      await ResponseTimeTracker.startResponseTimeTracking(
-        providerId,
-        chatId,
-        messageDoc.id,
-        guaranteeHours
-      );
-
-      // Update last message in chat document
-      const chatRef = doc(db, 'directChats', chatId);
-      await setDoc(chatRef, {
-        lastMessage: {
-          text: newMessage.trim(),
-          senderId: user.uid,
-          senderName: companyName,
-          timestamp: serverTimestamp()
-        },
-        lastUpdated: serverTimestamp()
-      }, { merge: true });
-
       setNewMessage('');
+      setWarningMessage(null);
     } catch (error) {
       console.error('Fehler beim Senden der Nachricht:', error);
     } finally {
@@ -171,7 +299,7 @@ export default function DirectChatModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md h-96 flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md h-[500px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
@@ -183,7 +311,7 @@ export default function DirectChatModal({
                 Chat mit {providerName}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Direktnachricht
+                Sicherer Chat - Kontaktdaten werden nach Buchung freigegeben
               </p>
             </div>
           </div>
@@ -195,12 +323,37 @@ export default function DirectChatModal({
           </button>
         </div>
 
+        {/* Warning Message */}
+        {warningMessage && (
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 mx-4 mt-4 rounded">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                  {warningMessage.reason}
+                </p>
+                <ul className="mt-2 text-sm text-red-700 dark:text-red-400 list-disc list-inside">
+                  {warningMessage.suggestions.map((suggestion, index) => (
+                    <li key={index}>{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Starten Sie die Unterhaltung mit {providerName}</p>
+              <p className="mb-2">Starten Sie die Unterhaltung mit {providerName}</p>
+              <div className="text-xs bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Hinweis:</p>
+                <p className="text-blue-600 dark:text-blue-400">
+                  Aus Sicherheitsgründen können Kontaktdaten erst nach einer Buchung ausgetauscht werden.
+                </p>
+              </div>
             </div>
           ) : (
             messages.map((message) => (
@@ -237,15 +390,19 @@ export default function DirectChatModal({
             <input
               type="text"
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Nachricht eingeben..."
-              className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
+              onChange={handleMessageChange}
+              placeholder="Beschreiben Sie Ihr Projekt..."
+              className={`flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent transition-colors ${
+                warningMessage 
+                  ? 'border-red-300 dark:border-red-600' 
+                  : 'border-gray-200 dark:border-gray-600'
+              }`}
               disabled={sending}
             />
             <button
               type="submit"
-              disabled={!newMessage.trim() || sending}
-              className="px-4 py-2 bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              disabled={!newMessage.trim() || sending || !!warningMessage}
+              className="bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               <Send className="w-4 h-4" />
             </button>
