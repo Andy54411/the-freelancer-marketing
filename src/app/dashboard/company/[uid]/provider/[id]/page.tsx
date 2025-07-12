@@ -8,10 +8,9 @@ import { Star, MapPin, ArrowLeft, Briefcase, Clock, Users, MessageCircle, Calend
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import ProviderReviews from '@/components/ProviderReviews';
-import Modal from '@/components/Modal';
-import CreateOrderModal from '@/app/dashboard/user/[uid]/components/CreateOrderModal';
+import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserProfileData } from '@/types/types';
+import { UserProfileData, SavedAddress } from '@/types/types';
 
 interface Provider {
     id: string;
@@ -58,8 +57,8 @@ export default function CompanyProviderDetailPage() {
     const [chatModalOpen, setChatModalOpen] = useState(false);
     const [companyName, setCompanyName] = useState<string>('');
 
-    // Booking Modal State
-    const [bookingModalOpen, setBookingModalOpen] = useState(false);
+    // Direct Booking Modal State
+    const [datePickerOpen, setDatePickerOpen] = useState(false);
 
     useEffect(() => {
         loadProviderData();
@@ -217,13 +216,18 @@ export default function CompanyProviderDetailPage() {
 
     const openBookingModal = () => {
         if (provider) {
-            setBookingModalOpen(true);
+            setDatePickerOpen(true);
         }
     };
 
-    const handleBookingSuccess = () => {
-        setBookingModalOpen(false);
-        // Optional: Zeige eine Erfolgsmeldung oder navigiere zu einer anderen Seite
+    const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (selection, time, durationString) => {
+        setDatePickerOpen(false);
+        console.log('Termin gebucht:', { selection, time, durationString, provider: provider?.companyName });
+        
+        // Hier können Sie die Buchungslogik implementieren
+        // TODO: Direkte Buchung mit Provider-Details verarbeiten
+        
+        // Erfolgreiche Buchung - zurück zum Dashboard
         router.push(`/dashboard/company/${companyUid}`);
     };
 
@@ -576,16 +580,23 @@ export default function CompanyProviderDetailPage() {
                 />
             )}
 
-            {/* Booking Modal */}
-            {bookingModalOpen && firebaseUser && userProfile && (
-                <Modal onClose={() => setBookingModalOpen(false)} title="Termin buchen">
-                    <CreateOrderModal
-                        onClose={() => setBookingModalOpen(false)}
-                        onSuccess={handleBookingSuccess}
-                        currentUser={firebaseUser}
-                        userProfile={userProfile}
-                    />
-                </Modal>
+            {/* Direct Booking DatePicker */}
+            {provider && (
+                <DateTimeSelectionPopup
+                    isOpen={datePickerOpen}
+                    onClose={() => setDatePickerOpen(false)}
+                    onConfirm={handleDateTimeConfirm}
+                    bookingSubcategory={provider.selectedSubcategory || provider.selectedCategory || null}
+                    contextCompany={{
+                        id: provider.id,
+                        companyName: provider.companyName || provider.userName || 'Unbekannter Anbieter',
+                        hourlyRate: provider.hourlyRate || 0,
+                        profilePictureURL: getProfileImage(),
+                        description: provider.bio || provider.description,
+                        selectedSubcategory: provider.selectedSubcategory,
+                        // Weitere erforderliche Felder für AnbieterDetails können hier hinzugefügt werden
+                    }}
+                />
             )}
         </div>
     );
