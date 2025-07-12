@@ -77,10 +77,24 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
       }
 
       const reviewsSnapshot = await getDocs(reviewsQuery);
-      const reviewsData = reviewsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Review[];
+      const reviewsData = reviewsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          rating: data.rating || 0,
+          comment: data.comment || '',
+          reviewerName: data.reviewerName || 'Anonymer Nutzer',
+          reviewerCountry: data.reviewerCountry,
+          date: data.date,
+          projectTitle: data.projectTitle,
+          projectPrice: data.projectPrice,
+          projectDuration: data.projectDuration,
+          isVerified: data.isVerified || false,
+          isReturningCustomer: data.isReturningCustomer || false,
+          helpfulVotes: data.helpfulVotes || 0,
+          providerResponse: data.providerResponse
+        };
+      }) as Review[];
 
       if (initial) {
         setReviews(reviewsData);
@@ -132,6 +146,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
   };
 
   const truncateText = (text: string, maxLength: number = 200) => {
+    if (!text || typeof text !== 'string') return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
   };
@@ -154,6 +169,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
   };
 
   const getAvatarInitial = (name: string) => {
+    if (!name || typeof name !== 'string') return '?';
     return name.charAt(0).toUpperCase();
   };
 
@@ -162,6 +178,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
       'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-red-500',
       'bg-yellow-500', 'bg-indigo-500', 'bg-pink-500', 'bg-teal-500'
     ];
+    if (!name || typeof name !== 'string') return colors[0];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
   };
@@ -284,10 +301,11 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         <div className="space-y-6">
           {reviews.map((review) => {
             const isExpanded = expandedReviews.has(review.id);
-            const shouldTruncate = review.comment.length > 200;
+            const reviewComment = review.comment || '';
+            const shouldTruncate = reviewComment.length > 200;
             const displayComment = isExpanded || !shouldTruncate 
-              ? review.comment 
-              : truncateText(review.comment);
+              ? reviewComment 
+              : truncateText(reviewComment);
 
             return (
               <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0">
@@ -295,14 +313,14 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                   {/* User Header */}
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      <div className={`w-12 h-12 ${getAvatarColor(review.reviewerName)} rounded-full flex items-center justify-center text-white font-semibold`}>
-                        {getAvatarInitial(review.reviewerName)}
+                      <div className={`w-12 h-12 ${getAvatarColor(review.reviewerName || 'Anonymous')} rounded-full flex items-center justify-center text-white font-semibold`}>
+                        {getAvatarInitial(review.reviewerName || 'Anonymous')}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {review.reviewerName}
+                          {review.reviewerName || 'Anonymer Nutzer'}
                         </p>
                         {review.isVerified && (
                           <div className="flex items-center space-x-1 text-sm">
