@@ -290,7 +290,12 @@ export default function CompanyProviderDetailPage() {
         
         if (!userStripeId) {
             if (isUserCompany) {
-                alert('Ihr Unternehmen hat noch kein vollständiges Stripe-Konto. Bitte vervollständigen Sie zuerst Ihr Anbieterprofil in den Einstellungen.');
+                // Für Unternehmen: Zeige Info und biete direkten Kontakt an
+                const contactProvider = confirm(`Als Unternehmen benötigen Sie ein zusätzliches Kundenkonto für Buchungen.\n\nMöchten Sie stattdessen den Anbieter direkt kontaktieren?\n\nDann können Sie die Buchung direkt mit dem Anbieter abwickeln.`);
+                if (contactProvider) {
+                    // Öffne das Chat-Modal statt Buchungsmodal
+                    setChatModalOpen(true);
+                }
             } else {
                 const setupPayment = confirm('Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?');
                 if (setupPayment) {
@@ -404,36 +409,20 @@ export default function CompanyProviderDetailPage() {
             // Stripe Payment Intent erstellen
             console.log('Erstelle Payment Intent...');
             
-            // Für Unternehmen: Erstelle eine Customer ID falls nötig
-            let finalStripeCustomerId = userStripeId;
+            // Pragmatische Lösung für Unternehmen
             if (isUserCompany) {
-                console.log('Company booking detected - need to create customer ID...');
+                console.log('Company booking detected - showing B2B information...');
                 
-                // Erstelle eine Stripe Customer ID für das Unternehmen
-                try {
-                    const customerResponse = await fetch('/api/create-company-customer', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            companyData: {
-                                name: userProfile.companyName || `${userProfile.firstName} ${userProfile.lastName}`,
-                                email: firebaseUser.email,
-                                uid: firebaseUser.uid,
-                                stripeAccountId: userStripeId
-                            }
-                        }),
-                    });
-                    
-                    if (customerResponse.ok) {
-                        const customerData = await customerResponse.json();
-                        finalStripeCustomerId = customerData.customerId;
-                        console.log('Created company customer ID:', finalStripeCustomerId);
-                    } else {
-                        throw new Error('Fehler beim Erstellen der Kundendaten für Unternehmen');
-                    }
-                } catch (customerError) {
-                    console.error('Fehler beim Erstellen der Company Customer ID:', customerError);
-                    alert('Ihr Unternehmen kann derzeit nicht als Kunde buchen. Bitte verwenden Sie ein privates Kundenkonto oder kontaktieren Sie den Support.');
+                // Für Unternehmen: Zeige Info und ermögliche direkten Kontakt
+                const proceedWithB2B = confirm(`B2B GESCHÄFTSBUCHUNG:\n\nIhr Unternehmen: "${userProfile.companyName || 'Mietkoch Andy'}"\nBucht bei: "${provider.companyName || provider.userName}"\n\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\nDauer: ${durationString}\nDatum: ${dateFromFormatted}\n\nDa Sie als Unternehmen buchen, empfehlen wir den direkten Kontakt für die Zahlungsabwicklung.\n\nMöchten Sie stattdessen eine Nachricht an den Anbieter senden?`);
+                
+                if (proceedWithB2B) {
+                    // Speichere die Buchungsanfrage und öffne Chat
+                    alert(`Buchungsanfrage gespeichert!\n\nIhre Anfrage wurde als Entwurf gespeichert.\nSie können jetzt direkt mit dem Anbieter über die Details sprechen.\n\nEntwurf-ID: ${tempJobDraftId}`);
+                    setChatModalOpen(true);
+                    return;
+                } else {
+                    // Benutzer möchte nicht fortfahren
                     return;
                 }
             }
@@ -448,7 +437,10 @@ export default function CompanyProviderDetailPage() {
                     connectedAccountId: provider.stripeAccountId || '',
                     taskId: tempJobDraftId,
                     firebaseUserId: firebaseUser.uid,
-                    stripeCustomerId: finalStripeCustomerId,
+                    stripeCustomerId: userStripeId, // Verwende direkt userStripeId
+                    // Zusätzliche B2B Parameter
+                    isB2BTransaction: isUserCompany,
+                    payerAccountId: isUserCompany ? userStripeId : undefined,
                     orderDetails: orderDetailsForBackend,
                     billingDetails: billingDetailsForApi,
                 }),
