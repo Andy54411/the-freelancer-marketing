@@ -69,8 +69,37 @@ export async function POST(request: NextRequest) {
       console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Firebase User ID.", { firebaseUserId });
       return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
     }
-    if (!stripeCustomerId || typeof stripeCustomerId !== 'string' || !stripeCustomerId.startsWith('cus_')) {
-      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Stripe Customer ID.", { stripeCustomerId });
+    // NEU: Automatische Customer-Erstellung für B2B-Unternehmen
+    let finalStripeCustomerId = stripeCustomerId;
+    if (stripeCustomerId === 'CREATE_CUSTOMER_FOR_COMPANY') {
+      console.log("[API /create-payment-intent] Erstelle automatisch Customer ID für Unternehmen...");
+      
+      const { companyName, customerEmail } = body;
+      
+      try {
+        const customer = await stripe.customers.create({
+          email: customerEmail,
+          name: companyName || 'Unternehmen',
+          metadata: {
+            firebaseUserId: firebaseUserId,
+            createdFor: 'B2B_booking',
+            isCompany: 'true'
+          }
+        });
+        
+        finalStripeCustomerId = customer.id;
+        console.log("[API /create-payment-intent] Customer ID erfolgreich erstellt:", finalStripeCustomerId);
+        
+        // TODO: Hier könnte die Customer ID auch in Firestore gespeichert werden
+        
+      } catch (customerError) {
+        console.error("[API /create-payment-intent] Fehler beim Erstellen der Customer ID:", customerError);
+        return NextResponse.json({ error: 'Kunde konnte nicht erstellt werden.' }, { status: 500 });
+      }
+    }
+    
+    if (!finalStripeCustomerId || typeof finalStripeCustomerId !== 'string' || !finalStripeCustomerId.startsWith('cus_')) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Stripe Customer ID.", { stripeCustomerId: finalStripeCustomerId });
       return NextResponse.json({ error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' }, { status: 400 });
     }
     // NEU: Validierung für billingDetails
@@ -179,7 +208,7 @@ export async function POST(request: NextRequest) {
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: totalAmountToChargeBuyer, // Der Gesamtbetrag, den der Käufer zahlt
       currency: currency,
-      customer: stripeCustomerId,
+      customer: finalStripeCustomerId,
       application_fee_amount: totalApplicationFee, // Die Gesamtgebühr für eure Plattform
       transfer_data: {
         destination: connectedAccountId, // Der Restbetrag geht an den Dienstleister
