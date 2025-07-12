@@ -246,11 +246,27 @@ export default function CompanyProviderDetailPage() {
         }
 
         if (!userProfile.stripeCustomerId) {
-            alert('Ihr Zahlungsprofil ist nicht vollständig. Bitte fügen Sie unter "Einstellungen" eine Zahlungsmethode hinzu, bevor Sie buchen.');
+            console.log('User profile:', userProfile);
+            const setupPayment = confirm('Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?');
+            if (setupPayment) {
+                router.push(`/dashboard/company/${companyUid}/settings`);
+            }
+            return;
+        }
+
+        // Prüfe ob Adressdaten vorhanden sind
+        if (!userProfile.savedAddresses || userProfile.savedAddresses.length === 0) {
+            const setupAddress = confirm('Sie haben noch keine Rechnungsadresse hinterlegt. Möchten Sie jetzt zu den Einstellungen gehen, um eine Adresse hinzuzufügen?');
+            if (setupAddress) {
+                router.push(`/dashboard/company/${companyUid}/settings`);
+            }
             return;
         }
 
         try {
+            // Standardadresse für Billing-Daten
+            const defaultAddress = userProfile.savedAddresses?.[0];
+            
             // Datum formatieren
             let dateFromFormatted: string, dateToFormatted: string, calculatedNumberOfDays = 1;
 
@@ -304,13 +320,13 @@ export default function CompanyProviderDetailPage() {
                 customerType: userProfile.user_type || 'private',
                 description: `Buchung für ${provider.companyName || provider.userName} - ${provider.selectedSubcategory || provider.selectedCategory || 'Allgemeine Dienstleistung'}`,
                 jobCalculatedPriceInCents: servicePriceInCents,
-                jobCity: userProfile.city || '',
-                jobCountry: userProfile.country || 'Deutschland',
+                jobCity: defaultAddress?.city || 'Unbekannt',
+                jobCountry: defaultAddress?.country || 'Deutschland',
                 jobDateFrom: dateFromFormatted,
                 jobDateTo: dateToFormatted,
                 jobDurationString: durationString,
-                jobPostalCode: userProfile.postal_code || '',
-                jobStreet: userProfile.line1 || '',
+                jobPostalCode: defaultAddress?.postal_code || '00000',
+                jobStreet: defaultAddress?.line1 || 'Keine Adresse angegeben',
                 jobTimePreference: time,
                 jobTotalCalculatedHours: totalHours,
                 kundeId: firebaseUser.uid,
@@ -318,20 +334,20 @@ export default function CompanyProviderDetailPage() {
                 selectedCategory: provider.selectedCategory || null,
                 selectedSubcategory: provider.selectedSubcategory || null,
                 totalPriceInCents: totalPriceInCents,
-                addressName: 'Standard-Adresse',
+                addressName: defaultAddress?.name || 'Standard-Adresse',
             };
 
-            // Billing Details für Stripe
+            // Billing Details für Stripe - verwende gespeicherte Adresse oder Standardwerte
             const billingDetailsForApi = {
                 name: `${userProfile.firstname || ''} ${userProfile.lastname || ''}`.trim() || 'Unbekannter Name',
                 email: firebaseUser.email || userProfile.email || '',
-                phone: userProfile.phoneNumber || undefined,
+                phone: (userProfile as any).phoneNumber || (userProfile as any).phone || undefined,
                 address: {
-                    line1: userProfile.line1 || '',
-                    line2: userProfile.line2 || undefined,
-                    city: userProfile.city || '',
-                    postal_code: userProfile.postal_code || '',
-                    country: userProfile.country || 'Deutschland',
+                    line1: defaultAddress?.line1 || 'Keine Adresse angegeben',
+                    line2: defaultAddress?.line2 || undefined,
+                    city: defaultAddress?.city || 'Unbekannt',
+                    postal_code: defaultAddress?.postal_code || '00000',
+                    country: defaultAddress?.country || 'Deutschland',
                 },
             };
 
