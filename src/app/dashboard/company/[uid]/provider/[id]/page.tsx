@@ -409,22 +409,18 @@ export default function CompanyProviderDetailPage() {
             // Stripe Payment Intent erstellen
             console.log('Erstelle Payment Intent...');
             
-            // Pragmatische Lösung für Unternehmen
+            // B2B-Information für Unternehmen (aber normale Bezahlung)
             if (isUserCompany) {
-                console.log('Company booking detected - showing B2B information...');
+                console.log('Company booking detected - proceeding with B2B payment...');
                 
-                // Für Unternehmen: Zeige Info und ermögliche direkten Kontakt
-                const proceedWithB2B = confirm(`B2B GESCHÄFTSBUCHUNG:\n\nIhr Unternehmen: "${userProfile.companyName || 'Mietkoch Andy'}"\nBucht bei: "${provider.companyName || provider.userName}"\n\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\nDauer: ${durationString}\nDatum: ${dateFromFormatted}\n\nDa Sie als Unternehmen buchen, empfehlen wir den direkten Kontakt für die Zahlungsabwicklung.\n\nMöchten Sie stattdessen eine Nachricht an den Anbieter senden?`);
+                // Zeige B2B-Info, aber fahre mit normaler Bezahlung fort
+                const proceedWithPayment = confirm(`B2B GESCHÄFTSBUCHUNG:\n\nIhr Unternehmen: "${userProfile.companyName || 'Mietkoch Andy'}"\nBucht bei: "${provider.companyName || provider.userName}"\n\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\nDauer: ${durationString}\nDatum: ${dateFromFormatted}\n\nDie Bezahlung erfolgt über Stripe.\nNach erfolgreicher Zahlung können Sie mit dem Anbieter chatten.\n\nJetzt bezahlen?`);
                 
-                if (proceedWithB2B) {
-                    // Speichere die Buchungsanfrage und öffne Chat
-                    alert(`Buchungsanfrage gespeichert!\n\nIhre Anfrage wurde als Entwurf gespeichert.\nSie können jetzt direkt mit dem Anbieter über die Details sprechen.\n\nEntwurf-ID: ${tempJobDraftId}`);
-                    setChatModalOpen(true);
-                    return;
-                } else {
-                    // Benutzer möchte nicht fortfahren
+                if (!proceedWithPayment) {
+                    // Benutzer möchte nicht bezahlen
                     return;
                 }
+                // Fahre mit normaler Bezahlung fort
             }
             
             const response = await fetch('/api/create-payment-intent', {
@@ -455,7 +451,19 @@ export default function CompanyProviderDetailPage() {
             console.log('Payment Intent erfolgreich erstellt:', data.clientSecret);
             
             // Erfolgreiche Buchung mit Payment Intent
-            alert(`Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über Stripe abgewickelt.`);
+            const successMessage = `Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über Stripe abgewickelt.`;
+            
+            // Für B2B-Buchungen: Biete Chat nach Zahlung an
+            if (isUserCompany) {
+                const openChat = confirm(`${successMessage}\n\n✅ ZAHLUNG EINGELEITET\n\nMöchten Sie jetzt direkt mit dem Anbieter chatten, um weitere Details zu besprechen?`);
+                
+                if (openChat) {
+                    setChatModalOpen(true);
+                    return; // Bleibe auf der Seite für Chat
+                }
+            } else {
+                alert(successMessage);
+            }
             
             // Weiterleitung zur Zahlungsseite oder zurück zum Dashboard
             router.push(`/dashboard/company/${companyUid}`);
