@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Star, MapPin, ArrowLeft, Briefcase, Clock, Award, Users, MessageCircle, Calendar } from 'lucide-react';
 import DirectChatModal from '@/components/DirectChatModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -166,7 +166,6 @@ export default function CompanyProviderDetailPage() {
       const reviewsQuery = query(
         collection(db, 'reviews'),
         where('providerId', '==', providerId),
-        orderBy('date', 'desc'),
         limit(10)
       );
 
@@ -175,6 +174,13 @@ export default function CompanyProviderDetailPage() {
         id: doc.id,
         ...doc.data()
       })) as Review[];
+
+      // Sortiere nach Datum im Client
+      reviewsData.sort((a, b) => {
+        const dateA = a.date?.toDate?.() || new Date(0);
+        const dateB = b.date?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
 
       setReviews(reviewsData);
     } catch (error) {

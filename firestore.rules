@@ -325,6 +325,28 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
     }
 
+    // --- reviews Collection ---
+    match /reviews/{reviewId} {
+      // Öffentlicher Lesezugriff für alle Bewertungen (Service-Discovery)
+      allow get: if true;
+      
+      // Öffentlicher Lesezugriff für Reviews-Listen mit Limit
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Reviewer kann seine eigene Bewertung erstellen
+      allow create: if request.auth != null && 
+        request.resource.data.reviewerId == request.auth.uid;
+      
+      // Nur der Reviewer kann seine eigene Bewertung aktualisieren oder Support
+      allow update: if request.auth != null && (
+        resource.data.reviewerId == request.auth.uid ||
+        isSupportStaff()
+      );
+      
+      // Nur Support kann Reviews löschen
+      allow delete: if isSupportStaff();
+    }
+
     // --- directChats Collection ---
     match /directChats/{chatId} {
       // Erlaubt Lesen und Schreiben für Teilnehmer des Chats
