@@ -203,10 +203,42 @@ export default function CompanyProviderDetailPage() {
         if (!firebaseUser?.uid) return;
 
         try {
-            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            // Zuerst in users Collection suchen
+            let userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            let userData = null;
+            
             if (userDoc.exists()) {
-                const data = userDoc.data();
-                setUserProfile(data as UserProfileData);
+                userData = userDoc.data() as UserProfileData;
+            } else {
+                // Falls nicht in users gefunden, in firma Collection suchen
+                const firmaDoc = await getDoc(doc(db, 'firma', firebaseUser.uid));
+                if (firmaDoc.exists()) {
+                    const firmaData = firmaDoc.data();
+                    // Konvertiere firma Daten zu UserProfileData Format
+                    userData = {
+                        uid: firmaDoc.id,
+                        email: firebaseUser.email || '',
+                        firstname: firmaData.firstName || '',
+                        lastname: firmaData.lastName || '',
+                        user_type: 'firma',
+                        stripeCustomerId: firmaData.stripeCustomerId, // Falls vorhanden
+                        stripeAccountId: firmaData.stripeAccountId, // Für Unternehmen wichtig
+                        savedAddresses: firmaData.savedAddresses || [{
+                            id: 'company-address',
+                            name: 'Firmenadresse',
+                            line1: firmaData.companyAddressLine1ForBackend || firmaData.step1?.personalStreet || '',
+                            city: firmaData.companyCityForBackend || firmaData.step1?.personalCity || '',
+                            postal_code: firmaData.companyPostalCodeForBackend || firmaData.step1?.personalPostalCode || '',
+                            country: firmaData.companyCountryForBackend || firmaData.step1?.personalCountry || 'DE',
+                        }],
+                        phoneNumber: firmaData.step1?.phoneNumber,
+                    } as any;
+                }
+            }
+            
+            if (userData) {
+                setUserProfile(userData);
+                console.log('User Profile loaded:', userData);
             }
         } catch (error) {
             console.error('Fehler beim Laden des Benutzerprofils:', error);
@@ -226,8 +258,6 @@ export default function CompanyProviderDetailPage() {
     };
 
     const handleBookingConfirm = async (selection: any, time: string, durationString: string, description: string) => {
-        setDatePickerOpen(false);
-        
         if (!selection || !time || !durationString || !description?.trim() || !provider || !firebaseUser || !userProfile) {
             console.error('Unvollständige Buchungsdaten:', { selection, time, durationString, description, provider: !!provider, user: !!firebaseUser, userProfile: !!userProfile });
             alert('Unvollständige Buchungsdaten. Bitte versuchen Sie es erneut.');
@@ -245,20 +275,27 @@ export default function CompanyProviderDetailPage() {
             return;
         }
 
-        if (!userProfile.stripeCustomerId) {
-            console.log('User profile:', userProfile);
-            const setupPayment = confirm('Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?');
-            if (setupPayment) {
-                router.push(`/dashboard/company/${companyUid}/settings`);
-            }
-            return;
-        }
+        // Debug: Stripe-Status des aktuellen Benutzers
+        console.log('=== STRIPE DEBUG ===');
+        console.log('User Profile:', {
+            user_type: userProfile.user_type,
+            stripeCustomerId: userProfile.stripeCustomerId,
+            stripeAccountId: (userProfile as any).stripeAccountId,
+            uid: firebaseUser.uid
+        });
 
-        // Prüfe ob Adressdaten vorhanden sind
-        if (!userProfile.savedAddresses || userProfile.savedAddresses.length === 0) {
-            const setupAddress = confirm('Sie haben noch keine Rechnungsadresse hinterlegt. Möchten Sie jetzt zu den Einstellungen gehen, um eine Adresse hinzuzufügen?');
-            if (setupAddress) {
-                router.push(`/dashboard/company/${companyUid}/settings`);
+        // Für Unternehmen: Verwende stripeAccountId, für Kunden: Verwende stripeCustomerId
+        const isUserCompany = userProfile.user_type === 'firma';
+        const userStripeId = isUserCompany ? (userProfile as any).stripeAccountId : userProfile.stripeCustomerId;
+        
+        if (!userStripeId) {
+            if (isUserCompany) {
+                alert('Ihr Unternehmen hat noch kein vollständiges Stripe-Konto. Bitte vervollständigen Sie zuerst Ihr Anbieterprofil in den Einstellungen.');
+            } else {
+                const setupPayment = confirm('Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?');
+                if (setupPayment) {
+                    router.push(`/dashboard/user/${firebaseUser.uid}/settings`);
+                }
             }
             return;
         }
@@ -368,19 +405,19 @@ export default function CompanyProviderDetailPage() {
             console.log('Erstelle Payment Intent...');
             const response = await fetch('/api/create-payment-intent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    amount: totalPriceInCents,
-                    jobPriceInCents: servicePriceInCents,
-                    currency: 'eur',
-                    connectedAccountId: provider.stripeAccountId || '',
-                    taskId: tempJobDraftId,
-                    firebaseUserId: firebaseUser.uid,
-                    stripeCustomerId: userProfile.stripeCustomerId,
-                    orderDetails: orderDetailsForBackend,
-                    billingDetails: billingDetailsForApi,
-                }),
-            });
+                headers: { 'Content-Type': 'application/json' },                    body: JSON.stringify({
+                        amount: totalPriceInCents,
+                        jobPriceInCents: servicePriceInCents,
+                        currency: 'eur',
+                        connectedAccountId: provider.stripeAccountId || '',
+                        taskId: tempJobDraftId,
+                        firebaseUserId: firebaseUser.uid,
+                        stripeCustomerId: isUserCompany ? undefined : userStripeId, // Nur für normale Kunden
+                        stripeAccountId: isUserCompany ? userStripeId : undefined, // Nur für Unternehmen
+                        orderDetails: orderDetailsForBackend,
+                        billingDetails: billingDetailsForApi,
+                    }),
+                });
 
             const data = await response.json();
             if (!response.ok || data.error) {
