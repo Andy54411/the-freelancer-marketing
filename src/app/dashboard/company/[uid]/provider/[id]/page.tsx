@@ -410,8 +410,38 @@ export default function CompanyProviderDetailPage() {
             console.log('Erstelle Payment Intent...');
             
             // B2B-Information für Unternehmen (aber normale Bezahlung)
+            let finalCustomerId = userStripeId;
             if (isUserCompany) {
                 console.log('Company booking detected - proceeding with B2B payment...');
+                
+                // Für Unternehmen ohne Customer ID: Erstelle eine
+                if (!userStripeId || userStripeId.startsWith('acct_')) {
+                    console.log('Company needs Customer ID for payment...');
+                    
+                    try {
+                        const customerResponse = await fetch('/api/create-company-customer', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                companyName: userProfile.companyName || 'Mietkoch Andy',
+                                email: firebaseUser.email,
+                                uid: firebaseUser.uid
+                            })
+                        });
+                        
+                        if (customerResponse.ok) {
+                            const customerData = await customerResponse.json();
+                            finalCustomerId = customerData.customerId;
+                            console.log('Company Customer ID created:', finalCustomerId);
+                        } else {
+                            throw new Error('Could not create company customer');
+                        }
+                    } catch (error) {
+                        console.log('Customer creation failed, using fallback...');
+                        // Fallback: Verwende eine temporäre Customer ID
+                        finalCustomerId = `temp_company_${firebaseUser.uid}`;
+                    }
+                }
                 
                 // Zeige B2B-Info, aber fahre mit normaler Bezahlung fort
                 const proceedWithPayment = confirm(`B2B GESCHÄFTSBUCHUNG:\n\nIhr Unternehmen: "${userProfile.companyName || 'Mietkoch Andy'}"\nBucht bei: "${provider.companyName || provider.userName}"\n\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\nDauer: ${durationString}\nDatum: ${dateFromFormatted}\n\nDie Bezahlung erfolgt über Stripe.\nNach erfolgreicher Zahlung können Sie mit dem Anbieter chatten.\n\nJetzt bezahlen?`);
@@ -433,7 +463,7 @@ export default function CompanyProviderDetailPage() {
                     connectedAccountId: provider.stripeAccountId || '',
                     taskId: tempJobDraftId,
                     firebaseUserId: firebaseUser.uid,
-                    stripeCustomerId: userStripeId, // Verwende direkt userStripeId
+                    stripeCustomerId: finalCustomerId, // Verwende die finale Customer ID
                     // Zusätzliche B2B Parameter
                     isB2BTransaction: isUserCompany,
                     payerAccountId: isUserCompany ? userStripeId : undefined,
