@@ -318,7 +318,7 @@ export default function CompanyServiceSubcategoryPage() {
     return provider.profilePictureFirebaseUrl ||
       provider.profilePictureURL ||
       provider.photoURL ||
-      '/images/default-avatar.png';
+      '/images/default-avatar.jpg';
   };
 
   const getProviderName = (provider: Provider) => {
@@ -449,7 +449,7 @@ export default function CompanyServiceSubcategoryPage() {
                         alt={getProviderName(provider)}
                         className="w-16 h-16 rounded-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                          (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                         }}
                       />
                       {provider.isCompany && (
