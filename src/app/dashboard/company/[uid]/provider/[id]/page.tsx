@@ -190,14 +190,16 @@ export default function CompanyProviderDetailPage() {
 
     if (!provider) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-                <div className="max-w-2xl mx-auto text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <div className="max-w-2xl mx-auto text-center py-16">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.not.found.title">
                         Anbieter nicht gefunden
                     </h1>
                     <button
                         onClick={() => router.push(`/dashboard/company/${companyUid}`)}
                         className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto"
+                        data-translatable
+                        data-translation-key="provider.not.found.back"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Zurück zum Dashboard
@@ -287,19 +289,19 @@ export default function CompanyProviderDetailPage() {
                                         {provider.completedJobs && provider.completedJobs > 0 && (
                                             <div className="flex items-center gap-1">
                                                 <Briefcase className="w-4 h-4" />
-                                                {provider.completedJobs} Projekte abgeschlossen
+                                                <span data-translatable data-translation-key="provider.stats.projects">{provider.completedJobs} Projekte abgeschlossen</span>
                                             </div>
                                         )}
                                         {provider.responseTime && (
                                             <div className="flex items-center gap-1">
                                                 <Clock className="w-4 h-4" />
-                                                Antwortet in {provider.responseTime}
+                                                <span data-translatable data-translation-key="provider.stats.response">Antwortet in {provider.responseTime}</span>
                                             </div>
                                         )}
                                         {provider.teamSize && (
                                             <div className="flex items-center gap-1">
                                                 <Users className="w-4 h-4" />
-                                                {provider.teamSize} Mitarbeiter
+                                                <span data-translatable data-translation-key="provider.stats.team">{provider.teamSize} Mitarbeiter</span>
                                             </div>
                                         )}
                                     </div>
@@ -312,7 +314,7 @@ export default function CompanyProviderDetailPage() {
                                             <div className="text-2xl font-bold text-[#14ad9f]">
                                                 €{provider.hourlyRate}/h
                                             </div>
-                                            <div className="text-sm text-gray-500">
+                                            <div className="text-sm text-gray-500" data-translatable data-translation-key="provider.hourly.rate">
                                                 Stundensatz
                                             </div>
                                         </div>
@@ -334,19 +336,19 @@ export default function CompanyProviderDetailPage() {
                         {/* Description */}
                         {(provider.bio || provider.description) && (
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.about.title">
                                     Über {provider.isCompany ? 'das Unternehmen' : 'mich'}
                                 </h2>
-                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed" data-translatable data-translation-key="provider.about.description">
                                     {provider.bio || provider.description}
                                 </p>
                             </div>
                         )}
 
                         {/* Skills & Services */}
-                        {provider.skills && provider.skills.length > 0 && (
+                        {provider.skills && Array.isArray(provider.skills) && provider.skills.length > 0 && (
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.skills.title">
                                     Fähigkeiten & Services
                                 </h2>
                                 <div className="flex flex-wrap gap-2">
@@ -374,13 +376,13 @@ export default function CompanyProviderDetailPage() {
                     <div className="space-y-6">
                         {/* Contact Info */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.contact.title">
                                 Kontaktinformationen
                             </h3>
                             <div className="space-y-3">
                                 {provider.email && (
                                     <div>
-                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.contact.email">
                                             E-Mail
                                         </label>
                                         <p className="text-gray-900 dark:text-white">
@@ -390,7 +392,7 @@ export default function CompanyProviderDetailPage() {
                                 )}
                                 {provider.phone && (
                                     <div>
-                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.contact.phone">
                                             Telefon
                                         </label>
                                         <p className="text-gray-900 dark:text-white">
@@ -400,7 +402,7 @@ export default function CompanyProviderDetailPage() {
                                 )}
                                 {provider.website && (
                                     <div>
-                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.contact.website">
                                             Website
                                         </label>
                                         <a
@@ -423,16 +425,16 @@ export default function CompanyProviderDetailPage() {
                             showDetailed={true}
                         />
 
-                        {/* Additional Info */}
-                        {(provider.founded || provider.languages?.length) && (
+                                    {/* Additional Info */}
+                        {(provider.founded || (provider.languages && Array.isArray(provider.languages) && provider.languages.length > 0)) && (
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.additional.title">
                                     Weitere Informationen
                                 </h3>
                                 <div className="space-y-3">
                                     {provider.founded && (
                                         <div>
-                                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.additional.founded">
                                                 Gegründet
                                             </label>
                                             <p className="text-gray-900 dark:text-white">
@@ -440,9 +442,9 @@ export default function CompanyProviderDetailPage() {
                                             </p>
                                         </div>
                                     )}
-                                    {provider.languages && provider.languages.length > 0 && (
+                                    {provider.languages && Array.isArray(provider.languages) && provider.languages.length > 0 && (
                                         <div>
-                                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.additional.languages">
                                                 Sprachen
                                             </label>
                                             <div className="flex flex-wrap gap-1 mt-1">
@@ -463,13 +465,15 @@ export default function CompanyProviderDetailPage() {
 
                         {/* Quick Actions */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.actions.title">
                                 Schnellaktionen
                             </h3>
                             <div className="space-y-3">
                                 <button
                                     onClick={openChatWithProvider}
                                     className="w-full bg-[#14ad9f] hover:bg-teal-600 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                    data-translatable
+                                    data-translation-key="provider.actions.message"
                                 >
                                     <MessageCircle className="w-4 h-4" />
                                     Nachricht senden
@@ -477,6 +481,8 @@ export default function CompanyProviderDetailPage() {
                                 <button
                                     onClick={() => {/* Implementiere Terminbuchung */ }}
                                     className="w-full border border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                    data-translatable
+                                    data-translation-key="provider.actions.appointment"
                                 >
                                     <Calendar className="w-4 h-4" />
                                     Termin buchen
