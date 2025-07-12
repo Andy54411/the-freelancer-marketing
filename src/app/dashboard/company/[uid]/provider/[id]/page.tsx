@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Star, MapPin, ArrowLeft, Briefcase, Clock, Award, Users, MessageCircle, Calendar } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { Star, MapPin, ArrowLeft, Briefcase, Clock, Users, MessageCircle, Calendar } from 'lucide-react';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
+import ProviderReviews from '@/components/ProviderReviews';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Provider {
@@ -39,15 +40,6 @@ interface Provider {
   services?: string[];
 }
 
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  reviewerName: string;
-  date: any;
-  projectTitle?: string;
-}
-
 export default function CompanyProviderDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -56,9 +48,7 @@ export default function CompanyProviderDetailPage() {
   const providerId = params.id as string;
 
   const [provider, setProvider] = useState<Provider | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
   
   // Chat Modal State
   const [chatModalOpen, setChatModalOpen] = useState(false);
@@ -67,7 +57,6 @@ export default function CompanyProviderDetailPage() {
   useEffect(() => {
     loadProviderData();
     loadCompanyData();
-    loadReviews();
   }, [providerId]);
 
   const loadProviderData = async () => {
@@ -158,36 +147,6 @@ export default function CompanyProviderDetailPage() {
       }
     } catch (error) {
       console.error('Fehler beim Laden der Unternehmensdaten:', error);
-    }
-  };
-
-  const loadReviews = async () => {
-    try {
-      setReviewsLoading(true);
-      const reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('providerId', '==', providerId),
-        limit(10)
-      );
-
-      const reviewsSnapshot = await getDocs(reviewsQuery);
-      const reviewsData = reviewsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Review[];
-
-      // Sortiere nach Datum im Client
-      reviewsData.sort((a, b) => {
-        const dateA = a.date?.toDate?.() || new Date(0);
-        const dateB = b.date?.toDate?.() || new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-
-      setReviews(reviewsData);
-    } catch (error) {
-      console.error('Fehler beim Laden der Bewertungen:', error);
-    } finally {
-      setReviewsLoading(false);
     }
   };
 
@@ -403,66 +362,11 @@ export default function CompanyProviderDetailPage() {
             )}
 
             {/* Reviews */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-                Bewertungen ({provider.reviewCount || 0})
-              </h2>
-
-              {reviewsLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse border-b border-gray-200 dark:border-gray-700 pb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-16 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                        <div className="w-20 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                      </div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mt-2"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : reviews.length > 0 ? (
-                <div className="space-y-6">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${i < review.rating
-                                ? 'text-yellow-400 fill-current'
-                                : 'text-gray-300'}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {review.reviewerName}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {review.date?.toDate?.()?.toLocaleDateString('de-DE') || 'Datum unbekannt'}
-                        </span>
-                      </div>
-                      {review.projectTitle && (
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Projekt: {review.projectTitle}
-                        </p>
-                      )}
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {review.comment}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Noch keine Bewertungen vorhanden
-                  </p>
-                </div>
-              )}
-            </div>
+            <ProviderReviews 
+              providerId={providerId}
+              reviewCount={provider.reviewCount}
+              averageRating={provider.rating}
+            />
           </div>
 
           {/* Sidebar */}
