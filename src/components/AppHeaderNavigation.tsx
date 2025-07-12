@@ -21,11 +21,11 @@ const AppHeaderNavigation: React.FC = () => {
     // Helper function to get the correct dashboard URL based on user type
     const getServiceUrl = (category: string, subcategory?: string) => {
         if (!user?.uid) return '/login';
-        
-        const baseUrl = user.role === 'firma' 
-            ? `/dashboard/company/${user.uid}/services` 
+
+        const baseUrl = user.role === 'firma'
+            ? `/dashboard/company/${user.uid}/services`
             : `/dashboard/user/${user.uid}/services`;
-            
+
         if (subcategory) {
             return `${baseUrl}/${category}/${subcategory}`;
         }

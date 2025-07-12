@@ -11,16 +11,16 @@ const db = admin.firestore();
 async function checkStripeAccounts() {
   try {
     console.log('🔍 Suche nach Benutzern mit Stripe-Konten...');
-    
+
     const usersSnapshot = await db.collection('users').get();
     let totalUsers = 0;
     let usersWithStripeAccounts = 0;
     let stripeAccountDetails = [];
-    
+
     usersSnapshot.forEach(doc => {
       totalUsers++;
       const userData = doc.data();
-      
+
       if (userData.stripeAccountId) {
         usersWithStripeAccounts++;
         stripeAccountDetails.push({
@@ -34,11 +34,11 @@ async function checkStripeAccounts() {
         });
       }
     });
-    
+
     console.log(`\n📊 ERGEBNISSE:`);
     console.log(`   Gesamte Benutzer: ${totalUsers}`);
     console.log(`   Benutzer mit Stripe-Konten: ${usersWithStripeAccounts}`);
-    
+
     if (usersWithStripeAccounts > 0) {
       console.log(`\n✅ GEFUNDENE STRIPE-KONTEN:`);
       stripeAccountDetails.forEach((account, index) => {
@@ -54,7 +54,7 @@ async function checkStripeAccounts() {
     } else {
       console.log(`\n❌ KEINE STRIPE-KONTEN GEFUNDEN`);
     }
-    
+
   } catch (error) {
     console.error('❌ Fehler beim Prüfen der Stripe-Konten:', error);
   }

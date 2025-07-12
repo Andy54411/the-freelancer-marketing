@@ -17,7 +17,7 @@ const useSimpleTranslations = () => {
     sortBy: "Sortieren nach",
     sortOptions: {
       rating: "Bewertung",
-      reviews: "Bewertungen", 
+      reviews: "Bewertungen",
       price: "Preis",
       newest: "Neueste"
     },
@@ -42,7 +42,7 @@ const useSimpleTranslations = () => {
   // Detect language from navigator if available
   if (typeof window !== 'undefined') {
     const browserLang = navigator.language.split('-')[0];
-    
+
     if (browserLang === 'en') {
       return {
         title: "Find Service Providers",
@@ -52,7 +52,7 @@ const useSimpleTranslations = () => {
         sortOptions: {
           rating: "Rating",
           reviews: "Reviews",
-          price: "Price", 
+          price: "Price",
           newest: "Newest"
         },
         noResults: "No providers found",
@@ -61,7 +61,7 @@ const useSimpleTranslations = () => {
         provider: {
           company: "Company",
           freelancer: "Freelancer",
-          rating: "Rating", 
+          rating: "Rating",
           reviews: "Reviews",
           completedJobs: "Completed Jobs",
           responseTime: "Response Time",
@@ -115,7 +115,7 @@ export default function CompanyServiceSubcategoryPage() {
   // URL-Parameter dekodieren und Kategorie finden
   const decodedCategory = decodeURIComponent(category);
   const decodedSubcategory = decodeURIComponent(subcategory);
-  
+
   console.log('[ServicePage] URL-Parameter Debug:', {
     rawCategory: category,
     rawSubcategory: subcategory,
@@ -129,28 +129,28 @@ export default function CompanyServiceSubcategoryPage() {
   // Finde die Kategorie durch Vergleich der normalisierten Namen
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    
+
     console.log('[ServicePage] Category matching:', {
       categoryTitle: cat.title,
       expectedSlug,
       decodedParam: decodedCategory,
       matches: expectedSlug === decodedCategory
     });
-    
+
     return expectedSlug === decodedCategory;
   });
-  
+
   // Finde die Unterkategorie durch Vergleich der normalisierten Namen
   const subcategoryName = categoryInfo?.subcategories.find(sub => {
     const expectedSubSlug = normalizeToSlug(sub);
-    
+
     console.log('[ServicePage] Subcategory matching:', {
       subcategoryName: sub,
       expectedSubSlug,
       decodedParam: decodedSubcategory,
       matches: expectedSubSlug === decodedSubcategory
     });
-    
+
     return expectedSubSlug === decodedSubcategory;
   });
 
@@ -181,7 +181,7 @@ export default function CompanyServiceSubcategoryPage() {
       );
 
       console.log('[ServicePage] Executing queries...');
-      
+
       const [firmSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery).catch(error => {
           console.error('[ServicePage] Error loading firma collection:', error);
@@ -253,9 +253,9 @@ export default function CompanyServiceSubcategoryPage() {
         // Für Firmen: prüfe selectedSubcategory
         if (provider.isCompany && provider.selectedSubcategory) {
           return provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase() ||
-                 provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
+            provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
         }
-        
+
         // Für Freelancer: prüfe skills (fallback)
         return provider.skills?.some(skill =>
           skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
@@ -463,7 +463,7 @@ export default function CompanyServiceSubcategoryPage() {
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                         {getProviderName(provider)}
                       </h3>
-                      
+
                       {provider.location && (
                         <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
                           <MapPin className="w-3 h-3" />
@@ -478,8 +478,8 @@ export default function CompanyServiceSubcategoryPage() {
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`w-3 h-3 ${i < Math.floor(provider.rating ?? 0) 
-                                  ? 'text-yellow-400 fill-current' 
+                                className={`w-3 h-3 ${i < Math.floor(provider.rating ?? 0)
+                                  ? 'text-yellow-400 fill-current'
                                   : 'text-gray-300'}`}
                               />
                             ))}
@@ -560,7 +560,7 @@ export default function CompanyServiceSubcategoryPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => router.push(`/provider/${provider.id}`)}
                       className="flex-1 border border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
                     >

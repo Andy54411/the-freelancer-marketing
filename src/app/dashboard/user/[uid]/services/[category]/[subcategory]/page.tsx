@@ -40,7 +40,7 @@ export default function UserServiceSubcategoryPage() {
   // URL-Parameter dekodieren und Kategorie finden
   const decodedCategory = decodeURIComponent(category);
   const decodedSubcategory = decodeURIComponent(subcategory);
-  
+
   console.log('[ServicePage] URL-Parameter Debug:', {
     rawCategory: category,
     rawSubcategory: subcategory,
@@ -54,28 +54,28 @@ export default function UserServiceSubcategoryPage() {
   // Finde die Kategorie durch Vergleich der normalisierten Namen
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    
+
     console.log('[ServicePage] Category matching:', {
       categoryTitle: cat.title,
       expectedSlug,
       decodedParam: decodedCategory,
       matches: expectedSlug === decodedCategory
     });
-    
+
     return expectedSlug === decodedCategory;
   });
-  
+
   // Finde die Unterkategorie durch Vergleich der normalisierten Namen
   const subcategoryName = categoryInfo?.subcategories.find(sub => {
     const expectedSubSlug = normalizeToSlug(sub);
-    
+
     console.log('[ServicePage] Subcategory matching:', {
       subcategoryName: sub,
       expectedSubSlug,
       decodedParam: decodedSubcategory,
       matches: expectedSubSlug === decodedSubcategory
     });
-    
+
     return expectedSubSlug === decodedSubcategory;
   });
 
@@ -106,7 +106,7 @@ export default function UserServiceSubcategoryPage() {
       );
 
       console.log('[ServicePage] Executing queries...');
-      
+
       const [firmSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery).catch(error => {
           console.error('[ServicePage] Error loading firma collection:', error);

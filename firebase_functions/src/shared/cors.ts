@@ -19,7 +19,7 @@ export const corsHandler = cors({
             callback(null, true);
             return;
         }
-        
+
         if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
