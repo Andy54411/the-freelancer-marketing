@@ -346,56 +346,58 @@ export default function CompanyServiceSubcategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      {/* Modern Header */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => router.push(`/dashboard/company/${uid}`)}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="text-gray-600 dark:text-gray-400 hover:text-[#14ad9f] transition-colors"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+              <div className="flex items-center gap-2 text-sm text-[#14ad9f] mb-1">
                 <span>{categoryInfo.title}</span>
                 <span>/</span>
-                <span>{subcategoryName}</span>
+                <span className="font-medium">{subcategoryName}</span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 {subcategoryName}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {providers.length} {providers.length === 1 ? t.provider.company : t.provider.company} für {subcategoryName}
+                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für {subcategoryName}
               </p>
             </div>
           </div>
 
-          {/* Filter und Suche */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Suchfeld */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder={t.searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          {/* Modern Filter Bar */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Suchfeld */}
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Nach Anbietern oder Skills suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent transition-colors"
+                />
+              </div>
 
-            {/* Sortierung */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="rating">{t.sortOptions.rating}</option>
-              <option value="reviews">{t.sortOptions.reviews}</option>
-              <option value="price">{t.sortOptions.price}</option>
-              <option value="newest">{t.sortOptions.newest}</option>
-            </select>
+              {/* Sortierung */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
+                className="px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent transition-colors"
+              >
+                <option value="rating">Beste Bewertung</option>
+                <option value="reviews">Meiste Bewertungen</option>
+                <option value="price">Preis</option>
+                <option value="newest">Neueste</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -435,110 +437,138 @@ export default function CompanyServiceSubcategoryPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {providers.map(provider => (
-              <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-start gap-6">
-                  <img
-                    src={getProfileImage(provider)}
-                    alt={getProviderName(provider)}
-                    className="w-20 h-20 rounded-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/default-avatar.png';
-                    }}
-                  />
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                          {getProviderName(provider)}
-                          {provider.isCompany && (
-                            <span className="ml-3 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                              Firma
-                            </span>
-                          )}
-                        </h3>
-
-                        <div className="flex items-center gap-4 mt-2">
-                          {provider.location && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                              <MapPin className="w-4 h-4" />
-                              {provider.location}
-                            </div>
-                          )}
-
-                          {(provider.rating ?? 0) > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {(provider.rating ?? 0).toFixed(1)}
-                              </span>
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                ({provider.reviewCount} {t.provider.reviews})
-                              </span>
-                            </div>
-                          )}
-
-                          {provider.completedJobs && provider.completedJobs > 0 && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                              <Briefcase className="w-4 h-4" />
-                              {provider.completedJobs} {t.provider.completedJobs}
-                            </div>
-                          )}
+              <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                {/* Provider Card Header */}
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="relative">
+                      <img
+                        src={getProfileImage(provider)}
+                        alt={getProviderName(provider)}
+                        className="w-16 h-16 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                        }}
+                      />
+                      {provider.isCompany && (
+                        <div className="absolute -bottom-1 -right-1 bg-[#14ad9f] text-white text-xs px-2 py-0.5 rounded-full">
+                          PRO
                         </div>
-                      </div>
-
-                      <div className="text-right">
-                        {provider.priceRange && (
-                          <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {provider.priceRange}
-                          </div>
-                        )}
-                        {provider.responseTime && (
-                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <Clock className="w-4 h-4" />
-                            {provider.responseTime}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
 
-                    {provider.bio && (
-                      <p className="text-gray-600 dark:text-gray-400 mt-3 line-clamp-2">
-                        {provider.bio}
-                      </p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                        {getProviderName(provider)}
+                      </h3>
+                      
+                      {provider.location && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <MapPin className="w-3 h-3" />
+                          {provider.location}
+                        </div>
+                      )}
 
-                    {provider.skills && provider.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {provider.skills.slice(0, 6).map((skill, index) => (
-                          <span
-                            key={index}
-                            className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full"
-                          >
-                            {skill}
+                      {/* Rating */}
+                      {(provider.rating ?? 0) > 0 && (
+                        <div className="flex items-center gap-1">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${i < Math.floor(provider.rating ?? 0) 
+                                  ? 'text-yellow-400 fill-current' 
+                                  : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {(provider.rating ?? 0).toFixed(1)}
                           </span>
-                        ))}
-                        {provider.skills.length > 6 && (
-                          <span className="text-sm text-gray-500 dark:text-gray-400 px-3 py-1">
-                            +{provider.skills.length - 6} weitere
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            ({provider.reviewCount})
                           </span>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3 mt-4">
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                        {t.provider.contactNow}
-                      </button>
-                      <button 
-                        onClick={() => router.push(`/provider/${provider.id}`)}
-                        className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        {t.provider.viewProfile}
-                      </button>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Price */}
+                    <div className="text-right">
+                      {provider.hourlyRate && (
+                        <div className="text-lg font-bold text-[#14ad9f]">
+                          €{provider.hourlyRate}/h
+                        </div>
+                      )}
+                      {provider.responseTime && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          ~{provider.responseTime}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {provider.bio && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4" style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {provider.bio}
+                    </p>
+                  )}
+
+                  {/* Skills Tags */}
+                  {provider.skills && provider.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {provider.skills.slice(0, 4).map((skill, index) => (
+                        <span
+                          key={index}
+                          className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {provider.skills.length > 4 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
+                          +{provider.skills.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                    <div className="flex items-center gap-3">
+                      {provider.completedJobs && provider.completedJobs > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="w-3 h-3" />
+                          {provider.completedJobs} Projekte
+                        </div>
+                      )}
+                      {provider.responseTime && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {provider.responseTime} Antwort
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => router.push(`/provider/${provider.id}`)}
+                      className="flex-1 border border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                    >
+                      Profil ansehen
+                    </button>
+                    <button className="flex-1 bg-[#14ad9f] hover:bg-teal-600 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm">
+                      Kontaktieren
+                    </button>
                   </div>
                 </div>
               </div>
