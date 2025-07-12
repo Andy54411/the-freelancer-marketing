@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Star, MapPin, ArrowLeft, Briefcase, Clock, Users, MessageCircle, Calendar } from 'lucide-react';
+import { format, differenceInCalendarDays, isValid } from 'date-fns';
+import { de } from 'date-fns/locale';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import ProviderReviews from '@/components/ProviderReviews';
@@ -40,6 +42,7 @@ interface Provider {
     languages?: string[];
     portfolio?: any[];
     services?: string[];
+    stripeAccountId?: string;
 }
 
 export default function CompanyProviderDetailPage() {
@@ -119,7 +122,8 @@ export default function CompanyProviderDetailPage() {
                         teamSize: data.teamSize,
                         languages: data.languages || [],
                         portfolio: data.portfolio || [],
-                        services: data.services || []
+                        services: data.services || [],
+                        stripeAccountId: data.stripeAccountId,
                     });
             } else {
                 // Falls nicht in firma gefunden, in users suchen
@@ -166,7 +170,8 @@ export default function CompanyProviderDetailPage() {
                         phone: data.phone,
                         website: data.website,
                         languages: data.languages || [],
-                        portfolio: data.portfolio || []
+                        portfolio: data.portfolio || [],
+                        stripeAccountId: data.stripeAccountId,
                     });
                 } else {
                     console.error('Provider nicht gefunden');
@@ -222,13 +227,163 @@ export default function CompanyProviderDetailPage() {
 
     const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (selection, time, durationString) => {
         setDatePickerOpen(false);
-        console.log('Termin gebucht:', { selection, time, durationString, provider: provider?.companyName });
         
-        // Hier können Sie die Buchungslogik implementieren
-        // TODO: Direkte Buchung mit Provider-Details verarbeiten
-        
-        // Erfolgreiche Buchung - zurück zum Dashboard
-        router.push(`/dashboard/company/${companyUid}`);
+        if (!selection || !time || !durationString || !provider || !firebaseUser || !userProfile) {
+            console.error('Unvollständige Buchungsdaten:', { selection, time, durationString, provider: !!provider, user: !!firebaseUser, userProfile: !!userProfile });
+            alert('Unvollständige Buchungsdaten. Bitte versuchen Sie es erneut.');
+            return;
+        }
+
+        // Validierung der Stripe-Voraussetzungen
+        if (!provider.stripeAccountId) {
+            alert('Dieser Anbieter kann derzeit keine Zahlungen empfangen. Bitte kontaktieren Sie den Anbieter direkt oder wählen Sie einen anderen Anbieter.');
+            return;
+        }
+
+        if (!provider.hourlyRate || provider.hourlyRate <= 0) {
+            alert('Dieser Anbieter hat keinen gültigen Stundensatz. Bitte kontaktieren Sie den Anbieter direkt.');
+            return;
+        }
+
+        if (!userProfile.stripeCustomerId) {
+            alert('Ihr Zahlungsprofil ist nicht vollständig. Bitte fügen Sie unter "Einstellungen" eine Zahlungsmethode hinzu, bevor Sie buchen.');
+            return;
+        }
+
+        try {
+            // Datum formatieren
+            let dateFromFormatted: string, dateToFormatted: string, calculatedNumberOfDays = 1;
+
+            if (selection instanceof Date && isValid(selection)) {
+                dateFromFormatted = format(selection, "yyyy-MM-dd");
+                dateToFormatted = dateFromFormatted;
+            } else if (selection && 'from' in selection && selection.from && isValid(selection.from)) {
+                const { from, to } = selection;
+                dateFromFormatted = format(from, "yyyy-MM-dd");
+                dateToFormatted = to && isValid(to) ? format(to, "yyyy-MM-dd") : dateFromFormatted;
+                calculatedNumberOfDays = to && isValid(to) ? differenceInCalendarDays(to, from) + 1 : 1;
+            } else {
+                throw new Error("Ungültiges Datum ausgewählt. Bitte versuchen Sie es erneut.");
+            }
+
+            // Dauer parsen
+            const parseDurationStringToHours = (durationStr: string): number | null => {
+                const match = durationStr.match(/(\d+(\.\d+)?)/);
+                if (match && match[1]) {
+                    const hours = parseFloat(match[1]);
+                    return isNaN(hours) ? null : hours;
+                }
+                return null;
+            };
+
+            const hoursInput = parseDurationStringToHours(durationString);
+            if (!hoursInput || hoursInput <= 0) {
+                throw new Error("Ungültige Dauer ausgewählt.");
+            }
+
+            // Preisberechnung
+            const hourlyRateNum = provider.hourlyRate;
+            const totalHours = hoursInput; // Für einfache Buchung, ohne Tage-Multiplikation
+            const servicePrice = totalHours * hourlyRateNum;
+            const servicePriceInCents = Math.round(servicePrice * 100);
+            const totalPriceInCents = servicePriceInCents;
+
+            if (totalPriceInCents <= 0) {
+                throw new Error("Der berechnete Auftragswert muss positiv sein.");
+            }
+
+            // Temporäre Job-Draft-ID generieren
+            const tempJobDraftId = crypto.randomUUID();
+
+            // Auftragsdetails für Backend
+            const orderDetailsForBackend = {
+                customerEmail: firebaseUser.email || userProfile.email || '',
+                customerFirebaseUid: firebaseUser.uid,
+                customerFirstName: userProfile.firstname || '',
+                customerLastName: userProfile.lastname || '',
+                customerType: userProfile.user_type || 'private',
+                description: `Buchung für ${provider.companyName || provider.userName} - ${provider.selectedSubcategory || provider.selectedCategory || 'Allgemeine Dienstleistung'}`,
+                jobCalculatedPriceInCents: servicePriceInCents,
+                jobCity: userProfile.city || '',
+                jobCountry: userProfile.country || 'Deutschland',
+                jobDateFrom: dateFromFormatted,
+                jobDateTo: dateToFormatted,
+                jobDurationString: durationString,
+                jobPostalCode: userProfile.postal_code || '',
+                jobStreet: userProfile.line1 || '',
+                jobTimePreference: time,
+                jobTotalCalculatedHours: totalHours,
+                kundeId: firebaseUser.uid,
+                selectedAnbieterId: provider.id,
+                selectedCategory: provider.selectedCategory || null,
+                selectedSubcategory: provider.selectedSubcategory || null,
+                totalPriceInCents: totalPriceInCents,
+                addressName: 'Standard-Adresse',
+            };
+
+            // Billing Details für Stripe
+            const billingDetailsForApi = {
+                name: `${userProfile.firstname || ''} ${userProfile.lastname || ''}`.trim() || 'Unbekannter Name',
+                email: firebaseUser.email || userProfile.email || '',
+                phone: userProfile.phoneNumber || undefined,
+                address: {
+                    line1: userProfile.line1 || '',
+                    line2: userProfile.line2 || undefined,
+                    city: userProfile.city || '',
+                    postal_code: userProfile.postal_code || '',
+                    country: userProfile.country || 'Deutschland',
+                },
+            };
+
+            // Temporären Job-Entwurf speichern
+            const tempDraftToSave = {
+                ...orderDetailsForBackend,
+                providerName: provider.companyName || provider.userName,
+                providerId: provider.id,
+                status: 'initial_draft',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
+            await setDoc(doc(db, "temporaryJobDrafts", tempJobDraftId), tempDraftToSave);
+            console.log(`Temporärer Job-Entwurf ${tempJobDraftId} erfolgreich gespeichert.`);
+
+            // Stripe Payment Intent erstellen
+            console.log('Erstelle Payment Intent...');
+            const response = await fetch('/api/create-payment-intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: totalPriceInCents,
+                    jobPriceInCents: servicePriceInCents,
+                    currency: 'eur',
+                    connectedAccountId: provider.stripeAccountId || '',
+                    taskId: tempJobDraftId,
+                    firebaseUserId: firebaseUser.uid,
+                    stripeCustomerId: userProfile.stripeCustomerId,
+                    orderDetails: orderDetailsForBackend,
+                    billingDetails: billingDetailsForApi,
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                console.error("API-Antwort Fehler:", data.error);
+                throw new Error(data.error?.message || 'Fehler bei der Kommunikation mit dem Zahlungsserver.');
+            }
+
+            console.log('Payment Intent erfolgreich erstellt:', data.clientSecret);
+            
+            // Erfolgreiche Buchung mit Payment Intent
+            alert(`Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über Stripe abgewickelt.`);
+            
+            // Weiterleitung zur Zahlungsseite oder zurück zum Dashboard
+            router.push(`/dashboard/company/${companyUid}`);
+            
+        } catch (error) {
+            console.error('Fehler beim Erstellen der Buchung:', error);
+            alert(`Fehler beim Buchen des Termins: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+        }
     };
 
     const getProfileImage = () => {
