@@ -403,21 +403,56 @@ export default function CompanyProviderDetailPage() {
 
             // Stripe Payment Intent erstellen
             console.log('Erstelle Payment Intent...');
+            
+            // Für Unternehmen: Erstelle eine Customer ID falls nötig
+            let finalStripeCustomerId = userStripeId;
+            if (isUserCompany) {
+                console.log('Company booking detected - need to create customer ID...');
+                
+                // Erstelle eine Stripe Customer ID für das Unternehmen
+                try {
+                    const customerResponse = await fetch('/api/create-company-customer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            companyData: {
+                                name: userProfile.companyName || `${userProfile.firstName} ${userProfile.lastName}`,
+                                email: firebaseUser.email,
+                                uid: firebaseUser.uid,
+                                stripeAccountId: userStripeId
+                            }
+                        }),
+                    });
+                    
+                    if (customerResponse.ok) {
+                        const customerData = await customerResponse.json();
+                        finalStripeCustomerId = customerData.customerId;
+                        console.log('Created company customer ID:', finalStripeCustomerId);
+                    } else {
+                        throw new Error('Fehler beim Erstellen der Kundendaten für Unternehmen');
+                    }
+                } catch (customerError) {
+                    console.error('Fehler beim Erstellen der Company Customer ID:', customerError);
+                    alert('Ihr Unternehmen kann derzeit nicht als Kunde buchen. Bitte verwenden Sie ein privates Kundenkonto oder kontaktieren Sie den Support.');
+                    return;
+                }
+            }
+            
             const response = await fetch('/api/create-payment-intent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },                    body: JSON.stringify({
-                        amount: totalPriceInCents,
-                        jobPriceInCents: servicePriceInCents,
-                        currency: 'eur',
-                        connectedAccountId: provider.stripeAccountId || '',
-                        taskId: tempJobDraftId,
-                        firebaseUserId: firebaseUser.uid,
-                        stripeCustomerId: isUserCompany ? undefined : userStripeId, // Nur für normale Kunden
-                        stripeAccountId: isUserCompany ? userStripeId : undefined, // Nur für Unternehmen
-                        orderDetails: orderDetailsForBackend,
-                        billingDetails: billingDetailsForApi,
-                    }),
-                });
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: totalPriceInCents,
+                    jobPriceInCents: servicePriceInCents,
+                    currency: 'eur',
+                    connectedAccountId: provider.stripeAccountId || '',
+                    taskId: tempJobDraftId,
+                    firebaseUserId: firebaseUser.uid,
+                    stripeCustomerId: finalStripeCustomerId,
+                    orderDetails: orderDetailsForBackend,
+                    billingDetails: billingDetailsForApi,
+                }),
+            });
 
             const data = await response.json();
             if (!response.ok || data.error) {
