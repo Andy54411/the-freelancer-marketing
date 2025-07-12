@@ -3,6 +3,9 @@
  * Diese Datei demonstriert die verschiedenen Arten von blockierten Inhalten
  */
 
+// Import der ContactDataFilter Klasse
+import { ContactDataFilter } from './DirectChatModal';
+
 // Beispiele für blockierte Inhalte:
 
 const testCases = {

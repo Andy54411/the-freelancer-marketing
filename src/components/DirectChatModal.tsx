@@ -35,7 +35,7 @@ interface Message {
 }
 
 // Content-Filter für Kontaktdaten
-class ContactDataFilter {
+export class ContactDataFilter {
   private static phonePatterns = [
     // Deutsche Telefonnummern
     /(\+49|0049|\+\s*49)[\s\-\.]*\d{2,4}[\s\-\.]*\d{3,8}[\s\-\.]*\d{0,6}/g,

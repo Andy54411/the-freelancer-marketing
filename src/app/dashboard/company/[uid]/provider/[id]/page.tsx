@@ -263,111 +263,117 @@ export default function CompanyProviderDetailPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-6 relative z-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Provider Header Card - Enhanced */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 transform hover:scale-[1.01] transition-all duration-300">
-                            <div className="flex flex-col sm:flex-row items-start gap-6">
-                                <div className="relative group">
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full opacity-75 group-hover:opacity-100 transition duration-300 blur"></div>
-                                    <img
-                                        src={getProfileImage()}
-                                        alt={getProviderName()}
-                                        className="relative w-28 h-28 rounded-full object-cover ring-4 ring-white dark:ring-gray-700"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
-                                        }}
-                                    />
-                                    {provider.isCompany && (
-                                        <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-xs px-3 py-1 rounded-full shadow-lg font-bold">
-                                            PRO
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                    <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                                        {getProviderName()}
-                                    </h1>
-
-                                    {provider.location && (
-                                        <div className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
-                                            <MapPin className="w-4 h-4 text-[#14ad9f]" />
-                                            {provider.location}
-                                        </div>
-                                    )}
-
-                                    {/* Enhanced Rating */}
-                                    {actualRating > 0 && (
-                                        <div className="flex items-center gap-3 mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 px-4 py-3 rounded-xl border border-yellow-200 dark:border-yellow-800">
-                                            <div className="flex">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`w-6 h-6 ${i < Math.floor(actualRating)
-                                                            ? 'text-yellow-500 fill-current drop-shadow-sm'
-                                                            : 'text-gray-300 dark:text-gray-600'}`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xl font-bold text-gray-900 dark:text-white">
-                                                    {actualRating.toFixed(1)}
-                                                </span>
-                                                <span className="text-gray-500 dark:text-gray-400 font-medium">
-                                                    ({actualReviewCount} Bewertungen)
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Enhanced Stats */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                                        {provider.completedJobs && provider.completedJobs > 0 && (
-                                            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
-                                                <Briefcase className="w-4 h-4 text-blue-600" />
-                                                <span className="text-blue-800 dark:text-blue-300 font-medium">
-                                                    {provider.completedJobs} Projekte
-                                                </span>
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
+                            <div className="flex flex-col gap-6">
+                                {/* Top Row: Profile Image and Basic Info */}
+                                <div className="flex flex-col sm:flex-row items-start gap-6">
+                                    <div className="relative group flex-shrink-0">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full opacity-75 group-hover:opacity-100 transition duration-300 blur"></div>
+                                        <img
+                                            src={getProfileImage()}
+                                            alt={getProviderName()}
+                                            className="relative w-28 h-28 rounded-full object-cover ring-4 ring-white dark:ring-gray-700"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
+                                            }}
+                                        />
+                                        {provider.isCompany && (
+                                            <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-xs px-3 py-1 rounded-full shadow-lg font-bold">
+                                                PRO
                                             </div>
                                         )}
-                                        {provider.responseTime && (
-                                            <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800">
-                                                <Clock className="w-4 h-4 text-green-600" />
-                                                <span className="text-green-800 dark:text-green-300 font-medium">
-                                                    {provider.responseTime}
-                                                </span>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                                            {getProviderName()}
+                                        </h1>
+
+                                        {provider.location && (
+                                            <div className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
+                                                <MapPin className="w-4 h-4 text-[#14ad9f]" />
+                                                {provider.location}
                                             </div>
                                         )}
-                                        {provider.teamSize && (
-                                            <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-800">
-                                                <Users className="w-4 h-4 text-purple-600" />
-                                                <span className="text-purple-800 dark:text-purple-300 font-medium">
-                                                    {provider.teamSize} Team
-                                                </span>
+                                    </div>
+
+                                    {/* Price Box - Moved to separate column */}
+                                    <div className="flex-shrink-0 sm:ml-auto">
+                                        {provider.hourlyRate && (
+                                            <div className="text-center bg-gradient-to-br from-[#14ad9f] to-teal-600 text-white p-4 rounded-xl shadow-lg">
+                                                <div className="text-3xl font-bold">
+                                                    €{provider.hourlyRate}
+                                                </div>
+                                                <div className="text-sm opacity-90">
+                                                    pro Stunde
+                                                </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Enhanced Action Buttons */}
-                                <div className="flex flex-col gap-4 sm:items-end">
-                                    {provider.hourlyRate && (
-                                        <div className="text-right bg-gradient-to-br from-[#14ad9f] to-teal-600 text-white p-4 rounded-xl shadow-lg">
-                                            <div className="text-3xl font-bold">
-                                                €{provider.hourlyRate}
-                                            </div>
-                                            <div className="text-sm opacity-90">
-                                                pro Stunde
-                                            </div>
+                                {/* Rating Section - Full width */}
+                                {actualRating > 0 && (
+                                    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 px-4 py-3 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                                        <div className="flex">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                    key={i}
+                                                    className={`w-6 h-6 ${i < Math.floor(actualRating)
+                                                        ? 'text-yellow-500 fill-current drop-shadow-sm'
+                                                        : 'text-gray-300 dark:text-gray-600'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-bold text-gray-900 dark:text-white">
+                                                {actualRating.toFixed(1)}
+                                            </span>
+                                            <span className="text-gray-500 dark:text-gray-400 font-medium">
+                                                ({actualReviewCount} Bewertungen)
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Stats Section - Full width */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                                    {provider.completedJobs && provider.completedJobs > 0 && (
+                                        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+                                            <Briefcase className="w-4 h-4 text-blue-600" />
+                                            <span className="text-blue-800 dark:text-blue-300 font-medium">
+                                                {provider.completedJobs} Projekte
+                                            </span>
                                         </div>
                                     )}
+                                    {provider.responseTime && (
+                                        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800">
+                                            <Clock className="w-4 h-4 text-green-600" />
+                                            <span className="text-green-800 dark:text-green-300 font-medium">
+                                                {provider.responseTime}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {provider.teamSize && (
+                                        <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-800">
+                                            <Users className="w-4 h-4 text-purple-600" />
+                                            <span className="text-purple-800 dark:text-purple-300 font-medium">
+                                                {provider.teamSize} Team
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
 
+                                {/* Action Button - Full width */}
+                                <div className="pt-4">
                                     <button
                                         onClick={openChatWithProvider}
-                                        className="bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white px-8 py-4 rounded-xl font-bold transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+                                        className="w-full bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white px-8 py-4 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                                     >
                                         <MessageCircle className="w-5 h-5" />
                                         Jetzt kontaktieren
@@ -416,8 +422,8 @@ export default function CompanyProviderDetailPage() {
                         {/* Reviews */}
                         <ProviderReviews
                             providerId={providerId}
-                            reviewCount={provider.reviewCount}
-                            averageRating={provider.rating}
+                            reviewCount={actualReviewCount}
+                            averageRating={actualRating}
                         />
                     </div>
 
