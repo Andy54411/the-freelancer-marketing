@@ -88,10 +88,19 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         ...doc.data()
       })) as Review[];
 
+      // Filter out invalid reviews
+      const validReviews = reviewsData.filter(review => 
+        review && 
+        review.id && 
+        review.comment && 
+        typeof review.comment === 'string' &&
+        review.rating !== undefined
+      );
+
       if (initial) {
-        setReviews(reviewsData);
+        setReviews(validReviews);
       } else {
-        setReviews(prev => [...prev, ...reviewsData]);
+        setReviews(prev => [...prev, ...validReviews]);
       }
 
       // Set pagination state
@@ -138,6 +147,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
   };
 
   const truncateText = (text: string, maxLength: number = 200) => {
+    if (!text || typeof text !== 'string') return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
   };
@@ -340,9 +350,15 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         </div>
       )}
 
-      {reviews.length > 0 ? (
+      {Array.isArray(reviews) && reviews.length > 0 ? (
         <div className="space-y-6">
           {reviews.map((review) => {
+            // Safety checks for undefined values
+            if (!review || !review.id || !review.comment) {
+              console.warn('Invalid review data:', review);
+              return null;
+            }
+
             const isExpanded = expandedReviews.has(review.id);
             const shouldTruncate = review.comment.length > 200;
             const isTranslated = translatedReviews.has(review.id);
@@ -490,37 +506,44 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                   )}
 
                   {/* Project Images */}
-                  {review.projectImages && review.projectImages.length > 0 && (
+                  {review.projectImages && Array.isArray(review.projectImages) && review.projectImages.length > 0 && (
                     <div className="flex gap-3 flex-wrap">
-                      {review.projectImages.slice(0, 4).map((imageUrl, index) => (
-                        <div
-                          key={index}
-                          className="relative w-32 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity group"
-                        >
-                          <img
-                            src={imageUrl}
-                            alt={`Arbeitsbeispiel ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/images/placeholder-project.jpg';
-                            }}
-                          />
-                          {/* Overlay with view icon */}
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
-                              Vergrößern
+                      {review.projectImages.slice(0, 4).map((imageUrl, index) => {
+                        // Safety check for image URL
+                        if (!imageUrl || typeof imageUrl !== 'string') {
+                          return null;
+                        }
+                        
+                        return (
+                          <div
+                            key={index}
+                            className="relative w-32 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity group"
+                          >
+                            <img
+                              src={imageUrl}
+                              alt={`Arbeitsbeispiel ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/images/placeholder-project.jpg';
+                              }}
+                            />
+                            {/* Overlay with view icon */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+                                Vergrößern
+                              </div>
                             </div>
+                            {/* Show count if more than 4 images */}
+                            {index === 3 && review.projectImages && review.projectImages.length > 4 && (
+                              <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                <span className="text-white font-semibold">
+                                  +{review.projectImages.length - 4}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          {/* Show count if more than 4 images */}
-                          {index === 3 && review.projectImages && review.projectImages.length > 4 && (
-                            <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                              <span className="text-white font-semibold">
-                                +{review.projectImages.length - 4}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
