@@ -98,11 +98,10 @@ service cloud.firestore {
     // --- firma Collection ---
     match /firma/{firmaId} {
       // Öffentlicher Lesezugriff für Service-Discovery
-      allow get: if isSupportStaff() || true;
+      allow get: if true;
       
-      // Öffentlicher Lesezugriff für Service-Discovery mit Query-Limits
-      allow list: if isSupportStaff() || 
-                     (request.query.limit <= 100);
+      // Öffentlicher Lesezugriff für Service-Discovery mit flexiblen Query-Limits
+      allow list: if true;
       
       // Ein Benutzer kann sein eigenes Firmendokument erstellen.
       allow create: if request.auth != null && request.auth.uid == firmaId;

@@ -7,6 +7,77 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 
+// Simple translation hook fallback for existing pages
+const useSimpleTranslations = () => {
+  // Default German translations (fallback)
+  const translations = {
+    title: "Service-Anbieter finden",
+    subtitle: "Finden Sie qualifizierte Anbieter für Ihre Anfrage",
+    searchPlaceholder: "Nach Anbietern suchen...",
+    sortBy: "Sortieren nach",
+    sortOptions: {
+      rating: "Bewertung",
+      reviews: "Bewertungen", 
+      price: "Preis",
+      newest: "Neueste"
+    },
+    noResults: "Keine Anbieter gefunden",
+    noResultsDescription: "Versuchen Sie, Ihre Suchkriterien anzupassen.",
+    loading: "Lade Anbieter...",
+    provider: {
+      company: "Unternehmen",
+      freelancer: "Freelancer",
+      rating: "Bewertung",
+      reviews: "Bewertungen",
+      completedJobs: "Abgeschlossene Aufträge",
+      responseTime: "Antwortzeit",
+      location: "Standort",
+      skills: "Fähigkeiten",
+      contactNow: "Jetzt kontaktieren",
+      viewProfile: "Profil ansehen",
+      unavailable: "Nicht verfügbar"
+    }
+  };
+
+  // Detect language from navigator if available
+  if (typeof window !== 'undefined') {
+    const browserLang = navigator.language.split('-')[0];
+    
+    if (browserLang === 'en') {
+      return {
+        title: "Find Service Providers",
+        subtitle: "Find qualified providers for your request",
+        searchPlaceholder: "Search for providers...",
+        sortBy: "Sort by",
+        sortOptions: {
+          rating: "Rating",
+          reviews: "Reviews",
+          price: "Price", 
+          newest: "Newest"
+        },
+        noResults: "No providers found",
+        noResultsDescription: "Try adjusting your search criteria.",
+        loading: "Loading providers...",
+        provider: {
+          company: "Company",
+          freelancer: "Freelancer",
+          rating: "Rating", 
+          reviews: "Reviews",
+          completedJobs: "Completed Jobs",
+          responseTime: "Response Time",
+          location: "Location",
+          skills: "Skills",
+          contactNow: "Contact Now",
+          viewProfile: "View Profile",
+          unavailable: "Unavailable"
+        }
+      };
+    }
+  }
+
+  return translations;
+};
+
 interface Provider {
   id: string;
   companyName?: string;
@@ -17,15 +88,19 @@ interface Provider {
   bio?: string;
   location?: string;
   skills?: string[];
+  selectedCategory?: string;
+  selectedSubcategory?: string;
   rating?: number;
   reviewCount?: number;
   completedJobs?: number;
   isCompany?: boolean;
   priceRange?: string;
   responseTime?: string;
+  hourlyRate?: number;
 }
 
 export default function CompanyServiceSubcategoryPage() {
+  const t = useSimpleTranslations();
   const params = useParams();
   const router = useRouter();
   const uid = params.uid as string;
@@ -132,14 +207,17 @@ export default function CompanyServiceSubcategoryPage() {
           profilePictureURL: data.profilePictureURL,
           photoURL: data.photoURL,
           bio: data.description || data.bio,
-          location: data.location,
+          location: data.location ? data.location : `${data.companyCity || ''}, ${data.companyCountry || ''}`.trim().replace(/^,\s*/, ''),
           skills: data.services || data.skills || [],
+          selectedCategory: data.selectedCategory,
+          selectedSubcategory: data.selectedSubcategory,
           rating: data.averageRating || 0,
           reviewCount: data.reviewCount || 0,
           completedJobs: data.completedJobs || 0,
           isCompany: true,
           priceRange: data.priceRange,
-          responseTime: data.responseTime
+          responseTime: data.responseTime,
+          hourlyRate: data.hourlyRate
         };
       });
 
@@ -171,18 +249,31 @@ export default function CompanyServiceSubcategoryPage() {
       const allProviders = [...firmProviders, ...userProviders];
 
       // Filter nach Subcategory
-      let filteredProviders = allProviders.filter(provider =>
-        provider.skills?.some(skill =>
+      let filteredProviders = allProviders.filter(provider => {
+        // Für Firmen: prüfe selectedSubcategory
+        if (provider.isCompany && provider.selectedSubcategory) {
+          return provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase() ||
+                 provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
+        }
+        
+        // Für Freelancer: prüfe skills (fallback)
+        return provider.skills?.some(skill =>
           skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
           skill.toLowerCase().includes(subcategory.toLowerCase())
-        )
-      );
+        );
+      });
 
       console.log('[ServicePage] Filtered by subcategory:', {
         subcategoryName,
         subcategory,
         totalProviders: allProviders.length,
-        filteredProviders: filteredProviders.length
+        filteredProviders: filteredProviders.length,
+        providersWithSubcategory: allProviders.filter(p => p.selectedSubcategory).map(p => ({
+          id: p.id,
+          companyName: p.companyName,
+          selectedSubcategory: p.selectedSubcategory,
+          isCompany: p.isCompany
+        }))
       });
 
       // Suchfilter
@@ -231,7 +322,7 @@ export default function CompanyServiceSubcategoryPage() {
   };
 
   const getProviderName = (provider: Provider) => {
-    return provider.companyName || provider.userName || 'Unbekannter Anbieter';
+    return provider.companyName || provider.userName || t.provider.unavailable;
   };
 
   if (!categoryInfo || !subcategoryName) {
@@ -239,7 +330,7 @@ export default function CompanyServiceSubcategoryPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Seite nicht gefunden
+            {t.noResults}
           </h1>
           <button
             onClick={() => router.back()}
@@ -275,7 +366,7 @@ export default function CompanyServiceSubcategoryPage() {
                 {subcategoryName}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für {subcategoryName}
+                {providers.length} {providers.length === 1 ? t.provider.company : t.provider.company} für {subcategoryName}
               </p>
             </div>
           </div>
@@ -287,7 +378,7 @@ export default function CompanyServiceSubcategoryPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Anbieter suchen..."
+                placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -300,10 +391,10 @@ export default function CompanyServiceSubcategoryPage() {
               onChange={(e) => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="rating">Beste Bewertung</option>
-              <option value="reviews">Meiste Bewertungen</option>
-              <option value="price">Preis</option>
-              <option value="newest">Neueste</option>
+              <option value="rating">{t.sortOptions.rating}</option>
+              <option value="reviews">{t.sortOptions.reviews}</option>
+              <option value="price">{t.sortOptions.price}</option>
+              <option value="newest">{t.sortOptions.newest}</option>
             </select>
           </div>
         </div>
@@ -331,10 +422,10 @@ export default function CompanyServiceSubcategoryPage() {
           <div className="text-center py-12">
             <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Keine Anbieter gefunden
+              {t.noResults}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
+              {t.noResultsDescription}
             </p>
             <button
               onClick={() => router.push(`/dashboard/company/${uid}`)}
@@ -384,7 +475,7 @@ export default function CompanyServiceSubcategoryPage() {
                                 {(provider.rating ?? 0).toFixed(1)}
                               </span>
                               <span className="text-sm text-gray-600 dark:text-gray-400">
-                                ({provider.reviewCount} Bewertungen)
+                                ({provider.reviewCount} {t.provider.reviews})
                               </span>
                             </div>
                           )}
@@ -392,7 +483,7 @@ export default function CompanyServiceSubcategoryPage() {
                           {provider.completedJobs && provider.completedJobs > 0 && (
                             <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                               <Briefcase className="w-4 h-4" />
-                              {provider.completedJobs} Aufträge
+                              {provider.completedJobs} {t.provider.completedJobs}
                             </div>
                           )}
                         </div>
@@ -439,10 +530,10 @@ export default function CompanyServiceSubcategoryPage() {
 
                     <div className="flex items-center gap-3 mt-4">
                       <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                        Kontaktieren
+                        {t.provider.contactNow}
                       </button>
                       <button className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
-                        Profil anzeigen
+                        {t.provider.viewProfile}
                       </button>
                     </div>
                   </div>

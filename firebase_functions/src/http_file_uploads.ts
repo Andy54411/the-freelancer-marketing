@@ -168,7 +168,7 @@ export const uploadStripeFile = onRequest(
 
         const stripe = getStripeInstance(stripeKey);
         logger.info("[uploadStripeFile] Stripe instance obtained.");
-        const bucket = getStorageInstance().bucket();
+        const bucket = getStorageInstance().bucket('tilvo-f142f-storage');
         logger.info("[uploadStripeFile] Firebase Storage bucket obtained.");
 
         logger.info("[uploadStripeFile] Initiating parallel uploads to Stripe and Firebase Storage.");

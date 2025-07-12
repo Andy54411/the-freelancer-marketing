@@ -2,7 +2,7 @@ import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import Stripe from 'stripe';
 import { getDb, getStripeInstance, getEmulatorCallbackFrontendURL, getChatParticipantDetails, ParticipantDetails } from './helpers';
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineSecret } from 'firebase-functions/params';
 import { FieldValue } from 'firebase-admin/firestore';
 
 // Definiere die erlaubten Origins direkt hier
@@ -14,12 +14,12 @@ const allowedOrigins = [
   'https://tasko-rho.vercel.app',
   'https://tasko-zh8k.vercel.app',
   'https://tasko-live.vercel.app',
-  'https://tilvo-f142f.web.app'
+  'https://tilvo-f142f.web.app',
+  'https://taskilo.de'
 ];
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
-const FRONTEND_URL_PARAM = defineString("FRONTEND_URL");
 
 // Hilfsfunktion für Stripe-Key in Emulator vs Production
 function getStripeSecretKey(): string {
@@ -236,32 +236,33 @@ const getEnvironmentUrls = (configuredFrontendUrl: string) => {
       stripeBusinessProfileUrl: 'https://tilvo-f142f.web.app', // Gültige Produktions-URL für Stripe
     };
   } else {
-    // In Produktion: Verwende die konfigurierte URL für alles
+    // In Produktion: Verwende die konfigurierte URL oder Fallback
+    let finalUrl = configuredFrontendUrl;
+    
+    // Wenn localhost URL übergeben wird, verwende Produktions-Fallback
     if (!configuredFrontendUrl || !configuredFrontendUrl.startsWith('http') || configuredFrontendUrl.includes('localhost')) {
-      loggerV2.error(`[getEnvironmentUrls] FEHLER: Ungültige Produktions-URL: ${configuredFrontendUrl}`);
-      throw new Error("Produktions-Frontend-URL ist ungültig oder fehlt");
+      loggerV2.warn(`[getEnvironmentUrls] Ungültige URL '${configuredFrontendUrl}' erkannt, verwende Produktions-Fallback`);
+      finalUrl = 'https://taskilo.de'; // Sichere Produktions-URL als Fallback
     }
+    
     return {
-      stripeBusinessProfileUrl: configuredFrontendUrl,
+      stripeBusinessProfileUrl: finalUrl,
     };
   }
 };
 
 export const createStripeAccountIfComplete = onCall(
   // Force redeploy by adding a comment
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
 
     const stripeKey = STRIPE_SECRET_KEY.value();
-    const frontendUrlValue = FRONTEND_URL_PARAM.value().trim();
-
-    // --- NEUE, STRIKTE PRÜFUNG DER FRONTEND_URL ---
-    if (!frontendUrlValue || !frontendUrlValue.startsWith('http')) {
-      loggerV2.error(`[createStripeAccountIfComplete] FATAL: Die FRONTEND_URL ist nicht korrekt konfiguriert. Aktueller Wert: '${frontendUrlValue}'. Die URL muss eine vollständige Produktions-URL sein (z.B. https://mein-projekt.web.app).`);
-      throw new HttpsError("internal", "Server-Konfigurationsfehler: Die Frontend-URL ist ungültig oder fehlt.");
-    }
-    // --- ENDE DER PRÜFUNG ---
+    const frontendUrlValue = process.env.FRONTEND_URL || 'https://taskilo.de';
 
     loggerV2.info(`[DEBUG] Stripe Key geladen? ${stripeKey ? 'Ja, Länge: ' + stripeKey.length : 'NEIN, LEER!'}`);
     loggerV2.info(`[DEBUG] Frontend URL geladen? ${frontendUrlValue ? 'Ja: ' + frontendUrlValue : 'NEIN, LEER!'}`);
@@ -624,7 +625,11 @@ export const createStripeAccountIfComplete = onCall(
 
 // --- HIER WIRD DIE FUNKTION getOrCreateStripeCustomer HINZUGEFÜGT ---
 export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload>(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<GetOrCreateStripeCustomerPayload>): Promise<GetOrCreateStripeCustomerResult> => {
     loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
     const db = getDb();
@@ -734,14 +739,15 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
 export const updateStripeCompanyDetails = onCall(
   {
     region: "europe-west1",
-    cors: true  // Erlaube alle Origins in der Entwicklung
+    cors: true,  // Erlaube alle Origins in der Entwicklung
+    secrets: [STRIPE_SECRET_KEY]
   },
   async (request: CallableRequest<UpdateStripeCompanyDetailsData>): Promise<UpdateStripeCompanyDetailsResult> => {
     loggerV2.info("[updateStripeCompanyDetails] Aufgerufen mit request.data:", JSON.stringify(request.data));
     const db = getDb();
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
     const stripeKey = STRIPE_SECRET_KEY.value();
-    const frontendUrlValue = FRONTEND_URL_PARAM.value();
+    const frontendUrlValue = process.env.FRONTEND_URL || 'https://taskilo.de';
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     const userDocRef = db.collection("users").doc(userId);
@@ -970,7 +976,11 @@ export const updateStripeCompanyDetails = onCall(
  * bevor sie die Daten zurückgibt.
  */
 export const getOrderParticipantDetails = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<{ orderId: string }>): Promise<{ provider: ParticipantDetails, customer: ParticipantDetails }> => {
     const { orderId } = request.data;
     loggerV2.info(`[getOrderParticipantDetails] Called for orderId: ${orderId} by user: ${request.auth?.uid}`);
@@ -1007,7 +1017,11 @@ export const getOrderParticipantDetails = onCall(
 );
 
 export const createSetupIntent = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<{ customerId: string, paymentMethodTypes?: string[] }>): Promise<{ client_secret: string | null }> => {
     loggerV2.info("[createSetupIntent] Aufgerufen.");
     const db = getDb();
@@ -1056,7 +1070,11 @@ export const createSetupIntent = onCall(
 );
 
 export const detachPaymentMethod = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<{ paymentMethodId: string }>): Promise<{ success: boolean }> => {
     loggerV2.info("[detachPaymentMethod] Aufgerufen.");
     const db = getDb();
@@ -1117,7 +1135,11 @@ interface GetStripeAccountStatusResult {
 }
 
 export const getStripeAccountStatus = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<{ userId: string }>): Promise<GetStripeAccountStatusResult> => {
     const { userId } = request.data;
     if (!userId) {
@@ -1152,7 +1174,11 @@ export const getStripeAccountStatus = onCall(
   });
 
 export const getSavedPaymentMethods = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<Record<string, never>>): Promise<{ savedPaymentMethods: Stripe.PaymentMethod[] }> => {
     // User must be authenticated
     if (!request.auth?.uid) {
@@ -1190,7 +1216,11 @@ export const getSavedPaymentMethods = onCall(
   });
 
 export const getProviderStripeAccountId = onCall(
-  { region: "europe-west1", cors: allowedOrigins },
+  {
+    region: "europe-west1",
+    cors: allowedOrigins,
+    secrets: [STRIPE_SECRET_KEY]
+  },
   async (request: CallableRequest<{ providerId: string }>): Promise<{ accountId: string | null }> => {
     const { providerId } = request.data;
     if (!providerId) {
