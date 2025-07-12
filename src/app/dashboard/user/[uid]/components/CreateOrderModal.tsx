@@ -334,78 +334,186 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onSuccess,
 
   return (
     <>
-      <div className="p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-2xl font-semibold text-gray-800 mb-6">Neuen Auftrag erstellen</h3>
-        {error && <p className="bg-red-100 text-red-700 p-2 rounded-md text-sm my-2">{error}</p>}
+      <div className="p-8 max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
+        <div className="text-center mb-8">
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">Neuen Auftrag erstellen</h3>
+          <p className="text-gray-600">Finden Sie den perfekten Tasker für Ihr Projekt</p>
+        </div>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-sm mb-6 flex items-center">
+            <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+            {error}
+          </div>
+        )}
 
         {currentStep === 'details' && (
-          <div className="space-y-6">
-            <div className="p-4 border rounded-md">
-              <h4 className="text-lg font-semibold text-gray-700 mb-4">1. Was soll erledigt werden?</h4>
-              <div className="space-y-4">
+          <div className="space-y-8">
+            <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-sm">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">1</div>
+                <h4 className="text-xl font-semibold text-gray-800">Was soll erledigt werden?</h4>
+              </div>
+              <div className="space-y-6">
                 <div>
-                  <Label htmlFor="category">Hauptkategorie *</Label>
-                  <SimpleSelect id="category" options={categories.map(c => c.title)} placeholder="Bitte wählen..." value={selectedCategory || ''} onChange={e => { setSelectedCategory(e.target.value); setSelectedSubcategory(null); setSelectedProvider(null); }} />
+                  <Label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2 block">Hauptkategorie *</Label>
+                  <SimpleSelect 
+                    id="category" 
+                    options={categories.map(c => c.title)} 
+                    placeholder="Bitte wählen..." 
+                    value={selectedCategory || ''} 
+                    onChange={e => { 
+                      setSelectedCategory(e.target.value); 
+                      setSelectedSubcategory(null); 
+                      setSelectedProvider(null); 
+                    }} 
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors"
+                  />
                 </div>
                 {selectedCategory && (
                   <div>
-                    <Label htmlFor="subcategory">Unterkategorie *</Label>
-                    <SimpleSelect id="subcategory" options={availableSubcategories} placeholder="Bitte wählen..." value={selectedSubcategory || ''} onChange={e => { setSelectedSubcategory(e.target.value); setSelectedProvider(null); }} />
+                    <Label htmlFor="subcategory" className="text-sm font-medium text-gray-700 mb-2 block">Unterkategorie *</Label>
+                    <SimpleSelect 
+                      id="subcategory" 
+                      options={availableSubcategories} 
+                      placeholder="Bitte wählen..." 
+                      value={selectedSubcategory || ''} 
+                      onChange={e => { 
+                        setSelectedSubcategory(e.target.value); 
+                        setSelectedProvider(null); 
+                      }} 
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors"
+                    />
                   </div>
                 )}
                 {selectedSubcategory && (
                   <div>
-                    <Label htmlFor="description">Auftragsbeschreibung *</Label>
-                    <Textarea id="description" placeholder="Beschreiben Sie hier, was genau gemacht werden soll..." value={description} onChange={e => setDescription(e.target.value)} />
+                    <Label htmlFor="description" className="text-sm font-medium text-gray-700 mb-2 block">Auftragsbeschreibung *</Label>
+                    <Textarea 
+                      id="description" 
+                      placeholder="Beschreiben Sie hier detailliert, was genau gemacht werden soll..." 
+                      value={description} 
+                      onChange={e => setDescription(e.target.value)} 
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors min-h-[100px] resize-none"
+                    />
                   </div>
                 )}
               </div>
             </div>
+            
             {selectedSubcategory && (
-              <OrderAddressSelection userProfile={userProfile} useSavedAddress={useSavedAddress} setUseSavedAddress={setUseSavedAddress} newAddressDetails={newAddressDetails} setNewAddressDetails={setNewAddressDetails} selectedSubcategory={selectedSubcategory} onProviderSelect={setSelectedProvider} onOpenDatePicker={handleOpenDatePicker} />
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+                <OrderAddressSelection 
+                  userProfile={userProfile} 
+                  useSavedAddress={useSavedAddress} 
+                  setUseSavedAddress={setUseSavedAddress} 
+                  newAddressDetails={newAddressDetails} 
+                  setNewAddressDetails={setNewAddressDetails} 
+                  selectedSubcategory={selectedSubcategory} 
+                  onProviderSelect={setSelectedProvider} 
+                  onOpenDatePicker={handleOpenDatePicker} 
+                />
+              </div>
             )}
-            <div className="flex justify-end gap-2 mt-6 p-4 border-t">
-              <Button type="button" onClick={onClose} variant="outline">Abbrechen</Button>
+            
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <Button 
+                type="button" 
+                onClick={onClose} 
+                variant="outline"
+                className="px-6 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Abbrechen
+              </Button>
             </div>
           </div>
         )}
 
         {currentStep === 'payment' && finalOrderData && (
-          <div className="space-y-6">
-            <h4 className="text-lg font-semibold text-gray-700">2. Zahlung abschließen</h4>
-            <div className="p-4 border rounded-lg bg-gray-50 text-sm space-y-1">
-              <p><strong>Anbieter:</strong> {selectedProvider?.companyName}</p>
-              <p><strong>Auftrag:</strong> {finalOrderData.selectedSubcategory}</p>
-              <p><strong>Datum:</strong> {format(new Date(finalOrderData.jobDateFrom), 'PPP', { locale: de })}</p>
-              <p className="text-lg font-bold mt-2">Gesamtpreis: ${(finalOrderData.totalPriceInCents / 100).toFixed(2)} EUR</p>
+          <div className="space-y-8">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">2</div>
+              <h4 className="text-xl font-semibold text-gray-800">Zahlung abschließen</h4>
             </div>
-            <PaymentSection
-              userProfile={userProfile}
-              useSavedPaymentMethod={useSavedPaymentMethod}
-              setUseSavedPaymentMethod={setUseSavedPaymentMethod}
-              clientSecret={clientSecret}
-              isPaymentIntentLoading={loading}
-              handleCheckoutFormProcessing={(isProcessing) => setLoading(isProcessing)}
-              handleCheckoutFormError={handlePaymentError}
-              handleCheckoutFormSuccess={handlePaymentSuccess}
-              loading={loading}
-
-              totalPriceInCents={finalTotalPriceInCents}
-              onPaymentSuccess={handlePaymentSuccess}
-              onPaymentError={handlePaymentError}
-              fullOrderDetails={finalOrderData}
-            />
-            <div className="flex justify-start pt-2">
-              <Button type="button" onClick={() => { setError(null); setCurrentStep('details'); }} variant="outline">Zurück</Button>
+            
+            <div className="bg-gradient-to-r from-[#14ad9f]/5 to-teal-50 p-6 border border-[#14ad9f]/20 rounded-xl">
+              <h5 className="font-semibold text-gray-800 mb-4 flex items-center">
+                <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-3"></div>
+                Auftragsübersicht
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm space-y-2 md:space-y-0">
+                <div>
+                  <span className="font-medium text-gray-600">Anbieter:</span>
+                  <p className="text-gray-900">{selectedProvider?.companyName}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Service:</span>
+                  <p className="text-gray-900">{finalOrderData.selectedSubcategory}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Datum:</span>
+                  <p className="text-gray-900">{format(new Date(finalOrderData.jobDateFrom), 'PPP', { locale: de })}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Dauer:</span>
+                  <p className="text-gray-900">{finalOrderData.jobDurationString}</p>
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-[#14ad9f]/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-800">Gesamtpreis:</span>
+                  <span className="text-2xl font-bold text-[#14ad9f]">
+                    €{(finalOrderData.totalPriceInCents / 100).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-sm">
+              <PaymentSection
+                userProfile={userProfile}
+                useSavedPaymentMethod={useSavedPaymentMethod}
+                setUseSavedPaymentMethod={setUseSavedPaymentMethod}
+                clientSecret={clientSecret}
+                isPaymentIntentLoading={loading}
+                handleCheckoutFormProcessing={(isProcessing) => setLoading(isProcessing)}
+                handleCheckoutFormError={handlePaymentError}
+                handleCheckoutFormSuccess={handlePaymentSuccess}
+                loading={loading}
+                totalPriceInCents={finalTotalPriceInCents}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentError={handlePaymentError}
+                fullOrderDetails={finalOrderData}
+              />
+            </div>
+            
+            <div className="flex justify-start pt-6 border-t border-gray-200">
+              <Button 
+                type="button" 
+                onClick={() => { setError(null); setCurrentStep('details'); }} 
+                variant="outline"
+                className="px-6 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Zurück
+              </Button>
             </div>
           </div>
         )}
 
         {currentStep === 'success' && (
-          <div className="text-center p-10 flex flex-col items-center justify-center">
-            <FiCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
-            <h4 className="text-xl font-semibold text-gray-800">Auftrag erfolgreich erstellt!</h4>
-            <p className="text-gray-600 mt-2">Das Modal wird in Kürze geschlossen.</p>
+          <div className="text-center py-16 px-8">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiCheckCircle className="text-4xl text-green-600" />
+            </div>
+            <h4 className="text-2xl font-bold text-gray-900 mb-3">Auftrag erfolgreich erstellt!</h4>
+            <p className="text-gray-600 mb-2">Ihr Auftrag wurde erfolgreich übermittelt.</p>
+            <p className="text-sm text-gray-500">Das Modal wird in Kürze automatisch geschlossen.</p>
+            
+            <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                Sie erhalten in Kürze eine Bestätigungs-E-Mail mit allen Details zu Ihrem Auftrag.
+              </p>
+            </div>
           </div>
         )}
       </div>
