@@ -351,6 +351,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const translatePageContent = async (targetLang: string) => {
+    if (isTranslating) return; // Verhindere mehrfache gleichzeitige Übersetzungen
+    
     setIsTranslating(true);
     
     try {
@@ -369,8 +371,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
       if (textsToTranslate.length === 0) {
         console.log('Keine Texte zum Übersetzen gefunden');
+        setIsTranslating(false);
         return;
       }
+
+      console.log(`Übersetze ${textsToTranslate.length} Texte nach ${targetLang}`);
 
       // Übersetze alle Texte in einem Batch
       const response = await fetch('/api/translate-batch', {
@@ -386,7 +391,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Übersetzung fehlgeschlagen');
+        const errorData = await response.json();
+        console.error('API Fehler:', errorData);
+        throw new Error(`Übersetzung fehlgeschlagen: ${response.status}`);
       }
 
       const data = await response.json();
@@ -406,6 +413,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
+      console.log('Übersetzung erfolgreich abgeschlossen');
+
     } catch (error) {
       console.error('Fehler bei der Seitenübersetzung:', error);
     } finally {
@@ -424,8 +433,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: string, values?: Record<string, any>) => {
-    const langTranslations = translations[language as keyof typeof translations];
+    // Fallback zu 'de' wenn die aktuelle Sprache nicht verfügbar ist
+    const langTranslations = translations[language as keyof typeof translations] || translations.de;
     let text = langTranslations[key as keyof typeof langTranslations] || key;
+
+    // Prüfe auch in dynamischen Übersetzungen
+    if (text === key && dynamicTranslations[key]) {
+      text = dynamicTranslations[key];
+    }
 
     if (values) {
       Object.entries(values).forEach(([key, value]) => {

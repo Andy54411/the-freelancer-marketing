@@ -1,12 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronDown, Languages, Loader2 } from 'lucide-react';
 
 export default function LanguageSelector() {
   const { language, setLanguage, isTranslating, availableLanguages, translatePageContent } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      
+      // Entscheide basierend auf verfügbarem Platz
+      // 320px ist ungefähr die Höhe des Dropdowns
+      if (spaceBelow < 320 && spaceAbove > spaceBelow) {
+        setDropdownPosition('top');
+      } else {
+        setDropdownPosition('bottom');
+      }
+    }
+  }, [isOpen]);
 
   const handleLanguageChange = async (langCode: string) => {
     setIsOpen(false);
@@ -26,6 +45,7 @@ export default function LanguageSelector() {
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         disabled={isTranslating}
         className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -50,8 +70,14 @@ export default function LanguageSelector() {
             onClick={() => setIsOpen(false)}
           />
           
-          {/* Dropdown */}
-          <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+          {/* Dropdown - Intelligente Positionierung */}
+          <div 
+            className={`absolute right-0 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto transform transition-all duration-200 ${
+              dropdownPosition === 'top' 
+                ? 'bottom-full mb-2 origin-bottom-right animate-in slide-in-from-bottom-2' 
+                : 'top-full mt-2 origin-top-right animate-in slide-in-from-top-2'
+            }`}
+          >
             <div className="p-2">
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-1 mb-2">
                 VERFÜGBARE SPRACHEN

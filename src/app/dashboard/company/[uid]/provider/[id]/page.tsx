@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Star, MapPin, ArrowLeft, Briefcase, Clock, Users, MessageCircle, Calendar } from 'lucide-react';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
@@ -68,40 +68,77 @@ export default function CompanyProviderDetailPage() {
 
             if (firmaDoc.exists()) {
                 const data = firmaDoc.data();
-                setProvider({
-                    id: firmaDoc.id,
-                    companyName: data.companyName,
-                    profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-                    profilePictureURL: data.profilePictureURL,
-                    photoURL: data.photoURL,
-                    bio: data.description || data.bio,
-                    description: data.description,
-                    location: data.location || `${data.companyCity || ''}, ${data.companyCountry || ''}`.trim().replace(/^,\s*/, ''),
-                    skills: data.services || data.skills || [],
-                    selectedCategory: data.selectedCategory,
-                    selectedSubcategory: data.selectedSubcategory,
-                    rating: data.averageRating || 0,
-                    reviewCount: data.reviewCount || 0,
-                    completedJobs: data.completedJobs || 0,
-                    isCompany: true,
-                    priceRange: data.priceRange,
-                    responseTime: data.responseTime,
-                    hourlyRate: data.hourlyRate,
-                    email: data.email,
-                    phone: data.phone,
-                    website: data.website,
-                    founded: data.founded,
-                    teamSize: data.teamSize,
-                    languages: data.languages || [],
-                    portfolio: data.portfolio || [],
-                    services: data.services || []
-                });
+                    // Real-time Rating berechnen
+                    const reviewsQuery = query(
+                        collection(db, 'reviews'),
+                        where('providerId', '==', firmaDoc.id)
+                    );
+                    const reviewsSnapshot = await getDocs(reviewsQuery);
+                    
+                    let calculatedRating = 0;
+                    let calculatedCount = 0;
+                    
+                    if (!reviewsSnapshot.empty) {
+                        const ratings = reviewsSnapshot.docs.map((doc: any) => doc.data().rating).filter((rating: any) => rating);
+                        calculatedCount = ratings.length;
+                        if (calculatedCount > 0) {
+                            calculatedRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / calculatedCount;
+                        }
+                    }
+
+                    setProvider({
+                        id: firmaDoc.id,
+                        companyName: data.companyName,
+                        profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
+                        profilePictureURL: data.profilePictureURL,
+                        photoURL: data.photoURL,
+                        bio: data.description || data.bio,
+                        description: data.description,
+                        location: data.location || `${data.companyCity || ''}, ${data.companyCountry || ''}`.trim().replace(/^,\s*/, ''),
+                        skills: data.services || data.skills || [],
+                        selectedCategory: data.selectedCategory,
+                        selectedSubcategory: data.selectedSubcategory,
+                        rating: calculatedRating, // Verwende berechnetn Wert
+                        reviewCount: calculatedCount, // Verwende berechneten Wert
+                        completedJobs: data.completedJobs || 0,
+                        isCompany: true,
+                        priceRange: data.priceRange,
+                        responseTime: data.responseTime,
+                        hourlyRate: data.hourlyRate,
+                        email: data.email,
+                        phone: data.phone,
+                        website: data.website,
+                        founded: data.founded,
+                        teamSize: data.teamSize,
+                        languages: data.languages || [],
+                        portfolio: data.portfolio || [],
+                        services: data.services || []
+                    });
             } else {
                 // Falls nicht in firma gefunden, in users suchen
                 const userDoc = await getDoc(doc(db, 'users', providerId));
 
                 if (userDoc.exists()) {
                     const data = userDoc.data();
+                    
+                    // Real-time Rating berechnen für User
+                    const reviewsQuery = query(
+                        collection(db, 'reviews'),
+                        where('providerId', '==', userDoc.id)
+                    );
+                    const reviewsSnapshot = await getDocs(reviewsQuery);
+                    
+                    let calculatedRating = 0;
+                    let calculatedCount = 0;
+                    
+                    if (!reviewsSnapshot.empty) {
+                        const ratings = reviewsSnapshot.docs.map((doc: any) => doc.data().rating).filter((rating: any) => rating);
+                        calculatedCount = ratings.length;
+                        if (calculatedCount > 0) {
+                            calculatedRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / calculatedCount;
+                        }
+                    }
+
                     setProvider({
                         id: userDoc.id,
                         userName: data.userName || data.displayName,
@@ -111,8 +148,8 @@ export default function CompanyProviderDetailPage() {
                         bio: data.bio,
                         location: data.location,
                         skills: data.skills || [],
-                        rating: data.rating || 0,
-                        reviewCount: data.reviewCount || 0,
+                        rating: calculatedRating, // Verwende berechneten Wert
+                        reviewCount: calculatedCount, // Verwende berechneten Wert
                         completedJobs: data.completedJobs || 0,
                         isCompany: false,
                         priceRange: data.priceRange,

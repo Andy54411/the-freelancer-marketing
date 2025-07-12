@@ -331,7 +331,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                         {review.isReturningCustomer && (
                           <div className="flex items-center space-x-1 text-sm">
                             <RotateCcw className="w-4 h-4 text-blue-500" />
-                            <span className="text-blue-600 dark:text-blue-400 font-medium">Wiederkehrender Kunde</span>
+                            <span className="text-[#14ad9f] dark:text-[#14ad9f] font-medium">Wiederkehrender Kunde</span>
                           </div>
                         )}
                       </div>
@@ -368,40 +368,44 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                   )}
 
                   {/* Review Text */}
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {translatedReviews.has(review.id) ? translatedReviews.get(review.id) : displayComment}
-                      {shouldTruncate && (
-                        <button
-                          onClick={() => toggleExpandReview(review.id)}
-                          className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
-                        >
-                          {isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
-                        </button>
-                      )}
-                    </p>
-                    
-                    {/* Translation Button */}
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        onClick={() => translateText(review.comment, review.id)}
-                        disabled={translatingReviews.has(review.id)}
-                        className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
-                      >
-                        {translatingReviews.has(review.id) ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b border-[#14ad9f]"></div>
-                            Übersetze...
-                          </>
-                        ) : (
-                          <>
-                            <Languages className="w-3 h-3" />
-                            {translatedReviews.has(review.id) ? 'Original anzeigen' : 'Übersetzen'}
-                          </>
+                  {(reviewComment || translatedReviews.has(review.id)) && (
+                    <div className="prose max-w-none">
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {translatedReviews.has(review.id) ? translatedReviews.get(review.id) : displayComment}
+                        {shouldTruncate && (
+                          <button
+                            onClick={() => toggleExpandReview(review.id)}
+                            className="text-[#14ad9f] dark:text-[#14ad9f] hover:underline ml-1"
+                          >
+                            {isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                          </button>
                         )}
-                      </button>
+                      </p>
+                      
+                      {/* Translation Button */}
+                      {reviewComment && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={() => translateText(reviewComment, review.id)}
+                            disabled={translatingReviews.has(review.id)}
+                            className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
+                          >
+                            {translatingReviews.has(review.id) ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b border-[#14ad9f]"></div>
+                                Übersetze...
+                              </>
+                            ) : (
+                              <>
+                                <Languages className="w-3 h-3" />
+                                {translatedReviews.has(review.id) ? 'Original anzeigen' : 'Übersetzen'}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
 
                   {/* Project Details */}
                   {(review.projectPrice || review.projectDuration) && (
@@ -500,7 +504,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
               <button
                 onClick={() => loadReviews(false)}
                 disabled={loadingMore}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                className="bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto"
               >
                 {loadingMore ? (
                   <>
