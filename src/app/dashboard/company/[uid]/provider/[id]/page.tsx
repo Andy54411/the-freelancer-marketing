@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Star, MapPin, ArrowLeft, Briefcase, Clock, Users, MessageCircle, Calendar } from 'lucide-react';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
@@ -49,8 +49,6 @@ export default function CompanyProviderDetailPage() {
 
     const [provider, setProvider] = useState<Provider | null>(null);
     const [loading, setLoading] = useState(true);
-    const [actualRating, setActualRating] = useState<number>(0);
-    const [actualReviewCount, setActualReviewCount] = useState<number>(0);
 
     // Chat Modal State
     const [chatModalOpen, setChatModalOpen] = useState(false);
@@ -59,7 +57,6 @@ export default function CompanyProviderDetailPage() {
     useEffect(() => {
         loadProviderData();
         loadCompanyData();
-        loadReviewStats();
     }, [providerId]);
 
     const loadProviderData = async () => {
@@ -153,35 +150,6 @@ export default function CompanyProviderDetailPage() {
         }
     };
 
-    const loadReviewStats = async () => {
-        try {
-            const reviewsQuery = query(
-                collection(db, 'reviews'),
-                where('providerId', '==', providerId)
-            );
-
-            const reviewsSnapshot = await getDocs(reviewsQuery);
-            const reviews = reviewsSnapshot.docs.map(doc => doc.data());
-
-            if (reviews.length > 0) {
-                const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
-                const averageRating = totalRating / reviews.length;
-
-                setActualRating(averageRating);
-                setActualReviewCount(reviews.length);
-
-                console.log(`Loaded ${reviews.length} reviews with average rating: ${averageRating.toFixed(2)}`);
-            } else {
-                setActualRating(0);
-                setActualReviewCount(0);
-            }
-        } catch (error) {
-            console.error('Fehler beim Laden der Review-Statistiken:', error);
-            setActualRating(0);
-            setActualReviewCount(0);
-        }
-    };
-
     const openChatWithProvider = () => {
         if (provider) {
             setChatModalOpen(true);
@@ -240,25 +208,20 @@ export default function CompanyProviderDetailPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Header with Gradient */}
-            <div className="bg-gradient-to-r from-[#14ad9f] to-teal-700 shadow-xl">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-800 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => router.back()}
-                            className="text-white/80 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                            className="text-gray-600 dark:text-gray-400 hover:text-[#14ad9f] transition-colors"
                         >
                             <ArrowLeft className="w-6 h-6" />
                         </button>
-                        <div>
-                            <h1 className="text-3xl font-bold text-white">
-                                Anbieter-Profil
-                            </h1>
-                            <p className="text-white/80 mt-1">
-                                Detailierte Informationen und Bewertungen
-                            </p>
-                        </div>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-translatable data-translation-key="provider.profile.title">
+                            Anbieter-Profil
+                        </h1>
                     </div>
                 </div>
             </div>
@@ -266,116 +229,102 @@ export default function CompanyProviderDetailPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Provider Header Card - Enhanced */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
-                            <div className="flex flex-col gap-6">
-                                {/* Top Row: Profile Image and Basic Info */}
-                                <div className="flex flex-col sm:flex-row items-start gap-6">
-                                    <div className="relative group flex-shrink-0">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full opacity-75 group-hover:opacity-100 transition duration-300 blur"></div>
-                                        <img
-                                            src={getProfileImage()}
-                                            alt={getProviderName()}
-                                            className="relative w-28 h-28 rounded-full object-cover ring-4 ring-white dark:ring-gray-700"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
-                                            }}
-                                        />
-                                        {provider.isCompany && (
-                                            <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-xs px-3 py-1 rounded-full shadow-lg font-bold">
-                                                PRO
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Provider Header Card */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+                            <div className="flex flex-col sm:flex-row items-start gap-6">
+                                <div className="relative">
+                                    <img
+                                        src={getProfileImage()}
+                                        alt={getProviderName()}
+                                        className="w-24 h-24 rounded-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
+                                        }}
+                                    />
+                                    {provider.isCompany && (
+                                        <div className="absolute -bottom-2 -right-2 bg-[#14ad9f] text-white text-xs px-2 py-1 rounded-full">
+                                            PRO
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        {getProviderName()}
+                                    </h1>
+
+                                    {provider.location && (
+                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-3">
+                                            <MapPin className="w-4 h-4" />
+                                            {provider.location}
+                                        </div>
+                                    )}
+
+                                    {/* Rating */}
+                                    {(provider.rating ?? 0) > 0 && (
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="flex">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star
+                                                        key={i}
+                                                        className={`w-5 h-5 ${i < Math.floor(provider.rating ?? 0)
+                                                            ? 'text-yellow-400 fill-current'
+                                                            : 'text-gray-300'}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="text-lg font-medium text-gray-900 dark:text-white">
+                                                {(provider.rating ?? 0).toFixed(1)}
+                                            </span>                                        <span className="text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.reviews.count">
+                                            ({provider.reviewCount} Bewertungen)
+                                        </span>
+                                        </div>
+                                    )}
+
+                                    {/* Stats */}
+                                    <div className="flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
+                                        {provider.completedJobs && provider.completedJobs > 0 && (
+                                            <div className="flex items-center gap-1">
+                                                <Briefcase className="w-4 h-4" />
+                                                {provider.completedJobs} Projekte abgeschlossen
                                             </div>
                                         )}
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                                            {getProviderName()}
-                                        </h1>
-
-                                        {provider.location && (
-                                            <div className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
-                                                <MapPin className="w-4 h-4 text-[#14ad9f]" />
-                                                {provider.location}
+                                        {provider.responseTime && (
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="w-4 h-4" />
+                                                Antwortet in {provider.responseTime}
                                             </div>
                                         )}
-                                    </div>
-
-                                    {/* Price Box - Moved to separate column */}
-                                    <div className="flex-shrink-0 sm:ml-auto">
-                                        {provider.hourlyRate && (
-                                            <div className="text-center bg-gradient-to-br from-[#14ad9f] to-teal-600 text-white p-4 rounded-xl shadow-lg">
-                                                <div className="text-3xl font-bold">
-                                                    €{provider.hourlyRate}
-                                                </div>
-                                                <div className="text-sm opacity-90">
-                                                    pro Stunde
-                                                </div>
+                                        {provider.teamSize && (
+                                            <div className="flex items-center gap-1">
+                                                <Users className="w-4 h-4" />
+                                                {provider.teamSize} Mitarbeiter
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Rating Section - Full width */}
-                                {actualRating > 0 && (
-                                    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 px-4 py-3 rounded-xl border border-yellow-200 dark:border-yellow-800">
-                                        <div className="flex">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star
-                                                    key={i}
-                                                    className={`w-6 h-6 ${i < Math.floor(actualRating)
-                                                        ? 'text-yellow-500 fill-current drop-shadow-sm'
-                                                        : 'text-gray-300 dark:text-gray-600'}`}
-                                                />
-                                            ))}
+                                {/* Action Buttons */}
+                                <div className="flex flex-col gap-3 sm:items-end">
+                                    {provider.hourlyRate && (
+                                        <div className="text-right">
+                                            <div className="text-2xl font-bold text-[#14ad9f]">
+                                                €{provider.hourlyRate}/h
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                Stundensatz
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl font-bold text-gray-900 dark:text-white">
-                                                {actualRating.toFixed(1)}
-                                            </span>
-                                            <span className="text-gray-500 dark:text-gray-400 font-medium">
-                                                ({actualReviewCount} Bewertungen)
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Stats Section - Full width */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                                    {provider.completedJobs && provider.completedJobs > 0 && (
-                                        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
-                                            <Briefcase className="w-4 h-4 text-blue-600" />
-                                            <span className="text-blue-800 dark:text-blue-300 font-medium">
-                                                {provider.completedJobs} Projekte
-                                            </span>
-                                        </div>
-                                    )}
-                                    {provider.responseTime && (
-                                        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800">
-                                            <Clock className="w-4 h-4 text-green-600" />
-                                            <span className="text-green-800 dark:text-green-300 font-medium">
-                                                {provider.responseTime}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {provider.teamSize && (
-                                        <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-800">
-                                            <Users className="w-4 h-4 text-purple-600" />
-                                            <span className="text-purple-800 dark:text-purple-300 font-medium">
-                                                {provider.teamSize} Team
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Action Button - Full width */}
-                                <div className="pt-4">
                                     <button
                                         onClick={openChatWithProvider}
-                                        className="w-full bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white px-8 py-4 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                        className="bg-[#14ad9f] hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                                        data-translatable
+                                        data-translation-key="provider.contact.button"
                                     >
-                                        <MessageCircle className="w-5 h-5" />
+                                        <MessageCircle className="w-4 h-4" />
                                         Jetzt kontaktieren
                                     </button>
                                 </div>
@@ -384,14 +333,11 @@ export default function CompanyProviderDetailPage() {
 
                         {/* Description */}
                         {(provider.bio || provider.description) && (
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 hover:shadow-xl transition-all duration-300">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-1 h-8 bg-gradient-to-b from-[#14ad9f] to-teal-600 rounded-full"></div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        Über {provider.isCompany ? 'das Unternehmen' : 'mich'}
-                                    </h2>
-                                </div>
-                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                                    Über {provider.isCompany ? 'das Unternehmen' : 'mich'}
+                                </h2>
+                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                                     {provider.bio || provider.description}
                                 </p>
                             </div>
@@ -399,18 +345,15 @@ export default function CompanyProviderDetailPage() {
 
                         {/* Skills & Services */}
                         {provider.skills && provider.skills.length > 0 && (
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 hover:shadow-xl transition-all duration-300">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-1 h-8 bg-gradient-to-b from-[#14ad9f] to-teal-600 rounded-full"></div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        Fähigkeiten & Services
-                                    </h2>
-                                </div>
-                                <div className="flex flex-wrap gap-3">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                                    Fähigkeiten & Services
+                                </h2>
+                                <div className="flex flex-wrap gap-2">
                                     {provider.skills.map((skill, index) => (
                                         <span
                                             key={index}
-                                            className="bg-gradient-to-r from-[#14ad9f]/10 to-teal-600/10 text-[#14ad9f] px-4 py-2 rounded-full text-sm font-semibold border border-[#14ad9f]/20 hover:from-[#14ad9f]/20 hover:to-teal-600/20 transition-all duration-200 cursor-default"
+                                            className="bg-[#14ad9f]/10 text-[#14ad9f] px-3 py-1 rounded-full text-sm font-medium"
                                         >
                                             {skill}
                                         </span>
@@ -422,52 +365,49 @@ export default function CompanyProviderDetailPage() {
                         {/* Reviews */}
                         <ProviderReviews
                             providerId={providerId}
-                            reviewCount={actualReviewCount}
-                            averageRating={actualRating}
+                            reviewCount={provider.reviewCount}
+                            averageRating={provider.rating}
                         />
                     </div>
 
-                    {/* Enhanced Sidebar */}
-                    <div className="space-y-8">
+                    {/* Sidebar */}
+                    <div className="space-y-6">
                         {/* Contact Info */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-1 h-6 bg-gradient-to-b from-[#14ad9f] to-teal-600 rounded-full"></div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    Kontaktinformationen
-                                </h3>
-                            </div>
-                            <div className="space-y-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Kontaktinformationen
+                            </h3>
+                            <div className="space-y-3">
                                 {provider.email && (
-                                    <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="text-sm font-semibold text-[#14ad9f] uppercase tracking-wide">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             E-Mail
                                         </label>
-                                        <p className="text-gray-900 dark:text-white mt-1 font-medium">
+                                        <p className="text-gray-900 dark:text-white">
                                             {provider.email}
                                         </p>
                                     </div>
                                 )}
                                 {provider.phone && (
-                                    <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="text-sm font-semibold text-[#14ad9f] uppercase tracking-wide">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             Telefon
                                         </label>
-                                        <p className="text-gray-900 dark:text-white mt-1 font-medium">
+                                        <p className="text-gray-900 dark:text-white">
                                             {provider.phone}
                                         </p>
                                     </div>
                                 )}
                                 {provider.website && (
-                                    <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="text-sm font-semibold text-[#14ad9f] uppercase tracking-wide">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             Website
                                         </label>
                                         <a
                                             href={provider.website.startsWith('http') ? provider.website : `https://${provider.website}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-[#14ad9f] hover:text-teal-600 break-all mt-1 block font-medium transition-colors"
+                                            className="text-[#14ad9f] hover:text-teal-600 break-all"
                                         >
                                             {provider.website}
                                         </a>
@@ -485,34 +425,31 @@ export default function CompanyProviderDetailPage() {
 
                         {/* Additional Info */}
                         {(provider.founded || provider.languages?.length) && (
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-1 h-6 bg-gradient-to-b from-[#14ad9f] to-teal-600 rounded-full"></div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                        Weitere Informationen
-                                    </h3>
-                                </div>
-                                <div className="space-y-4">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                    Weitere Informationen
+                                </h3>
+                                <div className="space-y-3">
                                     {provider.founded && (
-                                        <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                            <label className="text-sm font-semibold text-[#14ad9f] uppercase tracking-wide">
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                                 Gegründet
                                             </label>
-                                            <p className="text-gray-900 dark:text-white mt-1 font-medium">
+                                            <p className="text-gray-900 dark:text-white">
                                                 {provider.founded}
                                             </p>
                                         </div>
                                     )}
                                     {provider.languages && provider.languages.length > 0 && (
-                                        <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                            <label className="text-sm font-semibold text-[#14ad9f] uppercase tracking-wide mb-2 block">
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                                 Sprachen
                                             </label>
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-1 mt-1">
                                                 {provider.languages.map((language, index) => (
                                                     <span
                                                         key={index}
-                                                        className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600"
+                                                        className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-sm"
                                                     >
                                                         {language}
                                                     </span>
@@ -524,27 +461,24 @@ export default function CompanyProviderDetailPage() {
                             </div>
                         )}
 
-                        {/* Enhanced Quick Actions */}
-                        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-1 h-6 bg-gradient-to-b from-[#14ad9f] to-teal-600 rounded-full"></div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    Schnellaktionen
-                                </h3>
-                            </div>
-                            <div className="space-y-4">
+                        {/* Quick Actions */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Schnellaktionen
+                            </h3>
+                            <div className="space-y-3">
                                 <button
                                     onClick={openChatWithProvider}
-                                    className="w-full bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+                                    className="w-full bg-[#14ad9f] hover:bg-teal-600 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                                 >
-                                    <MessageCircle className="w-5 h-5" />
+                                    <MessageCircle className="w-4 h-4" />
                                     Nachricht senden
                                 </button>
                                 <button
                                     onClick={() => {/* Implementiere Terminbuchung */ }}
-                                    className="w-full border-2 border-[#14ad9f] text-[#14ad9f] hover:bg-gradient-to-r hover:from-[#14ad9f] hover:to-teal-600 hover:text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-3 hover:shadow-lg transform hover:scale-105"
+                                    className="w-full border border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                                 >
-                                    <Calendar className="w-5 h-5" />
+                                    <Calendar className="w-4 h-4" />
                                     Termin buchen
                                 </button>
                             </div>

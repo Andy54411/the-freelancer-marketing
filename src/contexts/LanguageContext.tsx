@@ -7,6 +7,10 @@ interface LanguageContextType {
   language: string;
   setLanguage: (lang: string) => void;
   t: (key: string, values?: Record<string, any>) => string;
+  isTranslating: boolean;
+  availableLanguages: { code: string; name: string; flag: string }[];
+  translatePageContent: (targetLang: string) => Promise<void>;
+  dynamicTranslations: Record<string, string>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -316,7 +320,27 @@ const translations = {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState('de');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [dynamicTranslations, setDynamicTranslations] = useState<Record<string, string>>({});
   const router = useRouter();
+
+  // Verfügbare Sprachen für automatische Übersetzung
+  const availableLanguages = [
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹' },
+    { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
+    { code: 'pl', name: 'Polski', flag: '🇵🇱' },
+    { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    { code: 'ko', name: '한국어', flag: '🇰🇷' },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  ];
 
   useEffect(() => {
     // Lade die Sprache aus localStorage
@@ -326,10 +350,77 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const translatePageContent = async (targetLang: string) => {
+    setIsTranslating(true);
+    
+    try {
+      // Sammle alle sichtbaren Texte von der aktuellen Seite
+      const textElements = document.querySelectorAll('[data-translatable]');
+      const textsToTranslate: string[] = [];
+      const sourceKeys: string[] = [];
+
+      textElements.forEach((element) => {
+        const text = element.textContent?.trim();
+        if (text && text.length > 0) {
+          textsToTranslate.push(text);
+          sourceKeys.push(element.getAttribute('data-translation-key') || text);
+        }
+      });
+
+      if (textsToTranslate.length === 0) {
+        console.log('Keine Texte zum Übersetzen gefunden');
+        return;
+      }
+
+      // Übersetze alle Texte in einem Batch
+      const response = await fetch('/api/translate-batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          texts: textsToTranslate,
+          targetLang: targetLang,
+          sourceKeys: sourceKeys,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Übersetzung fehlgeschlagen');
+      }
+
+      const data = await response.json();
+      
+      // Aktualisiere die dynamischen Übersetzungen
+      setDynamicTranslations(prev => ({
+        ...prev,
+        ...data.translations
+      }));
+
+      // Wende die Übersetzungen auf die Elemente an
+      textElements.forEach((element, index) => {
+        const key = sourceKeys[index];
+        const translatedText = data.translations[key];
+        if (translatedText && element.textContent) {
+          element.textContent = translatedText;
+        }
+      });
+
+    } catch (error) {
+      console.error('Fehler bei der Seitenübersetzung:', error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const handleSetLanguage = (lang: string) => {
     setLanguage(lang);
     localStorage.setItem('taskilo-language', lang);
-    // Hier könnte man auch die URL ändern, wenn gewünscht
+    
+    // Falls es keine manuelle Übersetzung für diese Sprache gibt, verwende automatische Übersetzung
+    if (!translations[lang as keyof typeof translations] && lang !== 'de') {
+      translatePageContent(lang);
+    }
   };
 
   const t = (key: string, values?: Record<string, any>) => {
@@ -346,7 +437,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
+    <LanguageContext.Provider value={{ 
+      language, 
+      setLanguage: handleSetLanguage, 
+      t,
+      isTranslating,
+      availableLanguages,
+      translatePageContent,
+      dynamicTranslations
+    }}>
       {children}
     </LanguageContext.Provider>
   );

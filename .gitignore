@@ -49,3 +49,4 @@ yarn-error.log*
 .env.local
 firebase_functions/.env.tilvo-f142f
 .env.local
+.env.example

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit, orderBy, startAfter } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { Star, Award, ThumbsUp, ThumbsDown, VerifiedIcon, RotateCcw, ChevronDown, Globe, Languages } from 'lucide-react';
+import { Star, Award, ThumbsUp, ThumbsDown, VerifiedIcon, RotateCcw, ChevronDown, Languages } from 'lucide-react';
 
 interface Review {
   id: string;
@@ -11,7 +11,6 @@ interface Review {
   comment: string;
   reviewerName: string;
   reviewerCountry?: string;
-  reviewerCountryCode?: string;
   date: any;
   projectTitle?: string;
   projectPrice?: string;
@@ -19,14 +18,9 @@ interface Review {
   isVerified?: boolean;
   isReturningCustomer?: boolean;
   helpfulVotes?: number;
-  projectImages?: string[];
-  originalLanguage?: string;
-  translatedComment?: string;
   providerResponse?: {
     comment: string;
     date: any;
-    originalLanguage?: string;
-    translatedComment?: string;
   };
 }
 
@@ -43,9 +37,9 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
   const [hasMore, setHasMore] = useState(true);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
-  const [translatedReviews, setTranslatedReviews] = useState<Set<string>>(new Set());
+  const [translatedReviews, setTranslatedReviews] = useState<Map<string, string>>(new Map());
   const [translatingReviews, setTranslatingReviews] = useState<Set<string>>(new Set());
-  const [translatedResponses, setTranslatedResponses] = useState<Set<string>>(new Set());
+  const [translatedResponses, setTranslatedResponses] = useState<Map<string, string>>(new Map());
   const [translatingResponses, setTranslatingResponses] = useState<Set<string>>(new Set());
 
   const REVIEWS_PER_PAGE = 5;
@@ -88,19 +82,10 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         ...doc.data()
       })) as Review[];
 
-      // Filter out invalid reviews
-      const validReviews = reviewsData.filter(review => 
-        review && 
-        review.id && 
-        review.comment && 
-        typeof review.comment === 'string' &&
-        review.rating !== undefined
-      );
-
       if (initial) {
-        setReviews(validReviews);
+        setReviews(reviewsData);
       } else {
-        setReviews(prev => [...prev, ...validReviews]);
+        setReviews(prev => [...prev, ...reviewsData]);
       }
 
       // Set pagination state
@@ -147,7 +132,6 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
   };
 
   const truncateText = (text: string, maxLength: number = 200) => {
-    if (!text || typeof text !== 'string') return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
   };
@@ -182,124 +166,70 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
     return colors[index];
   };
 
-  const getCountryFlag = (countryCode?: string) => {
-    if (!countryCode) return null;
-    
-    // Map common country codes to flag URLs (you can extend this)
-    const flagMap: Record<string, string> = {
-      'US': 'https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1fa-1f1f8.png',
-      'DE': 'https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1e9-1f1ea.png',
-      'UK': 'https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1ec-1f1e7.png',
-      'FR': 'https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1eb-1f1f7.png',
-      'IT': 'https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1ee-1f1f9.png',
-      'ES': 'https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1ea-1f1f8.png',
-    };
-    
-    return flagMap[countryCode.toUpperCase()];
-  };
+  const translateText = async (text: string, reviewId: string, isResponse: boolean = false) => {
+    // Wenn bereits übersetzt, zeige Original
+    if (isResponse) {
+      if (translatedResponses.has(reviewId)) {
+        setTranslatedResponses(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(reviewId);
+          return newMap;
+        });
+        return;
+      }
+      setTranslatingResponses(prev => new Set([...prev, reviewId]));
+    } else {
+      if (translatedReviews.has(reviewId)) {
+        setTranslatedReviews(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(reviewId);
+          return newMap;
+        });
+        return;
+      }
+      setTranslatingReviews(prev => new Set([...prev, reviewId]));
+    }
 
-  const translateText = async (text: string, targetLang: string = 'de'): Promise<string> => {
     try {
-      // Using Google Translate API (you need to set up the API key)
-      const response = await fetch(`/api/translate`, {
+      const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text,
-          targetLang,
+          text: text,
+          targetLang: 'de'
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Translation failed');
+        throw new Error('Übersetzung fehlgeschlagen');
       }
 
       const data = await response.json();
-      return data.translatedText || text;
-    } catch (error) {
-      console.error('Translation error:', error);
-      // Fallback to original text if translation fails
-      return text;
-    }
-  };
 
-  const handleTranslateReview = async (reviewId: string, originalText: string) => {
-    if (translatedReviews.has(reviewId)) {
-      // Toggle back to original
-      setTranslatedReviews(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(reviewId);
-        return newSet;
-      });
-      return;
-    }
-
-    setTranslatingReviews(prev => new Set(prev).add(reviewId));
-    
-    try {
-      const translatedText = await translateText(originalText);
-      
-      // Update the review with translated text (in real app, you might store this)
-      setReviews(prev => prev.map(review => 
-        review.id === reviewId 
-          ? { ...review, translatedComment: translatedText }
-          : review
-      ));
-      
-      setTranslatedReviews(prev => new Set(prev).add(reviewId));
+      if (isResponse) {
+        setTranslatedResponses(prev => new Map([...prev, [reviewId, data.translatedText]]));
+      } else {
+        setTranslatedReviews(prev => new Map([...prev, [reviewId, data.translatedText]]));
+      }
     } catch (error) {
-      console.error('Failed to translate review:', error);
+      console.error('Übersetzungsfehler:', error);
+      // Fallback: zeige Original-Text
     } finally {
-      setTranslatingReviews(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(reviewId);
-        return newSet;
-      });
-    }
-  };
-
-  const handleTranslateResponse = async (reviewId: string, originalText: string) => {
-    const responseId = `${reviewId}_response`;
-    
-    if (translatedResponses.has(responseId)) {
-      // Toggle back to original
-      setTranslatedResponses(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(responseId);
-        return newSet;
-      });
-      return;
-    }
-
-    setTranslatingResponses(prev => new Set(prev).add(responseId));
-    
-    try {
-      const translatedText = await translateText(originalText);
-      
-      // Update the response with translated text
-      setReviews(prev => prev.map(review => 
-        review.id === reviewId && review.providerResponse
-          ? { 
-              ...review, 
-              providerResponse: {
-                ...review.providerResponse,
-                translatedComment: translatedText
-              }
-            }
-          : review
-      ));
-      
-      setTranslatedResponses(prev => new Set(prev).add(responseId));
-    } catch (error) {
-      console.error('Failed to translate response:', error);
-    } finally {
-      setTranslatingResponses(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(responseId);
-        return newSet;
-      });
+      if (isResponse) {
+        setTranslatingResponses(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reviewId);
+          return newSet;
+        });
+      } else {
+        setTranslatingReviews(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reviewId);
+          return newSet;
+        });
+      }
     }
   };
 
@@ -350,25 +280,14 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         </div>
       )}
 
-      {Array.isArray(reviews) && reviews.length > 0 ? (
+      {reviews.length > 0 ? (
         <div className="space-y-6">
           {reviews.map((review) => {
-            // Safety checks for undefined values
-            if (!review || !review.id || !review.comment) {
-              console.warn('Invalid review data:', review);
-              return null;
-            }
-
             const isExpanded = expandedReviews.has(review.id);
             const shouldTruncate = review.comment.length > 200;
-            const isTranslated = translatedReviews.has(review.id);
-            const isTranslating = translatingReviews.has(review.id);
-            
-            // Use translated text if available, otherwise original
-            const reviewText = isTranslated && review.translatedComment ? review.translatedComment : review.comment;
             const displayComment = isExpanded || !shouldTruncate 
-              ? reviewText 
-              : truncateText(reviewText);
+              ? review.comment 
+              : truncateText(review.comment);
 
             return (
               <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0">
@@ -400,18 +319,6 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                       </div>
                       {review.reviewerCountry && (
                         <div className="flex items-center space-x-2 mt-1">
-                          {review.reviewerCountryCode && getCountryFlag(review.reviewerCountryCode) ? (
-                            <img 
-                              className="w-4 h-4" 
-                              src={getCountryFlag(review.reviewerCountryCode)!} 
-                              alt={review.reviewerCountryCode}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <Globe className="w-4 h-4 text-gray-400" />
-                          )}
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             {review.reviewerCountry}
                           </span>
@@ -445,7 +352,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                   {/* Review Text */}
                   <div className="prose max-w-none">
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {displayComment}
+                      {translatedReviews.has(review.id) ? translatedReviews.get(review.id) : displayComment}
                       {shouldTruncate && (
                         <button
                           onClick={() => toggleExpandReview(review.id)}
@@ -457,21 +364,21 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                     </p>
                     
                     {/* Translation Button */}
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center gap-2">
                       <button
-                        onClick={() => handleTranslateReview(review.id, review.comment)}
-                        disabled={isTranslating}
-                        className="inline-flex items-center space-x-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors disabled:opacity-50"
+                        onClick={() => translateText(review.comment, review.id)}
+                        disabled={translatingReviews.has(review.id)}
+                        className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
                       >
-                        {isTranslating ? (
+                        {translatingReviews.has(review.id) ? (
                           <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
-                            <span>Übersetze...</span>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-[#14ad9f]"></div>
+                            Übersetze...
                           </>
                         ) : (
                           <>
-                            <Languages className="w-4 h-4" />
-                            <span>{isTranslated ? 'Original anzeigen' : 'Übersetzen'}</span>
+                            <Languages className="w-3 h-3" />
+                            {translatedReviews.has(review.id) ? 'Original anzeigen' : 'Übersetzen'}
                           </>
                         )}
                       </button>
@@ -505,48 +412,6 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                     </div>
                   )}
 
-                  {/* Project Images */}
-                  {review.projectImages && Array.isArray(review.projectImages) && review.projectImages.length > 0 && (
-                    <div className="flex gap-3 flex-wrap">
-                      {review.projectImages.slice(0, 4).map((imageUrl, index) => {
-                        // Safety check for image URL
-                        if (!imageUrl || typeof imageUrl !== 'string') {
-                          return null;
-                        }
-                        
-                        return (
-                          <div
-                            key={index}
-                            className="relative w-32 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity group"
-                          >
-                            <img
-                              src={imageUrl}
-                              alt={`Arbeitsbeispiel ${index + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/images/placeholder-project.jpg';
-                              }}
-                            />
-                            {/* Overlay with view icon */}
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
-                                Vergrößern
-                              </div>
-                            </div>
-                            {/* Show count if more than 4 images */}
-                            {index === 3 && review.projectImages && review.projectImages.length > 4 && (
-                              <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                <span className="text-white font-semibold">
-                                  +{review.projectImages.length - 4}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
                   {/* Provider Response */}
                   {review.providerResponse && (
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 ml-8">
@@ -559,34 +424,33 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                             Antwort des Anbieters
                           </p>
                           <p className="text-gray-700 dark:text-gray-300 text-sm">
-                            {translatedResponses.has(`${review.id}_response`) && review.providerResponse.translatedComment
-                              ? review.providerResponse.translatedComment
-                              : review.providerResponse.comment}
+                            {translatedResponses.has(review.id) ? translatedResponses.get(review.id) : review.providerResponse.comment}
                           </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatDate(review.providerResponse.date)}
-                            </p>
+                          
+                          {/* Translation Button for Response */}
+                          <div className="mt-2 flex items-center gap-2">
                             <button
-                              onClick={() => handleTranslateResponse(review.id, review.providerResponse!.comment)}
-                              disabled={translatingResponses.has(`${review.id}_response`)}
-                              className="inline-flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors disabled:opacity-50"
+                              onClick={() => translateText(review.providerResponse!.comment, review.id, true)}
+                              disabled={translatingResponses.has(review.id)}
+                              className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
                             >
-                              {translatingResponses.has(`${review.id}_response`) ? (
+                              {translatingResponses.has(review.id) ? (
                                 <>
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
-                                  <span>Übersetze...</span>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b border-[#14ad9f]"></div>
+                                  Übersetze...
                                 </>
                               ) : (
                                 <>
                                   <Languages className="w-3 h-3" />
-                                  <span>
-                                    {translatedResponses.has(`${review.id}_response`) ? 'Original' : 'Übersetzen'}
-                                  </span>
+                                  {translatedResponses.has(review.id) ? 'Original anzeigen' : 'Übersetzen'}
                                 </>
                               )}
                             </button>
                           </div>
+                          
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {formatDate(review.providerResponse.date)}
+                          </p>
                         </div>
                       </div>
                     </div>

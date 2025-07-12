@@ -9,6 +9,8 @@ import { ChevronsUpDown } from 'lucide-react'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+import LanguageSelector from '@/components/LanguageSelector'
+
 export default function FooterSection() {
     const { language, setLanguage, t } = useLanguage();
 
@@ -277,25 +279,7 @@ export default function FooterSection() {
                     <small className="text-white/70 order-last block text-center text-sm md:order-first">
                         {t('footer.copyright', { year: new Date().getFullYear() })}
                     </small>
-                    <div className="relative">
-                        <ChevronsUpDown
-                            className="pointer-events-none absolute inset-y-0 right-2 my-auto text-white/70"
-                            size="0.75rem"
-                        />
-                        <select
-                            className={cn(
-                                'bg-white/10 border-white/20 text-white placeholder:text-white/60 shadow-xs flex h-9 w-full min-w-32 appearance-none rounded-md border px-3 py-1 text-base outline-none transition-[color,box-shadow] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                'focus-visible:border-white focus-visible:ring-white/20 focus-visible:ring-[3px]'
-                            )}
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                            name="language">
-                            <option value="de" className="bg-gray-800 text-white">Deutsch</option>
-                            <option value="en" className="bg-gray-800 text-white">English</option>
-                            <option value="fr" className="bg-gray-800 text-white">Français</option>
-                            <option value="es" className="bg-gray-800 text-white">Español</option>
-                        </select>
-                    </div>
+                    <LanguageSelector />
                 </div>
             </div>
         </footer>

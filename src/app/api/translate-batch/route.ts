@@ -3,10 +3,10 @@ import { GoogleAuth } from 'google-auth-library';
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, targetLang = 'de' } = await request.json();
+    const { texts, targetLang, sourceKeys } = await request.json();
 
-    if (!text) {
-      return NextResponse.json({ error: 'Text ist erforderlich' }, { status: 400 });
+    if (!texts || !Array.isArray(texts)) {
+      return NextResponse.json({ error: 'Texts array ist erforderlich' }, { status: 400 });
     }
 
     // Google Auth mit Service Account
@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
       throw new Error('Konnte kein Access Token erhalten');
     }
 
-    const projectId = 'tilvo-f142f'; // Ihr Firebase Projekt-ID
+    const projectId = 'tilvo-f142f';
 
-    // Google Cloud Translation API v3 verwenden
+    // Batch-Übersetzung für bessere Performance
     const response = await fetch(
       `https://translation.googleapis.com/v3/projects/${projectId}/locations/global:translateText`,
       {
@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${accessToken.token}`,
         },
         body: JSON.stringify({
-          contents: [text],
+          contents: texts,
           targetLanguageCode: targetLang,
-          sourceLanguageCode: 'auto', // Automatische Spracherkennung
+          sourceLanguageCode: 'auto',
         }),
       }
     );
@@ -49,16 +49,24 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    const translation = data.translations[0];
+    
+    // Erstelle ein Mapping von Keys zu übersetzten Texten
+    const translations: Record<string, string> = {};
+    data.translations.forEach((translation: any, index: number) => {
+      if (sourceKeys && sourceKeys[index]) {
+        translations[sourceKeys[index]] = translation.translatedText;
+      } else {
+        translations[texts[index]] = translation.translatedText;
+      }
+    });
 
     return NextResponse.json({ 
-      translatedText: translation.translatedText,
-      originalText: text,
-      detectedSourceLanguage: translation.detectedLanguageCode
+      translations,
+      detectedLanguage: data.translations[0]?.detectedLanguageCode
     });
 
   } catch (error) {
-    console.error('Übersetzungsfehler:', error);
+    console.error('Batch-Übersetzungsfehler:', error);
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
