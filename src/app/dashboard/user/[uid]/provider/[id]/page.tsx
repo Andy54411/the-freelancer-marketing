@@ -44,6 +44,19 @@ interface Review {
     rating: number;
     text: string;
     date: any;
+    projectPrice?: string;
+    projectDuration?: string;
+    isVerified?: boolean;
+    isReturningCustomer?: boolean;
+    helpfulVotes?: {
+        yes: number;
+        no: number;
+    };
+    providerResponse?: {
+        text: string;
+        date: any;
+        providerName: string;
+    };
 }
 
 export default function UserProviderProfilePage() {
@@ -336,40 +349,160 @@ export default function UserProviderProfilePage() {
                         )}
 
                         {/* Reviews */}
-                        {reviews.length > 0 && (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                                    Bewertungen
-                                </h2>
-                                <div className="space-y-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                                Bewertungen
+                            </h2>
+                            <div className="reviews-wrap">
+                                <ul className="review-list space-y-8">
                                     {reviews.map((review) => (
-                                        <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 last:border-0 pb-4 last:pb-0">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="flex">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <FiStar
-                                                            key={i}
-                                                            className={`w-4 h-4 ${i < review.rating
-                                                                ? 'text-yellow-400 fill-current'
-                                                                : 'text-gray-300'}`}
-                                                        />
-                                                    ))}
+                                        <li key={review.id} className="review-item-component border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
+                                            <div className="flex flex-col space-y-4">
+                                                {/* Benutzer-Header */}
+                                                <div className="flex items-start space-x-4">
+                                                    <div className="flex-shrink-0">
+                                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                                            {review.reviewerName.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center space-x-2">
+                                                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                                {review.reviewerName}
+                                                            </p>
+                                                            {review.isReturningCustomer && (
+                                                                <span className="text-green-600 dark:text-green-400 font-medium text-sm">
+                                                                    🔄 Wiederkehrender Kunde
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center space-x-2 mt-1">
+                                                            <img className="w-4 h-4" src="https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1e9-1f1ea.png" alt="DE" />
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400">Deutschland</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <span className="font-medium text-gray-900 dark:text-white">
-                                                    {review.reviewerName}
-                                                </span>
-                                                <span className="text-gray-500 dark:text-gray-400 text-sm">
-                                                    {review.date?.toDate?.()?.toLocaleDateString('de-DE')}
-                                                </span>
+
+                                                {/* Bewertung und Datum */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="flex items-center space-x-1">
+                                                            <div className="flex">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <FiStar
+                                                                        key={i}
+                                                                        className={`w-4 h-4 ${i < review.rating
+                                                                            ? 'text-yellow-400 fill-current'
+                                                                            : 'text-gray-300'}`}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                            <strong className="text-lg font-semibold ml-2">{review.rating}</strong>
+                                                        </div>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                            {review.date?.toDate?.()?.toLocaleDateString('de-DE', {
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Bewertungstext */}
+                                                <div className="prose max-w-none">
+                                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                        {review.text}
+                                                    </p>
+                                                </div>
+
+                                                {/* Projektdetails */}
+                                                {(review.projectPrice || review.projectDuration) && (
+                                                    <div className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                                                        <div className="flex items-center space-x-4">
+                                                            {review.projectPrice && (
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-900 dark:text-white">
+                                                                        {review.projectPrice}
+                                                                    </p>
+                                                                    <p className="text-gray-500 dark:text-gray-400">Preis</p>
+                                                                </div>
+                                                            )}
+                                                            {review.projectPrice && review.projectDuration && (
+                                                                <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+                                                            )}
+                                                            {review.projectDuration && (
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-900 dark:text-white">
+                                                                        {review.projectDuration}
+                                                                    </p>
+                                                                    <p className="text-gray-500 dark:text-gray-400">Dauer</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Anbieter-Antwort */}
+                                                {review.providerResponse && (
+                                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 ml-8">
+                                                        <div className="flex items-start space-x-3">
+                                                            <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                                                A
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                    Antwort von {review.providerResponse.providerName}
+                                                                </p>
+                                                                <p className="text-gray-700 dark:text-gray-300 text-sm">
+                                                                    {review.providerResponse.text}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Hilfreich-Buttons */}
+                                                <div className="flex items-center space-x-4 text-sm">
+                                                    <span className="text-gray-600 dark:text-gray-400">Hilfreich?</span>
+                                                    <button className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                                        <span>👍 Ja</span>
+                                                        {review.helpfulVotes?.yes && (
+                                                            <span className="text-xs">({review.helpfulVotes.yes})</span>
+                                                        )}
+                                                    </button>
+                                                    <button className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                                        <span>👎 Nein</span>
+                                                        {review.helpfulVotes?.no && (
+                                                            <span className="text-xs">({review.helpfulVotes.no})</span>
+                                                        )}
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                {review.text}
-                                            </p>
-                                        </div>
+                                        </li>
                                     ))}
-                                </div>
+                                </ul>
+
+                                {/* Empty State */}
+                                {reviews.length === 0 && (
+                                    <div className="text-center py-8">
+                                        <FiStar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-500 dark:text-gray-400">
+                                            Noch keine Bewertungen vorhanden.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Button für weitere Bewertungen */}
+                                {reviews.length > 0 && (
+                                    <div className="mt-6 text-center">
+                                        <button className="bg-[#14ad9f] hover:bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                                            Weitere Bewertungen anzeigen
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     {/* Sidebar */}
