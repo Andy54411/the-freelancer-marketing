@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
+import DirectChatModal from '@/components/DirectChatModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Simple translation hook fallback for existing pages
 const useSimpleTranslations = () => {
@@ -103,6 +105,7 @@ export default function CompanyServiceSubcategoryPage() {
   const t = useSimpleTranslations();
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const uid = params.uid as string;
   const category = params.category as string;
   const subcategory = params.subcategory as string;
@@ -111,6 +114,11 @@ export default function CompanyServiceSubcategoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
+  
+  // Chat Modal State
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+  const [companyName, setCompanyName] = useState<string>('');
 
   // URL-Parameter dekodieren und Kategorie finden
   const decodedCategory = decodeURIComponent(category);
@@ -157,7 +165,29 @@ export default function CompanyServiceSubcategoryPage() {
   useEffect(() => {
     if (!categoryInfo || !subcategoryName) return;
     loadProviders();
+    loadCompanyData();
   }, [category, subcategory, sortBy]);
+
+  // Lade Unternehmensdaten für Chat
+  const loadCompanyData = async () => {
+    if (!uid) return;
+    
+    try {
+      const firmaDoc = await getDocs(query(collection(db, 'firma'), where('__name__', '==', uid)));
+      if (!firmaDoc.empty) {
+        const data = firmaDoc.docs[0].data();
+        setCompanyName(data.companyName || 'Unbekanntes Unternehmen');
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Unternehmensdaten:', error);
+    }
+  };
+
+  // Chat mit Provider öffnen
+  const openChatWithProvider = (provider: Provider) => {
+    setSelectedProvider(provider);
+    setChatModalOpen(true);
+  };
 
   const loadProviders = async () => {
     try {
@@ -561,12 +591,15 @@ export default function CompanyServiceSubcategoryPage() {
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => router.push(`/provider/${provider.id}`)}
+                      onClick={() => router.push(`/dashboard/company/${uid}/provider/${provider.id}`)}
                       className="flex-1 border border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
                     >
                       Profil ansehen
                     </button>
-                    <button className="flex-1 bg-[#14ad9f] hover:bg-teal-600 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm">
+                    <button
+                      onClick={() => openChatWithProvider(provider)}
+                      className="flex-1 bg-[#14ad9f] hover:bg-teal-600 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                    >
                       Kontaktieren
                     </button>
                   </div>
@@ -576,6 +609,18 @@ export default function CompanyServiceSubcategoryPage() {
           </div>
         )}
       </div>
+
+      {/* Direct Chat Modal */}
+      {selectedProvider && (
+        <DirectChatModal
+          isOpen={chatModalOpen}
+          onClose={() => setChatModalOpen(false)}
+          providerId={selectedProvider.id}
+          providerName={getProviderName(selectedProvider)}
+          companyId={uid}
+          companyName={companyName}
+        />
+      )}
     </div>
   );
 }

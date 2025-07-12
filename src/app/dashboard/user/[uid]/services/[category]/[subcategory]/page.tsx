@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
+import DirectChatModal from '@/components/DirectChatModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Provider {
   id: string;
@@ -28,6 +30,7 @@ interface Provider {
 export default function UserServiceSubcategoryPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const uid = params.uid as string;
   const category = params.category as string;
   const subcategory = params.subcategory as string;
@@ -36,6 +39,11 @@ export default function UserServiceSubcategoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
+  
+  // Chat Modal State
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+  const [userName, setUserName] = useState<string>('');
 
   // URL-Parameter dekodieren und Kategorie finden
   const decodedCategory = decodeURIComponent(category);
@@ -82,7 +90,33 @@ export default function UserServiceSubcategoryPage() {
   useEffect(() => {
     if (!categoryInfo || !subcategoryName) return;
     loadProviders();
+    loadUserData();
   }, [category, subcategory, sortBy]);
+
+  // Lade User-Daten für Chat
+  const loadUserData = async () => {
+    if (!uid) return;
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUserName(data.displayName || data.firstName || 'Unbekannter Benutzer');
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzerdaten:', error);
+    }
+  };
+
+  // Chat mit Provider öffnen
+  const openChatWithProvider = (provider: Provider) => {
+    setSelectedProvider(provider);
+    setChatModalOpen(true);
+  };
+
+  const getProviderName = (provider: Provider) => {
+    return provider.companyName || provider.userName || 'Unbekannter Anbieter';
+  };
 
   const loadProviders = async () => {
     try {
@@ -213,10 +247,6 @@ export default function UserServiceSubcategoryPage() {
       provider.profilePictureURL ||
       provider.photoURL ||
       '/images/default-avatar.png';
-  };
-
-  const getProviderName = (provider: Provider) => {
-    return provider.companyName || provider.userName || 'Unbekannter Anbieter';
   };
 
   if (!categoryInfo || !subcategoryName) {
@@ -423,10 +453,13 @@ export default function UserServiceSubcategoryPage() {
                     )}
 
                     <div className="flex items-center gap-3 mt-4">
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                      <button className="bg-[#14ad9f] hover:bg-teal-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                         Kontaktieren
                       </button>
-                      <button className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                      <button 
+                        onClick={() => router.push(`/dashboard/user/${uid}/provider/${provider.id}`)}
+                        className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
+                      >
                         Profil anzeigen
                       </button>
                     </div>
@@ -437,6 +470,18 @@ export default function UserServiceSubcategoryPage() {
           </div>
         )}
       </div>
+
+      {/* Direct Chat Modal */}
+      {selectedProvider && (
+        <DirectChatModal
+          isOpen={chatModalOpen}
+          onClose={() => setChatModalOpen(false)}
+          providerId={selectedProvider.id}
+          providerName={getProviderName(selectedProvider)}
+          companyId={uid}
+          companyName={userName}
+        />
+      )}
     </div>
   );
 }
