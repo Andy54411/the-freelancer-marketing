@@ -10,7 +10,7 @@ import { de } from 'date-fns/locale';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import ProviderReviews from '@/components/ProviderReviews';
-import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
+import { ProviderBookingModal } from './components/ProviderBookingModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserProfileData, SavedAddress } from '@/types/types';
 
@@ -225,11 +225,11 @@ export default function CompanyProviderDetailPage() {
         }
     };
 
-    const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (selection, time, durationString) => {
+    const handleBookingConfirm = async (selection: any, time: string, durationString: string, description: string) => {
         setDatePickerOpen(false);
         
-        if (!selection || !time || !durationString || !provider || !firebaseUser || !userProfile) {
-            console.error('Unvollständige Buchungsdaten:', { selection, time, durationString, provider: !!provider, user: !!firebaseUser, userProfile: !!userProfile });
+        if (!selection || !time || !durationString || !description?.trim() || !provider || !firebaseUser || !userProfile) {
+            console.error('Unvollständige Buchungsdaten:', { selection, time, durationString, description, provider: !!provider, user: !!firebaseUser, userProfile: !!userProfile });
             alert('Unvollständige Buchungsdaten. Bitte versuchen Sie es erneut.');
             return;
         }
@@ -318,7 +318,7 @@ export default function CompanyProviderDetailPage() {
                 customerFirstName: userProfile.firstname || '',
                 customerLastName: userProfile.lastname || '',
                 customerType: userProfile.user_type || 'private',
-                description: `Buchung für ${provider.companyName || provider.userName} - ${provider.selectedSubcategory || provider.selectedCategory || 'Allgemeine Dienstleistung'}`,
+                description: description.trim(),
                 jobCalculatedPriceInCents: servicePriceInCents,
                 jobCity: defaultAddress?.city || 'Unbekannt',
                 jobCountry: defaultAddress?.country || 'Deutschland',
@@ -751,22 +751,13 @@ export default function CompanyProviderDetailPage() {
                 />
             )}
 
-            {/* Direct Booking DatePicker */}
+            {/* Provider Booking Modal */}
             {provider && (
-                <DateTimeSelectionPopup
+                <ProviderBookingModal
                     isOpen={datePickerOpen}
                     onClose={() => setDatePickerOpen(false)}
-                    onConfirm={handleDateTimeConfirm}
-                    bookingSubcategory={provider.selectedSubcategory || provider.selectedCategory || null}
-                    contextCompany={{
-                        id: provider.id,
-                        companyName: provider.companyName || provider.userName || 'Unbekannter Anbieter',
-                        hourlyRate: provider.hourlyRate || 0,
-                        profilePictureURL: getProfileImage(),
-                        description: provider.bio || provider.description,
-                        selectedSubcategory: provider.selectedSubcategory,
-                        // Weitere erforderliche Felder für AnbieterDetails können hier hinzugefügt werden
-                    }}
+                    provider={provider}
+                    onConfirm={handleBookingConfirm}
                 />
             )}
         </div>
