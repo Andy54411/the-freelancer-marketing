@@ -8,7 +8,10 @@ import { Star, MapPin, ArrowLeft, Briefcase, Clock, Users, MessageCircle, Calend
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import ProviderReviews from '@/components/ProviderReviews';
+import Modal from '@/components/Modal';
+import CreateOrderModal from '@/app/dashboard/user/[uid]/components/CreateOrderModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserProfileData } from '@/types/types';
 
 interface Provider {
     id: string;
@@ -43,21 +46,26 @@ interface Provider {
 export default function CompanyProviderDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, firebaseUser } = useAuth();
     const companyUid = params.uid as string;
     const providerId = params.id as string;
 
     const [provider, setProvider] = useState<Provider | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
 
     // Chat Modal State
     const [chatModalOpen, setChatModalOpen] = useState(false);
     const [companyName, setCompanyName] = useState<string>('');
 
+    // Booking Modal State
+    const [bookingModalOpen, setBookingModalOpen] = useState(false);
+
     useEffect(() => {
         loadProviderData();
         loadCompanyData();
-    }, [providerId]);
+        loadUserProfile();
+    }, [providerId, firebaseUser]);
 
     const loadProviderData = async () => {
         try {
@@ -187,10 +195,36 @@ export default function CompanyProviderDetailPage() {
         }
     };
 
+    const loadUserProfile = async () => {
+        if (!firebaseUser?.uid) return;
+
+        try {
+            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                setUserProfile(data as UserProfileData);
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden des Benutzerprofils:', error);
+        }
+    };
+
     const openChatWithProvider = () => {
         if (provider) {
             setChatModalOpen(true);
         }
+    };
+
+    const openBookingModal = () => {
+        if (provider) {
+            setBookingModalOpen(true);
+        }
+    };
+
+    const handleBookingSuccess = () => {
+        setBookingModalOpen(false);
+        // Optional: Zeige eine Erfolgsmeldung oder navigiere zu einer anderen Seite
+        router.push(`/dashboard/company/${companyUid}`);
     };
 
     const getProfileImage = () => {
@@ -516,7 +550,7 @@ export default function CompanyProviderDetailPage() {
                                     Nachricht senden
                                 </button>
                                 <button
-                                    onClick={() => {/* Implementiere Terminbuchung */ }}
+                                    onClick={openBookingModal}
                                     className="w-full border border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                                     data-translatable
                                     data-translation-key="provider.actions.appointment"
@@ -540,6 +574,18 @@ export default function CompanyProviderDetailPage() {
                     companyId={companyUid}
                     companyName={companyName}
                 />
+            )}
+
+            {/* Booking Modal */}
+            {bookingModalOpen && firebaseUser && userProfile && (
+                <Modal onClose={() => setBookingModalOpen(false)} title="Termin buchen">
+                    <CreateOrderModal
+                        onClose={() => setBookingModalOpen(false)}
+                        onSuccess={handleBookingSuccess}
+                        currentUser={firebaseUser}
+                        userProfile={userProfile}
+                    />
+                </Modal>
             )}
         </div>
     );
