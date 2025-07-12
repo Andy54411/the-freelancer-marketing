@@ -87,29 +87,43 @@ export default function CompanyServiceSubcategoryPage() {
   const loadProviders = async () => {
     try {
       setLoading(true);
+      console.log('[ServicePage] Loading providers...');
 
-      // Query für Firmen
+      // Query für Firmen mit besserer Fehlerbehandlung
       const firmCollectionRef = collection(db, 'firma');
       let firmQuery = query(
         firmCollectionRef,
         where('isActive', '==', true),
-        limit(50)
+        limit(20) // Reduziertes Limit für bessere Performance
       );
 
-      // Query für Users/Freelancer
+      // Query für Users/Freelancer mit besserer Fehlerbehandlung
       const userCollectionRef = collection(db, 'users');
       let userQuery = query(
         userCollectionRef,
         where('isFreelancer', '==', true),
-        limit(50)
+        limit(20) // Reduziertes Limit für bessere Performance
       );
 
+      console.log('[ServicePage] Executing queries...');
+      
       const [firmSnapshot, userSnapshot] = await Promise.all([
-        getDocs(firmQuery),
-        getDocs(userQuery)
+        getDocs(firmQuery).catch(error => {
+          console.error('[ServicePage] Error loading firma collection:', error);
+          return { docs: [] };
+        }),
+        getDocs(userQuery).catch(error => {
+          console.error('[ServicePage] Error loading users collection:', error);
+          return { docs: [] };
+        })
       ]);
 
-      const firmProviders: Provider[] = firmSnapshot.docs.map(doc => {
+      console.log('[ServicePage] Query results:', {
+        firmDocs: firmSnapshot.docs?.length || 0,
+        userDocs: userSnapshot.docs?.length || 0
+      });
+
+      const firmProviders: Provider[] = (firmSnapshot.docs || []).map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -129,7 +143,7 @@ export default function CompanyServiceSubcategoryPage() {
         };
       });
 
-      const userProviders: Provider[] = userSnapshot.docs.map(doc => {
+      const userProviders: Provider[] = (userSnapshot.docs || []).map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -149,6 +163,11 @@ export default function CompanyServiceSubcategoryPage() {
         };
       });
 
+      console.log('[ServicePage] Providers mapped:', {
+        firmProviders: firmProviders.length,
+        userProviders: userProviders.length
+      });
+
       const allProviders = [...firmProviders, ...userProviders];
 
       // Filter nach Subcategory
@@ -158,6 +177,13 @@ export default function CompanyServiceSubcategoryPage() {
           skill.toLowerCase().includes(subcategory.toLowerCase())
         )
       );
+
+      console.log('[ServicePage] Filtered by subcategory:', {
+        subcategoryName,
+        subcategory,
+        totalProviders: allProviders.length,
+        filteredProviders: filteredProviders.length
+      });
 
       // Suchfilter
       if (searchQuery) {
@@ -187,8 +213,11 @@ export default function CompanyServiceSubcategoryPage() {
       });
 
       setProviders(filteredProviders);
+      console.log('[ServicePage] Providers set successfully:', filteredProviders.length);
     } catch (error) {
-      console.error('Fehler beim Laden der Anbieter:', error);
+      console.error('[ServicePage] Fehler beim Laden der Anbieter:', error);
+      // Zeige leere Liste bei Fehlern
+      setProviders([]);
     } finally {
       setLoading(false);
     }

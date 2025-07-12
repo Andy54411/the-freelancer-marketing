@@ -87,27 +87,41 @@ export default function UserServiceSubcategoryPage() {
   const loadProviders = async () => {
     try {
       setLoading(true);
+      console.log('[ServicePage] Loading providers...');
 
-      // Query für Firmen
+      // Query für Firmen mit besserer Fehlerbehandlung
       const firmCollectionRef = collection(db, 'firma');
       let firmQuery = query(
         firmCollectionRef,
         where('isActive', '==', true),
-        limit(50)
+        limit(20) // Reduziertes Limit für bessere Performance
       );
 
-      // Query für Users/Freelancer
+      // Query für Users/Freelancer mit besserer Fehlerbehandlung
       const userCollectionRef = collection(db, 'users');
       let userQuery = query(
         userCollectionRef,
         where('isFreelancer', '==', true),
-        limit(50)
+        limit(20) // Reduziertes Limit für bessere Performance
       );
 
+      console.log('[ServicePage] Executing queries...');
+      
       const [firmSnapshot, userSnapshot] = await Promise.all([
-        getDocs(firmQuery),
-        getDocs(userQuery)
+        getDocs(firmQuery).catch(error => {
+          console.error('[ServicePage] Error loading firma collection:', error);
+          return { docs: [] };
+        }),
+        getDocs(userQuery).catch(error => {
+          console.error('[ServicePage] Error loading users collection:', error);
+          return { docs: [] };
+        })
       ]);
+
+      console.log('[ServicePage] Query results:', {
+        firmDocs: firmSnapshot.docs?.length || 0,
+        userDocs: userSnapshot.docs?.length || 0
+      });
 
       const firmProviders: Provider[] = firmSnapshot.docs.map(doc => {
         const data = doc.data();
