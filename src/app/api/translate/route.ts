@@ -5,9 +5,15 @@ export async function POST(request: NextRequest) {
   try {
     const { text, targetLang = 'de' } = await request.json();
 
-    if (!text) {
-      return NextResponse.json({ error: 'Text ist erforderlich' }, { status: 400 });
+    if (!text || typeof text !== 'string') {
+      return NextResponse.json({ error: 'Text ist erforderlich und muss ein String sein' }, { status: 400 });
     }
+
+    if (!targetLang || typeof targetLang !== 'string') {
+      return NextResponse.json({ error: 'Target language ist erforderlich' }, { status: 400 });
+    }
+
+    console.log('Übersetzung gestartet:', { textLength: text.length, targetLang });
 
     // Google Auth mit Service Account
     const auth = new GoogleAuth({
@@ -19,6 +25,7 @@ export async function POST(request: NextRequest) {
     const accessToken = await authClient.getAccessToken();
 
     if (!accessToken.token) {
+      console.error('Fehler: Konnte kein Access Token erhalten');
       throw new Error('Konnte kein Access Token erhalten');
     }
 
@@ -45,11 +52,23 @@ export async function POST(request: NextRequest) {
       console.error('Google Translate API Fehler:', response.status, response.statusText);
       const errorText = await response.text();
       console.error('Fehlerdetails:', errorText);
-      return NextResponse.json({ error: 'Übersetzung fehlgeschlagen' }, { status: 500 });
+      return NextResponse.json({ 
+        error: `Übersetzung fehlgeschlagen: ${response.status} ${response.statusText}`,
+        details: errorText 
+      }, { status: 500 });
     }
 
     const data = await response.json();
+    console.log('Google Translate Response:', data);
+    
+    if (!data.translations || !data.translations[0]) {
+      console.error('Ungültige Antwort von Google Translate:', data);
+      return NextResponse.json({ error: 'Ungültige Antwort von Google Translate' }, { status: 500 });
+    }
+    
     const translation = data.translations[0];
+
+    console.log('Übersetzung erfolgreich abgeschlossen');
 
     return NextResponse.json({ 
       translatedText: translation.translatedText,
@@ -59,6 +78,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Übersetzungsfehler:', error);
-    return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Interner Server-Fehler',
+      message: error instanceof Error ? error.message : 'Unbekannter Fehler'
+    }, { status: 500 });
   }
 }
