@@ -6,6 +6,7 @@ import { db } from '@/firebase/clients';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Star, MapPin, ArrowLeft, Briefcase, Clock, Award, Users, MessageCircle, Calendar } from 'lucide-react';
 import DirectChatModal from '@/components/DirectChatModal';
+import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Provider {
@@ -509,6 +510,13 @@ export default function CompanyProviderDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Antwortzeit-Garantie */}
+            <ResponseTimeDisplay 
+              providerId={providerId}
+              guaranteeHours={24}
+              showDetailed={true}
+            />
 
             {/* Additional Info */}
             {(provider.founded || provider.languages?.length) && (

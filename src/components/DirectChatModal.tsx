@@ -16,6 +16,7 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import { ResponseTimeTracker } from '@/lib/responseTimeTracker';
 
 interface DirectChatModalProps {
   isOpen: boolean;
@@ -110,13 +111,41 @@ export default function DirectChatModal({
     setSending(true);
     try {
       const messagesRef = collection(db, 'directChats', chatId, 'messages');
-      await addDoc(messagesRef, {
+      const messageDoc = await addDoc(messagesRef, {
         senderId: user.uid,
         senderName: companyName,
         senderType: 'company',
         text: newMessage.trim(),
         timestamp: serverTimestamp()
       });
+
+      // Start Response Time Tracking für Provider
+      // Hole Provider Garantie-Stunden (Standard: 24h)
+      let guaranteeHours = 24;
+      try {
+        const providerDoc = await getDoc(doc(db, 'firma', providerId));
+        if (providerDoc.exists()) {
+          const providerData = providerDoc.data();
+          guaranteeHours = providerData?.responseTimeGuaranteeHours || 24;
+        } else {
+          // Versuche users Collection
+          const userDoc = await getDoc(doc(db, 'users', providerId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Provider-Garantie:', error);
+      }
+
+      // Starte Response Time Tracking
+      await ResponseTimeTracker.startResponseTimeTracking(
+        providerId,
+        chatId,
+        messageDoc.id,
+        guaranteeHours
+      );
 
       // Update last message in chat document
       const chatRef = doc(db, 'directChats', chatId);

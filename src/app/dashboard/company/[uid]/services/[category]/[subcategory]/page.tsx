@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import DirectChatModal from '@/components/DirectChatModal';
+import { ResponseTimeBadge } from '@/components/ResponseTimeDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Simple translation hook fallback for existing pages
@@ -586,6 +587,10 @@ export default function CompanyServiceSubcategoryPage() {
                         </div>
                       )}
                     </div>
+                    <ResponseTimeBadge 
+                      providerId={provider.id}
+                      guaranteeHours={24}
+                    />
                   </div>
 
                   {/* Action Buttons */}

@@ -302,6 +302,34 @@ service cloud.firestore {
       );
     }
 
+    // --- responseTimeMetrics Collection ---
+    match /responseTimeMetrics/{metricId} {
+      // Nur Support und der betroffene Provider können Metriken lesen
+      allow get: if request.auth != null && (
+        isSupportStaff() ||
+        resource.data.providerId == request.auth.uid
+      );
+      
+      // Listen nur für Support und gefilterte Abfragen für Provider
+      allow list: if request.auth != null && (
+        isSupportStaff() ||
+        (
+          'where' in request.query &&
+          request.query.where != null &&
+          request.query.where.size() > 0 &&
+          request.query.where[0].path == 'providerId' &&
+          request.query.where[0].op == '==' &&
+          request.query.where[0].value == request.auth.uid
+        )
+      );
+      
+      // Nur Backend/Cloud Functions können Metriken erstellen und aktualisieren
+      allow create, update: if false; // Wird durch Cloud Functions gemacht
+      
+      // Nur Support kann löschen
+      allow delete: if isSupportStaff();
+    }
+
     // NEU: Regeln für die Benachrichtigungs-Sammlung
     match /notifications/{notificationId} {
       // get: Ein Benutzer darf seine eigene Benachrichtigung lesen. Ein Admin darf jede lesen.
