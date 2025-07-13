@@ -14,7 +14,7 @@ function initializeFirebaseAdmin() {
 
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const projectId = process.env.FIREBASE_PROJECT_ID;
+    let projectId = process.env.FIREBASE_PROJECT_ID;
     
     console.log("[Firebase Init] Environment check:", {
       hasServiceAccountKey: !!serviceAccountKey,
@@ -22,12 +22,23 @@ function initializeFirebaseAdmin() {
       nodeEnv: process.env.NODE_ENV
     });
     
-    if (!serviceAccountKey || !projectId) {
-      console.error("[Firebase Init] Missing environment variables");
+    if (!serviceAccountKey) {
+      console.error("[Firebase Init] Missing FIREBASE_SERVICE_ACCOUNT_KEY");
       return null;
     }
 
     const serviceAccount = JSON.parse(serviceAccountKey);
+    
+    // Fallback: Verwende project_id aus dem Service Account, falls FIREBASE_PROJECT_ID nicht gesetzt ist
+    if (!projectId && serviceAccount.project_id) {
+      projectId = serviceAccount.project_id;
+      console.log("[Firebase Init] Using project_id from service account:", projectId);
+    }
+    
+    if (!projectId) {
+      console.error("[Firebase Init] No project ID available");
+      return null;
+    }
     
     console.log("[Firebase Init] Service account parsed successfully, project:", serviceAccount.project_id);
     
