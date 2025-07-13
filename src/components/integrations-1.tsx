@@ -42,30 +42,30 @@ export default function IntegrationsSection() {
   ]
 
   return (
-    <section className="py-16 md:py-32">
+    <section className="py-16 md:py-32 bg-white dark:bg-gray-900">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-semibold lg:text-4xl text-gray-900">
+          <h2 className="text-3xl font-semibold lg:text-4xl text-gray-900 dark:text-white">
             Unsere Service-Kategorien
           </h2>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
             Finden Sie den passenden Dienstleister für jeden Bereich
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {serviceCategories.map((category) => (
-            <Card key={category.name} className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-sm bg-white">
+            <Card key={category.name} className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-sm bg-white dark:bg-gray-800">
               <CardContent className="p-6 text-center">
                 <div className="flex justify-center mb-4">
                   <div className="p-3 bg-[#14ad9f]/10 rounded-full">
                     <category.icon className="w-8 h-8 text-[#14ad9f]" />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {category.name}
                 </h3>
-                <p className="text-gray-600 mb-3">
+                <p className="text-gray-600 dark:text-gray-300 mb-3">
                   {category.description}
                 </p>
                 <div className="text-sm font-medium text-[#14ad9f]">

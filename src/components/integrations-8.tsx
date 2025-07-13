@@ -35,7 +35,7 @@ export default function IntegrationsSection1() {
   ]
 
   return (
-    <section className="py-16 md:py-24 bg-white">
+    <section className="py-16 md:py-24 bg-white dark:bg-gray-900">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
@@ -44,18 +44,18 @@ export default function IntegrationsSection1() {
               Vertrauen Sie auf Qualität
             </div>
             
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
               Über 10.000 Kunden vertrauen bereits auf 
               <span className="text-[#14ad9f]"> Taskilo</span>
             </h2>
             
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
               Taskilo hat sich als führende Plattform für professionelle Dienstleistungen etabliert. 
               Unsere Zahlen sprechen für sich und zeigen das Vertrauen unserer Kunden.
             </p>
 
             {/* Customer Testimonial */}
-            <div className="bg-gray-50 rounded-xl p-6 mb-8">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-8">
               <div className="flex items-center mb-4">
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
@@ -63,7 +63,7 @@ export default function IntegrationsSection1() {
                   ))}
                 </div>
               </div>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
                 "Taskilo hat mir geholfen, schnell und unkompliziert einen zuverlässigen Handwerker zu finden. 
                 Die Qualität der Arbeit war ausgezeichnet!"
               </p>
@@ -72,8 +72,8 @@ export default function IntegrationsSection1() {
                   MS
                 </div>
                 <div className="ml-3">
-                  <p className="font-semibold text-gray-900">Maria Schmidt</p>
-                  <p className="text-sm text-gray-600">Hausbesitzerin aus München</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">Maria Schmidt</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Hausbesitzerin aus München</p>
                 </div>
               </div>
             </div>
@@ -86,7 +86,7 @@ export default function IntegrationsSection1() {
           {/* Right Statistics */}
           <div className="grid grid-cols-2 gap-6">
             {stats.map((stat, index) => (
-              <Card key={index} className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm">
+              <Card key={index} className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-8">
                   <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl ${stat.bgColor} mb-4 group-hover:scale-110 transition-transform duration-300`}>
                     <stat.icon className={`h-8 w-8 ${stat.color}`} />
@@ -94,7 +94,7 @@ export default function IntegrationsSection1() {
                   <div className={`text-3xl font-bold mb-2 ${stat.color}`}>
                     {stat.number}
                   </div>
-                  <p className="text-sm text-gray-600 font-medium">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                     {stat.label}
                   </p>
                 </CardContent>

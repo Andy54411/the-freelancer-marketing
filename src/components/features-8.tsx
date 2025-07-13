@@ -48,32 +48,32 @@ export default function FeaturesSection() {
   ]
 
   return (
-    <section className="py-16 md:py-24 bg-gray-50">
+    <section className="py-16 md:py-24 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Warum 
             <span className="text-[#14ad9f]"> Taskilo </span>
             die beste Wahl ist
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             Entdecken Sie, wie Taskilo die Verbindung zwischen Kunden und professionellen Dienstleistern revolutioniert
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white">
+            <Card key={index} className="group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white dark:bg-gray-800">
               <CardContent className="p-8">
                 <div className={`inline-flex h-14 w-14 items-center justify-center rounded-xl ${feature.bgColor} mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <feature.icon className={`h-7 w-7 ${feature.color}`} />
                 </div>
                 
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
                   {feature.title}
                 </h3>
                 
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                   {feature.description}
                 </p>
               </CardContent>
@@ -82,23 +82,23 @@ export default function FeaturesSection() {
         </div>
 
         {/* Trust Indicators */}
-        <div className="mt-16 pt-12 border-t border-gray-200">
+        <div className="mt-16 pt-12 border-t border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-[#14ad9f] mb-2">10.000+</div>
-              <div className="text-sm text-gray-600">Zufriedene Kunden</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Zufriedene Kunden</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[#14ad9f] mb-2">5.000+</div>
-              <div className="text-sm text-gray-600">Geprüfte Anbieter</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Geprüfte Anbieter</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[#14ad9f] mb-2">4.8/5</div>
-              <div className="text-sm text-gray-600">Durchschnittsbewertung</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Durchschnittsbewertung</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[#14ad9f] mb-2">99%</div>
-              <div className="text-sm text-gray-600">Erfolgreiche Projekte</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Erfolgreiche Projekte</div>
             </div>
           </div>
         </div>

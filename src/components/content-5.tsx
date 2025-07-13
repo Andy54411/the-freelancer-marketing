@@ -26,16 +26,16 @@ export default function ContentSection() {
   ]
 
   return (
-    <section className="py-16 md:py-32">
+    <section className="py-16 md:py-32 bg-white dark:bg-gray-900">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900">
+            <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
               Die Plattform, die 
               <span className="text-[#14ad9f]"> Dienstleister und Kunden </span>
               perfekt zusammenbringt
             </h2>
-            <p className="mt-6 text-lg text-gray-600">
+            <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
               Taskilo macht es einfach, den perfekten Dienstleister für Ihr Projekt zu finden. 
               Von der Suche bis zur Bezahlung - alles aus einer Hand.
             </p>
@@ -47,8 +47,8 @@ export default function ContentSection() {
                     <feature.icon className="h-5 w-5 text-[#14ad9f]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{feature.title}</h3>
-                    <p className="text-sm text-gray-600">{feature.description}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{feature.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{feature.description}</p>
                   </div>
                 </div>
               ))}
@@ -60,20 +60,20 @@ export default function ContentSection() {
               <div className="flex h-full w-full items-center justify-center">
                 <div className="text-center">
                   <Users className="mx-auto h-16 w-16 text-[#14ad9f]" />
-                  <p className="mt-4 text-sm text-gray-500">Taskilo Platform</p>
+                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Taskilo Platform</p>
                 </div>
               </div>
             </div>
             
             {/* Floating Stats Card */}
-            <div className="absolute -bottom-6 -left-6 rounded-lg bg-white p-6 shadow-xl border">
+            <div className="absolute -bottom-6 -left-6 rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl border dark:border-gray-700">
               <div className="flex items-center space-x-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14ad9f]/10">
                   <Award className="h-6 w-6 text-[#14ad9f]" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">4.8/5</p>
-                  <p className="text-sm text-gray-600">Kundenbewertung</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">4.8/5</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Kundenbewertung</p>
                 </div>
               </div>
             </div>

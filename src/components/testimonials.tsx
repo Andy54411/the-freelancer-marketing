@@ -74,22 +74,22 @@ export default function Testimonials() {
   }
 
   return (
-    <section className="py-16 md:py-32 bg-gray-50">
+    <section className="py-16 md:py-32 bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
-          <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900">
+          <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
             Was unsere Kunden über 
             <span className="text-[#14ad9f]"> Taskilo </span>
             sagen
           </h2>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
             Über 10.000 zufriedene Kunden vertrauen bereits auf Taskilo
           </p>
         </div>
 
         <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+            <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <Avatar>
@@ -98,8 +98,8 @@ export default function Testimonials() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</p>
                   </div>
                 </div>
                 
@@ -107,7 +107,7 @@ export default function Testimonials() {
                   {renderStars(testimonial.rating)}
                 </div>
                 
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                   "{testimonial.content}"
                 </p>
               </CardContent>
@@ -116,18 +116,18 @@ export default function Testimonials() {
         </div>
 
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center space-x-8 bg-white rounded-xl p-8 shadow-sm border">
+          <div className="inline-flex items-center space-x-8 bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm border dark:border-gray-700">
             <div className="text-center">
               <p className="text-3xl font-bold text-[#14ad9f]">4.8/5</p>
-              <p className="text-sm text-gray-600">Durchschnittsbewertung</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Durchschnittsbewertung</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-[#14ad9f]">10.000+</p>
-              <p className="text-sm text-gray-600">Zufriedene Kunden</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Zufriedene Kunden</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-[#14ad9f]">15.000+</p>
-              <p className="text-sm text-gray-600">Bewertungen</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Bewertungen</p>
             </div>
           </div>
         </div>
