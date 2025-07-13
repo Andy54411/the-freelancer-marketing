@@ -3,59 +3,53 @@ import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-// Simple in-memory cache for balance data (3 minutes TTL for faster updates)
+// Fast cache for balance data
 const balanceCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 3 * 60 * 1000; // 3 minutes in milliseconds
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-// Initialize Firebase Admin - robust production version
+// Connection pools
+let stripeInstance: Stripe | null = null;
 let db: any = null;
+
+// Pre-initialize Stripe
+function getStripeInstance() {
+  if (!stripeInstance) {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    }
+    stripeInstance = new Stripe(stripeSecretKey, {
+      apiVersion: '2024-06-20',
+      timeout: 8000, // 8 second timeout
+      maxNetworkRetries: 0, // No retries for faster fails
+    });
+  }
+  return stripeInstance;
+}
 
 function initializeFirebaseAdmin() {
   if (getApps().length > 0) {
-    // Firebase already initialized
     return getFirestore();
   }
 
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
 
-    console.log("[Firebase Init] Environment check:", {
-      hasServiceAccountKey: !!serviceAccountKey,
-      hasProjectId: !!projectId,
-      nodeEnv: process.env.NODE_ENV
-    });
-
-    if (!serviceAccountKey) {
-      console.error("[Firebase Init] Missing FIREBASE_SERVICE_ACCOUNT_KEY");
+    if (!serviceAccountKey || !projectId) {
+      console.error("[Firebase Init] Missing credentials");
       return null;
     }
 
     const serviceAccount = JSON.parse(serviceAccountKey);
-
-    // Fallback: Verwende project_id aus dem Service Account, falls FIREBASE_PROJECT_ID nicht gesetzt ist
-    if (!projectId && serviceAccount.project_id) {
-      projectId = serviceAccount.project_id;
-      console.log("[Firebase Init] Using project_id from service account:", projectId);
-    }
-
-    if (!projectId) {
-      console.error("[Firebase Init] No project ID available");
-      return null;
-    }
-
-    console.log("[Firebase Init] Service account parsed successfully, project:", serviceAccount.project_id);
-
     const app = initializeApp({
       credential: cert(serviceAccount),
       projectId: projectId,
     });
 
-    console.log("[Firebase Init] Firebase Admin initialized successfully");
     return getFirestore(app);
-
   } catch (error) {
-    console.error("[Firebase Init] Initialization failed:", error);
+    console.error("[Firebase Init] Error:", error);
     return null;
   }
 }
@@ -64,304 +58,146 @@ function initializeFirebaseAdmin() {
 try {
   db = initializeFirebaseAdmin();
 } catch (error) {
-  console.warn("Firebase Admin initialization skipped during build:", error);
+  console.warn("Firebase initialization failed:", error);
 }
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-
-if (!stripeSecret) {
-  console.error("FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/get-stripe-balance.");
-}
-
-const stripe = stripeSecret ? new Stripe(stripeSecret, {
-  apiVersion: '2024-06-20',
-}) : null;
-
-// Gemeinsame Logik für GET und POST
 async function handleBalanceRequest(firebaseUserId: string) {
-  console.log("[API /get-stripe-balance] Processing request for user:", firebaseUserId);
+  console.log("[BALANCE-API] Request for user:", firebaseUserId);
 
   // Check cache first
   const cacheKey = `balance_${firebaseUserId}`;
   const cached = balanceCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-    console.log("[API /get-stripe-balance] Returning cached result for user:", firebaseUserId);
+    console.log("[BALANCE-API] Cache hit");
     return NextResponse.json(cached.data);
   }
 
-  // Ausführliches Debugging der Umgebung
-  console.log("[API /get-stripe-balance] Detailed Environment check:", {
-    hasStripeSecret: !!stripeSecret,
-    hasFirebaseDb: !!db,
-    nodeEnv: process.env.NODE_ENV,
-    hasFirebaseServiceAccountKey: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
-    hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
-    serviceAccountKeyLength: process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.length || 0,
-    projectIdValue: process.env.FIREBASE_PROJECT_ID,
-    firebaseAppsLength: getApps().length
+  // Timeout wrapper for all operations
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Total timeout after 12 seconds')), 12000);
   });
 
-  // Versuche Firebase erneut zu initialisieren, falls es beim ersten Mal fehlgeschlagen ist
-  if (!db) {
-    console.log("[API /get-stripe-balance] Attempting to re-initialize Firebase...");
-    db = initializeFirebaseAdmin();
-  }
-
-  if (!stripe) {
-    console.error("[API /get-stripe-balance] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.");
-    return NextResponse.json({
-      error: 'Stripe-Konfiguration auf dem Server fehlt.',
-      debug: {
-        hasStripeSecret: !!stripeSecret,
-        env: process.env.NODE_ENV
-      }
-    }, { status: 500 });
-  }
-
-  if (!db) {
-    console.error("[API /get-stripe-balance] Firebase wurde nicht initialisiert.");
-    return NextResponse.json({
-      error: 'Firebase-Konfiguration auf dem Server fehlt.',
-      debug: {
-        hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
-        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-        serviceAccountKeyLength: process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.length || 0,
-        projectIdValue: process.env.FIREBASE_PROJECT_ID,
-        firebaseAppsLength: getApps().length
-      }
-    }, { status: 500 });
-  }
-
-  if (!firebaseUserId || typeof firebaseUserId !== 'string') {
-    console.error("[API /get-stripe-balance] Validierungsfehler: Ungültige Firebase User ID.", { firebaseUserId });
-    return NextResponse.json({
-      error: 'Ungültige Firebase User ID.',
-      received: firebaseUserId,
-      type: typeof firebaseUserId
-    }, { status: 400 });
-  }
-
   try {
-    // Hole die Stripe Account ID aus der Firestore
-    // Versuche zuerst die companies Collection, dann die users Collection
-    let userDoc;
-    let stripeAccountId;
+    const result = await Promise.race([
+      executeBalanceCheck(firebaseUserId, cacheKey),
+      timeoutPromise
+    ]);
 
-    try {
-      // Versuche zuerst companies collection
-      const companyDocRef = db.collection('companies').doc(firebaseUserId);
-      const companyDoc = await companyDocRef.get();
-
-      if (companyDoc.exists) {
-        const companyData = companyDoc.data();
-        stripeAccountId = companyData?.stripeAccountId;
-        userDoc = companyDoc;
-      }
-
-      // Falls nicht in companies gefunden, versuche users collection
-      if (!stripeAccountId) {
-        const userDocRef = db.collection('users').doc(firebaseUserId);
-        userDoc = await userDocRef.get();
-
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          stripeAccountId = userData?.stripeAccountId;
-        }
-      }
-    } catch (firestoreError) {
-      console.error("[API /get-stripe-balance] Fehler beim Zugriff auf Firestore:", firestoreError);
-      return NextResponse.json({ error: 'Datenbankfehler beim Abrufen der Benutzerdaten.' }, { status: 500 });
+    return result;
+  } catch (error: any) {
+    console.error("[BALANCE-API] Error:", error.message);
+    
+    // Return expired cache if available
+    if (cached) {
+      console.log("[BALANCE-API] Using expired cache");
+      return NextResponse.json({ ...cached.data, source: 'expired_cache' });
     }
-
-    if (!userDoc || !userDoc.exists) {
-      console.error("[API /get-stripe-balance] Benutzer nicht gefunden in Firestore.", { firebaseUserId });
-      return NextResponse.json({ error: 'Benutzer nicht gefunden.' }, { status: 404 });
-    }
-
-    if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-      console.warn("[API /get-stripe-balance] Keine gültige Stripe Account ID gefunden - Benutzer wahrscheinlich noch nicht vollständig registriert.", { stripeAccountId });
-
-      // Für Benutzer ohne vollständige Stripe-Registrierung geben wir 0 Balance zurück
-      return NextResponse.json({
-        available: 0,
-        pending: 0,
-        currency: 'eur',
-        stripeAccountId: null,
-        message: 'Stripe-Konto noch nicht vollständig eingerichtet'
-      });
-    }
-
-    console.log("[API /get-stripe-balance] Rufe Stripe Balance ab für Account:", stripeAccountId);
-
-    // Hole das Guthaben vom Stripe Connected Account mit Timeout und Retry-Logik
-    if (!stripe) {
-      throw new Error('Stripe client is not initialized');
-    }
-
-    let balance: Stripe.Balance | undefined;
-    let retryCount = 0;
-    const maxRetries = 2;
-
-    while (retryCount <= maxRetries) {
-      try {
-        console.log(`[API /get-stripe-balance] Attempt ${retryCount + 1}/${maxRetries + 1} for Stripe API call`);
-        
-        // Implementiere einen aggressiveren Timeout für die Stripe API-Anfrage
-        const balancePromise = stripe.balance.retrieve({
-          stripeAccount: stripeAccountId
-        });
-
-        // Reduziere Timeout auf 10 Sekunden für ersten Versuch, dann 15 für Retry
-        const timeoutMs = retryCount === 0 ? 10000 : 15000;
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Stripe API timeout')), timeoutMs);
-        });
-
-        balance = await Promise.race([balancePromise, timeoutPromise]) as Stripe.Balance;
-        console.log(`[API /get-stripe-balance] Stripe API call successful on attempt ${retryCount + 1}`);
-        break; // Erfolg - verlasse die Retry-Schleife
-
-      } catch (error) {
-        retryCount++;
-        console.warn(`[API /get-stripe-balance] Attempt ${retryCount} failed:`, error instanceof Error ? error.message : error);
-        
-        if (retryCount > maxRetries) {
-          // Letzter Versuch fehlgeschlagen - gib Fallback-Werte zurück
-          console.error("[API /get-stripe-balance] All retry attempts failed, returning fallback balance");
-          
-          // Prüfe ob es ein Timeout war
-          if (error instanceof Error && error.message === 'Stripe API timeout') {
-            // Cache einen temporären 0-Wert für 1 Minute
-            const fallbackData = {
-              available: 0,
-              pending: 0,
-              currency: 'eur',
-              stripeAccountId: stripeAccountId,
-              fallback: true,
-              message: 'Guthaben wird geladen - bitte aktualisieren Sie die Seite'
-            };
-            
-            balanceCache.set(cacheKey, {
-              data: fallbackData,
-              timestamp: Date.now() - (CACHE_TTL - 60000) // 1 Minute Cache
-            });
-            
-            return NextResponse.json(fallbackData);
-          }
-          
-          // Andere Fehler weiterwerfen
-          throw error;
-        }
-        
-        // Kurze Pause vor Retry
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-
-    // Sicherheitscheck falls balance undefined ist
-    if (!balance) {
-      throw new Error('Failed to retrieve balance after all retry attempts');
-    }
-
-    // Berechne verfügbares und ausstehendes Guthaben in EUR
-    const eurBalanceAvailable = balance.available.find(b => b.currency === 'eur');
-    const eurBalancePending = balance.pending.find(b => b.currency === 'eur');
-
-    const availableAmount = eurBalanceAvailable ? eurBalanceAvailable.amount : 0;
-    const pendingAmount = eurBalancePending ? eurBalancePending.amount : 0;
-
-    console.log("[API /get-stripe-balance] Balance abgerufen:", {
-      available: availableAmount,
-      pending: pendingAmount,
-      currency: 'eur'
+    
+    // Final fallback
+    return NextResponse.json({ 
+      available: 0, 
+      pending: 0, 
+      source: 'error_fallback',
+      error: error.message 
     });
-
-    const responseData = {
-      available: availableAmount, // Amount in cents
-      pending: pendingAmount,     // Amount in cents
-      currency: 'eur',
-      stripeAccountId: stripeAccountId
-    };
-
-    // Cache the successful response
-    balanceCache.set(cacheKey, {
-      data: responseData,
-      timestamp: Date.now()
-    });
-
-    return NextResponse.json(responseData);
-
-  } catch (error) {
-    console.error("[API /get-stripe-balance] Fehler beim Abrufen des Guthabens:", error);
-
-    let errorMessage = 'Interner Serverfehler beim Abrufen des Guthabens.';
-    let statusCode = 500;
-
-    // Spezielle Behandlung für Timeout-Fehler
-    if (error instanceof Error && error.message === 'Stripe API timeout') {
-      errorMessage = 'Stripe API Timeout - Bitte versuchen Sie es später erneut.';
-      statusCode = 504;
-    } else if (error instanceof Stripe.errors.StripeError) {
-      console.error("[API /get-stripe-balance] Stripe Error Details:", {
-        type: error.type,
-        code: error.code,
-        decline_code: error.decline_code,
-        message: error.message
-      });
-
-      if (error.type === 'StripePermissionError') {
-        errorMessage = 'Keine Berechtigung für dieses Stripe-Konto.';
-        statusCode = 403;
-      } else if (error.type === 'StripeInvalidRequestError') {
-        errorMessage = 'Ungültige Anfrage an Stripe.';
-        statusCode = 400;
-      } else if (error.type === 'StripeConnectionError') {
-        errorMessage = 'Verbindungsfehler zu Stripe - Bitte versuchen Sie es später erneut.';
-        statusCode = 502;
-      } else {
-        errorMessage = `Stripe Fehler: ${error.message}`;
-      }
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    return NextResponse.json({
-      error: errorMessage,
-    }, { status: statusCode });
   }
+}
+
+async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
+  if (!db) {
+    throw new Error('Firebase not initialized');
+  }
+
+  // Fast Firebase lookup with timeout
+  const firebaseTimeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Firebase timeout')), 6000);
+  });
+
+  const doc = await Promise.race([
+    db.collection('stripe_accounts').doc(firebaseUserId).get(),
+    firebaseTimeout
+  ]);
+
+  if (!doc || !doc.exists) {
+    const fallback = { available: 0, pending: 0, source: 'no_account' };
+    balanceCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
+    return NextResponse.json(fallback);
+  }
+
+  const data = doc.data();
+  const stripeAccountId = data?.stripeAccountId;
+
+  if (!stripeAccountId) {
+    const fallback = { available: 0, pending: 0, source: 'no_stripe_id' };
+    balanceCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
+    return NextResponse.json(fallback);
+  }
+
+  // Fast Stripe API call
+  const stripe = getStripeInstance();
+  const stripeTimeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Stripe timeout')), 8000);
+  });
+
+  const balance = await Promise.race([
+    stripe.balance.retrieve({ stripeAccount: stripeAccountId }),
+    stripeTimeout
+  ]) as Stripe.Balance;
+
+  const response = {
+    available: balance.available?.[0]?.amount || 0,
+    pending: balance.pending?.[0]?.amount || 0,
+    currency: balance.available?.[0]?.currency || 'eur',
+    source: 'stripe_api'
+  };
+
+  // Cache successful result
+  balanceCache.set(cacheKey, { data: response, timestamp: Date.now() });
+  console.log("[BALANCE-API] Success:", response);
+  
+  return NextResponse.json(response);
 }
 
 export async function GET(request: NextRequest) {
-  console.log("[API /get-stripe-balance] GET Anfrage empfangen.");
+  try {
+    const { searchParams } = new URL(request.url);
+    const firebaseUserId = searchParams.get('firebaseUserId');
 
-  const { searchParams } = new URL(request.url);
-  const firebaseUserId = searchParams.get('firebaseUserId');
+    if (!firebaseUserId) {
+      return NextResponse.json(
+        { error: 'Missing firebaseUserId parameter' },
+        { status: 400 }
+      );
+    }
 
-  if (!firebaseUserId) {
-    return NextResponse.json({ error: 'firebaseUserId Parameter erforderlich.' }, { status: 400 });
+    return await handleBalanceRequest(firebaseUserId);
+  } catch (error: any) {
+    console.error("[BALANCE-API] GET Error:", error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
   }
-
-  return handleBalanceRequest(firebaseUserId);
 }
 
 export async function POST(request: NextRequest) {
-  console.log("[API /get-stripe-balance] POST Anfrage empfangen.");
-
   try {
-    let body;
-    try {
-      body = await request.json();
-      console.log("[API /get-stripe-balance] Request body parsed:", body);
-    } catch (parseError) {
-      console.error("[API /get-stripe-balance] Fehler beim Parsen des Request Body:", parseError);
-      return NextResponse.json({ error: 'Ungültiger Request Body - JSON erwartet.' }, { status: 400 });
-    }
-
+    const body = await request.json();
     const { firebaseUserId } = body;
 
-    return handleBalanceRequest(firebaseUserId);
-  } catch (error) {
-    console.error("[API /get-stripe-balance] Fehler beim Verarbeiten der POST-Anfrage:", error);
-    return NextResponse.json({ error: 'Fehler beim Verarbeiten der Anfrage.' }, { status: 500 });
+    if (!firebaseUserId) {
+      return NextResponse.json(
+        { error: 'Missing firebaseUserId in request body' },
+        { status: 400 }
+      );
+    }
+
+    return await handleBalanceRequest(firebaseUserId);
+  } catch (error: any) {
+    console.error("[BALANCE-API] POST Error:", error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
   }
 }
