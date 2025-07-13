@@ -205,7 +205,7 @@ export function SectionCards() {
         </CardHeader>
         <CardContent className="pt-0 pb-4">
           <div className="flex items-center justify-between gap-3">
-            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 flex-1 min-w-0 px-3 py-1 whitespace-nowrap overflow-hidden text-ellipsis">
+            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 px-3 py-1 text-xs">
               {stats.pendingBalance > 0 
                 ? `+${formatCurrency(stats.pendingBalance)} ausstehend` 
                 : 'Sofort verfügbar'
