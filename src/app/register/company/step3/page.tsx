@@ -427,7 +427,7 @@ export default function Step3CompanyPage() {
       )}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
         <div className="flex justify-end mb-4">
-          <button onClick={() => router.push('/')} className="text-gray-600 hover:text-gray-800 text-base sm:text-lg flex items-center transition-colors duration-200" disabled={isProcessingImage}>
+          <button onClick={() => router.push('/')} className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200" disabled={isProcessingImage}>
             <span className="mr-2">Abbrechen</span> <FiX />
           </button>
         </div>

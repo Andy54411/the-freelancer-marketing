@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -188,15 +189,17 @@ export function SectionCards() {
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-5">
       {/* Guthaben Card */}
       <Card className="@container/card h-full bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardDescription className="flex items-center gap-2 text-green-700 dark:text-green-300">
             <IconWallet size={16} /> Verfügbares Guthaben
           </CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-green-800 dark:text-green-200">
             {formatCurrency(stats.availableBalance)}
           </CardTitle>
-          <CardAction className="flex items-center justify-between">
-            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300">
+        </CardHeader>
+        <CardContent className="pt-0 pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 flex-1">
               {stats.pendingBalance > 0 
                 ? `+${formatCurrency(stats.pendingBalance)} ausstehend` 
                 : 'Sofort verfügbar'
@@ -206,7 +209,7 @@ export function SectionCards() {
               size="sm" 
               onClick={handleWithdraw}
               disabled={isWithdrawing || stats.availableBalance <= 0}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0"
             >
               {isWithdrawing ? (
                 <span>Wird verarbeitet...</span>
@@ -217,8 +220,8 @@ export function SectionCards() {
                 </>
               )}
             </Button>
-          </CardAction>
-        </CardHeader>
+          </div>
+        </CardContent>
       </Card>
 
       <Card className="@container/card h-full">

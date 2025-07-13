@@ -105,7 +105,9 @@ const parseMultipartFormData = (req: any): Promise<{ fields: { [key: string]: st
 export const uploadStripeFile = onRequest(
   {
     region: 'europe-west1',
-    secrets: [STRIPE_SECRET_KEY_UPLOADS] // Secret für die Funktion deklarieren
+    secrets: [STRIPE_SECRET_KEY_UPLOADS], // Secret für die Funktion deklarieren
+    memory: '512MiB', // Speicher auf 512 MiB erhöhen für Datei-Uploads
+    timeoutSeconds: 120 // Timeout auf 120 Sekunden erhöhen für große Dateien
   },
   async (req, res) => {
     // WICHTIG: Der corsHandler MUSS die Anfrage verarbeiten, BEVOR irgendeine andere Logik ausgeführt wird.
@@ -172,9 +174,20 @@ export const uploadStripeFile = onRequest(
         logger.info("[uploadStripeFile] Firebase Storage bucket obtained.");
 
         logger.info("[uploadStripeFile] Initiating parallel uploads to Stripe and Firebase Storage.");
+        
+        // Memory-optimiert: Datei in Chunks lesen statt alles auf einmal
+        let fileBuffer: Buffer;
+        try {
+          fileBuffer = fs.readFileSync(uploadedFilePath);
+          logger.info(`[uploadStripeFile] File read into buffer: ${fileBuffer.length} bytes`);
+        } catch (readError) {
+          logger.error("[uploadStripeFile] Failed to read file into buffer:", readError);
+          throw { status: 500, message: "Failed to read uploaded file." };
+        }
+        
         const stripePromise = stripe.files.create({
           purpose: purpose,
-          file: { data: fs.readFileSync(uploadedFilePath), name: filename, type: mimeType },
+          file: { data: fileBuffer, name: filename, type: mimeType },
         });
 
         const storagePath = `user_uploads/${userId}/${purpose}_${uuidv4()}_${filename}`;

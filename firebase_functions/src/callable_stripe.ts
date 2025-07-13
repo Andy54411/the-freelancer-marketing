@@ -256,7 +256,9 @@ export const createStripeAccountIfComplete = onCall(
   {
     region: "europe-west1",
     cors: allowedOrigins,
-    secrets: [STRIPE_SECRET_KEY]
+    secrets: [STRIPE_SECRET_KEY],
+    memory: '512MiB', // Speicher auf 512 MiB erhöhen für Stripe-Konto-Erstellung
+    timeoutSeconds: 120 // Timeout auf 120 Sekunden erhöhen für komplexe Stripe-Operationen
   },
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));

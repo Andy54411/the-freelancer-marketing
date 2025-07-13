@@ -77,6 +77,7 @@ const WEBP_QUALITY = 0.8;
 
 export default function Step5CompanyPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [currentStepMessage, setCurrentStepMessage] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
@@ -287,7 +288,19 @@ export default function Step5CompanyPage() {
       body: formData,
     });
 
-    if (!response.ok) { const errTxt = await response.text(); throw new Error(`Upload-Fehler für ${fileNameForLog}: ${response.status} ${errTxt}`); }
+    if (!response.ok) { 
+      const errTxt = await response.text(); 
+      // Bessere Fehlermeldungen für häufige Probleme
+      let userFriendlyMessage = `Upload-Fehler für ${fileNameForLog}: ${response.status}`;
+      if (response.status === 500) {
+        userFriendlyMessage = `Server-Fehler beim Upload von ${fileNameForLog}. Bitte versuchen Sie es in wenigen Sekunden erneut.`;
+      } else if (response.status === 413) {
+        userFriendlyMessage = `Datei ${fileNameForLog} ist zu groß. Bitte verwenden Sie eine kleinere Datei.`;
+      } else if (response.status === 401) {
+        userFriendlyMessage = `Authentifizierungsfehler beim Upload von ${fileNameForLog}. Bitte laden Sie die Seite neu.`;
+      }
+      throw new Error(`${userFriendlyMessage} Details: ${errTxt}`); 
+    }
     const result = await response.json();
     if (result.success && result.stripeFileId) return { stripeFileId: result.stripeFileId, firebaseStorageUrl: result.firebaseStorageUrl, firebaseStoragePath: result.firebaseStoragePath };
     else throw new Error(result.message || `Upload-Fehler für ${fileNameForLog}.`);
@@ -614,9 +627,15 @@ export default function Step5CompanyPage() {
         };
         await updateDoc(doc(db, 'users', currentAuthUserUID), { ...userUpdateAfterStripe });
 
-        alert('Registrierung fast abgeschlossen! Bitte überprüfe dein Dashboard für den Status deines Zahlungskontos.');
-        if (resetRegistrationData) resetRegistrationData();
-        router.push(`/dashboard/company/${currentAuthUserUID}`);
+        setCurrentStepMessage('Weiterleitung zum Dashboard...');
+        setIsRedirecting(true);
+        
+        // Kurze Verzögerung bevor Weiterleitung für bessere UX
+        setTimeout(() => {
+          alert('Registrierung fast abgeschlossen! Bitte überprüfe dein Dashboard für den Status deines Zahlungskontos.');
+          if (resetRegistrationData) resetRegistrationData();
+          router.push(`/dashboard/company/${currentAuthUserUID}`);
+        }, 1500);
 
       } else {
         setFormError(`Problem bei Stripe: ${result.data.message || 'Unbekannter Fehler.'} ${result.data.missingFields ? `Fehlende Felder: ${result.data.missingFields.join(', ')}` : ''}`);
@@ -635,24 +654,33 @@ export default function Step5CompanyPage() {
       }
       setFormError(specificErrorMessage);
     } finally {
-      setIsLoading(false);
-      setCurrentStepMessage('');
+      if (!isRedirecting) {
+        setIsLoading(false);
+        setCurrentStepMessage('');
+      }
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 font-sans">
-      {(isLoading || isConvertingImage || isProcessingImage) && (
+      {(isLoading || isConvertingImage || isProcessingImage || isRedirecting) && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[101]">
-          <div className="bg-white p-4 rounded-lg shadow-xl flex items-center">
-            <FiLoader className="animate-spin h-5 w-5 mr-3 text-teal-600" />
-            <span>{currentStepMessage || 'Bitte warten...'}</span>
+          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center max-w-sm mx-4">
+            <FiLoader className="animate-spin h-8 w-8 mb-4 text-teal-600" />
+            <span className="text-lg font-medium text-gray-800 text-center mb-2">
+              {currentStepMessage || 'Bitte warten...'}
+            </span>
+            {isRedirecting && (
+              <p className="text-sm text-gray-600 text-center">
+                Sie werden gleich zu Ihrem Dashboard weitergeleitet.
+              </p>
+            )}
           </div>
         </div>
       )}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
         <div className="flex justify-end mb-4">
-          <button onClick={() => router.push('/')} className="text-gray-600 hover:text-gray-800 text-base sm:text-lg flex items-center transition-colors duration-200" disabled={isLoading || isConvertingImage}>
+          <button onClick={() => router.push('/')} className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200" disabled={isLoading || isConvertingImage || isRedirecting}>
             <span className="mr-2">Abbrechen</span> <FiX />
           </button>
         </div>
@@ -745,13 +773,13 @@ export default function Step5CompanyPage() {
           <button
             type="button"
             onClick={handleRegistration}
-            disabled={isLoading || isConvertingImage || isProcessingImage || (hasAttemptedSubmit && !isFormValid())}
+            disabled={isLoading || isConvertingImage || isProcessingImage || isRedirecting || (hasAttemptedSubmit && !isFormValid())}
             className={`w-full py-3 px-6 rounded-lg font-semibold text-lg text-white transition-colors duration-150 ease-in-out
-              ${(!isFormValid() || isLoading || isConvertingImage || isProcessingImage)
+              ${(!isFormValid() || isLoading || isConvertingImage || isProcessingImage || isRedirecting)
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'}`}
           >
-            {isLoading || isConvertingImage || isProcessingImage ? (
+            {isLoading || isConvertingImage || isProcessingImage || isRedirecting ? (
               <span className="flex items-center justify-center">
                 <FiLoader className="animate-spin h-5 w-5 mr-3" />
                 <span>{currentStepMessage || 'Bitte warten...'}</span>

@@ -41,6 +41,13 @@ const stripe = stripeSecret ? new Stripe(stripeSecret, {
 export async function POST(request: NextRequest) {
   console.log("[API /get-stripe-balance] POST Anfrage empfangen.");
 
+  // Debugging der Umgebungsvariablen
+  console.log("[API /get-stripe-balance] Environment check:", {
+    hasStripeSecret: !!stripeSecret,
+    hasFirebaseDb: !!db,
+    nodeEnv: process.env.NODE_ENV
+  });
+
   if (!stripe) {
     console.error("[API /get-stripe-balance] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.");
     return NextResponse.json({ error: 'Stripe-Konfiguration auf dem Server fehlt.' }, { status: 500 });
@@ -61,16 +68,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Hole die Stripe Account ID aus der Firestore
-    const userDocRef = db.collection('companies').doc(firebaseUserId);
-    const userDoc = await userDocRef.get();
+    // Versuche zuerst die companies Collection, dann die users Collection
+    let userDoc;
+    let stripeAccountId;
     
-    if (!userDoc.exists) {
+    try {
+      // Versuche zuerst companies collection
+      const companyDocRef = db.collection('companies').doc(firebaseUserId);
+      const companyDoc = await companyDocRef.get();
+      
+      if (companyDoc.exists) {
+        const companyData = companyDoc.data();
+        stripeAccountId = companyData?.stripeAccountId;
+        userDoc = companyDoc;
+      }
+      
+      // Falls nicht in companies gefunden, versuche users collection
+      if (!stripeAccountId) {
+        const userDocRef = db.collection('users').doc(firebaseUserId);
+        userDoc = await userDocRef.get();
+        
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          stripeAccountId = userData?.stripeAccountId;
+        }
+      }
+    } catch (firestoreError) {
+      console.error("[API /get-stripe-balance] Fehler beim Zugriff auf Firestore:", firestoreError);
+      return NextResponse.json({ error: 'Datenbankfehler beim Abrufen der Benutzerdaten.' }, { status: 500 });
+    }
+    
+    if (!userDoc || !userDoc.exists) {
       console.error("[API /get-stripe-balance] Benutzer nicht gefunden in Firestore.", { firebaseUserId });
       return NextResponse.json({ error: 'Benutzer nicht gefunden.' }, { status: 404 });
     }
-
-    const userData = userDoc.data();
-    const stripeAccountId = userData?.stripeAccountId;
 
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
       console.error("[API /get-stripe-balance] Keine gültige Stripe Account ID gefunden.", { stripeAccountId });
@@ -108,15 +139,31 @@ export async function POST(request: NextRequest) {
     console.error("[API /get-stripe-balance] Fehler beim Abrufen des Guthabens:", error);
     
     let errorMessage = 'Interner Serverfehler beim Abrufen des Guthabens.';
+    let statusCode = 500;
     
     if (error instanceof Stripe.errors.StripeError) {
-      errorMessage = `Stripe Fehler: ${error.message}`;
+      console.error("[API /get-stripe-balance] Stripe Error Details:", {
+        type: error.type,
+        code: error.code,
+        decline_code: error.decline_code,
+        message: error.message
+      });
+      
+      if (error.type === 'StripePermissionError') {
+        errorMessage = 'Keine Berechtigung für dieses Stripe-Konto.';
+        statusCode = 403;
+      } else if (error.type === 'StripeInvalidRequestError') {
+        errorMessage = 'Ungültige Anfrage an Stripe.';
+        statusCode = 400;
+      } else {
+        errorMessage = `Stripe Fehler: ${error.message}`;
+      }
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
 
     return NextResponse.json({
       error: errorMessage,
-    }, { status: 500 });
+    }, { status: statusCode });
   }
 }
