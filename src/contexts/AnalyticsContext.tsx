@@ -21,14 +21,12 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const pathname = usePathname();
   const analytics = useAnalytics();
 
-  // Track page views automatically
+  // Track page views automatically only on client side
   useEffect(() => {
-    analytics.trackPageView(pathname);
-  }, [pathname, analytics]);
-
-  // Track initial page load
-  useEffect(() => {
-    analytics.trackEvent('page_load', 'navigation', pathname);
+    if (typeof window !== 'undefined') {
+      analytics.trackPageView(pathname);
+      analytics.trackEvent('page_load', 'navigation', pathname);
+    }
   }, [pathname, analytics]);
 
   return (
