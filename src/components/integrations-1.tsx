@@ -55,11 +55,11 @@ export default function IntegrationsSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {serviceCategories.map((category) => (
-            <Card key={category.name} className="hover:shadow-lg transition-shadow duration-300">
+            <Card key={category.name} className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-sm bg-white">
               <CardContent className="p-6 text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <category.icon className="w-8 h-8 text-blue-600" />
+                  <div className="p-3 bg-[#14ad9f]/10 rounded-full">
+                    <category.icon className="w-8 h-8 text-[#14ad9f]" />
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -68,7 +68,7 @@ export default function IntegrationsSection() {
                 <p className="text-gray-600 mb-3">
                   {category.description}
                 </p>
-                <div className="text-sm font-medium text-blue-600">
+                <div className="text-sm font-medium text-[#14ad9f]">
                   {category.count} Dienstleister
                 </div>
               </CardContent>

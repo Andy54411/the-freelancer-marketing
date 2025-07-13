@@ -56,10 +56,10 @@ export default function ContentSection() {
           </div>
 
           <div className="relative">
-            <div className="aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-purple-50">
+            <div className="aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20">
               <div className="flex h-full w-full items-center justify-center">
                 <div className="text-center">
-                  <Users className="mx-auto h-16 w-16 text-blue-400" />
+                  <Users className="mx-auto h-16 w-16 text-[#14ad9f]" />
                   <p className="mt-4 text-sm text-gray-500">Taskilo Platform</p>
                 </div>
               </div>
