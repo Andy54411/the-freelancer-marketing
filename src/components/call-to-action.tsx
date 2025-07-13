@@ -1,39 +1,40 @@
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export default function CallToAction() {
   return (
-    <section className="py-16 md:py-32">
+    <section className="py-16 md:py-32 bg-gradient-to-r from-blue-600 to-purple-600">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="text-center">
-          <h2 className="text-4xl font-semibold lg:text-5xl">Start Building</h2>
-          <p className="mt-4">Libero sapiente aliquam quibusdam aspernatur.</p>
+        <div className="text-center text-white">
+          <h2 className="text-4xl font-semibold lg:text-5xl">Bereit für Taskilo?</h2>
+          <p className="mt-4 text-xl text-blue-100">
+            Starten Sie noch heute und finden Sie den perfekten Dienstleister für Ihr nächstes Projekt.
+          </p>
 
-          <form className="mx-auto mt-10 max-w-sm lg:mt-12">
-            <div className="relative grid grid-cols-[1fr_auto] items-center rounded-lg border pr-3 shadow-md bg-white">
-              
-              {/* Eingebautes Mail Icon */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M4 4h16v16H4z" strokeWidth="2" />
-                  <path d="M4 4l8 8 8-8" strokeWidth="2" />
-                </svg>
-              </div>
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              asChild 
+              size="lg" 
+              className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-4 text-lg"
+            >
+              <Link href="/register/user">Als Kunde registrieren</Link>
+            </Button>
+            
+            <Button 
+              asChild 
+              variant="outline" 
+              size="lg" 
+              className="border-white text-white hover:bg-white hover:text-blue-600 font-semibold px-8 py-4 text-lg"
+            >
+              <Link href="/register/company">Als Dienstleister anmelden</Link>
+            </Button>
+          </div>
 
-              <input
-                placeholder="Your mail address"
-                className="h-14 w-full rounded-l-lg pl-12 pr-4 bg-transparent text-black focus:outline-none"
-                type="email"
-              />
-
-              <Button type="submit" aria-label="submit" className="rounded-r-lg bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-                {/* Eingebautes Send Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M22 2L11 13" strokeWidth="2" />
-                  <path d="M22 2L15 22L11 13L2 9L22 2Z" strokeWidth="2" />
-                </svg>
-              </Button>
-            </div>
-          </form>
+          <div className="mt-8 text-blue-100">
+            <p className="text-sm">
+              ✓ Kostenlose Registrierung • ✓ Sofort einsatzbereit • ✓ Keine versteckten Kosten
+            </p>
+          </div>
         </div>
       </div>
     </section>
