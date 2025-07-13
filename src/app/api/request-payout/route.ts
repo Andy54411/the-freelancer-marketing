@@ -6,26 +6,46 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 // Initialize Firebase Admin only if environment variables are available
 let db: any = null;
 
-if (!getApps().length) {
-  try {
+try {
+  if (!getApps().length) {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const projectId = process.env.FIREBASE_PROJECT_ID;
+    let projectId = process.env.FIREBASE_PROJECT_ID;
     
-    if (serviceAccountKey && projectId) {
+    console.log("[API /request-payout] Firebase init check:", {
+      hasServiceAccountKey: !!serviceAccountKey,
+      hasProjectId: !!projectId,
+      serviceAccountKeyLength: serviceAccountKey?.length || 0
+    });
+    
+    if (serviceAccountKey) {
       const serviceAccount = JSON.parse(serviceAccountKey);
-      if (serviceAccount.project_id) {
+      
+      // Extract project ID from service account if not set in environment
+      if (!projectId && serviceAccount.project_id) {
+        projectId = serviceAccount.project_id;
+        console.log("[API /request-payout] Using project ID from service account:", projectId);
+      }
+      
+      if (serviceAccount.project_id && projectId) {
         initializeApp({
           credential: cert(serviceAccount),
           projectId: projectId,
         });
         db = getFirestore();
+        console.log("[API /request-payout] Firebase Admin initialized successfully");
+      } else {
+        console.error("[API /request-payout] Invalid service account or missing project ID");
       }
+    } else {
+      console.error("[API /request-payout] Missing Firebase service account key");
     }
-  } catch (error) {
-    console.warn("Firebase Admin initialization skipped during build:", error);
+  } else {
+    db = getFirestore();
+    console.log("[API /request-payout] Using existing Firebase Admin instance");
   }
-} else {
-  db = getFirestore();
+} catch (error) {
+  console.error("[API /request-payout] Firebase Admin initialization failed:", error);
+  db = null;
 }
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
