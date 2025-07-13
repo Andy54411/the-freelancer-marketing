@@ -11,6 +11,8 @@ import LogoForm from '@/components/dashboard_setting/logo';
 import PublicProfileForm from '@/components/dashboard_setting/public-profile';
 import { PAGE_ERROR } from '@/lib/constants'; // Stellen Sie sicher, dass dies korrekt ist
 import { Loader2 as FiLoader, Save as FiSave, X as FiX } from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
 import Stripe from 'stripe';
@@ -145,9 +147,10 @@ interface UpdateStripeCompanyDetailsCallableResult {
 }
 
 const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
+  const { user } = useAuth();
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'accounting' | 'bank' | 'logo' | 'public-profile'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'accounting' | 'bank' | 'logo' | 'public-profile' | 'payouts'>('general');
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
 
   useEffect(() => {
@@ -524,7 +527,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   }, [form, userData, onDataSaved, handleChange]); // Abhängigkeiten für useCallback
 
   // Alle Hooks müssen vor bedingten Returns aufgerufen werden
-  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'public-profile';
+  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'public-profile' | 'payouts';
   interface TabDefinition { key: TabKey; label: string; }
 
   const tabsToDisplay: TabDefinition[] = [
@@ -532,7 +535,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     { key: 'public-profile', label: 'Öffentliches Profil' },
     { key: 'accounting', label: 'Buchhaltung & Steuer' },
     { key: 'bank', label: 'Bankverbindung' },
-    { key: 'logo', label: 'Logo & Dokumente' }
+    { key: 'logo', label: 'Logo & Dokumente' },
+    { key: 'payouts', label: 'Auszahlungen' }
   ];
 
   if (!form) {
@@ -564,6 +568,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           {activeTab === 'accounting' && 'Buchhaltung & Steuern'}
           {activeTab === 'bank' && 'Bankverbindung'}
           {activeTab === 'logo' && 'Logo & Dokumente'}
+          {activeTab === 'payouts' && 'Auszahlungen & Rechnungen'}
         </h2>
 
         {form && activeTab === 'general' && <GeneralForm formData={form} handleChange={handleChange} onOpenManagingDirectorPersonalModal={() => setShowManagingDirectorPersonalModal(true)} />}
@@ -571,6 +576,57 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         {form && activeTab === 'accounting' && <AccountingForm formData={form} handleChange={handleChange} />}
         {form && activeTab === 'bank' && <BankForm formData={form} handleChange={handleChange} />}
         {form && activeTab === 'logo' && <LogoForm formData={form} handleChange={handleChange} />}
+        {activeTab === 'payouts' && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Auszahlungshistorie & Rechnungen
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Verwalten Sie Ihre Auszahlungen und laden Sie Rechnungen für Ihre Buchführung herunter.
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href={`/dashboard/company/${user?.uid}/payouts`}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f] transition-colors"
+                >
+                  Auszahlungen verwalten
+                </Link>
+                
+                <div className="text-sm text-gray-500 dark:text-gray-400 pt-3">
+                  Hier können Sie alle Ihre Auszahlungen einsehen, den Status verfolgen und Rechnungen für Ihre Buchführung herunterladen.
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Wichtige Hinweise zu Auszahlungen
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Auszahlungen werden in der Regel innerhalb von 1-2 Werktagen bearbeitet
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Eine Plattformgebühr von 4,5% wird automatisch abgezogen
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Rechnungen stehen sofort nach der Auszahlung zum Download bereit
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Alle Beträge werden automatisch versteuert - Details in Ihrer Buchhaltung
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
 
         <div className="pt-8 mt-8 border-t border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row justify-between items-center gap-4">
           <button
