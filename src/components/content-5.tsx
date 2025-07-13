@@ -32,7 +32,7 @@ export default function ContentSection() {
           <div>
             <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900">
               Die Plattform, die 
-              <span className="text-blue-600"> Dienstleister und Kunden </span>
+              <span className="text-[#14ad9f]"> Dienstleister und Kunden </span>
               perfekt zusammenbringt
             </h2>
             <p className="mt-6 text-lg text-gray-600">
@@ -43,8 +43,8 @@ export default function ContentSection() {
             <div className="mt-10 grid grid-cols-2 gap-6">
               {features.map((feature, index) => (
                 <div key={index} className="flex items-start space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                    <feature.icon className="h-5 w-5 text-blue-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#14ad9f]/10">
+                    <feature.icon className="h-5 w-5 text-[#14ad9f]" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{feature.title}</h3>
@@ -66,10 +66,10 @@ export default function ContentSection() {
             </div>
             
             {/* Floating Stats Card */}
-            <div className="absolute -bottom-6 -left-6 rounded-lg bg-white p-6 shadow-lg">
+            <div className="absolute -bottom-6 -left-6 rounded-lg bg-white p-6 shadow-xl border">
               <div className="flex items-center space-x-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                  <Award className="h-6 w-6 text-green-600" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14ad9f]/10">
+                  <Award className="h-6 w-6 text-[#14ad9f]" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">4.8/5</p>

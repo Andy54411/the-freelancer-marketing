@@ -1,88 +1,108 @@
-import { Star, Clock, Shield, Users, CheckCircle, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
+import { Shield, Users, Star, TrendingUp } from 'lucide-react'
 
 export default function IntegrationsSection1() {
-    return (
-        <section>
-            <div className="bg-muted dark:bg-background py-24 md:py-32">
-                <div className="mx-auto flex flex-col px-6 md:grid md:max-w-5xl md:grid-cols-2 md:gap-12">
-                    <div className="order-last mt-6 flex flex-col gap-12 md:order-first">
-                        <div className="space-y-6">
-                            <h2 className="text-balance text-3xl font-semibold md:text-4xl lg:text-5xl">Vertrauen Sie auf Taskilo</h2>
-                            <p className="text-muted-foreground">Über 10.000 zufriedene Kunden und 5.000+ verifizierte Dienstleister vertrauen bereits auf unsere Plattform.</p>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                asChild>
-                                <Link href="/register/user">Jetzt kostenlos starten</Link>
-                            </Button>
-                        </div>
+  const stats = [
+    {
+      icon: Users,
+      number: '10.000+',
+      label: 'Zufriedene Kunden',
+      color: 'text-[#14ad9f]',
+      bgColor: 'bg-[#14ad9f]/10'
+    },
+    {
+      icon: Shield,
+      number: '5.000+',
+      label: 'Verifizierte Anbieter',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-600/10'
+    },
+    {
+      icon: Star,
+      number: '4.8/5',
+      label: 'Durchschnittsbewertung',
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-600/10'
+    },
+    {
+      icon: TrendingUp,
+      number: '99%',
+      label: 'Erfolgreiche Projekte',
+      color: 'text-green-600',
+      bgColor: 'bg-green-600/10'
+    }
+  ]
 
-                        <div className="mt-auto grid grid-cols-[auto_1fr] gap-3">
-                            <div className="bg-background flex aspect-square items-center justify-center border rounded-lg">
-                                <Star className="size-9 text-yellow-500" />
-                            </div>
-                            <blockquote>
-                                <p>"Taskilo hat mir geholfen, schnell und unkompliziert einen zuverlässigen Handwerker zu finden. Absolute Empfehlung!"</p>
-                                <div className="mt-2 flex gap-2 text-sm">
-                                    <cite>Maria Schmidt</cite>
-                                    <p className="text-muted-foreground">Kundin aus München</p>
-                                </div>
-                            </blockquote>
-                        </div>
-                    </div>
+  return (
+    <section className="py-16 md:py-24 bg-white">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Content */}
+          <div>
+            <div className="inline-flex items-center rounded-full bg-[#14ad9f]/10 px-4 py-2 text-sm font-medium text-[#14ad9f] mb-6">
+              Vertrauen Sie auf Qualität
+            </div>
+            
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              Über 10.000 Kunden vertrauen bereits auf 
+              <span className="text-[#14ad9f]"> Taskilo</span>
+            </h2>
+            
+            <p className="text-lg text-gray-600 mb-8">
+              Taskilo hat sich als führende Plattform für professionelle Dienstleistungen etabliert. 
+              Unsere Zahlen sprechen für sich und zeigen das Vertrauen unserer Kunden.
+            </p>
 
-                    <div className="-mx-6 px-6 [mask-image:radial-gradient(ellipse_100%_100%_at_50%_0%,#000_70%,transparent_100%)] sm:mx-auto sm:max-w-md md:-mx-6 md:ml-auto md:mr-0">
-                        <div className="bg-background dark:bg-muted/50 rounded-2xl border p-3 shadow-lg md:pb-12">
-                            <div className="grid grid-cols-2 gap-2">
-                                <Integration
-                                    icon={<Users className="text-blue-600" />}
-                                    name="10.000+"
-                                    description="Zufriedene Kunden vertrauen Taskilo"
-                                />
-                                <Integration
-                                    icon={<CheckCircle className="text-green-600" />}
-                                    name="5.000+"
-                                    description="Verifizierte Dienstleister"
-                                />
-                                <Integration
-                                    icon={<Clock className="text-purple-600" />}
-                                    name="< 2 Min"
-                                    description="Durchschnittliche Buchungszeit"
-                                />
-                                <Integration
-                                    icon={<Shield className="text-emerald-600" />}
-                                    name="100%"
-                                    description="Sichere Zahlungsabwicklung"
-                                />
-                                <Integration
-                                    icon={<Star className="text-yellow-500" />}
-                                    name="4.8/5"
-                                    description="Durchschnittliche Bewertung"
-                                />
-                                <Integration
-                                    icon={<TrendingUp className="text-red-600" />}
-                                    name="99.8%"
-                                    description="Erfolgreiche Vermittlungen"
-                                />
-                            </div>
-                        </div>
-                    </div>
+            {/* Customer Testimonial */}
+            <div className="bg-gray-50 rounded-xl p-6 mb-8">
+              <div className="flex items-center mb-4">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-current" />
+                  ))}
                 </div>
+              </div>
+              <p className="text-gray-700 mb-4">
+                "Taskilo hat mir geholfen, schnell und unkompliziert einen zuverlässigen Handwerker zu finden. 
+                Die Qualität der Arbeit war ausgezeichnet!"
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-semibold">
+                  MS
+                </div>
+                <div className="ml-3">
+                  <p className="font-semibold text-gray-900">Maria Schmidt</p>
+                  <p className="text-sm text-gray-600">Hausbesitzerin aus München</p>
+                </div>
+              </div>
             </div>
-        </section>
-    )
-}
 
-const Integration = ({ icon, name, description }: { icon: React.ReactNode; name: string; description: string }) => {
-    return (
-        <div className="bg-background dark:bg-muted/50 rounded-xl border p-3">
-            <div className="flex items-center gap-2">
-                <div className="*:size-4">{icon}</div>
-                <p className="text-sm font-medium">{name}</p>
-            </div>
-            <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+            <Button asChild size="lg" className="bg-[#14ad9f] hover:bg-[#0f9d84]">
+              <a href="/register/user">Jetzt kostenlos registrieren</a>
+            </Button>
+          </div>
+
+          {/* Right Statistics */}
+          <div className="grid grid-cols-2 gap-6">
+            {stats.map((stat, index) => (
+              <Card key={index} className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm">
+                <CardContent className="p-8">
+                  <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl ${stat.bgColor} mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                  </div>
+                  <div className={`text-3xl font-bold mb-2 ${stat.color}`}>
+                    {stat.number}
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium">
+                    {stat.label}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-    )
+      </div>
+    </section>
+  )
 }

@@ -93,7 +93,7 @@ export default function Testimonials() {
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <Avatar>
-                    <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                    <AvatarFallback className="bg-[#14ad9f] text-white font-semibold">
                       {testimonial.avatar}
                     </AvatarFallback>
                   </Avatar>
@@ -116,17 +116,17 @@ export default function Testimonials() {
         </div>
 
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center space-x-8 bg-white rounded-lg p-6 shadow-sm">
+          <div className="inline-flex items-center space-x-8 bg-white rounded-xl p-8 shadow-sm border">
             <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">4.8/5</p>
+              <p className="text-3xl font-bold text-[#14ad9f]">4.8/5</p>
               <p className="text-sm text-gray-600">Durchschnittsbewertung</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">10.000+</p>
+              <p className="text-3xl font-bold text-[#14ad9f]">10.000+</p>
               <p className="text-sm text-gray-600">Zufriedene Kunden</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">15.000+</p>
+              <p className="text-3xl font-bold text-[#14ad9f]">15.000+</p>
               <p className="text-sm text-gray-600">Bewertungen</p>
             </div>
           </div>
