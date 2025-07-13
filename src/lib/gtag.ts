@@ -49,7 +49,7 @@ export const purchaseEvent = ({
     price: number;
   }>;
 }) => {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('event', 'purchase', {
       transaction_id: transactionId,
       value: value,
@@ -61,7 +61,7 @@ export const purchaseEvent = ({
 
 // User engagement events
 export const signUpEvent = (method: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('event', 'sign_up', {
       method: method,
     });
@@ -69,7 +69,7 @@ export const signUpEvent = (method: string) => {
 };
 
 export const loginEvent = (method: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('event', 'login', {
       method: method,
     });
@@ -86,7 +86,7 @@ export const taskOrderEvent = ({
   subcategory: string;
   value: number;
 }) => {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('event', 'task_order_created', {
       event_category: 'engagement',
       custom_category: category,
@@ -97,7 +97,7 @@ export const taskOrderEvent = ({
 };
 
 export const providerRegistrationEvent = (userType: 'company' | 'employee') => {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('event', 'provider_registration', {
       event_category: 'engagement',
       user_type: userType,
