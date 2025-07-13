@@ -65,17 +65,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültiger Betrag.' }, { status: 400 });
     }
 
-    // Hole die Stripe Account ID aus der Firestore
-    const userDocRef = db.collection('companies').doc(firebaseUserId);
-    const userDoc = await userDocRef.get();
-    
-    if (!userDoc.exists) {
+    // Hole die Stripe Account ID aus der Firestore - suche in users Collection zuerst
+    let userDoc = await db.collection('users').doc(firebaseUserId).get();
+    let userData = null;
+    let stripeAccountId = null;
+
+    if (userDoc.exists) {
+      userData = userDoc.data();
+      stripeAccountId = userData?.stripeAccountId;
+      console.log("[API /request-payout] Found user in users collection with stripeAccountId:", stripeAccountId);
+    }
+
+    // Fallback: Suche in companies Collection
+    if (!stripeAccountId) {
+      const companyDocRef = db.collection('companies').doc(firebaseUserId);
+      const companyDoc = await companyDocRef.get();
+      
+      if (companyDoc.exists) {
+        userData = companyDoc.data();
+        stripeAccountId = userData?.stripeAccountId;
+        console.log("[API /request-payout] Found user in companies collection with stripeAccountId:", stripeAccountId);
+      }
+    }
+
+    if (!userData) {
       console.error("[API /request-payout] Benutzer nicht gefunden in Firestore.", { firebaseUserId });
       return NextResponse.json({ error: 'Benutzer nicht gefunden.' }, { status: 404 });
     }
-
-    const userData = userDoc.data();
-    const stripeAccountId = userData?.stripeAccountId;
 
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
       console.error("[API /request-payout] Keine gültige Stripe Account ID gefunden.", { stripeAccountId });
