@@ -18,8 +18,7 @@
     "lint": "next lint --max-warnings=0",
     "lint:fix": "next lint --fix",
     "emulators": "cd firebase_functions && npm run serve",
-    "type-check": "tsc --noEmit",
-    "postbuild": "next-sitemap"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

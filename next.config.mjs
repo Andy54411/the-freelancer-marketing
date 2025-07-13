@@ -13,8 +13,8 @@ const nextConfig = {
   // Experimental features for faster builds
   experimental: {
     turbo: {
-      loaders: {
-        '.svg': ['@svgr/webpack'],
+      rules: {
+        '*.svg': ['@svgr/webpack'],
       },
     },
     serverComponentsExternalPackages: ['firebase-admin', 'stripe'],
