@@ -3,6 +3,10 @@ import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
+// Simple in-memory cache for balance data (5 minutes TTL)
+const balanceCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 // Initialize Firebase Admin - robust production version
 let db: any = null;
 
@@ -76,6 +80,14 @@ const stripe = stripeSecret ? new Stripe(stripeSecret, {
 // Gemeinsame Logik für GET und POST
 async function handleBalanceRequest(firebaseUserId: string) {
   console.log("[API /get-stripe-balance] Processing request for user:", firebaseUserId);
+
+  // Check cache first
+  const cacheKey = `balance_${firebaseUserId}`;
+  const cached = balanceCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    console.log("[API /get-stripe-balance] Returning cached result for user:", firebaseUserId);
+    return NextResponse.json(cached.data);
+  }
 
   // Ausführliches Debugging der Umgebung
   console.log("[API /get-stripe-balance] Detailed Environment check:", {
@@ -181,14 +193,21 @@ async function handleBalanceRequest(firebaseUserId: string) {
 
     console.log("[API /get-stripe-balance] Rufe Stripe Balance ab für Account:", stripeAccountId);
 
-    // Hole das Guthaben vom Stripe Connected Account
+    // Hole das Guthaben vom Stripe Connected Account mit Timeout
     if (!stripe) {
       throw new Error('Stripe client is not initialized');
     }
     
-    const balance = await stripe.balance.retrieve({
+    // Implementiere einen Timeout für die Stripe API-Anfrage
+    const balancePromise = stripe.balance.retrieve({
       stripeAccount: stripeAccountId
     });
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Stripe API timeout')), 25000); // 25 Sekunden Timeout
+    });
+    
+    const balance = await Promise.race([balancePromise, timeoutPromise]) as Stripe.Balance;
 
     // Berechne verfügbares und ausstehendes Guthaben in EUR
     const eurBalanceAvailable = balance.available.find(b => b.currency === 'eur');
@@ -203,12 +222,20 @@ async function handleBalanceRequest(firebaseUserId: string) {
       currency: 'eur'
     });
 
-    return NextResponse.json({
+    const responseData = {
       available: availableAmount, // Amount in cents
       pending: pendingAmount,     // Amount in cents
       currency: 'eur',
       stripeAccountId: stripeAccountId
+    };
+
+    // Cache the successful response
+    balanceCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
     });
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
     console.error("[API /get-stripe-balance] Fehler beim Abrufen des Guthabens:", error);
@@ -216,7 +243,11 @@ async function handleBalanceRequest(firebaseUserId: string) {
     let errorMessage = 'Interner Serverfehler beim Abrufen des Guthabens.';
     let statusCode = 500;
     
-    if (error instanceof Stripe.errors.StripeError) {
+    // Spezielle Behandlung für Timeout-Fehler
+    if (error instanceof Error && error.message === 'Stripe API timeout') {
+      errorMessage = 'Stripe API Timeout - Bitte versuchen Sie es später erneut.';
+      statusCode = 504;
+    } else if (error instanceof Stripe.errors.StripeError) {
       console.error("[API /get-stripe-balance] Stripe Error Details:", {
         type: error.type,
         code: error.code,
@@ -230,6 +261,9 @@ async function handleBalanceRequest(firebaseUserId: string) {
       } else if (error.type === 'StripeInvalidRequestError') {
         errorMessage = 'Ungültige Anfrage an Stripe.';
         statusCode = 400;
+      } else if (error.type === 'StripeConnectionError') {
+        errorMessage = 'Verbindungsfehler zu Stripe - Bitte versuchen Sie es später erneut.';
+        statusCode = 502;
       } else {
         errorMessage = `Stripe Fehler: ${error.message}`;
       }
