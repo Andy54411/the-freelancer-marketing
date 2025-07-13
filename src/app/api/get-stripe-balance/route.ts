@@ -34,19 +34,27 @@ function initializeFirebaseAdmin() {
 
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const projectId = process.env.FIREBASE_PROJECT_ID;
 
-    if (!serviceAccountKey || !projectId) {
-      console.error("[Firebase Init] Missing credentials");
+    if (!serviceAccountKey) {
+      console.error("[Firebase Init] Missing service account key");
       return null;
     }
 
     const serviceAccount = JSON.parse(serviceAccountKey);
+    // Extract project_id from service account instead of requiring separate env var
+    const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID;
+    
+    if (!projectId) {
+      console.error("[Firebase Init] No project_id found in service account or FIREBASE_PROJECT_ID env var");
+      return null;
+    }
+
     const app = initializeApp({
       credential: cert(serviceAccount),
       projectId: projectId,
     });
 
+    console.log("[Firebase Init] Successfully initialized with project:", projectId);
     return getFirestore(app);
   } catch (error) {
     console.error("[Firebase Init] Error:", error);
