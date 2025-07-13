@@ -238,13 +238,13 @@ const getEnvironmentUrls = (configuredFrontendUrl: string) => {
   } else {
     // In Produktion: Verwende die konfigurierte URL oder Fallback
     let finalUrl = configuredFrontendUrl;
-    
+
     // Wenn localhost URL übergeben wird, verwende Produktions-Fallback
     if (!configuredFrontendUrl || !configuredFrontendUrl.startsWith('http') || configuredFrontendUrl.includes('localhost')) {
       loggerV2.warn(`[getEnvironmentUrls] Ungültige URL '${configuredFrontendUrl}' erkannt, verwende Produktions-Fallback`);
       finalUrl = 'https://taskilo.de'; // Sichere Produktions-URL als Fallback
     }
-    
+
     return {
       stripeBusinessProfileUrl: finalUrl,
     };

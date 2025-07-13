@@ -85,10 +85,10 @@ export function SectionCards() {
         let pendingBalance = 0;
 
         try {
-          const balanceResponse = await fetch('/api/get-stripe-balance', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ firebaseUserId: uid })
+          // Use GET request instead of POST to avoid timeout issues
+          const balanceResponse = await fetch(`/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
           });
 
           if (balanceResponse.ok) {
