@@ -3,16 +3,30 @@ import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-// Initialize Firebase Admin
-if (!getApps().length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-  initializeApp({
-    credential: cert(serviceAccount),
-    projectId: process.env.FIREBASE_PROJECT_ID,
-  });
-}
+// Initialize Firebase Admin only if environment variables are available
+let db: any = null;
 
-const db = getFirestore();
+if (!getApps().length) {
+  try {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    
+    if (serviceAccountKey && projectId) {
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      if (serviceAccount.project_id) {
+        initializeApp({
+          credential: cert(serviceAccount),
+          projectId: projectId,
+        });
+        db = getFirestore();
+      }
+    }
+  } catch (error) {
+    console.warn("Firebase Admin initialization skipped during build:", error);
+  }
+} else {
+  db = getFirestore();
+}
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
@@ -30,6 +44,11 @@ export async function POST(request: NextRequest) {
   if (!stripe) {
     console.error("[API /create-company-customer] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.");
     return NextResponse.json({ error: 'Stripe-Konfiguration auf dem Server fehlt.' }, { status: 500 });
+  }
+
+  if (!db) {
+    console.error("[API /create-company-customer] Firebase wurde nicht initialisiert.");
+    return NextResponse.json({ error: 'Firebase-Konfiguration auf dem Server fehlt.' }, { status: 500 });
   }
 
   try {
@@ -73,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Aktualisiere Firestore mit der neuen Customer ID
     try {
-      const userDocRef = db.collection('firma').doc(uid);
+      const userDocRef = db.collection('companies').doc(uid);
       await userDocRef.update({
         stripeCustomerId: customer.id,
         customerCreatedAt: new Date(),
