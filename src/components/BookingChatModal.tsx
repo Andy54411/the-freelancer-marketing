@@ -36,7 +36,7 @@ export function BookingChatModal({ auftrag, onClose }: BookingChatModalProps) {
                 {/* Chat Nachrichten Bereich (Platzhalter) */}
                 <div className="p-4 flex-grow overflow-y-auto">
                     {/* Hier werden später die Chat-Nachrichten geladen und angezeigt */}
-                    <p className="text-muted-foreground text-sm">Chat-Nachrichten werden hier geladen...</p>
+                    <p className="text-muted-foreground text-sm font-medium">Chat-Nachrichten werden hier geladen...</p>
                 </div>
 
                 {/* Nachricht Eingabebereich (Platzhalter) */}

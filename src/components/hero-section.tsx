@@ -43,24 +43,35 @@ export default function HeroSection() {
           setLoading(false);
           return;
         }
-        const companiesRef = collection(db, 'companies');
-        // Annahme: Ein 'createdAt' Feld vom Typ Timestamp existiert in den Firmendokumenten zur Sortierung.
-        const q = query(companiesRef, orderBy('createdAt', 'desc'), limit(15));
-        const querySnapshot = await getDocs(q);
-
-        const companies: CompanyLogo[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          // Nur Firmen mit einem Logo und Namen hinzufügen
-          // ERWEITERT: Akzeptiere auch Firmen ohne Profilbild und verwende ein Fallback
-          if (data.companyName) {
-            companies.push({
-              id: doc.id,
-              name: data.companyName,
-              profilePictureURL: data.profilePictureURL || '/icon/default-company-logo.png', // Fallback für fehlende Bilder
-            });
-          }
+        
+        // Timeout für bessere Performance - falls Firestore langsam ist
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout')), 3000);
         });
+        
+        const queryPromise = (async () => {
+          const companiesRef = collection(db, 'companies');
+          // Annahme: Ein 'createdAt' Feld vom Typ Timestamp existiert in den Firmendokumenten zur Sortierung.
+          const q = query(companiesRef, orderBy('createdAt', 'desc'), limit(15));
+          const querySnapshot = await getDocs(q);
+
+          const companies: CompanyLogo[] = [];
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            // Nur Firmen mit einem Logo und Namen hinzufügen
+            // ERWEITERT: Akzeptiere auch Firmen ohne Profilbild und verwende ein Fallback
+            if (data.companyName) {
+              companies.push({
+                id: doc.id,
+                name: data.companyName,
+                profilePictureURL: data.profilePictureURL || '/icon/default-company-logo.png', // Fallback für fehlende Bilder
+              });
+            }
+          });
+          return companies;
+        })();
+
+        const companies = await Promise.race([queryPromise, timeoutPromise]);
 
         // NEUE LOGIK: Client-seitige Bildvalidierung überspringen für SSR-Kompatibilität
         // Filtere nur Firmen mit Profilbildern (nicht Default-Fallback)
@@ -76,7 +87,8 @@ export default function HeroSection() {
         setNewCompanies(limitedCompanies);
       } catch (err) {
         console.error("Fehler beim Laden der neuen Firmen:", err);
-        setError("Die neuesten Dienstleister konnten nicht geladen werden."); // Fehlermeldung für den Benutzer setzen
+        // Bei Timeout oder anderen Fehlern - verwende leere Liste statt Fehlermeldung für bessere UX
+        setNewCompanies([]);
       } finally {
         setLoading(false);
       }
@@ -101,7 +113,7 @@ export default function HeroSection() {
                   </span>
                 </h1>
 
-                <p className="mt-8 max-w-2xl text-pretty text-lg">
+                <p className="mt-8 max-w-2xl text-pretty text-lg text-foreground">
                   Taskilo bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!
                 </p>
 
@@ -135,6 +147,11 @@ export default function HeroSection() {
                   width={1200}
                   height={800}
                   priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
+                  style={{ 
+                    maxWidth: '100%',
+                    height: 'auto',
+                  }}
                 />
               </div>
             </div>
@@ -145,7 +162,7 @@ export default function HeroSection() {
           <div className="group relative m-auto max-w-6xl px-6">
             <div className="flex flex-col items-center md:flex-row">
               <div className="md:max-w-44 md:border-r md:pr-6">
-                <p className="text-end text-sm">unsere neuen Tasker</p>
+                <p className="text-end text-sm font-medium text-foreground">unsere neuen Tasker</p>
               </div>
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
                 {newCompanies.length > 0 && (
@@ -197,10 +214,10 @@ export default function HeroSection() {
                   </InfiniteSlider>
                 )}
                 {error && !loading && (
-                  <div className="text-center text-sm text-red-500">{error}</div>
+                  <div className="text-center text-sm font-medium text-red-500">{error}</div>
                 )}
                 {!loading && !error && newCompanies.length === 0 && (
-                  <div className="text-center text-sm text-gray-500">Aktuell keine neuen Dienstleister.</div>
+                  <div className="text-center text-sm font-medium text-gray-500">Aktuell keine neuen Dienstleister.</div>
                 )}
 
                 <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>
