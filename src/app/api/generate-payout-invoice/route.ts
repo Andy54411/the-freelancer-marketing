@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import PDFDocument from 'pdfkit';
+import { getCurrentPlatformFeeRate } from '@/lib/platform-config';
 
 // Initialize Firebase Admin
 let db: any = null;
@@ -133,14 +134,15 @@ export async function POST(request: NextRequest) {
       doc.text(`Ankunftsdatum: ${new Date(payout.arrival_date * 1000).toLocaleDateString('de-DE')}`, 50, 290);
     }
 
-    // Platform Fee Info
-    const platformFee = payout.amount * 0.045; // 4.5% platform fee
+    // Platform Fee Info - dynamisch aus Datenbank laden
+    const platformFeeRate = await getCurrentPlatformFeeRate();
+    const platformFee = payout.amount * platformFeeRate;
     const grossAmount = payout.amount + platformFee;
 
     doc.fontSize(14).text('Gebührenaufschlüsselung:', 50, 330);
     doc.fontSize(12)
        .text(`Bruttobetrag: ${(grossAmount / 100).toFixed(2)} €`, 50, 350)
-       .text(`Plattformgebühr (4,5%): -${(platformFee / 100).toFixed(2)} €`, 50, 365)
+       .text(`Plattformgebühr (${(platformFeeRate * 100).toFixed(1)}%): -${(platformFee / 100).toFixed(2)} €`, 50, 365)
        .text(`Nettobetrag (ausgezahlt): ${(payout.amount / 100).toFixed(2)} €`, 50, 380);
 
     // Footer

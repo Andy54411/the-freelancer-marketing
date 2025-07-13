@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { calculatePlatformFee } from '@/lib/platform-config';
 
 // Initialize Firebase Admin only if environment variables are available
 let db: any = null;
@@ -120,10 +121,9 @@ export async function POST(request: NextRequest) {
 
     console.log("[API /request-payout] Erstelle Payout für Account:", stripeAccountId, "Betrag:", amount);
 
-    // Berechne Plattformgebühr (4.5%)
-    const platformFeeRate = 0.045;
-    const platformFee = Math.floor(amount * platformFeeRate);
-    const payoutAmount = amount - platformFee;
+    // Berechne Plattformgebühr dynamisch aus der Datenbank
+    const feeCalculation = await calculatePlatformFee(amount);
+    const { platformFee, payoutAmount, feeRate: platformFeeRate } = feeCalculation;
 
     console.log("[API /request-payout] Gebührenberechnung:", {
       originalAmount: amount,

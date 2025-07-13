@@ -4,7 +4,7 @@ import { getAllChats } from '@/lib/chat-data';
 import { getSupportTickets } from '@/lib/support-data';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FiUsers, FiBriefcase, FiMessageSquare, FiHelpCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FiUsers, FiBriefcase, FiMessageSquare, FiHelpCircle, FiAlertTriangle, FiSettings } from 'react-icons/fi';
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +44,8 @@ export default async function DashboardPage() {
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-4">Willkommen im Admin-Dashboard</h1>
+            
+            {/* Hauptstatistiken */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     href="/dashboard/admin/companies"
@@ -73,6 +75,26 @@ export default async function DashboardPage() {
                     value={supportTicketsResult.status === 'fulfilled' ? supportTicketsResult.value.length : 0}
                     error={supportTicketsResult.status === 'rejected' ? supportTicketsResult.reason.message : undefined}
                 />
+            </div>
+
+            {/* Plattform-Verwaltung */}
+            <div className="space-y-4">
+                <h2 className="text-2xl font-semibold text-gray-800">Plattform-Verwaltung</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Link href="/dashboard/admin/platform-settings" className="block">
+                        <Card className="hover:shadow-lg transition-shadow h-full border-2 border-[#14ad9f]/20 hover:border-[#14ad9f]/40">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-[#14ad9f]">Plattform-Einstellungen</CardTitle>
+                                <FiSettings className="h-5 w-5 text-[#14ad9f]" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-sm text-gray-600">
+                                    Verwalten Sie Plattformgebühren, Stripe-Einstellungen und andere wichtige Konfigurationen
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                </div>
             </div>
         </div>
     );
