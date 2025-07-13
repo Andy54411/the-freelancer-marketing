@@ -121,22 +121,44 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
     setTimeout(() => reject(new Error('Firebase timeout')), 6000);
   });
 
-  const doc = await Promise.race([
-    db.collection('stripe_accounts').doc(firebaseUserId).get(),
-    firebaseTimeout
-  ]);
-
-  if (!doc || !doc.exists) {
-    const fallback = { available: 0, pending: 0, source: 'no_account' };
-    balanceCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
-    return NextResponse.json(fallback);
+  // Try users collection first, then stripe_accounts as fallback
+  let stripeAccountId = null;
+  
+  try {
+    const userDoc = await Promise.race([
+      db.collection('users').doc(firebaseUserId).get(),
+      firebaseTimeout
+    ]);
+    
+    if (userDoc?.exists) {
+      const userData = userDoc.data();
+      stripeAccountId = userData?.stripeAccountId;
+      console.log("[BALANCE-API] Found stripeAccountId in users:", stripeAccountId);
+    }
+  } catch (error) {
+    console.log("[BALANCE-API] Error accessing users collection:", error);
   }
 
-  const data = doc.data();
-  const stripeAccountId = data?.stripeAccountId;
+  // Fallback: try stripe_accounts collection
+  if (!stripeAccountId) {
+    try {
+      const doc = await Promise.race([
+        db.collection('stripe_accounts').doc(firebaseUserId).get(),
+        firebaseTimeout
+      ]);
+
+      if (doc?.exists) {
+        const data = doc.data();
+        stripeAccountId = data?.stripeAccountId;
+        console.log("[BALANCE-API] Found stripeAccountId in stripe_accounts:", stripeAccountId);
+      }
+    } catch (error) {
+      console.log("[BALANCE-API] Error accessing stripe_accounts collection:", error);
+    }
+  }
 
   if (!stripeAccountId) {
-    const fallback = { available: 0, pending: 0, source: 'no_stripe_id' };
+    const fallback = { available: 0, pending: 0, source: 'no_account' };
     balanceCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
     return NextResponse.json(fallback);
   }
