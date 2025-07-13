@@ -204,8 +204,8 @@ export function SectionCards() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 pb-4">
-          <div className="flex items-center justify-between gap-3">
-            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 px-3 py-1 text-xs">
+          <div className="flex flex-col gap-3">
+            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit">
               {stats.pendingBalance > 0 
                 ? `+${formatCurrency(stats.pendingBalance)} ausstehend` 
                 : 'Sofort verfügbar'
@@ -215,7 +215,7 @@ export function SectionCards() {
               size="sm" 
               onClick={handleWithdraw}
               disabled={isWithdrawing || stats.availableBalance <= 0}
-              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0"
+              className="bg-green-600 hover:bg-green-700 text-white w-full"
             >
               {isWithdrawing ? (
                 <span>Wird verarbeitet...</span>
