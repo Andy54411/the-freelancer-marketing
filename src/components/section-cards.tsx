@@ -85,8 +85,8 @@ export function SectionCards() {
         let pendingBalance = 0;
 
         try {
-          // Use GET request instead of POST to avoid timeout issues
-          const balanceResponse = await fetch(`/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`, {
+          // Use the simple mock version temporarily to avoid timeout issues
+          const balanceResponse = await fetch(`/api/get-stripe-balance-simple?firebaseUserId=${encodeURIComponent(uid)}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
           });
