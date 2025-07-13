@@ -86,7 +86,7 @@ export function SectionCards() {
 
         try {
           // Use the simple mock version temporarily to avoid timeout issues
-          const balanceResponse = await fetch(`/api/get-stripe-balance-simple?firebaseUserId=${encodeURIComponent(uid)}`, {
+          const balanceResponse = await fetch(`/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
           });

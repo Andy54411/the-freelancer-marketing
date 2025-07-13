@@ -2,6 +2,24 @@ import path from 'path';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Build Performance Optimizations
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn']
+    } : false,
+  },
+  
+  // Experimental features for faster builds
+  experimental: {
+    turbo: {
+      loaders: {
+        '.svg': ['@svgr/webpack'],
+      },
+    },
+    serverComponentsExternalPackages: ['firebase-admin', 'stripe'],
+  },
+  
   // Webpack-Konfiguration, um den functions-Ordner zu ignorieren
   webpack: (config, { isServer }) => {
     config.externals = config.externals || [];

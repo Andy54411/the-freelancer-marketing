@@ -13,10 +13,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --max-warnings=0",
+    "lint:fix": "next lint --fix",
     "emulators": "cd firebase_functions && npm run serve",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "postbuild": "next-sitemap"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -1,7 +1,11 @@
 {
+  "buildCommand": "pnpm build",
+  "framework": "nextjs",
+  "regions": ["fra1"],
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "headers": [

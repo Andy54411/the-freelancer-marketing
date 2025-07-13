@@ -1,0 +1,30 @@
+# Firebase Functions (deployed separately)
+firebase_functions/
+firebase-export-*/
+
+# Development files
+*.log
+debug-*.js
+test-*.js
+scripts/
+
+# Large files that don't need to be in build
+public/images/*.jpeg
+public/images/*.jpg
+public/images/*.png
+
+# Database files
+*.rules
+firestore-debug.log
+database-debug.log
+pglite-debug.log
+
+# Documentation
+*.md
+!README.md
+
+# Local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
