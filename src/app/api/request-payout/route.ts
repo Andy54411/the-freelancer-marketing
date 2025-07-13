@@ -121,15 +121,16 @@ export async function POST(request: NextRequest) {
 
     console.log("[API /request-payout] Erstelle Payout für Account:", stripeAccountId, "Betrag:", amount);
 
-    // Berechne Plattformgebühr dynamisch aus der Datenbank
+    // Berechne Plattformgebühr dynamisch aus der Datenbank (nur für Logging/Metadata)
     const feeCalculation = await calculatePlatformFee(amount);
     const { platformFee, payoutAmount, feeRate: platformFeeRate } = feeCalculation;
 
-    console.log("[API /request-payout] Gebührenberechnung:", {
+    console.log("[API /request-payout] Gebührenberechnung (nur für Tracking - Application Fee bereits abgezogen):", {
       originalAmount: amount,
       platformFee,
-      payoutAmount,
-      feeRate: platformFeeRate
+      calculatedPayoutAmount: payoutAmount,
+      feeRate: platformFeeRate,
+      actualPayoutAmount: amount // Der tatsächliche Payout-Betrag (ohne nochmalige Gebührenabzug)
     });
 
     // Prüfe verfügbares Guthaben vor Auszahlung
@@ -150,16 +151,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Erstelle die Auszahlung
+    // Erstelle die Auszahlung - WICHTIG: Verwende den vollen Betrag, da Application Fee bereits beim Payment Intent abgezogen wurde
     const payout = await stripe.payouts.create({
-      amount: payoutAmount,
+      amount: amount, // Vollbetrag - Plattformgebühr wurde bereits als Application Fee transferiert
       currency: 'eur',
       metadata: {
         firebaseUserId,
         originalAmount: amount.toString(),
-        platformFee: platformFee.toString(),
+        platformFee: platformFee.toString(), // Bereits als Application Fee transferiert
         feeRate: platformFeeRate.toString(),
-        processedAt: new Date().toISOString()
+        processedAt: new Date().toISOString(),
+        note: 'Application fee already transferred to platform account'
       }
     }, {
       stripeAccount: stripeAccountId
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[API /request-payout] Payout erfolgreich erstellt:", {
       payoutId: payout.id,
-      amount: payoutAmount,
+      amount: amount, // Voller Betrag ausgezahlt
       status: payout.status
     });
 
@@ -179,12 +181,13 @@ export async function POST(request: NextRequest) {
         payoutId: payout.id,
         originalAmount: amount,
         platformFee,
-        payoutAmount,
+        actualPayoutAmount: amount, // Tatsächlich ausgezahlter Betrag (ohne doppelte Gebührenabzug)
         status: payout.status,
         createdAt: new Date(),
         metadata: {
           feeRate: platformFeeRate,
-          currency: 'eur'
+          currency: 'eur',
+          note: 'Application fee already transferred to platform account'
         }
       });
       console.log("[API /request-payout] Payout-Information in Firestore gespeichert.");
@@ -196,11 +199,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       payoutId: payout.id,
-      amount: payoutAmount,
+      amount: amount, // Tatsächlich ausgezahlter Betrag (voller verfügbarer Betrag)
       originalAmount: amount,
       platformFee,
       status: payout.status,
-      expectedArrival: 'Die Auszahlung erfolgt normalerweise innerhalb von 1-2 Werktagen.'
+      expectedArrival: 'Die Auszahlung erfolgt normalerweise innerhalb von 1-2 Werktagen.',
+      note: 'Plattformgebühr wurde bereits beim Payment als Application Fee an das Hauptkonto transferiert'
     });
 
   } catch (error) {
