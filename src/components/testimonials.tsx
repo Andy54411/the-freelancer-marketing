@@ -79,7 +79,7 @@ export default function Testimonials() {
         <div className="text-center">
           <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900">
             Was unsere Kunden über 
-            <span className="text-blue-600"> Taskilo </span>
+            <span className="text-[#14ad9f]"> Taskilo </span>
             sagen
           </h2>
           <p className="mt-4 text-lg text-gray-600">
