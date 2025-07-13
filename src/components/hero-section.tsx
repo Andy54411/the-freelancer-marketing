@@ -9,6 +9,7 @@ import { InfiniteSlider } from '@/components/ui/infinite-slider'
 import { ProgressiveBlur } from '@/components/ui/progressive-blur'
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { db } from '@/firebase/clients'
+import { useAnalyticsContext } from '@/contexts/AnalyticsContext'
 
 interface CompanyLogo {
   id: string; // WICHTIG: Eindeutige ID für den React-Key
@@ -20,6 +21,17 @@ export default function HeroSection() {
   const [newCompanies, setNewCompanies] = useState<CompanyLogo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
+  const { trackEvent, trackNavigation } = useAnalyticsContext();
+
+  const handleSearchClick = () => {
+    trackEvent('hero_cta_click', 'user_engagement', 'search_help');
+    trackNavigation('order_creation', 'hero_section');
+  };
+
+  const handleProviderClick = () => {
+    trackEvent('hero_cta_click', 'user_engagement', 'become_provider');
+    trackNavigation('provider_registration', 'hero_section');
+  };
 
   useEffect(() => {
     const fetchNewCompanies = async () => {
@@ -94,7 +106,7 @@ export default function HeroSection() {
                 </p>
 
                 <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
-                  <Button asChild size="lg" className="px-5 text-base bg-[#14ad9f] text-white hover:bg-teal-700">
+                  <Button asChild size="lg" className="px-5 text-base bg-[#14ad9f] text-white hover:bg-teal-700" onClick={handleSearchClick}>
                     <Link href="/auftrag/get-started">
                       <span className="text-nowrap">Ich suche Hilfe</span>
                     </Link>
@@ -105,6 +117,7 @@ export default function HeroSection() {
                     size="lg"
                     variant="ghost"
                     className="px-5 text-base"
+                    onClick={handleProviderClick}
                   >
                     <Link href="#link">
                       <span className="text-nowrap">Ich biete Hilfe an</span>

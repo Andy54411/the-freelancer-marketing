@@ -5,8 +5,10 @@ import type { Metadata } from 'next';
 import { Providers } from './providers';
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import Chatbot from '@/components/Chatbot';
 import FooterSection from '@/components/footer';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -30,13 +32,16 @@ export default function RootLayout({
           enableSystem
         >
           <LanguageProvider>
-            <Providers>
-              {children}
-              <FooterSection />
-              <Chatbot />
-              <Analytics />
-              <SpeedInsights />
-            </Providers>
+            <AnalyticsProvider>
+              <Providers>
+                {children}
+                <FooterSection />
+                <Chatbot />
+                <GoogleAnalytics />
+                <Analytics />
+                <SpeedInsights />
+              </Providers>
+            </AnalyticsProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

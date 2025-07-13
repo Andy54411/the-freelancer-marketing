@@ -5,6 +5,7 @@ import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiInfo, FiCheck } from 'react-icons/fi';
 import { useState } from 'react';
 import { useRegistration } from '@/contexts/Registration-Context'; // Korrigierter Pfad zum Context
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const steps = [
   "Über Sie",
@@ -39,6 +40,7 @@ export default function Step1() {
   const [isModalOpen, setIsModalOpen] = useState(false); // Zustand für das Modal
 
   const router = useRouter(); // Next.js Router für Navigation
+  const { trackEvent, trackNavigation } = useAnalytics();
 
 
   // Funktion zum Behandeln des "Weiter"-Klicks
@@ -48,6 +50,9 @@ export default function Step1() {
       return;
     }
 
+    // Analytics: Track registration step progress
+    trackEvent('registration_step_completed', 'registration', 'company_step_1');
+
     // Aktualisiere den globalen Context mit den lokalen Zuständen
     setFirstName(localFirstName);
     setLastName(localLastName);
@@ -56,6 +61,9 @@ export default function Step1() {
     setDateOfBirth(localDateOfBirth);
     setPhoneNumber(localPhoneCountryCode + ' ' + localPhoneNumber);
     setIsManagingDirectorOwner(localIsSoleOwner); // Aufruf mit dem korrigierten Setter
+
+    // Analytics: Track navigation
+    trackNavigation('company_step_2', 'company_step_1');
 
     // Navigiere zum nächsten Schritt
     router.push('/register/company/step2');
