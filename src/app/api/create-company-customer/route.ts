@@ -1,75 +1,123 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
 // Initialize Firebase Admin
 if (!getApps().length) {
-    initializeApp({
-        credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-    });
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
+  initializeApp({
+    credential: cert(serviceAccount),
+    projectId: process.env.FIREBASE_PROJECT_ID,
+  });
 }
 
 const db = getFirestore();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20',
-});
+
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+
+if (!stripeSecret) {
+  console.error("FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-company-customer.");
+}
+
+const stripe = stripeSecret ? new Stripe(stripeSecret, {
+  apiVersion: '2024-06-20',
+}) : null;
 
 export async function POST(request: NextRequest) {
-    try {
-        const { companyData } = await request.json();
-        
-        if (!companyData || !companyData.email || !companyData.uid) {
-            return NextResponse.json(
-                { error: 'Unvollständige Unternehmensdaten' },
-                { status: 400 }
-            );
-        }
+  console.log("[API /create-company-customer] POST Anfrage empfangen.");
 
-        console.log('Creating Stripe Customer for company:', companyData);
+  if (!stripe) {
+    console.error("[API /create-company-customer] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.");
+    return NextResponse.json({ error: 'Stripe-Konfiguration auf dem Server fehlt.' }, { status: 500 });
+  }
 
-        // Erstelle einen Stripe Customer für das Unternehmen
-        const customer = await stripe.customers.create({
-            email: companyData.email,
-            name: companyData.name,
-            metadata: {
-                firebase_uid: companyData.uid,
-                user_type: 'firma',
-                stripe_account_id: companyData.stripeAccountId || '',
-                created_for: 'company_booking'
-            },
-            description: `Company customer for ${companyData.name} (${companyData.email})`
-        });
+  try {
+    const body = await request.json();
+    const { companyName, email, uid } = body;
 
-        console.log('Stripe Customer created:', customer.id);
-
-        // Speichere die customerId in der Firestore Database
-        try {
-            await db.collection('firma').doc(companyData.uid).update({
-                stripeCustomerId: customer.id,
-                stripeCustomerCreatedAt: new Date(),
-            });
-            console.log('Updated firma document with stripeCustomerId');
-        } catch (firestoreError) {
-            console.error('Error updating Firestore:', firestoreError);
-            // Customer wurde erstellt, aber nicht in DB gespeichert - das ist OK für jetzt
-        }
-
-        return NextResponse.json({
-            success: true,
-            customerId: customer.id,
-            message: 'Company customer created successfully'
-        });
-
-    } catch (error) {
-        console.error('Error creating company customer:', error);
-        return NextResponse.json(
-            { error: 'Fehler beim Erstellen des Unternehmenskundenkontos' },
-            { status: 500 }
-        );
+    if (!companyName || typeof companyName !== 'string') {
+      console.error("[API /create-company-customer] Validierungsfehler: Ungültiger Firmenname.", { companyName });
+      return NextResponse.json({ error: 'Ungültiger Firmenname.' }, { status: 400 });
     }
+
+    if (!email || typeof email !== 'string') {
+      console.error("[API /create-company-customer] Validierungsfehler: Ungültige E-Mail.", { email });
+      return NextResponse.json({ error: 'Ungültige E-Mail-Adresse.' }, { status: 400 });
+    }
+
+    if (!uid || typeof uid !== 'string') {
+      console.error("[API /create-company-customer] Validierungsfehler: Ungültige UID.", { uid });
+      return NextResponse.json({ error: 'Ungültige Benutzer-ID.' }, { status: 400 });
+    }
+
+    console.log("[API /create-company-customer] Erstelle Stripe Customer für Unternehmen:", {
+      companyName,
+      email,
+      uid
+    });
+
+    // Erstelle Stripe Customer für das Unternehmen
+    const customer = await stripe.customers.create({
+      email: email,
+      name: companyName,
+      metadata: {
+        firebaseUserId: uid,
+        customerType: 'company',
+        createdFor: 'B2B_payments',
+        createdAt: new Date().toISOString()
+      }
+    });
+
+    console.log("[API /create-company-customer] Stripe Customer erfolgreich erstellt:", customer.id);
+
+    // Aktualisiere Firestore mit der neuen Customer ID
+    try {
+      const userDocRef = db.collection('firma').doc(uid);
+      await userDocRef.update({
+        stripeCustomerId: customer.id,
+        customerCreatedAt: new Date(),
+        customerType: 'company'
+      });
+
+      console.log("[API /create-company-customer] Firestore erfolgreich aktualisiert für UID:", uid);
+    } catch (firestoreError) {
+      console.warn("[API /create-company-customer] Fehler beim Aktualisieren von Firestore:", firestoreError);
+      // Continue even if Firestore update fails, as the Stripe customer was created successfully
+    }
+
+    return NextResponse.json({
+      success: true,
+      customerId: customer.id,
+      message: 'Company customer erfolgreich erstellt',
+      customerDetails: {
+        id: customer.id,
+        email: customer.email,
+        name: customer.name,
+        created: customer.created
+      }
+    });
+
+  } catch (error) {
+    console.error("[API /create-company-customer] Fehler beim Erstellen des Company Customers:", error);
+    
+    let errorMessage = 'Interner Serverfehler beim Erstellen des Company Customers.';
+    
+    if (error instanceof Stripe.errors.StripeError) {
+      errorMessage = `Stripe Fehler: ${error.message}`;
+      
+      // Spezielle Behandlung für häufige Stripe-Fehler
+      if (error.code === 'email_invalid') {
+        errorMessage = 'Die angegebene E-Mail-Adresse ist ungültig.';
+      } else if (error.code === 'customer_creation_failed') {
+        errorMessage = 'Kunde konnte nicht erstellt werden. Versuchen Sie es erneut.';
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    return NextResponse.json({
+      error: errorMessage,
+    }, { status: 500 });
+  }
 }

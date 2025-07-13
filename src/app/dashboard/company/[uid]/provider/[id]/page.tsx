@@ -10,7 +10,7 @@ import { de } from 'date-fns/locale';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import ProviderReviews from '@/components/ProviderReviews';
-import { ProviderBookingModal } from './components/ProviderBookingModal';
+import { DateTimeSelectionPopup, DateTimeSelectionPopupProps } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserProfileData, SavedAddress } from '@/types/types';
 
@@ -78,70 +78,70 @@ export default function CompanyProviderDetailPage() {
 
             if (firmaDoc.exists()) {
                 const data = firmaDoc.data();
-                    // Real-time Rating berechnen
-                    const reviewsQuery = query(
-                        collection(db, 'reviews'),
-                        where('providerId', '==', firmaDoc.id)
-                    );
-                    const reviewsSnapshot = await getDocs(reviewsQuery);
-                    
-                    let calculatedRating = 0;
-                    let calculatedCount = 0;
-                    
-                    if (!reviewsSnapshot.empty) {
-                        const ratings = reviewsSnapshot.docs.map((doc: any) => doc.data().rating).filter((rating: any) => rating);
-                        calculatedCount = ratings.length;
-                        if (calculatedCount > 0) {
-                            calculatedRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / calculatedCount;
-                        }
-                    }
+                // Real-time Rating berechnen
+                const reviewsQuery = query(
+                    collection(db, 'reviews'),
+                    where('providerId', '==', firmaDoc.id)
+                );
+                const reviewsSnapshot = await getDocs(reviewsQuery);
 
-                    setProvider({
-                        id: firmaDoc.id,
-                        companyName: data.companyName,
-                        profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-                        profilePictureURL: data.profilePictureURL,
-                        photoURL: data.photoURL,
-                        bio: data.description || data.bio,
-                        description: data.description,
-                        location: data.location || `${data.companyCity || ''}, ${data.companyCountry || ''}`.trim().replace(/^,\s*/, ''),
-                        skills: data.services || data.skills || [],
-                        selectedCategory: data.selectedCategory,
-                        selectedSubcategory: data.selectedSubcategory,
-                        rating: calculatedRating, // Verwende berechnetn Wert
-                        reviewCount: calculatedCount, // Verwende berechneten Wert
-                        completedJobs: data.completedJobs || 0,
-                        isCompany: true,
-                        priceRange: data.priceRange,
-                        responseTime: data.responseTime,
-                        hourlyRate: data.hourlyRate,
-                        email: data.email,
-                        phone: data.phone,
-                        website: data.website,
-                        founded: data.founded,
-                        teamSize: data.teamSize,
-                        languages: data.languages || [],
-                        portfolio: data.portfolio || [],
-                        services: data.services || [],
-                        stripeAccountId: data.stripeAccountId,
-                    });
+                let calculatedRating = 0;
+                let calculatedCount = 0;
+
+                if (!reviewsSnapshot.empty) {
+                    const ratings = reviewsSnapshot.docs.map((doc: any) => doc.data().rating).filter((rating: any) => rating);
+                    calculatedCount = ratings.length;
+                    if (calculatedCount > 0) {
+                        calculatedRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / calculatedCount;
+                    }
+                }
+
+                setProvider({
+                    id: firmaDoc.id,
+                    companyName: data.companyName,
+                    profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
+                    profilePictureURL: data.profilePictureURL,
+                    photoURL: data.photoURL,
+                    bio: data.description || data.bio,
+                    description: data.description,
+                    location: data.location || `${data.companyCity || ''}, ${data.companyCountry || ''}`.trim().replace(/^,\s*/, ''),
+                    skills: data.services || data.skills || [],
+                    selectedCategory: data.selectedCategory,
+                    selectedSubcategory: data.selectedSubcategory,
+                    rating: calculatedRating, // Verwende berechnetn Wert
+                    reviewCount: calculatedCount, // Verwende berechneten Wert
+                    completedJobs: data.completedJobs || 0,
+                    isCompany: true,
+                    priceRange: data.priceRange,
+                    responseTime: data.responseTime,
+                    hourlyRate: data.hourlyRate,
+                    email: data.email,
+                    phone: data.phone,
+                    website: data.website,
+                    founded: data.founded,
+                    teamSize: data.teamSize,
+                    languages: data.languages || [],
+                    portfolio: data.portfolio || [],
+                    services: data.services || [],
+                    stripeAccountId: data.stripeAccountId,
+                });
             } else {
                 // Falls nicht in firma gefunden, in users suchen
                 const userDoc = await getDoc(doc(db, 'users', providerId));
 
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-                    
+
                     // Real-time Rating berechnen für User
                     const reviewsQuery = query(
                         collection(db, 'reviews'),
                         where('providerId', '==', userDoc.id)
                     );
                     const reviewsSnapshot = await getDocs(reviewsQuery);
-                    
+
                     let calculatedRating = 0;
                     let calculatedCount = 0;
-                    
+
                     if (!reviewsSnapshot.empty) {
                         const ratings = reviewsSnapshot.docs.map((doc: any) => doc.data().rating).filter((rating: any) => rating);
                         calculatedCount = ratings.length;
@@ -203,42 +203,10 @@ export default function CompanyProviderDetailPage() {
         if (!firebaseUser?.uid) return;
 
         try {
-            // Zuerst in users Collection suchen
-            let userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-            let userData = null;
-            
+            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
             if (userDoc.exists()) {
-                userData = userDoc.data() as UserProfileData;
-            } else {
-                // Falls nicht in users gefunden, in firma Collection suchen
-                const firmaDoc = await getDoc(doc(db, 'firma', firebaseUser.uid));
-                if (firmaDoc.exists()) {
-                    const firmaData = firmaDoc.data();
-                    // Konvertiere firma Daten zu UserProfileData Format
-                    userData = {
-                        uid: firmaDoc.id,
-                        email: firebaseUser.email || '',
-                        firstname: firmaData.firstName || '',
-                        lastname: firmaData.lastName || '',
-                        user_type: 'firma',
-                        stripeCustomerId: firmaData.stripeCustomerId, // Falls vorhanden
-                        stripeAccountId: firmaData.stripeAccountId, // Für Unternehmen wichtig
-                        savedAddresses: firmaData.savedAddresses || [{
-                            id: 'company-address',
-                            name: 'Firmenadresse',
-                            line1: firmaData.companyAddressLine1ForBackend || firmaData.step1?.personalStreet || '',
-                            city: firmaData.companyCityForBackend || firmaData.step1?.personalCity || '',
-                            postal_code: firmaData.companyPostalCodeForBackend || firmaData.step1?.personalPostalCode || '',
-                            country: firmaData.companyCountryForBackend || firmaData.step1?.personalCountry || 'DE',
-                        }],
-                        phoneNumber: firmaData.step1?.phoneNumber,
-                    } as any;
-                }
-            }
-            
-            if (userData) {
-                setUserProfile(userData);
-                console.log('User Profile loaded:', userData);
+                const data = userDoc.data();
+                setUserProfile(data as UserProfileData);
             }
         } catch (error) {
             console.error('Fehler beim Laden des Benutzerprofils:', error);
@@ -257,9 +225,11 @@ export default function CompanyProviderDetailPage() {
         }
     };
 
-    const handleBookingConfirm = async (selection: any, time: string, durationString: string, description: string) => {
-        if (!selection || !time || !durationString || !description?.trim() || !provider || !firebaseUser || !userProfile) {
-            console.error('Unvollständige Buchungsdaten:', { selection, time, durationString, description, provider: !!provider, user: !!firebaseUser, userProfile: !!userProfile });
+    const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (selection, time, durationString) => {
+        setDatePickerOpen(false);
+
+        if (!selection || !time || !durationString || !provider || !firebaseUser || !userProfile) {
+            console.error('Unvollständige Buchungsdaten:', { selection, time, durationString, provider: !!provider, user: !!firebaseUser, userProfile: !!userProfile });
             alert('Unvollständige Buchungsdaten. Bitte versuchen Sie es erneut.');
             return;
         }
@@ -275,32 +245,20 @@ export default function CompanyProviderDetailPage() {
             return;
         }
 
-        // Debug: Stripe-Status des aktuellen Benutzers
-        console.log('=== STRIPE DEBUG ===');
-        console.log('User Profile:', {
-            user_type: userProfile.user_type,
-            stripeCustomerId: userProfile.stripeCustomerId,
-            stripeAccountId: (userProfile as any).stripeAccountId,
-            uid: firebaseUser.uid
-        });
+        if (!userProfile.stripeCustomerId) {
+            console.log('User profile:', userProfile);
+            const setupPayment = confirm('Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?');
+            if (setupPayment) {
+                router.push(`/dashboard/company/${companyUid}/settings`);
+            }
+            return;
+        }
 
-        // Für Unternehmen: Verwende stripeAccountId, für Kunden: Verwende stripeCustomerId
-        const isUserCompany = userProfile.user_type === 'firma';
-        const userStripeId = isUserCompany ? (userProfile as any).stripeAccountId : userProfile.stripeCustomerId;
-        
-        if (!userStripeId) {
-            if (isUserCompany) {
-                // Für Unternehmen: Zeige Info und biete direkten Kontakt an
-                const contactProvider = confirm(`Als Unternehmen benötigen Sie ein zusätzliches Kundenkonto für Buchungen.\n\nMöchten Sie stattdessen den Anbieter direkt kontaktieren?\n\nDann können Sie die Buchung direkt mit dem Anbieter abwickeln.`);
-                if (contactProvider) {
-                    // Öffne das Chat-Modal statt Buchungsmodal
-                    setChatModalOpen(true);
-                }
-            } else {
-                const setupPayment = confirm('Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?');
-                if (setupPayment) {
-                    router.push(`/dashboard/user/${firebaseUser.uid}/settings`);
-                }
+        // Prüfe ob Adressdaten vorhanden sind
+        if (!userProfile.savedAddresses || userProfile.savedAddresses.length === 0) {
+            const setupAddress = confirm('Sie haben noch keine Rechnungsadresse hinterlegt. Möchten Sie jetzt zu den Einstellungen gehen, um eine Adresse hinzuzufügen?');
+            if (setupAddress) {
+                router.push(`/dashboard/company/${companyUid}/settings`);
             }
             return;
         }
@@ -308,7 +266,7 @@ export default function CompanyProviderDetailPage() {
         try {
             // Standardadresse für Billing-Daten
             const defaultAddress = userProfile.savedAddresses?.[0];
-            
+
             // Datum formatieren
             let dateFromFormatted: string, dateToFormatted: string, calculatedNumberOfDays = 1;
 
@@ -360,7 +318,7 @@ export default function CompanyProviderDetailPage() {
                 customerFirstName: userProfile.firstname || '',
                 customerLastName: userProfile.lastname || '',
                 customerType: userProfile.user_type || 'private',
-                description: description.trim(),
+                description: `Buchung für ${provider.companyName || provider.userName} - ${provider.selectedSubcategory || provider.selectedCategory || 'Allgemeine Dienstleistung'}`,
                 jobCalculatedPriceInCents: servicePriceInCents,
                 jobCity: defaultAddress?.city || 'Unbekannt',
                 jobCountry: defaultAddress?.country || 'Deutschland',
@@ -408,27 +366,6 @@ export default function CompanyProviderDetailPage() {
 
             // Stripe Payment Intent erstellen
             console.log('Erstelle Payment Intent...');
-            
-            // B2B-Information für Unternehmen (aber normale Bezahlung)
-            let finalCustomerId = userStripeId;
-            if (isUserCompany) {
-                console.log('Company booking detected - proceeding with B2B payment...');
-                
-                // Zeige B2B-Info, aber fahre mit normaler Bezahlung fort
-                const proceedWithPayment = confirm(`B2B GESCHÄFTSBUCHUNG:\n\nIhr Unternehmen: "${userProfile.companyName || 'Mietkoch Andy'}"\nBucht bei: "${provider.companyName || provider.userName}"\n\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\nDauer: ${durationString}\nDatum: ${dateFromFormatted}\n\nDie Bezahlung erfolgt über Stripe.\nNach erfolgreicher Zahlung können Sie mit dem Anbieter chatten.\n\nJetzt bezahlen?`);
-                
-                if (!proceedWithPayment) {
-                    // Benutzer möchte nicht bezahlen
-                    return;
-                }
-                
-                // Für Unternehmen: Verwende spezielle Markierung für automatische Customer-Erstellung
-                if (!userStripeId || userStripeId.startsWith('acct_')) {
-                    console.log('Company needs Customer ID - will be created by payment API...');
-                    finalCustomerId = 'CREATE_CUSTOMER_FOR_COMPANY'; // Spezielle Markierung
-                }
-            }
-            
             const response = await fetch('/api/create-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -439,15 +376,9 @@ export default function CompanyProviderDetailPage() {
                     connectedAccountId: provider.stripeAccountId || '',
                     taskId: tempJobDraftId,
                     firebaseUserId: firebaseUser.uid,
-                    stripeCustomerId: finalCustomerId, // Kann 'CREATE_CUSTOMER_FOR_COMPANY' sein
-                    // Zusätzliche B2B Parameter
-                    isB2BTransaction: isUserCompany,
-                    payerAccountId: isUserCompany ? userStripeId : undefined,
+                    stripeCustomerId: userProfile.stripeCustomerId,
                     orderDetails: orderDetailsForBackend,
                     billingDetails: billingDetailsForApi,
-                    // Informationen für Customer-Erstellung
-                    companyName: isUserCompany ? (userProfile.companyName || 'Mietkoch Andy') : undefined,
-                    customerEmail: firebaseUser.email,
                 }),
             });
 
@@ -458,25 +389,13 @@ export default function CompanyProviderDetailPage() {
             }
 
             console.log('Payment Intent erfolgreich erstellt:', data.clientSecret);
-            
+
             // Erfolgreiche Buchung mit Payment Intent
-            const successMessage = `Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über Stripe abgewickelt.`;
-            
-            // Für B2B-Buchungen: Biete Chat nach Zahlung an
-            if (isUserCompany) {
-                const openChat = confirm(`${successMessage}\n\n✅ ZAHLUNG EINGELEITET\n\nMöchten Sie jetzt direkt mit dem Anbieter chatten, um weitere Details zu besprechen?`);
-                
-                if (openChat) {
-                    setChatModalOpen(true);
-                    return; // Bleibe auf der Seite für Chat
-                }
-            } else {
-                alert(successMessage);
-            }
-            
+            alert(`Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über Stripe abgewickelt.`);
+
             // Weiterleitung zur Zahlungsseite oder zurück zum Dashboard
             router.push(`/dashboard/company/${companyUid}`);
-            
+
         } catch (error) {
             console.error('Fehler beim Erstellen der Buchung:', error);
             alert(`Fehler beim Buchen des Termins: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
@@ -606,8 +525,8 @@ export default function CompanyProviderDetailPage() {
                                             <span className="text-lg font-medium text-gray-900 dark:text-white">
                                                 {(provider.rating ?? 0).toFixed(1)}
                                             </span>                                        <span className="text-gray-500 dark:text-gray-400" data-translatable data-translation-key="provider.reviews.count">
-                                            ({provider.reviewCount} Bewertungen)
-                                        </span>
+                                                ({provider.reviewCount} Bewertungen)
+                                            </span>
                                         </div>
                                     )}
 
@@ -752,7 +671,7 @@ export default function CompanyProviderDetailPage() {
                             showDetailed={true}
                         />
 
-                                    {/* Additional Info */}
+                        {/* Additional Info */}
                         {(provider.founded || (provider.languages && Array.isArray(provider.languages) && provider.languages.length > 0)) && (
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4" data-translatable data-translation-key="provider.additional.title">
@@ -832,13 +751,22 @@ export default function CompanyProviderDetailPage() {
                 />
             )}
 
-            {/* Provider Booking Modal */}
+            {/* Direct Booking DatePicker */}
             {provider && (
-                <ProviderBookingModal
+                <DateTimeSelectionPopup
                     isOpen={datePickerOpen}
                     onClose={() => setDatePickerOpen(false)}
-                    provider={provider}
-                    onConfirm={handleBookingConfirm}
+                    onConfirm={handleDateTimeConfirm}
+                    bookingSubcategory={provider.selectedSubcategory || provider.selectedCategory || null}
+                    contextCompany={{
+                        id: provider.id,
+                        companyName: provider.companyName || provider.userName || 'Unbekannter Anbieter',
+                        hourlyRate: provider.hourlyRate || 0,
+                        profilePictureURL: getProfileImage(),
+                        description: provider.bio || provider.description,
+                        selectedSubcategory: provider.selectedSubcategory,
+                        // Weitere erforderliche Felder für AnbieterDetails können hier hinzugefügt werden
+                    }}
                 />
             )}
         </div>

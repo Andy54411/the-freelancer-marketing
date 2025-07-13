@@ -69,8 +69,37 @@ export async function POST(request: NextRequest) {
       console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Firebase User ID.", { firebaseUserId });
       return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
     }
-    if (!stripeCustomerId || typeof stripeCustomerId !== 'string' || !stripeCustomerId.startsWith('cus_')) {
-      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Stripe Customer ID.", { stripeCustomerId });
+    // NEU: Automatische Customer-Erstellung für B2B-Unternehmen
+    let finalStripeCustomerId = stripeCustomerId;
+    if (stripeCustomerId === 'CREATE_CUSTOMER_FOR_COMPANY') {
+      console.log("[API /create-payment-intent] Erstelle automatisch Customer ID für Unternehmen...");
+      
+      const { companyName, customerEmail } = body;
+      
+      try {
+        const customer = await stripe.customers.create({
+          email: customerEmail,
+          name: companyName || 'Unternehmen',
+          metadata: {
+            firebaseUserId: firebaseUserId,
+            createdFor: 'B2B_booking',
+            isCompany: 'true'
+          }
+        });
+        
+        finalStripeCustomerId = customer.id;
+        console.log("[API /create-payment-intent] Customer ID erfolgreich erstellt:", finalStripeCustomerId);
+        
+        // TODO: Hier könnte die Customer ID auch in Firestore gespeichert werden
+        
+      } catch (customerError) {
+        console.error("[API /create-payment-intent] Fehler beim Erstellen der Customer ID:", customerError);
+        return NextResponse.json({ error: 'Kunde konnte nicht erstellt werden.' }, { status: 500 });
+      }
+    }
+    
+    if (!finalStripeCustomerId || typeof finalStripeCustomerId !== 'string' || !finalStripeCustomerId.startsWith('cus_')) {
+      console.error("[API /create-payment-intent] Validierungsfehler: Ungültige Stripe Customer ID.", { stripeCustomerId: finalStripeCustomerId });
       return NextResponse.json({ error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' }, { status: 400 });
     }
     // NEU: Validierung für billingDetails
@@ -172,49 +201,150 @@ export async function POST(request: NextRequest) {
     console.log(`  Basispreis & Gesamtbetrag für Käufer (jobPriceInCents): ${jobPriceInCents} Cents`);
     console.log(`  Plattformgebühr (totalApplicationFee, von Anbieter getragen): ${totalApplicationFee} Cents`);
 
+    // NEU: B2B Guthaben-Prüfung für Unternehmen
+    const { isB2BTransaction, payerAccountId } = body;
+    let useAccountBalance = false;
+    let availableBalance = 0;
+
+    if (isB2BTransaction && payerAccountId && payerAccountId.startsWith('acct_')) {
+      console.log(`[API /create-payment-intent] B2B-Transaktion erkannt. Prüfe Guthaben für Account: ${payerAccountId}`);
+      
+      try {
+        // Prüfe das verfügbare Guthaben des Unternehmens-Accounts
+        const balance = await stripe.balance.retrieve({
+          stripeAccount: payerAccountId
+        });
+        
+        // Verfügbares Guthaben in der gewünschten Währung
+        const eurBalance = balance.available.find(b => b.currency === 'eur');
+        availableBalance = eurBalance ? eurBalance.amount : 0;
+        
+        console.log(`[API /create-payment-intent] Verfügbares Guthaben: ${availableBalance} Cents, Benötigt: ${totalAmountToChargeBuyer} Cents`);
+        
+        if (availableBalance >= totalAmountToChargeBuyer) {
+          useAccountBalance = true;
+          console.log(`[API /create-payment-intent] Ausreichend Guthaben vorhanden. Verwende Account-to-Account Transfer.`);
+        } else {
+          console.log(`[API /create-payment-intent] Unzureichendes Guthaben. Fallback auf Kreditkartenzahlung.`);
+        }
+      } catch (balanceError) {
+        console.warn(`[API /create-payment-intent] Fehler beim Abrufen des Guthabens:`, balanceError);
+        console.log(`[API /create-payment-intent] Fallback auf Kreditkartenzahlung.`);
+      }
+    }
+
 
 
     console.log(`[API /create-payment-intent] Konfiguriere PaymentIntent für Client-seitige Bestätigung (keine Weiterleitungen).`);
 
-    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
-      amount: totalAmountToChargeBuyer, // Der Gesamtbetrag, den der Käufer zahlt
-      currency: currency,
-      customer: stripeCustomerId,
-      application_fee_amount: totalApplicationFee, // Die Gesamtgebühr für eure Plattform
-      transfer_data: {
-        destination: connectedAccountId, // Der Restbetrag geht an den Dienstleister
-      },
-      confirm: false, // PaymentIntent wird NICHT sofort bestätigt
-      setup_future_usage: 'off_session', // Karte für zukünftige Zahlungen speichern
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never', // Verhindert Weiterleitungen
-      },
-      metadata: {
-        tempJobDraftId: taskId,
-        firebaseUserId: firebaseUserId,
-        // NEU: Detaillierte Preiskomponenten in den Metadaten speichern
-        originalJobPriceInCents: jobPriceInCents.toString(),
-        buyerServiceFeeInCents: '0', // Käufer zahlt keine Gebühr mehr
-        sellerCommissionInCents: totalApplicationFee.toString(), // Die Gebühr des Verkäufers
-        totalPlatformFeeInCents: totalApplicationFee.toString(),
-        // Optional: Weitere billingDetails hier hinzufügen, wenn sie für Webhooks relevant sind
-        // billingName: billingDetails?.name,
-        // billingEmail: billingDetails?.email,
-        // billingPostalCode: billingDetails?.address?.postal_code,
+    let paymentIntentParams: Stripe.PaymentIntentCreateParams;
+
+    if (useAccountBalance) {
+      // B2B Account-to-Account Transfer (ohne Kreditkarte)
+      console.log(`[API /create-payment-intent] Konfiguriere Account-to-Account Transfer für B2B-Zahlung.`);
+      
+      // Für Account-to-Account Transfer erstellen wir einen Transfer direkt
+      try {
+        const transfer = await stripe.transfers.create({
+          amount: jobPriceInCents - totalApplicationFee, // Betrag nach Abzug der Plattformgebühr
+          currency: currency,
+          destination: connectedAccountId,
+          source_transaction: undefined, // Kein Payment Intent erforderlich
+          metadata: {
+            type: 'B2B_account_transfer',
+            taskId: taskId,
+            payerAccountId: payerAccountId,
+            originalAmount: totalAmountToChargeBuyer
+          }
+        }, {
+          stripeAccount: payerAccountId // Transfer vom Payer Account
+        });
+
+        console.log(`[API /create-payment-intent] Account-to-Account Transfer erfolgreich:`, transfer.id);
+        
+        return NextResponse.json({
+          success: true,
+          transferId: transfer.id,
+          paymentMethod: 'account_balance',
+          message: 'Zahlung erfolgreich über Guthaben abgewickelt'
+        });
+        
+      } catch (transferError) {
+        console.error(`[API /create-payment-intent] Fehler beim Account Transfer:`, transferError);
+        // Fallback auf normale Kreditkartenzahlung
+        useAccountBalance = false;
       }
-    };
+    }
 
-    console.log("[API /create-payment-intent] Erstelle PaymentIntent mit Parametern:", JSON.stringify(paymentIntentParams, null, 2));
-    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
-    console.log("[API /create-payment-intent] PaymentIntent erfolgreich erstellt:", paymentIntent.id);
+    if (!useAccountBalance) {
+      // Standard Kreditkarten-Payment Intent
+      paymentIntentParams = {
+        amount: totalAmountToChargeBuyer, // Der Gesamtbetrag, den der Käufer zahlt
+        currency: currency,
+        customer: finalStripeCustomerId,
+        application_fee_amount: totalApplicationFee, // Die Gesamtgebühr für eure Plattform
+        transfer_data: {
+          destination: connectedAccountId, // Der Restbetrag geht an den Dienstleister
+        },
+        confirm: false, // PaymentIntent wird NICHT sofort bestätigt
+        setup_future_usage: 'off_session', // Karte für zukünftige Zahlungen speichern
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never', // Verhindert Weiterleitungen
+        },
+        metadata: {
+          tempJobDraftId: taskId,
+          firebaseUserId: firebaseUserId,
+          paymentMethod: 'credit_card',
+          // NEU: Detaillierte Preiskomponenten in den Metadaten speichern
+          originalJobPriceInCents: jobPriceInCents.toString(),
+          buyerServiceFeeInCents: '0', // Käufer zahlt keine Gebühr mehr
+          sellerCommissionInCents: totalApplicationFee.toString(), // Die Gebühr des Verkäufers
+          totalPlatformFeeInCents: totalApplicationFee.toString(),
+        }
+      };
 
-    return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-    });
+      console.log("[API /create-payment-intent] Erstelle PaymentIntent mit Parametern:", JSON.stringify(paymentIntentParams, null, 2));
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+      console.log("[API /create-payment-intent] PaymentIntent erfolgreich erstellt:", paymentIntent.id);
+
+      return NextResponse.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        paymentMethod: 'credit_card'
+      });
+    }
 
   } catch (error: unknown) {
+    let errorMessage = 'Interner Serverfehler beim Erstellen des PaymentIntents.';
+    let stripeErrorCode: string | null = null;
+    let stripeErrorType: string | null = null;
+    let rawErrorDetails: Stripe.StripeRawError | null = null;
+
+    if (error instanceof Stripe.errors.StripeError) {
+      console.error("[API /create-payment-intent] StripeError im Catch-Block:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      errorMessage = `Stripe Fehler: ${error.message}`;
+      stripeErrorCode = error.code || null;
+      stripeErrorType = error.type;
+      const raw = error.raw as Stripe.StripeRawError;
+      if (raw && typeof raw.type === 'string') {
+        rawErrorDetails = raw;
+      }
+    } else if (error instanceof Error) {
+      console.error("[API /create-payment-intent] Allgemeiner Fehler im Catch-Block:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      errorMessage = error.message;
+    } else {
+      console.error("[API /create-payment-intent] Unbekannter Fehler im Catch-Block:", JSON.stringify(error, null, 2));
+    }
+
+    return NextResponse.json({
+      error: errorMessage,
+      details: stripeErrorCode,
+      stripeErrorType: stripeErrorType,
+      raw: rawErrorDetails
+    }, { status: 500 });
+  }
+}
     let errorMessage = 'Interner Serverfehler beim Erstellen des PaymentIntents.';
     let stripeErrorCode: string | null = null;
     let stripeErrorType: string | null = null;
