@@ -32,6 +32,7 @@ export default function Step1() {
   const [localPassword, setLocalPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localDateOfBirth, setLocalDateOfBirth] = useState('');
+  const [localPhoneCountryCode, setLocalPhoneCountryCode] = useState('+49');
   const [localPhoneNumber, setLocalPhoneNumber] = useState('');
   const [localIsSoleOwner, setLocalIsSoleOwner] = useState(false); // Initial auf false setzen
   const [agreeTerms, setAgreeTerms] = useState(false); // Initial auf false setzen
@@ -53,7 +54,7 @@ export default function Step1() {
     setEmail(localEmail);
     setPassword(localPassword);
     setDateOfBirth(localDateOfBirth);
-    setPhoneNumber(localPhoneNumber);
+    setPhoneNumber(localPhoneCountryCode + ' ' + localPhoneNumber);
     setIsManagingDirectorOwner(localIsSoleOwner); // Aufruf mit dem korrigierten Setter
 
     // Navigiere zum nächsten Schritt
@@ -69,9 +70,8 @@ export default function Step1() {
       confirmPassword.trim() !== '' &&
       localDateOfBirth.trim() !== '' &&
       localPhoneNumber.trim() !== '' &&
-      localPhoneNumber.trim() !== '' &&
-      agreeTerms && // Allgemeine Geschäftsbedingungen müssen akzeptiert sein
-      localIsSoleOwner; // Alleiniger Inhaber muss bestätigt sein
+      agreeTerms &&
+      localIsSoleOwner;
   };
 
   return (
@@ -163,10 +163,8 @@ export default function Step1() {
               <div className="flex gap-2 w-full">
                 <select
                   className="w-20 flex-shrink-0 px-2 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800 text-sm"
-                  value={localPhoneNumber.substring(0, localPhoneNumber.indexOf(' ') + 1).trim()}
-                  onChange={(e) =>
-                    setLocalPhoneNumber(e.target.value + localPhoneNumber.substring(localPhoneNumber.indexOf(' ') + 1))
-                  }
+                  value={localPhoneCountryCode}
+                  onChange={(e) => setLocalPhoneCountryCode(e.target.value)}
                 >
                   <option value="+49">🇩🇪 +49</option>
                   <option value="+41">🇨🇭 +41</option>
@@ -176,10 +174,8 @@ export default function Step1() {
                 <input
                   type="tel"
                   id="phoneNumber"
-                  value={localPhoneNumber.substring(localPhoneNumber.indexOf(' ') + 1)}
-                  onChange={(e) =>
-                    setLocalPhoneNumber(localPhoneNumber.substring(0, localPhoneNumber.indexOf(' ') + 1) + e.target.value)
-                  }
+                  value={localPhoneNumber}
+                  onChange={(e) => setLocalPhoneNumber(e.target.value)}
                   required
                   placeholder="Deine Nummer"
                   className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"

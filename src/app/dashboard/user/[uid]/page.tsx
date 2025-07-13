@@ -17,6 +17,7 @@ import { toast } from 'sonner'; // Importiere toast
 import ProfilePictureUploadModal from './components/ProfilePictureUploadModal'; // Pfad korrigiert
 import CreateOrderModal from './components/CreateOrderModal';
 import SupportChatInterface from './components/Support/SupportChatInterface';
+import TaskiloProjectAssistant from '@/components/TaskiloProjectAssistant';
 import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
 import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 
@@ -317,7 +318,7 @@ export default function UserDashboardPage() {
         addr.id === updatedAddress.id ? updatedAddress : addr
       ) || [];
 
-      // Validierung auf eindeutigen Namen (außer bei der bearbeiteten Adresse selbst)
+      // Validierung auf eindeutige Namen (außer bei der bearbeiteten Adresse selbst)
       if (updatedAddresses.some(addr => addr.name === updatedAddress.name && addr.id !== updatedAddress.id)) {
         alert("Eine andere Adresse mit diesem Namen existiert bereits. Bitte wählen Sie einen eindeutigen Namen.");
         return;
@@ -618,6 +619,18 @@ export default function UserDashboardPage() {
                 }}
               />
             </Modal>
+          )}
+          
+          {/* Taskilo KI-Projekt-Assistent */}
+          {currentUser?.uid && (
+            <TaskiloProjectAssistant 
+              userId={currentUser.uid}
+              onOrderCreate={(orderData) => {
+                toast.success('Auftrag erfolgreich erstellt!');
+                // Optional: Refresh der Seite oder Navigation
+                window.location.reload();
+              }}
+            />
           )}
         </div>
       </ProtectedRoute>
