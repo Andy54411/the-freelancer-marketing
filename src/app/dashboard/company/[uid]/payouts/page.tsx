@@ -135,7 +135,8 @@ export default function PayoutOverviewPage() {
 
   const downloadInvoice = async (payoutId: string) => {
     try {
-      const response = await fetch('/api/generate-payout-invoice', {
+      // Verwende zuerst die einfache HTML-Version
+      const response = await fetch('/api/generate-payout-invoice-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -145,22 +146,54 @@ export default function PayoutOverviewPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Fehler beim Generieren der Rechnung');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `Auszahlung_${payoutId}_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const htmlContent = await response.text();
+      
+      // Öffne HTML in neuem Fenster zum Drucken/Speichern
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Auto-Print Dialog öffnen
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+        
+        // Erfolgsmeldung zeigen
+        console.log('Rechnung erfolgreich geöffnet');
+      } else {
+        // Fallback: HTML in Blob speichern
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Auszahlung_${payoutId}_${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // Erfolgsmeldung zeigen
+        console.log('Rechnung erfolgreich heruntergeladen');
+      }
     } catch (err) {
       console.error('Error downloading invoice:', err);
-      alert('Fehler beim Download der Rechnung');
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      
+      // Zeige eine benutzerfreundlichere Fehlermeldung
+      if (errorMessage.includes('Zahlungsverarbeitung nicht verfügbar')) {
+        alert('Die Rechnungsgenerierung ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.');
+      } else if (errorMessage.includes('Datenbankverbindung nicht verfügbar')) {
+        alert('Verbindungsproblem zur Datenbank. Bitte versuchen Sie es später erneut.');
+      } else {
+        alert(`Fehler beim Erstellen der Rechnung: ${errorMessage}`);
+      }
     }
   };
 
