@@ -3,9 +3,9 @@ import Stripe from 'stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-// Simple in-memory cache for balance data (5 minutes TTL)
+// Simple in-memory cache for balance data (3 minutes TTL for faster updates)
 const balanceCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutes in milliseconds
 
 // Initialize Firebase Admin - robust production version
 let db: any = null;
@@ -193,21 +193,75 @@ async function handleBalanceRequest(firebaseUserId: string) {
 
     console.log("[API /get-stripe-balance] Rufe Stripe Balance ab für Account:", stripeAccountId);
 
-    // Hole das Guthaben vom Stripe Connected Account mit Timeout
+    // Hole das Guthaben vom Stripe Connected Account mit Timeout und Retry-Logik
     if (!stripe) {
       throw new Error('Stripe client is not initialized');
     }
 
-    // Implementiere einen Timeout für die Stripe API-Anfrage
-    const balancePromise = stripe.balance.retrieve({
-      stripeAccount: stripeAccountId
-    });
+    let balance: Stripe.Balance | undefined;
+    let retryCount = 0;
+    const maxRetries = 2;
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Stripe API timeout')), 25000); // 25 Sekunden Timeout
-    });
+    while (retryCount <= maxRetries) {
+      try {
+        console.log(`[API /get-stripe-balance] Attempt ${retryCount + 1}/${maxRetries + 1} for Stripe API call`);
+        
+        // Implementiere einen aggressiveren Timeout für die Stripe API-Anfrage
+        const balancePromise = stripe.balance.retrieve({
+          stripeAccount: stripeAccountId
+        });
 
-    const balance = await Promise.race([balancePromise, timeoutPromise]) as Stripe.Balance;
+        // Reduziere Timeout auf 10 Sekunden für ersten Versuch, dann 15 für Retry
+        const timeoutMs = retryCount === 0 ? 10000 : 15000;
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Stripe API timeout')), timeoutMs);
+        });
+
+        balance = await Promise.race([balancePromise, timeoutPromise]) as Stripe.Balance;
+        console.log(`[API /get-stripe-balance] Stripe API call successful on attempt ${retryCount + 1}`);
+        break; // Erfolg - verlasse die Retry-Schleife
+
+      } catch (error) {
+        retryCount++;
+        console.warn(`[API /get-stripe-balance] Attempt ${retryCount} failed:`, error instanceof Error ? error.message : error);
+        
+        if (retryCount > maxRetries) {
+          // Letzter Versuch fehlgeschlagen - gib Fallback-Werte zurück
+          console.error("[API /get-stripe-balance] All retry attempts failed, returning fallback balance");
+          
+          // Prüfe ob es ein Timeout war
+          if (error instanceof Error && error.message === 'Stripe API timeout') {
+            // Cache einen temporären 0-Wert für 1 Minute
+            const fallbackData = {
+              available: 0,
+              pending: 0,
+              currency: 'eur',
+              stripeAccountId: stripeAccountId,
+              fallback: true,
+              message: 'Guthaben wird geladen - bitte aktualisieren Sie die Seite'
+            };
+            
+            balanceCache.set(cacheKey, {
+              data: fallbackData,
+              timestamp: Date.now() - (CACHE_TTL - 60000) // 1 Minute Cache
+            });
+            
+            return NextResponse.json(fallbackData);
+          }
+          
+          // Andere Fehler weiterwerfen
+          throw error;
+        }
+        
+        // Kurze Pause vor Retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    // Sicherheitscheck falls balance undefined ist
+    if (!balance) {
+      throw new Error('Failed to retrieve balance after all retry attempts');
+    }
 
     // Berechne verfügbares und ausstehendes Guthaben in EUR
     const eurBalanceAvailable = balance.available.find(b => b.currency === 'eur');
