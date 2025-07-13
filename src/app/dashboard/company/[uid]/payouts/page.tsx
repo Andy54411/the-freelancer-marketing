@@ -48,7 +48,7 @@ export default function PayoutOverviewPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const companyId = params.companyId as string;
+  const uid = params.uid as string;
 
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [summary, setSummary] = useState<PayoutSummary | null>(null);
@@ -56,9 +56,9 @@ export default function PayoutOverviewPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !companyId) return;
+    if (!user || !uid) return;
     loadPayoutHistory();
-  }, [user, companyId]);
+  }, [user, uid]);
 
   const loadPayoutHistory = async () => {
     try {
@@ -68,7 +68,7 @@ export default function PayoutOverviewPage() {
       const response = await fetch('/api/get-payout-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUserId: companyId })
+        body: JSON.stringify({ firebaseUserId: uid })
       });
 
       if (!response.ok) {
@@ -139,7 +139,7 @@ export default function PayoutOverviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          firebaseUserId: companyId,
+          firebaseUserId: uid,
           payoutId: payoutId
         })
       });
@@ -193,7 +193,7 @@ export default function PayoutOverviewPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <button
-            onClick={() => router.push(`/dashboard/company/${companyId}/settings`)}
+            onClick={() => router.push(`/dashboard/company/${uid}/settings`)}
             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <ArrowLeft className="w-6 h-6" />
