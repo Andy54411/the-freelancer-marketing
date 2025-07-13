@@ -38,35 +38,51 @@ const stripe = stripeSecret ? new Stripe(stripeSecret, {
   apiVersion: '2024-06-20',
 }) : null;
 
-export async function POST(request: NextRequest) {
-  console.log("[API /get-stripe-balance] POST Anfrage empfangen.");
+// Gemeinsame Logik für GET und POST
+async function handleBalanceRequest(firebaseUserId: string) {
+  console.log("[API /get-stripe-balance] Processing request for user:", firebaseUserId);
 
   // Debugging der Umgebungsvariablen
   console.log("[API /get-stripe-balance] Environment check:", {
     hasStripeSecret: !!stripeSecret,
     hasFirebaseDb: !!db,
-    nodeEnv: process.env.NODE_ENV
+    nodeEnv: process.env.NODE_ENV,
+    hasFirebaseServiceAccountKey: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+    hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID
   });
 
   if (!stripe) {
     console.error("[API /get-stripe-balance] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.");
-    return NextResponse.json({ error: 'Stripe-Konfiguration auf dem Server fehlt.' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Stripe-Konfiguration auf dem Server fehlt.',
+      debug: {
+        hasStripeSecret: !!stripeSecret,
+        env: process.env.NODE_ENV
+      }
+    }, { status: 500 });
   }
 
   if (!db) {
     console.error("[API /get-stripe-balance] Firebase wurde nicht initialisiert.");
-    return NextResponse.json({ error: 'Firebase-Konfiguration auf dem Server fehlt.' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Firebase-Konfiguration auf dem Server fehlt.',
+      debug: {
+        hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID
+      }
+    }, { status: 500 });
+  }
+
+  if (!firebaseUserId || typeof firebaseUserId !== 'string') {
+    console.error("[API /get-stripe-balance] Validierungsfehler: Ungültige Firebase User ID.", { firebaseUserId });
+    return NextResponse.json({ 
+      error: 'Ungültige Firebase User ID.',
+      received: firebaseUserId,
+      type: typeof firebaseUserId
+    }, { status: 400 });
   }
 
   try {
-    const body = await request.json();
-    const { firebaseUserId } = body;
-
-    if (!firebaseUserId || typeof firebaseUserId !== 'string') {
-      console.error("[API /get-stripe-balance] Validierungsfehler: Ungültige Firebase User ID.", { firebaseUserId });
-      return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
-    }
-
     // Hole die Stripe Account ID aus der Firestore
     // Versuche zuerst die companies Collection, dann die users Collection
     let userDoc;
@@ -104,13 +120,25 @@ export async function POST(request: NextRequest) {
     }
 
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-      console.error("[API /get-stripe-balance] Keine gültige Stripe Account ID gefunden.", { stripeAccountId });
-      return NextResponse.json({ error: 'Keine gültige Stripe Account ID gefunden.' }, { status: 400 });
+      console.warn("[API /get-stripe-balance] Keine gültige Stripe Account ID gefunden - Benutzer wahrscheinlich noch nicht vollständig registriert.", { stripeAccountId });
+      
+      // Für Benutzer ohne vollständige Stripe-Registrierung geben wir 0 Balance zurück
+      return NextResponse.json({
+        available: 0,
+        pending: 0,
+        currency: 'eur',
+        stripeAccountId: null,
+        message: 'Stripe-Konto noch nicht vollständig eingerichtet'
+      });
     }
 
     console.log("[API /get-stripe-balance] Rufe Stripe Balance ab für Account:", stripeAccountId);
 
     // Hole das Guthaben vom Stripe Connected Account
+    if (!stripe) {
+      throw new Error('Stripe client is not initialized');
+    }
+    
     const balance = await stripe.balance.retrieve({
       stripeAccount: stripeAccountId
     });
@@ -165,5 +193,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       error: errorMessage,
     }, { status: statusCode });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  console.log("[API /get-stripe-balance] GET Anfrage empfangen.");
+  
+  const { searchParams } = new URL(request.url);
+  const firebaseUserId = searchParams.get('firebaseUserId');
+  
+  if (!firebaseUserId) {
+    return NextResponse.json({ error: 'firebaseUserId Parameter erforderlich.' }, { status: 400 });
+  }
+  
+  return handleBalanceRequest(firebaseUserId);
+}
+
+export async function POST(request: NextRequest) {
+  console.log("[API /get-stripe-balance] POST Anfrage empfangen.");
+
+  try {
+    let body;
+    try {
+      body = await request.json();
+      console.log("[API /get-stripe-balance] Request body parsed:", body);
+    } catch (parseError) {
+      console.error("[API /get-stripe-balance] Fehler beim Parsen des Request Body:", parseError);
+      return NextResponse.json({ error: 'Ungültiger Request Body - JSON erwartet.' }, { status: 400 });
+    }
+    
+    const { firebaseUserId } = body;
+
+    return handleBalanceRequest(firebaseUserId);
+  } catch (error) {
+    console.error("[API /get-stripe-balance] Fehler beim Verarbeiten der POST-Anfrage:", error);
+    return NextResponse.json({ error: 'Fehler beim Verarbeiten der Anfrage.' }, { status: 500 });
   }
 }

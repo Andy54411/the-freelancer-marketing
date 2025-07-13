@@ -95,9 +95,15 @@ export function SectionCards() {
             const balanceData = await balanceResponse.json();
             availableBalance = (balanceData.available || 0) / 100; // Convert from cents to euros
             pendingBalance = (balanceData.pending || 0) / 100;
+          } else {
+            console.warn(`Stripe balance API error: ${balanceResponse.status} ${balanceResponse.statusText}`);
+            // Bei Fehlern wird Balance auf 0 gelassen
+            const errorData = await balanceResponse.json().catch(() => ({}));
+            console.warn('Error details:', errorData);
           }
         } catch (balanceError) {
           console.warn('Failed to fetch Stripe balance:', balanceError);
+          // Bei Netzwerkfehlern wird Balance auf 0 gelassen
         }
 
         // Setze alle Statistiken
