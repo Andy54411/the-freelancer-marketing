@@ -64,8 +64,8 @@ export default function IntegrationsSection1() {
                 </div>
               </div>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                "Taskilo hat mir geholfen, schnell und unkompliziert einen zuverlässigen Handwerker zu finden. 
-                Die Qualität der Arbeit war ausgezeichnet!"
+                &ldquo;Taskilo hat mir geholfen, schnell und unkompliziert einen zuverlässigen Handwerker zu finden. 
+                Die Qualität der Arbeit war ausgezeichnet!&rdquo;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-semibold">

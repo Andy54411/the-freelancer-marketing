@@ -1,9 +1,0 @@
-<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-  <!-- Taskilo Icon - nur das T-Symbol -->
-  <g transform="translate(10, 10)">
-    <!-- Teal T part -->
-    <path d="M0 20 L60 20 L60 35 L35 35 L35 60 L20 60 L20 35 L0 35 Z" fill="#14ad9f"/>
-    <!-- Gray extension -->
-    <path d="M25 35 L45 35 L45 60 L60 60 L60 75 L25 75 Z" fill="#4a5568"/>
-  </g>
-</svg>

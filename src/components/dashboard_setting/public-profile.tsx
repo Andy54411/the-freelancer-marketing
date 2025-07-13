@@ -411,7 +411,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
         </div>
         <p className="text-blue-700 text-sm mt-1">
           Alle Änderungen werden automatisch mit den allgemeinen Einstellungen gespeichert.
-          Klicken Sie unten auf "Änderungen speichern" um alle Profil-Einstellungen zu übernehmen.
+          Klicken Sie unten auf &ldquo;Änderungen speichern&rdquo; um alle Profil-Einstellungen zu übernehmen.
         </p>
       </div>
     </div>

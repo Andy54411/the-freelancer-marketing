@@ -21,7 +21,7 @@ export default function AGBPage() {
                 § 1 Geltungsbereich
               </h2>
               <div className="text-gray-700 dark:text-gray-300 space-y-4">
-                <p>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge, die zwischen der Taskilo GmbH (nachfolgend „Taskilo" oder „wir") und ihren Kunden (nachfolgend „Nutzer" oder „Sie") über die Nutzung der Taskilo-Plattform geschlossen werden.</p>
+                <p>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge, die zwischen der Taskilo GmbH (nachfolgend &ldquo;Taskilo&rdquo; oder &ldquo;wir&rdquo;) und ihren Kunden (nachfolgend &ldquo;Nutzer&rdquo; oder &ldquo;Sie&rdquo;) über die Nutzung der Taskilo-Plattform geschlossen werden.</p>
                 <p>Die Taskilo-Plattform ist ein Online-Marktplatz, der es Nutzern ermöglicht, Dienstleistungsanfragen zu stellen und Angebote von registrierten Dienstleistern zu erhalten.</p>
               </div>
             </section>

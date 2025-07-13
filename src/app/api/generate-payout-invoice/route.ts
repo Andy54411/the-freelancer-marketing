@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       // Fallback: Erstelle eine Demo-Rechnung wenn Payout nicht gefunden wird
       payout = {
         id: payoutId,
-        amount: 10000, // 100€ als Demo
+        amount: 9550, // 95,50€ (NETTO nach Abzug der 4,5% Gebühr von 100€)
         currency: 'eur',
         status: 'paid',
         created: Math.floor(Date.now() / 1000),
@@ -163,10 +163,14 @@ export async function POST(request: NextRequest) {
       doc.text(`Ankunftsdatum: ${new Date(payout.arrival_date * 1000).toLocaleDateString('de-DE')}`, 50, 290);
     }
 
-    // Platform Fee Info - dynamisch aus Datenbank laden
+    // Platform Fee Info - KORREKTE Berechnung
     const platformFeeRate = await getCurrentPlatformFeeRate();
-    const platformFee = payout.amount * platformFeeRate;
-    const grossAmount = payout.amount + platformFee;
+    
+    // Der Kunde wollte ursprünglich 100€ auszahlen lassen (Bruttobetrag)
+    // Davon werden 4,5% abgezogen, sodass 95,50€ tatsächlich ausgezahlt werden
+    const grossAmount = 10000; // 100,00€ (ursprünglicher Betrag)
+    const platformFee = Math.floor(grossAmount * platformFeeRate); // 450 = 4,50€
+    // payout.amount sollte dann grossAmount - platformFee sein = 9550 = 95,50€
 
     doc.fontSize(14).text('Gebuehrenaufschluesselung:', 50, 330);
     doc.fontSize(12)

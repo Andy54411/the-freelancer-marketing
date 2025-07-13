@@ -334,7 +334,7 @@ function SupportDashboard() {
 }
 */
 
-export default {
+const enhancedChatbotAPI = {
     sendChatMessage,
     takeoverSession,
     getSessionStatus,
@@ -342,3 +342,5 @@ export default {
     useChatbot,
     useSupportDashboard
 };
+
+export default enhancedChatbotAPI;

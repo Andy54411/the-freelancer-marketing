@@ -4,37 +4,40 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 // Firebase Admin Setup
 let db: any = null;
 
-// Nur initialisieren wenn nicht während Build-Zeit
-const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production';
-
-if (!isBuildTime) {
-  try {
+try {
+  // Nur initialisieren wenn Service Account verfügbar ist
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  
+  if (serviceAccountKey && serviceAccountKey !== 'undefined') {
     if (!getApps().length) {
-      const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
       let projectId = process.env.FIREBASE_PROJECT_ID;
       
-      if (serviceAccountKey) {
-        const serviceAccount = JSON.parse(serviceAccountKey);
-        
-        if (!projectId && serviceAccount.project_id) {
-          projectId = serviceAccount.project_id;
-        }
-        
-        if (serviceAccount.project_id && projectId) {
-          initializeApp({
-            credential: cert(serviceAccount),
-            projectId: projectId,
-          });
-          db = getFirestore();
-        }
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      
+      if (!projectId && serviceAccount.project_id) {
+        projectId = serviceAccount.project_id;
+      }
+      
+      if (serviceAccount.project_id && projectId) {
+        initializeApp({
+          credential: cert(serviceAccount),
+          projectId: projectId,
+        });
+        db = getFirestore();
+        console.log('[Firebase Init] Successfully initialized');
+      } else {
+        console.log('[Firebase Init] Missing project ID');
       }
     } else {
       db = getFirestore();
+      console.log('[Firebase Init] Using existing app');
     }
-  } catch (error) {
-    console.error('Firebase Admin initialization failed in platform config util:', error);
-    db = null;
+  } else {
+    console.log('[Firebase Init] Missing service account key');
   }
+} catch (error) {
+  console.log('[Firebase Init] Error during initialization:', error);
+  db = null;
 }
 
 export interface PlatformFeeConfig {
@@ -53,8 +56,17 @@ export interface PlatformFeeConfig {
 export async function getCurrentPlatformFeeRate(): Promise<number> {
   const defaultFeeRate = 0.045; // 4.5% Fallback
   
-  // Während Build-Zeit oder ohne Datenbank: Fallback verwenden
-  if (!db || typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+  // Build-Zeit-Erkennung
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     process.env.NODE_ENV === 'production' && !process.env.VERCEL;
+  
+  // Fallback verwenden wenn Build-Zeit oder keine Datenbank verfügbar
+  if (isBuildTime || !db) {
+    if (isBuildTime) {
+      console.log('Build time detected - using default platform fee rate');
+    } else {
+      console.log('Firebase service account key not available in platform-config');
+    }
     return defaultFeeRate;
   }
 
@@ -74,6 +86,7 @@ export async function getCurrentPlatformFeeRate(): Promise<number> {
       return defaultFeeRate;
     }
   } catch (error) {
+    console.log('Error loading platform config:', error);
     // Bei Verbindungsfehlern (wie während Build) stillen Fallback verwenden
     return defaultFeeRate;
   }
@@ -84,8 +97,9 @@ export async function getCurrentPlatformFeeRate(): Promise<number> {
  * @returns Promise<PlatformFeeConfig | null>
  */
 export async function getPlatformConfig(): Promise<PlatformFeeConfig | null> {
-  // Während Build-Zeit: null zurückgeben
-  if (!db || typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+  // Fallback wenn keine Datenbank verfügbar
+  if (!db) {
+    console.log('Firebase service account key not available in platform-config');
     return null;
   }
 

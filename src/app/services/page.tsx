@@ -284,7 +284,7 @@ const DashboardServicesPage: React.FC = () => {
                         {searchTerm && (
                             <div className="mb-6">
                                 <p className="text-gray-600">
-                                    {filteredCategories.length} Kategorie{filteredCategories.length !== 1 ? 'n' : ''} für "{searchTerm}" gefunden
+                                    {filteredCategories.length} Kategorie{filteredCategories.length !== 1 ? 'n' : ''} für &ldquo;{searchTerm}&rdquo; gefunden
                                 </p>
                             </div>
                         )}

@@ -181,7 +181,7 @@ function AiConfigContent() {
                         placeholder='[{&quot;question&quot;: &quot;Wie funktioniert Taskilo?&quot;, &quot;answer&quot;: &quot;Taskilo verbindet...&quot;}]'
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                        Häufig gestellte Fragen als JSON-Array mit "question" und "answer" Feldern.
+                        Häufig gestellte Fragen als JSON-Array mit &quot;question&quot; und &quot;answer&quot; Feldern.
                     </p>
                 </div>
 

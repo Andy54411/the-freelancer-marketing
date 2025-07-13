@@ -3,16 +3,23 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import Stripe from 'stripe';
 
+// Force dynamic rendering - verhindert static generation
+export const dynamic = 'force-dynamic';
+
 // Firebase Admin Setup
 let db: any;
 
-try {
-  if (getApps().length === 0) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
-    
-    if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-      const serviceAccount = JSON.parse(serviceAccountKey);
+// Build-Zeit-Erkennung
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+
+if (!isBuildTime) {
+  try {
+    if (getApps().length === 0) {
+      const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+      let projectId = process.env.FIREBASE_PROJECT_ID;
+      
+      if (serviceAccountKey && serviceAccountKey !== 'undefined') {
+        const serviceAccount = JSON.parse(serviceAccountKey);
       
       // Extract project ID from service account if not set in environment
       if (!projectId && serviceAccount.project_id) {
@@ -32,9 +39,10 @@ try {
   } else {
     db = getFirestore();
   }
-} catch (error) {
-  console.error('Firebase Admin initialization error in request-platform-payout:', error);
-  db = null;
+  } catch (error) {
+    console.error('Firebase Admin initialization error in request-platform-payout:', error);
+    db = null;
+  }
 }
 
 // Stripe Setup

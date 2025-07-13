@@ -66,7 +66,7 @@ export default function DatenschutzPage() {
                             </h2>
                             <div className="text-gray-700 dark:text-gray-300 space-y-4">
                                 <h3 className="font-semibold">Cookies</h3>
-                                <p>Unsere Internetseiten verwenden so genannte „Cookies". Cookies sind kleine Textdateien und richten auf Ihrem Endgerät keinen Schaden an. Sie werden entweder vorübergehend für die Dauer einer Sitzung (Session-Cookies) oder dauerhaft (permanente Cookies) auf Ihrem Endgerät gespeichert.</p>
+                                <p>Unsere Internetseiten verwenden so genannte &ldquo;Cookies&rdquo;. Cookies sind kleine Textdateien und richten auf Ihrem Endgerät keinen Schaden an. Sie werden entweder vorübergehend für die Dauer einer Sitzung (Session-Cookies) oder dauerhaft (permanente Cookies) auf Ihrem Endgerät gespeichert.</p>
 
                                 <h3 className="font-semibold">Server-Log-Dateien</h3>
                                 <p>Der Provider der Seiten erhebt und speichert automatisch Informationen in so genannten Server-Log-Dateien, die Ihr Browser automatisch an uns übermittelt. Dies sind:</p>

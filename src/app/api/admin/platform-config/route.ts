@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
+// Force dynamic rendering - verhindert static generation
+export const dynamic = 'force-dynamic';
+
 // Firebase Admin Setup
 let db: any;
 

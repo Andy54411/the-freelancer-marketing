@@ -3,38 +3,50 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import Stripe from 'stripe';
 
-// Firebase Admin Setup
-let db: any;
+// Force dynamic rendering - verhindert static generation
+export const dynamic = 'force-dynamic';
 
-try {
-  if (getApps().length === 0) {
+// Firebase Admin Setup (lazy loading)
+let db: any = null;
+let dbInitialized = false;
+
+async function getDatabase() {
+  if (dbInitialized) return db;
+  
+  try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
     
     if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-      
-      // Extract project ID from service account if not set in environment
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-      }
-      
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
+      if (getApps().length === 0) {
+        let projectId = process.env.FIREBASE_PROJECT_ID;
+        
+        const serviceAccount = JSON.parse(serviceAccountKey);
+        
+        // Extract project ID from service account if not set in environment
+        if (!projectId && serviceAccount.project_id) {
+          projectId = serviceAccount.project_id;
+        }
+        
+        if (serviceAccount.project_id && projectId) {
+          initializeApp({
+            credential: cert(serviceAccount),
+            projectId: projectId,
+          });
+          db = getFirestore();
+        }
+      } else {
         db = getFirestore();
       }
     } else {
       console.warn('Firebase service account key not available in platform-stats');
     }
-  } else {
-    db = getFirestore();
+  } catch (error) {
+    console.error('Firebase Admin initialization error in platform-stats:', error);
+    db = null;
   }
-} catch (error) {
-  console.error('Firebase Admin initialization error in platform-stats:', error);
-  db = null;
+  
+  dbInitialized = true;
+  return db;
 }
 
 // Stripe Setup
