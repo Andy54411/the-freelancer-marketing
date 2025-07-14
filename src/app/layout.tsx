@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   title: 'TASKILO',
   description:
     'TASKILO bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TASKILO',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({

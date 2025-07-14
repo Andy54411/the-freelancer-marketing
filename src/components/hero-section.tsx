@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import Image from 'next/image'
 import { HeroHeader } from '@/components/hero8-header'
 import { InfiniteSlider } from '@/components/ui/infinite-slider'
 import { ProgressiveBlur } from '@/components/ui/progressive-blur'
@@ -102,10 +101,10 @@ export default function HeroSection() {
       <HeroHeader />
       <main className="overflow-x-hidden">
         <section>
-          <div className="pb-24 pt-12 md:pb-32 lg:pb-56 lg:pt-44">
-            <div className="relative mx-auto max-w-6xl px-6 flex flex-col-reverse items-center gap-10 lg:flex-row lg:items-center">
+          <div className="pb-16 pt-8 sm:pb-20 md:pb-32 lg:pb-56 lg:pt-44">
+            <div className="relative mx-auto max-w-6xl px-6 flex flex-col-reverse items-center gap-8 sm:gap-10 lg:flex-row lg:items-center">
               <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
-                <h1 className="text-3xl font-semibold leading-snug tracking-tight md:text-4xl xl:text-5xl">
+                <h1 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight md:text-4xl xl:text-5xl">
                   <span className="block">Finde verlässliche Hilfe</span>
                   <span className="block">für jedes Projekt –</span>
                   <span className="block">
@@ -113,12 +112,12 @@ export default function HeroSection() {
                   </span>
                 </h1>
 
-                <p className="mt-8 max-w-2xl text-pretty text-lg text-foreground">
+                <p className="mt-6 sm:mt-8 max-w-2xl text-pretty text-base sm:text-lg text-foreground">
                   Taskilo bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!
                 </p>
 
-                <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
-                  <Button asChild size="lg" className="px-5 text-base bg-[#14ad9f] text-white hover:bg-teal-700" onClick={handleSearchClick}>
+                <div className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-3 sm:gap-2 sm:flex-row lg:justify-start">
+                  <Button asChild size="lg" className="w-full sm:w-auto px-5 text-base bg-[#14ad9f] text-white hover:bg-teal-700" onClick={handleSearchClick}>
                     <Link href="/auftrag/get-started">
                       <span className="text-nowrap">Ich suche Hilfe</span>
                     </Link>
@@ -128,7 +127,7 @@ export default function HeroSection() {
                     asChild
                     size="lg"
                     variant="ghost"
-                    className="px-5 text-base"
+                    className="w-full sm:w-auto px-5 text-base"
                     onClick={handleProviderClick}
                   >
                     <Link href="#link">
@@ -140,14 +139,15 @@ export default function HeroSection() {
 
               {/* Bild im eigenen div */}
               <div className="w-full max-w-xl lg:w-1/2">
-                <Image
+                <img
                   className="h-auto w-full object-contain"
                   src="/images/AdobeStock_163577338.jpeg"
                   alt="Taskilo Hero"
-                  width={1200}
-                  height={800}
-                  priority
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
+                  loading="lazy"
+                  onError={(e) => {
+                    console.error('Hero image failed to load');
+                    e.currentTarget.style.display = 'none';
+                  }}
                   style={{ 
                     maxWidth: '100%',
                     height: 'auto',
@@ -188,14 +188,12 @@ export default function HeroSection() {
 
                           return (
                             <div key={company.id} className="flex">
-                              <Image
+                              <img
                                 className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
                                 src={imageUrl}
                                 alt={`${company.name} Logo`}
-                                height={100}
-                                width={200}
                                 style={{ objectFit: "contain" }}
-                                unoptimized={true} // Umgeht Next.js Image Optimization für Firebase Storage
+                                loading="lazy"
                                 onError={(e) => {
                                   console.warn(`Failed to load image for ${company.name}:`, imageUrl);
                                   // Verstecke das Bild und den Container bei Fehlern

@@ -1,6 +1,5 @@
 'use client'
-import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 
 const categories = [
@@ -8,12 +7,12 @@ const categories = [
     id: 'moebel',
     label: 'Möbelmontage',
     icon: (
-      <Image
+      <img
         src="/icon/AdobeStock_439527548.svg"
         alt="Icon"
-        width={40}
-        height={40}
-        className="w-10 h-10 text-[#14ad9f]"
+        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
       /> // text-[#14ad9f] won't affect Image color unless it's an SVG manipulated by CSS
     ),
     tags: ['Möbelmontage', 'IKEA Montage'],
@@ -25,12 +24,12 @@ const categories = [
     id: 'mietkoeche',
     label: 'Mietköche',
     icon: (
-      <Image
+      <img
         src="/icon/AdobeStock_574841528.svg"
         alt="Icon"
-        width={40}
-        height={40}
-        className="w-10 h-10 text-[#14ad9f]"
+        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     ),
     tags: ['Privatkoch buchen', 'Event-Küche'],
@@ -42,12 +41,12 @@ const categories = [
     id: 'elektro',
     label: 'Elektrikarbeiten',
     icon: (
-      <Image
+      <img
         src="/icon/AdobeStock_547824942.svg"
         alt="Icon"
-        width={40}
-        height={40}
-        className="w-10 h-10 text-[#14ad9f]"
+        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     ),
     tags: ['Lichtinstallation', 'Steckdosen tauschen'],
@@ -59,12 +58,12 @@ const categories = [
     id: 'reparatur',
     label: 'Reparaturen im Haus',
     icon: (
-      <Image
+      <img
         src="/icon/AdobeStock_227384966.svg"
         alt="Icon"
-        width={40}
-        height={40}
-        className="w-10 h-10 text-[#14ad9f]"
+        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     ),
     tags: ['Kleinreparaturen', 'Tür einstellen'],
@@ -76,12 +75,12 @@ const categories = [
     id: 'umzug',
     label: 'Umzug',
     icon: (
-      <Image
+      <img
         src="/icon/AdobeStock_452856534.svg"
         alt="Icon"
-        width={40}
-        height={40}
-        className="w-10 h-10 text-[#14ad9f]"
+        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     ),
     tags: ['Umzugshilfe', 'Schwere Lasten heben'],
@@ -93,12 +92,12 @@ const categories = [
     id: 'beliebt',
     label: 'Beliebt',
     icon: (
-      <Image
+      <img
         src="/icon/AdobeStock_558879898.svg"
         alt="Icon"
-        width={40}
-        height={40}
-        className="w-10 h-10 text-[#14ad9f]"
+        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     ),
     tags: ['Top Tilver ', 'Top Tilver'],
@@ -110,21 +109,32 @@ const categories = [
 
 export default function CategoryGrid() {
   const [active, setActive] = useState('moebel')
+  const [imageLoading, setImageLoading] = useState(true)
+  
   const selected = categories.find((cat) => cat.id === active)!
 
+  const handleCategoryChange = useCallback((categoryId: string) => {
+    setImageLoading(true) // Zeige Loading-State beim Kategoriewechsel
+    setActive(categoryId)
+  }, [])
+
+  const handleImageLoad = useCallback(() => {
+    setImageLoading(false)
+  }, [])
+
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 space-y-8">
-      {/* Kategorie-Icons im 3x2 Grid */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-6 justify-items-center border-b pb-6">
+    <div className="w-full max-w-6xl mx-auto px-4 space-y-6 sm:space-y-8">
+      {/* Kategorie-Icons im 2x3 Grid für Mobile, 3x2 für Tablet, 6x1 für Desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 justify-items-center border-b pb-4 sm:pb-6">
         {categories.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => setActive(cat.id)}
-            className="flex flex-col items-center group"
+            onClick={() => handleCategoryChange(cat.id)}
+            className="flex flex-col items-center group min-h-[80px] sm:min-h-[auto]"
           >
             <div
               className={cn(
-                'flex items-center justify-center w-16 h-16 rounded-full mb-1 transition-all',
+                'flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full mb-1 transition-all',
                 active === cat.id
                   ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]'
                   : 'bg-gray-100'
@@ -134,7 +144,7 @@ export default function CategoryGrid() {
             </div>
             <span
               className={cn(
-                'text-sm mt-1 text-center',
+                'text-xs sm:text-sm mt-1 text-center leading-tight',
                 active === cat.id ? 'text-[#14ad9f] font-semibold' : 'text-gray-600'
               )}
             >
@@ -180,15 +190,39 @@ export default function CategoryGrid() {
           </div>
 
           {/* Bild */}
-          <div className="md:ml-[200px] w-full mt-6 md:mt-0">
-            <Image
-              src={selected.image}
-              alt={selected.title}
-              width={800} // Example width, adjust for aspect ratio
-              height={450} // Example height, adjust for aspect ratio
-              className="rounded-2xl w-full h-auto object-cover"
-              priority // This image changes dynamically, consider if priority is always needed
-            />
+          <div className="md:ml-[200px] w-full mt-4 sm:mt-6 md:mt-0">
+            <div className="relative w-full h-64 sm:h-80 md:h-96 bg-gray-200 rounded-2xl overflow-hidden">
+              {/* Loading Overlay */}
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                  <div className="animate-pulse text-gray-500">Laden...</div>
+                </div>
+              )}
+              <img
+                key={selected.id} // Key hinzugefügt für sauberen Re-render
+                src={selected.image}
+                alt={selected.title}
+                className={cn(
+                  "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
+                  imageLoading ? "opacity-0" : "opacity-100"
+                )}
+                loading="lazy"
+                onLoad={handleImageLoad}
+                onError={(e) => {
+                  console.error('Category image failed to load:', selected.image);
+                  setImageLoading(false);
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.parentElement?.querySelector('.fallback');
+                  if (fallback) {
+                    (fallback as HTMLElement).style.display = 'flex';
+                  }
+                }}
+              />
+              {/* Fallback wenn Bild nicht lädt */}
+              <div className="fallback absolute inset-0 hidden items-center justify-center bg-gray-100 text-gray-500">
+                <span>Bild nicht verfügbar</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

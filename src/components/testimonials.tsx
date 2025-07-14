@@ -77,17 +77,17 @@ export default function Testimonials() {
     <section className="py-16 md:py-32 bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
-          <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
             Was unsere Kunden über 
             <span className="text-[#14ad9f]"> Taskilo </span>
             sagen
           </h2>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+          <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300">
             Über 10.000 zufriedene Kunden vertrauen bereits auf Taskilo
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 sm:mt-16 grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {testimonials.map((testimonial, index) => (
             <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-6">
@@ -115,19 +115,19 @@ export default function Testimonials() {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center space-x-8 bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm border dark:border-gray-700">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-[#14ad9f]">4.8/5</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Durchschnittsbewertung</p>
+        <div className="mt-8 sm:mt-12 text-center">
+          <div className="inline-flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8 bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-8 shadow-sm border dark:border-gray-700">
+            <div className="text-center min-w-0 flex-1">
+              <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">4.8/5</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">Ø Bewertung</p>
             </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-[#14ad9f]">10.000+</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Zufriedene Kunden</p>
+            <div className="text-center min-w-0 flex-1">
+              <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">10.000+</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">Zufriedene Kunden</p>
             </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-[#14ad9f]">15.000+</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Bewertungen</p>
+            <div className="text-center min-w-0 flex-1">
+              <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">15.000+</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">Bewertungen</p>
             </div>
           </div>
         </div>

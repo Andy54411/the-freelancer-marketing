@@ -21,7 +21,7 @@ export default function IntegrationsSection1() {
     {
       icon: Star,
       number: '4.8/5',
-      label: 'Durchschnittsbewertung',
+      label: 'Ø Bewertung',
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-600/10'
     },
@@ -35,9 +35,9 @@ export default function IntegrationsSection1() {
   ]
 
   return (
-    <section className="py-16 md:py-24 bg-white dark:bg-gray-900">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+    <section className="py-12 sm:py-16 md:py-24 bg-white dark:bg-gray-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left Content */}
           <div>
             <div className="inline-flex items-center rounded-full bg-[#14ad9f]/10 px-4 py-2 text-sm font-medium text-[#14ad9f] mb-6">
@@ -84,17 +84,17 @@ export default function IntegrationsSection1() {
           </div>
 
           {/* Right Statistics */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {stats.map((stat, index) => (
               <Card key={index} className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white dark:bg-gray-800">
-                <CardContent className="p-8">
-                  <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl ${stat.bgColor} mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                <CardContent className="p-4 sm:p-6 lg:p-8">
+                  <div className={`inline-flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl ${stat.bgColor} mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <stat.icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
                   </div>
-                  <div className={`text-3xl font-bold mb-2 ${stat.color}`}>
+                  <div className={`text-2xl sm:text-3xl font-bold mb-2 ${stat.color}`}>
                     {stat.number}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium leading-tight">
                     {stat.label}
                   </p>
                 </CardContent>

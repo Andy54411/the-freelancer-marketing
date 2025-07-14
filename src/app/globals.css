@@ -162,6 +162,63 @@
   [data-sidebar="menu-sub-button"] svg {
     @apply size-4 shrink-0;
   }
+
+  /* Mobile Optimierungen */
+  @media (max-width: 768px) {
+    /* Touch-friendly Buttons */
+    button, a[role="button"], input[type="submit"], input[type="button"] {
+      min-height: 44px !important;
+      min-width: 44px !important;
+    }
+    
+    /* Prevent horizontal scroll */
+    body {
+      overflow-x: hidden;
+    }
+    
+    /* Responsive text scaling */
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Better mobile scrolling */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Mobile-friendly form inputs */
+    input, textarea, select {
+      font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+    
+    /* Improved touch target spacing */
+    .space-y-2 > * + * {
+      margin-top: 0.75rem;
+    }
+    
+    .space-y-4 > * + * {
+      margin-top: 1.5rem;
+    }
+  }
+
+  /* Extra small screens */
+  @media (max-width: 480px) {
+    /* Smaller padding for very small screens */
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    /* Compact spacing */
+    .space-y-8 > * + * {
+      margin-top: 1.5rem;
+    }
+    
+    .space-y-12 > * + * {
+      margin-top: 2rem;
+    }
+  }
 }
 
 /* Der zweite @layer base-Block wurde entfernt, da alle Regeln

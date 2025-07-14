@@ -82,23 +82,23 @@ export default function FeaturesSection() {
         </div>
 
         {/* Trust Indicators */}
-        <div className="mt-16 pt-12 border-t border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div className="mt-12 sm:mt-16 pt-8 sm:pt-12 border-t border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-[#14ad9f] mb-2">10.000+</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Zufriedene Kunden</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#14ad9f] mb-2">10.000+</div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Zufriedene Kunden</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#14ad9f] mb-2">5.000+</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Geprüfte Anbieter</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#14ad9f] mb-2">5.000+</div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Geprüfte Anbieter</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#14ad9f] mb-2">4.8/5</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Durchschnittsbewertung</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#14ad9f] mb-2">4.8/5</div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">Ø Bewertung</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#14ad9f] mb-2">99%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Erfolgreiche Projekte</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#14ad9f] mb-2">99%</div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Erfolgreiche Projekte</div>
             </div>
           </div>
         </div>

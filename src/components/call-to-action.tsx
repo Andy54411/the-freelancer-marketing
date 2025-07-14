@@ -3,19 +3,19 @@ import Link from 'next/link'
 
 export default function CallToAction() {
   return (
-    <section className="py-16 md:py-32 bg-gradient-to-r from-[#14ad9f] to-[#0f9d84]">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="py-12 sm:py-16 md:py-32 bg-gradient-to-r from-[#14ad9f] to-[#0f9d84]">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="text-center text-white">
-          <h2 className="text-4xl font-semibold lg:text-5xl">Bereit für Taskilo?</h2>
-          <p className="mt-4 text-xl text-teal-100">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold lg:text-5xl">Bereit für Taskilo?</h2>
+          <p className="mt-4 text-base sm:text-lg md:text-xl text-teal-100">
             Starten Sie noch heute und finden Sie den perfekten Dienstleister für Ihr nächstes Projekt.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="mt-8 sm:mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4 justify-center">
             <Button 
               asChild 
               size="lg" 
-              className="bg-white text-[#14ad9f] hover:bg-gray-100 font-semibold px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full sm:w-auto bg-white text-[#14ad9f] hover:bg-gray-100 font-semibold px-6 sm:px-8 py-4 text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <Link href="/register/user">Als Kunde registrieren</Link>
             </Button>
@@ -24,14 +24,14 @@ export default function CallToAction() {
               asChild 
               variant="outline" 
               size="lg" 
-              className="border-2 border-white text-white hover:bg-white hover:text-[#14ad9f] font-semibold px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full sm:w-auto border-2 border-white text-white hover:bg-white hover:text-[#14ad9f] font-semibold px-6 sm:px-8 py-4 text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <Link href="/register/company">Als Dienstleister anmelden</Link>
             </Button>
           </div>
 
-          <div className="mt-8 text-teal-100">
-            <p className="text-sm">
+          <div className="mt-6 sm:mt-8 text-teal-100">
+            <p className="text-xs sm:text-sm">
               ✓ Kostenlose Registrierung • ✓ Sofort einsatzbereit • ✓ Keine versteckten Kosten
             </p>
           </div>
