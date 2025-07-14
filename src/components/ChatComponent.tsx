@@ -331,11 +331,10 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
               className={`flex ${msg.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  msg.senderId === currentUser.uid
+                className={`max-w-[70%] p-3 rounded-lg ${msg.senderId === currentUser.uid
                     ? 'bg-[#14ad9f] text-white'
                     : 'bg-gray-200 text-gray-800'
-                }`}
+                  }`}
               >
                 <p className="text-xs font-semibold mb-1">
                   {msg.senderName} (

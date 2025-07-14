@@ -284,17 +284,17 @@ export default function CompanyOrderDetailPage() {
   const isViewerProvider = currentUser.uid === order.providerId;
   const cardUser = isViewerProvider
     ? {
-        id: order.customerId,
-        name: order.customerName,
-        avatarUrl: order.customerAvatarUrl,
-        role: 'customer' as const,
-      }
+      id: order.customerId,
+      name: order.customerName,
+      avatarUrl: order.customerAvatarUrl,
+      role: 'customer' as const,
+    }
     : {
-        id: order.providerId,
-        name: order.providerName,
-        avatarUrl: order.providerAvatarUrl,
-        role: 'provider' as const,
-      };
+      id: order.providerId,
+      name: order.providerName,
+      avatarUrl: order.providerAvatarUrl,
+      role: 'provider' as const,
+    };
 
   return (
     <Suspense

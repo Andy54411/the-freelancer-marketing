@@ -180,55 +180,55 @@ export default function HeroSection() {
                   <InfiniteSlider speedOnHover={20} speed={40} gap={112}>
                     {loading
                       ? // Zeige Platzhalter während des Ladens
-                        Array.from({ length: 8 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-                          />
-                        ))
+                      Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                        />
+                      ))
                       : newCompanies
-                          .filter(
-                            company =>
-                              company.profilePictureURL &&
-                              company.profilePictureURL !== '/icon/default-company-logo.png'
-                          ) // Nur Firmen mit echten Bildern
-                          .map(company => {
-                            // Den eindeutigen Key verwenden
-                            // KORREKTUR: Robuste URL-Behandlung für verschiedene Firebase Storage-Formate
-                            let imageUrl = company.profilePictureURL;
+                        .filter(
+                          company =>
+                            company.profilePictureURL &&
+                            company.profilePictureURL !== '/icon/default-company-logo.png'
+                        ) // Nur Firmen mit echten Bildern
+                        .map(company => {
+                          // Den eindeutigen Key verwenden
+                          // KORREKTUR: Robuste URL-Behandlung für verschiedene Firebase Storage-Formate
+                          let imageUrl = company.profilePictureURL;
 
-                            // Wenn die URL nicht mit http beginnt, ist es ein relativer Pfad
-                            if (!imageUrl.startsWith('http')) {
-                              // URL-dekodieren falls nötig
-                              const decodedPath = decodeURIComponent(imageUrl);
-                              imageUrl = `https://storage.googleapis.com/tilvo-f142f.firebasestorage.app/${decodedPath}`;
-                            }
+                          // Wenn die URL nicht mit http beginnt, ist es ein relativer Pfad
+                          if (!imageUrl.startsWith('http')) {
+                            // URL-dekodieren falls nötig
+                            const decodedPath = decodeURIComponent(imageUrl);
+                            imageUrl = `https://storage.googleapis.com/tilvo-f142f.firebasestorage.app/${decodedPath}`;
+                          }
 
-                            return (
-                              <div key={company.id} className="flex">
-                                <img
-                                  className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
-                                  src={imageUrl}
-                                  alt={`${company.name} Logo`}
-                                  style={{ objectFit: 'contain' }}
-                                  loading="lazy"
-                                  onError={e => {
-                                    console.warn(
-                                      `Failed to load image for ${company.name}:`,
-                                      imageUrl
-                                    );
-                                    // Verstecke das Bild und den Container bei Fehlern
-                                    const target = e.currentTarget as HTMLImageElement;
-                                    const container = target.closest('.flex') as HTMLElement;
-                                    if (container) {
-                                      container.style.display = 'none';
-                                      container.remove(); // Entferne aus DOM, damit der Slider korrekt funktioniert
-                                    }
-                                  }}
-                                />
-                              </div>
-                            );
-                          })}
+                          return (
+                            <div key={company.id} className="flex">
+                              <img
+                                className="mx-auto h-6 w-fit" // dark:invert wurde entfernt, da es bei farbigen Logos stören kann
+                                src={imageUrl}
+                                alt={`${company.name} Logo`}
+                                style={{ objectFit: 'contain' }}
+                                loading="lazy"
+                                onError={e => {
+                                  console.warn(
+                                    `Failed to load image for ${company.name}:`,
+                                    imageUrl
+                                  );
+                                  // Verstecke das Bild und den Container bei Fehlern
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const container = target.closest('.flex') as HTMLElement;
+                                  if (container) {
+                                    container.style.display = 'none';
+                                    container.remove(); // Entferne aus DOM, damit der Slider korrekt funktioniert
+                                  }
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                   </InfiniteSlider>
                 )}
                 {error && !loading && (

@@ -150,10 +150,10 @@ export function SectionCards() {
 
     const confirmWithdraw = confirm(
       `${t('cards.withdraw.confirm')}\n\n` +
-        `${t('cards.withdraw.available')}: ${formatCurrency(stats.availableBalance)}\n` +
-        `${t('cards.withdraw.fee')}: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
-        `${t('cards.withdraw.amount')}: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
-        `${t('cards.withdraw.question')}`
+      `${t('cards.withdraw.available')}: ${formatCurrency(stats.availableBalance)}\n` +
+      `${t('cards.withdraw.fee')}: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
+      `${t('cards.withdraw.amount')}: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
+      `${t('cards.withdraw.question')}`
     );
 
     if (!confirmWithdraw) return;

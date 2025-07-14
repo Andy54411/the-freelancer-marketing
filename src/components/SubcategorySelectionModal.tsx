@@ -51,11 +51,10 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
                   onClose(); // Modal nach Auswahl schließen
                 }}
                 className={`w-full text-left p-3 md:p-4 rounded-md transition-all duration-150 ease-in-out flex justify-between items-center
-                            ${
-                              currentlySelectedSubcategory === subcategory
-                                ? 'bg-[#14ad9f] text-white'
-                                : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200'
-                            }`}
+                            ${currentlySelectedSubcategory === subcategory
+                    ? 'bg-[#14ad9f] text-white'
+                    : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200'
+                  }`}
               >
                 <span className="text-sm md:text-base">{subcategory}</span>
                 <FiChevronRight size={20} />

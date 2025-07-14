@@ -1,138 +1,133 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-
-const categories = [
-  {
-    id: 'moebel',
-    label: 'Möbelmontage',
-    // text-[#14ad9f] won't affect Image color unless it's an SVG manipulated by CSS
-    icon: (
-      <img
-        src="/icon/AdobeStock_439527548.svg"
-        alt="Icon"
-        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-        loading="lazy"
-        onError={e => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-    ),
-    tags: ['Möbelmontage', 'IKEA Montage'],
-    image: '/images/AdobeStock_298445672.jpeg',
-    title: 'Möbelmontage',
-    text: 'Hilfe beim Aufbau von Möbeln und IKEA-Produkten.',
-  },
-  {
-    id: 'mietkoeche',
-    label: 'Mietköche',
-    icon: (
-      <img
-        src="/icon/AdobeStock_574841528.svg"
-        alt="Icon"
-        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-        loading="lazy"
-        onError={e => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-    ),
-    tags: ['Privatkoch buchen', 'Event-Küche'],
-    image: '/images/AdobeStock_136993219.jpeg',
-    title: 'Mietköche',
-    text: 'Flexible Köche für Events, Zuhause oder Gastronomie.',
-  },
-  {
-    id: 'elektro',
-    label: 'Elektrikarbeiten',
-    icon: (
-      <img
-        src="/icon/AdobeStock_547824942.svg"
-        alt="Icon"
-        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-        loading="lazy"
-        onError={e => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-    ),
-    tags: ['Lichtinstallation', 'Steckdosen tauschen'],
-    image: '/images/AdobeStock_377954036.jpeg',
-    title: 'Elektrikarbeiten',
-    text: 'Professionelle Unterstützung bei Elektroarbeiten.',
-  },
-  {
-    id: 'reparatur',
-    label: 'Reparaturen im Haus',
-    icon: (
-      <img
-        src="/icon/AdobeStock_227384966.svg"
-        alt="Icon"
-        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-        loading="lazy"
-        onError={e => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-    ),
-    tags: ['Kleinreparaturen', 'Tür einstellen'],
-    image: '/images/AdobeStock_221207083.jpeg',
-    title: 'Reparaturen',
-    text: 'Hilfe bei kleinen Reparaturen und Wartungen.',
-  },
-  {
-    id: 'umzug',
-    label: 'Umzug',
-    icon: (
-      <img
-        src="/icon/AdobeStock_452856534.svg"
-        alt="Icon"
-        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-        loading="lazy"
-        onError={e => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-    ),
-    tags: ['Umzugshilfe', 'Schwere Lasten heben'],
-    image: '/images/AdobeStock_171302559.jpeg',
-    title: 'Umzug',
-    text: 'Ein- und Auspacken, Tragen und Möbeltransport.',
-  },
-  {
-    id: 'beliebt',
-    label: 'Beliebt',
-    icon: (
-      <img
-        src="/icon/AdobeStock_558879898.svg"
-        alt="Icon"
-        className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-        loading="lazy"
-        onError={e => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-    ),
-    tags: ['Top Tilver ', 'Top Tilver'],
-    image: '/images/AdobeStock_369265805.jpeg',
-    title: 'Beliebte Tasks',
-    text: 'Die beliebtesten Dienstleistungen der Woche.',
-  },
-];
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CategoryGrid() {
+  const { t } = useLanguage();
   const [active, setActive] = useState('moebel');
-  const [imageLoading, setImageLoading] = useState(true);
+
+  const categories = [
+    {
+      id: 'moebel',
+      label: t('categoryGrid.furniture.label'),
+      icon: (
+        <img
+          src="/icon/AdobeStock_439527548.svg"
+          alt="Icon"
+          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+          loading="lazy"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ),
+      tags: [t('categoryGrid.furniture.tag1'), t('categoryGrid.furniture.tag2')],
+      image: '/images/AdobeStock_298445672.jpeg',
+      title: t('categoryGrid.furniture.title'),
+      text: t('categoryGrid.furniture.text'),
+    },
+    {
+      id: 'mietkoeche',
+      label: t('categoryGrid.chef.label'),
+      icon: (
+        <img
+          src="/icon/AdobeStock_574841528.svg"
+          alt="Icon"
+          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+          loading="lazy"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ),
+      tags: [t('categoryGrid.chef.tag1'), t('categoryGrid.chef.tag2')],
+      image: '/images/AdobeStock_136993219.jpeg',
+      title: t('categoryGrid.chef.title'),
+      text: t('categoryGrid.chef.text'),
+    },
+    {
+      id: 'elektro',
+      label: t('categoryGrid.electrical.label'),
+      icon: (
+        <img
+          src="/icon/AdobeStock_547824942.svg"
+          alt="Icon"
+          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+          loading="lazy"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ),
+      tags: [t('categoryGrid.electrical.tag1'), t('categoryGrid.electrical.tag2')],
+      image: '/images/AdobeStock_377954036.jpeg',
+      title: t('categoryGrid.electrical.title'),
+      text: t('categoryGrid.electrical.text'),
+    },
+    {
+      id: 'reparatur',
+      label: t('categoryGrid.repair.label'),
+      icon: (
+        <img
+          src="/icon/AdobeStock_227384966.svg"
+          alt="Icon"
+          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+          loading="lazy"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ),
+      tags: [t('categoryGrid.repair.tag1'), t('categoryGrid.repair.tag2')],
+      image: '/images/AdobeStock_221207083.jpeg',
+      title: t('categoryGrid.repair.title'),
+      text: t('categoryGrid.repair.text'),
+    },
+    {
+      id: 'umzug',
+      label: t('categoryGrid.moving.label'),
+      icon: (
+        <img
+          src="/icon/AdobeStock_452856534.svg"
+          alt="Icon"
+          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+          loading="lazy"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ),
+      tags: [t('categoryGrid.moving.tag1'), t('categoryGrid.moving.tag2')],
+      image: '/images/AdobeStock_171302559.jpeg',
+      title: t('categoryGrid.moving.title'),
+      text: t('categoryGrid.moving.text'),
+    },
+    {
+      id: 'beliebt',
+      label: t('categoryGrid.popular.label'),
+      icon: (
+        <img
+          src="/icon/AdobeStock_558879898.svg"
+          alt="Icon"
+          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
+          loading="lazy"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ),
+      tags: [t('categoryGrid.popular.tag1'), t('categoryGrid.popular.tag2')],
+      image: '/images/AdobeStock_369265805.jpeg',
+      title: t('categoryGrid.popular.title'),
+      text: t('categoryGrid.popular.text'),
+    },
+  ];
 
   const selected = categories.find(cat => cat.id === active)!;
 
   const handleCategoryChange = useCallback((categoryId: string) => {
-    setImageLoading(true); // Zeige Loading-State beim Kategoriewechsel
     setActive(categoryId);
-  }, []);
-
-  const handleImageLoad = useCallback(() => {
-    setImageLoading(false);
   }, []);
 
   return (
@@ -192,35 +187,22 @@ export default function CategoryGrid() {
               <li className="flex gap-2">
                 <span className="text-[#14ad9f]">✓</span>
                 <span>
-                  Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige
-                  Materialien.
+                  {t('categoryGrid.trends')}
                 </span>
               </li>
             </ul>
           </div>
 
-          {/* Bild */}
           <div className="md:ml-[200px] w-full mt-4 sm:mt-6 md:mt-0">
             <div className="relative w-full h-64 sm:h-80 md:h-96 bg-gray-200 rounded-2xl overflow-hidden">
-              {/* Loading Overlay */}
-              {imageLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                  <div className="animate-pulse text-gray-500">Laden...</div>
-                </div>
-              )}
               <img
                 key={selected.id} // Key hinzugefügt für sauberen Re-render
                 src={selected.image}
                 alt={selected.title}
-                className={cn(
-                  'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
-                  imageLoading ? 'opacity-0' : 'opacity-100'
-                )}
+                className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
-                onLoad={handleImageLoad}
                 onError={e => {
                   console.error('Category image failed to load:', selected.image);
-                  setImageLoading(false);
                   e.currentTarget.style.display = 'none';
                   const fallback = e.currentTarget.parentElement?.querySelector('.fallback');
                   if (fallback) {
@@ -230,7 +212,7 @@ export default function CategoryGrid() {
               />
               {/* Fallback wenn Bild nicht lädt */}
               <div className="fallback absolute inset-0 hidden items-center justify-center bg-gray-100 text-gray-500">
-                <span>Bild nicht verfügbar</span>
+                <span>{t('categoryGrid.imageNotAvailable')}</span>
               </div>
             </div>
           </div>

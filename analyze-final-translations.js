@@ -12,8 +12,8 @@ const deSection = languageContent.match(/de: \{([\s\S]*?)\n  \},/);
 const enSection = languageContent.match(/en: \{([\s\S]*?)\n  \},/);
 
 if (!deSection || !enSection) {
-  console.log('❌ Fehler beim Parsen der Übersetzungen');
-  process.exit(1);
+    console.log('❌ Fehler beim Parsen der Übersetzungen');
+    process.exit(1);
 }
 
 // Zähle Keys in beiden Sprachen
@@ -27,37 +27,37 @@ console.log();
 
 console.log('📈 Übersetzungsabdeckung:');
 if (deKeys === enKeys) {
-  console.log(`  ✅ Vollständige Abdeckung: ${deKeys} Keys in beiden Sprachen`);
+    console.log(`  ✅ Vollständige Abdeckung: ${deKeys} Keys in beiden Sprachen`);
 } else {
-  console.log(`  ⚠️  Unterschiedliche Anzahl: DE=${deKeys}, EN=${enKeys}`);
+    console.log(`  ⚠️  Unterschiedliche Anzahl: DE=${deKeys}, EN=${enKeys}`);
 }
 console.log();
 
 // Kategorien analysieren
 const categories = [
-  'Basis UI-Elemente',
-  'Navigation & Menu',
-  'Hero Section',
-  'Call to Action',
-  'Banner',
-  'Service Categories',
-  'Booking Process',
-  'Provider Profile',
-  'Reviews & Ratings',
-  'Forms & Validation',
-  'Account & Authentication',
-  'Messages & Chat',
-  'Payment & Billing',
-  'Time & Date',
-  'Status Messages',
-  'Error Messages',
-  'Success Messages',
+    'Basis UI-Elemente',
+    'Navigation & Menu',
+    'Hero Section',
+    'Call to Action',
+    'Banner',
+    'Service Categories',
+    'Booking Process',
+    'Provider Profile',
+    'Reviews & Ratings',
+    'Forms & Validation',
+    'Account & Authentication',
+    'Messages & Chat',
+    'Payment & Billing',
+    'Time & Date',
+    'Status Messages',
+    'Error Messages',
+    'Success Messages',
 ];
 
 console.log('📂 Erkannte Kategorien:');
 categories.forEach(category => {
-  const found = languageContent.includes(`// ${category}`);
-  console.log(`  ${found ? '✅' : '❌'} ${category}`);
+    const found = languageContent.includes(`// ${category}`);
+    console.log(`  ${found ? '✅' : '❌'} ${category}`);
 });
 console.log();
 
@@ -68,19 +68,19 @@ console.log(`  ✅ Vollständigkeit: ${deKeys === enKeys ? '100%' : 'Inkonsisten
 console.log();
 
 if (deKeys === enKeys && deKeys > 100) {
-  console.log('🎉 Exzellent - Umfassende zweisprachige Internationalisierung!');
-  console.log();
-  console.log('🚀 Empfohlene nächste Schritte:');
-  console.log('  1. ✅ Komponenten mit Übersetzungen testen');
-  console.log('  2. ✅ Sprachswitch-Funktionalität prüfen');
-  console.log('  3. ✅ UI in beiden Sprachen validieren');
+    console.log('🎉 Exzellent - Umfassende zweisprachige Internationalisierung!');
+    console.log();
+    console.log('🚀 Empfohlene nächste Schritte:');
+    console.log('  1. ✅ Komponenten mit Übersetzungen testen');
+    console.log('  2. ✅ Sprachswitch-Funktionalität prüfen');
+    console.log('  3. ✅ UI in beiden Sprachen validieren');
 } else {
-  console.log('⚠️  Übersetzungsstruktur benötigt weitere Arbeit.');
+    console.log('⚠️  Übersetzungsstruktur benötigt weitere Arbeit.');
 }
 
 // Prüfe verfügbare Sprachen
 const availableLanguagesMatch = languageContent.match(/availableLanguages = \[([\s\S]*?)\]/);
 if (availableLanguagesMatch) {
-  const langCount = (availableLanguagesMatch[1].match(/code:/g) || []).length;
-  console.log(`\n📋 Konfigurierte Sprachen: ${langCount}`);
+    const langCount = (availableLanguagesMatch[1].match(/code:/g) || []).length;
+    console.log(`\n📋 Konfigurierte Sprachen: ${langCount}`);
 }

@@ -60,11 +60,10 @@ export default function LanguageSelector() {
 
           {/* Dropdown - Intelligente Positionierung */}
           <div
-            className={`absolute right-0 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto transform transition-all duration-200 ${
-              dropdownPosition === 'top'
+            className={`absolute right-0 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto transform transition-all duration-200 ${dropdownPosition === 'top'
                 ? 'bottom-full mb-2 origin-bottom-right animate-in slide-in-from-bottom-2'
                 : 'top-full mt-2 origin-top-right animate-in slide-in-from-top-2'
-            }`}
+              }`}
           >
             <div className="p-2">
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-1 mb-2">
@@ -75,11 +74,10 @@ export default function LanguageSelector() {
                 <button
                   key={lang.code}
                   onClick={() => handleLanguageChange(lang.code)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
-                    language === lang.code
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${language === lang.code
                       ? 'bg-[#14ad9f] text-white'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <span className="text-lg">{lang.flag}</span>
                   <span className="flex-1 text-left">{lang.name}</span>
