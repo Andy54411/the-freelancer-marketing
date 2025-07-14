@@ -2,11 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ChevronDown, Languages, Loader2 } from 'lucide-react';
+import { ChevronDown, Languages } from 'lucide-react';
 
 export default function LanguageSelector() {
-  const { language, setLanguage, isTranslating, availableLanguages, translatePageContent } =
-    useLanguage();
+  const { language, setLanguage, availableLanguages } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -28,16 +27,11 @@ export default function LanguageSelector() {
     }
   }, [isOpen]);
 
-  const handleLanguageChange = async (langCode: string) => {
+  const handleLanguageChange = (langCode: string) => {
     setIsOpen(false);
 
     if (langCode !== language) {
-      await setLanguage(langCode);
-
-      // Für Sprachen ohne manuelle Übersetzung, verwende automatische Übersetzung
-      if (!['de', 'en', 'es'].includes(langCode)) {
-        await translatePageContent(langCode);
-      }
+      setLanguage(langCode);
     }
   };
 
@@ -49,14 +43,9 @@ export default function LanguageSelector() {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        disabled={isTranslating}
-        className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border-2 border-[#14ad9f] text-gray-700 dark:text-gray-200 rounded-lg hover:bg-[#14ad9f] hover:text-white dark:hover:bg-[#14ad9f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+        className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border-2 border-[#14ad9f] text-gray-700 dark:text-gray-200 rounded-lg hover:bg-[#14ad9f] hover:text-white dark:hover:bg-[#14ad9f] transition-colors shadow-sm"
       >
-        {isTranslating ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Languages className="w-4 h-4" />
-        )}
+        <Languages className="w-4 h-4" />
         <span className="flex items-center gap-1">
           <span className="text-lg">{currentLanguage.flag}</span>
           <span className="hidden sm:inline">{currentLanguage.name}</span>
@@ -97,15 +86,6 @@ export default function LanguageSelector() {
                   {language === lang.code && <div className="w-2 h-2 bg-white rounded-full"></div>}
                 </button>
               ))}
-
-              {isTranslating && (
-                <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
-                  <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Übersetze Seite...
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </>
