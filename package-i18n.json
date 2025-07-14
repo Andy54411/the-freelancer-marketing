@@ -1,0 +1,16 @@
+{
+  "name": "taskilo-i18n-tools",
+  "version": "1.0.0",
+  "scripts": {
+    "translate:auto": "node scripts/translate-project.js",
+    "translate:extract": "node scripts/extract-texts.js",
+    "translate:update": "node scripts/update-components.js",
+    "i18n:build": "npm run translate:extract && npm run translate:auto && npm run translate:update"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "openai": "^4.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "glob": "^10.3.0"
+  }
+}

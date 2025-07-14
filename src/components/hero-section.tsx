@@ -9,6 +9,7 @@ import { ProgressiveBlur } from '@/components/ui/progressive-blur';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAnalyticsContext } from '@/contexts/AnalyticsContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompanyLogo {
   id: string; // WICHTIG: Eindeutige ID für den React-Key
@@ -21,6 +22,7 @@ export default function HeroSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
   const { trackEvent, trackNavigation } = useAnalyticsContext();
+  const { t } = useLanguage();
 
   const handleSearchClick = () => {
     trackEvent('hero_cta_click', 'user_engagement', 'search_help');
@@ -106,16 +108,16 @@ export default function HeroSection() {
             <div className="relative mx-auto max-w-6xl px-6 flex flex-col-reverse items-center gap-8 sm:gap-10 lg:flex-row lg:items-center">
               <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
                 <h1 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight md:text-4xl xl:text-5xl">
-                  <span className="block">Finde verlässliche Hilfe</span>
-                  <span className="block">für jedes Projekt –</span>
+                  <span className="block">{t('hero.title.line1')}</span>
+                  <span className="block">{t('hero.title.line2')}</span>
                   <span className="block">
-                    schnell, einfach, <span className="text-[#14ad9f]">Taskilo</span>
+                    {t('hero.title.line3').replace('Taskilo', '')}
+                    <span className="text-[#14ad9f]">Taskilo</span>
                   </span>
                 </h1>
 
                 <p className="mt-6 sm:mt-8 max-w-2xl text-pretty text-base sm:text-lg text-foreground">
-                  Taskilo bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und
-                  zuverlässig über App & Web zusammen – einfach buchen & starten!
+                  {t('hero.description')}
                 </p>
 
                 <div className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-3 sm:gap-2 sm:flex-row lg:justify-start">
@@ -126,19 +128,19 @@ export default function HeroSection() {
                     onClick={handleSearchClick}
                   >
                     <Link href="/auftrag/get-started">
-                      <span className="text-nowrap">Ich suche Hilfe</span>
+                      <span className="text-nowrap">{t('hero.button.searchHelp')}</span>
                     </Link>
                   </Button>
                   <Button
                     key={2}
                     asChild
                     size="lg"
-                    variant="ghost"
-                    className="w-full sm:w-auto px-5 text-base"
+                    variant="outline"
+                    className="w-full sm:w-auto px-5 text-base border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                     onClick={handleProviderClick}
                   >
                     <Link href="#link">
-                      <span className="text-nowrap">Ich biete Hilfe an</span>
+                      <span className="text-nowrap">{t('hero.button.offerHelp')}</span>
                     </Link>
                   </Button>
                 </div>
@@ -169,7 +171,9 @@ export default function HeroSection() {
           <div className="group relative m-auto max-w-6xl px-6">
             <div className="flex flex-col items-center md:flex-row">
               <div className="md:max-w-44 md:border-r md:pr-6">
-                <p className="text-end text-sm font-medium text-foreground">unsere neuen Tasker</p>
+                <p className="text-end text-sm font-medium text-foreground">
+                  {t('hero.newProviders')}
+                </p>
               </div>
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
                 {newCompanies.length > 0 && (
@@ -232,7 +236,7 @@ export default function HeroSection() {
                 )}
                 {!loading && !error && newCompanies.length === 0 && (
                   <div className="text-center text-sm font-medium text-gray-500">
-                    Aktuell keine neuen Dienstleister.
+                    {t('hero.noProviders')}
                   </div>
                 )}
 
