@@ -6,58 +6,60 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FiLoader } from 'react-icons/fi';
 
 function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-    // Memoize the redirect URL to avoid re-calculating it on every render.
-    const redirectTo = useMemo(() => {
-        const params = searchParams.toString();
-        return `${pathname}${params ? `?${params}` : ''}`;
-    }, [pathname, searchParams]);
+  // Memoize the redirect URL to avoid re-calculating it on every render.
+  const redirectTo = useMemo(() => {
+    const params = searchParams.toString();
+    return `${pathname}${params ? `?${params}` : ''}`;
+  }, [pathname, searchParams]);
 
-    useEffect(() => {
-        // Do nothing while the auth state is loading.
-        if (loading) {
-            return;
-        }
-
-        // When loading is finished and there's no user, redirect.
-        if (!user) {
-            router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
-        }
-    }, [user, loading, router, redirectTo]);
-
-    // While loading, show a full-screen spinner to avoid content flicker.
+  useEffect(() => {
+    // Do nothing while the auth state is loading.
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
-                <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-                <span>Authentifizierung wird geprüft...</span>
-            </div>
-        );
+      return;
     }
 
-    // If loading is done and we have a user, render the protected content.
-    if (user) {
-        return <>{children}</>;
+    // When loading is finished and there's no user, redirect.
+    if (!user) {
+      router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
     }
+  }, [user, loading, router, redirectTo]);
 
-    // If loading is done and there is no user, render nothing.
-    // The useEffect is handling the redirect. This prevents a flash of the children.
-    return null;
+  // While loading, show a full-screen spinner to avoid content flicker.
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
+        <span>Authentifizierung wird geprüft...</span>
+      </div>
+    );
+  }
+
+  // If loading is done and we have a user, render the protected content.
+  if (user) {
+    return <>{children}</>;
+  }
+
+  // If loading is done and there is no user, render nothing.
+  // The useEffect is handling the redirect. This prevents a flash of the children.
+  return null;
 }
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    return (
-        <Suspense fallback={
-            <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
-                <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-                <span>Authentifizierung wird geprüft...</span>
-            </div>
-        }>
-            <ProtectedRouteInternal>{children}</ProtectedRouteInternal>
-        </Suspense>
-    );
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+          <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
+          <span>Authentifizierung wird geprüft...</span>
+        </div>
+      }
+    >
+      <ProtectedRouteInternal>{children}</ProtectedRouteInternal>
+    </Suspense>
+  );
 }

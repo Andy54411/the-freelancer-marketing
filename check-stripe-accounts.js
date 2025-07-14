@@ -30,7 +30,7 @@ async function checkStripeAccounts() {
           accountCreationDate: userData.stripeAccountCreationDate?.toDate?.() || 'Unbekannt',
           detailsSubmitted: userData.stripeAccountDetailsSubmitted || false,
           payoutsEnabled: userData.stripeAccountPayoutsEnabled || false,
-          chargesEnabled: userData.stripeAccountChargesEnabled || false
+          chargesEnabled: userData.stripeAccountChargesEnabled || false,
         });
       }
     });
@@ -54,7 +54,6 @@ async function checkStripeAccounts() {
     } else {
       console.log(`\n❌ KEINE STRIPE-KONTEN GEFUNDEN`);
     }
-
   } catch (error) {
     console.error('❌ Fehler beim Prüfen der Stripe-Konten:', error);
   }

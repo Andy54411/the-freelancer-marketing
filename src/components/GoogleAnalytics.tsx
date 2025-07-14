@@ -7,35 +7,35 @@ import { GA_TRACKING_ID, pageview } from '@/lib/gtag';
 import { Suspense } from 'react';
 
 function GoogleAnalyticsInner() {
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-    useEffect(() => {
-        if (!GA_TRACKING_ID || typeof window === 'undefined') return;
+  useEffect(() => {
+    if (!GA_TRACKING_ID || typeof window === 'undefined') return;
 
-        const url = pathname + searchParams.toString();
-        pageview(url);
-    }, [pathname, searchParams]);
+    const url = pathname + searchParams.toString();
+    pageview(url);
+  }, [pathname, searchParams]);
 
-    return null;
+  return null;
 }
 
 export default function GoogleAnalytics() {
-    if (!GA_TRACKING_ID) {
-        return null;
-    }
+  if (!GA_TRACKING_ID) {
+    return null;
+  }
 
-    return (
-        <>
-            <Script
-                strategy="afterInteractive"
-                src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
-            />
-            <Script
-                id="google-analytics"
-                strategy="afterInteractive"
-                dangerouslySetInnerHTML={{
-                    __html: `
+  return (
+    <>
+      <Script
+        strategy="afterInteractive"
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+      />
+      <Script
+        id="google-analytics"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
@@ -45,11 +45,11 @@ export default function GoogleAnalytics() {
               cookie_flags: 'SameSite=None;Secure',
             });
           `,
-                }}
-            />
-            <Suspense fallback={null}>
-                <GoogleAnalyticsInner />
-            </Suspense>
-        </>
-    );
+        }}
+      />
+      <Suspense fallback={null}>
+        <GoogleAnalyticsInner />
+      </Suspense>
+    </>
+  );
 }

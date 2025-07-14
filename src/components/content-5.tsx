@@ -1,29 +1,29 @@
-import Image from 'next/image'
-import { Shield, Clock, Users, Award } from 'lucide-react'
+import Image from 'next/image';
+import { Shield, Clock, Users, Award } from 'lucide-react';
 
 export default function ContentSection() {
   const features = [
     {
       icon: Clock,
       title: 'Schnell',
-      description: 'Dienstleister in wenigen Minuten finden'
+      description: 'Dienstleister in wenigen Minuten finden',
     },
     {
       icon: Shield,
       title: 'Sicher',
-      description: 'Verifizierte Anbieter und sichere Bezahlung'
+      description: 'Verifizierte Anbieter und sichere Bezahlung',
     },
     {
       icon: Users,
       title: 'Professionell',
-      description: 'Qualifizierte Experten für jeden Bereich'
+      description: 'Qualifizierte Experten für jeden Bereich',
     },
     {
       icon: Award,
       title: 'Bewährt',
-      description: 'Über 10.000 zufriedene Kunden vertrauen uns'
-    }
-  ]
+      description: 'Über 10.000 zufriedene Kunden vertrauen uns',
+    },
+  ];
 
   return (
     <section className="py-16 md:py-32 bg-white dark:bg-gray-900">
@@ -31,13 +31,13 @@ export default function ContentSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
             <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
-              Die Plattform, die 
+              Die Plattform, die
               <span className="text-[#14ad9f]"> Dienstleister und Kunden </span>
               perfekt zusammenbringt
             </h2>
             <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-              Taskilo macht es einfach, den perfekten Dienstleister für Ihr Projekt zu finden. 
-              Von der Suche bis zur Bezahlung - alles aus einer Hand.
+              Taskilo macht es einfach, den perfekten Dienstleister für Ihr Projekt zu finden. Von
+              der Suche bis zur Bezahlung - alles aus einer Hand.
             </p>
 
             <div className="mt-10 grid grid-cols-2 gap-6">
@@ -48,7 +48,9 @@ export default function ContentSection() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{feature.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{feature.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {feature.description}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -64,7 +66,7 @@ export default function ContentSection() {
                 </div>
               </div>
             </div>
-            
+
             {/* Floating Stats Card */}
             <div className="absolute -bottom-6 -left-6 rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl border dark:border-gray-700">
               <div className="flex items-center space-x-4">
@@ -81,5 +83,5 @@ export default function ContentSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

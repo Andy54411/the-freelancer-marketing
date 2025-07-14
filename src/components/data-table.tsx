@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -11,14 +11,14 @@ import {
   useSensors,
   type DragEndEvent,
   type UniqueIdentifier,
-} from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   SortableContext,
   arrayMove,
   useSortable,
   verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
+} from '@dnd-kit/sortable';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -33,8 +33,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { CSS } from "@dnd-kit/utilities"
+} from '@tanstack/react-table';
+import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical as IconGripVertical,
   Columns as IconLayoutColumns,
@@ -45,11 +45,11 @@ import {
   ChevronRight as IconChevronRight,
   ChevronsRight as IconChevronsRight,
   Loader2 as FiLoader,
-} from "lucide-react"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+} from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Drawer,
   DrawerClose,
@@ -59,17 +59,22 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from '@/components/ui/drawer';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -77,19 +82,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Create a separate component for the drag handle
 function DragHandle<TData>({ row }: { row: Row<TData> }) {
   const { attributes, listeners } = useSortable({
     id: row.id,
-  })
+  });
 
   return (
     <Button
@@ -102,23 +102,23 @@ function DragHandle<TData>({ row }: { row: Row<TData> }) {
       <IconGripVertical className="text-muted-foreground size-3" />
       <span className="sr-only">Drag to reorder</span>
     </Button>
-  )
+  );
 }
 
 function DraggableRow<TData extends { id: UniqueIdentifier }>({
   row,
   onRowClick,
 }: {
-  row: Row<TData>
-  onRowClick?: (row: TData) => void
+  row: Row<TData>;
+  onRowClick?: (row: TData) => void;
 }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
-  })
+  });
 
   return (
     <TableRow
-      data-state={row.getIsSelected() && "selected"}
+      data-state={row.getIsSelected() && 'selected'}
       data-dragging={isDragging}
       ref={setNodeRef}
       className="relative z-0 cursor-pointer data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
@@ -128,20 +128,20 @@ function DraggableRow<TData extends { id: UniqueIdentifier }>({
         transition: transition,
       }}
     >
-      {row.getVisibleCells().map((cell) => (
+      {row.getVisibleCells().map(cell => (
         <TableCell key={cell.id}>
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
     </TableRow>
-  )
+  );
 }
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  isLoading?: boolean
-  onRowClick?: (row: TData) => void // NEU: Prop für den Klick-Handler
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  isLoading?: boolean;
+  onRowClick?: (row: TData) => void; // NEU: Prop für den Klick-Handler
 }
 
 export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
@@ -150,7 +150,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
   isLoading = false,
   onRowClick, // NEU: Prop extrahieren
 }: DataTableProps<TData, TValue>) {
-  const [data, setData] = React.useState(() => initialData)
+  const [data, setData] = React.useState(() => initialData);
 
   // KORREKTUR: Dieser Effekt synchronisiert den internen Zustand der Tabelle mit den Daten, die als Prop übergeben werden.
   // Dies ist entscheidend, da die Daten von der übergeordneten Komponente asynchron geladen werden.
@@ -158,28 +158,22 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
     setData(initialData);
   }, [initialData]);
 
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
-  })
-  const sortableId = React.useId()
+  });
+  const sortableId = React.useId();
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
     useSensor(TouchSensor, {}),
     useSensor(KeyboardSensor, {})
-  )
+  );
 
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
-  )
+  const dataIds = React.useMemo<UniqueIdentifier[]>(() => data?.map(({ id }) => id) || [], [data]);
 
   const table = useReactTable({
     data,
@@ -191,7 +185,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
       columnFilters,
       pagination,
     },
-    getRowId: (row) => String(row.id),
+    getRowId: row => String(row.id),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -204,16 +198,16 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
+  });
 
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
+    const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id)
-        const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex)
-      })
+      setData(data => {
+        const oldIndex = dataIds.indexOf(active.id);
+        const newIndex = dataIds.indexOf(over.id);
+        return arrayMove(data, oldIndex, newIndex);
+      });
     }
   }
 
@@ -233,24 +227,18 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
           <DropdownMenuContent align="end" className="w-56">
             {table
               .getAllColumns()
-              .filter(
-                (column) =>
-                  typeof column.accessorFn !== "undefined" &&
-                  column.getCanHide()
-              )
-              .map((column) => {
+              .filter(column => typeof column.accessorFn !== 'undefined' && column.getCanHide())
+              .map(column => {
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
+                    onCheckedChange={value => column.toggleVisibility(!!value)}
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
-                )
+                );
               })}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -270,19 +258,16 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
           >
             <Table>
               <TableHeader className="bg-muted sticky top-0 z-10">
-                {table.getHeaderGroups().map((headerGroup) => (
+                {table.getHeaderGroups().map(headerGroup => (
                   <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
+                    {headerGroup.headers.map(header => {
                       return (
                         <TableHead key={header.id} colSpan={header.colSpan}>
                           {header.isPlaceholder
                             ? null
-                            : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            : flexRender(header.column.columnDef.header, header.getContext())}
                         </TableHead>
-                      )
+                      );
                     })}
                   </TableRow>
                 ))}
@@ -298,16 +283,13 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                   </TableRow>
                 ) : table.getRowModel().rows?.length ? (
                   <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
-                    {table.getRowModel().rows.map((row) => (
+                    {table.getRowModel().rows.map(row => (
                       <DraggableRow key={row.id} row={row} onRowClick={onRowClick} />
                     ))}
                   </SortableContext>
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
                       Keine Ergebnisse.
                     </TableCell>
                   </TableRow>
@@ -318,7 +300,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} von{" "}
+            {table.getFilteredSelectedRowModel().rows.length} von{' '}
             {table.getFilteredRowModel().rows.length} Zeile(n) ausgewählt.
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
@@ -328,17 +310,15 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
               </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
-                onValueChange={(value) => {
-                  table.setPageSize(Number(value))
+                onValueChange={value => {
+                  table.setPageSize(Number(value));
                 }}
               >
                 <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
-                  />
+                  <SelectValue placeholder={table.getState().pagination.pageSize} />
                 </SelectTrigger>
                 <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                  {[10, 20, 30, 40, 50].map(pageSize => (
                     <SelectItem key={pageSize} value={`${pageSize}`}>
                       {pageSize}
                     </SelectItem>
@@ -347,8 +327,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Seite {table.getState().pagination.pageIndex + 1} von{" "}
-              {table.getPageCount() || 1}
+              Seite {table.getState().pagination.pageIndex + 1} von {table.getPageCount() || 1}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
@@ -395,5 +374,5 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
         </div>
       </div>
     </div>
-  )
+  );
 }

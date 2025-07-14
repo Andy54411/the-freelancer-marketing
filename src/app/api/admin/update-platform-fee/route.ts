@@ -12,15 +12,15 @@ try {
   if (getApps().length === 0) {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     let projectId = process.env.FIREBASE_PROJECT_ID;
-    
+
     if (serviceAccountKey && serviceAccountKey !== 'undefined') {
       const serviceAccount = JSON.parse(serviceAccountKey);
-      
+
       // Extract project ID from service account if not set in environment
       if (!projectId && serviceAccount.project_id) {
         projectId = serviceAccount.project_id;
       }
-      
+
       if (serviceAccount.project_id && projectId) {
         initializeApp({
           credential: cert(serviceAccount),
@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
     // Validierung
     if (typeof feeRate !== 'number' || feeRate < 0 || feeRate > 0.2) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Ungültiger Gebührensatz. Muss zwischen 0 und 0.2 (20%) liegen.' 
+        {
+          success: false,
+          message: 'Ungültiger Gebührensatz. Muss zwischen 0 und 0.2 (20%) liegen.',
         },
         { status: 400 }
       );
@@ -65,9 +65,9 @@ export async function POST(req: NextRequest) {
 
     if (!db) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Datenbank nicht verfügbar. Konfiguration kann nicht gespeichert werden.' 
+        {
+          success: false,
+          message: 'Datenbank nicht verfügbar. Konfiguration kann nicht gespeichert werden.',
         },
         { status: 503 }
       );
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         ...existing,
         feeRate,
         updatedAt: Math.floor(Date.now() / 1000),
-        updatedBy: adminUserId
+        updatedBy: adminUserId,
       };
     } else {
       // Neue Konfiguration erstellen
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         isActive: true,
         createdAt: Math.floor(Date.now() / 1000),
         updatedAt: Math.floor(Date.now() / 1000),
-        updatedBy: adminUserId
+        updatedBy: adminUserId,
       };
     }
 
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       newFeeRate: feeRate,
       adminUserId,
       timestamp: Math.floor(Date.now() / 1000),
-      ipAddress: req.ip || 'unknown'
+      ipAddress: req.ip || 'unknown',
     });
 
     console.log(`Platform fee updated to ${(feeRate * 100).toFixed(1)}% by admin ${adminUserId}`);
@@ -119,15 +119,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       config: updatedConfig,
-      message: `Plattformgebühr erfolgreich auf ${(feeRate * 100).toFixed(1)}% aktualisiert`
+      message: `Plattformgebühr erfolgreich auf ${(feeRate * 100).toFixed(1)}% aktualisiert`,
     });
-
   } catch (error) {
     console.error('Error updating platform fee:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Fehler beim Aktualisieren der Plattformgebühr' 
+      {
+        success: false,
+        message: 'Fehler beim Aktualisieren der Plattformgebühr',
       },
       { status: 500 }
     );

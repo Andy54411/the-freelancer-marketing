@@ -18,7 +18,10 @@ const ProjectGallery: React.FC<ProjectGalleryProps> = ({ userId, images }) => {
     <div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {images.map((imageUrl, index) => (
-          <div key={`${userId}-img-${index}`} className="aspect-square bg-gray-200 rounded-md overflow-hidden">
+          <div
+            key={`${userId}-img-${index}`}
+            className="aspect-square bg-gray-200 rounded-md overflow-hidden"
+          >
             <Image
               src={imageUrl}
               alt={`Projektbild ${index + 1}`}

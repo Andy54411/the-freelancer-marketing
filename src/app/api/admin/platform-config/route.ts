@@ -12,15 +12,15 @@ try {
   if (getApps().length === 0) {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     let projectId = process.env.FIREBASE_PROJECT_ID;
-    
+
     if (serviceAccountKey && serviceAccountKey !== 'undefined') {
       const serviceAccount = JSON.parse(serviceAccountKey);
-      
+
       // Extract project ID from service account if not set in environment
       if (!projectId && serviceAccount.project_id) {
         projectId = serviceAccount.project_id;
       }
-      
+
       if (serviceAccount.project_id && projectId) {
         initializeApp({
           credential: cert(serviceAccount),
@@ -57,19 +57,19 @@ export async function GET() {
         feeRate: 0.045, // 4.5%
         isActive: true,
         createdAt: Math.floor(Date.now() / 1000),
-        updatedAt: Math.floor(Date.now() / 1000)
+        updatedAt: Math.floor(Date.now() / 1000),
       };
-      
+
       return NextResponse.json({
         success: true,
         config: defaultConfig,
-        fallback: true
+        fallback: true,
       });
     }
 
     // Lade aktuelle Plattformkonfiguration
     const configDoc = await db.collection('platform_config').doc('fee_settings').get();
-    
+
     if (!configDoc.exists) {
       // Erstelle Standard-Konfiguration falls nicht vorhanden
       const defaultConfig: PlatformFeeConfig = {
@@ -77,14 +77,14 @@ export async function GET() {
         feeRate: 0.045, // 4.5%
         isActive: true,
         createdAt: Math.floor(Date.now() / 1000),
-        updatedAt: Math.floor(Date.now() / 1000)
+        updatedAt: Math.floor(Date.now() / 1000),
       };
-      
+
       await db.collection('platform_config').doc('fee_settings').set(defaultConfig);
-      
+
       return NextResponse.json({
         success: true,
-        config: defaultConfig
+        config: defaultConfig,
       });
     }
 
@@ -92,15 +92,14 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      config
+      config,
     });
-
   } catch (error) {
     console.error('Error loading platform config:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Fehler beim Laden der Plattformkonfiguration' 
+      {
+        success: false,
+        message: 'Fehler beim Laden der Plattformkonfiguration',
       },
       { status: 500 }
     );

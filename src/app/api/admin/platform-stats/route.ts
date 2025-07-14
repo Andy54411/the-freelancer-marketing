@@ -12,21 +12,21 @@ let dbInitialized = false;
 
 async function getDatabase() {
   if (dbInitialized) return db;
-  
+
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    
+
     if (serviceAccountKey && serviceAccountKey !== 'undefined') {
       if (getApps().length === 0) {
         let projectId = process.env.FIREBASE_PROJECT_ID;
-        
+
         const serviceAccount = JSON.parse(serviceAccountKey);
-        
+
         // Extract project ID from service account if not set in environment
         if (!projectId && serviceAccount.project_id) {
           projectId = serviceAccount.project_id;
         }
-        
+
         if (serviceAccount.project_id && projectId) {
           initializeApp({
             credential: cert(serviceAccount),
@@ -44,7 +44,7 @@ async function getDatabase() {
     console.error('Firebase Admin initialization error in platform-stats:', error);
     db = null;
   }
-  
+
   dbInitialized = true;
   return db;
 }
@@ -71,47 +71,41 @@ export async function GET() {
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
     // Stripe Daten abrufen
-    const [
-      applicationFees,
-      lastMonthFees,
-      connectedAccounts,
-      balance
-    ] = await Promise.all([
+    const [applicationFees, lastMonthFees, connectedAccounts, balance] = await Promise.all([
       // Gesamte Application Fees
-      stripe.applicationFees.list({ 
+      stripe.applicationFees.list({
         limit: 100,
-        created: { gte: Math.floor(startOfMonth.getTime() / 1000) }
+        created: { gte: Math.floor(startOfMonth.getTime() / 1000) },
       }),
-      
+
       // Letzter Monat für Wachstumsberechnung
       stripe.applicationFees.list({
         limit: 100,
-        created: { 
+        created: {
           gte: Math.floor(startOfLastMonth.getTime() / 1000),
-          lte: Math.floor(endOfLastMonth.getTime() / 1000)
-        }
+          lte: Math.floor(endOfLastMonth.getTime() / 1000),
+        },
       }),
-      
+
       // Connected Accounts
       stripe.accounts.list({ limit: 100 }),
-      
+
       // Platform Balance
-      stripe.balance.retrieve()
+      stripe.balance.retrieve(),
     ]);
 
     // Berechne Statistiken
     const totalFees = applicationFees.data.reduce((sum, fee) => sum + fee.amount, 0);
     const lastMonthTotalFees = lastMonthFees.data.reduce((sum, fee) => sum + fee.amount, 0);
-    
+
     // Berechne Gesamtumsatz basierend auf Application Fees
     // Bei 4.5% Fee Rate: totalRevenue = totalFees / 0.045
     const currentFeeRate = 0.045; // Default, wird später dynamisch geladen
     const totalRevenue = totalFees > 0 ? Math.round(totalFees / currentFeeRate) : 0;
-    
+
     // Berechne monatliches Wachstum
-    const monthlyGrowth = lastMonthTotalFees > 0 
-      ? ((totalFees - lastMonthTotalFees) / lastMonthTotalFees) * 100
-      : 0;
+    const monthlyGrowth =
+      lastMonthTotalFees > 0 ? ((totalFees - lastMonthTotalFees) / lastMonthTotalFees) * 100 : 0;
 
     // Extrahiere Balance-Informationen
     const eurAvailable = balance.available.find(b => b.currency === 'eur');
@@ -123,16 +117,19 @@ export async function GET() {
       connectedAccounts: connectedAccounts.data.length,
       monthlyGrowth: Math.round(monthlyGrowth * 100), // Für Anzeige als Prozentwert
       availableBalance: eurAvailable?.amount || 0,
-      pendingBalance: eurPending?.amount || 0
+      pendingBalance: eurPending?.amount || 0,
     };
 
     // Optional: Cache die Statistiken in Firestore für bessere Performance
     if (db) {
       try {
-        await db.collection('platform_stats').doc('current').set({
-          ...stats,
-          lastUpdated: Math.floor(Date.now() / 1000)
-        });
+        await db
+          .collection('platform_stats')
+          .doc('current')
+          .set({
+            ...stats,
+            lastUpdated: Math.floor(Date.now() / 1000),
+          });
       } catch (dbError) {
         console.warn('Could not cache stats to Firestore:', dbError);
       }
@@ -140,12 +137,11 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      stats
+      stats,
     });
-
   } catch (error) {
     console.error('Error fetching platform stats:', error);
-    
+
     // Fallback: Lade gecachte Statistiken aus Firestore
     if (db) {
       try {
@@ -154,7 +150,7 @@ export async function GET() {
           return NextResponse.json({
             success: true,
             stats: cachedStats.data(),
-            cached: true
+            cached: true,
           });
         }
       } catch (cacheError) {
@@ -171,9 +167,9 @@ export async function GET() {
         connectedAccounts: 0,
         monthlyGrowth: 0,
         availableBalance: 0,
-        pendingBalance: 0
+        pendingBalance: 0,
       },
-      fallback: true
+      fallback: true,
     });
   }
 }

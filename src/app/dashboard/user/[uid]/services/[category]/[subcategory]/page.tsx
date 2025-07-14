@@ -39,7 +39,7 @@ export default function UserServiceSubcategoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
-  
+
   // Chat Modal State
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
@@ -53,7 +53,7 @@ export default function UserServiceSubcategoryPage() {
     rawCategory: category,
     rawSubcategory: subcategory,
     decodedCategory,
-    decodedSubcategory
+    decodedSubcategory,
   });
 
   // Normalisierungsfunktion (gleich wie in Navigation verwendet)
@@ -67,7 +67,7 @@ export default function UserServiceSubcategoryPage() {
       categoryTitle: cat.title,
       expectedSlug,
       decodedParam: decodedCategory,
-      matches: expectedSlug === decodedCategory
+      matches: expectedSlug === decodedCategory,
     });
 
     return expectedSlug === decodedCategory;
@@ -81,7 +81,7 @@ export default function UserServiceSubcategoryPage() {
       subcategoryName: sub,
       expectedSubSlug,
       decodedParam: decodedSubcategory,
-      matches: expectedSubSlug === decodedSubcategory
+      matches: expectedSubSlug === decodedSubcategory,
     });
 
     return expectedSubSlug === decodedSubcategory;
@@ -96,7 +96,7 @@ export default function UserServiceSubcategoryPage() {
   // Lade User-Daten für Chat
   const loadUserData = async () => {
     if (!uid) return;
-    
+
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
@@ -149,12 +149,12 @@ export default function UserServiceSubcategoryPage() {
         getDocs(userQuery).catch(error => {
           console.error('[ServicePage] Error loading users collection:', error);
           return { docs: [] };
-        })
+        }),
       ]);
 
       console.log('[ServicePage] Query results:', {
         firmDocs: firmSnapshot.docs?.length || 0,
-        userDocs: userSnapshot.docs?.length || 0
+        userDocs: userSnapshot.docs?.length || 0,
       });
 
       const firmProviders: Provider[] = firmSnapshot.docs.map(doc => {
@@ -173,7 +173,7 @@ export default function UserServiceSubcategoryPage() {
           completedJobs: data.completedJobs || 0,
           isCompany: true,
           priceRange: data.priceRange,
-          responseTime: data.responseTime
+          responseTime: data.responseTime,
         };
       });
 
@@ -193,7 +193,7 @@ export default function UserServiceSubcategoryPage() {
           completedJobs: data.completedJobs || 0,
           isCompany: false,
           priceRange: data.priceRange,
-          responseTime: data.responseTime
+          responseTime: data.responseTime,
         };
       });
 
@@ -204,94 +204,106 @@ export default function UserServiceSubcategoryPage() {
         firms: firmProviders.length,
         freelancers: userProviders.length,
         subcategoryName,
-        sampleProviderSkills: allProviders.slice(0, 3).map(p => ({ id: p.id, skills: p.skills, name: getProviderName(p) }))
+        sampleProviderSkills: allProviders
+          .slice(0, 3)
+          .map(p => ({ id: p.id, skills: p.skills, name: getProviderName(p) })),
       });
 
       // Filter nach Subcategory - erweiterte Matching-Logik
       let filteredProviders = allProviders.filter(provider => {
         if (!provider.skills || provider.skills.length === 0) return false;
-        
+
         const subcategoryLower = (subcategoryName || '').toLowerCase();
         const paramSubcategoryLower = subcategory.toLowerCase();
-        
+
         // Verschiedene Matching-Strategien
-        const hasDirectMatch = provider.skills.some(skill => 
-          skill.toLowerCase().includes(subcategoryLower) || 
-          skill.toLowerCase().includes(paramSubcategoryLower)
+        const hasDirectMatch = provider.skills.some(
+          skill =>
+            skill.toLowerCase().includes(subcategoryLower) ||
+            skill.toLowerCase().includes(paramSubcategoryLower)
         );
-        
+
         // Erweiterte Matches für häufige Begriffe
         const hasExtendedMatch = provider.skills.some(skill => {
           const skillLower = skill.toLowerCase();
-          
+
           // Spezielle Matches für Gastronomie
           if (subcategoryLower.includes('mietkoch') || paramSubcategoryLower.includes('mietkoch')) {
-            return skillLower.includes('koch') || 
-                   skillLower.includes('küche') || 
-                   skillLower.includes('kochen') ||
-                   skillLower.includes('catering') ||
-                   skillLower.includes('gastronomie');
+            return (
+              skillLower.includes('koch') ||
+              skillLower.includes('küche') ||
+              skillLower.includes('kochen') ||
+              skillLower.includes('catering') ||
+              skillLower.includes('gastronomie')
+            );
           }
-          
-          if (subcategoryLower.includes('mietkellner') || paramSubcategoryLower.includes('mietkellner')) {
-            return skillLower.includes('kellner') || 
-                   skillLower.includes('service') || 
-                   skillLower.includes('bedienung') ||
-                   skillLower.includes('restaurant') ||
-                   skillLower.includes('gastronomie');
+
+          if (
+            subcategoryLower.includes('mietkellner') ||
+            paramSubcategoryLower.includes('mietkellner')
+          ) {
+            return (
+              skillLower.includes('kellner') ||
+              skillLower.includes('service') ||
+              skillLower.includes('bedienung') ||
+              skillLower.includes('restaurant') ||
+              skillLower.includes('gastronomie')
+            );
           }
-          
+
           return false;
         });
-        
+
         return hasDirectMatch || hasExtendedMatch;
       });
 
       console.log('[ServicePage] After filtering by subcategory:', {
         filteredCount: filteredProviders.length,
         originalCount: allProviders.length,
-        filterCriteria: { subcategoryName, subcategory }
+        filterCriteria: { subcategoryName, subcategory },
       });
 
       // Fallback: Wenn keine spezifischen Anbieter gefunden werden, zeige alle aktiven Anbieter der Kategorie
       if (filteredProviders.length === 0 && allProviders.length > 0 && categoryInfo) {
         console.log('[ServicePage] No specific providers found, using category fallback');
-        
+
         // Suche nach Anbietern mit Category-bezogenen Skills
         filteredProviders = allProviders.filter(provider => {
           if (!provider.skills || provider.skills.length === 0) return false;
-          
+
           const categoryLower = categoryInfo.title.toLowerCase();
-          
+
           return provider.skills.some(skill => {
             const skillLower = skill.toLowerCase();
-            
+
             // Category-basierte Matches
             if (categoryLower.includes('hotel') || categoryLower.includes('gastronomie')) {
-              return skillLower.includes('hotel') || 
-                     skillLower.includes('gastronomie') ||
-                     skillLower.includes('restaurant') ||
-                     skillLower.includes('küche') ||
-                     skillLower.includes('service') ||
-                     skillLower.includes('catering');
+              return (
+                skillLower.includes('hotel') ||
+                skillLower.includes('gastronomie') ||
+                skillLower.includes('restaurant') ||
+                skillLower.includes('küche') ||
+                skillLower.includes('service') ||
+                skillLower.includes('catering')
+              );
             }
-            
+
             // Weitere Category-Matches können hier hinzugefügt werden
-            return skillLower.includes(categoryLower) ||
-                   categoryLower.includes(skillLower);
+            return skillLower.includes(categoryLower) || categoryLower.includes(skillLower);
           });
         });
-        
+
         console.log('[ServicePage] Category fallback result:', filteredProviders.length);
       }
 
       // Suchfilter
       if (searchQuery) {
-        filteredProviders = filteredProviders.filter(provider =>
-          (provider.companyName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (provider.userName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (provider.bio?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (provider.skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())))
+        filteredProviders = filteredProviders.filter(
+          provider =>
+            provider.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
         );
       }
 
@@ -321,10 +333,12 @@ export default function UserServiceSubcategoryPage() {
   };
 
   const getProfileImage = (provider: Provider) => {
-    return provider.profilePictureFirebaseUrl ||
+    return (
+      provider.profilePictureFirebaseUrl ||
       provider.profilePictureURL ||
       provider.photoURL ||
-      '/images/default-avatar.png';
+      '/images/default-avatar.png'
+    );
   };
 
   if (!categoryInfo || !subcategoryName) {
@@ -368,7 +382,8 @@ export default function UserServiceSubcategoryPage() {
                 {subcategoryName}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für {subcategoryName}
+                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für{' '}
+                {subcategoryName}
               </p>
             </div>
           </div>
@@ -382,7 +397,7 @@ export default function UserServiceSubcategoryPage() {
                 type="text"
                 placeholder="Nach Anbietern oder Skills suchen..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -390,7 +405,7 @@ export default function UserServiceSubcategoryPage() {
             {/* Sortierung */}
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
+              onChange={e => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="rating">Beste Bewertung</option>
@@ -407,7 +422,10 @@ export default function UserServiceSubcategoryPage() {
         {loading ? (
           <div className="space-y-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse"
+              >
                 <div className="flex items-start gap-6">
                   <div className="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                   <div className="flex-1 space-y-3">
@@ -429,9 +447,7 @@ export default function UserServiceSubcategoryPage() {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
               {searchQuery && (
-                <span className="block mt-2">
-                  Versuchen Sie, Ihre Suchkriterien anzupassen.
-                </span>
+                <span className="block mt-2">Versuchen Sie, Ihre Suchkriterien anzupassen.</span>
               )}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -452,13 +468,16 @@ export default function UserServiceSubcategoryPage() {
         ) : (
           <div className="space-y-6">
             {providers.map(provider => (
-              <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div
+                key={provider.id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+              >
                 <div className="flex items-start gap-6">
                   <img
                     src={getProfileImage(provider)}
                     alt={getProviderName(provider)}
                     className="w-20 h-20 rounded-full object-cover"
-                    onError={(e) => {
+                    onError={e => {
                       (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                     }}
                   />
@@ -547,8 +566,10 @@ export default function UserServiceSubcategoryPage() {
                       <button className="bg-[#14ad9f] hover:bg-teal-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                         Kontaktieren
                       </button>
-                      <button 
-                        onClick={() => router.push(`/dashboard/user/${uid}/provider/${provider.id}`)}
+                      <button
+                        onClick={() =>
+                          router.push(`/dashboard/user/${uid}/provider/${provider.id}`)
+                        }
                         className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
                       >
                         Profil anzeigen

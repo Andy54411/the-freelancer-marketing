@@ -36,16 +36,18 @@ function initializeFirebaseAdmin() {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (!serviceAccountKey) {
-      console.error("[Firebase Init] Missing service account key");
+      console.error('[Firebase Init] Missing service account key');
       return null;
     }
 
     const serviceAccount = JSON.parse(serviceAccountKey);
     // Extract project_id from service account instead of requiring separate env var
     const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID;
-    
+
     if (!projectId) {
-      console.error("[Firebase Init] No project_id found in service account or FIREBASE_PROJECT_ID env var");
+      console.error(
+        '[Firebase Init] No project_id found in service account or FIREBASE_PROJECT_ID env var'
+      );
       return null;
     }
 
@@ -54,10 +56,10 @@ function initializeFirebaseAdmin() {
       projectId: projectId,
     });
 
-    console.log("[Firebase Init] Successfully initialized with project:", projectId);
+    console.log('[Firebase Init] Successfully initialized with project:', projectId);
     return getFirestore(app);
   } catch (error) {
-    console.error("[Firebase Init] Error:", error);
+    console.error('[Firebase Init] Error:', error);
     return null;
   }
 }
@@ -66,17 +68,17 @@ function initializeFirebaseAdmin() {
 try {
   db = initializeFirebaseAdmin();
 } catch (error) {
-  console.warn("Firebase initialization failed:", error);
+  console.warn('Firebase initialization failed:', error);
 }
 
 async function handleBalanceRequest(firebaseUserId: string) {
-  console.log("[BALANCE-API] Request for user:", firebaseUserId);
+  console.log('[BALANCE-API] Request for user:', firebaseUserId);
 
   // Check cache first
   const cacheKey = `balance_${firebaseUserId}`;
   const cached = balanceCache.get(cacheKey);
-  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-    console.log("[BALANCE-API] Cache hit");
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log('[BALANCE-API] Cache hit');
     return NextResponse.json(cached.data);
   }
 
@@ -88,25 +90,25 @@ async function handleBalanceRequest(firebaseUserId: string) {
   try {
     const result = await Promise.race([
       executeBalanceCheck(firebaseUserId, cacheKey),
-      timeoutPromise
+      timeoutPromise,
     ]);
 
     return result;
   } catch (error: any) {
-    console.error("[BALANCE-API] Error:", error.message);
-    
+    console.error('[BALANCE-API] Error:', error.message);
+
     // Return expired cache if available
     if (cached) {
-      console.log("[BALANCE-API] Using expired cache");
+      console.log('[BALANCE-API] Using expired cache');
       return NextResponse.json({ ...cached.data, source: 'expired_cache' });
     }
-    
+
     // Final fallback
-    return NextResponse.json({ 
-      available: 0, 
-      pending: 0, 
+    return NextResponse.json({
+      available: 0,
+      pending: 0,
       source: 'error_fallback',
-      error: error.message 
+      error: error.message,
     });
   }
 }
@@ -123,20 +125,20 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
 
   // Try users collection first, then stripe_accounts as fallback
   let stripeAccountId = null;
-  
+
   try {
     const userDoc = await Promise.race([
       db.collection('users').doc(firebaseUserId).get(),
-      firebaseTimeout
+      firebaseTimeout,
     ]);
-    
+
     if (userDoc?.exists) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
-      console.log("[BALANCE-API] Found stripeAccountId in users:", stripeAccountId);
+      console.log('[BALANCE-API] Found stripeAccountId in users:', stripeAccountId);
     }
   } catch (error) {
-    console.log("[BALANCE-API] Error accessing users collection:", error);
+    console.log('[BALANCE-API] Error accessing users collection:', error);
   }
 
   // Fallback: try stripe_accounts collection
@@ -144,16 +146,16 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
     try {
       const doc = await Promise.race([
         db.collection('stripe_accounts').doc(firebaseUserId).get(),
-        firebaseTimeout
+        firebaseTimeout,
       ]);
 
       if (doc?.exists) {
         const data = doc.data();
         stripeAccountId = data?.stripeAccountId;
-        console.log("[BALANCE-API] Found stripeAccountId in stripe_accounts:", stripeAccountId);
+        console.log('[BALANCE-API] Found stripeAccountId in stripe_accounts:', stripeAccountId);
       }
     } catch (error) {
-      console.log("[BALANCE-API] Error accessing stripe_accounts collection:", error);
+      console.log('[BALANCE-API] Error accessing stripe_accounts collection:', error);
     }
   }
 
@@ -169,22 +171,22 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
     setTimeout(() => reject(new Error('Stripe timeout')), 8000);
   });
 
-  const balance = await Promise.race([
+  const balance = (await Promise.race([
     stripe.balance.retrieve({ stripeAccount: stripeAccountId }),
-    stripeTimeout
-  ]) as Stripe.Balance;
+    stripeTimeout,
+  ])) as Stripe.Balance;
 
   const response = {
     available: balance.available?.[0]?.amount || 0,
     pending: balance.pending?.[0]?.amount || 0,
     currency: balance.available?.[0]?.currency || 'eur',
-    source: 'stripe_api'
+    source: 'stripe_api',
   };
 
   // Cache successful result
   balanceCache.set(cacheKey, { data: response, timestamp: Date.now() });
-  console.log("[BALANCE-API] Success:", response);
-  
+  console.log('[BALANCE-API] Success:', response);
+
   return NextResponse.json(response);
 }
 
@@ -194,15 +196,12 @@ export async function GET(request: NextRequest) {
     const firebaseUserId = searchParams.get('firebaseUserId');
 
     if (!firebaseUserId) {
-      return NextResponse.json(
-        { error: 'Missing firebaseUserId parameter' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing firebaseUserId parameter' }, { status: 400 });
     }
 
     return await handleBalanceRequest(firebaseUserId);
   } catch (error: any) {
-    console.error("[BALANCE-API] GET Error:", error);
+    console.error('[BALANCE-API] GET Error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
@@ -224,7 +223,7 @@ export async function POST(request: NextRequest) {
 
     return await handleBalanceRequest(firebaseUserId);
   } catch (error: any) {
-    console.error("[BALANCE-API] POST Error:", error);
+    console.error('[BALANCE-API] POST Error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

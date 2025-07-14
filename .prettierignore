@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+*.min.js
+*.min.css
+
+# Firebase
+firebase_functions/lib/
+firebase-export-*/
+
+# Documentation that shouldn't be formatted
+*.md
+
+# Config files that shouldn't be formatted
+public/
+dataconnect/
+firebase_functions/
+
+# HTML test files
+*.html
+
+# Shell scripts
+*.sh
+
+# Data files
+*.json
+!package.json
+!tsconfig.json
+!messages/*.json
+
+# GraphQL files (haben Syntaxfehler)
+*.gql
+
+# Spezielle Dateien
+*.js.backup
+*.ts.backup
+cors.json
+secret.txt
+database.rules.json
+firestore.rules
+storage.rules
+vercel.json
+eslint.config.mjs

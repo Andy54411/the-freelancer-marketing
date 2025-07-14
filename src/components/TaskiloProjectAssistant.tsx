@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MessageSquare, 
-  Send, 
-  Bot, 
-  CheckCircle, 
-  Clock, 
+import {
+  MessageSquare,
+  Send,
+  Bot,
+  CheckCircle,
+  Clock,
   AlertCircle,
   FileText,
   Calendar,
@@ -23,7 +23,7 @@ import {
   ArrowRight,
   User,
   Briefcase,
-  Settings
+  Settings,
 } from 'lucide-react';
 
 interface Message {
@@ -62,7 +62,7 @@ interface OrderData {
   priority: 'low' | 'medium' | 'high' | 'urgent';
 }
 
-type ProjectStep = 
+type ProjectStep =
   | 'welcome'
   | 'category-selection'
   | 'description'
@@ -81,10 +81,10 @@ interface TaskiloProjectAssistantProps {
   existingOrderId?: string;
 }
 
-export default function TaskiloProjectAssistant({ 
-  userId, 
-  onOrderCreate, 
-  existingOrderId 
+export default function TaskiloProjectAssistant({
+  userId,
+  onOrderCreate,
+  existingOrderId,
 }: TaskiloProjectAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -135,9 +135,9 @@ Lassen Sie uns anfangen! Was für ein Projekt haben Sie im Sinn?`,
           'Reinigungsservice',
           'IT-Support',
           'Gartenpflege',
-          'Umzugshilfe'
-        ]
-      }
+          'Umzugshilfe',
+        ],
+      },
     };
     setMessages([welcomeMessage]);
   };
@@ -162,9 +162,9 @@ Wie kann ich Ihnen heute helfen?`,
           'Termin verschieben',
           'Zusätzliche Anforderungen',
           'Mit Dienstleister chatten',
-          'Rechnung anfordern'
-        ]
-      }
+          'Rechnung anfordern',
+        ],
+      },
     };
     setMessages([projectMessage]);
     setCurrentStep('project-monitoring');
@@ -179,7 +179,7 @@ Wie kann ich Ihnen heute helfen?`,
       id: generateId(),
       type: 'user',
       content: inputValue,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -191,7 +191,7 @@ Wie kann ich Ihnen heute helfen?`,
       const response = generateAIResponse(inputValue, currentStep);
       setMessages(prev => [...prev, response]);
       setIsLoading(false);
-      
+
       // Update step if needed
       if (response.metadata?.step) {
         setCurrentStep(response.metadata.step);
@@ -217,8 +217,8 @@ Können Sie mir mehr Details zu Ihrem ${userInput.toLowerCase()}-Projekt geben? 
         timestamp: new Date(),
         metadata: {
           step: 'description',
-          actionRequired: true
-        }
+          actionRequired: true,
+        },
       }),
 
       'category-selection': () => ({
@@ -226,7 +226,7 @@ Können Sie mir mehr Details zu Ihrem ${userInput.toLowerCase()}-Projekt geben? 
         type: 'assistant',
         content: `Ausgezeichnete Wahl! Lassen Sie mich Ihnen bei der optimalen Umsetzung helfen.`,
         timestamp: new Date(),
-        metadata: { step: 'description' }
+        metadata: { step: 'description' },
       }),
 
       description: () => ({
@@ -241,8 +241,8 @@ Bitte geben Sie Ihre Adresse oder PLZ ein, damit ich passende Dienstleister in I
         timestamp: new Date(),
         metadata: {
           step: 'location',
-          suggestions: ['München', 'Berlin', 'Hamburg', 'Köln']
-        }
+          suggestions: ['München', 'Berlin', 'Hamburg', 'Köln'],
+        },
       }),
 
       location: () => ({
@@ -260,8 +260,8 @@ Bitte geben Sie Ihre Adresse oder PLZ ein, damit ich passende Dienstleister in I
         timestamp: new Date(),
         metadata: {
           step: 'timeline',
-          suggestions: ['Diese Woche', 'Nächste Woche', 'Flexibel', 'Bestimmtes Datum']
-        }
+          suggestions: ['Diese Woche', 'Nächste Woche', 'Flexibel', 'Bestimmtes Datum'],
+        },
       }),
 
       timeline: () => ({
@@ -278,8 +278,8 @@ Welcher Budgetrahmen schwebt Ihnen vor?
         timestamp: new Date(),
         metadata: {
           step: 'budget',
-          suggestions: ['150-300€', '300-500€', '500-800€', 'Über 800€']
-        }
+          suggestions: ['150-300€', '300-500€', '500-800€', 'Über 800€'],
+        },
       }),
 
       budget: () => ({
@@ -299,8 +299,8 @@ Soll ich jetzt passende Dienstleister für Sie suchen? Ich kann Ihnen die 3 best
         metadata: {
           step: 'provider-matching',
           actionRequired: true,
-          suggestions: ['Ja, Dienstleister suchen', 'Noch etwas ändern']
-        }
+          suggestions: ['Ja, Dienstleister suchen', 'Noch etwas ändern'],
+        },
       }),
 
       requirements: () => ({
@@ -308,7 +308,7 @@ Soll ich jetzt passende Dienstleister für Sie suchen? Ich kann Ihnen die 3 best
         type: 'assistant',
         content: `Zusätzliche Anforderungen notiert!`,
         timestamp: new Date(),
-        metadata: { step: 'review' }
+        metadata: { step: 'review' },
       }),
 
       review: () => ({
@@ -331,8 +331,13 @@ Welchen Dienstleister möchten Sie kontaktieren?`,
         timestamp: new Date(),
         metadata: {
           step: 'provider-matching',
-          suggestions: ['Max Müller wählen', 'ProFix wählen', 'Heimwerker-Profis wählen', 'Alle Details vergleichen']
-        }
+          suggestions: [
+            'Max Müller wählen',
+            'ProFix wählen',
+            'Heimwerker-Profis wählen',
+            'Alle Details vergleichen',
+          ],
+        },
       }),
 
       'provider-matching': () => ({
@@ -352,8 +357,8 @@ Ich halte Sie über alle Entwicklungen auf dem Laufenden und unterstütze bei Fr
         timestamp: new Date(),
         metadata: {
           step: 'project-monitoring',
-          suggestions: ['Projekt-Status zeigen', 'Dienstleister chatten', 'Termin ändern']
-        }
+          suggestions: ['Projekt-Status zeigen', 'Dienstleister chatten', 'Termin ändern'],
+        },
       }),
 
       'project-monitoring': () => ({
@@ -366,15 +371,17 @@ Ich halte Sie über alle Entwicklungen auf dem Laufenden und unterstütze bei Fr
 • Fortschritt: 60% abgeschlossen
 • Qualität: Hervorragend ⭐⭐⭐⭐⭐
 
-${userInput.toLowerCase().includes('problem') || userInput.toLowerCase().includes('issue') 
-  ? '🔧 **Unterstützung:** Ich koordiniere sofort eine Lösung mit Ihrem Dienstleister!'
-  : '💡 **Tipp:** Alles läuft super! Der Abschluss ist für übermorgen geplant.'}
+${
+  userInput.toLowerCase().includes('problem') || userInput.toLowerCase().includes('issue')
+    ? '🔧 **Unterstützung:** Ich koordiniere sofort eine Lösung mit Ihrem Dienstleister!'
+    : '💡 **Tipp:** Alles läuft super! Der Abschluss ist für übermorgen geplant.'
+}
 
 Gibt es noch etwas, womit ich helfen kann?`,
         timestamp: new Date(),
         metadata: {
-          suggestions: ['Zahlung vorbereiten', 'Bewertung planen', 'Weiteres Projekt starten']
-        }
+          suggestions: ['Zahlung vorbereiten', 'Bewertung planen', 'Weiteres Projekt starten'],
+        },
       }),
 
       completion: () => ({
@@ -391,9 +398,9 @@ Wie zufrieden sind Sie mit dem Ergebnis? Ihre Bewertung hilft anderen Kunden!
 Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
         timestamp: new Date(),
         metadata: {
-          suggestions: ['5 Sterne geben', 'Bewertung schreiben', 'Neues Projekt starten']
-        }
-      })
+          suggestions: ['5 Sterne geben', 'Bewertung schreiben', 'Neues Projekt starten'],
+        },
+      }),
     };
 
     return responses[step]();
@@ -416,7 +423,7 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
       review: <CheckCircle className="h-4 w-4" />,
       'provider-matching': <User className="h-4 w-4" />,
       'project-monitoring': <Clock className="h-4 w-4" />,
-      completion: <Star className="h-4 w-4" />
+      completion: <Star className="h-4 w-4" />,
     };
     return icons[step];
   };
@@ -433,7 +440,7 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
       review: 'Überprüfung',
       'provider-matching': 'Dienstleister-Suche',
       'project-monitoring': 'Projektbegleitung',
-      completion: 'Abschluss'
+      completion: 'Abschluss',
     };
     return labels[step];
   };
@@ -487,7 +494,7 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
         <CardContent className="p-0 flex flex-col h-[calc(600px-80px)]">
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
+            {messages.map(message => (
               <div
                 key={message.id}
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -500,7 +507,7 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
                   }`}
                 >
                   <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-                  
+
                   {/* Suggestions */}
                   {message.metadata?.suggestions && (
                     <div className="mt-3 space-y-1">
@@ -520,14 +527,20 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.1s' }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.2s' }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -540,9 +553,9 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
             <div className="flex space-x-2">
               <Input
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={e => setInputValue(e.target.value)}
                 placeholder="Ihre Nachricht..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1"
               />
               <Button

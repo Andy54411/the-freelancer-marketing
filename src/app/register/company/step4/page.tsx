@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useState, useCallback, useEffect } from 'react'; // useEffect hinzugefügt
 import { useRouter } from 'next/navigation';
@@ -17,121 +17,174 @@ interface CardData {
 
 const categoriesData: CardData[] = [
   {
-    title: "Handwerk",
-    description: "Spezialisiert auf Handwerksarbeiten",
-    skill: "Handwerk",
+    title: 'Handwerk',
+    description: 'Spezialisiert auf Handwerksarbeiten',
+    skill: 'Handwerk',
     subcategories: [
-      "Tischler", "Klempner", "Maler & Lackierer", "Elektriker",
-      "Heizungsbau & Sanitär", "Fliesenleger", "Dachdecker",
-      "Maurer", "Trockenbauer", "Schreiner", "Zimmerer",
-      "Bodenleger", "Glaser", "Schlosser", "Metallbauer", "Fenster- & Türenbauer"
-    ]
+      'Tischler',
+      'Klempner',
+      'Maler & Lackierer',
+      'Elektriker',
+      'Heizungsbau & Sanitär',
+      'Fliesenleger',
+      'Dachdecker',
+      'Maurer',
+      'Trockenbauer',
+      'Schreiner',
+      'Zimmerer',
+      'Bodenleger',
+      'Glaser',
+      'Schlosser',
+      'Metallbauer',
+      'Fenster- & Türenbauer',
+    ],
   },
   {
-    title: "Haushalt & Reinigung",
-    description: "Dienstleistungen rund um den Haushalt",
-    skill: "Haushalt & Reinigung",
+    title: 'Haushalt & Reinigung',
+    description: 'Dienstleistungen rund um den Haushalt',
+    skill: 'Haushalt & Reinigung',
     subcategories: [
-      "Reinigungskraft", "Garten und Landschaftspflege", "Haushaltshilfe", "Fensterputzer",
-      "Umzugshelfer", "Entrümpelung", "Hausmeisterdienste", "Teppichreinigung",
-      "Bodenreinigung", "Hausreinigung"
-    ]
+      'Reinigungskraft',
+      'Garten und Landschaftspflege',
+      'Haushaltshilfe',
+      'Fensterputzer',
+      'Umzugshelfer',
+      'Entrümpelung',
+      'Hausmeisterdienste',
+      'Teppichreinigung',
+      'Bodenreinigung',
+      'Hausreinigung',
+    ],
   },
   {
-    title: "Transport & Logistik",
-    description: "Experten für Transport & Logistik",
-    skill: "Transport & Logistik",
+    title: 'Transport & Logistik',
+    description: 'Experten für Transport & Logistik',
+    skill: 'Transport & Logistik',
     subcategories: [
-      "Möbelmontage", "Umzugshelfer", "Fahrer", "Kurierdienste",
-      "Transportdienstleistungen", "Lagerlogistik", "Frachtführer",
-      "Speditionsdienstleistungen", "Kurierfahrer", "Frachtlogistik"
-    ]
+      'Möbelmontage',
+      'Umzugshelfer',
+      'Fahrer',
+      'Kurierdienste',
+      'Transportdienstleistungen',
+      'Lagerlogistik',
+      'Frachtführer',
+      'Speditionsdienstleistungen',
+      'Kurierfahrer',
+      'Frachtlogistik',
+    ],
   },
   {
-    title: "Hotel & Gastronomie",
-    description: "Dienstleistungen im Bereich Hotel & Gastronomie",
-    skill: "Hotel & Gastronomie",
-    subcategories: [
-      "Mietkoch", "Mietkellner"
-    ]
+    title: 'Hotel & Gastronomie',
+    description: 'Dienstleistungen im Bereich Hotel & Gastronomie',
+    skill: 'Hotel & Gastronomie',
+    subcategories: ['Mietkoch', 'Mietkellner'],
   },
   {
-    title: "IT & Technik",
-    description: "Experten für Informationstechnologie und technische Dienstleistungen",
-    skill: "IT & Technik",
+    title: 'IT & Technik',
+    description: 'Experten für Informationstechnologie und technische Dienstleistungen',
+    skill: 'IT & Technik',
     subcategories: [
-      "Webentwicklung", "Softwareentwicklung", "App-Entwicklung",
-      "IT-Support", "Netzwerkadministration", "Datenbankentwicklung",
-      "IT-Beratung", "Webdesign", "UX/UI Design",
-      "Systemintegration", "Cloud Computing", "Cybersecurity"
-    ]
+      'Webentwicklung',
+      'Softwareentwicklung',
+      'App-Entwicklung',
+      'IT-Support',
+      'Netzwerkadministration',
+      'Datenbankentwicklung',
+      'IT-Beratung',
+      'Webdesign',
+      'UX/UI Design',
+      'Systemintegration',
+      'Cloud Computing',
+      'Cybersecurity',
+    ],
   },
   {
-    title: "Marketing & Vertrieb",
-    description: "Dienstleistungen im Bereich Marketing und Vertrieb",
-    skill: "Marketing & Vertrieb",
-    subcategories: [
-      "Online Marketing", "Social Media Marketing", "Content Marketing",
-    ]
+    title: 'Marketing & Vertrieb',
+    description: 'Dienstleistungen im Bereich Marketing und Vertrieb',
+    skill: 'Marketing & Vertrieb',
+    subcategories: ['Online Marketing', 'Social Media Marketing', 'Content Marketing'],
   },
   {
-    title: "Finanzen & Recht",
-    description: "Experten für Finanz- und Rechtsdienstleistungen",
-    skill: "Finanzen & Recht",
+    title: 'Finanzen & Recht',
+    description: 'Experten für Finanz- und Rechtsdienstleistungen',
+    skill: 'Finanzen & Recht',
     subcategories: [
-      "Buchhaltung", "Steuerberatung (freiberuflich)", "Rechtsberatung (freiberuflich)",
-      "Finanzberatung", "Versicherungsberatung", "Übersetzungen (juristisch/wirtschaftlich)",
-      "Lektorat (juristisch/wirtschaftlich)"
-    ]
+      'Buchhaltung',
+      'Steuerberatung (freiberuflich)',
+      'Rechtsberatung (freiberuflich)',
+      'Finanzberatung',
+      'Versicherungsberatung',
+      'Übersetzungen (juristisch/wirtschaftlich)',
+      'Lektorat (juristisch/wirtschaftlich)',
+    ],
   },
   {
-    title: "Gesundheit & Wellness",
-    description: "Dienstleistungen im Bereich Gesundheit und Wohlbefinden",
-    skill: "Gesundheit & Wellness",
+    title: 'Gesundheit & Wellness',
+    description: 'Dienstleistungen im Bereich Gesundheit und Wohlbefinden',
+    skill: 'Gesundheit & Wellness',
     subcategories: [
-      "Physiotherapie (selbstständig)", "Ergotherapie (selbstständig)",
-      "Heilpraktiker", "Coaching (Gesundheit/Wellness)", "Yoga-Lehrer",
-      "Pilates-Lehrer", "Massage-Therapeut", "Ernährungsberatung"
-    ]
+      'Physiotherapie (selbstständig)',
+      'Ergotherapie (selbstständig)',
+      'Heilpraktiker',
+      'Coaching (Gesundheit/Wellness)',
+      'Yoga-Lehrer',
+      'Pilates-Lehrer',
+      'Massage-Therapeut',
+      'Ernährungsberatung',
+    ],
   },
   {
-    title: "Bildung & Nachhilfe",
-    description: "Dienstleistungen im Bildungsbereich",
-    skill: "Bildung & Nachhilfe",
+    title: 'Bildung & Nachhilfe',
+    description: 'Dienstleistungen im Bildungsbereich',
+    skill: 'Bildung & Nachhilfe',
     subcategories: [
-      "Nachhilfelehrer (verschiedene Fächer)", "Sprachlehrer",
-      "Dozenten (freiberuflich)", "Trainer (Soft Skills etc.)",
-      "Musikunterricht", "Kunstunterricht"
-    ]
+      'Nachhilfelehrer (verschiedene Fächer)',
+      'Sprachlehrer',
+      'Dozenten (freiberuflich)',
+      'Trainer (Soft Skills etc.)',
+      'Musikunterricht',
+      'Kunstunterricht',
+    ],
   },
   {
-    title: "Kunst & Kultur",
-    description: "Dienstleistungen im künstlerischen und kulturellen Bereich",
-    skill: "Kunst & Kultur",
+    title: 'Kunst & Kultur',
+    description: 'Dienstleistungen im künstlerischen und kulturellen Bereich',
+    skill: 'Kunst & Kultur',
     subcategories: [
-      "Musiker (freiberuflich)", "Künstler (freiberuflich)", "Fotografen",
-      "Videografen", "Texter (kreativ)", "Lektoren (Belletristik)",
-      "Übersetzer (literarisch)", "Grafikdesigner (künstlerisch)"
-    ]
+      'Musiker (freiberuflich)',
+      'Künstler (freiberuflich)',
+      'Fotografen',
+      'Videografen',
+      'Texter (kreativ)',
+      'Lektoren (Belletristik)',
+      'Übersetzer (literarisch)',
+      'Grafikdesigner (künstlerisch)',
+    ],
   },
   {
-    title: "Veranstaltungen & Events",
-    description: "Dienstleistungen rund um Veranstaltungen und Events",
-    skill: "Veranstaltungen & Events",
+    title: 'Veranstaltungen & Events',
+    description: 'Dienstleistungen rund um Veranstaltungen und Events',
+    skill: 'Veranstaltungen & Events',
     subcategories: [
-      "Eventplanung", "Catering (klein)", "DJ (freiberuflich)",
-      "Fotografen (Event)", "Videografen (Event)", "Servicekräfte (Mietbasis)"
-    ]
+      'Eventplanung',
+      'Catering (klein)',
+      'DJ (freiberuflich)',
+      'Fotografen (Event)',
+      'Videografen (Event)',
+      'Servicekräfte (Mietbasis)',
+    ],
   },
   {
-    title: "Tiere & Pflanzen",
-    description: "Dienstleistungen rund um Tiere und Pflanzen",
-    skill: "Tiere & Pflanzen",
+    title: 'Tiere & Pflanzen',
+    description: 'Dienstleistungen rund um Tiere und Pflanzen',
+    skill: 'Tiere & Pflanzen',
     subcategories: [
-      "Tierbetreuung (Hundesitter etc.)", "Gartenpflege",
-      "Landschaftsgärtner (klein)", "Hundetrainer (freiberuflich)"
-    ]
-  }
+      'Tierbetreuung (Hundesitter etc.)',
+      'Gartenpflege',
+      'Landschaftsgärtner (klein)',
+      'Hundetrainer (freiberuflich)',
+    ],
+  },
 ];
 
 // --- Neue Komponente: SubcategorySelectionModal ---
@@ -148,7 +201,7 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
   selectedSubcategory,
   onSelect,
   onClose,
-  isOpen
+  isOpen,
 }) => {
   // NEU: useEffect zur Steuerung des Body-Scrollens
   useEffect(() => {
@@ -169,7 +222,7 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
     // Overlay für den Hintergrund des Modals (mit Weichzeichner)
     <div className="fixed inset-0 bg-transparent bg-opacity-30 backdrop-blur-md flex justify-center items-center z-50 p-4">
       {/* KORREKTUR: max-w-lg zu max-w-2xl erhöht, um mehr Platz zu schaffen */}
-      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-200 relative" >
+      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-200 relative">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 text-center">
           Unterkategorien für &quot;{category.title}&quot;
         </h2>
@@ -182,16 +235,19 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
 
         {/* KORREKTUR: Von grid zu flex, um dynamische Breiten zu ermöglichen */}
         <div className="flex flex-wrap justify-center gap-4 max-h-80 overflow-y-auto pr-2">
-          {category.subcategories.map((subcat) => (
+          {category.subcategories.map(subcat => (
             <button
               key={subcat}
-              onClick={() => { onSelect(subcat); }}
+              onClick={() => {
+                onSelect(subcat);
+              }}
               className={`
                 px-6 py-4 border-2 rounded-lg text-center transition-all duration-200
                 overflow-hidden // Behält Überlauf bei, lässt Text aber umbrechen
-                ${selectedSubcategory === subcat
-                  ? 'bg-teal-500 text-white border-teal-500 shadow-md'
-                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-teal-50 hover:text-teal-600'
+                ${
+                  selectedSubcategory === subcat
+                    ? 'bg-teal-500 text-white border-teal-500 shadow-md'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-teal-50 hover:text-teal-600'
                 }
                 // KEIN w-full, damit Breite sich an Inhalt anpasst
               `}
@@ -229,12 +285,12 @@ const HorizontalCardGrid: React.FC<HorizontalCardGridProps> = ({
   onSkillSelect,
   selectedSkill,
   onOpenSubcategoryModal,
-  selectedSubcategorySkills
+  selectedSubcategorySkills,
 }) => {
   return (
     <div className="w-full">
       <div className="flex flex-wrap justify-center gap-6 p-6">
-        {categories.map((category) => {
+        {categories.map(category => {
           const isSelected = selectedSkill === category.skill;
           const hasSelectedSubcategory = selectedSubcategorySkills[category.skill];
 
@@ -248,9 +304,10 @@ const HorizontalCardGrid: React.FC<HorizontalCardGridProps> = ({
                 h-48 shadow-lg rounded-xl overflow-hidden cursor-pointer
                 transition-all flex flex-col items-center justify-center p-4 text-center
                 transform hover:scale-105 duration-300
-                ${isSelected
-                  ? 'bg-teal-600 text-white border-4 border-teal-800 ring-2 ring-teal-500'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                ${
+                  isSelected
+                    ? 'bg-teal-600 text-white border-4 border-teal-800 ring-2 ring-teal-500'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }
               `}
               onClick={() => {
@@ -280,14 +337,13 @@ export default function Step4() {
   const [isSubcategoryModalOpen, setIsSubcategoryModalOpen] = useState(false);
   const [currentSelectedCategory, setCurrentSelectedCategory] = useState<CardData | null>(null);
 
-  const [selectedSubcategorySkills, setSelectedSubcategorySkills] = useState<{ [key: string]: string | null }>({});
+  const [selectedSubcategorySkills, setSelectedSubcategorySkills] = useState<{
+    [key: string]: string | null;
+  }>({});
   const router = useRouter();
 
-  const {
-    setSelectedHandwerkSkills,
-    setSelectedHaushaltServices,
-    setSelectedSubcategory
-  } = useRegistration();
+  const { setSelectedHandwerkSkills, setSelectedHaushaltServices, setSelectedSubcategory } =
+    useRegistration();
 
   const handleOpenSubcategoryModal = useCallback((category: CardData) => {
     setCurrentSelectedCategory(category);
@@ -299,17 +355,19 @@ export default function Step4() {
     setCurrentSelectedCategory(null);
   }, []);
 
-  const handleSubcategorySelectInModal = useCallback((subcategory: string) => {
-    if (selectedSkill) {
-      setSelectedSubcategorySkills(prev => ({
-        ...prev,
-        [selectedSkill]: subcategory
-      }));
-      setSelectedSubcategory(subcategory);
-      handleCloseSubcategoryModal(); // KORREKTUR: Modal hier schließen
-    }
-  }, [selectedSkill, setSelectedSubcategory, handleCloseSubcategoryModal]);
-
+  const handleSubcategorySelectInModal = useCallback(
+    (subcategory: string) => {
+      if (selectedSkill) {
+        setSelectedSubcategorySkills(prev => ({
+          ...prev,
+          [selectedSkill]: subcategory,
+        }));
+        setSelectedSubcategory(subcategory);
+        handleCloseSubcategoryModal(); // KORREKTUR: Modal hier schließen
+      }
+    },
+    [selectedSkill, setSelectedSubcategory, handleCloseSubcategoryModal]
+  );
 
   const handleNext = () => {
     if (!selectedSkill) {
@@ -362,7 +420,10 @@ export default function Step4() {
         <div className="flex justify-between items-center mb-6">
           <p className="text-lg sm:text-xl text-teal-600 font-semibold">Schritt 4/5</p>
           <div className="flex items-center">
-            <button onClick={openStepsModal} className="text-sm sm:text-base text-teal-600 hover:underline mr-2 cursor-pointer">
+            <button
+              onClick={openStepsModal}
+              className="text-sm sm:text-base text-teal-600 hover:underline mr-2 cursor-pointer"
+            >
               Schritte anzeigen
             </button>
             <FiInfo className="text-teal-600 text-xl sm:text-2xl" />
@@ -374,7 +435,9 @@ export default function Step4() {
       <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">
         Fähigkeiten auswählen
       </h2>
-      <p className="text-gray-600 text-center mb-8 max-w-xl">Wählen Sie eine Hauptkategorie und dann eine passende Unterkategorie.</p>
+      <p className="text-gray-600 text-center mb-8 max-w-xl">
+        Wählen Sie eine Hauptkategorie und dann eine passende Unterkategorie.
+      </p>
 
       <HorizontalCardGrid
         categories={categoriesData}
@@ -390,11 +453,11 @@ export default function Step4() {
           isOpen={isStepsModalOpen}
           onClose={closeStepsModal}
           steps={[
-            "Firmenprofil anlegen",
-            "Adresse eingeben",
-            "Kontaktdaten angeben",
-            "Fähigkeiten auswählen",
-            "Zusammenfassung & Abschluss"
+            'Firmenprofil anlegen',
+            'Adresse eingeben',
+            'Kontaktdaten angeben',
+            'Fähigkeiten auswählen',
+            'Zusammenfassung & Abschluss',
           ]}
         />
       )}

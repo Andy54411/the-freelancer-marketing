@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { getAuth } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import * as React from 'react';
+import * as AvatarPrimitive from '@radix-ui/react-avatar';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 // Hauptkomponenten
 const Avatar = ({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>) => (
@@ -14,18 +14,26 @@ const Avatar = ({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
   />
 );
 
-const AvatarImage = ({ className, src, alt, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) => (
+const AvatarImage = ({
+  className,
+  src,
+  alt,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Image>) => (
   <AvatarPrimitive.Image
     data-slot="avatar-image"
     className={`h-full w-full object-cover rounded-full ${className}`}
     src={src}
     alt={alt}
-    onError={(e) => console.error(`Fehler beim Laden des Avatarbilds: ${src}`, e)}
+    onError={e => console.error(`Fehler beim Laden des Avatarbilds: ${src}`, e)}
     {...props}
   />
 );
 
-const AvatarFallback = ({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Fallback>) => (
+const AvatarFallback = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) => (
   <AvatarPrimitive.Fallback
     data-slot="avatar-fallback"
     className={`flex h-full w-full items-center justify-center bg-gray-200 text-gray-500 rounded-full ${className}`}
@@ -44,7 +52,7 @@ export const useProfilePicture = () => {
       if (!user) return;
 
       const db = getFirestore();
-      const userDocRef = doc(db, "users", user.uid);
+      const userDocRef = doc(db, 'users', user.uid);
       const snap = await getDoc(userDocRef);
       const data = snap.data();
       setUrl(data?.step3?.profilePictureURL || null);
@@ -53,14 +61,11 @@ export const useProfilePicture = () => {
     load();
 
     // ⏱ Reagiert auf 'window.dispatchEvent(new Event("profilePictureUpdated"))'
-    window.addEventListener("profilePictureUpdated", load);
-    return () => window.removeEventListener("profilePictureUpdated", load);
+    window.addEventListener('profilePictureUpdated', load);
+    return () => window.removeEventListener('profilePictureUpdated', load);
   }, []);
 
   return url;
 };
 
 export { Avatar, AvatarImage, AvatarFallback };
-
-
-

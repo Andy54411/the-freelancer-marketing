@@ -2,7 +2,17 @@
 // pages/api/ai/project-assistant.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore, doc, collection, addDoc, updateDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  collection,
+  addDoc,
+  updateDoc,
+  getDoc,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '@/firebase/clients';
 
@@ -39,13 +49,13 @@ interface OrderData {
 
 class TaskiloAIAssistant {
   private static serviceCategories = {
-    'handwerk': ['Elektriker', 'Klempner', 'Maler', 'Tischler', 'Renovierung'],
-    'reinigung': ['Hausreinigung', 'Büroreinigung', 'Fensterreinigung', 'Teppichreinigung'],
-    'garten': ['Rasenpflege', 'Baumschnitt', 'Gartengestaltung', 'Winterdienst'],
-    'transport': ['Umzug', 'Lieferung', 'Möbeltransport', 'Kurierdienst'],
-    'it': ['Computer-Reparatur', 'Software-Installation', 'Netzwerk-Setup', 'Datenrettung'],
-    'wellness': ['Massage', 'Physiotherapie', 'Personal Training', 'Beauty'],
-    'beratung': ['Rechtsberatung', 'Steuerberatung', 'Unternehmensberatung', 'Coaching']
+    handwerk: ['Elektriker', 'Klempner', 'Maler', 'Tischler', 'Renovierung'],
+    reinigung: ['Hausreinigung', 'Büroreinigung', 'Fensterreinigung', 'Teppichreinigung'],
+    garten: ['Rasenpflege', 'Baumschnitt', 'Gartengestaltung', 'Winterdienst'],
+    transport: ['Umzug', 'Lieferung', 'Möbeltransport', 'Kurierdienst'],
+    it: ['Computer-Reparatur', 'Software-Installation', 'Netzwerk-Setup', 'Datenrettung'],
+    wellness: ['Massage', 'Physiotherapie', 'Personal Training', 'Beauty'],
+    beratung: ['Rechtsberatung', 'Steuerberatung', 'Unternehmensberatung', 'Coaching'],
   };
 
   static async processMessage(request: ProjectAssistantRequest): Promise<{
@@ -63,39 +73,39 @@ class TaskiloAIAssistant {
     switch (currentStep) {
       case 'welcome':
         return this.handleWelcome(message);
-      
+
       case 'category-selection':
         return this.handleCategorySelection(message);
-      
+
       case 'description':
         return this.handleDescription(message, orderData);
-      
+
       case 'location':
         return this.handleLocation(message, orderData);
-      
+
       case 'timeline':
         return this.handleTimeline(message, orderData);
-      
+
       case 'budget':
         return this.handleBudget(message, orderData);
-      
+
       case 'provider-matching':
         return await this.handleProviderMatching(message, orderData, userId);
-      
+
       case 'project-monitoring':
         return await this.handleProjectMonitoring(message, userId);
-      
+
       default:
         return {
           response: 'Entschuldigung, ich verstehe nicht ganz. Können Sie das anders formulieren?',
-          suggestions: ['Neuen Auftrag erstellen', 'Hilfe anzeigen']
+          suggestions: ['Neuen Auftrag erstellen', 'Hilfe anzeigen'],
         };
     }
   }
 
   private static handleWelcome(message: string) {
     const category = this.detectCategory(message);
-    
+
     if (category) {
       return {
         response: `Perfekt! Ich erkenne, dass Sie Hilfe im Bereich "${category}" benötigen. 
@@ -109,17 +119,17 @@ Beschreiben Sie mir bitte genauer, was gemacht werden soll. Je detaillierter Ihr
         orderData: { category },
         suggestions: [
           'Komplette Renovierung',
-          'Reparatur/Wartung', 
+          'Reparatur/Wartung',
           'Installation/Montage',
-          'Beratung benötigt'
-        ]
+          'Beratung benötigt',
+        ],
       };
     }
 
     return {
       response: `Gerne helfe ich Ihnen! Um den perfekten Dienstleister zu finden, wählen Sie bitte eine Kategorie:`,
       nextStep: 'category-selection',
-      suggestions: Object.keys(this.serviceCategories)
+      suggestions: Object.keys(this.serviceCategories),
     };
   }
 
@@ -136,20 +146,20 @@ ${subcategories.map(sub => `• ${sub}`).join('\n')}
 Beschreiben Sie mir nun bitte Ihr konkretes Projekt. Was genau soll gemacht werden?`,
         nextStep: 'description',
         orderData: { category },
-        suggestions: subcategories.slice(0, 4)
+        suggestions: subcategories.slice(0, 4),
       };
     }
 
     return {
       response: 'Diese Kategorie kenne ich nicht. Bitte wählen Sie eine der verfügbaren Optionen.',
-      suggestions: Object.keys(this.serviceCategories)
+      suggestions: Object.keys(this.serviceCategories),
     };
   }
 
   private static handleDescription(message: string, orderData: Partial<OrderData>) {
     // KI-gestützte Analyse der Beschreibung
     const analysis = this.analyzeDescription(message);
-    
+
     return {
       response: `Danke für die ausführliche Beschreibung! 
 
@@ -161,12 +171,12 @@ Bitte geben Sie Ihre Adresse oder PLZ ein, damit ich lokale Dienstleister finden
 
 ${analysis.estimatedDuration ? `⏱️ *Geschätzte Projektdauer: ${analysis.estimatedDuration}*` : ''}`,
       nextStep: 'location',
-      orderData: { 
-        ...orderData, 
+      orderData: {
+        ...orderData,
         description: message,
-        requirements: analysis.requirements
+        requirements: analysis.requirements,
       },
-      suggestions: ['München 80331', 'Berlin 10115', 'Hamburg 20095', 'Andere Stadt']
+      suggestions: ['München 80331', 'Berlin 10115', 'Hamburg 20095', 'Andere Stadt'],
     };
   }
 
@@ -182,16 +192,11 @@ Wann soll das Projekt idealerweise starten?
 
 📅 Bitte geben Sie Ihren gewünschten Zeitrahmen an.`,
       nextStep: 'timeline',
-      orderData: { 
-        ...orderData, 
-        location 
+      orderData: {
+        ...orderData,
+        location,
       },
-      suggestions: [
-        'So schnell wie möglich',
-        'Nächste Woche', 
-        'Nächsten Monat',
-        'Flexibel'
-      ]
+      suggestions: ['So schnell wie möglich', 'Nächste Woche', 'Nächsten Monat', 'Flexibel'],
     };
   }
 
@@ -212,16 +217,16 @@ Welcher Budgetrahmen passt für Sie?
 
 💡 *Ein realistisches Budget hilft bei der Anbieter-Auswahl und Qualität.*`,
       nextStep: 'budget',
-      orderData: { 
-        ...orderData, 
-        timeline 
+      orderData: {
+        ...orderData,
+        timeline,
       },
       suggestions: [
         `${budgetEstimate.min}€ - ${budgetEstimate.mid}€`,
         `${budgetEstimate.mid}€ - ${budgetEstimate.max}€`,
         `Über ${budgetEstimate.max}€`,
-        'Budget flexibel'
-      ]
+        'Budget flexibel',
+      ],
     };
   }
 
@@ -243,23 +248,23 @@ Welcher Budgetrahmen passt für Sie?
 
 Ich analysiere Bewertungen, Verfügbarkeit und Preise!`,
       nextStep: 'provider-matching',
-      orderData: { 
-        ...orderData, 
-        budget 
+      orderData: {
+        ...orderData,
+        budget,
       },
-      suggestions: [
-        'Ja, Dienstleister suchen!',
-        'Noch etwas ändern',
-        'Auftrag speichern'
-      ]
+      suggestions: ['Ja, Dienstleister suchen!', 'Noch etwas ändern', 'Auftrag speichern'],
     };
   }
 
-  private static async handleProviderMatching(message: string, orderData: Partial<OrderData>, userId: string) {
+  private static async handleProviderMatching(
+    message: string,
+    orderData: Partial<OrderData>,
+    userId: string
+  ) {
     if (message.toLowerCase().includes('ja') || message.toLowerCase().includes('suchen')) {
       // Erstelle den Auftrag in Firestore
       const orderId = await this.createOrder(orderData, userId);
-      
+
       // Suche passende Dienstleister
       const providers = await this.findMatchingProviders(orderData);
 
@@ -268,22 +273,26 @@ Ich analysiere Bewertungen, Verfügbarkeit und Preise!`,
 
 🔍 **Top 3 Dienstleister gefunden:**
 
-${providers.map((provider, index) => `
+${providers
+  .map(
+    (provider, index) => `
 ⭐ **${provider.name}** (${provider.rating}/5)
 💰 Ab ${provider.price}€ | 📍 ${provider.distance}km entfernt
 ✅ ${provider.experience} | 📅 ${provider.availability}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 Welchen Dienstleister möchten Sie kontaktieren?`,
         nextStep: 'project-monitoring',
         providerMatches: providers,
-        suggestions: providers.map(p => `${p.name} auswählen`)
+        suggestions: providers.map(p => `${p.name} auswählen`),
       };
     }
 
     return {
       response: 'Was möchten Sie ändern? Ich helfe gerne beim Anpassen!',
-      suggestions: ['Beschreibung ändern', 'Anderer Ort', 'Anderes Budget', 'Anderer Zeitpunkt']
+      suggestions: ['Beschreibung ändern', 'Anderer Ort', 'Anderes Budget', 'Anderer Zeitpunkt'],
     };
   }
 
@@ -295,16 +304,25 @@ Welchen Dienstleister möchten Sie kontaktieren?`,
       return {
         response: `📊 **Projekt-Status Update:**
 
-${activeProjects.map(project => `
+${activeProjects
+  .map(
+    project => `
 🔄 **${project.title}**
 • Status: ${project.status}
 • Fortschritt: ${project.progress}%
 • Nächster Termin: ${project.nextAppointment}
 • Dienstleister: ${project.providerName}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 Gibt es spezielle Fragen zu einem Projekt?`,
-        suggestions: ['Termin verschieben', 'Mit Dienstleister chatten', 'Zusätzliche Arbeiten', 'Rechnung anfordern']
+        suggestions: [
+          'Termin verschieben',
+          'Mit Dienstleister chatten',
+          'Zusätzliche Arbeiten',
+          'Rechnung anfordern',
+        ],
       };
     }
 
@@ -317,18 +335,18 @@ Gibt es spezielle Fragen zu einem Projekt?`,
 • Kommunikation koordinieren
 • Zahlungen abwickeln
 • Bewertungen abgeben`,
-      suggestions: ['Projekt-Status zeigen', 'Neuen Auftrag erstellen', 'Hilfe kontaktieren']
+      suggestions: ['Projekt-Status zeigen', 'Neuen Auftrag erstellen', 'Hilfe kontaktieren'],
     };
   }
 
   // Hilfsmethoden
   private static detectCategory(message: string): string | null {
     const keywords = {
-      'handwerk': ['renovierung', 'reparatur', 'elektriker', 'klempner', 'maler', 'handwerker'],
-      'reinigung': ['putzen', 'reinigung', 'sauber', 'clean'],
-      'garten': ['garten', 'rasen', 'baum', 'pflanzen'],
-      'transport': ['umzug', 'transport', 'lieferung', 'möbel'],
-      'it': ['computer', 'laptop', 'software', 'netzwerk', 'tech'],
+      handwerk: ['renovierung', 'reparatur', 'elektriker', 'klempner', 'maler', 'handwerker'],
+      reinigung: ['putzen', 'reinigung', 'sauber', 'clean'],
+      garten: ['garten', 'rasen', 'baum', 'pflanzen'],
+      transport: ['umzug', 'transport', 'lieferung', 'möbel'],
+      it: ['computer', 'laptop', 'software', 'netzwerk', 'tech'],
     };
 
     for (const [category, keywordList] of Object.entries(keywords)) {
@@ -356,7 +374,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
     return {
       summary: `• ${description.substring(0, 200)}${description.length > 200 ? '...' : ''}`,
       requirements,
-      estimatedDuration
+      estimatedDuration,
     };
   }
 
@@ -368,7 +386,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
     return {
       address: message,
       city: cityMatch ? cityMatch[0].trim() : 'Unbekannt',
-      postalCode: plzMatch ? plzMatch[0] : ''
+      postalCode: plzMatch ? plzMatch[0] : '',
     };
   }
 
@@ -395,7 +413,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
       return {
         min: parseInt(budgetMatch[1]),
         max: budgetMatch[2] ? parseInt(budgetMatch[2]) : parseInt(budgetMatch[1]) * 1.5,
-        currency: 'EUR' as const
+        currency: 'EUR' as const,
       };
     }
     return { min: 200, max: 500, currency: 'EUR' as const };
@@ -404,21 +422,21 @@ Gibt es spezielle Fragen zu einem Projekt?`,
   private static estimateNearbyProviders(city: string): number {
     // Mock-Schätzung basierend auf Stadt
     const cityProviders: Record<string, number> = {
-      'münchen': 45,
-      'berlin': 52,
-      'hamburg': 38,
-      'köln': 34
+      münchen: 45,
+      berlin: 52,
+      hamburg: 38,
+      köln: 34,
     };
     return cityProviders[city.toLowerCase()] || 15;
   }
 
   private static estimateBudget(category?: string, description?: string) {
     const baseBudgets: Record<string, { min: number; mid: number; max: number }> = {
-      'handwerk': { min: 150, mid: 400, max: 800 },
-      'reinigung': { min: 50, mid: 120, max: 250 },
-      'garten': { min: 80, mid: 200, max: 500 },
-      'transport': { min: 100, mid: 300, max: 600 },
-      'it': { min: 80, mid: 180, max: 400 }
+      handwerk: { min: 150, mid: 400, max: 800 },
+      reinigung: { min: 50, mid: 120, max: 250 },
+      garten: { min: 80, mid: 200, max: 500 },
+      transport: { min: 100, mid: 300, max: 600 },
+      it: { min: 80, mid: 180, max: 400 },
     };
 
     return baseBudgets[category || 'handwerk'];
@@ -431,7 +449,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         userId,
         status: 'created',
         createdAt: new Date(),
-        aiAssisted: true
+        aiAssisted: true,
       });
       return orderRef.id;
     } catch (error) {
@@ -450,16 +468,16 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         price: 280,
         distance: 2.5,
         experience: '15 Jahre Erfahrung',
-        availability: 'Verfügbar diese Woche'
+        availability: 'Verfügbar diese Woche',
       },
       {
-        id: '2', 
+        id: '2',
         name: 'Express-Handwerk',
         rating: 4.8,
         price: 320,
         distance: 1.8,
-        experience: '10 Jahre Erfahrung', 
-        availability: 'Verfügbar nächste Woche'
+        experience: '10 Jahre Erfahrung',
+        availability: 'Verfügbar nächste Woche',
       },
       {
         id: '3',
@@ -468,8 +486,8 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         price: 250,
         distance: 3.2,
         experience: '8 Jahre Erfahrung',
-        availability: 'Sofort verfügbar'
-      }
+        availability: 'Sofort verfügbar',
+      },
     ];
   }
 
@@ -481,7 +499,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         where('status', 'in', ['active', 'in-progress'])
       );
       const snapshot = await getDocs(projectsQuery);
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -489,7 +507,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         status: 'In Bearbeitung',
         progress: 65,
         nextAppointment: 'Morgen 10:00',
-        providerName: 'ProService München'
+        providerName: 'ProService München',
       }));
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -501,7 +519,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
     try {
       await addDoc(collection(db, 'ai_conversations'), {
         ...request,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     } catch (error) {
       console.error('Error saving conversation:', error);
@@ -511,24 +529,18 @@ Gibt es spezielle Fragen zu einem Projekt?`,
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as ProjectAssistantRequest;
-    
+    const body = (await request.json()) as ProjectAssistantRequest;
+
     // Validierung
     if (!body.userId || !body.message) {
-      return NextResponse.json(
-        { error: 'UserId und Message sind erforderlich' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'UserId und Message sind erforderlich' }, { status: 400 });
     }
 
     const result = await TaskiloAIAssistant.processMessage(body);
-    
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('Project Assistant API Error:', error);
-    return NextResponse.json(
-      { error: 'Interner Server-Fehler' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

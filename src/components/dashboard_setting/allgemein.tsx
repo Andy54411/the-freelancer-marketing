@@ -1,13 +1,13 @@
 // Pfad könnte sein: src/components/allgemein.tsx
-'use client'
+'use client';
 
-import React from "react";
+import React from 'react';
 // KORREKTUR 1: GoogleMap und Circle bleiben, aber useJsApiLoader wird nicht mehr gebraucht.
-import { GoogleMap, Circle } from "@react-google-maps/api";
-import { UserDataForSettings } from "@/components/SettingsPage";
+import { GoogleMap, Circle } from '@react-google-maps/api';
+import { UserDataForSettings } from '@/components/SettingsPage';
 
 // KORREKTUR 2: Wir importieren unseren eigenen Hook.
-import { useGoogleMaps } from "@/contexts/GoogleMapsLoaderContext";
+import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
 
 export interface GeneralFormProps {
   formData: UserDataForSettings;
@@ -16,8 +16,8 @@ export interface GeneralFormProps {
 }
 
 const mapContainerStyle = {
-  width: "100%",
-  height: "300px",
+  width: '100%',
+  height: '300px',
 };
 
 const GoogleMapComponent: React.FC<{
@@ -33,7 +33,7 @@ const GoogleMapComponent: React.FC<{
   // Er wartet jetzt auf den globalen Ladezustand.
   if (!isLoaded) return <p>Lade Karte...</p>;
 
-  const center = lat && lng ? { lat, lng } : { lat: 48.1351, lng: 11.5820 };
+  const center = lat && lng ? { lat, lng } : { lat: 48.1351, lng: 11.582 };
 
   return (
     <div>
@@ -53,8 +53,8 @@ const GoogleMapComponent: React.FC<{
           center={center}
           radius={radiusKm * 1000}
           options={{
-            fillColor: "#14ad9f80",
-            strokeColor: "#14ad9f",
+            fillColor: '#14ad9f80',
+            strokeColor: '#14ad9f',
             strokeWeight: 2,
             clickable: false,
             draggable: false,
@@ -70,7 +70,7 @@ const GoogleMapComponent: React.FC<{
           min={1}
           max={100}
           value={radiusKm}
-          onChange={(e) => onRadiusChange(Number(e.target.value))}
+          onChange={e => onRadiusChange(Number(e.target.value))}
           className="w-full"
         />
         <span className="min-w-[3rem]">{radiusKm} km</span>
@@ -84,7 +84,7 @@ const GoogleMapComponent: React.FC<{
 const GeneralForm: React.FC<GeneralFormProps> = ({
   formData,
   handleChange,
-  onOpenManagingDirectorPersonalModal
+  onOpenManagingDirectorPersonalModal,
 }) => {
   const { step1, step2, lat, lng, radiusKm } = formData;
   return (
@@ -94,16 +94,16 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Firma</label>
           <input
-            value={step2.companyName || ""}
-            onChange={(e) => handleChange("step2.companyName", e.target.value)}
+            value={step2.companyName || ''}
+            onChange={e => handleChange('step2.companyName', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Firmenzusatz</label>
           <input
-            value={step2.companySuffix || ""}
-            onChange={(e) => handleChange("step2.companySuffix", e.target.value)}
+            value={step2.companySuffix || ''}
+            onChange={e => handleChange('step2.companySuffix', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
@@ -121,16 +121,16 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Rechtsform</label>
           <input
-            value={step2.legalForm || ""}
-            onChange={(e) => handleChange("step2.legalForm", e.target.value)}
+            value={step2.legalForm || ''}
+            onChange={e => handleChange('step2.legalForm', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Straße</label>
           <input
-            value={step2.address || ""}
-            onChange={(e) => handleChange("step2.address", e.target.value)}
+            value={step2.address || ''}
+            onChange={e => handleChange('step2.address', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
@@ -138,16 +138,16 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">PLZ</label>
             <input
-              value={step2.postalCode || ""}
-              onChange={(e) => handleChange("step2.postalCode", e.target.value)}
+              value={step2.postalCode || ''}
+              onChange={e => handleChange('step2.postalCode', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
           </div>
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">Stadt</label>
             <input
-              value={step2.city || ""}
-              onChange={(e) => handleChange("step2.city", e.target.value)}
+              value={step2.city || ''}
+              onChange={e => handleChange('step2.city', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
           </div>
@@ -163,40 +163,40 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Telefon</label>
           <input
-            value={step2.companyPhoneNumber || ""}
-            onChange={(e) => handleChange("step2.companyPhoneNumber", e.target.value)}
+            value={step2.companyPhoneNumber || ''}
+            onChange={e => handleChange('step2.companyPhoneNumber', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">FAX</label>
           <input
-            value={step2.fax || ""}
-            onChange={(e) => handleChange("step2.fax", e.target.value)}
+            value={step2.fax || ''}
+            onChange={e => handleChange('step2.fax', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">E-Mail-Adresse</label>
           <input
-            value={step1.email || ""}
-            onChange={(e) => handleChange("step1.email", e.target.value)}
+            value={step1.email || ''}
+            onChange={e => handleChange('step1.email', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Webseite</label>
           <input
-            value={step2.website || ""}
-            onChange={(e) => handleChange("step2.website", e.target.value)}
+            value={step2.website || ''}
+            onChange={e => handleChange('step2.website', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Gesprochene Sprachen</label>
           <input
-            value={step2.languages || ""}
-            onChange={(e) => handleChange("step2.languages", e.target.value)}
+            value={step2.languages || ''}
+            onChange={e => handleChange('step2.languages', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="z. B. Deutsch, Englisch, Türkisch"
           />
@@ -204,8 +204,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Branche</label>
           <select
-            value={step2.industry || ""}
-            onChange={(e) => handleChange("step2.industry", e.target.value)}
+            value={step2.industry || ''}
+            onChange={e => handleChange('step2.industry', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           >
             <option value="">Bitte wählen</option>
@@ -215,8 +215,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col col-span-2">
           <label className="block mb-1 font-medium">Beschreibung des Unternehmens</label>
           <textarea
-            value={step2.description || ""}
-            onChange={(e) => handleChange("step2.description", e.target.value)}
+            value={step2.description || ''}
+            onChange={e => handleChange('step2.description', e.target.value)}
             className="input min-h-[120px] dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="Beschreiben Sie Ihr Unternehmen..."
           />
@@ -225,8 +225,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">Mitarbeiterzahl</label>
             <input
-              value={step2.employees || ""}
-              onChange={(e) => handleChange("step2.employees", e.target.value)}
+              value={step2.employees || ''}
+              onChange={e => handleChange('step2.employees', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
           </div>
@@ -237,19 +237,19 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
               min={1}
               max={100}
               value={radiusKm ?? 30}
-              onChange={(e) => handleChange("radiusKm", Number(e.target.value))}
+              onChange={e => handleChange('radiusKm', Number(e.target.value))}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
           </div>
         </div>
         <div className="flex flex-col col-span-2 mt-4">
           <label className="block mb-2 font-medium">Einzugsgebiet auf der Karte</label>
-          {typeof window !== "undefined" && (
+          {typeof window !== 'undefined' && (
             <GoogleMapComponent
               lat={lat}
               lng={lng}
               radiusKm={radiusKm ?? 30}
-              onRadiusChange={(newRadius) => handleChange("radiusKm", newRadius)}
+              onRadiusChange={newRadius => handleChange('radiusKm', newRadius)}
             />
           )}
         </div>

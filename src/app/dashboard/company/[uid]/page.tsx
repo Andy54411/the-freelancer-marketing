@@ -1,23 +1,28 @@
 'use client';
 
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
-import { Badge } from "@/components/ui/badge";
-import { SectionCards } from "@/components/section-cards";
-import { callHttpsFunction } from "@/lib/httpsFunctions";
-import Link from "next/link";
+import { ChartAreaInteractive } from '@/components/chart-area-interactive';
+import { DataTable } from '@/components/data-table';
+import { Badge } from '@/components/ui/badge';
+import { SectionCards } from '@/components/section-cards';
+import { callHttpsFunction } from '@/lib/httpsFunctions';
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SettingsPage from "@/components/SettingsPage";
-import { useCompanyDashboard } from "@/hooks/useCompanyDashboard";
-import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
-import { Grid as FiGrid, Calendar as FiCalendar, User as FiUser, Settings as FiSettings } from "lucide-react";
-import { OrderSummaryDrawer } from "@/components/OrderSummaryDrawer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CompanyCalendar from "@/components/CompanyCalendar";
-import { Button } from "@/components/ui/button";
-import { calculateCompanyMetrics, type CompanyMetrics } from "@/lib/companyMetrics";
+import SettingsPage from '@/components/SettingsPage';
+import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
+import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown } from 'lucide-react';
+import {
+  Grid as FiGrid,
+  Calendar as FiCalendar,
+  User as FiUser,
+  Settings as FiSettings,
+} from 'lucide-react';
+import { OrderSummaryDrawer } from '@/components/OrderSummaryDrawer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CompanyCalendar from '@/components/CompanyCalendar';
+import { Button } from '@/components/ui/button';
+import { calculateCompanyMetrics, type CompanyMetrics } from '@/lib/companyMetrics';
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -32,7 +37,7 @@ type OrderData = {
 };
 
 const isNonEmptyString = (val: unknown): val is string =>
-  typeof val === "string" && val.trim() !== "";
+  typeof val === 'string' && val.trim() !== '';
 
 export default function Page() {
   const searchParams = useSearchParams();
@@ -40,15 +45,18 @@ export default function Page() {
   // Spaltendefinitionen für die DataTable
   const columns: ColumnDef<OrderData>[] = [
     {
-      id: "Dienstleistung",
-      accessorKey: "selectedSubcategory",
+      id: 'Dienstleistung',
+      accessorKey: 'selectedSubcategory',
       header: () => <div className="text-center">Dienstleistung</div>,
       cell: ({ row }) => {
         const order = row.original;
         // Link zur spezifischen Auftrags-Chat-Seite
         return (
           <div className="text-center">
-            <Link href={`/dashboard/company/${order.uid}/inbox/chat/${order.id}`} className="font-medium text-[#14ad9f] hover:underline">
+            <Link
+              href={`/dashboard/company/${order.uid}/inbox/chat/${order.id}`}
+              className="font-medium text-[#14ad9f] hover:underline"
+            >
               {order.selectedSubcategory}
             </Link>
           </div>
@@ -56,36 +64,45 @@ export default function Page() {
       },
     },
     {
-      id: "Kunde",
-      accessorKey: "customerName",
+      id: 'Kunde',
+      accessorKey: 'customerName',
       header: () => <div className="text-center">Kunde</div>,
       cell: ({ row }) => <div className="text-center">{row.original.customerName}</div>,
     },
     {
-      id: "Status",
-      accessorKey: "status",
+      id: 'Status',
+      accessorKey: 'status',
       header: () => <div className="text-center">Status</div>,
       cell: ({ row }) => {
         const status = row.original.status;
-        if (!status) return <div className="text-center"><Badge variant="secondary">Unbekannt</Badge></div>;
-        return <div className="text-center"><Badge variant="outline">{status.replace(/_/g, ' ')}</Badge></div>;
+        if (!status)
+          return (
+            <div className="text-center">
+              <Badge variant="secondary">Unbekannt</Badge>
+            </div>
+          );
+        return (
+          <div className="text-center">
+            <Badge variant="outline">{status.replace(/_/g, ' ')}</Badge>
+          </div>
+        );
       },
     },
     {
-      id: "Datum",
-      accessorKey: "orderDate", // Use the consistent date field
+      id: 'Datum',
+      accessorKey: 'orderDate', // Use the consistent date field
       header: ({ column }) => {
         return (
           <div className="flex justify-center">
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
               Datum
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           </div>
-        )
+        );
       },
       cell: ({ row }) => {
         const date = row.original.orderDate; // Use the consistent date field
@@ -97,12 +114,15 @@ export default function Page() {
       },
     },
     {
-      id: "Umsatz",
-      accessorKey: "totalAmountPaidByBuyer",
+      id: 'Umsatz',
+      accessorKey: 'totalAmountPaidByBuyer',
       header: () => <div className="text-center">Umsatz</div>,
       cell: ({ row }) => {
         const amount = row.original.totalAmountPaidByBuyer / 100;
-        const formatted = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(amount);
+        const formatted = new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+        }).format(amount);
         return <div className="text-center font-mono">{formatted}</div>;
       },
     },
@@ -112,7 +132,7 @@ export default function Page() {
     isChecking,
     isAuthorized,
     uid,
-    view,      // view-State wieder aus dem Hook holen
+    view, // view-State wieder aus dem Hook holen
     setView, // setView-Funktion wieder aus dem Hook holen
     missingFields,
     userData,
@@ -145,7 +165,6 @@ export default function Page() {
     }
   };
 
-
   // NEU: Effekt zum Laden der Auftragsdaten
   useEffect(() => {
     if (uid) {
@@ -156,7 +175,7 @@ export default function Page() {
           const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
           setOrders(result.orders || []);
         } catch (error) {
-          console.error("Fehler beim Laden der Aufträge für die Tabelle:", error);
+          console.error('Fehler beim Laden der Aufträge für die Tabelle:', error);
         } finally {
           setLoadingOrders(false);
         }
@@ -174,7 +193,7 @@ export default function Page() {
           const metrics = await calculateCompanyMetrics(uid);
           setCompanyMetrics(metrics);
         } catch (error) {
-          console.error("Fehler beim Berechnen der Company Metriken:", error);
+          console.error('Fehler beim Berechnen der Company Metriken:', error);
         } finally {
           setLoadingMetrics(false);
         }
@@ -220,7 +239,12 @@ export default function Page() {
             <div className="flex flex-col gap-4 md:gap-6">
               <SectionCards />
               {uid && <ChartAreaInteractive companyUid={uid} />}
-              <DataTable columns={columns} data={orders} isLoading={loadingOrders} onRowClick={handleRowClick} />
+              <DataTable
+                columns={columns}
+                data={orders}
+                isLoading={loadingOrders}
+                onRowClick={handleRowClick}
+              />
               <div className="mt-8 text-center">
                 <Link
                   href={`/dashboard/company/${uid}/orders/overview`}
@@ -241,14 +265,17 @@ export default function Page() {
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Company Profile verwalten</h2>
                 <p className="text-gray-600 mt-2">
-                  Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ für eine professionelle Präsentation auf Taskilo.
+                  Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ für eine
+                  professionelle Präsentation auf Taskilo.
                 </p>
               </div>
               {/* Platzhalter für zukünftige Profil-Features */}
               <div className="text-center py-12">
                 <FiUser className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">Profil-Management</h3>
-                <p className="mt-1 text-sm text-gray-500">Profil-Features werden hier implementiert.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Profil-Features werden hier implementiert.
+                </p>
               </div>
             </div>
           </TabsContent>

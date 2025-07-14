@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { X as FiX, MessageSquare as FiMessageCircle } from 'lucide-react';
@@ -41,11 +41,15 @@ export interface DateTimeSelectionPopupProps {
 }
 
 export function DateTimeSelectionPopup({
-  isOpen, onClose, onConfirm, initialDateRange, initialTime, initialDuration,
-  contextCompany, bookingSubcategory,
+  isOpen,
+  onClose,
+  onConfirm,
+  initialDateRange,
+  initialTime,
+  initialDuration,
+  contextCompany,
+  bookingSubcategory,
 }: DateTimeSelectionPopupProps) {
-
-
   const characteristics = useMemo(
     () => getBookingCharacteristics(bookingSubcategory ?? null),
     [bookingSubcategory]
@@ -53,7 +57,9 @@ export function DateTimeSelectionPopup({
 
   const currentCalendarMode = characteristics.datePickerMode; // <-- Hier wird der Modus genutzt
 
-  const [selectedDateValue, setSelectedDateValue] = useState<Date | DateRange | undefined>(undefined);
+  const [selectedDateValue, setSelectedDateValue] = useState<Date | DateRange | undefined>(
+    undefined
+  );
   const [selectedTimeInPopup, setSelectedTimeInPopup] = useState<string>('');
   const [durationInput, setDurationInput] = useState<string>('');
   const [durationError, setDurationError] = useState<string | null>(null);
@@ -64,34 +70,47 @@ export function DateTimeSelectionPopup({
       const defaultToday = new Date();
 
       if (currentCalendarMode === 'single') {
-        newDateSelection = (initialDateRange?.from && isValid(initialDateRange.from))
-          ? initialDateRange.from
-          : defaultToday;
-      } else { // 'range' mode
-        const fromDate = (initialDateRange?.from && isValid(initialDateRange.from))
-          ? initialDateRange.from
-          : defaultToday;
-        const toDate = (initialDateRange?.to && isValid(initialDateRange.to))
-          ? initialDateRange.to
-          : fromDate;
+        newDateSelection =
+          initialDateRange?.from && isValid(initialDateRange.from)
+            ? initialDateRange.from
+            : defaultToday;
+      } else {
+        // 'range' mode
+        const fromDate =
+          initialDateRange?.from && isValid(initialDateRange.from)
+            ? initialDateRange.from
+            : defaultToday;
+        const toDate =
+          initialDateRange?.to && isValid(initialDateRange.to) ? initialDateRange.to : fromDate;
         newDateSelection = { from: fromDate, to: toDate };
       }
       setSelectedDateValue(newDateSelection);
 
-      const initialTimeValue = initialTime || generalTimeOptionsForPopup.find(t => t === "09:00") || (generalTimeOptionsForPopup.length > 0 ? generalTimeOptionsForPopup[0] : "00:00");
+      const initialTimeValue =
+        initialTime ||
+        generalTimeOptionsForPopup.find(t => t === '09:00') ||
+        (generalTimeOptionsForPopup.length > 0 ? generalTimeOptionsForPopup[0] : '00:00');
       setSelectedTimeInPopup(initialTimeValue);
 
-      const initialDurationValue = initialDuration || characteristics.defaultDurationHours?.toString() || '';
+      const initialDurationValue =
+        initialDuration || characteristics.defaultDurationHours?.toString() || '';
       setDurationInput(initialDurationValue);
       setDurationError(null); // Fehler beim Öffnen zurücksetzen
     }
-  }, [isOpen, currentCalendarMode, initialDateRange, initialTime, initialDuration, characteristics.defaultDurationHours]);
+  }, [
+    isOpen,
+    currentCalendarMode,
+    initialDateRange,
+    initialTime,
+    initialDuration,
+    characteristics.defaultDurationHours,
+  ]);
 
-  const handleSingleDateSelect: SelectSingleEventHandler = (day) => {
+  const handleSingleDateSelect: SelectSingleEventHandler = day => {
     setSelectedDateValue(day);
   };
 
-  const handleRangeDateSelect: SelectRangeEventHandler = (range) => {
+  const handleRangeDateSelect: SelectRangeEventHandler = range => {
     if (range?.from && !range.to) {
       setSelectedDateValue({ from: range.from, to: range.from });
     } else {
@@ -125,10 +144,15 @@ export function DateTimeSelectionPopup({
 
   if (!isOpen) return null;
 
-  let footerSummaryText = "Bitte ein Datum auswählen.";
+  let footerSummaryText = 'Bitte ein Datum auswählen.';
   if (selectedDateValue instanceof Date && isValid(selectedDateValue)) {
     footerSummaryText = `Gewählt: ${format(selectedDateValue, 'PPP', { locale: de })}`;
-  } else if (selectedDateValue && typeof selectedDateValue === 'object' && (selectedDateValue as DateRange).from && isValid((selectedDateValue as DateRange).from!)) {
+  } else if (
+    selectedDateValue &&
+    typeof selectedDateValue === 'object' &&
+    (selectedDateValue as DateRange).from &&
+    isValid((selectedDateValue as DateRange).from!)
+  ) {
     const range = selectedDateValue as DateRange;
     const fromDateValid = range.from!;
     if (range.to && isValid(range.to) && fromDateValid.getTime() !== range.to!.getTime()) {
@@ -138,13 +162,19 @@ export function DateTimeSelectionPopup({
     }
   }
 
-  const popupTitle = contextCompany?.companyName ? `Termin für ${contextCompany.companyName}` : "Datum, Zeit & Dauer auswählen";
+  const popupTitle = contextCompany?.companyName
+    ? `Termin für ${contextCompany.companyName}`
+    : 'Datum, Zeit & Dauer auswählen';
   const showTwoColumnLayout = currentCalendarMode === 'range' && !!contextCompany;
 
   let calendarDefaultMonth: Date | undefined;
   if (selectedDateValue instanceof Date && isValid(selectedDateValue)) {
     calendarDefaultMonth = selectedDateValue;
-  } else if (selectedDateValue && (selectedDateValue as DateRange).from && isValid((selectedDateValue as DateRange).from!)) {
+  } else if (
+    selectedDateValue &&
+    (selectedDateValue as DateRange).from &&
+    isValid((selectedDateValue as DateRange).from!)
+  ) {
     calendarDefaultMonth = (selectedDateValue as DateRange).from;
   } else if (initialDateRange?.from && isValid(initialDateRange.from)) {
     calendarDefaultMonth = initialDateRange.from;
@@ -153,7 +183,12 @@ export function DateTimeSelectionPopup({
   }
 
   let displayDateStringForRightColumn = 'Datum nicht gewählt';
-  if (selectedDateValue && typeof selectedDateValue === 'object' && (selectedDateValue as DateRange).from && isValid((selectedDateValue as DateRange).from!)) {
+  if (
+    selectedDateValue &&
+    typeof selectedDateValue === 'object' &&
+    (selectedDateValue as DateRange).from &&
+    isValid((selectedDateValue as DateRange).from!)
+  ) {
     const fromDate = (selectedDateValue as DateRange).from!;
     const toDate = (selectedDateValue as DateRange).to;
     const fromFormatted = format(fromDate, 'd. MMM yy', { locale: de });
@@ -172,17 +207,33 @@ export function DateTimeSelectionPopup({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className={`bg-white rounded-xl shadow-2xl w-full p-6 md:p-8 relative ${showTwoColumnLayout ? 'max-w-4xl' : 'max-w-md'}`}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10" aria-label="Schließen">
+      <div
+        className={`bg-white rounded-xl shadow-2xl w-full p-6 md:p-8 relative ${showTwoColumnLayout ? 'max-w-4xl' : 'max-w-md'}`}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+          aria-label="Schließen"
+        >
           <FiX size={24} />
         </button>
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 text-center">{popupTitle}</h2>
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 text-center">
+          {popupTitle}
+        </h2>
         <div className={`flex flex-col ${showTwoColumnLayout ? 'md:flex-row' : ''} gap-6 md:gap-8`}>
           <div className={`w-full ${showTwoColumnLayout ? 'md:flex-1' : ''} space-y-4`}>
             {showTwoColumnLayout && contextCompany?.companyName && (
               <div className="flex items-center space-x-3 mb-3 border-b border-gray-200 pb-4">
-                <Image src={contextCompany.profilePictureURL || '/default-avatar.jpg'} alt={contextCompany.companyName || 'Anbieter'} width={40} height={40} className="w-10 h-10 rounded-full object-cover border" />
-                <p className="text-md font-semibold text-gray-700">Verfügbarkeit prüfen für {contextCompany.companyName}</p>
+                <Image
+                  src={contextCompany.profilePictureURL || '/default-avatar.jpg'}
+                  alt={contextCompany.companyName || 'Anbieter'}
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-full object-cover border"
+                />
+                <p className="text-md font-semibold text-gray-700">
+                  Verfügbarkeit prüfen für {contextCompany.companyName}
+                </p>
               </div>
             )}
             <div className="flex justify-center">
@@ -215,40 +266,86 @@ export function DateTimeSelectionPopup({
             </div>
             <div className="text-xs text-center text-gray-500 h-4">{footerSummaryText}</div>
             <div className="pt-2">
-              <Label htmlFor="time-select-popup" className="text-sm font-medium text-gray-700">Startzeit (am ersten Tag)</Label>
-              <select id="time-select-popup" value={selectedTimeInPopup} onChange={(e) => setSelectedTimeInPopup(e.target.value)} className="w-full mt-1 border-gray-300 rounded-lg shadow-sm p-2.5 focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f]">
-                {generalTimeOptionsForPopup.map((timeOpt: string) => <option key={timeOpt} value={timeOpt}>{timeOpt}</option>)}
+              <Label htmlFor="time-select-popup" className="text-sm font-medium text-gray-700">
+                Startzeit (am ersten Tag)
+              </Label>
+              <select
+                id="time-select-popup"
+                value={selectedTimeInPopup}
+                onChange={e => setSelectedTimeInPopup(e.target.value)}
+                className="w-full mt-1 border-gray-300 rounded-lg shadow-sm p-2.5 focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f]"
+              >
+                {generalTimeOptionsForPopup.map((timeOpt: string) => (
+                  <option key={timeOpt} value={timeOpt}>
+                    {timeOpt}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="pt-2">
-              <Label htmlFor="duration-input-popup" className="text-sm font-medium text-gray-700">{durationLabel}</Label>
-              <Input id="duration-input-popup" type="number" placeholder={durationPlaceholder} value={durationInput} onChange={handleDurationChange} className={`w-full mt-1 border-gray-300 rounded-lg shadow-sm p-2.5 focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f] ${durationError ? 'border-red-500' : ''}`} />
+              <Label htmlFor="duration-input-popup" className="text-sm font-medium text-gray-700">
+                {durationLabel}
+              </Label>
+              <Input
+                id="duration-input-popup"
+                type="number"
+                placeholder={durationPlaceholder}
+                value={durationInput}
+                onChange={handleDurationChange}
+                className={`w-full mt-1 border-gray-300 rounded-lg shadow-sm p-2.5 focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f] ${durationError ? 'border-red-500' : ''}`}
+              />
               <p className="text-xs text-gray-500 mt-1">{durationHint}</p>
-              {durationError && (
-                <p className="text-xs text-red-500 mt-1">{durationError}</p>
-              )}
+              {durationError && <p className="text-xs text-red-500 mt-1">{durationError}</p>}
             </div>
-            {showTwoColumnLayout && (<p className="text-xs text-gray-500 pt-2">Nach der Buchung könnt ihr im Chat weitere Details klären.</p>)}
+            {showTwoColumnLayout && (
+              <p className="text-xs text-gray-500 pt-2">
+                Nach der Buchung könnt ihr im Chat weitere Details klären.
+              </p>
+            )}
           </div>
           {showTwoColumnLayout && (
             <div className="w-full md:w-auto md:min-w-[280px] p-6 border border-gray-200 rounded-lg bg-gray-50 flex flex-col justify-between space-y-4">
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-1">Ausgewählte Zeit für:</p>
-                <p className="text-xl font-semibold text-gray-800">{displayDateStringForRightColumn}</p>
-                <p className="text-xl font-semibold text-[#14ad9f]">{selectedTimeInPopup || 'Uhrzeit wählen'}</p>
-                {durationInput && <p className="text-sm text-gray-600 mt-1">Dauer: {durationInput} {characteristics.isDurationPerDay ? "Std./Tag" : "Std. gesamt"}</p>}
+                <p className="text-xl font-semibold text-gray-800">
+                  {displayDateStringForRightColumn}
+                </p>
+                <p className="text-xl font-semibold text-[#14ad9f]">
+                  {selectedTimeInPopup || 'Uhrzeit wählen'}
+                </p>
+                {durationInput && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Dauer: {durationInput}{' '}
+                    {characteristics.isDurationPerDay ? 'Std./Tag' : 'Std. gesamt'}
+                  </p>
+                )}
               </div>
               <div className="w-full space-y-3">
-                <button onClick={handleConfirmClick} disabled={isConfirmButtonDisabled} className="w-full bg-[#14ad9f] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed">Termin & Dauer bestätigen</button>
-                <p className="text-xs text-gray-500 flex items-start"><FiMessageCircle className="w-5 h-5 mr-1.5 shrink-0 text-gray-400" /><span>Bestätige die Auswahl, um mit dem Anbieter in Kontakt zu treten.</span></p>
+                <button
+                  onClick={handleConfirmClick}
+                  disabled={isConfirmButtonDisabled}
+                  className="w-full bg-[#14ad9f] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Termin & Dauer bestätigen
+                </button>
+                <p className="text-xs text-gray-500 flex items-start">
+                  <FiMessageCircle className="w-5 h-5 mr-1.5 shrink-0 text-gray-400" />
+                  <span>Bestätige die Auswahl, um mit dem Anbieter in Kontakt zu treten.</span>
+                </p>
               </div>
             </div>
           )}
         </div>
-        {(!showTwoColumnLayout) && (
+        {!showTwoColumnLayout && (
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <button onClick={handleConfirmClick} disabled={isConfirmButtonDisabled} className="w-full bg-[#14ad9f] text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-              {currentCalendarMode === 'single' ? 'Datum, Zeit & Dauer bestätigen' : 'Zeitraum, Zeit & Dauer bestätigen'}
+            <button
+              onClick={handleConfirmClick}
+              disabled={isConfirmButtonDisabled}
+              className="w-full bg-[#14ad9f] text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {currentCalendarMode === 'single'
+                ? 'Datum, Zeit & Dauer bestätigen'
+                : 'Zeitraum, Zeit & Dauer bestätigen'}
             </button>
           </div>
         )}

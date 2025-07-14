@@ -1,4 +1,4 @@
-import { auth } from "@/firebase/clients";
+import { auth } from '@/firebase/clients';
 
 export async function callHttpsFunction(
   functionName: string,
@@ -17,7 +17,7 @@ export async function callHttpsFunction(
   let options: RequestInit = {
     method,
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   };

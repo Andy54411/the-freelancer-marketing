@@ -1,153 +1,153 @@
 {
-    "Navigation": {
-        "home": "Startseite",
-        "comingSoon": "Coming Soon",
-        "vision": "Vision",
-        "pricing": "Preise",
-        "blog": "Blog",
-        "about": "Über uns",
-        "contact": "Kontakt",
-        "imprint": "Impressum",
-        "login": "Anmelden",
-        "register": "Registrieren",
-        "dashboard": "Dashboard"
+  "Navigation": {
+    "home": "Startseite",
+    "comingSoon": "Coming Soon",
+    "vision": "Vision",
+    "pricing": "Preise",
+    "blog": "Blog",
+    "about": "Über uns",
+    "contact": "Kontakt",
+    "imprint": "Impressum",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "dashboard": "Dashboard"
+  },
+  "Footer": {
+    "product": "Produkt",
+    "features": "Features",
+    "comingSoon": "Coming Soon",
+    "categories": "Kategorien",
+    "pricing": "Preise",
+    "help": "Hilfe",
+    "solutions": "Lösungen",
+    "forCompanies": "Für Unternehmen",
+    "forFreelancers": "Für Freelancer",
+    "forCustomers": "Für Kunden",
+    "startProject": "Projekt starten",
+    "becomeProvider": "Anbieter werden",
+    "company": "Unternehmen",
+    "about": "Über uns",
+    "careers": "Karriere",
+    "blog": "Blog",
+    "press": "Presse",
+    "contact": "Kontakt",
+    "legal": "Rechtliches",
+    "imprint": "Impressum",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "cookies": "Cookies",
+    "newsletter": "Newsletter",
+    "emailPlaceholder": "Ihre E-Mail-Adresse",
+    "subscribe": "Abonnieren",
+    "newsletterText": "Verpassen Sie keine Updates!",
+    "copyright": "© {year} Taskilo, Alle Rechte vorbehalten"
+  },
+  "ComingSoon": {
+    "title": "Coming Soon",
+    "subtitle": "Taskilo wird noch besser! Entdecken Sie die spannenden neuen Features, die wir für Sie entwickeln.",
+    "launchCountdown": "KI-Assistent Launch in:",
+    "days": "Tage",
+    "hours": "Stunden",
+    "minutes": "Minuten",
+    "seconds": "Sekunden",
+    "emailPlaceholder": "Ihre E-Mail-Adresse",
+    "notify": "Benachrichtigen",
+    "thankYou": "Vielen Dank! Wir benachrichtigen Sie bei neuen Updates.",
+    "whatToExpect": "Was erwartet Sie?",
+    "whatToExpectSubtitle": "Innovative Features, die Ihre Erfahrung mit Taskilo revolutionieren werden.",
+    "roadmap": "Roadmap 2025",
+    "roadmapSubtitle": "Unsere wichtigsten Meilensteine für das kommende Jahr.",
+    "readyForFuture": "Bereit für die Zukunft?",
+    "readyForFutureText": "Nutzen Sie bereits heute die verfügbaren Features von Taskilo und freuen Sie sich auf die kommenden Innovationen.",
+    "startProject": "Projekt starten",
+    "registerAsProvider": "Als Anbieter registrieren",
+    "toDashboard": "Zum Dashboard",
+    "features": {
+      "aiAssistant": {
+        "title": "KI-gestützter Projektassistent",
+        "description": "Intelligente Projektvorschläge und automatische Anbieter-Matching"
+      },
+      "mobileApp": {
+        "title": "Mobile App",
+        "description": "Native iOS und Android App für unterwegs"
+      },
+      "ratingSystem": {
+        "title": "Erweiterte Bewertungssysteme",
+        "description": "Detaillierte Anbieter-Bewertungen und Qualitätssicherung"
+      },
+      "teamCollaboration": {
+        "title": "Team-Kollaboration",
+        "description": "Mehrere Benutzer pro Unternehmen und Projekt-Teams"
+      },
+      "automatedBilling": {
+        "title": "Automatisierte Rechnungsstellung",
+        "description": "Integrierte Buchhaltung und Steuer-Management"
+      },
+      "videoConsultation": {
+        "title": "Video-Beratung",
+        "description": "Direkte Video-Calls mit Anbietern für komplexe Projekte"
+      }
     },
-    "Footer": {
-        "product": "Produkt",
-        "features": "Features",
-        "comingSoon": "Coming Soon",
-        "categories": "Kategorien",
-        "pricing": "Preise",
-        "help": "Hilfe",
-        "solutions": "Lösungen",
-        "forCompanies": "Für Unternehmen",
-        "forFreelancers": "Für Freelancer",
-        "forCustomers": "Für Kunden",
-        "startProject": "Projekt starten",
-        "becomeProvider": "Anbieter werden",
-        "company": "Unternehmen",
-        "about": "Über uns",
-        "careers": "Karriere",
-        "blog": "Blog",
-        "press": "Presse",
-        "contact": "Kontakt",
-        "legal": "Rechtliches",
-        "imprint": "Impressum",
-        "privacy": "Datenschutz",
-        "terms": "AGB",
-        "cookies": "Cookies",
-        "newsletter": "Newsletter",
-        "emailPlaceholder": "Ihre E-Mail-Adresse",
-        "subscribe": "Abonnieren",
-        "newsletterText": "Verpassen Sie keine Updates!",
-        "copyright": "© {year} Taskilo, Alle Rechte vorbehalten"
+    "status": {
+      "inDevelopment": "In Entwicklung",
+      "betaTest": "Beta-Test",
+      "planning": "Planung",
+      "concept": "Konzept",
+      "prototype": "Prototyp"
     },
-    "ComingSoon": {
-        "title": "Coming Soon",
-        "subtitle": "Taskilo wird noch besser! Entdecken Sie die spannenden neuen Features, die wir für Sie entwickeln.",
-        "launchCountdown": "KI-Assistent Launch in:",
-        "days": "Tage",
-        "hours": "Stunden",
-        "minutes": "Minuten",
-        "seconds": "Sekunden",
-        "emailPlaceholder": "Ihre E-Mail-Adresse",
-        "notify": "Benachrichtigen",
-        "thankYou": "Vielen Dank! Wir benachrichtigen Sie bei neuen Updates.",
-        "whatToExpect": "Was erwartet Sie?",
-        "whatToExpectSubtitle": "Innovative Features, die Ihre Erfahrung mit Taskilo revolutionieren werden.",
-        "roadmap": "Roadmap 2025",
-        "roadmapSubtitle": "Unsere wichtigsten Meilensteine für das kommende Jahr.",
-        "readyForFuture": "Bereit für die Zukunft?",
-        "readyForFutureText": "Nutzen Sie bereits heute die verfügbaren Features von Taskilo und freuen Sie sich auf die kommenden Innovationen.",
-        "startProject": "Projekt starten",
-        "registerAsProvider": "Als Anbieter registrieren",
-        "toDashboard": "Zum Dashboard",
-        "features": {
-            "aiAssistant": {
-                "title": "KI-gestützter Projektassistent",
-                "description": "Intelligente Projektvorschläge und automatische Anbieter-Matching"
-            },
-            "mobileApp": {
-                "title": "Mobile App",
-                "description": "Native iOS und Android App für unterwegs"
-            },
-            "ratingSystem": {
-                "title": "Erweiterte Bewertungssysteme",
-                "description": "Detaillierte Anbieter-Bewertungen und Qualitätssicherung"
-            },
-            "teamCollaboration": {
-                "title": "Team-Kollaboration",
-                "description": "Mehrere Benutzer pro Unternehmen und Projekt-Teams"
-            },
-            "automatedBilling": {
-                "title": "Automatisierte Rechnungsstellung",
-                "description": "Integrierte Buchhaltung und Steuer-Management"
-            },
-            "videoConsultation": {
-                "title": "Video-Beratung",
-                "description": "Direkte Video-Calls mit Anbietern für komplexe Projekte"
-            }
-        },
-        "status": {
-            "inDevelopment": "In Entwicklung",
-            "betaTest": "Beta-Test",
-            "planning": "Planung",
-            "concept": "Konzept",
-            "prototype": "Prototyp"
-        },
-        "milestones": {
-            "aiLaunch": {
-                "title": "KI-Assistent Launch",
-                "description": "Vollständig ausgerollter KI-gestützter Projektassistent"
-            },
-            "mobileAppBeta": {
-                "title": "Mobile App Beta",
-                "description": "Beta-Version der mobilen App für iOS und Android"
-            },
-            "premiumFeatures": {
-                "title": "Premium Features",
-                "description": "Erweiterte Funktionen für Geschäftskunden"
-            },
-            "apiLaunch": {
-                "title": "API Launch",
-                "description": "Öffentliche API für Drittanbieter-Integrationen"
-            }
-        }
-    },
-    "Banner": {
-        "text": "🚀 Neue Features kommen bald! KI-Assistent, Mobile App und mehr...",
-        "learnMore": "Mehr erfahren",
-        "close": "Banner schließen"
-    },
-    "ServiceDiscovery": {
-        "title": "Service-Anbieter finden",
-        "subtitle": "Finden Sie qualifizierte Anbieter für Ihre Anfrage",
-        "searchPlaceholder": "Nach Anbietern suchen...",
-        "sortBy": "Sortieren nach",
-        "sortOptions": {
-            "rating": "Bewertung",
-            "reviews": "Bewertungen",
-            "price": "Preis",
-            "newest": "Neueste"
-        },
-        "filterBy": "Filter",
-        "location": "Standort",
-        "priceRange": "Preisbereich",
-        "noResults": "Keine Anbieter gefunden",
-        "noResultsDescription": "Versuchen Sie, Ihre Suchkriterien anzupassen.",
-        "loading": "Lade Anbieter...",
-        "provider": {
-            "company": "Unternehmen",
-            "freelancer": "Freelancer",
-            "rating": "Bewertung",
-            "reviews": "Bewertungen",
-            "completedJobs": "Abgeschlossene Aufträge",
-            "responseTime": "Antwortzeit",
-            "location": "Standort",
-            "skills": "Fähigkeiten",
-            "contactNow": "Jetzt kontaktieren",
-            "viewProfile": "Profil ansehen",
-            "unavailable": "Nicht verfügbar"
-        }
+    "milestones": {
+      "aiLaunch": {
+        "title": "KI-Assistent Launch",
+        "description": "Vollständig ausgerollter KI-gestützter Projektassistent"
+      },
+      "mobileAppBeta": {
+        "title": "Mobile App Beta",
+        "description": "Beta-Version der mobilen App für iOS und Android"
+      },
+      "premiumFeatures": {
+        "title": "Premium Features",
+        "description": "Erweiterte Funktionen für Geschäftskunden"
+      },
+      "apiLaunch": {
+        "title": "API Launch",
+        "description": "Öffentliche API für Drittanbieter-Integrationen"
+      }
     }
+  },
+  "Banner": {
+    "text": "🚀 Neue Features kommen bald! KI-Assistent, Mobile App und mehr...",
+    "learnMore": "Mehr erfahren",
+    "close": "Banner schließen"
+  },
+  "ServiceDiscovery": {
+    "title": "Service-Anbieter finden",
+    "subtitle": "Finden Sie qualifizierte Anbieter für Ihre Anfrage",
+    "searchPlaceholder": "Nach Anbietern suchen...",
+    "sortBy": "Sortieren nach",
+    "sortOptions": {
+      "rating": "Bewertung",
+      "reviews": "Bewertungen",
+      "price": "Preis",
+      "newest": "Neueste"
+    },
+    "filterBy": "Filter",
+    "location": "Standort",
+    "priceRange": "Preisbereich",
+    "noResults": "Keine Anbieter gefunden",
+    "noResultsDescription": "Versuchen Sie, Ihre Suchkriterien anzupassen.",
+    "loading": "Lade Anbieter...",
+    "provider": {
+      "company": "Unternehmen",
+      "freelancer": "Freelancer",
+      "rating": "Bewertung",
+      "reviews": "Bewertungen",
+      "completedJobs": "Abgeschlossene Aufträge",
+      "responseTime": "Antwortzeit",
+      "location": "Standort",
+      "skills": "Fähigkeiten",
+      "contactNow": "Jetzt kontaktieren",
+      "viewProfile": "Profil ansehen",
+      "unavailable": "Nicht verfügbar"
+    }
+  }
 }

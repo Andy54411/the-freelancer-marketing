@@ -19,7 +19,7 @@ const steps = [
   'Kundentyp wählen',
   'Kategorie wählen',
   'Unterkategorie wählen',
-  'Auftrag beschreiben'
+  'Auftrag beschreiben',
 ];
 
 const TOTAL_STEPS = steps.length;
@@ -81,10 +81,9 @@ export default function GetStartedPage() {
   };
 
   const availableSubcategories =
-    categories.find((cat) => cat.title === selectedCategory)?.subcategories || [];
+    categories.find(cat => cat.title === selectedCategory)?.subcategories || [];
 
-  const showDescriptionField =
-    customerType && selectedCategory && selectedSubcategory;
+  const showDescriptionField = customerType && selectedCategory && selectedSubcategory;
 
   const handleNextClick = () => {
     setError(null);
@@ -105,13 +104,15 @@ export default function GetStartedPage() {
       customerType: customerType,
       selectedCategory: selectedCategory,
       selectedSubcategory: selectedSubcategory,
-      description: description
+      description: description,
     });
 
     const encodedSubcategory = encodeURIComponent(selectedSubcategory!);
     const encodedDescription = encodeURIComponent(description); // Beschreibung kodieren
 
-    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse?description=${encodedDescription}`);
+    router.push(
+      `/auftrag/get-started/${encodedSubcategory}/adresse?description=${encodedDescription}`
+    );
   };
 
   return (
@@ -123,7 +124,8 @@ export default function GetStartedPage() {
             Um welchen Auftrag handelt es sich?
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Finden Sie die Dienstleistung, die Sie benötigen, um geprüfte Handwerker in Ihrer Nähe zu kontaktieren.
+            Finden Sie die Dienstleistung, die Sie benötigen, um geprüfte Handwerker in Ihrer Nähe
+            zu kontaktieren.
           </p>
 
           <div className="w-full max-w-4xl mx-auto mt-6">
@@ -131,7 +133,9 @@ export default function GetStartedPage() {
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm text-[#14ad9f] font-medium">
-            <p>Schritt {stepForDisplay}/{TOTAL_STEPS}</p>
+            <p>
+              Schritt {stepForDisplay}/{TOTAL_STEPS}
+            </p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="hover:underline flex items-center gap-1"
@@ -165,12 +169,12 @@ export default function GetStartedPage() {
           </div>
 
           {isClientMounted && customerType && (
-            <div className="mt-6 w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-6 w-full" onClick={e => e.stopPropagation()}>
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Hauptkategorie
               </Label>
               <Combobox
-                options={categories.map((cat) => cat.title)}
+                options={categories.map(cat => cat.title)}
                 placeholder="z. B. Handwerk, IT & Technik …"
                 selected={selectedCategory}
                 onChange={handleCategoryChange}
@@ -179,7 +183,7 @@ export default function GetStartedPage() {
           )}
 
           {isClientMounted && selectedCategory && (
-            <div className="mt-6 w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-6 w-full" onClick={e => e.stopPropagation()}>
               <Label className="text-base font-medium text-gray-800 dark:text-white">
                 Wähle eine Unterkategorie
               </Label>
@@ -194,21 +198,25 @@ export default function GetStartedPage() {
 
           {isClientMounted && showDescriptionField && (
             <div className="mt-6 w-full">
-              <Label htmlFor="auftragBeschreibung" className="text-base font-medium text-gray-800 dark:text-white">
+              <Label
+                htmlFor="auftragBeschreibung"
+                className="text-base font-medium text-gray-800 dark:text-white"
+              >
                 Beschreiben Sie Ihren Auftrag!
               </Label>
               <Textarea
                 id="auftragBeschreibung"
                 placeholder="Beschreiben Sie hier, was genau gemacht werden soll …"
                 value={description}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
+                onChange={e => handleDescriptionChange(e.target.value)}
               />
             </div>
           )}
 
-
           {error && (
-            <div className="text-red-500 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">{error}</div>
+            <div className="text-red-500 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              {error}
+            </div>
           )}
 
           {isClientMounted && logicalCurrentStep === TOTAL_STEPS && (
@@ -225,12 +233,71 @@ export default function GetStartedPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 w-full max-w-6xl">
           {[
-            { title: "Erstellen Sie Ihren Auftrag", subtitle: "kostenlos und ohne Verpflichtungen", icon: (<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M12 20h9" /> <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" /> </svg>), },
-            { title: "Mehr als 56.582", subtitle: "registrierte Handwerker", icon: (<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M17 21v-2a4 4 0 0 0-3-3.87" /> <path d="M7 21v-2a4 4 0 0 1 3-3.87" /> <circle cx="12" cy="7" r="4" /> </svg>), },
-            { title: "Mehr als 994.012", subtitle: "unabhängige Bewertungen", icon: (<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M14 9l3 6h5l-3-6V3h-5v6z" /> <path d="M2 12h4l3 6h6" /> </svg>), },
+            {
+              title: 'Erstellen Sie Ihren Auftrag',
+              subtitle: 'kostenlos und ohne Verpflichtungen',
+              icon: (
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {' '}
+                  <path d="M12 20h9" />{' '}
+                  <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" />{' '}
+                </svg>
+              ),
+            },
+            {
+              title: 'Mehr als 56.582',
+              subtitle: 'registrierte Handwerker',
+              icon: (
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {' '}
+                  <path d="M17 21v-2a4 4 0 0 0-3-3.87" /> <path d="M7 21v-2a4 4 0 0 1 3-3.87" />{' '}
+                  <circle cx="12" cy="7" r="4" />{' '}
+                </svg>
+              ),
+            },
+            {
+              title: 'Mehr als 994.012',
+              subtitle: 'unabhängige Bewertungen',
+              icon: (
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {' '}
+                  <path d="M14 9l3 6h5l-3-6V3h-5v6z" /> <path d="M2 12h4l3 6h6" />{' '}
+                </svg>
+              ),
+            },
           ].map((item, index) => (
-            <div key={index} className="rounded-lg border p-6 text-center flex flex-col items-center bg-white dark:bg-gray-800 shadow-[0_0_20px_rgba(20,173,159,0.1)] hover:shadow-[0_0_30px_rgba(20,173,159,0.4)] transition duration-300" >
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full mb-4 text-[#14ad9f]"> {item.icon} </div>
+            <div
+              key={index}
+              className="rounded-lg border p-6 text-center flex flex-col items-center bg-white dark:bg-gray-800 shadow-[0_0_20px_rgba(20,173,159,0.1)] hover:shadow-[0_0_30px_rgba(20,173,159,0.4)] transition duration-300"
+            >
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full mb-4 text-[#14ad9f]">
+                {' '}
+                {item.icon}{' '}
+              </div>
               <p className="text-base font-semibold text-gray-800 dark:text-white">{item.title}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">{item.subtitle}</p>
             </div>
@@ -239,9 +306,34 @@ export default function GetStartedPage() {
         {isModalOpen && (
           <div className="fixed inset-0 flex justify-center items-center z-50 bg-black/50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-md">
-              <div className="flex justify-between items-center"> <h2 className="text-2xl font-semibold">Auftrag erstellen</h2> <button onClick={() => setIsModalOpen(false)}> <FiX className="text-lg text-gray-500" /> </button> </div>
-              <div className="mt-4"> {steps.map((step, index) => (<div key={step} className="flex items-center py-2"> <FiCheck className="text-green-500 mr-2" /> <p className="text-lg">{`${index + 1}. ${step}`}</p> </div>))} </div>
-              <div className="flex justify-center mt-6"> <button onClick={() => setIsModalOpen(false)} className="bg-[#14ad9f] text-white py-2 px-4 rounded-full hover:bg-[#7bdad2]" > Verstanden </button> </div>
+              <div className="flex justify-between items-center">
+                {' '}
+                <h2 className="text-2xl font-semibold">Auftrag erstellen</h2>{' '}
+                <button onClick={() => setIsModalOpen(false)}>
+                  {' '}
+                  <FiX className="text-lg text-gray-500" />{' '}
+                </button>{' '}
+              </div>
+              <div className="mt-4">
+                {' '}
+                {steps.map((step, index) => (
+                  <div key={step} className="flex items-center py-2">
+                    {' '}
+                    <FiCheck className="text-green-500 mr-2" />{' '}
+                    <p className="text-lg">{`${index + 1}. ${step}`}</p>{' '}
+                  </div>
+                ))}{' '}
+              </div>
+              <div className="flex justify-center mt-6">
+                {' '}
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-[#14ad9f] text-white py-2 px-4 rounded-full hover:bg-[#7bdad2]"
+                >
+                  {' '}
+                  Verstanden{' '}
+                </button>{' '}
+              </div>
             </div>
           </div>
         )}

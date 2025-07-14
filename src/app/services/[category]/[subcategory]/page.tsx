@@ -37,13 +37,13 @@ export default function SubcategoryPage() {
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
 
   // Finde die Kategorie basierend auf dem URL-Slug
-  const categoryInfo = categories.find(cat => 
-    cat.title.toLowerCase().replace(/\s+/g, '-') === category
+  const categoryInfo = categories.find(
+    cat => cat.title.toLowerCase().replace(/\s+/g, '-') === category
   );
-  
+
   // Finde die Unterkategorie basierend auf dem URL-Slug
-  const subcategoryName = categoryInfo?.subcategories.find(sub =>
-    sub.toLowerCase().replace(/\s+/g, '-') === subcategory
+  const subcategoryName = categoryInfo?.subcategories.find(
+    sub => sub.toLowerCase().replace(/\s+/g, '-') === subcategory
   );
 
   useEffect(() => {
@@ -57,23 +57,15 @@ export default function SubcategoryPage() {
 
       // Query für Firmen
       const firmCollectionRef = collection(db, 'firma');
-      let firmQuery = query(
-        firmCollectionRef,
-        where('isActive', '==', true),
-        limit(50)
-      );
+      let firmQuery = query(firmCollectionRef, where('isActive', '==', true), limit(50));
 
       // Query für Users/Freelancer
       const userCollectionRef = collection(db, 'users');
-      let userQuery = query(
-        userCollectionRef,
-        where('isFreelancer', '==', true),
-        limit(50)
-      );
+      let userQuery = query(userCollectionRef, where('isFreelancer', '==', true), limit(50));
 
       const [firmSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery),
-        getDocs(userQuery)
+        getDocs(userQuery),
       ]);
 
       const firmProviders: Provider[] = firmSnapshot.docs.map(doc => {
@@ -92,7 +84,7 @@ export default function SubcategoryPage() {
           completedJobs: data.completedJobs || 0,
           isCompany: true,
           priceRange: data.priceRange,
-          responseTime: data.responseTime
+          responseTime: data.responseTime,
         };
       });
 
@@ -112,7 +104,7 @@ export default function SubcategoryPage() {
           completedJobs: data.completedJobs || 0,
           isCompany: false,
           priceRange: data.priceRange,
-          responseTime: data.responseTime
+          responseTime: data.responseTime,
         };
       });
 
@@ -120,19 +112,21 @@ export default function SubcategoryPage() {
 
       // Filter nach Subcategory
       let filteredProviders = allProviders.filter(provider =>
-        provider.skills?.some(skill =>
-          skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
-          skill.toLowerCase().includes(subcategory.toLowerCase())
+        provider.skills?.some(
+          skill =>
+            skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
+            skill.toLowerCase().includes(subcategory.toLowerCase())
         )
       );
 
       // Suchfilter
       if (searchQuery) {
-        filteredProviders = filteredProviders.filter(provider =>
-          (provider.companyName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (provider.userName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (provider.bio?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (provider.skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())))
+        filteredProviders = filteredProviders.filter(
+          provider =>
+            provider.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
         );
       }
 
@@ -162,10 +156,12 @@ export default function SubcategoryPage() {
   };
 
   const getProfileImage = (provider: Provider) => {
-    return provider.profilePictureFirebaseUrl ||
+    return (
+      provider.profilePictureFirebaseUrl ||
       provider.profilePictureURL ||
       provider.photoURL ||
-      '/images/default-avatar.png';
+      '/images/default-avatar.png'
+    );
   };
 
   const getProviderName = (provider: Provider) => {
@@ -213,7 +209,8 @@ export default function SubcategoryPage() {
                 {subcategoryName}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für {subcategoryName}
+                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für{' '}
+                {subcategoryName}
               </p>
             </div>
           </div>
@@ -227,7 +224,7 @@ export default function SubcategoryPage() {
                 type="text"
                 placeholder="Anbieter suchen..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -235,7 +232,7 @@ export default function SubcategoryPage() {
             {/* Sortierung */}
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
+              onChange={e => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="rating">Beste Bewertung</option>
@@ -252,7 +249,10 @@ export default function SubcategoryPage() {
         {loading ? (
           <div className="space-y-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse"
+              >
                 <div className="flex items-start gap-6">
                   <div className="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                   <div className="flex-1 space-y-3">
@@ -284,13 +284,16 @@ export default function SubcategoryPage() {
         ) : (
           <div className="space-y-6">
             {providers.map(provider => (
-              <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div
+                key={provider.id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+              >
                 <div className="flex items-start gap-6">
                   <img
                     src={getProfileImage(provider)}
                     alt={getProviderName(provider)}
                     className="w-20 h-20 rounded-full object-cover"
-                    onError={(e) => {
+                    onError={e => {
                       (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                     }}
                   />

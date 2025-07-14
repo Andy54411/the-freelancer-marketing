@@ -11,12 +11,12 @@ import {
   // AuthError // AuthError ist ein Typ, kein Wert für instanceof
 } from 'firebase/auth';
 import { auth } from '@/firebase/clients'; // Dein Firebase Auth Import
-import { LoginForm } from './login-form';   // Importiere deine LoginForm UI-Komponente
+import { LoginForm } from './login-form'; // Importiere deine LoginForm UI-Komponente
 // import { Button } from '@/components/ui/button'; // Marked as unused
 
 // Logging-Konstanten (optional)
-const POPUP_LOG = "LoginPopup:";
-const POPUP_ERROR = "LoginPopup ERROR:";
+const POPUP_LOG = 'LoginPopup:';
+const POPUP_ERROR = 'LoginPopup ERROR:';
 // const POPUP_WARN = "LoginPopup WARN:"; // Marked as unused
 
 interface LoginPopupProps {
@@ -30,7 +30,7 @@ export default function LoginPopup({
   isOpen,
   onClose,
   onLoginSuccess,
-  initialEmail = ''
+  initialEmail = '',
 }: LoginPopupProps) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -42,31 +42,33 @@ export default function LoginPopup({
     if (isOpen) {
       setEmail(initialEmail || ''); // Setzt E-Mail, wenn Popup geöffnet wird
       setPassword(''); // Passwort immer zurücksetzen
-      setError(null);   // Fehler zurücksetzen
+      setError(null); // Fehler zurücksetzen
     }
   }, [isOpen, initialEmail]);
 
   const handleEmailPasswordLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email.trim() || !password.trim()) {
-      setError("Bitte E-Mail und Passwort eingeben.");
+      setError('Bitte E-Mail und Passwort eingeben.');
       return;
     }
     setLoading('email');
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log(POPUP_LOG, "Email/Passwort Login erfolgreich für:", userCredential.user.uid);
+      console.log(POPUP_LOG, 'Email/Passwort Login erfolgreich für:', userCredential.user.uid);
       onLoginSuccess(userCredential.user);
     } catch (err: unknown) {
       // Prüfen, ob es ein Firebase Auth Fehler ist, indem wir auf 'code' und 'message' prüfen
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string }; // Type Assertion
-        console.error(POPUP_ERROR, "Email/Passwort Login Fehler:", err.code, err.message);
-        if (firebaseError.code === 'auth/user-not-found' ||
+        console.error(POPUP_ERROR, 'Email/Passwort Login Fehler:', err.code, err.message);
+        if (
+          firebaseError.code === 'auth/user-not-found' ||
           firebaseError.code === 'auth/wrong-password' ||
           firebaseError.code === 'auth/invalid-credential' || // Neuerer Fehlercode für falsche Credentials
-          firebaseError.code === 'auth/invalid-email') {
+          firebaseError.code === 'auth/invalid-email'
+        ) {
           setError('Ungültige E-Mail-Adresse oder falsches Passwort.');
         } else {
           setError('Login fehlgeschlagen. Bitte versuchen Sie es später erneut.');
@@ -85,17 +87,19 @@ export default function LoginPopup({
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      console.log(POPUP_LOG, "Google Login erfolgreich für:", result.user.uid);
+      console.log(POPUP_LOG, 'Google Login erfolgreich für:', result.user.uid);
       onLoginSuccess(result.user);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
-        console.error(POPUP_ERROR, "Google Login Fehler:", err.code, err.message);
+        console.error(POPUP_ERROR, 'Google Login Fehler:', err.code, err.message);
         if (firebaseError.code === 'auth/popup-closed-by-user') {
           // Kein Fehler anzeigen, Nutzer hat das Popup geschlossen
           console.log(POPUP_LOG, 'Google Login Popup vom Nutzer geschlossen.');
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
-          setError('Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.');
+          setError(
+            'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
+          );
         } else {
           setError('Google Login fehlgeschlagen.');
         }
@@ -116,16 +120,18 @@ export default function LoginPopup({
       // provider.addScope('email');
       // provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
-      console.log(POPUP_LOG, "Apple Login erfolgreich für:", result.user.uid);
+      console.log(POPUP_LOG, 'Apple Login erfolgreich für:', result.user.uid);
       onLoginSuccess(result.user);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
-        console.error(POPUP_ERROR, "Apple Login Fehler:", err.code, err.message);
+        console.error(POPUP_ERROR, 'Apple Login Fehler:', err.code, err.message);
         if (firebaseError.code === 'auth/popup-closed-by-user') {
           console.log(POPUP_LOG, 'Apple Login Popup vom Nutzer geschlossen.');
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
-          setError('Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.');
+          setError(
+            'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
+          );
         } else {
           setError('Apple Login fehlgeschlagen.');
         }
@@ -162,7 +168,14 @@ export default function LoginPopup({
           className="absolute -top-3 -right-3 z-[60] bg-gray-200 text-gray-800 hover:bg-teal-100 hover:text-teal-800 rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
           aria-label="Popup schließen"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="currentColor"
+            className="w-5 h-5"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -179,9 +192,9 @@ export default function LoginPopup({
           // HINWEIS: Die LoginForm-Komponente sollte eine 'disabled'-Prop erhalten,
           // um die Buttons während des Ladevorgangs zu deaktivieren.
           disabled={loading !== null}
-        // TODO: error und loading Props an LoginForm übergeben, falls die UI das dort anzeigen soll.
-        // Aktuell wird der Fehler nur unterhalb der LoginForm angezeigt (siehe unten).
-        // Der "Sign up"-Link in LoginForm müsste onClose aufrufen oder speziell behandelt werden.
+          // TODO: error und loading Props an LoginForm übergeben, falls die UI das dort anzeigen soll.
+          // Aktuell wird der Fehler nur unterhalb der LoginForm angezeigt (siehe unten).
+          // Der "Sign up"-Link in LoginForm müsste onClose aufrufen oder speziell behandelt werden.
         />
         {/* Fehleranzeige direkt unter dem Formular, falls gewünscht */}
         {error && (

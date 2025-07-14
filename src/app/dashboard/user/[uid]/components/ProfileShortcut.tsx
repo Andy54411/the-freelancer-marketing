@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
+import Link from 'next/link';
 
 export const ProfileShortcut = () => {
   return (
@@ -13,5 +13,5 @@ export const ProfileShortcut = () => {
         Profil bearbeiten →
       </Link>
     </div>
-  )
-}
+  );
+};

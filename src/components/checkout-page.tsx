@@ -2,12 +2,7 @@
 'use client';
 
 import React, { useState, FormEvent, useEffect } from 'react';
-import {
-  PaymentElement,
-  useStripe,
-  useElements,
-  AddressElement
-} from '@stripe/react-stripe-js';
+import { PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { StripePaymentElementOptions, StripeError, PaymentIntent } from '@stripe/stripe-js'; // PaymentIntent importieren
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 
@@ -48,7 +43,7 @@ export const StripeCardCheckout = ({
 
   useEffect(() => {
     if (!stripe || !elements) {
-      console.log("Stripe oder Elements noch nicht bereit.");
+      console.log('Stripe oder Elements noch nicht bereit.');
     }
   }, [stripe, elements]);
 
@@ -75,30 +70,40 @@ export const StripeCardCheckout = ({
       if (result.error) {
         // In diesem Block ist result.error definiert.
         // TypeScript sollte jetzt wissen, dass result.paymentIntent hier nicht relevant ist oder undefined sein kann.
-        setMessage(result.error.message || 'Ein Fehler ist bei der Zahlungsbestätigung aufgetreten.');
-        onPaymentError(result.error.message || 'Ein Fehler ist bei der Zahlungsbestätigung aufgetreten.');
+        setMessage(
+          result.error.message || 'Ein Fehler ist bei der Zahlungsbestätigung aufgetreten.'
+        );
+        onPaymentError(
+          result.error.message || 'Ein Fehler ist bei der Zahlungsbestätigung aufgetreten.'
+        );
       } else {
         // In diesem Block ist result.error undefined.
         // Wir müssen jetzt prüfen, ob result.paymentIntent vorhanden ist.
         if (result.paymentIntent) {
           // Hier ist result.paymentIntent definiert und kann sicher verwendet werden.
           // Dies sollten die Zeilen 91, 93, 94, 95 sein.
-          if (result.paymentIntent.status === 'succeeded') { // Zeile 91 (ungefähr)
+          if (result.paymentIntent.status === 'succeeded') {
+            // Zeile 91 (ungefähr)
             setMessage(`Zahlung erfolgreich! ID: ${result.paymentIntent.id}`); // Zeile 93 (id)
             onPaymentSuccess(result.paymentIntent.id); // Zeile 94 (id)
           } else {
-            setMessage(`Zahlungsstatus: ${result.paymentIntent.status}. Du wirst ggf. weitergeleitet.`); // Zeile 95 (status)
+            setMessage(
+              `Zahlungsstatus: ${result.paymentIntent.status}. Du wirst ggf. weitergeleitet.`
+            ); // Zeile 95 (status)
           }
         } else {
           // Fall: kein Fehler UND kein paymentIntent (sehr unwahrscheinlich, aber zur Vollständigkeit)
           // Dies wäre Zeile 98.
-          setMessage("Unbekannter Zahlungsstatus oder Ergebnis von Stripe (kein Fehler, kein PaymentIntent).");
-          onPaymentError("Unbekannter Zahlungsstatus oder Ergebnis von Stripe (kein Fehler, kein PaymentIntent).");
+          setMessage(
+            'Unbekannter Zahlungsstatus oder Ergebnis von Stripe (kein Fehler, kein PaymentIntent).'
+          );
+          onPaymentError(
+            'Unbekannter Zahlungsstatus oder Ergebnis von Stripe (kein Fehler, kein PaymentIntent).'
+          );
         }
       }
-
     } catch (error: unknown) {
-      console.error("Fehler im Bezahlprozess:", error);
+      console.error('Fehler im Bezahlprozess:', error);
       let errorMessage = 'Ein allgemeiner Fehler ist im Bezahlprozess aufgetreten.';
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -113,11 +118,15 @@ export const StripeCardCheckout = ({
   };
 
   const paymentElementOptions: StripePaymentElementOptions = {
-    layout: "tabs",
+    layout: 'tabs',
   };
 
   return (
-    <form id="payment-form" onSubmit={handleSubmit} className="space-y-6 p-4 border rounded-lg shadow-sm bg-white">
+    <form
+      id="payment-form"
+      onSubmit={handleSubmit}
+      className="space-y-6 p-4 border rounded-lg shadow-sm bg-white"
+    >
       <h3 className="text-lg font-semibold mb-4">Zahlungsdetails</h3>
       <AddressElement options={{ mode: 'billing', allowedCountries: ['DE', 'AT', 'CH'] }} />
       <PaymentElement id="payment-element" options={paymentElementOptions} />
@@ -127,10 +136,15 @@ export const StripeCardCheckout = ({
         className="w-full p-3 bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] disabled:opacity-50 transition-colors flex items-center justify-center"
       >
         {isLoading && <FiLoader className="animate-spin mr-2" />}
-        {isLoading ? 'Verarbeite...' : `Jetzt ${taskAmount / 100} ${taskCurrency?.toUpperCase()} zahlen`}
+        {isLoading
+          ? 'Verarbeite...'
+          : `Jetzt ${taskAmount / 100} ${taskCurrency?.toUpperCase()} zahlen`}
       </button>
       {message && (
-        <div id="payment-message" className={`mt-4 text-center text-sm ${message.includes('erfolgreich') ? 'text-green-600' : 'text-red-600'} flex items-center justify-center`}>
+        <div
+          id="payment-message"
+          className={`mt-4 text-center text-sm ${message.includes('erfolgreich') ? 'text-green-600' : 'text-red-600'} flex items-center justify-center`}
+        >
           {!message.includes('erfolgreich') && <FiAlertCircle className="mr-1" />}
           {message}
         </div>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { HeroHeader } from '@/components/hero8-header';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -16,7 +16,7 @@ export default function ContactPage() {
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -30,7 +30,7 @@ export default function ContactPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -40,11 +40,10 @@ export default function ContactPage() {
       <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Kontakt
-            </h1>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Kontakt</h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Haben Sie Fragen oder benötigen Sie Hilfe? Wir sind für Sie da und helfen Ihnen gerne weiter.
+              Haben Sie Fragen oder benötigen Sie Hilfe? Wir sind für Sie da und helfen Ihnen gerne
+              weiter.
             </p>
           </div>
 
@@ -56,9 +55,7 @@ export default function ContactPage() {
                   <CardTitle className="text-2xl text-gray-900 dark:text-white">
                     Kontakt-Informationen
                   </CardTitle>
-                  <CardDescription>
-                    Erreichen Sie uns über die folgenden Kanäle
-                  </CardDescription>
+                  <CardDescription>Erreichen Sie uns über die folgenden Kanäle</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-start gap-4">
@@ -75,7 +72,9 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">Telefon</h3>
                       <p className="text-gray-600 dark:text-gray-400">+49 (0) 123 456789</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-500">Mo-Fr: 9:00-17:00 Uhr</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        Mo-Fr: 9:00-17:00 Uhr
+                      </p>
                     </div>
                   </div>
 
@@ -84,9 +83,12 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">Adresse</h3>
                       <p className="text-gray-600 dark:text-gray-400">
-                        Taskilo GmbH<br/>
-                        Musterstraße 123<br/>
-                        12345 Musterstadt<br/>
+                        Taskilo GmbH
+                        <br />
+                        Musterstraße 123
+                        <br />
+                        12345 Musterstadt
+                        <br />
                         Deutschland
                       </p>
                     </div>
@@ -95,7 +97,9 @@ export default function ContactPage() {
                   <div className="flex items-start gap-4">
                     <Clock className="h-6 w-6 text-[#14ad9f] mt-1" />
                     <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">Öffnungszeiten</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        Öffnungszeiten
+                      </h3>
                       <div className="text-gray-600 dark:text-gray-400 space-y-1">
                         <p>Montag - Freitag: 9:00 - 17:00 Uhr</p>
                         <p>Samstag: 10:00 - 14:00 Uhr</p>
@@ -154,12 +158,10 @@ export default function ContactPage() {
                       Nachricht gesendet!
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Vielen Dank für Ihre Nachricht. Wir werden uns innerhalb von 24 Stunden bei Ihnen melden.
+                      Vielen Dank für Ihre Nachricht. Wir werden uns innerhalb von 24 Stunden bei
+                      Ihnen melden.
                     </p>
-                    <Button 
-                      className="mt-4" 
-                      onClick={() => setIsSubmitted(false)}
-                    >
+                    <Button className="mt-4" onClick={() => setIsSubmitted(false)}>
                       Neue Nachricht senden
                     </Button>
                   </div>
@@ -221,7 +223,8 @@ export default function ContactPage() {
                     </Button>
 
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      * Pflichtfelder. Ihre Daten werden vertraulich behandelt und nicht an Dritte weitergegeben.
+                      * Pflichtfelder. Ihre Daten werden vertraulich behandelt und nicht an Dritte
+                      weitergegeben.
                     </p>
                   </form>
                 )}

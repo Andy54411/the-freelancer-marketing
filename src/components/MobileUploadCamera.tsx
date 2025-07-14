@@ -3,7 +3,12 @@
 import React, { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getDatabase, ref, update } from 'firebase/database';
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
 import { initializeApp } from 'firebase/app';
 
 const firebaseConfig = {
@@ -44,7 +49,7 @@ export default function MobileUploadCamera() {
         uploadTask.on(
           'state_changed',
           null,
-          (error) => reject(error),
+          error => reject(error),
           () => resolve()
         );
       });

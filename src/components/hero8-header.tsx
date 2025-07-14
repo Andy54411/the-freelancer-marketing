@@ -1,92 +1,95 @@
-'use client'
+'use client';
 
-import { cn } from '@/lib/utils'
-import Link from 'next/link'
-import { Logo } from './logo'
-import { Menu, X, User, LogOut, Settings, Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import React, { Suspense, useEffect } from 'react'
-import { ModeToggle } from './mode-toggle'
-import LoginPopup from '@/components/LoginPopup'
-import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
-import { app, storage, db } from '@/firebase/clients'
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { Logo } from './logo';
+import { Menu, X, User, LogOut, Settings, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import React, { Suspense, useEffect } from 'react';
+import { ModeToggle } from './mode-toggle';
+import LoginPopup from '@/components/LoginPopup';
+import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { app, storage, db } from '@/firebase/clients';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface User {
-  uid: string
-  email: string | null
-  displayName: string | null
-  photoURL: string | null
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
 }
 
 const menuItems = [
   { name: 'Services', href: '/services' },
   { name: 'Über uns', href: '/about' },
   { name: 'Kontakt', href: '/contact' },
-]
+];
 
 export const HeroHeader = () => {
-  const [menuState, setMenuState] = React.useState(false)
-  const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false)
-  const [user, setUser] = React.useState<User | null>(null)
-  const [profilePictureUrl, setProfilePictureUrl] = React.useState<string | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
+  const [menuState, setMenuState] = React.useState(false);
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   useEffect(() => {
-    const auth = getAuth(app)
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('HeroHeader: Auth state changed:', user?.uid)
-      
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, async user => {
+      console.log('HeroHeader: Auth state changed:', user?.uid);
+
       if (user) {
         setUser({
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
-        })
-        
+        });
+
         // Load profile picture from Firestore
         try {
-          const userDocRef = doc(db, 'users', user.uid)
-          const userDoc = await getDoc(userDocRef)
-          
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+
           if (userDoc.exists()) {
-            const userData = userDoc.data()
-            console.log('HeroHeader: User data from Firestore:', userData)
-            
+            const userData = userDoc.data();
+            console.log('HeroHeader: User data from Firestore:', userData);
+
             if (userData.profilePictureFirebaseUrl) {
-              console.log('HeroHeader: Setting profile picture URL:', userData.profilePictureFirebaseUrl)
-              setProfilePictureUrl(userData.profilePictureFirebaseUrl)
+              console.log(
+                'HeroHeader: Setting profile picture URL:',
+                userData.profilePictureFirebaseUrl
+              );
+              setProfilePictureUrl(userData.profilePictureFirebaseUrl);
             } else {
-              console.log('HeroHeader: No profilePictureFirebaseUrl found')
-              setProfilePictureUrl(null)
+              console.log('HeroHeader: No profilePictureFirebaseUrl found');
+              setProfilePictureUrl(null);
             }
           } else {
-            console.log('HeroHeader: User document not found')
-            setProfilePictureUrl(null)
+            console.log('HeroHeader: User document not found');
+            setProfilePictureUrl(null);
           }
         } catch (error) {
-          console.error('HeroHeader: Error loading profile picture:', error)
-          setProfilePictureUrl(null)
+          console.error('HeroHeader: Error loading profile picture:', error);
+          setProfilePictureUrl(null);
         }
       } else {
-        setUser(null)
-        setProfilePictureUrl(null)
+        setUser(null);
+        setProfilePictureUrl(null);
       }
-      
-      setIsLoading(false)
-    })
 
-    return () => unsubscribe()
-  }, [])
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleOpenLoginPopup = () => {
     setIsLoginPopupOpen(true);
@@ -97,19 +100,19 @@ export const HeroHeader = () => {
   };
 
   const handleLoginSuccess = () => {
-    setIsLoginPopupOpen(false)
-    window.location.href = '/dashboard'
-  }
+    setIsLoginPopupOpen(false);
+    window.location.href = '/dashboard';
+  };
 
   const handleLogout = async () => {
     try {
-      const auth = getAuth(app)
-      await signOut(auth)
-      window.location.href = '/'
+      const auth = getAuth(app);
+      await signOut(auth);
+      window.location.href = '/';
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('Logout error:', error);
     }
-  }
+  };
 
   return (
     <header>
@@ -167,16 +170,16 @@ export const HeroHeader = () => {
                 'lg:flex hidden'
               )}
             >
-              {!isLoading && (
-                user ? (
+              {!isLoading &&
+                (user ? (
                   // Authenticated user
                   <div className="flex items-center gap-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
-                          <AvatarImage 
-                            src={profilePictureUrl || undefined} 
-                            alt={user.displayName || user.email || 'Benutzer'} 
+                          <AvatarImage
+                            src={profilePictureUrl || undefined}
+                            alt={user.displayName || user.email || 'Benutzer'}
                           />
                           <AvatarFallback>
                             <User className="h-4 w-4" />
@@ -197,7 +200,10 @@ export const HeroHeader = () => {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-600">
+                        <DropdownMenuItem
+                          onClick={handleLogout}
+                          className="flex items-center gap-2 text-red-600"
+                        >
                           <LogOut className="h-4 w-4" />
                           Abmelden
                         </DropdownMenuItem>
@@ -218,8 +224,7 @@ export const HeroHeader = () => {
                     </Button>
                     <ModeToggle />
                   </div>
-                )
-              )}
+                ))}
             </div>
 
             {/* Mobile Navigation */}
@@ -238,15 +243,15 @@ export const HeroHeader = () => {
                   ))}
                 </ul>
                 <div className="px-6 pb-6 flex flex-col gap-3">
-                  {!isLoading && (
-                    user ? (
+                  {!isLoading &&
+                    (user ? (
                       // Authenticated user - mobile
                       <>
                         <div className="flex items-center gap-3 pb-3 border-b">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage 
-                              src={profilePictureUrl || undefined} 
-                              alt={user.displayName || user.email || 'Benutzer'} 
+                            <AvatarImage
+                              src={profilePictureUrl || undefined}
+                              alt={user.displayName || user.email || 'Benutzer'}
                             />
                             <AvatarFallback>
                               <User className="h-5 w-5" />
@@ -277,8 +282,7 @@ export const HeroHeader = () => {
                           <Link href="/register/company">Starte mit Taskilo</Link>
                         </Button>
                       </>
-                    )
-                  )}
+                    ))}
                   <ModeToggle />
                 </div>
               </div>
@@ -295,5 +299,5 @@ export const HeroHeader = () => {
         />
       </Suspense>
     </header>
-  )
-}
+  );
+};

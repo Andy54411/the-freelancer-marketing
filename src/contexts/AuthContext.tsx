@@ -1,17 +1,10 @@
-"use client";
+'use client';
 
-import { type User as FirebaseUser, onAuthStateChanged, signOut } from "@/firebase/clients";
-import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
-import { orderBy, limit } from "firebase/firestore"; // NEU: orderBy und limit importieren
+import { type User as FirebaseUser, onAuthStateChanged, signOut } from '@/firebase/clients';
+import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { orderBy, limit } from 'firebase/firestore'; // NEU: orderBy und limit importieren
 import { auth, db } from '@/firebase/clients';
 
 /**
@@ -71,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Optional: Leite den Benutzer nach dem Logout weiter
       router.push('/login');
     } catch (error) {
-      console.error("Fehler beim Abmelden: ", error);
+      console.error('Fehler beim Abmelden: ', error);
       // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
     }
   };
@@ -88,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('AuthContext: Custom Claims:', idTokenResult.claims);
 
           if (!db) {
-            throw new Error("Firestore DB-Instanz ist nicht initialisiert.");
+            throw new Error('Firestore DB-Instanz ist nicht initialisiert.');
           }
           const userDocRef = doc(db, 'users', fbUser.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -97,11 +90,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const profileData = userDocSnap.data();
 
             // Rollenbestimmung: Custom Claim hat Vorrang.
-            const roleFromClaim = idTokenResult.claims.master ? 'master' :
-              idTokenResult.claims.role === 'master' ? 'master' :
-                idTokenResult.claims.role === 'support' ? 'support' :
-                  idTokenResult.claims.role === 'firma' ? 'firma' :
-                    idTokenResult.claims.role === 'kunde' ? 'kunde' : null;
+            const roleFromClaim = idTokenResult.claims.master
+              ? 'master'
+              : idTokenResult.claims.role === 'master'
+                ? 'master'
+                : idTokenResult.claims.role === 'support'
+                  ? 'support'
+                  : idTokenResult.claims.role === 'firma'
+                    ? 'firma'
+                    : idTokenResult.claims.role === 'kunde'
+                      ? 'kunde'
+                      : null;
             const roleFromDb = (profileData.user_type as UserProfile['role']) || 'kunde';
 
             const finalRole = roleFromClaim || roleFromDb;
@@ -120,13 +119,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               profilePictureURL: profileData.profilePictureURL || undefined,
             });
           } else {
-            console.warn(`AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`);
+            console.warn(
+              `AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`
+            );
             // Auch hier den Claim berücksichtigen, falls das DB-Dokument fehlt.
-            const roleFromClaim = idTokenResult.claims.master ? 'master' :
-              idTokenResult.claims.role === 'master' ? 'master' :
-                idTokenResult.claims.role === 'support' ? 'support' :
-                  idTokenResult.claims.role === 'firma' ? 'firma' :
-                    idTokenResult.claims.role === 'kunde' ? 'kunde' : 'kunde';
+            const roleFromClaim = idTokenResult.claims.master
+              ? 'master'
+              : idTokenResult.claims.role === 'master'
+                ? 'master'
+                : idTokenResult.claims.role === 'support'
+                  ? 'support'
+                  : idTokenResult.claims.role === 'firma'
+                    ? 'firma'
+                    : idTokenResult.claims.role === 'kunde'
+                      ? 'kunde'
+                      : 'kunde';
 
             console.log('AuthContext: Fallback role from claim:', roleFromClaim);
 
@@ -141,7 +148,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setFirebaseUser(null);
         }
       } catch (error) {
-        console.error("AuthContext: Fehler beim Abrufen des Benutzerprofils oder der Claims.", error);
+        console.error(
+          'AuthContext: Fehler beim Abrufen des Benutzerprofils oder der Claims.',
+          error
+        );
         setUser(null);
         setFirebaseUser(null);
       } finally {
@@ -154,7 +164,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {
-    console.log(`AuthContext: Login-Effekt ausgeführt - loading: ${loading}, user: ${user ? user.email : 'null'}, isRedirecting: ${isRedirecting}, pathname: ${pathname}`);
+    console.log(
+      `AuthContext: Login-Effekt ausgeführt - loading: ${loading}, user: ${user ? user.email : 'null'}, isRedirecting: ${isRedirecting}, pathname: ${pathname}`
+    );
 
     // Nur ausführen, wenn der Ladevorgang abgeschlossen ist, ein Benutzer vorhanden ist und wir nicht bereits weiterleiten
     if (!loading && user && !isRedirecting) {
@@ -163,7 +175,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const registrationRedirectTo = sessionStorage.getItem('registrationRedirectTo');
 
       if (justRegistered === 'true' && registrationRedirectTo) {
-        console.log("AuthContext: Benutzer gerade registriert, weiterleiten zu:", registrationRedirectTo);
+        console.log(
+          'AuthContext: Benutzer gerade registriert, weiterleiten zu:',
+          registrationRedirectTo
+        );
         // Cleanup der sessionStorage items
         sessionStorage.removeItem('justRegistered');
         sessionStorage.removeItem('registrationRedirectTo');
@@ -198,7 +213,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (shouldRedirect && targetPath) {
-        console.log(`AuthContext: Weiterleitung von ${pathname} zu ${targetPath} für Rolle ${user.role}`);
+        console.log(
+          `AuthContext: Weiterleitung von ${pathname} zu ${targetPath} für Rolle ${user.role}`
+        );
         setIsRedirecting(true);
         router.push(targetPath);
       }
@@ -218,7 +235,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     // HINZUGEFÜGT: Zusätzliche Sicherheitsprüfung für die DB-Instanz.
     if (!db) {
-      console.error("[AuthContext] Firestore DB ist nicht für den Listener für ungelesene Nachrichten verfügbar.");
+      console.error(
+        '[AuthContext] Firestore DB ist nicht für den Listener für ungelesene Nachrichten verfügbar.'
+      );
       setUnreadMessagesCount(0);
       setRecentChats([]);
       return;
@@ -234,31 +253,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       limit(5)
     );
 
-    const unsubscribe = onSnapshot(recentChatsQuery, (snapshot) => {
-      const chatsData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const otherUserId = data.users.find((id: string) => id !== user.uid);
-        const userDetails = otherUserId ? data.userDetails?.[otherUserId] : null;
-        const inboxLink = user.role === 'firma' ? `/dashboard/company/${user.uid}/inbox` : `/dashboard/user/${user.uid}/inbox`;
+    const unsubscribe = onSnapshot(
+      recentChatsQuery,
+      snapshot => {
+        const chatsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const otherUserId = data.users.find((id: string) => id !== user.uid);
+          const userDetails = otherUserId ? data.userDetails?.[otherUserId] : null;
+          const inboxLink =
+            user.role === 'firma'
+              ? `/dashboard/company/${user.uid}/inbox`
+              : `/dashboard/user/${user.uid}/inbox`;
 
-        return {
-          id: doc.id,
-          otherUserName: userDetails?.name || 'Unbekannter Benutzer',
-          otherUserAvatarUrl: userDetails?.avatarUrl || null,
-          lastMessageText: data.lastMessage?.text || '',
-          isUnread: data.lastMessage?.senderId !== user.uid && !data.lastMessage?.isRead,
-          link: inboxLink,
-        };
-      });
+          return {
+            id: doc.id,
+            otherUserName: userDetails?.name || 'Unbekannter Benutzer',
+            otherUserAvatarUrl: userDetails?.avatarUrl || null,
+            lastMessageText: data.lastMessage?.text || '',
+            isUnread: data.lastMessage?.senderId !== user.uid && !data.lastMessage?.isRead,
+            link: inboxLink,
+          };
+        });
 
-      const unreadCount = chatsData.filter(chat => chat.isUnread).length;
-      setUnreadMessagesCount(unreadCount);
-      setRecentChats(chatsData);
-    }, (error) => {
-      console.error("[AuthContext] Fehler beim Abhören der Chats:", error);
-      setUnreadMessagesCount(0);
-      setRecentChats([]);
-    });
+        const unreadCount = chatsData.filter(chat => chat.isUnread).length;
+        setUnreadMessagesCount(unreadCount);
+        setRecentChats(chatsData);
+      },
+      error => {
+        console.error('[AuthContext] Fehler beim Abhören der Chats:', error);
+        setUnreadMessagesCount(0);
+        setRecentChats([]);
+      }
+    );
 
     return () => {
       if (unsubscribe) {
@@ -269,15 +295,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // HINWEIS: `useMemo` wird verwendet, um unnötige Neurenderungen von abhängigen Komponenten zu vermeiden.
   // Der Context-Wert wird nur dann neu berechnet, wenn sich eine der Abhängigkeiten ändert.
-  const value = useMemo(() => ({
-    user,
-    firebaseUser,
-    loading,
-    logout, // NEU: Logout-Funktion im Context bereitstellen
-    userRole: user?.role || null,
-    unreadMessagesCount,
-    recentChats,
-  }), [user, firebaseUser, loading, unreadMessagesCount, recentChats]);
+  const value = useMemo(
+    () => ({
+      user,
+      firebaseUser,
+      loading,
+      logout, // NEU: Logout-Funktion im Context bereitstellen
+      userRole: user?.role || null,
+      unreadMessagesCount,
+      recentChats,
+    }),
+    [user, firebaseUser, loading, unreadMessagesCount, recentChats]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -285,7 +314,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

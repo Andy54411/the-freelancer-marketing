@@ -21,9 +21,11 @@ export const config = {
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
-  apiVersion: '2024-06-20',
-}) : null;
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: '2024-06-20',
+    })
+  : null;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
@@ -36,11 +38,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
-    } catch (err: unknown) { // err ist hier vom Typ unknown
+    } catch (err: unknown) {
+      // err ist hier vom Typ unknown
       let errorMessage = 'Fehler bei der Webhook-Signaturverifizierung.';
       if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
         errorMessage = `⚠️  Webhook signature verification failed: ${err.message}`;
-      } else if (err instanceof Error) { // Fallback für andere Fehler
+      } else if (err instanceof Error) {
+        // Fallback für andere Fehler
         errorMessage = `⚠️  Webhook error: ${err.message}`;
       }
       console.error(`[WEBHOOK ERROR] ${errorMessage}`, err);
@@ -56,20 +60,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
 
         if (!tempJobDraftId || !firebaseUserId) {
-          console.error(`[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`);
+          console.error(
+            `[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`
+          );
           // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
-          return res.status(200).json({ received: true, message: 'Wichtige Metadaten (tempJobDraftId oder firebaseUserId) fehlen.' });
+          return res
+            .status(200)
+            .json({
+              received: true,
+              message: 'Wichtige Metadaten (tempJobDraftId oder firebaseUserId) fehlen.',
+            });
         }
 
         try {
           const tempJobDraftRef = db.collection('temporaryJobDrafts').doc(tempJobDraftId);
           const auftragCollectionRef = db.collection('auftraege');
 
-          await db.runTransaction(async (transaction) => {
+          await db.runTransaction(async transaction => {
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
             if (tempJobDraftSnapshot.data()?.status === 'converted') {
-              console.log(`[WEBHOOK LOG] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe.`);
+              console.log(
+                `[WEBHOOK LOG] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe.`
+              );
               return;
             }
             if (!tempJobDraftSnapshot.exists) {
@@ -81,8 +94,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // Berechnung für die Clearing-Periode (z.B. 14 Tage)
             const clearingPeriodDays = 14;
             const paidAtDate = new Date(); // Zeitpunkt der erfolgreichen Zahlung
-            const clearingEndsDate = new Date(paidAtDate.getTime() + clearingPeriodDays * 24 * 60 * 60 * 1000);
-            const clearingPeriodEndsAtTimestamp = admin.firestore.Timestamp.fromDate(clearingEndsDate);
+            const clearingEndsDate = new Date(
+              paidAtDate.getTime() + clearingPeriodDays * 24 * 60 * 60 * 1000
+            );
+            const clearingPeriodEndsAtTimestamp =
+              admin.firestore.Timestamp.fromDate(clearingEndsDate);
 
             const auftragData = {
               ...tempJobDraftData,
@@ -92,10 +108,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               customerFirebaseUid: firebaseUserId,
               tempJobDraftRefId: tempJobDraftId,
               // Detaillierte Preiskomponenten aus Metadaten (Strings in Zahlen umwandeln)
-              originalJobPriceInCents: paymentIntentSucceeded.metadata?.originalJobPriceInCents ? parseInt(paymentIntentSucceeded.metadata.originalJobPriceInCents, 10) : 0,
-              buyerServiceFeeInCents: paymentIntentSucceeded.metadata?.buyerServiceFeeInCents ? parseInt(paymentIntentSucceeded.metadata.buyerServiceFeeInCents, 10) : 0,
-              sellerCommissionInCents: paymentIntentSucceeded.metadata?.sellerCommissionInCents ? parseInt(paymentIntentSucceeded.metadata.sellerCommissionInCents, 10) : 0,
-              totalPlatformFeeInCents: paymentIntentSucceeded.metadata?.totalPlatformFeeInCents ? parseInt(paymentIntentSucceeded.metadata.totalPlatformFeeInCents, 10) : (paymentIntentSucceeded.application_fee_amount || 0),
+              originalJobPriceInCents: paymentIntentSucceeded.metadata?.originalJobPriceInCents
+                ? parseInt(paymentIntentSucceeded.metadata.originalJobPriceInCents, 10)
+                : 0,
+              buyerServiceFeeInCents: paymentIntentSucceeded.metadata?.buyerServiceFeeInCents
+                ? parseInt(paymentIntentSucceeded.metadata.buyerServiceFeeInCents, 10)
+                : 0,
+              sellerCommissionInCents: paymentIntentSucceeded.metadata?.sellerCommissionInCents
+                ? parseInt(paymentIntentSucceeded.metadata.sellerCommissionInCents, 10)
+                : 0,
+              totalPlatformFeeInCents: paymentIntentSucceeded.metadata?.totalPlatformFeeInCents
+                ? parseInt(paymentIntentSucceeded.metadata.totalPlatformFeeInCents, 10)
+                : paymentIntentSucceeded.application_fee_amount || 0,
               totalAmountPaidByBuyer: paymentIntentSucceeded.amount, // Gesamtbetrag, den der Käufer gezahlt hat
               applicationFeeAmountFromStripe: paymentIntentSucceeded.application_fee_amount || 0, // Direkter Wert von Stripe
               // Stelle sicher, dass createdAt ein gültiger Timestamp ist
@@ -103,12 +127,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 tempJobDraftData?.createdAt?._seconds || Math.floor(Date.now() / 1000),
                 tempJobDraftData?.createdAt?._nanoseconds || 0
               ),
-              paymentMethodId: typeof paymentIntentSucceeded.payment_method === 'string'
-                ? paymentIntentSucceeded.payment_method
-                : (paymentIntentSucceeded.payment_method && typeof paymentIntentSucceeded.payment_method === 'object' && 'id' in paymentIntentSucceeded.payment_method ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id : null),
-              stripeCustomerId: typeof paymentIntentSucceeded.customer === 'string'
-                ? paymentIntentSucceeded.customer
-                : (paymentIntentSucceeded.customer && typeof paymentIntentSucceeded.customer === 'object' && 'id' in paymentIntentSucceeded.customer ? (paymentIntentSucceeded.customer as Stripe.Customer).id : null),
+              paymentMethodId:
+                typeof paymentIntentSucceeded.payment_method === 'string'
+                  ? paymentIntentSucceeded.payment_method
+                  : paymentIntentSucceeded.payment_method &&
+                      typeof paymentIntentSucceeded.payment_method === 'object' &&
+                      'id' in paymentIntentSucceeded.payment_method
+                    ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id
+                    : null,
+              stripeCustomerId:
+                typeof paymentIntentSucceeded.customer === 'string'
+                  ? paymentIntentSucceeded.customer
+                  : paymentIntentSucceeded.customer &&
+                      typeof paymentIntentSucceeded.customer === 'object' &&
+                      'id' in paymentIntentSucceeded.customer
+                    ? (paymentIntentSucceeded.customer as Stripe.Customer).id
+                    : null,
               clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
               buyerApprovedAt: null, // Wird später gesetzt
             };
@@ -121,14 +155,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               convertedToOrderId: newAuftragRef.id,
             });
           });
-          console.log(`[WEBHOOK LOG] Transaktion für Job ${tempJobDraftId} erfolgreich abgeschlossen.`);
-        } catch (dbError: unknown) { // dbError ist hier vom Typ unknown
-          let dbErrorMessage = "Unbekannter Datenbankfehler bei der Job-Konvertierung.";
+          console.log(
+            `[WEBHOOK LOG] Transaktion für Job ${tempJobDraftId} erfolgreich abgeschlossen.`
+          );
+        } catch (dbError: unknown) {
+          // dbError ist hier vom Typ unknown
+          let dbErrorMessage = 'Unbekannter Datenbankfehler bei der Job-Konvertierung.';
           if (dbError instanceof Error) {
             dbErrorMessage = dbError.message;
           }
           console.error(`[WEBHOOK ERROR] Fehler in der Transaktion:`, dbError);
-          return res.status(200).json({ received: true, message: `Job conversion failed: ${dbErrorMessage}` });
+          return res
+            .status(200)
+            .json({ received: true, message: `Job conversion failed: ${dbErrorMessage}` });
         }
         break;
       }

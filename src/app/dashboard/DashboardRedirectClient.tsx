@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
+import { useEffect } from 'react';
 import { redirect } from 'next/navigation';
-import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 as FiLoader } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 as FiLoader } from 'lucide-react';
 
 export default function DashboardRedirectClient() {
   const { user, loading } = useAuth();
@@ -12,11 +12,11 @@ export default function DashboardRedirectClient() {
     if (loading) return;
     if (user) {
       switch (user.role) {
-        case "master":
-        case "support":
-          redirect("/dashboard/admin");
+        case 'master':
+        case 'support':
+          redirect('/dashboard/admin');
           break;
-        case "firma":
+        case 'firma':
           redirect(`/dashboard/company/${user.uid}`);
           break;
         default:

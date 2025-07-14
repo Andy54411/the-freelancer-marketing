@@ -8,10 +8,7 @@ import {
   Loader2 as FiLoader,
 } from 'lucide-react';
 import Image from 'next/image';
-import type {
-  Company as AnbieterDetails,
-  TaskDetails,
-} from '@/types/types';
+import type { Company as AnbieterDetails, TaskDetails } from '@/types/types';
 import { TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
 import { getFirebaseImageUrl } from '@/lib/getFirebaseImageUrl';
 
@@ -34,17 +31,18 @@ export function OrderSummary({
 }: OrderSummaryProps) {
   const displayDate = dateFrom
     ? `${new Date(dateFrom).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    })}${dateTo && dateTo !== dateFrom
-      ? ` - ${new Date(dateTo).toLocaleDateString('de-DE', {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
-      })}`
-      : ''
-    }`
+      })}${
+        dateTo && dateTo !== dateFrom
+          ? ` - ${new Date(dateTo).toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })}`
+          : ''
+      }`
     : 'Datum nicht spezifiziert';
 
   if (!anbieterDetails) {
@@ -72,7 +70,11 @@ export function OrderSummary({
     // eslint-disable-next-line no-console
     console.log('Image-URL:', imageUrl);
     // eslint-disable-next-line no-console
-    console.log('profilePictureURL:', anbieterDetails.profilePictureURL, typeof anbieterDetails.profilePictureURL);
+    console.log(
+      'profilePictureURL:',
+      anbieterDetails.profilePictureURL,
+      typeof anbieterDetails.profilePictureURL
+    );
   }
 
   return (
@@ -86,7 +88,7 @@ export function OrderSummary({
             className="w-12 h-12 rounded-full border object-cover mr-4"
             width={48}
             height={48}
-            onError={(e) => {
+            onError={e => {
               if (process.env.NODE_ENV === 'development') {
                 // eslint-disable-next-line no-console
                 console.error('Image-Load-Error:', imageUrl, e);
@@ -192,12 +194,10 @@ export function OrderSummary({
 
       {/* Hinweis */}
       <p className="text-xs text-gray-500 leading-snug mt-4">
-        Die Zahlung erfolgt erst nach Abschluss des Tasks. Du erhältst dann eine Rechnung mit ausgewiesener Mehrwertsteuer.
+        Die Zahlung erfolgt erst nach Abschluss des Tasks. Du erhältst dann eine Rechnung mit
+        ausgewiesener Mehrwertsteuer.
         <br />
-        <a
-          href="#"
-          className="text-[#14ad9f] hover:underline inline-block mt-1"
-        >
+        <a href="#" className="text-[#14ad9f] hover:underline inline-block mt-1">
           Mehr zu unseren Stornierungsbedingungen
         </a>
       </p>

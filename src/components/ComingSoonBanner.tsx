@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,9 +25,7 @@ export default function ComingSoonBanner() {
         <div className="max-w-7xl mx-auto flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 animate-pulse" />
-            <span className="font-medium text-sm md:text-base">
-              {t('banner.text')}
-            </span>
+            <span className="font-medium text-sm md:text-base">{t('banner.text')}</span>
           </div>
 
           <div className="flex items-center gap-3">

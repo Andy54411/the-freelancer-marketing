@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
-import { useState } from 'react'
+import Image from 'next/image';
+import { useState } from 'react';
 
 interface ResponsiveImageProps {
-  src: string
-  alt: string
-  width?: number
-  height?: number
-  className?: string
-  priority?: boolean
-  sizes?: string
-  style?: React.CSSProperties
-  fallbackSrc?: string
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  className?: string;
+  priority?: boolean;
+  sizes?: string;
+  style?: React.CSSProperties;
+  fallbackSrc?: string;
 }
 
 export default function ResponsiveImage({
@@ -24,17 +24,17 @@ export default function ResponsiveImage({
   priority = false,
   sizes,
   style,
-  fallbackSrc = '/images/default-placeholder.jpg'
+  fallbackSrc = '/images/default-placeholder.jpg',
 }: ResponsiveImageProps) {
-  const [imageSrc, setImageSrc] = useState(src)
-  const [hasError, setHasError] = useState(false)
+  const [imageSrc, setImageSrc] = useState(src);
+  const [hasError, setHasError] = useState(false);
 
   const handleError = () => {
     if (!hasError) {
-      setHasError(true)
-      setImageSrc(fallbackSrc)
+      setHasError(true);
+      setImageSrc(fallbackSrc);
     }
-  }
+  };
 
   return (
     <Image
@@ -49,5 +49,5 @@ export default function ResponsiveImage({
       unoptimized={true}
       onError={handleError}
     />
-  )
+  );
 }

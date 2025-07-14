@@ -1,61 +1,61 @@
-"use client"
+'use client';
 
-import { useEffect, useRef, useState } from "react"
-import { doc, getDoc } from "firebase/firestore"
-import { db } from "@/firebase/clients"
-import { getAuth } from "firebase/auth"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import Image from "next/image"
+import { useEffect, useRef, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+import { getAuth } from 'firebase/auth';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 interface Props {
-  userId?: string
+  userId?: string;
 }
 
 export default function ProjectGallery({ userId }: Props) {
-  const [images, setImages] = useState<string[]>([])
-  const [modalImage, setModalImage] = useState<string | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const auth = getAuth()
-  const uid = userId || auth.currentUser?.uid || ""
+  const [images, setImages] = useState<string[]>([]);
+  const [modalImage, setModalImage] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const auth = getAuth();
+  const uid = userId || auth.currentUser?.uid || '';
 
   useEffect(() => {
-    if (!uid) return
+    if (!uid) return;
 
     const fetchImagesFromCompanyProfile = async () => {
       try {
-        const docRef = doc(db, "companies", uid)
-        const snap = await getDoc(docRef)
+        const docRef = doc(db, 'companies', uid);
+        const snap = await getDoc(docRef);
 
         if (snap.exists()) {
-          const data = snap.data()
+          const data = snap.data();
           if (
             Array.isArray(data.projectImages) &&
-            data.projectImages.every((i) => typeof i === "string")
+            data.projectImages.every(i => typeof i === 'string')
           ) {
-            setImages(data.projectImages.slice(0, 10))
+            setImages(data.projectImages.slice(0, 10));
           } else {
-            setImages([])
+            setImages([]);
           }
         }
       } catch (err) {
-        console.error("Fehler beim Laden der Projektbilder:", err)
-        setImages([])
+        console.error('Fehler beim Laden der Projektbilder:', err);
+        setImages([]);
       }
-    }
+    };
 
-    fetchImagesFromCompanyProfile()
-  }, [uid])
+    fetchImagesFromCompanyProfile();
+  }, [uid]);
 
-  const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return
-    const scrollAmount = scrollRef.current.clientWidth / 3
+  const scroll = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const scrollAmount = scrollRef.current.clientWidth / 3;
     scrollRef.current.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    })
-  }
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
-  if (images.length === 0) return null
+  if (images.length === 0) return null;
 
   return (
     <>
@@ -66,7 +66,7 @@ export default function ProjectGallery({ userId }: Props) {
 
         <div className="relative">
           <button
-            onClick={() => scroll("left")}
+            onClick={() => scroll('left')}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-700 rounded-full shadow p-1 hover:bg-gray-100"
             aria-label="Scroll left"
           >
@@ -76,15 +76,15 @@ export default function ProjectGallery({ userId }: Props) {
           <div
             ref={scrollRef}
             className="flex overflow-x-auto no-scrollbar gap-4 scroll-smooth max-w-full px-8"
-            style={{ scrollSnapType: "x mandatory" }}
+            style={{ scrollSnapType: 'x mandatory' }}
           >
             {images.map((url, index) => (
               <div
                 key={index}
                 className="h-[100px] rounded overflow-hidden shadow-sm flex-shrink-0 cursor-pointer"
                 style={{
-                  minWidth: "calc((100% - 2rem) / 3)",
-                  scrollSnapAlign: "start",
+                  minWidth: 'calc((100% - 2rem) / 3)',
+                  scrollSnapAlign: 'start',
                 }}
                 onClick={() => setModalImage(url)}
               >
@@ -100,7 +100,7 @@ export default function ProjectGallery({ userId }: Props) {
           </div>
 
           <button
-            onClick={() => scroll("right")}
+            onClick={() => scroll('right')}
             className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-700 rounded-full shadow p-1 hover:bg-gray-100"
             aria-label="Scroll right"
           >
@@ -113,14 +113,14 @@ export default function ProjectGallery({ userId }: Props) {
         <div
           onClick={() => setModalImage(null)}
           className="fixed inset-0 flex items-center justify-center z-50 cursor-pointer"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
         >
           <Image
             src={modalImage}
             alt="Großes Projektbild"
             layout="fill"
             objectFit="contain"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
             className="!relative !inset-auto max-w-[90vw] max-h-[90vh] rounded shadow-lg"
           />
           <button
@@ -133,5 +133,5 @@ export default function ProjectGallery({ userId }: Props) {
         </div>
       )}
     </>
-  )
+  );
 }

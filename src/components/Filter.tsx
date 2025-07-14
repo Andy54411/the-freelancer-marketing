@@ -26,7 +26,7 @@ const FilterComponent: React.FC = () => {
         value={priceRange}
         onChange={handlePriceChange}
         valueLabelDisplay="auto"
-        valueLabelFormat={(value) => `${value} €`}
+        valueLabelFormat={value => `${value} €`}
         min={10}
         max={150}
         step={5}
@@ -35,31 +35,31 @@ const FilterComponent: React.FC = () => {
         Der durchschnittliche Stundensatz beträgt {priceRange[0]}€ – {priceRange[1]}€
       </Typography>
 
-      <Typography variant="h5" sx={{ mt: 2 }}>Tageszeit</Typography>
-      <FormControlLabel
-        control={<Checkbox />}
-        label="Morgens/Vormittags (08:00 – 12:00 Uhr)"
-      />
-      <FormControlLabel
-        control={<Checkbox />}
-        label="Nachmittags (12:00 – 17:00 Uhr)"
-      />
-      <FormControlLabel
-        control={<Checkbox />}
-        label="Abends (17:00 – 21:30 Uhr)"
-      />
+      <Typography variant="h5" sx={{ mt: 2 }}>
+        Tageszeit
+      </Typography>
+      <FormControlLabel control={<Checkbox />} label="Morgens/Vormittags (08:00 – 12:00 Uhr)" />
+      <FormControlLabel control={<Checkbox />} label="Nachmittags (12:00 – 17:00 Uhr)" />
+      <FormControlLabel control={<Checkbox />} label="Abends (17:00 – 21:30 Uhr)" />
 
-      <Typography variant="h5" sx={{ mt: 2 }}>Datum</Typography>
+      <Typography variant="h5" sx={{ mt: 2 }}>
+        Datum
+      </Typography>
       <RadioGroup defaultValue="within_a_week">
         <FormControlLabel value="today" control={<Radio />} label="Heute" />
         <FormControlLabel value="within_a_week" control={<Radio />} label="Innerhalb einer Woche" />
-        <FormControlLabel value="within_three_days" control={<Radio />} label="Innerhalb von 3 Tagen" />
+        <FormControlLabel
+          value="within_three_days"
+          control={<Radio />}
+          label="Innerhalb von 3 Tagen"
+        />
       </RadioGroup>
 
-      <Button variant="contained" sx={{ mt: 2 }}>Weitere Filter</Button>
+      <Button variant="contained" sx={{ mt: 2 }}>
+        Weitere Filter
+      </Button>
     </Box>
   );
 };
 
 export default FilterComponent;
-

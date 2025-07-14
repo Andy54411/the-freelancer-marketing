@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Settings, 
-  TrendingUp, 
-  DollarSign, 
-  Users, 
+import {
+  Settings,
+  TrendingUp,
+  DollarSign,
+  Users,
   Activity,
   Save,
   AlertCircle,
@@ -16,7 +16,7 @@ import {
   RefreshCw,
   CreditCard,
   Download,
-  ArrowUpRight
+  ArrowUpRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -67,11 +67,11 @@ export default function PlatformSettingsPage() {
   const loadPlatformSettings = async () => {
     try {
       setLoading(true);
-      
+
       // Lade aktuelle Konfiguration
       const configResponse = await fetch('/api/admin/platform-config');
       const configData = await configResponse.json();
-      
+
       if (configResponse.ok) {
         setFeeConfig(configData.config);
         setNewFeeRate((configData.config.feeRate * 100).toFixed(1));
@@ -80,7 +80,7 @@ export default function PlatformSettingsPage() {
       // Lade Platform Stats
       const statsResponse = await fetch('/api/admin/platform-stats');
       const statsData = await statsResponse.json();
-      
+
       if (statsResponse.ok) {
         setStats(statsData.stats);
       }
@@ -88,11 +88,10 @@ export default function PlatformSettingsPage() {
       // Lade Platform Payouts
       const payoutsResponse = await fetch('/api/admin/platform-payouts');
       const payoutsData = await payoutsResponse.json();
-      
+
       if (payoutsResponse.ok) {
         setPayouts(payoutsData.payouts || []);
       }
-      
     } catch (error) {
       console.error('Error loading platform settings:', error);
       toast.error('Fehler beim Laden der Plattform-Einstellungen');
@@ -108,7 +107,7 @@ export default function PlatformSettingsPage() {
     }
 
     const feeRateDecimal = Number(newFeeRate) / 100;
-    
+
     if (feeRateDecimal < 0 || feeRateDecimal > 0.2) {
       toast.error('Gebührensatz muss zwischen 0% und 20% liegen');
       return;
@@ -116,14 +115,14 @@ export default function PlatformSettingsPage() {
 
     try {
       setSaving(true);
-      
+
       const response = await fetch('/api/admin/update-platform-fee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           feeRate: feeRateDecimal,
-          adminUserId: 'current-admin-id' // TODO: Get from auth context
-        })
+          adminUserId: 'current-admin-id', // TODO: Get from auth context
+        }),
       });
 
       const data = await response.json();
@@ -131,13 +130,12 @@ export default function PlatformSettingsPage() {
       if (response.ok) {
         setFeeConfig(data.config);
         toast.success(`Plattformgebühr erfolgreich auf ${newFeeRate}% aktualisiert`);
-        
+
         // Refresh stats
         await refreshStats();
       } else {
         toast.error(data.message || 'Fehler beim Aktualisieren der Gebühr');
       }
-      
     } catch (error) {
       console.error('Error updating platform fee:', error);
       toast.error('Fehler beim Aktualisieren der Gebühr');
@@ -149,15 +147,14 @@ export default function PlatformSettingsPage() {
   const refreshStats = async () => {
     try {
       setRefreshing(true);
-      
+
       const response = await fetch('/api/admin/platform-stats');
       const data = await response.json();
-      
+
       if (response.ok) {
         setStats(data.stats);
         toast.success('Statistiken aktualisiert');
       }
-      
     } catch (error) {
       console.error('Error refreshing stats:', error);
       toast.error('Fehler beim Aktualisieren der Statistiken');
@@ -174,27 +171,26 @@ export default function PlatformSettingsPage() {
 
     try {
       setRequesting(true);
-      
+
       const response = await fetch('/api/admin/request-platform-payout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           amount: stats.availableBalance,
-          adminUserId: 'current-admin-id' // TODO: Get from auth context
-        })
+          adminUserId: 'current-admin-id', // TODO: Get from auth context
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         toast.success(`Auszahlung von ${formatCurrency(stats.availableBalance)} beantragt`);
-        
+
         // Refresh data
         await loadPlatformSettings();
       } else {
         toast.error(data.message || 'Fehler beim Beantragen der Auszahlung');
       }
-      
     } catch (error) {
       console.error('Error requesting payout:', error);
       toast.error('Fehler beim Beantragen der Auszahlung');
@@ -204,9 +200,9 @@ export default function PlatformSettingsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('de-DE', { 
-      style: 'currency', 
-      currency: 'EUR' 
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
     }).format(amount / 100);
   };
 
@@ -221,7 +217,7 @@ export default function PlatformSettingsPage() {
           <Settings className="w-8 h-8" />
           <h1 className="text-3xl font-bold text-gray-800">Plattform-Einstellungen</h1>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -273,7 +269,9 @@ export default function PlatformSettingsPage() {
               <CreditCard className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.availableBalance)}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(stats.availableBalance)}
+              </div>
             </CardContent>
           </Card>
 
@@ -293,7 +291,9 @@ export default function PlatformSettingsPage() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatPercentage(stats.monthlyGrowth / 100)}</div>
+              <div className="text-2xl font-bold">
+                {formatPercentage(stats.monthlyGrowth / 100)}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -312,11 +312,9 @@ export default function PlatformSettingsPage() {
             {feeConfig && (
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-sm text-gray-600">Aktueller Satz:</span>
-                <Badge variant="secondary">
-                  {formatPercentage(feeConfig.feeRate)}
-                </Badge>
-                <Badge variant={feeConfig.isActive ? "default" : "secondary"}>
-                  {feeConfig.isActive ? "Aktiv" : "Inaktiv"}
+                <Badge variant="secondary">{formatPercentage(feeConfig.feeRate)}</Badge>
+                <Badge variant={feeConfig.isActive ? 'default' : 'secondary'}>
+                  {feeConfig.isActive ? 'Aktiv' : 'Inaktiv'}
                 </Badge>
               </div>
             )}
@@ -333,11 +331,11 @@ export default function PlatformSettingsPage() {
                   max="20"
                   step="0.1"
                   value={newFeeRate}
-                  onChange={(e) => setNewFeeRate(e.target.value)}
+                  onChange={e => setNewFeeRate(e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                   placeholder="z.B. 4.5"
                 />
-                <Button 
+                <Button
                   onClick={updatePlatformFee}
                   disabled={saving}
                   className="bg-[#14ad9f] hover:bg-[#129a8f]"
@@ -375,17 +373,23 @@ export default function PlatformSettingsPage() {
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-600" />
                   <span className="text-sm">
-                    Konfiguration aktiv seit {new Date(feeConfig.updatedAt * 1000).toLocaleDateString('de-DE')}
+                    Konfiguration aktiv seit{' '}
+                    {new Date(feeConfig.updatedAt * 1000).toLocaleDateString('de-DE')}
                   </span>
                 </div>
-                
+
                 <div className="text-sm text-gray-600">
-                  <p>Erstellt: {new Date(feeConfig.createdAt * 1000).toLocaleDateString('de-DE')}</p>
-                  <p>Letzte Änderung: {new Date(feeConfig.updatedAt * 1000).toLocaleDateString('de-DE')}</p>
+                  <p>
+                    Erstellt: {new Date(feeConfig.createdAt * 1000).toLocaleDateString('de-DE')}
+                  </p>
+                  <p>
+                    Letzte Änderung:{' '}
+                    {new Date(feeConfig.updatedAt * 1000).toLocaleDateString('de-DE')}
+                  </p>
                 </div>
 
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={refreshStats}
                   disabled={refreshing}
                   className="w-full"
@@ -422,8 +426,14 @@ export default function PlatformSettingsPage() {
           <ul className="space-y-2 text-sm text-gray-600">
             <li>• Änderungen der Plattformgebühr werden sofort für neue Transaktionen wirksam</li>
             <li>• Bestehende ausstehende Auszahlungen werden nicht beeinflusst</li>
-            <li>• Die Gebühr wird automatisch in allen API-Routen und der Invoice-Generierung aktualisiert</li>
-            <li>• Empfohlener Bereich: 3% - 6% für optimale Balance zwischen Umsatz und Konkurrenzfähigkeit</li>
+            <li>
+              • Die Gebühr wird automatisch in allen API-Routen und der Invoice-Generierung
+              aktualisiert
+            </li>
+            <li>
+              • Empfohlener Bereich: 3% - 6% für optimale Balance zwischen Umsatz und
+              Konkurrenzfähigkeit
+            </li>
             <li>• Alle Änderungen werden für Compliance-Zwecke protokolliert</li>
           </ul>
         </CardContent>

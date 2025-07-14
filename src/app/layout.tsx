@@ -3,7 +3,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Providers } from './providers';
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from '@/components/theme-provider';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import Chatbot from '@/components/Chatbot';
@@ -26,19 +26,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" suppressHydrationWarning>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-        >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <LanguageProvider>
             <AnalyticsProvider>
               <Providers>

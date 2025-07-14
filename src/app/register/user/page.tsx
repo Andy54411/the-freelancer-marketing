@@ -1,31 +1,34 @@
 // page.tsx
-"use client";
+'use client';
 import { Suspense, useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { auth, db } from '@/firebase/clients';
 import { createUserWithEmailAndPassword, User as FirebaseUser, AuthError } from 'firebase/auth';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
 
+const PAGE_LOG = 'UserRegisterPage:';
+const PAGE_ERROR = 'UserRegisterPage ERROR:';
+const PAGE_WARN = 'UserRegisterPage WARN:';
 
-const PAGE_LOG = "UserRegisterPage:";
-const PAGE_ERROR = "UserRegisterPage ERROR:";
-const PAGE_WARN = "UserRegisterPage WARN:";
-
-async function linkJobToUser(jobId: string | null, userId: string, actionType: "login" | "register") {
+async function linkJobToUser(
+  jobId: string | null,
+  userId: string,
+  actionType: 'login' | 'register'
+) {
   const LOG_CONTEXT = `${PAGE_LOG} linkJobToUser (${actionType}):`;
   const WARN_CONTEXT = `${PAGE_WARN} linkJobToUser (${actionType}):`;
   const ERROR_CONTEXT = `${PAGE_ERROR} linkJobToUser (${actionType}):`;
 
   if (!jobId || !userId) {
-    console.warn(WARN_CONTEXT, "jobId oder userId fehlt, keine Verknüpfung möglich.");
+    console.warn(WARN_CONTEXT, 'jobId oder userId fehlt, keine Verknüpfung möglich.');
     return;
   }
   try {
@@ -34,17 +37,21 @@ async function linkJobToUser(jobId: string | null, userId: string, actionType: "
     const jobRef = doc(db, 'jobPostings', jobId);
     await updateDoc(jobRef, {
       kundeId: userId,
-      status: 'draft_authenticated_user'
+      status: 'draft_authenticated_user',
     });
     console.log(LOG_CONTEXT, `Job ${jobId} erfolgreich mit User ${userId} verknüpft.`);
   } catch (error: unknown) {
-    console.error(ERROR_CONTEXT, `Fehler beim Verknüpfen von Job ${jobId} mit User ${userId}:`, error);
+    console.error(
+      ERROR_CONTEXT,
+      `Fehler beim Verknüpfen von Job ${jobId} mit User ${userId}:`,
+      error
+    );
   }
 }
 
 // Diese Komponente enthält die eigentliche Logik und verwendet Client-Hooks
 function UserRegisterFormContent() {
-  "use client"; // Wichtig: Diese Komponente ist eine Client-Komponente
+  'use client'; // Wichtig: Diese Komponente ist eine Client-Komponente
 
   const router = useRouter();
   const searchParams = useSearchParams(); // useSearchParams wird hier verwendet
@@ -125,18 +132,29 @@ function UserRegisterFormContent() {
           setPostalCode(currentPostalCode);
           setCountry(currentCountry); // Setzt den Ländercode (z.B. DE)
         } else {
-          console.warn(PAGE_WARN, "Keine Adresskomponenten im ausgewählten Ort gefunden.");
+          console.warn(PAGE_WARN, 'Keine Adresskomponenten im ausgewählten Ort gefunden.');
         }
       });
     }
-  }, [isGoogleMapsLoaded, google, europeanCountryCodes, setStreet, setCity, setPostalCode, setCountry]); // States als Abhängigkeiten hinzugefügt
+  }, [
+    isGoogleMapsLoaded,
+    google,
+    europeanCountryCodes,
+    setStreet,
+    setCity,
+    setPostalCode,
+    setCountry,
+  ]); // States als Abhängigkeiten hinzugefügt
 
   // NEU: Effekt, der die Weiterleitung nach erfolgreicher Registrierung durchführt.
   // Dies entkoppelt die Weiterleitung von der Registrierungslogik und macht den Prozess robuster.
   useEffect(() => {
     if (registrationSuccess) {
       const finalRedirectUrl = redirectToFromParams || `/auftrag/get-started`;
-      console.log(PAGE_LOG, `Weiterleitung nach erfolgreicher Registrierung in 2 Sekunden zu: ${finalRedirectUrl}`);
+      console.log(
+        PAGE_LOG,
+        `Weiterleitung nach erfolgreicher Registrierung in 2 Sekunden zu: ${finalRedirectUrl}`
+      );
       console.log(PAGE_LOG, `redirectToFromParams Inhalt:`, redirectToFromParams);
 
       // KORREKTUR: Speichere die Ziel-URL im sessionStorage für den AuthContext
@@ -157,12 +175,21 @@ function UserRegisterFormContent() {
     e.preventDefault();
     setError(null);
     if (password.length < 6) {
-      setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+      setError('Das Passwort muss mindestens 6 Zeichen lang sein.');
       return;
     }
     // NEU: Zusätzliche Validierung für Adressfelder
-    if (!firstname.trim() || !lastname.trim() || !phone.trim() || !postalCode.trim() || !email.trim() || !street.trim() || !city.trim() || !country.trim()) {
-      setError("Bitte füllen Sie alle Felder aus, einschließlich der vollständigen Adresse.");
+    if (
+      !firstname.trim() ||
+      !lastname.trim() ||
+      !phone.trim() ||
+      !postalCode.trim() ||
+      !email.trim() ||
+      !street.trim() ||
+      !city.trim() ||
+      !country.trim()
+    ) {
+      setError('Bitte füllen Sie alle Felder aus, einschließlich der vollständigen Adresse.');
       return;
     }
     setLoading(true);
@@ -185,7 +212,7 @@ function UserRegisterFormContent() {
         phoneNumber: `${selectedCountryCode}${phone.replace(/\D/g, '')}`,
         postalCode: postalCode, // PLZ ist bereits vorhanden
         street: street, // NEU: Straße im Profil speichern
-        city: city,     // NEU: Stadt im Profil speichern
+        city: city, // NEU: Stadt im Profil speichern
         country: country, // NEU: Land im Profil speichern
         agreesToNewsletter: agreesToNewsletter, // NEU: Newsletter-Zustimmung speichern
         createdAt: serverTimestamp(),
@@ -207,13 +234,15 @@ function UserRegisterFormContent() {
       registration.setEmail(email); // E-Mail wird bereits für Auth verwendet, aber auch im Context nützlich
       registration.setPhoneNumber(`${selectedCountryCode}${phone.replace(/\D/g, '')}`);
 
-      console.log(PAGE_LOG, 'Persönliche Adress- und Kontaktdaten in Registration-Context geschrieben.');
+      console.log(
+        PAGE_LOG,
+        'Persönliche Adress- und Kontaktdaten in Registration-Context geschrieben.'
+      );
 
       // Setze den Erfolgszustand, anstatt direkt weiterzuleiten.
       setRegistrationSuccess(true);
-
     } catch (err: unknown) {
-      console.error(PAGE_ERROR, "Registrierungsfehler:", err);
+      console.error(PAGE_ERROR, 'Registrierungsfehler:', err);
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as AuthError;
         if (firebaseError.code === 'auth/email-already-in-use') {
@@ -221,7 +250,10 @@ function UserRegisterFormContent() {
         } else if (firebaseError.code === 'auth/weak-password') {
           setError('Das Passwort ist zu schwach. Es muss mindestens 6 Zeichen lang sein.');
         } else {
-          setError(firebaseError.message || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es später erneut.');
+          setError(
+            firebaseError.message ||
+              'Registrierung fehlgeschlagen. Bitte versuchen Sie es später erneut.'
+          );
         }
       } else if (err instanceof Error) {
         setError(err.message);
@@ -233,7 +265,10 @@ function UserRegisterFormContent() {
     }
   };
 
-  const handleLoginSuccessFromPopup = async (loggedInUser: FirebaseUser, redirectToUrl?: string | null) => {
+  const handleLoginSuccessFromPopup = async (
+    loggedInUser: FirebaseUser,
+    redirectToUrl?: string | null
+  ) => {
     setIsLoginPopupOpen(false);
     console.log(PAGE_LOG, 'Login via Popup erfolgreich für User:', loggedInUser.uid);
 
@@ -247,11 +282,15 @@ function UserRegisterFormContent() {
         // und nicht erneut hinzugefügt werden müssen.
 
         if (extractedJobId) {
-          await linkJobToUser(extractedJobId, loggedInUser.uid, "login");
+          await linkJobToUser(extractedJobId, loggedInUser.uid, 'login');
         }
         finalRedirectUrl = urlObj.toString(); // Sicherstellen, dass alle bestehenden Parameter erhalten bleiben
       } catch (urlParseError) {
-        console.error(PAGE_ERROR, "Fehler beim Parsen der redirectTo URL nach Popup-Login:", urlParseError);
+        console.error(
+          PAGE_ERROR,
+          'Fehler beim Parsen der redirectTo URL nach Popup-Login:',
+          urlParseError
+        );
         finalRedirectUrl = `/auftrag/get-started`; // Fallback
       }
     } else {
@@ -270,8 +309,12 @@ function UserRegisterFormContent() {
       <main className="bg-gradient-to-r from-blue-100 to-teal-200 grid place-items-center min-h-screen mx-auto p-6 md:p-12">
         <Card className="w-full max-w-md shadow-lg rounded-lg bg-white">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-semibold text-[#14ad9f]">Benutzer Registrierung</CardTitle>
-            <CardDescription className="text-sm text-[#14ad9f]">Erstelle dein Benutzerkonto</CardDescription>
+            <CardTitle className="text-2xl font-semibold text-[#14ad9f]">
+              Benutzer Registrierung
+            </CardTitle>
+            <CardDescription className="text-sm text-[#14ad9f]">
+              Erstelle dein Benutzerkonto
+            </CardDescription>
           </CardHeader>
           {registrationSuccess && (
             <CardContent className="text-center p-6">
@@ -281,28 +324,31 @@ function UserRegisterFormContent() {
             </CardContent>
           )}
           {!registrationSuccess && (
-
             <CardContent>
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="emailReg" className="text-[#14ad9f] font-medium">E-Mail</Label>
+                  <Label htmlFor="emailReg" className="text-[#14ad9f] font-medium">
+                    E-Mail
+                  </Label>
                   <Input
                     type="email"
                     id="emailReg"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     required
                     className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                     autoComplete="email" // Hinzugefügt für Browser-Hinweis
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="passwordReg" className="text-[#14ad9f] font-medium">Passwort</Label>
+                  <Label htmlFor="passwordReg" className="text-[#14ad9f] font-medium">
+                    Passwort
+                  </Label>
                   <Input
                     type="password"
                     id="passwordReg"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     required
                     className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                     autoComplete="new-password" // Hinzugefügt für Browser-Hinweis
@@ -310,24 +356,28 @@ function UserRegisterFormContent() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-1.5">
-                    <Label htmlFor="firstnameReg" className="text-[#14ad9f] font-medium">Vorname</Label>
+                    <Label htmlFor="firstnameReg" className="text-[#14ad9f] font-medium">
+                      Vorname
+                    </Label>
                     <Input
                       type="text"
                       id="firstnameReg"
                       value={firstname}
-                      onChange={(e) => setFirstname(e.target.value)}
+                      onChange={e => setFirstname(e.target.value)}
                       required
                       className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                       autoComplete="given-name" // Hinzugefügt für Browser-Hinweis
                     />
                   </div>
                   <div className="grid gap-1.5">
-                    <Label htmlFor="lastnameReg" className="text-[#14ad9f] font-medium">Nachname</Label>
+                    <Label htmlFor="lastnameReg" className="text-[#14ad9f] font-medium">
+                      Nachname
+                    </Label>
                     <Input
                       type="text"
                       id="lastnameReg"
                       value={lastname}
-                      onChange={(e) => setLastname(e.target.value)}
+                      onChange={e => setLastname(e.target.value)}
                       required
                       className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                       autoComplete="family-name" // Hinzugefügt für Browser-Hinweis
@@ -336,13 +386,15 @@ function UserRegisterFormContent() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="streetReg" className="text-[#14ad9f] font-medium">Straße & Hausnummer</Label>
+                  <Label htmlFor="streetReg" className="text-[#14ad9f] font-medium">
+                    Straße & Hausnummer
+                  </Label>
                   <Input
                     ref={streetInputRef} // Ref hier an das Straßenfeld binden
                     type="text"
                     id="streetReg"
                     value={street}
-                    onChange={(e) => setStreet(e.target.value)}
+                    onChange={e => setStreet(e.target.value)}
                     required
                     className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                     // autoComplete="off" // Deaktivieren, wenn Google Places aktiv ist, oder "street-address" für Fallback
@@ -351,24 +403,28 @@ function UserRegisterFormContent() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-1.5">
-                    <Label htmlFor="cityReg" className="text-[#14ad9f] font-medium">Stadt</Label>
+                    <Label htmlFor="cityReg" className="text-[#14ad9f] font-medium">
+                      Stadt
+                    </Label>
                     <Input
                       type="text"
                       id="cityReg"
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      onChange={e => setCity(e.target.value)}
                       required
                       className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                       autoComplete="address-level2" // Bleibt für manuelle Eingabe/Korrektur
                     />
                   </div>
                   <div className="grid gap-1.5">
-                    <Label htmlFor="postalCodeReg" className="text-[#14ad9f] font-medium">Postleitzahl</Label>
+                    <Label htmlFor="postalCodeReg" className="text-[#14ad9f] font-medium">
+                      Postleitzahl
+                    </Label>
                     <Input
                       type="text"
                       id="postalCodeReg"
                       value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
+                      onChange={e => setPostalCode(e.target.value)}
                       required
                       className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
                       autoComplete="postal-code" // Bleibt für manuelle Eingabe/Korrektur
@@ -376,12 +432,14 @@ function UserRegisterFormContent() {
                   </div>
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="countryReg" className="text-[#14ad9f] font-medium">Land</Label>
+                  <Label htmlFor="countryReg" className="text-[#14ad9f] font-medium">
+                    Land
+                  </Label>
                   <Input
                     type="text"
                     id="countryReg"
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={e => setCountry(e.target.value)}
                     required
                     placeholder="z.B. DE oder Deutschland"
                     className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
@@ -390,7 +448,9 @@ function UserRegisterFormContent() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="phoneReg" className="text-[#14ad9f] font-medium">Telefonnummer</Label>
+                  <Label htmlFor="phoneReg" className="text-[#14ad9f] font-medium">
+                    Telefonnummer
+                  </Label>
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <button
@@ -401,15 +461,32 @@ function UserRegisterFormContent() {
                         aria-expanded={isDropdownOpen}
                       >
                         <Flag
-                          code={europeanCountryCodes.find(country => country.dialCode === selectedCountryCode)?.flag}
+                          code={
+                            europeanCountryCodes.find(
+                              country => country.dialCode === selectedCountryCode
+                            )?.flag
+                          }
                           className="w-5 h-auto mr-1.5"
                         />
                         {selectedCountryCode}
-                        <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg
+                          className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                          ></path>
+                        </svg>
                       </button>
                       {isDropdownOpen && (
                         <div className="absolute z-20 mt-1 w-52 bg-white shadow-lg rounded-md max-h-48 overflow-y-auto border border-gray-200">
-                          {europeanCountryCodes.map((country) => (
+                          {europeanCountryCodes.map(country => (
                             <div
                               key={country.dialCode}
                               className="flex items-center p-2 cursor-pointer hover:bg-gray-100 text-sm"
@@ -429,7 +506,7 @@ function UserRegisterFormContent() {
                       type="tel"
                       id="phoneReg"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                      onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                       required
                       placeholder="123456789"
                       className="px-3 py-2 border rounded-r-md focus:ring-2 focus:ring-[#14ad9f] flex-1 h-10 text-sm"
@@ -444,14 +521,18 @@ function UserRegisterFormContent() {
                     type="checkbox"
                     id="newsletter"
                     checked={agreesToNewsletter}
-                    onChange={(e) => setAgreesToNewsletter(e.target.checked)}
+                    onChange={e => setAgreesToNewsletter(e.target.checked)}
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded cursor-pointer"
                   />
                   <label htmlFor="newsletter" className="ml-2 text-gray-600 text-sm cursor-pointer">
                     Ich möchte den Newsletter abonnieren und über Neuigkeiten informiert werden.
                   </label>
                 </div>
-                {error && <p className="text-red-500 text-xs text-center p-2 bg-red-50 rounded-md">{error}</p>}
+                {error && (
+                  <p className="text-red-500 text-xs text-center p-2 bg-red-50 rounded-md">
+                    {error}
+                  </p>
+                )}
 
                 <Button
                   type="submit"
@@ -495,11 +576,13 @@ export default function UserRegisterPage() {
   // Diese Komponente ist verantwortlich für das Setzen der Suspense-Boundary.
   // Sie kann eine Server-Komponente sein oder eine einfache Client-Komponente ohne problematische Hooks.
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 text-[#14ad9f] font-semibold">
-        Lade Registrierungsseite...
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 text-[#14ad9f] font-semibold">
+          Lade Registrierungsseite...
+        </div>
+      }
+    >
       <UserRegisterFormContent />
     </Suspense>
   );

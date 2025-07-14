@@ -1,122 +1,122 @@
 {
-    "Navigation": {
-        "home": "Accueil",
-        "comingSoon": "Bientôt",
-        "vision": "Vision",
-        "pricing": "Tarifs",
-        "blog": "Blog",
-        "about": "À propos",
-        "contact": "Contact",
-        "imprint": "Mentions légales",
-        "login": "Connexion",
-        "register": "S'inscrire",
-        "dashboard": "Tableau de bord"
+  "Navigation": {
+    "home": "Accueil",
+    "comingSoon": "Bientôt",
+    "vision": "Vision",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "about": "À propos",
+    "contact": "Contact",
+    "imprint": "Mentions légales",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "dashboard": "Tableau de bord"
+  },
+  "Footer": {
+    "product": "Produit",
+    "features": "Fonctionnalités",
+    "comingSoon": "Bientôt",
+    "categories": "Catégories",
+    "pricing": "Tarifs",
+    "help": "Aide",
+    "solutions": "Solutions",
+    "forCompanies": "Pour les entreprises",
+    "forFreelancers": "Pour les freelances",
+    "forCustomers": "Pour les clients",
+    "startProject": "Démarrer un projet",
+    "becomeProvider": "Devenir prestataire",
+    "company": "Entreprise",
+    "about": "À propos",
+    "careers": "Carrières",
+    "blog": "Blog",
+    "press": "Presse",
+    "contact": "Contact",
+    "legal": "Légal",
+    "imprint": "Mentions légales",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "cookies": "Cookies",
+    "newsletter": "Newsletter",
+    "emailPlaceholder": "Votre adresse e-mail",
+    "subscribe": "S'abonner",
+    "newsletterText": "Ne manquez aucune mise à jour !",
+    "copyright": "© {year} Taskilo, Tous droits réservés"
+  },
+  "ComingSoon": {
+    "title": "Bientôt",
+    "subtitle": "Taskilo s'améliore encore ! Découvrez les nouvelles fonctionnalités passionnantes que nous développons pour vous.",
+    "launchCountdown": "Lancement de l'Assistant IA dans :",
+    "days": "Jours",
+    "hours": "Heures",
+    "minutes": "Minutes",
+    "seconds": "Secondes",
+    "emailPlaceholder": "Votre adresse e-mail",
+    "notify": "Notifier",
+    "thankYou": "Merci ! Nous vous notifierons des nouvelles mises à jour.",
+    "whatToExpect": "À quoi s'attendre ?",
+    "whatToExpectSubtitle": "Des fonctionnalités innovantes qui révolutionneront votre expérience avec Taskilo.",
+    "roadmap": "Feuille de route 2025",
+    "roadmapSubtitle": "Nos étapes les plus importantes pour l'année à venir.",
+    "readyForFuture": "Prêt pour l'avenir ?",
+    "readyForFutureText": "Utilisez dès aujourd'hui les fonctionnalités disponibles de Taskilo et réjouissez-vous des innovations à venir.",
+    "startProject": "Démarrer un projet",
+    "registerAsProvider": "S'inscrire comme prestataire",
+    "toDashboard": "Vers le tableau de bord",
+    "features": {
+      "aiAssistant": {
+        "title": "Assistant de projet IA",
+        "description": "Suggestions de projets intelligentes et appariement automatique de fournisseurs"
+      },
+      "mobileApp": {
+        "title": "App mobile",
+        "description": "Application native iOS et Android pour mobile"
+      },
+      "ratingSystem": {
+        "title": "Systèmes d'évaluation avancés",
+        "description": "Évaluations détaillées des fournisseurs et assurance qualité"
+      },
+      "teamCollaboration": {
+        "title": "Collaboration d'équipe",
+        "description": "Plusieurs utilisateurs par entreprise et équipes de projet"
+      },
+      "automatedBilling": {
+        "title": "Facturation automatisée",
+        "description": "Comptabilité intégrée et gestion fiscale"
+      },
+      "videoConsultation": {
+        "title": "Consultation vidéo",
+        "description": "Appels vidéo directs avec les fournisseurs pour des projets complexes"
+      }
     },
-    "Footer": {
-        "product": "Produit",
-        "features": "Fonctionnalités",
-        "comingSoon": "Bientôt",
-        "categories": "Catégories",
-        "pricing": "Tarifs",
-        "help": "Aide",
-        "solutions": "Solutions",
-        "forCompanies": "Pour les entreprises",
-        "forFreelancers": "Pour les freelances",
-        "forCustomers": "Pour les clients",
-        "startProject": "Démarrer un projet",
-        "becomeProvider": "Devenir prestataire",
-        "company": "Entreprise",
-        "about": "À propos",
-        "careers": "Carrières",
-        "blog": "Blog",
-        "press": "Presse",
-        "contact": "Contact",
-        "legal": "Légal",
-        "imprint": "Mentions légales",
-        "privacy": "Confidentialité",
-        "terms": "Conditions",
-        "cookies": "Cookies",
-        "newsletter": "Newsletter",
-        "emailPlaceholder": "Votre adresse e-mail",
-        "subscribe": "S'abonner",
-        "newsletterText": "Ne manquez aucune mise à jour !",
-        "copyright": "© {year} Taskilo, Tous droits réservés"
+    "status": {
+      "inDevelopment": "En développement",
+      "betaTest": "Test bêta",
+      "planning": "Planification",
+      "concept": "Concept",
+      "prototype": "Prototype"
     },
-    "ComingSoon": {
-        "title": "Bientôt",
-        "subtitle": "Taskilo s'améliore encore ! Découvrez les nouvelles fonctionnalités passionnantes que nous développons pour vous.",
-        "launchCountdown": "Lancement de l'Assistant IA dans :",
-        "days": "Jours",
-        "hours": "Heures",
-        "minutes": "Minutes",
-        "seconds": "Secondes",
-        "emailPlaceholder": "Votre adresse e-mail",
-        "notify": "Notifier",
-        "thankYou": "Merci ! Nous vous notifierons des nouvelles mises à jour.",
-        "whatToExpect": "À quoi s'attendre ?",
-        "whatToExpectSubtitle": "Des fonctionnalités innovantes qui révolutionneront votre expérience avec Taskilo.",
-        "roadmap": "Feuille de route 2025",
-        "roadmapSubtitle": "Nos étapes les plus importantes pour l'année à venir.",
-        "readyForFuture": "Prêt pour l'avenir ?",
-        "readyForFutureText": "Utilisez dès aujourd'hui les fonctionnalités disponibles de Taskilo et réjouissez-vous des innovations à venir.",
-        "startProject": "Démarrer un projet",
-        "registerAsProvider": "S'inscrire comme prestataire",
-        "toDashboard": "Vers le tableau de bord",
-        "features": {
-            "aiAssistant": {
-                "title": "Assistant de projet IA",
-                "description": "Suggestions de projets intelligentes et appariement automatique de fournisseurs"
-            },
-            "mobileApp": {
-                "title": "App mobile",
-                "description": "Application native iOS et Android pour mobile"
-            },
-            "ratingSystem": {
-                "title": "Systèmes d'évaluation avancés",
-                "description": "Évaluations détaillées des fournisseurs et assurance qualité"
-            },
-            "teamCollaboration": {
-                "title": "Collaboration d'équipe",
-                "description": "Plusieurs utilisateurs par entreprise et équipes de projet"
-            },
-            "automatedBilling": {
-                "title": "Facturation automatisée",
-                "description": "Comptabilité intégrée et gestion fiscale"
-            },
-            "videoConsultation": {
-                "title": "Consultation vidéo",
-                "description": "Appels vidéo directs avec les fournisseurs pour des projets complexes"
-            }
-        },
-        "status": {
-            "inDevelopment": "En développement",
-            "betaTest": "Test bêta",
-            "planning": "Planification",
-            "concept": "Concept",
-            "prototype": "Prototype"
-        },
-        "milestones": {
-            "aiLaunch": {
-                "title": "Lancement de l'assistant IA",
-                "description": "Assistant de projet IA entièrement déployé"
-            },
-            "mobileAppBeta": {
-                "title": "Bêta de l'app mobile",
-                "description": "Version bêta de l'application mobile pour iOS et Android"
-            },
-            "premiumFeatures": {
-                "title": "Fonctionnalités premium",
-                "description": "Fonctionnalités avancées pour les clients professionnels"
-            },
-            "apiLaunch": {
-                "title": "Lancement de l'API",
-                "description": "API publique pour les intégrations tierces"
-            }
-        }
-    },
-    "Banner": {
-        "text": "🚀 Nouvelles fonctionnalités bientôt ! Assistant IA, App mobile et plus...",
-        "learnMore": "En savoir plus",
-        "close": "Fermer la bannière"
+    "milestones": {
+      "aiLaunch": {
+        "title": "Lancement de l'assistant IA",
+        "description": "Assistant de projet IA entièrement déployé"
+      },
+      "mobileAppBeta": {
+        "title": "Bêta de l'app mobile",
+        "description": "Version bêta de l'application mobile pour iOS et Android"
+      },
+      "premiumFeatures": {
+        "title": "Fonctionnalités premium",
+        "description": "Fonctionnalités avancées pour les clients professionnels"
+      },
+      "apiLaunch": {
+        "title": "Lancement de l'API",
+        "description": "API publique pour les intégrations tierces"
+      }
     }
+  },
+  "Banner": {
+    "text": "🚀 Nouvelles fonctionnalités bientôt ! Assistant IA, App mobile et plus...",
+    "learnMore": "En savoir plus",
+    "close": "Fermer la bannière"
+  }
 }

@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 export const BookingOverview = () => {
   return (
@@ -8,5 +8,5 @@ export const BookingOverview = () => {
         Du hast derzeit keine aktiven Buchungen.
       </p>
     </div>
-  )
-}
+  );
+};

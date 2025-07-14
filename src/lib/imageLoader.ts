@@ -1,5 +1,9 @@
 // Custom Image Loader für bessere Kompatibilität
-export const customImageLoader = ({ src, width, quality }: {
+export const customImageLoader = ({
+  src,
+  width,
+  quality,
+}: {
   src: string;
   width: number;
   quality?: number;
@@ -8,7 +12,7 @@ export const customImageLoader = ({ src, width, quality }: {
   if (src.startsWith('/')) {
     return src;
   }
-  
+
   // Für externe Bilder
   return `${src}?w=${width}&q=${quality || 75}`;
 };

@@ -1,10 +1,10 @@
 // /Users/andystaudinger/Taskilo/src/components/ReviewForm.tsx
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { getAuth } from 'firebase/auth'
-import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions'
-import { app } from '@/firebase/clients'
+import React, { useState } from 'react';
+import { getAuth } from 'firebase/auth';
+import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions';
+import { app } from '@/firebase/clients';
 
 // Funktionen-Instanz initialisieren
 const functionsInstance = getFunctions(app, 'europe-west1');
@@ -33,7 +33,12 @@ interface ReviewFormProps {
   unterkategorie: string;
 }
 
-export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkategorie }: ReviewFormProps) {
+export default function ReviewForm({
+  anbieterId,
+  auftragId,
+  kategorie,
+  unterkategorie,
+}: ReviewFormProps) {
   const [sterne, setSterne] = useState(5);
   const [kommentar, setKommentar] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,13 +68,16 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
       kommentar,
       kundeProfilePictureURL,
       kategorie,
-      unterkategorie
+      unterkategorie,
     };
 
     try {
       // The httpsCallable function works for both production and emulators.
       // The Firebase client SDK automatically routes the request to the emulator if it's configured.
-      const submitReviewCallable = httpsCallable<SubmitReviewData, SubmitReviewResult>(functionsInstance, 'submitReview');
+      const submitReviewCallable = httpsCallable<SubmitReviewData, SubmitReviewResult>(
+        functionsInstance,
+        'submitReview'
+      );
       const result = await submitReviewCallable(body);
       const resultData = result.data;
 
@@ -83,7 +91,12 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
         errorMessage = `Fehler von Cloud Function (${err.code}): ${err.message}`;
       } else if (err instanceof Error) {
         errorMessage = `Netzwerkfehler: ${err.message}`;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as any).message === 'string') {
+      } else if (
+        typeof err === 'object' &&
+        err !== null &&
+        'message' in err &&
+        typeof (err as any).message === 'string'
+      ) {
         errorMessage = (err as any).message;
       }
       setError(errorMessage);
@@ -98,7 +111,7 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
       <h3 className="text-lg font-semibold text-gray-900 mb-2">Bewertung abgeben</h3>
 
       <div className="flex gap-2 mb-4">
-        {[1, 2, 3, 4, 5].map((n) => (
+        {[1, 2, 3, 4, 5].map(n => (
           <button
             key={n}
             onClick={() => setSterne(n)}
@@ -112,16 +125,12 @@ export default function ReviewForm({ anbieterId, auftragId, kategorie, unterkate
       <textarea
         placeholder="Dein Kommentar (optional)"
         value={kommentar}
-        onChange={(e) => setKommentar(e.target.value)}
+        onChange={e => setKommentar(e.target.value)}
         rows={4}
         className="w-full rounded-md border p-3 mb-4"
       />
 
-      {error && (
-        <p className="text-red-600 mt-3 mb-2">
-          ❌ {error}
-        </p>
-      )}
+      {error && <p className="text-red-600 mt-3 mb-2">❌ {error}</p>}
 
       <button
         onClick={handleSubmit}

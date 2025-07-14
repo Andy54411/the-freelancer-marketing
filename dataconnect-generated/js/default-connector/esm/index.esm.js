@@ -1,7 +1,5 @@
-
 export const connectorConfig = {
   connector: 'default',
   service: 'tilvo_neu',
-  location: 'europe-central2'
+  location: 'europe-central2',
 };
-

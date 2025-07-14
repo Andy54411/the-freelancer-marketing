@@ -37,8 +37,9 @@ export default function CompanyCard({
   return (
     <div
       key={company.id}
-      className={`flex flex-col md:flex-row rounded-xl border p-4 shadow-lg transition-all bg-white dark:bg-gray-800 gap-4 ${isSelectedForPopup ? 'ring-2 ring-[#14ad9f]' : ''
-        }`}
+      className={`flex flex-col md:flex-row rounded-xl border p-4 shadow-lg transition-all bg-white dark:bg-gray-800 gap-4 ${
+        isSelectedForPopup ? 'ring-2 ring-[#14ad9f]' : ''
+      }`}
     >
       <div className="flex flex-col items-center md:w-1/3 text-center space-y-3 p-2">
         <Image
@@ -49,19 +50,26 @@ export default function CompanyCard({
           className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-md mb-3"
         />
         <button
-          onClick={(e) => { e.stopPropagation(); onShowProfileDetail(); }}
+          onClick={e => {
+            e.stopPropagation();
+            onShowProfileDetail();
+          }}
           className="w-full text-sm text-center text-[#14ad9f] font-semibold py-2 px-3 border border-[#14ad9f] rounded-lg hover:bg-[#14ad9f] hover:text-white transition-colors"
         >
           Profil und weitere Fähigkeiten anzeigen
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); onOpenDatePicker(); }}
+          onClick={e => {
+            e.stopPropagation();
+            onOpenDatePicker();
+          }}
           className="w-full text-sm text-center bg-[#14ad9f] text-white font-semibold py-2 px-3 rounded-lg hover:bg-[#129a8f] transition-colors"
         >
           Datum & Zeit wählen
         </button>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-2">
-          Nachdem du den Auftrag gebucht hast, kannst du mit deinem Tilver chatten und Details zum Auftrag anpassen oder die geplante Uhrzeit ändern.
+          Nachdem du den Auftrag gebucht hast, kannst du mit deinem Tilver chatten und Details zum
+          Auftrag anpassen oder die geplante Uhrzeit ändern.
         </p>
       </div>
       <div className="flex-1 min-w-0 md:w-2/3 p-2 space-y-2">
@@ -72,7 +80,9 @@ export default function CompanyCard({
           </p>
         </div>
         <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-          <span className="text-yellow-500 mr-1">{ratingInfo ? renderStars(ratingInfo.avg) : <FiStar />}</span>
+          <span className="text-yellow-500 mr-1">
+            {ratingInfo ? renderStars(ratingInfo.avg) : <FiStar />}
+          </span>
           {ratingInfo?.avg?.toFixed(1) ?? 'N/A'} ({ratingInfo?.count ?? 0} Bewertungen)
         </div>
         {company.taskCategories && company.taskCategories.length > 0 && (
@@ -97,15 +107,21 @@ export default function CompanyCard({
             Fahrzeug(e): {company.vehicleInfo}
           </div>
         )}
-        {company.languages && typeof company.languages === 'string' && company.languages.length > 0 && (
-          <div className="mt-2">
-            <p className="text-xs font-medium text-gray-500 mb-1">Sprachen:</p>
-            <LanguageTags languages={company.languages} maxTags={5} />
-          </div>
-        )}
+        {company.languages &&
+          typeof company.languages === 'string' &&
+          company.languages.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs font-medium text-gray-500 mb-1">Sprachen:</p>
+              <LanguageTags languages={company.languages} maxTags={5} />
+            </div>
+          )}
         <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-          <h4 className="font-semibold text-gray-800 dark:text-white mb-1">Bei diesen Aufträgen kann ich helfen:</h4>
-          <p className={`text-sm text-gray-700 dark:text-gray-300 ${!isExpanded ? 'line-clamp-3' : ''}`}>
+          <h4 className="font-semibold text-gray-800 dark:text-white mb-1">
+            Bei diesen Aufträgen kann ich helfen:
+          </h4>
+          <p
+            className={`text-sm text-gray-700 dark:text-gray-300 ${!isExpanded ? 'line-clamp-3' : ''}`}
+          >
             {company.description || 'Keine Beschreibung vorhanden.'}
           </p>
           <button

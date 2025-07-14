@@ -49,7 +49,7 @@ export function InfiniteSlider({
         duration: transitionDuration,
         onComplete: () => {
           setIsTransitioning(false);
-          setKey((prevKey) => prevKey + 1);
+          setKey(prevKey => prevKey + 1);
         },
       });
     } else {
@@ -66,17 +66,7 @@ export function InfiniteSlider({
     }
 
     return controls?.stop;
-  }, [
-    key,
-    translation,
-    currentSpeed,
-    width,
-    height,
-    gap,
-    isTransitioning,
-    direction,
-    reverse,
-  ]);
+  }, [key, translation, currentSpeed, width, height, gap, isTransitioning, direction, reverse]);
 
   const hoverProps = speedOnHover
     ? {
@@ -94,7 +84,7 @@ export function InfiniteSlider({
   return (
     <div className={cn('overflow-hidden', className)}>
       <motion.div
-        className='flex w-max'
+        className="flex w-max"
         style={{
           ...(direction === 'horizontal' ? { x: translation } : { y: translation }),
           gap: `${gap}px`,

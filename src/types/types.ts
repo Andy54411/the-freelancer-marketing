@@ -47,7 +47,6 @@ export interface SavedPaymentMethod {
   type: string;
 }
 
-
 // --- ANBIETER / TASKER ---
 
 export interface CompanyTaskCategory {
@@ -104,7 +103,6 @@ export interface AnbieterDetails {
 export type Company = AnbieterDetails;
 // ====================================================================
 
-
 /**
  * Repräsentiert die Rohdaten von der API. Enthält alle möglichen Feldnamen.
  */
@@ -134,7 +132,6 @@ export interface RatingMap {
 export interface ExpandedDescriptionsMap {
   [companyId: string]: boolean;
 }
-
 
 // --- BUCHUNG & AUFTRAG ---
 

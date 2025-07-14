@@ -5,11 +5,14 @@ const nextConfig = {
   // Build Performance Optimizations
   swcMinify: true,
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn']
-    } : false,
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? {
+            exclude: ['error', 'warn'],
+          }
+        : false,
   },
-  
+
   // Experimental features for faster builds
   experimental: {
     turbo: {
@@ -19,18 +22,16 @@ const nextConfig = {
     },
     serverComponentsExternalPackages: ['firebase-admin', 'stripe'],
   },
-  
+
   // Webpack-Konfiguration, um den functions-Ordner zu ignorieren
   webpack: (config, { isServer }) => {
     config.externals = config.externals || [];
-    config.externals.push(
-      {
-        './functions': './functions',
-        './functions/*': './functions/*',
-        './firebase_functions': './firebase_functions',
-        './firebase_functions/*': './firebase_functions/*',
-      }
-    );
+    config.externals.push({
+      './functions': './functions',
+      './functions/*': './functions/*',
+      './firebase_functions': './firebase_functions',
+      './firebase_functions/*': './firebase_functions/*',
+    });
 
     config.resolve = config.resolve || {};
     config.resolve.alias = {

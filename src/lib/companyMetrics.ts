@@ -56,7 +56,7 @@ export async function calculateCompanyMetrics(companyUid: string): Promise<Compa
       averageRating: calculateAverageRating(reviews),
       badges: calculateBadges(orders, reviews, thirtyDaysAgo),
       isOnline: calculateOnlineStatus(chats, companyUid),
-      recentActivity: getRecentActivity(orders, chats)
+      recentActivity: getRecentActivity(orders, chats),
     };
 
     return metrics;
@@ -70,8 +70,8 @@ export async function calculateCompanyMetrics(companyUid: string): Promise<Compa
 function calculateCompletionRate(orders: any[]): number {
   if (orders.length === 0) return 0;
 
-  const completedOrders = orders.filter(order =>
-    order.status === 'completed' || order.status === 'delivered'
+  const completedOrders = orders.filter(
+    order => order.status === 'completed' || order.status === 'delivered'
   ).length;
 
   return Math.round((completedOrders / orders.length) * 100);
@@ -91,8 +91,10 @@ function calculateResponseTime(chats: any[], companyUid: string): number {
 
       // Wenn vorherige Nachricht vom Kunden und aktuelle vom Unternehmen
       if (prevMessage.senderId !== companyUid && currentMessage.senderId === companyUid) {
-        const responseTime = (currentMessage.timestamp.seconds - prevMessage.timestamp.seconds) / 3600; // in Stunden
-        if (responseTime < 48) { // Nur realistische Response Times
+        const responseTime =
+          (currentMessage.timestamp.seconds - prevMessage.timestamp.seconds) / 3600; // in Stunden
+        if (responseTime < 48) {
+          // Nur realistische Response Times
           responseTimes.push(responseTime);
         }
       }
@@ -127,23 +129,25 @@ function calculateBadges(orders: any[], reviews: any[], thirtyDaysAgo: Date): st
 
   // Fast Delivery (>90% der Aufträge pünktlich)
   const recentOrders = orders.filter(order => {
-    const orderDate = order.orderDate?.seconds ? new Date(order.orderDate.seconds * 1000) : new Date(order.orderDate);
+    const orderDate = order.orderDate?.seconds
+      ? new Date(order.orderDate.seconds * 1000)
+      : new Date(order.orderDate);
     return orderDate >= thirtyDaysAgo;
   });
 
   if (recentOrders.length >= 5) {
-    const onTimeOrders = recentOrders.filter(order =>
-      order.status === 'completed' || order.status === 'delivered'
+    const onTimeOrders = recentOrders.filter(
+      order => order.status === 'completed' || order.status === 'delivered'
     ).length;
 
-    if ((onTimeOrders / recentOrders.length) >= 0.9) {
+    if (onTimeOrders / recentOrders.length >= 0.9) {
       badges.push('Fast Delivery');
     }
   }
 
   // Verified Pro (>50 erfolgreich abgeschlossene Aufträge)
-  const completedOrders = orders.filter(order =>
-    order.status === 'completed' || order.status === 'delivered'
+  const completedOrders = orders.filter(
+    order => order.status === 'completed' || order.status === 'delivered'
   ).length;
 
   if (completedOrders >= 50) {
@@ -178,7 +182,9 @@ function getRecentActivity(orders: any[], chats: any[]): Date {
   // Letzte Bestellung
   orders.forEach(order => {
     if (order.orderDate) {
-      const date = order.orderDate?.seconds ? new Date(order.orderDate.seconds * 1000) : new Date(order.orderDate);
+      const date = order.orderDate?.seconds
+        ? new Date(order.orderDate.seconds * 1000)
+        : new Date(order.orderDate);
       dates.push(date);
     }
   });
@@ -203,7 +209,7 @@ function getDefaultMetrics(): CompanyMetrics {
     averageRating: 0,
     badges: ['New Member'],
     isOnline: false,
-    recentActivity: new Date()
+    recentActivity: new Date(),
   };
 }
 
@@ -221,7 +227,7 @@ export async function calculateOrderMetrics(companyUid: string): Promise<OrderMe
       cancelled: orders.filter(o => o.status === 'cancelled').length,
       totalRevenue: orders
         .filter(o => o.status === 'completed' || o.status === 'delivered')
-        .reduce((sum, o) => sum + (o.totalAmountPaidByBuyer || 0), 0)
+        .reduce((sum, o) => sum + (o.totalAmountPaidByBuyer || 0), 0),
     };
 
     return metrics;

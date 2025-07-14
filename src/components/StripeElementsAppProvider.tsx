@@ -6,17 +6,21 @@ import { stripePromise } from '@/lib/stripe';
 import { StripeElementsOptions } from '@stripe/stripe-js';
 
 const elementsOptions: StripeElementsOptions = {
-    // locale: 'de', 
+  // locale: 'de',
 };
 
 export default function StripeElementsAppProvider({ children }: { children: React.ReactNode }) {
-    if (!stripePromise) {
-        console.error("FEHLER: stripePromise ist nicht verfügbar in StripeElementsAppProvider.");
-        return <div className="text-red-500 p-4">Stripe konnte nicht initialisiert werden. Publishable Key fehlt.</div>;
-    }
+  if (!stripePromise) {
+    console.error('FEHLER: stripePromise ist nicht verfügbar in StripeElementsAppProvider.');
     return (
-        <Elements stripe={stripePromise} options={elementsOptions}>
-            {children}
-        </Elements>
+      <div className="text-red-500 p-4">
+        Stripe konnte nicht initialisiert werden. Publishable Key fehlt.
+      </div>
     );
+  }
+  return (
+    <Elements stripe={stripePromise} options={elementsOptions}>
+      {children}
+    </Elements>
+  );
 }

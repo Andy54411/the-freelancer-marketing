@@ -5,21 +5,22 @@ import { CompanyDetailClientPage } from './components/CompanyDetailClientPage';
 export const dynamic = 'force-dynamic';
 
 // Wir typisieren nur noch das, was wir wirklich aus den Props destrukturieren und verwenden.
-export default async function CompanyDetailPage({
-    params,
-}: {
-    params: { id: string };
-}) {
-    const { id } = params;
+export default async function CompanyDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
-    if (!id) {
-        notFound();
-    }
+  if (!id) {
+    notFound();
+  }
 
-    const companyDetails = await getCompanyDetails(id);
-    if (!companyDetails) {
-        return <div>Firma mit ID {id} konnte nicht gefunden werden. Überprüfen Sie die Server-Logs für weitere Details.</div>;
-    }
+  const companyDetails = await getCompanyDetails(id);
+  if (!companyDetails) {
+    return (
+      <div>
+        Firma mit ID {id} konnte nicht gefunden werden. Überprüfen Sie die Server-Logs für weitere
+        Details.
+      </div>
+    );
+  }
 
-    return <CompanyDetailClientPage data={companyDetails} />;
+  return <CompanyDetailClientPage data={companyDetails} />;
 }

@@ -1,5 +1,5 @@
-import type { Firestore } from "firebase-admin/firestore";
-import { extractOrderIds, getMultipleOrders, formatOrderForChat } from "./order-utils";
+import type { Firestore } from 'firebase-admin/firestore';
+import { extractOrderIds, getMultipleOrders, formatOrderForChat } from './order-utils';
 
 // This generic type should be compatible with both the Firebase Admin SDK's Firestore
 // and the client-side SDK's Firestore for the operations used in this function.
@@ -19,43 +19,44 @@ const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
  * @returns A promise that resolves to the system instruction string.
  */
 export async function getSystemInstruction(
-    db: FirestoreInstance,
-    logError: (message: string, ...args: any[]) => void = console.error,
-    userMessage?: string,
-    chatHistory?: string[]
+  db: FirestoreInstance,
+  logError: (message: string, ...args: any[]) => void = console.error,
+  userMessage?: string,
+  chatHistory?: string[]
 ): Promise<string> {
-    const now = Date.now();
-    const shouldUseCache = cachedSystemInstruction && (now - lastFetchTime < CACHE_DURATION_MS);
+  const now = Date.now();
+  const shouldUseCache = cachedSystemInstruction && now - lastFetchTime < CACHE_DURATION_MS;
 
-    // Prüfe auf Auftragsnummern in der aktuellen Nachricht oder Chat-Historie
-    let orderContext = '';
-    if (userMessage || chatHistory) {
-        const textToCheck = [userMessage || '', ...(chatHistory || [])].join(' ');
-        const orderIds = extractOrderIds(textToCheck);
+  // Prüfe auf Auftragsnummern in der aktuellen Nachricht oder Chat-Historie
+  let orderContext = '';
+  if (userMessage || chatHistory) {
+    const textToCheck = [userMessage || '', ...(chatHistory || [])].join(' ');
+    const orderIds = extractOrderIds(textToCheck);
 
-        if (orderIds.length > 0) {
-            try {
-                const orders = await getMultipleOrders(db, orderIds, logError);
-                if (orders.length > 0) {
-                    orderContext = '\n\n## Relevante Aufträge:\n' +
-                        orders.map(order => formatOrderForChat(order)).join('\n\n');
-                }
-            } catch (error) {
-                logError('Fehler beim Abrufen der Auftragsdaten:', error);
-            }
+    if (orderIds.length > 0) {
+      try {
+        const orders = await getMultipleOrders(db, orderIds, logError);
+        if (orders.length > 0) {
+          orderContext =
+            '\n\n## Relevante Aufträge:\n' +
+            orders.map(order => formatOrderForChat(order)).join('\n\n');
         }
+      } catch (error) {
+        logError('Fehler beim Abrufen der Auftragsdaten:', error);
+      }
     }
+  }
 
-    // Wenn wir Auftragskontext haben, verwende nicht den Cache
-    if (orderContext || !shouldUseCache) {
-        try {
-            const docRef = db.collection('chatbot_config').doc('knowledge_base');
-            const configDoc = await docRef.get();
-            if (!configDoc.exists) {
-                throw new Error("Chatbot 'knowledge_base' document not found in Firestore.");
-            }
+  // Wenn wir Auftragskontext haben, verwende nicht den Cache
+  if (orderContext || !shouldUseCache) {
+    try {
+      const docRef = db.collection('chatbot_config').doc('knowledge_base');
+      const configDoc = await docRef.get();
+      if (!configDoc.exists) {
+        throw new Error("Chatbot 'knowledge_base' document not found in Firestore.");
+      }
 
-            const instruction = `
+      const instruction = `
 Du bist der offizielle Support-Bot von Taskilo, einer deutschen Plattform für lokale Dienstleistungen. Du hilfst Kunden bei Fragen zu ihren Aufträgen, der Plattform und Services.
 
 ## Kontext über Taskilo:
@@ -97,19 +98,19 @@ WICHTIG: Wenn du eine Frage nicht beantworten kannst oder den Nutzer an einen Mi
 WICHTIG: Wenn du Auftragsdaten oben siehst, nutze diese Informationen direkt, um dem Kunden bei Fragen zu seinem Taskilo-Auftrag zu helfen. Du kennst bereits alle Details und musst nicht nach weiteren Informationen fragen.
             `.trim();
 
-            // Nur cachen, wenn kein Auftragskontext vorhanden ist
-            if (!orderContext) {
-                cachedSystemInstruction = instruction;
-                lastFetchTime = now;
-            }
+      // Nur cachen, wenn kein Auftragskontext vorhanden ist
+      if (!orderContext) {
+        cachedSystemInstruction = instruction;
+        lastFetchTime = now;
+      }
 
-            return instruction;
-        } catch (error) {
-            logError("Fehler beim Laden der Chatbot-Konfiguration aus Firestore:", error);
-            return "Du bist ein hilfsbereiter Assistent für Taskilo. Antworte freundlich und auf Deutsch.";
-        }
+      return instruction;
+    } catch (error) {
+      logError('Fehler beim Laden der Chatbot-Konfiguration aus Firestore:', error);
+      return 'Du bist ein hilfsbereiter Assistent für Taskilo. Antworte freundlich und auf Deutsch.';
     }
+  }
 
-    // Falls Cache verwendet wird
-    return cachedSystemInstruction!;
+  // Falls Cache verwendet wird
+  return cachedSystemInstruction!;
 }

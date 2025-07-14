@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -18,93 +18,102 @@ import {
   FiCheckCircle,
   FiClock,
   FiArrowRight,
-  FiBell
+  FiBell,
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const getFeatures = (t: (key: string) => string) => [
   {
-    title: t('features.aiAssistant.title') || "KI-gestützter Projektassistent",
-    description: t('features.aiAssistant.description') || "Intelligente Projektvorschläge und automatische Anbieter-Matching",
+    title: t('features.aiAssistant.title') || 'KI-gestützter Projektassistent',
+    description:
+      t('features.aiAssistant.description') ||
+      'Intelligente Projektvorschläge und automatische Anbieter-Matching',
     progress: 85,
-    status: t('features.status.inDevelopment') || "In Entwicklung",
+    status: t('features.status.inDevelopment') || 'In Entwicklung',
     icon: FiZap,
-    estimated: "Q1 2025",
-    color: "bg-blue-500"
+    estimated: 'Q1 2025',
+    color: 'bg-blue-500',
   },
   {
-    title: t('features.mobileApp.title') || "Mobile App",
-    description: t('features.mobileApp.description') || "Native iOS und Android App für unterwegs",
+    title: t('features.mobileApp.title') || 'Mobile App',
+    description: t('features.mobileApp.description') || 'Native iOS und Android App für unterwegs',
     progress: 60,
-    status: t('features.status.betaTest') || "Beta-Test",
+    status: t('features.status.betaTest') || 'Beta-Test',
     icon: FiTrendingUp,
-    estimated: "Q2 2025",
-    color: "bg-green-500"
+    estimated: 'Q2 2025',
+    color: 'bg-green-500',
   },
   {
-    title: t('features.reviewSystem.title') || "Erweiterte Bewertungssysteme",
-    description: t('features.reviewSystem.description') || "Detaillierte Anbieter-Bewertungen und Qualitätssicherung",
+    title: t('features.reviewSystem.title') || 'Erweiterte Bewertungssysteme',
+    description:
+      t('features.reviewSystem.description') ||
+      'Detaillierte Anbieter-Bewertungen und Qualitätssicherung',
     progress: 40,
-    status: t('features.status.planning') || "Planung",
+    status: t('features.status.planning') || 'Planung',
     icon: FiStar,
-    estimated: "Q2 2025",
-    color: "bg-yellow-500"
+    estimated: 'Q2 2025',
+    color: 'bg-yellow-500',
   },
   {
-    title: t('features.teamCollaboration.title') || "Team-Kollaboration",
-    description: t('features.teamCollaboration.description') || "Mehrere Benutzer pro Unternehmen und Projekt-Teams",
+    title: t('features.teamCollaboration.title') || 'Team-Kollaboration',
+    description:
+      t('features.teamCollaboration.description') ||
+      'Mehrere Benutzer pro Unternehmen und Projekt-Teams',
     progress: 25,
-    status: t('features.status.concept') || "Konzept",
+    status: t('features.status.concept') || 'Konzept',
     icon: FiUsers,
-    estimated: "Q3 2025",
-    color: "bg-purple-500"
+    estimated: 'Q3 2025',
+    color: 'bg-purple-500',
   },
   {
-    title: t('features.automaticBilling.title') || "Automatisierte Rechnungsstellung",
-    description: t('features.automaticBilling.description') || "Integrierte Buchhaltung und Steuer-Management",
+    title: t('features.automaticBilling.title') || 'Automatisierte Rechnungsstellung',
+    description:
+      t('features.automaticBilling.description') || 'Integrierte Buchhaltung und Steuer-Management',
     progress: 70,
-    status: t('features.status.betaTest') || "Beta-Test",
+    status: t('features.status.betaTest') || 'Beta-Test',
     icon: FiCalendar,
-    estimated: "Q1 2025",
-    color: "bg-teal-500"
+    estimated: 'Q1 2025',
+    color: 'bg-teal-500',
   },
   {
-    title: t('features.videoConsultation.title') || "Video-Beratung",
-    description: t('features.videoConsultation.description') || "Direkte Video-Calls mit Anbietern für komplexe Projekte",
+    title: t('features.videoConsultation.title') || 'Video-Beratung',
+    description:
+      t('features.videoConsultation.description') ||
+      'Direkte Video-Calls mit Anbietern für komplexe Projekte',
     progress: 35,
-    status: t('features.status.prototype') || "Prototyp",
+    status: t('features.status.prototype') || 'Prototyp',
     icon: FiMail,
-    estimated: "Q2 2025",
-    color: "bg-red-500"
-  }
+    estimated: 'Q2 2025',
+    color: 'bg-red-500',
+  },
 ];
 
 const milestones = [
   {
-    date: "Januar 2025",
-    title: "KI-Assistent Launch",
-    description: "Vollständig ausgerollter KI-gestützter Projektassistent",
-    completed: false
+    date: 'Januar 2025',
+    title: 'KI-Assistent Launch',
+    description: 'Vollständig ausgerollter KI-gestützter Projektassistent',
+    completed: false,
   },
   {
-    date: "Februar 2025",
-    title: "Mobile App Beta",
-    description: "Beta-Version der mobilen App für iOS und Android",
-    completed: false
+    date: 'Februar 2025',
+    title: 'Mobile App Beta',
+    description: 'Beta-Version der mobilen App für iOS und Android',
+    completed: false,
   },
   {
-    date: "März 2025",
-    title: "Premium Features",
-    description: "Erweiterte Funktionen für Geschäftskunden",
-    completed: false
+    date: 'März 2025',
+    title: 'Premium Features',
+    description: 'Erweiterte Funktionen für Geschäftskunden',
+    completed: false,
   },
   {
-    date: "April 2025",
-    title: "API Launch",
-    description: "Öffentliche API für Drittanbieter-Integrationen",
-    completed: false
-  }
+    date: 'April 2025',
+    title: 'API Launch',
+    description: 'Öffentliche API für Drittanbieter-Integrationen',
+    completed: false,
+  },
 ];
 
 export default function ComingSoonPage() {
@@ -115,36 +124,42 @@ export default function ComingSoonPage() {
     days: 0,
     hours: 0,
     minutes: 0,
-    seconds: 0
+    seconds: 0,
   });
 
   const features = getFeatures(t);
 
   const getMilestones = () => [
     {
-      date: "Januar 2025",
-      title: t('milestones.aiLaunch.title') || "KI-Assistent Launch",
-      description: t('milestones.aiLaunch.description') || "Vollständig ausgerollter KI-gestützter Projektassistent",
-      completed: false
+      date: 'Januar 2025',
+      title: t('milestones.aiLaunch.title') || 'KI-Assistent Launch',
+      description:
+        t('milestones.aiLaunch.description') ||
+        'Vollständig ausgerollter KI-gestützter Projektassistent',
+      completed: false,
     },
     {
-      date: "Februar 2025",
-      title: t('milestones.mobileBeta.title') || "Mobile App Beta",
-      description: t('milestones.mobileBeta.description') || "Beta-Version der mobilen App für iOS und Android",
-      completed: false
+      date: 'Februar 2025',
+      title: t('milestones.mobileBeta.title') || 'Mobile App Beta',
+      description:
+        t('milestones.mobileBeta.description') ||
+        'Beta-Version der mobilen App für iOS und Android',
+      completed: false,
     },
     {
-      date: "März 2025",
-      title: t('milestones.premiumFeatures.title') || "Premium Features",
-      description: t('milestones.premiumFeatures.description') || "Erweiterte Funktionen für Geschäftskunden",
-      completed: false
+      date: 'März 2025',
+      title: t('milestones.premiumFeatures.title') || 'Premium Features',
+      description:
+        t('milestones.premiumFeatures.description') || 'Erweiterte Funktionen für Geschäftskunden',
+      completed: false,
     },
     {
-      date: "April 2025",
-      title: t('milestones.apiLaunch.title') || "API Launch",
-      description: t('milestones.apiLaunch.description') || "Öffentliche API für Drittanbieter-Integrationen",
-      completed: false
-    }
+      date: 'April 2025',
+      title: t('milestones.apiLaunch.title') || 'API Launch',
+      description:
+        t('milestones.apiLaunch.description') || 'Öffentliche API für Drittanbieter-Integrationen',
+      completed: false,
+    },
   ];
 
   const milestones = getMilestones();
@@ -162,7 +177,7 @@ export default function ComingSoonPage() {
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+          seconds: Math.floor((difference % (1000 * 60)) / 1000),
         });
       }
     };
@@ -190,7 +205,10 @@ export default function ComingSoonPage() {
             <Logo />
           </Link>
           <Link href="/dashboard">
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+            <Button
+              variant="outline"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
               {t('comingSoon.toDashboard')}
             </Button>
           </Link>
@@ -228,15 +246,13 @@ export default function ComingSoonPage() {
                 { label: t('comingSoon.days'), value: countdown.days },
                 { label: t('comingSoon.hours'), value: countdown.hours },
                 { label: t('comingSoon.minutes'), value: countdown.minutes },
-                { label: t('comingSoon.seconds'), value: countdown.seconds }
+                { label: t('comingSoon.seconds'), value: countdown.seconds },
               ].map((item, index) => (
                 <div key={index} className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-white">
                     {item.value.toString().padStart(2, '0')}
                   </div>
-                  <div className="text-white/70 text-sm uppercase tracking-wide">
-                    {item.label}
-                  </div>
+                  <div className="text-white/70 text-sm uppercase tracking-wide">{item.label}</div>
                 </div>
               ))}
             </div>
@@ -255,7 +271,7 @@ export default function ComingSoonPage() {
                   type="email"
                   placeholder={t('comingSoon.emailPlaceholder')}
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                   required
                 />
@@ -345,9 +361,7 @@ export default function ComingSoonPage() {
             transition={{ duration: 0.8, delay: 1.2 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Roadmap 2025
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Roadmap 2025</h2>
             <p className="text-xl text-white/80">
               Unsere wichtigsten Meilensteine für das kommende Jahr.
             </p>
@@ -363,7 +377,9 @@ export default function ComingSoonPage() {
                 className="flex gap-6 items-start"
               >
                 <div className="flex flex-col items-center">
-                  <div className={`w-4 h-4 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-white/30'}`}></div>
+                  <div
+                    className={`w-4 h-4 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-white/30'}`}
+                  ></div>
                   {index < milestones.length - 1 && (
                     <div className="w-0.5 h-16 bg-white/20 mt-4"></div>
                   )}
@@ -396,9 +412,7 @@ export default function ComingSoonPage() {
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
               {t('comingSoon.readyForFuture')}
             </h2>
-            <p className="text-xl text-white/80 mb-8">
-              {t('comingSoon.readyForFutureText')}
-            </p>
+            <p className="text-xl text-white/80 mb-8">{t('comingSoon.readyForFutureText')}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auftrag/get-started">
                 <Button size="lg" className="bg-white text-[#14ad9f] hover:bg-white/90">
@@ -407,7 +421,11 @@ export default function ComingSoonPage() {
                 </Button>
               </Link>
               <Link href="/register/company">
-                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                >
                   {t('comingSoon.registerAsProvider')}
                 </Button>
               </Link>

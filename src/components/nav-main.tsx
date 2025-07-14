@@ -1,11 +1,11 @@
-"use client"
+'use client';
 
-import { useState } from "react"
+import { useState } from 'react';
 import {
   Mail as IconMail,
   ChevronDown as IconChevronDown,
   type LucideIcon as Icon,
-} from "lucide-react"
+} from 'lucide-react';
 
 // import { Button } from "@/components/ui/button" // Marked as unused
 import {
@@ -16,20 +16,20 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar';
 
 export function NavMain({
   items,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: Icon
-    onClick?: () => void
-    isActive?: boolean
-  }[]
+    title: string;
+    url: string;
+    icon?: Icon;
+    onClick?: () => void;
+    isActive?: boolean;
+  }[];
 }) {
-  const [isPostfachOpen, setPostfachOpen] = useState(false)
+  const [isPostfachOpen, setPostfachOpen] = useState(false);
 
   return (
     <SidebarGroup>
@@ -38,7 +38,7 @@ export function NavMain({
           <SidebarMenuItem className="flex flex-col gap-1">
             <SidebarMenuButton
               tooltip="Postfach"
-              onClick={() => setPostfachOpen((prev) => !prev)}
+              onClick={() => setPostfachOpen(prev => !prev)}
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
@@ -46,7 +46,7 @@ export function NavMain({
                 <span>Postfach</span>
               </div>
               <IconChevronDown
-                className={`transition-transform duration-200 ${isPostfachOpen ? "rotate-180" : ""}`}
+                className={`transition-transform duration-200 ${isPostfachOpen ? 'rotate-180' : ''}`}
               />
             </SidebarMenuButton>
 
@@ -61,15 +61,17 @@ export function NavMain({
         </SidebarMenu>
 
         <SidebarMenu>
-          {items.map((item) => (
+          {items.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 tooltip={item.title}
                 onClick={item.onClick}
                 className={`cursor-pointer transition-colors duration-200 
-                  ${item.isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                    : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}`}
+                  ${
+                    item.isActive
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
+                      : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  }`}
               >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
@@ -79,5 +81,5 @@ export function NavMain({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

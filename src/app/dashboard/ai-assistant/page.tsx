@@ -7,19 +7,19 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Bot, 
-  Briefcase, 
-  MessageSquare, 
-  TrendingUp, 
-  Clock, 
+import {
+  Bot,
+  Briefcase,
+  MessageSquare,
+  TrendingUp,
+  Clock,
   CheckCircle,
   Star,
   Users,
   BarChart3,
   Lightbulb,
   ArrowRight,
-  Zap
+  Zap,
 } from 'lucide-react';
 import TaskiloProjectAssistant from '@/components/TaskiloProjectAssistant';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,33 +37,34 @@ export default function AIAssistantPage() {
       color: 'bg-[#14ad9f]',
       features: [
         'Intelligente Kategorie-Erkennung',
-        'Automatische Preis-Schätzung', 
+        'Automatische Preis-Schätzung',
         'Standort-basierte Dienstleister-Suche',
-        'Optimierte Projektbeschreibungen'
+        'Optimierte Projektbeschreibungen',
       ],
       stats: {
-        'Erfolgsrate': '94%',
+        Erfolgsrate: '94%',
         'Ø Erstellungszeit': '3 Min',
-        'Zufriedenheit': '4.8/5'
-      }
+        Zufriedenheit: '4.8/5',
+      },
     },
     {
       id: 'project-monitoring',
       title: 'Projekt-Überwachungs-Assistent',
-      description: 'Überwacht aktive Projekte und koordiniert automatisch zwischen allen Beteiligten',
+      description:
+        'Überwacht aktive Projekte und koordiniert automatisch zwischen allen Beteiligten',
       icon: TrendingUp,
       color: 'bg-blue-600',
       features: [
         'Echtzeit Fortschritts-Tracking',
         'Automatische Termin-Koordination',
         'Qualitäts-Überwachung',
-        'Proaktive Problem-Lösung'
+        'Proaktive Problem-Lösung',
       ],
       stats: {
         'Aktive Projekte': '127',
         'Ø Erfolgsrate': '96%',
-        'Zeit-Ersparnis': '40%'
-      }
+        'Zeit-Ersparnis': '40%',
+      },
     },
     {
       id: 'communication',
@@ -75,13 +76,13 @@ export default function AIAssistantPage() {
         'Automatische Übersetzung',
         'Missverständnis-Erkennung',
         'Eskalations-Management',
-        'Multi-Channel Support'
+        'Multi-Channel Support',
       ],
       stats: {
         'Nachrichten/Tag': '2.4k',
-        'Auflösungsrate': '89%',
-        'Ø Antwortzeit': '< 2 Min'
-      }
+        Auflösungsrate: '89%',
+        'Ø Antwortzeit': '< 2 Min',
+      },
     },
     {
       id: 'analytics',
@@ -93,14 +94,14 @@ export default function AIAssistantPage() {
         'Projekt-Performance-Analyse',
         'Kosten-Optimierung',
         'Trend-Erkennung',
-        'Personalisierte Empfehlungen'
+        'Personalisierte Empfehlungen',
       ],
       stats: {
         'Daten-Punkte': '50k+',
-        'Einsparungen': '€2.3k',
-        'Optimierungen': '234'
-      }
-    }
+        Einsparungen: '€2.3k',
+        Optimierungen: '234',
+      },
+    },
   ];
 
   const aiInsights = [
@@ -108,20 +109,20 @@ export default function AIAssistantPage() {
       title: 'Wöchentliche Projekt-Analyse',
       description: 'Ihre Projektkosten sind diese Woche um 15% gesunken',
       type: 'success',
-      action: 'Details anzeigen'
+      action: 'Details anzeigen',
     },
     {
       title: 'Neue Dienstleister verfügbar',
       description: '3 neue Top-bewertete Anbieter in Ihrer Region verfügbar',
       type: 'info',
-      action: 'Anbieter ansehen'
+      action: 'Anbieter ansehen',
     },
     {
       title: 'Verbesserungsvorschlag',
       description: 'Durch präzisere Projektbeschreibungen 20% bessere Angebote erhalten',
       type: 'tip',
-      action: 'Tipps ansehen'
-    }
+      action: 'Tipps ansehen',
+    },
   ];
 
   return (
@@ -135,10 +136,12 @@ export default function AIAssistantPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">KI-Assistenten</h1>
-              <p className="text-gray-600 dark:text-gray-400">Intelligente Unterstützung für all Ihre Projekte</p>
+              <p className="text-gray-600 dark:text-gray-400">
+                Intelligente Unterstützung für all Ihre Projekte
+              </p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
@@ -151,7 +154,7 @@ export default function AIAssistantPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
@@ -163,7 +166,7 @@ export default function AIAssistantPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
@@ -175,7 +178,7 @@ export default function AIAssistantPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
@@ -201,24 +204,38 @@ export default function AIAssistantPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {aiInsights.map((insight, index) => (
-                <div 
+                <div
                   key={index}
                   className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-gray-900 dark:text-white">{insight.title}</h3>
-                    <Badge 
-                      variant={insight.type === 'success' ? 'default' : insight.type === 'info' ? 'secondary' : 'outline'}
+                    <Badge
+                      variant={
+                        insight.type === 'success'
+                          ? 'default'
+                          : insight.type === 'info'
+                            ? 'secondary'
+                            : 'outline'
+                      }
                       className={
-                        insight.type === 'success' ? 'bg-green-100 text-green-800' :
-                        insight.type === 'info' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-yellow-100 text-yellow-800'
+                        insight.type === 'success'
+                          ? 'bg-green-100 text-green-800'
+                          : insight.type === 'info'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-yellow-100 text-yellow-800'
                       }
                     >
-                      {insight.type === 'success' ? 'Erfolg' : insight.type === 'info' ? 'Info' : 'Tipp'}
+                      {insight.type === 'success'
+                        ? 'Erfolg'
+                        : insight.type === 'info'
+                          ? 'Info'
+                          : 'Tipp'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{insight.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    {insight.description}
+                  </p>
                   <Button size="sm" variant="outline" className="w-full">
                     {insight.action}
                     <ArrowRight className="h-3 w-3 ml-1" />
@@ -231,7 +248,7 @@ export default function AIAssistantPage() {
 
         {/* Assistenten-Übersicht */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {assistantFeatures.map((assistant) => (
+          {assistantFeatures.map(assistant => (
             <Card key={assistant.id} className="overflow-hidden">
               <CardHeader className={`${assistant.color} text-white`}>
                 <div className="flex items-center justify-between">
@@ -242,8 +259,8 @@ export default function AIAssistantPage() {
                       <p className="text-sm opacity-90">{assistant.description}</p>
                     </div>
                   </div>
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     size="sm"
                     onClick={() => setActiveAssistant(assistant.id)}
                     className="bg-white/20 hover:bg-white/30 text-white border-white/30"
@@ -252,7 +269,7 @@ export default function AIAssistantPage() {
                   </Button>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="p-6">
                 {/* Features */}
                 <div className="mb-6">
@@ -291,7 +308,7 @@ export default function AIAssistantPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button 
+              <Button
                 onClick={() => setActiveAssistant('project-creation')}
                 className="h-16 bg-[#14ad9f] hover:bg-[#0f9d84]"
               >
@@ -300,8 +317,8 @@ export default function AIAssistantPage() {
                   <span>Neues Projekt erstellen</span>
                 </div>
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => setActiveAssistant('project-monitoring')}
                 className="h-16"
@@ -311,8 +328,8 @@ export default function AIAssistantPage() {
                   <span>Projekte überwachen</span>
                 </div>
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => setActiveAssistant('analytics')}
                 className="h-16"
@@ -329,9 +346,9 @@ export default function AIAssistantPage() {
 
       {/* Projekt-Assistent */}
       {user?.uid && (
-        <TaskiloProjectAssistant 
+        <TaskiloProjectAssistant
           userId={user.uid}
-          onOrderCreate={(orderData) => {
+          onOrderCreate={orderData => {
             console.log('Order created:', orderData);
           }}
         />

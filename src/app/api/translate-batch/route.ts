@@ -6,7 +6,10 @@ export async function POST(request: NextRequest) {
     const { texts, targetLang, sourceKeys } = await request.json();
 
     if (!texts || !Array.isArray(texts) || texts.length === 0) {
-      return NextResponse.json({ error: 'Texts array ist erforderlich und darf nicht leer sein' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Texts array ist erforderlich und darf nicht leer sein' },
+        { status: 400 }
+      );
     }
 
     if (!targetLang) {
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken.token}`,
+          Authorization: `Bearer ${accessToken.token}`,
         },
         body: JSON.stringify({
           contents: texts,
@@ -52,21 +55,27 @@ export async function POST(request: NextRequest) {
       console.error('Google Translate API Fehler:', response.status, response.statusText);
       const errorText = await response.text();
       console.error('Fehlerdetails:', errorText);
-      return NextResponse.json({ 
-        error: `Übersetzung fehlgeschlagen: ${response.status} ${response.statusText}`,
-        details: errorText 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: `Übersetzung fehlgeschlagen: ${response.status} ${response.statusText}`,
+          details: errorText,
+        },
+        { status: 500 }
+      );
     }
 
     const data = await response.json();
     console.log('Google Translate Response:', data);
-    
+
     // Erstelle ein Mapping von Keys zu übersetzten Texten
     const translations: Record<string, string> = {};
-    
+
     if (!data.translations || !Array.isArray(data.translations)) {
       console.error('Ungültige Antwort von Google Translate:', data);
-      return NextResponse.json({ error: 'Ungültige Antwort von Google Translate' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Ungültige Antwort von Google Translate' },
+        { status: 500 }
+      );
     }
 
     data.translations.forEach((translation: any, index: number) => {
@@ -77,18 +86,22 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('Übersetzung erfolgreich:', { translationsCount: Object.keys(translations).length });
-
-    return NextResponse.json({ 
-      translations,
-      detectedLanguage: data.translations[0]?.detectedLanguageCode
+    console.log('Übersetzung erfolgreich:', {
+      translationsCount: Object.keys(translations).length,
     });
 
+    return NextResponse.json({
+      translations,
+      detectedLanguage: data.translations[0]?.detectedLanguageCode,
+    });
   } catch (error) {
     console.error('Batch-Übersetzungsfehler:', error);
-    return NextResponse.json({ 
-      error: 'Interner Server-Fehler',
-      message: error instanceof Error ? error.message : 'Unbekannter Fehler'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Interner Server-Fehler',
+        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
+      { status: 500 }
+    );
   }
 }

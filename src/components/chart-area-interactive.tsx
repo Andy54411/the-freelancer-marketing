@@ -1,12 +1,12 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import * as React from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
-import { callHttpsFunction } from "@/lib/httpsFunctions"
-import { useAuth } from "@/contexts/AuthContext"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { AlertCircle as FiAlertCircle, Loader2 as FiLoader } from "lucide-react"
+import { callHttpsFunction } from '@/lib/httpsFunctions';
+import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { AlertCircle as FiAlertCircle, Loader2 as FiLoader } from 'lucide-react';
 import {
   Card,
   CardAction,
@@ -14,134 +14,127 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from '@/components/ui/chart';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
+} from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-export const description =
-  "Ein interaktiver Flächenchart, der den Gesamtumsatz anzeigt"
+export const description = 'Ein interaktiver Flächenchart, der den Gesamtumsatz anzeigt';
 
 // Typ für die Rohdaten, die wir von der Funktion erwarten
 type OrderData = {
-  id: string
-  orderDate?: { _seconds: number; _nanoseconds: number } | string
-  totalAmountPaidByBuyer: number
-  status: string
-}
+  id: string;
+  orderDate?: { _seconds: number; _nanoseconds: number } | string;
+  totalAmountPaidByBuyer: number;
+  status: string;
+};
 
 const chartConfig = {
   umsatz: {
-    label: "Umsatz",
-    color: "var(--primary)",
+    label: 'Umsatz',
+    color: 'var(--primary)',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
-  const isMobile = useIsMobile()
-  const { user, loading: authLoading } = useAuth()
-  const [timeRange, setTimeRange] = React.useState("90d")
-  const [orders, setOrders] = React.useState<OrderData[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+  const isMobile = useIsMobile();
+  const { user, loading: authLoading } = useAuth();
+  const [timeRange, setTimeRange] = React.useState('90d');
+  const [orders, setOrders] = React.useState<OrderData[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (isMobile) {
-      setTimeRange("7d")
+      setTimeRange('7d');
     }
-  }, [isMobile])
+  }, [isMobile]);
 
   React.useEffect(() => {
     if (authLoading || !user || !companyUid) {
-      return
+      return;
     }
 
     const fetchOrders = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       try {
-        const result = await callHttpsFunction('getProviderOrders', { providerId: companyUid }, 'GET')
-        setOrders(result.orders || [])
+        const result = await callHttpsFunction(
+          'getProviderOrders',
+          { providerId: companyUid },
+          'GET'
+        );
+        setOrders(result.orders || []);
       } catch (err: any) {
-        console.error("Fehler beim Laden der Aufträge für den Chart:", err)
-        setError(
-          err.message || "Die Umsatzdaten konnten nicht geladen werden."
-        )
+        console.error('Fehler beim Laden der Aufträge für den Chart:', err);
+        setError(err.message || 'Die Umsatzdaten konnten nicht geladen werden.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchOrders()
-  }, [companyUid, user, authLoading])
+    fetchOrders();
+  }, [companyUid, user, authLoading]);
 
   const { chartData, totalRevenue } = React.useMemo(() => {
-    if (!orders.length) return { chartData: [], totalRevenue: 0 }
+    if (!orders.length) return { chartData: [], totalRevenue: 0 };
 
-    const referenceDate = new Date()
-    let daysToSubtract = 90
-    if (timeRange === "30d") daysToSubtract = 30
-    else if (timeRange === "7d") daysToSubtract = 7
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
+    const referenceDate = new Date();
+    let daysToSubtract = 90;
+    if (timeRange === '30d') daysToSubtract = 30;
+    else if (timeRange === '7d') daysToSubtract = 7;
+    const startDate = new Date(referenceDate);
+    startDate.setDate(startDate.getDate() - daysToSubtract);
 
-    const dailyRevenue: { [key: string]: number } = {}
-    let currentTotalRevenue = 0
+    const dailyRevenue: { [key: string]: number } = {};
+    let currentTotalRevenue = 0;
 
-    orders.forEach((order) => {
-      if (
-        !order.orderDate ||
-        !["ABGESCHLOSSEN", "BEZAHLT"].includes(order.status)
-      ) {
-        return
+    orders.forEach(order => {
+      if (!order.orderDate || !['ABGESCHLOSSEN', 'BEZAHLT'].includes(order.status)) {
+        return;
       }
 
       const orderDate = new Date(
-        typeof order.orderDate === "string"
-          ? order.orderDate
-          : order.orderDate._seconds * 1000
-      )
+        typeof order.orderDate === 'string' ? order.orderDate : order.orderDate._seconds * 1000
+      );
 
       if (orderDate >= startDate) {
-        const dateString = orderDate.toISOString().split("T")[0] // YYYY-MM-DD
+        const dateString = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD
         if (!dailyRevenue[dateString]) {
-          dailyRevenue[dateString] = 0
+          dailyRevenue[dateString] = 0;
         }
-        dailyRevenue[dateString] += order.totalAmountPaidByBuyer / 100 // In Euro umrechnen
-        currentTotalRevenue += order.totalAmountPaidByBuyer / 100
+        dailyRevenue[dateString] += order.totalAmountPaidByBuyer / 100; // In Euro umrechnen
+        currentTotalRevenue += order.totalAmountPaidByBuyer / 100;
       }
-    })
+    });
 
     const finalChartData = Object.keys(dailyRevenue)
-      .map((date) => ({
+      .map(date => ({
         date,
         umsatz: dailyRevenue[date],
       }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return { chartData: finalChartData, totalRevenue: currentTotalRevenue }
-  }, [orders, timeRange])
+    return { chartData: finalChartData, totalRevenue: currentTotalRevenue };
+  }, [orders, timeRange]);
 
   if (loading) {
     return (
       <Card className="flex h-[350px] w-full items-center justify-center">
         <FiLoader className="h-8 w-8 animate-spin text-muted-foreground" />
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -150,7 +143,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         <FiAlertCircle className="mb-2 h-8 w-8 text-destructive" />
         <p className="text-destructive">{error}</p>
       </Card>
-    )
+    );
   }
 
   return (
@@ -158,7 +151,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
       <CardHeader>
         <CardTitle>Gesamtumsatz</CardTitle>
         <CardDescription>
-          Gesamtumsatz für den ausgewählten Zeitraum:{" "}
+          Gesamtumsatz für den ausgewählten Zeitraum:{' '}
           <span className="font-bold">{totalRevenue.toFixed(2)} €</span>
         </CardDescription>
         <CardAction>
@@ -200,16 +193,8 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillUmsatz" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-umsatz)"
-                  stopOpacity={1.0}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-umsatz)"
-                  stopOpacity={0.1}
-                />
+                <stop offset="5%" stopColor="var(--color-umsatz)" stopOpacity={1.0} />
+                <stop offset="95%" stopColor="var(--color-umsatz)" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -219,12 +204,12 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value + "T00:00:00") // Verhindert Zeitzonenprobleme
-                return date.toLocaleDateString("de-DE", {
-                  month: "short",
-                  day: "numeric",
-                })
+              tickFormatter={value => {
+                const date = new Date(value + 'T00:00:00'); // Verhindert Zeitzonenprobleme
+                return date.toLocaleDateString('de-DE', {
+                  month: 'short',
+                  day: 'numeric',
+                });
               }}
             />
             <ChartTooltip
@@ -232,14 +217,14 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
               defaultIndex={isMobile ? -1 : chartData.length - 1}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) =>
-                    new Date(value + "T00:00:00").toLocaleDateString("de-DE", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
+                  labelFormatter={value =>
+                    new Date(value + 'T00:00:00').toLocaleDateString('de-DE', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
                     })
                   }
-                  formatter={(value) => `${Number(value).toFixed(2)} €`}
+                  formatter={value => `${Number(value).toFixed(2)} €`}
                   indicator="dot"
                 />
               }
@@ -255,5 +240,5 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

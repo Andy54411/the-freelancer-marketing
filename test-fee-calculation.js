@@ -2,7 +2,7 @@
 
 /**
  * Test der Stripe Connect Payment Flow Berechnungen
- * 
+ *
  * Dieser Test validiert die mathematischen Berechnungen für:
  * 1. Application Fee (Plattformgebühr)
  * 2. Payout Amounts (Auszahlungsbeträge)
@@ -33,7 +33,7 @@ const testCases = [
     feeRate: 0.045, // 4,5%
     expectedFee: 90, // 0,90€
     expectedPayout: 1910, // 19,10€
-  }
+  },
 ];
 
 function calculateApplicationFee(customerPaymentCents, feeRate) {
@@ -55,37 +55,47 @@ let allTestsPassed = true;
 testCases.forEach((testCase, index) => {
   console.log(`\n${index + 1}. ${testCase.name}`);
   console.log('─'.repeat(50));
-  
+
   // Berechne Application Fee
   const calculatedFee = calculateApplicationFee(testCase.customerPayment, testCase.feeRate);
   const calculatedPayout = calculatePayoutAmount(testCase.customerPayment, calculatedFee);
-  
+
   console.log(`Customer pays:        ${formatCents(testCase.customerPayment)}`);
-  console.log(`Platform fee (${(testCase.feeRate * 100).toFixed(1)}%):    ${formatCents(calculatedFee)}`);
+  console.log(
+    `Platform fee (${(testCase.feeRate * 100).toFixed(1)}%):    ${formatCents(calculatedFee)}`
+  );
   console.log(`Provider gets:        ${formatCents(calculatedPayout)}`);
-  
+
   // Validierung
   const feeCorrect = calculatedFee === testCase.expectedFee;
   const payoutCorrect = calculatedPayout === testCase.expectedPayout;
-  
+
   console.log(`\n✓ Validierung:`);
-  console.log(`  Fee calculation:    ${feeCorrect ? '✅ CORRECT' : '❌ WRONG'} (expected: ${formatCents(testCase.expectedFee)}, got: ${formatCents(calculatedFee)})`);
-  console.log(`  Payout calculation: ${payoutCorrect ? '✅ CORRECT' : '❌ WRONG'} (expected: ${formatCents(testCase.expectedPayout)}, got: ${formatCents(calculatedPayout)})`);
-  
+  console.log(
+    `  Fee calculation:    ${feeCorrect ? '✅ CORRECT' : '❌ WRONG'} (expected: ${formatCents(testCase.expectedFee)}, got: ${formatCents(calculatedFee)})`
+  );
+  console.log(
+    `  Payout calculation: ${payoutCorrect ? '✅ CORRECT' : '❌ WRONG'} (expected: ${formatCents(testCase.expectedPayout)}, got: ${formatCents(calculatedPayout)})`
+  );
+
   if (!feeCorrect || !payoutCorrect) {
     allTestsPassed = false;
   }
-  
+
   // Stripe Connect Flow Simulation
   console.log(`\n🔄 Stripe Connect Flow:`);
   console.log(`  1. Customer pays ${formatCents(testCase.customerPayment)} to Connected Account`);
   console.log(`  2. Application Fee ${formatCents(calculatedFee)} transferred to Platform Account`);
   console.log(`  3. Remaining ${formatCents(calculatedPayout)} available for payout to Provider`);
-  console.log(`  4. Provider requests payout of full available amount: ${formatCents(calculatedPayout)}`);
+  console.log(
+    `  4. Provider requests payout of full available amount: ${formatCents(calculatedPayout)}`
+  );
 });
 
 console.log('\n' + '='.repeat(60));
-console.log(`\n🎯 Overall Result: ${allTestsPassed ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}`);
+console.log(
+  `\n🎯 Overall Result: ${allTestsPassed ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}`
+);
 
 if (allTestsPassed) {
   console.log('\n✨ Congratulations! The fee calculation logic is mathematically correct.');

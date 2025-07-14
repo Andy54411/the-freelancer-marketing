@@ -1,17 +1,17 @@
 import { db } from '@/firebase/clients';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  addDoc, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  getDoc,
+  updateDoc,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  orderBy,
   limit,
   serverTimestamp,
-  Timestamp
+  Timestamp,
 } from 'firebase/firestore';
 
 export interface ResponseTimeMetric {
@@ -36,7 +36,6 @@ export interface ResponseTimeStats {
 }
 
 export class ResponseTimeTracker {
-  
   /**
    * Startet die Zeitmessung für eine neue Kundenanfrage
    */
@@ -53,7 +52,7 @@ export class ResponseTimeTracker {
         chatId,
         customerMessageTime: serverTimestamp() as Timestamp,
         guaranteeHours,
-        createdAt: serverTimestamp() as Timestamp
+        createdAt: serverTimestamp() as Timestamp,
       };
 
       await addDoc(collection(db, 'responseTimeMetrics'), metric);
@@ -83,28 +82,29 @@ export class ResponseTimeTracker {
       );
 
       const metricsSnapshot = await getDocs(metricsQuery);
-      
+
       if (!metricsSnapshot.empty) {
         const metricDoc = metricsSnapshot.docs[0];
         const metricData = metricDoc.data() as ResponseTimeMetric;
         const responseTime = new Date();
         const customerMessageTime = metricData.customerMessageTime.toDate();
-        
+
         // Berechne Antwortzeit in Stunden
-        const responseTimeHours = (responseTime.getTime() - customerMessageTime.getTime()) / (1000 * 60 * 60);
+        const responseTimeHours =
+          (responseTime.getTime() - customerMessageTime.getTime()) / (1000 * 60 * 60);
         const isWithinGuarantee = responseTimeHours <= metricData.guaranteeHours;
 
         // Update das Metric-Dokument
         await updateDoc(doc(db, 'responseTimeMetrics', metricDoc.id), {
           providerResponseTime: serverTimestamp(),
           responseTimeHours: Math.round(responseTimeHours * 100) / 100, // Runde auf 2 Dezimalstellen
-          isWithinGuarantee
+          isWithinGuarantee,
         });
 
         console.log('[ResponseTimeTracker] Response recorded:', {
           responseTimeHours,
           isWithinGuarantee,
-          guaranteeHours: metricData.guaranteeHours
+          guaranteeHours: metricData.guaranteeHours,
         });
 
         // Aktualisiere Provider-Statistiken
@@ -137,7 +137,10 @@ export class ResponseTimeTracker {
       if (metrics.length === 0) return;
 
       // Berechne Statistiken
-      const totalResponseTime = metrics.reduce((sum, metric) => sum + (metric.responseTimeHours || 0), 0);
+      const totalResponseTime = metrics.reduce(
+        (sum, metric) => sum + (metric.responseTimeHours || 0),
+        0
+      );
       const averageResponseTimeHours = totalResponseTime / metrics.length;
       const responsesWithinGuarantee = metrics.filter(metric => metric.isWithinGuarantee).length;
       const guaranteeComplianceRate = (responsesWithinGuarantee / metrics.length) * 100;
@@ -147,36 +150,36 @@ export class ResponseTimeTracker {
         totalMessages: metrics.length,
         responsesWithinGuarantee,
         guaranteeComplianceRate: Math.round(guaranteeComplianceRate * 100) / 100,
-        lastUpdated: serverTimestamp() as Timestamp
+        lastUpdated: serverTimestamp() as Timestamp,
       };
 
       // Aktualisiere Provider-Dokument
       const providerDocRef = doc(db, 'firma', providerId);
       const providerDoc = await getDoc(providerDocRef);
-      
+
       if (providerDoc.exists()) {
         await updateDoc(providerDocRef, {
           responseTimeStats: stats,
           averageResponseTimeHours: stats.averageResponseTimeHours,
-          guaranteeComplianceRate: stats.guaranteeComplianceRate
+          guaranteeComplianceRate: stats.guaranteeComplianceRate,
         });
       } else {
         // Versuche auch in users Collection
         const userDocRef = doc(db, 'users', providerId);
         const userDoc = await getDoc(userDocRef);
-        
+
         if (userDoc.exists()) {
           await updateDoc(userDocRef, {
             responseTimeStats: stats,
             averageResponseTimeHours: stats.averageResponseTimeHours,
-            guaranteeComplianceRate: stats.guaranteeComplianceRate
+            guaranteeComplianceRate: stats.guaranteeComplianceRate,
           });
         }
       }
 
       console.log('[ResponseTimeTracker] Provider stats updated:', {
         providerId,
-        stats
+        stats,
       });
     } catch (error) {
       console.error('[ResponseTimeTracker] Error updating provider stats:', error);
@@ -190,7 +193,7 @@ export class ResponseTimeTracker {
     try {
       // Versuche zuerst firma Collection
       let providerDoc = await getDoc(doc(db, 'firma', providerId));
-      
+
       if (!providerDoc.exists()) {
         // Versuche users Collection
         providerDoc = await getDoc(doc(db, 'users', providerId));
@@ -214,7 +217,7 @@ export class ResponseTimeTracker {
   static async checkOverdueResponses(): Promise<void> {
     try {
       const now = new Date();
-      
+
       // Finde alle unbeantworteten Nachrichten
       const metricsQuery = query(
         collection(db, 'responseTimeMetrics'),
@@ -222,23 +225,23 @@ export class ResponseTimeTracker {
       );
 
       const metricsSnapshot = await getDocs(metricsQuery);
-      
+
       for (const metricDoc of metricsSnapshot.docs) {
         const metric = metricDoc.data() as ResponseTimeMetric;
         const customerMessageTime = metric.customerMessageTime.toDate();
         const hoursElapsed = (now.getTime() - customerMessageTime.getTime()) / (1000 * 60 * 60);
-        
+
         if (hoursElapsed > metric.guaranteeHours) {
           // Markiere als überfällig
           await updateDoc(doc(db, 'responseTimeMetrics', metricDoc.id), {
             isOverdue: true,
-            hoursOverdue: Math.round((hoursElapsed - metric.guaranteeHours) * 100) / 100
+            hoursOverdue: Math.round((hoursElapsed - metric.guaranteeHours) * 100) / 100,
           });
 
           console.log('[ResponseTimeTracker] Marked as overdue:', {
             providerId: metric.providerId,
             chatId: metric.chatId,
-            hoursOverdue: hoursElapsed - metric.guaranteeHours
+            hoursOverdue: hoursElapsed - metric.guaranteeHours,
           });
         }
       }

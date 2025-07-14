@@ -16,13 +16,15 @@ export default function Layout({ children }: LayoutProps) {
           <div className="mx-auto mb-6 flex justify-center">
             <Logo variant="default" className="scale-150" />
           </div>
-          <h1 className="text-4xl font-semibold text-[#14ad9f]">Registriere dein Unternehmen bei Taskilo</h1>
-          <p className="text-lg text-[#14ad9f] mt-2">Fülle die folgenden Informationen aus, um fortzufahren</p>
+          <h1 className="text-4xl font-semibold text-[#14ad9f]">
+            Registriere dein Unternehmen bei Taskilo
+          </h1>
+          <p className="text-lg text-[#14ad9f] mt-2">
+            Fülle die folgenden Informationen aus, um fortzufahren
+          </p>
         </header>
 
-        <div className="w-full max-w-7xl p-0 bg-transparent">
-          {children}
-        </div>
+        <div className="w-full max-w-7xl p-0 bg-transparent">{children}</div>
       </div>
     </RegistrationProvider>
   );

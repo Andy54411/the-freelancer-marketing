@@ -14,17 +14,17 @@ let db: any = null;
 
 try {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  
+
   if (serviceAccountKey && serviceAccountKey !== 'undefined') {
     if (!getApps().length) {
       let projectId = process.env.FIREBASE_PROJECT_ID;
-      
+
       const serviceAccount = JSON.parse(serviceAccountKey);
-      
+
       if (!projectId && serviceAccount.project_id) {
         projectId = serviceAccount.project_id;
       }
-      
+
       if (serviceAccount.project_id && projectId) {
         initializeApp({
           credential: cert(serviceAccount),
@@ -47,9 +47,9 @@ async function getStripeAccountId(firebaseUserId: string): Promise<string | null
   if (firebaseUserId === 'BsUxClYQtkNWRmpSY17YsJyVR0D2') {
     return 'acct_1RkMxsD7xuklQu0n'; // Andy's echte Stripe Account ID
   }
-  
+
   if (!db) return null;
-  
+
   try {
     // Lade User-Dokument direkt mit Firebase UID
     const userDoc = await db.collection('users').doc(firebaseUserId).get();
@@ -58,7 +58,7 @@ async function getStripeAccountId(firebaseUserId: string): Promise<string | null
       // Verwende die echte Datenbank-Struktur
       return data.step4?.stripeAccountId || data.stripeAccountId || null;
     }
-    
+
     return null;
   } catch (error) {
     console.error('[Invoice API] Error getting Stripe Account ID:', error);
@@ -78,7 +78,7 @@ async function calculatePlatformFeeFromRate(grossAmount: number): Promise<number
 }
 
 export async function POST(request: NextRequest) {
-  console.log("[API /generate-payout-invoice-simple] POST request received");
+  console.log('[API /generate-payout-invoice-simple] POST request received');
 
   try {
     const body = await request.json();
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     let companyData = {
       name: 'Demo Unternehmen',
       address: 'Musterstraße 123, 12345 Musterstadt',
-      taxId: 'DE123456789'
+      taxId: 'DE123456789',
     };
 
     // Spezielle Behandlung für Andy's UID (echte Produktionsdaten)
@@ -100,18 +100,18 @@ export async function POST(request: NextRequest) {
       companyData = {
         name: 'Mietkoch Andy',
         address: 'Siedlung am Wald 6, 18586 Sellin',
-        taxId: 'DE123456789'
+        taxId: 'DE123456789',
       };
       console.log('[Invoice API] ✅ Using hardcoded data for Andy:', companyData.name);
     } else if (db) {
       try {
         console.log('[Invoice API] Loading user data for Firebase UID:', firebaseUserId);
-        
+
         // Versuche zuerst users Collection
         let userDoc = await db.collection('users').doc(firebaseUserId).get();
         let data = null;
         let foundIn = null;
-        
+
         if (userDoc.exists) {
           data = userDoc.data();
           foundIn = 'users';
@@ -126,46 +126,57 @@ export async function POST(request: NextRequest) {
             console.log('[Invoice API] ✅ User found in firma collection');
           }
         }
-        
+
         if (data) {
           // Verwende die echte Datenbank-Struktur je nach Collection
           let companyName, companyAddress, taxId;
-          
+
           if (foundIn === 'users') {
             // users Collection Struktur
-            companyName = data.companyName || 
-                         (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) ||
-                         data.userName || 
-                         data.displayName || 
-                         'Unbekanntes Unternehmen';
-            companyAddress = data.companyAddressLine1ForBackend && data.companyCityForBackend ?
-              `${data.companyAddressLine1ForBackend}, ${data.companyPostalCodeForBackend || ''} ${data.companyCityForBackend}` :
-              (data.step1?.personalStreet ? 
-               `${data.step1.personalStreet}, ${data.step1.personalPostalCode || ''} ${data.step1.personalCity}` :
-               'Keine Adresse hinterlegt');
-            taxId = data.vatIdForBackend || data.step3?.vatId || data.step3?.taxNumber || 'Keine Steuernummer hinterlegt';
+            companyName =
+              data.companyName ||
+              (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) ||
+              data.userName ||
+              data.displayName ||
+              'Unbekanntes Unternehmen';
+            companyAddress =
+              data.companyAddressLine1ForBackend && data.companyCityForBackend
+                ? `${data.companyAddressLine1ForBackend}, ${data.companyPostalCodeForBackend || ''} ${data.companyCityForBackend}`
+                : data.step1?.personalStreet
+                  ? `${data.step1.personalStreet}, ${data.step1.personalPostalCode || ''} ${data.step1.personalCity}`
+                  : 'Keine Adresse hinterlegt';
+            taxId =
+              data.vatIdForBackend ||
+              data.step3?.vatId ||
+              data.step3?.taxNumber ||
+              'Keine Steuernummer hinterlegt';
           } else {
             // firma Collection Struktur
             companyName = data.companyName || data.name || 'Unbekanntes Unternehmen';
-            companyAddress = data.address ? 
-              (typeof data.address === 'string' ? data.address : 
-               `${data.address.street || 'Unbekannte Straße'}, ${data.address.postalCode || '00000'} ${data.address.city || 'Unbekannte Stadt'}`) :
-              'Keine Adresse hinterlegt';
+            companyAddress = data.address
+              ? typeof data.address === 'string'
+                ? data.address
+                : `${data.address.street || 'Unbekannte Straße'}, ${data.address.postalCode || '00000'} ${data.address.city || 'Unbekannte Stadt'}`
+              : 'Keine Adresse hinterlegt';
             taxId = data.taxId || data.vatNumber || 'Keine Steuernummer hinterlegt';
           }
-          
+
           companyData = {
             name: companyName,
             address: companyAddress,
-            taxId: taxId
+            taxId: taxId,
           };
-          
+
           console.log('[Invoice API] ✅ Real company data loaded from', foundIn, 'collection:');
           console.log('  - Name:', companyData.name);
           console.log('  - Address:', companyData.address);
           console.log('  - Tax ID:', companyData.taxId);
         } else {
-          console.log('[Invoice API] ❌ No user found with Firebase UID:', firebaseUserId, '- using demo data');
+          console.log(
+            '[Invoice API] ❌ No user found with Firebase UID:',
+            firebaseUserId,
+            '- using demo data'
+          );
         }
       } catch (error) {
         console.warn('[Invoice API] Error loading company data:', error);
@@ -174,20 +185,20 @@ export async function POST(request: NextRequest) {
 
     // 2. Lade echte Payout-Daten aus Stripe
     let payout, grossAmount, platformFee;
-    
+
     try {
       // Lade echte Payout-Daten aus Stripe
       const stripeAccountId = await getStripeAccountId(firebaseUserId);
-      
+
       if (stripeAccountId) {
         const stripePayout = await stripe.payouts.retrieve(payoutId, {
-          stripeAccount: stripeAccountId
+          stripeAccount: stripeAccountId,
         });
-        
+
         // Lade Payout-Metadaten aus Firestore für originale Beträge
         let originalAmount = null;
         let calculatedPlatformFee = null;
-        
+
         if (db) {
           try {
             const payoutDoc = await db.collection('payouts').doc(payoutId).get();
@@ -200,17 +211,19 @@ export async function POST(request: NextRequest) {
             console.warn('[Invoice API] Error loading payout metadata:', error);
           }
         }
-        
+
         // Verwende Stripe-Metadaten oder Firestore-Daten
         const metadata = stripePayout.metadata;
-        grossAmount = originalAmount || 
-                     (metadata?.originalAmount ? parseInt(metadata.originalAmount) : null) ||
-                     calculateGrossAmount(stripePayout.amount);
-        
-        platformFee = calculatedPlatformFee ||
-                     (metadata?.platformFee ? parseInt(metadata.platformFee) : null) ||
-                     await calculatePlatformFeeFromRate(grossAmount);
-        
+        grossAmount =
+          originalAmount ||
+          (metadata?.originalAmount ? parseInt(metadata.originalAmount) : null) ||
+          calculateGrossAmount(stripePayout.amount);
+
+        platformFee =
+          calculatedPlatformFee ||
+          (metadata?.platformFee ? parseInt(metadata.platformFee) : null) ||
+          (await calculatePlatformFeeFromRate(grossAmount));
+
         payout = {
           id: payoutId,
           amount: stripePayout.amount,
@@ -218,23 +231,21 @@ export async function POST(request: NextRequest) {
           status: stripePayout.status,
           created: stripePayout.created,
           arrival_date: stripePayout.arrival_date,
-          description: 'Stripe Connect Auszahlung'
+          description: 'Stripe Connect Auszahlung',
         };
-        
+
         console.log('[Invoice API] Real Stripe payout data loaded:', {
           payoutId,
           amount: stripePayout.amount / 100,
           grossAmount: grossAmount / 100,
-          platformFee: platformFee / 100
+          platformFee: platformFee / 100,
         });
-        
       } else {
         throw new Error('Stripe Account ID not found');
       }
-      
     } catch (error) {
       console.warn('[Invoice API] Error loading real payout data, using fallback:', error);
-      
+
       // Fallback zu bekannten Test-Daten
       if (payoutId === 'po_1RkQJWD7xuklQu0n3i5465D4') {
         payout = {
@@ -244,7 +255,7 @@ export async function POST(request: NextRequest) {
           status: 'paid',
           created: 1752414694,
           arrival_date: 1752451200,
-          description: 'Stripe Connect Auszahlung'
+          description: 'Stripe Connect Auszahlung',
         };
         grossAmount = 6000; // 60,00€
         platformFee = 270; // 2,70€
@@ -257,29 +268,29 @@ export async function POST(request: NextRequest) {
           currency: 'eur',
           status: 'paid',
           created: Math.floor(Date.now() / 1000),
-          arrival_date: Math.floor(Date.now() / 1000) + (2 * 24 * 60 * 60),
-          description: 'Demo-Auszahlung'
+          arrival_date: Math.floor(Date.now() / 1000) + 2 * 24 * 60 * 60,
+          description: 'Demo-Auszahlung',
         };
         grossAmount = 10000;
         platformFee = Math.floor(grossAmount * platformFeeRate);
       }
     }
-    
+
     // 3. Berechne Platform Fee Rate für Anzeige
     const platformFeeRate = await getCurrentPlatformFeeRate();
-    
+
     console.log(`[API /generate-payout-invoice-simple] Using data:`, {
       payoutId,
       grossAmount: grossAmount / 100,
       platformFee: platformFee / 100,
       payoutAmount: payout.amount / 100,
-      isRealStripeData: payoutId === 'po_1RkQJWD7xuklQu0n3i5465D4'
+      isRealStripeData: payoutId === 'po_1RkQJWD7xuklQu0n3i5465D4',
     });
 
     // Erstelle professionelle HTML-Rechnung mit echtem Taskilo-Branding
     const invoiceNumber = `RG-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
     const currentDate = new Date().toLocaleDateString('de-DE');
-    
+
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -636,12 +647,16 @@ export async function POST(request: NextRequest) {
                     <div class="detail-value">${new Date(payout.created * 1000).toLocaleDateString('de-DE')}</div>
                 </div>
                 
-                ${payout.arrival_date ? `
+                ${
+                  payout.arrival_date
+                    ? `
                 <div class="detail-grid">
                     <div class="detail-label">Ankunftsdatum:</div>
                     <div class="detail-value">${new Date(payout.arrival_date * 1000).toLocaleDateString('de-DE')}</div>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
             
             <!-- Gebührenaufschlüsselung -->
@@ -685,13 +700,15 @@ export async function POST(request: NextRequest) {
         'Content-Disposition': `inline; filename="Auszahlung_${payoutId}_${new Date().toISOString().split('T')[0]}.html"`,
       },
     });
-
   } catch (error) {
-    console.error("[API /generate-payout-invoice-simple] Error:", error);
-    
-    return NextResponse.json({ 
-      error: 'Fehler beim Generieren der Rechnung',
-      details: error instanceof Error ? error.message : 'Unbekannter Fehler'
-    }, { status: 500 });
+    console.error('[API /generate-payout-invoice-simple] Error:', error);
+
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Generieren der Rechnung',
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
+      { status: 500 }
+    );
   }
 }

@@ -35,8 +35,10 @@ export const LanguageTags: React.FC<LanguageTagsProps> = ({ languages, maxTags }
         </span>
       ))}
       {hasMore && (
-        <span className="px-3 py-1 rounded-full border text-sm font-medium whitespace-nowrap
-                         border-gray-300 text-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+        <span
+          className="px-3 py-1 rounded-full border text-sm font-medium whitespace-nowrap
+                         border-gray-300 text-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
           +{languageArray.length - displayLanguages.length}
         </span>
       )}

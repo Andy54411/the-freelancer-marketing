@@ -7,7 +7,7 @@ const serviceAccount = require('../firebase_functions/service-account.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   projectId: 'tilvo-f142f',
-  storageBucket: 'tilvo-f142f.firebasestorage.app'
+  storageBucket: 'tilvo-f142f.firebasestorage.app',
 });
 
 const db = admin.firestore();
@@ -77,7 +77,7 @@ async function checkAndFixCompanyImages() {
             // Generiere korrekte Download URL
             const [downloadURL] = await file.getSignedUrl({
               action: 'read',
-              expires: '03-09-2491'
+              expires: '03-09-2491',
             });
 
             // Update Firestore mit korrekter URL falls nötig
@@ -97,26 +97,28 @@ async function checkAndFixCompanyImages() {
               console.log(`🔍 Suche nach anderen Dateien für User: ${userId}`);
 
               const [files] = await bucket.getFiles({
-                prefix: `user_uploads/${userId}/`
+                prefix: `user_uploads/${userId}/`,
               });
 
               const imageFiles = files.filter(file => {
                 const name = file.name.toLowerCase();
-                return name.includes('business_icon') ||
+                return (
+                  name.includes('business_icon') ||
                   name.includes('profile') ||
-                  name.match(/\.(jpg|jpeg|png|gif|webp)$/);
+                  name.match(/\.(jpg|jpeg|png|gif|webp)$/)
+                );
               });
 
               if (imageFiles.length > 0) {
-                const latestFile = imageFiles.sort((a, b) =>
-                  new Date(b.metadata.timeCreated) - new Date(a.metadata.timeCreated)
+                const latestFile = imageFiles.sort(
+                  (a, b) => new Date(b.metadata.timeCreated) - new Date(a.metadata.timeCreated)
                 )[0];
 
                 console.log(`🔄 Verwende stattdessen: ${latestFile.name}`);
 
                 const [newDownloadURL] = await latestFile.getSignedUrl({
                   action: 'read',
-                  expires: '03-09-2491'
+                  expires: '03-09-2491',
                 });
 
                 await doc.ref.update({ profilePictureURL: newDownloadURL });
@@ -145,7 +147,6 @@ async function checkAndFixCompanyImages() {
     console.log(`✅ Repariert: ${fixedCount}`);
     console.log(`❌ Problematisch: ${brokenCount}`);
     console.log(`📝 Gesamt: ${companiesSnapshot.size}`);
-
   } catch (error) {
     console.error('❌ Fehler:', error);
   }
@@ -157,7 +158,7 @@ checkAndFixCompanyImages()
     console.log('🎉 Script abgeschlossen');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Script-Fehler:', error);
     process.exit(1);
   });

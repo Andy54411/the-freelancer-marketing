@@ -1,19 +1,22 @@
-'use client'
-import { useState, useCallback } from 'react'
-import { cn } from '@/lib/utils'
+'use client';
+import { useState, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 
 const categories = [
   {
     id: 'moebel',
     label: 'Möbelmontage',
+    // text-[#14ad9f] won't affect Image color unless it's an SVG manipulated by CSS
     icon: (
       <img
         src="/icon/AdobeStock_439527548.svg"
         alt="Icon"
         className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
         loading="lazy"
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-      /> // text-[#14ad9f] won't affect Image color unless it's an SVG manipulated by CSS
+        onError={e => {
+          e.currentTarget.style.display = 'none';
+        }}
+      />
     ),
     tags: ['Möbelmontage', 'IKEA Montage'],
     image: '/images/AdobeStock_298445672.jpeg',
@@ -29,7 +32,9 @@ const categories = [
         alt="Icon"
         className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
         loading="lazy"
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        onError={e => {
+          e.currentTarget.style.display = 'none';
+        }}
       />
     ),
     tags: ['Privatkoch buchen', 'Event-Küche'],
@@ -46,7 +51,9 @@ const categories = [
         alt="Icon"
         className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
         loading="lazy"
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        onError={e => {
+          e.currentTarget.style.display = 'none';
+        }}
       />
     ),
     tags: ['Lichtinstallation', 'Steckdosen tauschen'],
@@ -63,7 +70,9 @@ const categories = [
         alt="Icon"
         className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
         loading="lazy"
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        onError={e => {
+          e.currentTarget.style.display = 'none';
+        }}
       />
     ),
     tags: ['Kleinreparaturen', 'Tür einstellen'],
@@ -80,7 +89,9 @@ const categories = [
         alt="Icon"
         className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
         loading="lazy"
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        onError={e => {
+          e.currentTarget.style.display = 'none';
+        }}
       />
     ),
     tags: ['Umzugshilfe', 'Schwere Lasten heben'],
@@ -97,7 +108,9 @@ const categories = [
         alt="Icon"
         className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
         loading="lazy"
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        onError={e => {
+          e.currentTarget.style.display = 'none';
+        }}
       />
     ),
     tags: ['Top Tilver ', 'Top Tilver'],
@@ -105,28 +118,28 @@ const categories = [
     title: 'Beliebte Tasks',
     text: 'Die beliebtesten Dienstleistungen der Woche.',
   },
-]
+];
 
 export default function CategoryGrid() {
-  const [active, setActive] = useState('moebel')
-  const [imageLoading, setImageLoading] = useState(true)
-  
-  const selected = categories.find((cat) => cat.id === active)!
+  const [active, setActive] = useState('moebel');
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const selected = categories.find(cat => cat.id === active)!;
 
   const handleCategoryChange = useCallback((categoryId: string) => {
-    setImageLoading(true) // Zeige Loading-State beim Kategoriewechsel
-    setActive(categoryId)
-  }, [])
+    setImageLoading(true); // Zeige Loading-State beim Kategoriewechsel
+    setActive(categoryId);
+  }, []);
 
   const handleImageLoad = useCallback(() => {
-    setImageLoading(false)
-  }, [])
+    setImageLoading(false);
+  }, []);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 space-y-6 sm:space-y-8">
       {/* Kategorie-Icons im 2x3 Grid für Mobile, 3x2 für Tablet, 6x1 für Desktop */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 justify-items-center border-b pb-4 sm:pb-6">
-        {categories.map((cat) => (
+        {categories.map(cat => (
           <button
             key={cat.id}
             onClick={() => handleCategoryChange(cat.id)}
@@ -135,9 +148,7 @@ export default function CategoryGrid() {
             <div
               className={cn(
                 'flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full mb-1 transition-all',
-                active === cat.id
-                  ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]'
-                  : 'bg-gray-100'
+                active === cat.id ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]' : 'bg-gray-100'
               )}
             >
               {cat.icon}
@@ -150,16 +161,14 @@ export default function CategoryGrid() {
             >
               {cat.label}
             </span>
-            {active === cat.id && (
-              <div className="h-1 w-6 mt-2 bg-[#14ad9f] rounded" />
-            )}
+            {active === cat.id && <div className="h-1 w-6 mt-2 bg-[#14ad9f] rounded" />}
           </button>
         ))}
       </div>
 
       {/* Tags */}
       <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-        {selected.tags.map((tag) => (
+        {selected.tags.map(tag => (
           <button
             key={tag}
             className="px-6 py-2 border border-black rounded-full text-base font-medium hover:bg-gray-100 transition"
@@ -183,7 +192,8 @@ export default function CategoryGrid() {
               <li className="flex gap-2">
                 <span className="text-[#14ad9f]">✓</span>
                 <span>
-                  Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige Materialien.
+                  Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige
+                  Materialien.
                 </span>
               </li>
             </ul>
@@ -203,12 +213,12 @@ export default function CategoryGrid() {
                 src={selected.image}
                 alt={selected.title}
                 className={cn(
-                  "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
-                  imageLoading ? "opacity-0" : "opacity-100"
+                  'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
+                  imageLoading ? 'opacity-0' : 'opacity-100'
                 )}
                 loading="lazy"
                 onLoad={handleImageLoad}
-                onError={(e) => {
+                onError={e => {
                   console.error('Category image failed to load:', selected.image);
                   setImageLoading(false);
                   e.currentTarget.style.display = 'none';
@@ -227,5 +237,5 @@ export default function CategoryGrid() {
         </div>
       </div>
     </div>
-  )
+  );
 }

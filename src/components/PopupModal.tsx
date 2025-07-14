@@ -1,12 +1,12 @@
 'use client';
 
 import Image from 'next/image'; // Import next/image
-import React, { useState, useEffect } from "react";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db, auth } from "@/firebase/clients";
-import { AlertCircle as FiAlertCircle, CheckCircle as FiCheckCircle } from "lucide-react";
-import QRCode from "react-qr-code"; // Verwende 'react-qr-code'
+import React, { useState, useEffect } from 'react';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db, auth } from '@/firebase/clients';
+import { AlertCircle as FiAlertCircle, CheckCircle as FiCheckCircle } from 'lucide-react';
+import QRCode from 'react-qr-code'; // Verwende 'react-qr-code'
 
 interface PopupWithUploadProps {
   missingFields: string[];
@@ -24,13 +24,13 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
   const [identityBackPreview, setIdentityBackPreview] = useState<string | null>(null); // Vorschau Rückseite
 
   const user = auth.currentUser;
-  const uid = user?.uid || "";
+  const uid = user?.uid || '';
 
   useEffect(() => {
     if (!uid) return;
 
     const fetchUserDocs = async () => {
-      const userDocRef = doc(db, "users", uid);
+      const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
         const data = userDocSnap.data();
@@ -46,7 +46,7 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
     fetchUserDocs();
   }, [uid]);
 
-  const handleFileUpload = async (file: File, side: "front" | "back") => {
+  const handleFileUpload = async (file: File, side: 'front' | 'back') => {
     if (!uid) return;
 
     setUploadError(null);
@@ -59,32 +59,32 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
       await uploadTask;
       const url = await getDownloadURL(fileRef);
 
-      const userDocRef = doc(db, "users", uid);
+      const userDocRef = doc(db, 'users', uid);
       await updateDoc(userDocRef, {
-        [`step3.identity${side === "front" ? "FrontUrl" : "BackUrl"}`]: url,
+        [`step3.identity${side === 'front' ? 'FrontUrl' : 'BackUrl'}`]: url,
       });
 
-      if (side === "front") setIdentityFrontUrl(url);
+      if (side === 'front') setIdentityFrontUrl(url);
       else setIdentityBackUrl(url);
 
       setUploadSuccess(true);
     } catch (error: unknown) {
-      let errorMessage = `Fehler beim Hochladen der ${side === "front" ? "Vorderseite" : "Rückseite"}.`;
+      let errorMessage = `Fehler beim Hochladen der ${side === 'front' ? 'Vorderseite' : 'Rückseite'}.`;
       if (error instanceof Error) {
-        errorMessage = `Fehler beim Hochladen der ${side === "front" ? "Vorderseite" : "Rückseite"}: ${error.message}`;
+        errorMessage = `Fehler beim Hochladen der ${side === 'front' ? 'Vorderseite' : 'Rückseite'}: ${error.message}`;
       }
       setUploadError(errorMessage);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Zeige die Vorschau des Bildes, bevor es hochgeladen wird
     const reader = new FileReader();
     reader.onloadend = () => {
-      if (side === "front") {
+      if (side === 'front') {
         setIdentityFrontPreview(reader.result as string); // Setze die Vorschau für die Vorderseite
       } else {
         setIdentityBackPreview(reader.result as string); // Setze die Vorschau für die Rückseite
@@ -102,8 +102,10 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
         <h2 className="text-xl font-semibold mb-4">Bitte vervollständige dein Profil</h2>
         <p className="mb-4 text-[#14ad9f] font-medium">Folgende Bereiche fehlen:</p>
         <ul className="list-disc list-inside mb-4">
-          {missingFields.map((field) => (
-            <li key={field} className="text-red-600">{field}</li>
+          {missingFields.map(field => (
+            <li key={field} className="text-red-600">
+              {field}
+            </li>
           ))}
         </ul>
 
@@ -111,7 +113,9 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
         {showQRCode && (
           <div className="mb-4 flex justify-center items-center">
             <div className="flex flex-col items-center justify-center p-4">
-              <p className="text-center text-lg font-semibold mb-4">Scannen Sie den QR-Code, um Dateien hochzuladen</p>
+              <p className="text-center text-lg font-semibold mb-4">
+                Scannen Sie den QR-Code, um Dateien hochzuladen
+              </p>
               {/* @ts-ignore */}
               <QRCode
                 value={`${window.location.origin}/upload-from-phone?sessionId=${uid}`}
@@ -131,7 +135,8 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
               width={320} // Corresponds to max-w-xs
               height={180} // Example height, adjust as needed
               className="max-w-xs rounded mb-4"
-              style={{ objectFit: "contain" }} />
+              style={{ objectFit: 'contain' }}
+            />
           </div>
         ) : (
           !identityFrontUrl && (
@@ -143,7 +148,7 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
                 id="identity-front-upload"
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileChange(e, "front")}
+                onChange={e => handleFileChange(e, 'front')}
                 className="border p-2 rounded w-full"
               />
             </div>
@@ -160,7 +165,8 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
               width={320} // Corresponds to max-w-xs
               height={180} // Example height, adjust as needed
               className="max-w-xs rounded mb-4"
-              style={{ objectFit: "contain" }} />
+              style={{ objectFit: 'contain' }}
+            />
           </div>
         ) : (
           !identityBackUrl && (
@@ -172,7 +178,7 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
                 id="identity-back-upload"
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileChange(e, "back")}
+                onChange={e => handleFileChange(e, 'back')}
                 className="border p-2 rounded w-full"
               />
             </div>

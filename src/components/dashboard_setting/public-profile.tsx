@@ -1,7 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FiUser, FiMapPin, FiClock, FiPhone, FiMail, FiGlobe, FiPlus, FiTrash2, FiEdit3, FiImage, FiZap, FiShield, FiCheck, FiX } from 'react-icons/fi';
+import {
+  FiUser,
+  FiMapPin,
+  FiClock,
+  FiPhone,
+  FiMail,
+  FiGlobe,
+  FiPlus,
+  FiTrash2,
+  FiEdit3,
+  FiImage,
+  FiZap,
+  FiShield,
+  FiCheck,
+  FiX,
+} from 'react-icons/fi';
 import { UserDataForSettings } from '../SettingsPage';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -62,7 +77,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
     { day: 'Donnerstag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
     { day: 'Freitag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
     { day: 'Samstag', isOpen: false, openTime: '09:00', closeTime: '16:00' },
-    { day: 'Sonntag', isOpen: false, openTime: '10:00', closeTime: '14:00' }
+    { day: 'Sonntag', isOpen: false, openTime: '10:00', closeTime: '14:00' },
   ];
 
   // Local state für erweiterte Profile-Daten
@@ -76,10 +91,12 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
     faqs: (formData as any).faqs || [],
     profileBannerImage: (formData as any).profileBannerImage || null,
     businessLicense: (formData as any).businessLicense || null,
-    certifications: (formData as any).certifications || []
+    certifications: (formData as any).certifications || [],
   });
 
-  const [activeSection, setActiveSection] = useState<'basic' | 'services' | 'hours' | 'contact' | 'faq'>('basic');
+  const [activeSection, setActiveSection] = useState<
+    'basic' | 'services' | 'hours' | 'contact' | 'faq'
+  >('basic');
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
 
@@ -113,7 +130,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
     const faq: FAQ = {
       id: Date.now().toString(),
       question: newFAQ.question.trim(),
-      answer: newFAQ.answer.trim()
+      answer: newFAQ.answer.trim(),
     };
     const updated = [...publicProfileData.faqs, faq];
     updateProfileData('faqs', updated);
@@ -128,7 +145,11 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
   };
 
   // Arbeitszeiten aktualisieren
-  const updateWorkingHours = (index: number, field: keyof WorkingHours, value: string | boolean) => {
+  const updateWorkingHours = (
+    index: number,
+    field: keyof WorkingHours,
+    value: string | boolean
+  ) => {
     const updated = [...publicProfileData.workingHours];
     updated[index] = { ...updated[index], [field]: value };
     updateProfileData('workingHours', updated);
@@ -140,7 +161,8 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
       <div className="bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-lg p-6 text-white">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-            {formData.step3.profilePictureURL && formData.step3.profilePictureURL !== '/default-avatar.png' ? (
+            {formData.step3.profilePictureURL &&
+            formData.step3.profilePictureURL !== '/default-avatar.png' ? (
               <Image
                 src={formData.step3.profilePictureURL}
                 alt="Profil"
@@ -177,15 +199,16 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
             { id: 'services', label: 'Services', icon: FiZap },
             { id: 'hours', label: 'Öffnungszeiten', icon: FiClock },
             { id: 'contact', label: 'Kontakt & Erreichbarkeit', icon: FiPhone },
-            { id: 'faq', label: 'FAQ', icon: FiShield }
+            { id: 'faq', label: 'FAQ', icon: FiShield },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveSection(tab.id as any)}
-              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${activeSection === tab.id
+              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                activeSection === tab.id
                   ? 'border-[#14ad9f] text-[#14ad9f]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+              }`}
             >
               <tab.icon className="mr-2 h-5 w-5" />
               {tab.label}
@@ -203,7 +226,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
             </label>
             <textarea
               value={publicProfileData.publicDescription}
-              onChange={(e) => updateProfileData('publicDescription', e.target.value)}
+              onChange={e => updateProfileData('publicDescription', e.target.value)}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
               placeholder="Beschreiben Sie Ihr Unternehmen für potenzielle Kunden. Was macht Sie besonders? Welche Erfahrungen haben Sie?"
@@ -237,10 +260,10 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
               <input
                 type="text"
                 value={newSpecialty}
-                onChange={(e) => setNewSpecialty(e.target.value)}
+                onChange={e => setNewSpecialty(e.target.value)}
                 placeholder="z.B. Badezimmer-Renovierung, WordPress-Entwicklung"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                onKeyPress={(e) => e.key === 'Enter' && addSpecialty()}
+                onKeyPress={e => e.key === 'Enter' && addSpecialty()}
               />
               <button
                 onClick={addSpecialty}
@@ -259,7 +282,9 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
             <input
               type="number"
               value={publicProfileData.responseTimeGuarantee}
-              onChange={(e) => updateProfileData('responseTimeGuarantee', parseInt(e.target.value) || 24)}
+              onChange={e =>
+                updateProfileData('responseTimeGuarantee', parseInt(e.target.value) || 24)
+              }
               min="1"
               max="168"
               className="w-full max-w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
@@ -281,7 +306,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
                 <input
                   type="checkbox"
                   checked={day.isOpen}
-                  onChange={(e) => updateWorkingHours(index, 'isOpen', e.target.checked)}
+                  onChange={e => updateWorkingHours(index, 'isOpen', e.target.checked)}
                   className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
                 />
                 <span className="text-sm">Geöffnet</span>
@@ -291,14 +316,14 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
                   <input
                     type="time"
                     value={day.openTime}
-                    onChange={(e) => updateWorkingHours(index, 'openTime', e.target.value)}
+                    onChange={e => updateWorkingHours(index, 'openTime', e.target.value)}
                     className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                   />
                   <span>bis</span>
                   <input
                     type="time"
                     value={day.closeTime}
-                    onChange={(e) => updateWorkingHours(index, 'closeTime', e.target.value)}
+                    onChange={e => updateWorkingHours(index, 'closeTime', e.target.value)}
                     className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                   />
                 </>
@@ -315,14 +340,16 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
               <FiZap className="text-green-600" />
               <div>
                 <div className="font-medium text-green-800">Sofortbuchung aktivieren</div>
-                <div className="text-sm text-green-600">Kunden können direkt Termine buchen ohne vorherige Anfrage</div>
+                <div className="text-sm text-green-600">
+                  Kunden können direkt Termine buchen ohne vorherige Anfrage
+                </div>
               </div>
             </div>
             <label className="flex items-center">
               <input
                 type="checkbox"
                 checked={publicProfileData.instantBooking}
-                onChange={(e) => updateProfileData('instantBooking', e.target.checked)}
+                onChange={e => updateProfileData('instantBooking', e.target.checked)}
                 className="rounded border-gray-300 text-green-600 focus:ring-green-500"
               />
             </label>
@@ -379,13 +406,13 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
                 <input
                   type="text"
                   value={newFAQ.question}
-                  onChange={(e) => setNewFAQ(prev => ({ ...prev, question: e.target.value }))}
+                  onChange={e => setNewFAQ(prev => ({ ...prev, question: e.target.value }))}
                   placeholder="Frage eingeben..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                 />
                 <textarea
                   value={newFAQ.answer}
-                  onChange={(e) => setNewFAQ(prev => ({ ...prev, answer: e.target.value }))}
+                  onChange={e => setNewFAQ(prev => ({ ...prev, answer: e.target.value }))}
                   placeholder="Antwort eingeben..."
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
@@ -410,8 +437,9 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
           <span className="font-medium">Hinweis:</span>
         </div>
         <p className="text-blue-700 text-sm mt-1">
-          Alle Änderungen werden automatisch mit den allgemeinen Einstellungen gespeichert.
-          Klicken Sie unten auf &ldquo;Änderungen speichern&rdquo; um alle Profil-Einstellungen zu übernehmen.
+          Alle Änderungen werden automatisch mit den allgemeinen Einstellungen gespeichert. Klicken
+          Sie unten auf &ldquo;Änderungen speichern&rdquo; um alle Profil-Einstellungen zu
+          übernehmen.
         </p>
       </div>
     </div>

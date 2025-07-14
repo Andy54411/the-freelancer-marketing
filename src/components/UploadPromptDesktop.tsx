@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
-import QRCode from 'react-qr-code';  // Verwendet jetzt 'react-qr-code' statt 'qrcode.react'
+import QRCode from 'react-qr-code'; // Verwendet jetzt 'react-qr-code' statt 'qrcode.react'
 import { getDatabase, ref, set, onValue } from 'firebase/database';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeApp } from 'firebase/app';
@@ -35,14 +35,14 @@ export default function UploadPromptDesktop() {
 
     // Listener für den Upload-Status
     const statusRef = ref(db, `uploads/${newSessionId}/status`);
-    onValue(statusRef, (snapshot) => {
+    onValue(statusRef, snapshot => {
       const status = snapshot.val();
       setUploadStatus(status);
     });
 
     // Listener für die Bild-URL
     const imageUrlRef = ref(db, `uploads/${newSessionId}/imageUrl`);
-    onValue(imageUrlRef, (snapshot) => {
+    onValue(imageUrlRef, snapshot => {
       const url = snapshot.val();
       if (url) setUploadedImageUrl(url);
     });
@@ -56,14 +56,23 @@ export default function UploadPromptDesktop() {
   return (
     <div className="p-6 text-center">
       <h2 className="mb-4 text-xl font-semibold">Upload per Handy</h2>
-      <p className="mb-4">Scanne den QR-Code mit deinem Handy, um direkt Fotos aufzunehmen und hochzuladen.</p>
+      <p className="mb-4">
+        Scanne den QR-Code mit deinem Handy, um direkt Fotos aufzunehmen und hochzuladen.
+      </p>
       {/* @ts-ignore */}
-      {sessionId && phoneUrl && <QRCode value={phoneUrl} size={220} title="QR-Code für Upload-Link" />}
+      {sessionId && phoneUrl && (
+        <QRCode value={phoneUrl} size={220} title="QR-Code für Upload-Link" />
+      )}
       <p className="mt-4">
         Oder öffne auf deinem Handy diesen Link:
         <br />
         {phoneUrl && (
-          <a href={phoneUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+          <a
+            href={phoneUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
             {phoneUrl}
           </a>
         )}
@@ -80,7 +89,8 @@ export default function UploadPromptDesktop() {
               width={320} // Corresponds to max-w-xs (assuming 1rem = 16px, xs = 20rem = 320px)
               height={240} // Adjust height as needed, or use layout="responsive" if parent has dimensions
               className="mx-auto mt-2 rounded"
-              objectFit="contain" />
+              objectFit="contain"
+            />
           </>
         )}
         {uploadStatus === 'error' && <p className="text-red-600">Fehler beim Upload!</p>}

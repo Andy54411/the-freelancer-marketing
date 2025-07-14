@@ -60,27 +60,32 @@ export interface SmartScheduling {
 }
 
 export class TaskiloAIFeatures {
-  
   // Projekt-Optimierung mit KI
   static optimizeProject(projectData: any): ProjectOptimization {
     const category = projectData.category || 'general';
     const currentBudget = projectData.budget || { min: 200, max: 500 };
-    
+
     // KI-basierte Budget-Optimierung
-    const optimization = this.analyzeBudgetOptimization(category, currentBudget, projectData.description);
-    
+    const optimization = this.analyzeBudgetOptimization(
+      category,
+      currentBudget,
+      projectData.description
+    );
+
     return {
       category,
       currentBudget,
       optimizedBudget: optimization.optimizedRange,
       savings: optimization.potentialSavings,
       recommendations: optimization.recommendations,
-      confidence: optimization.confidence
+      confidence: optimization.confidence,
     };
   }
 
   // Intelligente Dienstleister-Empfehlungen
-  static async getSmartProviderRecommendations(projectData: any): Promise<ProviderRecommendation[]> {
+  static async getSmartProviderRecommendations(
+    projectData: any
+  ): Promise<ProviderRecommendation[]> {
     // Simuliere KI-Analyse für Dienstleister-Matching
     const recommendations: ProviderRecommendation[] = [
       {
@@ -91,80 +96,56 @@ export class TaskiloAIFeatures {
           'Spezialisiert auf Ihre Projektart',
           'Ausgezeichnete Bewertungen (4.9/5)',
           'Optimal verfügbar für Ihren Zeitrahmen',
-          'Faire Preisgestaltung'
+          'Faire Preisgestaltung',
         ],
         pricing: {
           estimate: 320,
-          confidence: 0.9
+          confidence: 0.9,
         },
         availability: {
           earliest: 'Diese Woche',
-          flexibility: 'high'
+          flexibility: 'high',
         },
         strengths: [
           '15 Jahre Erfahrung',
           'ISO-zertifiziert',
           'Garantie auf alle Arbeiten',
-          'Notfall-Service verfügbar'
+          'Notfall-Service verfügbar',
         ],
-        riskFactors: [
-          'Etwas höhere Preise als Konkurrenz'
-        ]
+        riskFactors: ['Etwas höhere Preise als Konkurrenz'],
       },
       {
         providerId: 'provider_2',
         name: 'Express-Handwerk',
         score: 0.88,
-        reasons: [
-          'Schnelle Verfügbarkeit',
-          'Kostengünstige Lösung',
-          'Gute lokale Bewertungen'
-        ],
+        reasons: ['Schnelle Verfügbarkeit', 'Kostengünstige Lösung', 'Gute lokale Bewertungen'],
         pricing: {
           estimate: 280,
-          confidence: 0.85
+          confidence: 0.85,
         },
         availability: {
           earliest: 'Morgen',
-          flexibility: 'medium'
+          flexibility: 'medium',
         },
-        strengths: [
-          'Schnelle Reaktionszeit',
-          '24/7 Erreichbarkeit',
-          'Flexible Terminplanung'
-        ],
-        riskFactors: [
-          'Weniger Erfahrung bei komplexen Projekten',
-          'Keine Garantie-Erweiterung'
-        ]
+        strengths: ['Schnelle Reaktionszeit', '24/7 Erreichbarkeit', 'Flexible Terminplanung'],
+        riskFactors: ['Weniger Erfahrung bei komplexen Projekten', 'Keine Garantie-Erweiterung'],
       },
       {
         providerId: 'provider_3',
         name: 'Premium-Profis',
         score: 0.82,
-        reasons: [
-          'Höchste Qualitätsstandards',
-          'Umfassende Garantie',
-          'Spezialisierte Expertise'
-        ],
+        reasons: ['Höchste Qualitätsstandards', 'Umfassende Garantie', 'Spezialisierte Expertise'],
         pricing: {
           estimate: 450,
-          confidence: 0.92
+          confidence: 0.92,
         },
         availability: {
           earliest: 'Nächste Woche',
-          flexibility: 'low'
+          flexibility: 'low',
         },
-        strengths: [
-          'Premium-Materialien inklusive',
-          '5 Jahre Garantie',
-          'Award-winning Service'
-        ],
-        riskFactors: [
-          'Höhere Kosten',
-          'Längere Wartezeiten'
-        ]
-      }
+        strengths: ['Premium-Materialien inklusive', '5 Jahre Garantie', 'Award-winning Service'],
+        riskFactors: ['Höhere Kosten', 'Längere Wartezeiten'],
+      },
     ];
 
     // Sortiere nach KI-Score
@@ -182,27 +163,30 @@ export class TaskiloAIFeatures {
         type: 'timeline' as const,
         level: 'medium' as const,
         description: 'Starrer Zeitplan kann zu Verzögerungen führen',
-        mitigation: 'Pufferzeiten einplanen oder Flexibilität erhöhen'
+        mitigation: 'Pufferzeiten einplanen oder Flexibilität erhöhen',
       });
     }
 
     // Budget-Risiken
-    if (projectData.budget && (projectData.budget.max - projectData.budget.min) < 100) {
+    if (projectData.budget && projectData.budget.max - projectData.budget.min < 100) {
       risks.push({
         type: 'budget' as const,
         level: 'high' as const,
         description: 'Sehr enger Budgetrahmen erhöht Risiko für Kostenüberschreitungen',
-        mitigation: 'Budget um 20-30% erweitern oder Projektumfang reduzieren'
+        mitigation: 'Budget um 20-30% erweitern oder Projektumfang reduzieren',
       });
     }
 
     // Technische Risiken
-    if (projectData.description?.includes('komplex') || projectData.description?.includes('schwierig')) {
+    if (
+      projectData.description?.includes('komplex') ||
+      projectData.description?.includes('schwierig')
+    ) {
       risks.push({
         type: 'technical' as const,
         level: 'medium' as const,
         description: 'Komplexes Projekt kann unvorhergesehene Herausforderungen mit sich bringen',
-        mitigation: 'Detaillierte Vorab-Analyse und erfahrenen Dienstleister wählen'
+        mitigation: 'Detaillierte Vorab-Analyse und erfahrenen Dienstleister wählen',
       });
     }
 
@@ -214,7 +198,7 @@ export class TaskiloAIFeatures {
           type: 'weather' as const,
           level: 'medium' as const,
           description: 'Winterwetter kann Außenarbeiten verzögern',
-          mitigation: 'Wetterunabhängige Arbeiten vorziehen oder Frühjahr abwarten'
+          mitigation: 'Wetterunabhängige Arbeiten vorziehen oder Frühjahr abwarten',
         });
       }
     }
@@ -232,7 +216,7 @@ export class TaskiloAIFeatures {
     return {
       overallRisk,
       riskFactors: risks,
-      recommendations: this.generateRiskRecommendations(risks)
+      recommendations: this.generateRiskRecommendations(risks),
     };
   }
 
@@ -240,7 +224,7 @@ export class TaskiloAIFeatures {
   static generateSmartScheduling(projectData: any): SmartScheduling {
     const startDate = new Date();
     const estimatedDuration = this.estimateProjectDuration(projectData);
-    
+
     // Optimaler Starttermin
     const optimalStart = this.findOptimalStartDate(projectData, startDate);
     const endDate = new Date(optimalStart);
@@ -256,16 +240,16 @@ export class TaskiloAIFeatures {
       optimizedTimeline: {
         startDate: optimalStart.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
-        milestones
+        milestones,
       },
-      alternatives
+      alternatives,
     };
 
     // Wetter-Überlegungen für Außenprojekte
     if (this.isOutdoorProject(projectData.category, projectData.description)) {
       scheduling.weatherConsiderations = {
         optimalPeriods: ['März-Mai', 'September-Oktober'],
-        riskyPeriods: ['Dezember-Februar', 'Juli-August']
+        riskyPeriods: ['Dezember-Februar', 'Juli-August'],
       };
     }
 
@@ -273,11 +257,15 @@ export class TaskiloAIFeatures {
   }
 
   // Hilfsmethoden
-  private static analyzeBudgetOptimization(category: string, currentBudget: any, description: string) {
+  private static analyzeBudgetOptimization(
+    category: string,
+    currentBudget: any,
+    description: string
+  ) {
     // Simuliere KI-Analyse
     const marketData = this.getMarketData(category);
     const complexity = this.analyzeComplexity(description);
-    
+
     let optimizationFactor = 1.0;
     const recommendations = [];
 
@@ -294,7 +282,7 @@ export class TaskiloAIFeatures {
 
     const optimizedRange = {
       min: Math.round(currentBudget.min * optimizationFactor),
-      max: Math.round(currentBudget.max * optimizationFactor)
+      max: Math.round(currentBudget.max * optimizationFactor),
     };
 
     const potentialSavings = currentBudget.max - optimizedRange.max;
@@ -303,24 +291,24 @@ export class TaskiloAIFeatures {
       optimizedRange,
       potentialSavings,
       recommendations,
-      confidence: 0.8 + (complexity.score * 0.2)
+      confidence: 0.8 + complexity.score * 0.2,
     };
   }
 
   private static getMarketData(category: string) {
     const marketRanges: Record<string, { averageMin: number; averageMax: number }> = {
-      'handwerk': { averageMin: 150, averageMax: 600 },
-      'reinigung': { averageMin: 50, averageMax: 200 },
-      'garten': { averageMin: 80, averageMax: 400 },
-      'transport': { averageMin: 100, averageMax: 500 },
-      'it': { averageMin: 80, averageMax: 300 }
+      handwerk: { averageMin: 150, averageMax: 600 },
+      reinigung: { averageMin: 50, averageMax: 200 },
+      garten: { averageMin: 80, averageMax: 400 },
+      transport: { averageMin: 100, averageMax: 500 },
+      it: { averageMin: 80, averageMax: 300 },
     };
     return marketRanges[category] || marketRanges['handwerk'];
   }
 
   private static analyzeComplexity(description: string) {
     let score = 0.3; // Basis-Komplexität
-    
+
     const complexKeywords = ['komplex', 'schwierig', 'speziell', 'umfangreich', 'renovation'];
     const simpleKeywords = ['einfach', 'standard', 'basic', 'klein'];
 
@@ -338,9 +326,11 @@ export class TaskiloAIFeatures {
   private static isOutdoorProject(category: string, description: string): boolean {
     const outdoorCategories = ['garten', 'dach', 'fassade'];
     const outdoorKeywords = ['außen', 'outdoor', 'garten', 'terrasse', 'balkon', 'dach'];
-    
-    return outdoorCategories.includes(category) || 
-           outdoorKeywords.some(keyword => description.toLowerCase().includes(keyword));
+
+    return (
+      outdoorCategories.includes(category) ||
+      outdoorKeywords.some(keyword => description.toLowerCase().includes(keyword))
+    );
   }
 
   private static getCurrentSeason(): string {
@@ -353,23 +343,23 @@ export class TaskiloAIFeatures {
 
   private static estimateProjectDuration(projectData: any): number {
     const baseDurations: Record<string, number> = {
-      'handwerk': 5,
-      'reinigung': 1,
-      'garten': 3,
-      'transport': 1,
-      'it': 2
+      handwerk: 5,
+      reinigung: 1,
+      garten: 3,
+      transport: 1,
+      it: 2,
     };
 
     const baseDuration = baseDurations[projectData.category] || 3;
     const complexity = this.analyzeComplexity(projectData.description || '');
-    
+
     return Math.round(baseDuration * (1 + complexity.score));
   }
 
   private static findOptimalStartDate(projectData: any, requestedStart: Date): Date {
     // Berücksichtige Wochentage, Feiertage, etc.
     const optimal = new Date(requestedStart);
-    
+
     // Vermeide Wochenenden für Business-Projekte
     if (optimal.getDay() === 0 || optimal.getDay() === 6) {
       optimal.setDate(optimal.getDate() + (8 - optimal.getDay()));
@@ -387,7 +377,7 @@ export class TaskiloAIFeatures {
       milestones.push({
         date: new Date(startDate).toISOString().split('T')[0],
         description: 'Projektplanung und Vorbereitung',
-        critical: true
+        critical: true,
       });
 
       // Zwischenmeilenstein
@@ -396,7 +386,7 @@ export class TaskiloAIFeatures {
       milestones.push({
         date: midDate.toISOString().split('T')[0],
         description: 'Zwischenstand und Qualitätskontrolle',
-        critical: false
+        critical: false,
       });
     }
 
@@ -406,7 +396,7 @@ export class TaskiloAIFeatures {
     milestones.push({
       date: endDate.toISOString().split('T')[0],
       description: 'Projektabschluss und Abnahme',
-      critical: true
+      critical: true,
     });
 
     return milestones;
@@ -421,7 +411,7 @@ export class TaskiloAIFeatures {
     alternatives.push({
       startDate: laterStart.toISOString().split('T')[0],
       benefits: ['Mehr Anbieter verfügbar', 'Möglicherweise bessere Preise'],
-      tradeoffs: ['Späterer Projektstart']
+      tradeoffs: ['Späterer Projektstart'],
     });
 
     // Einen Monat später
@@ -430,7 +420,7 @@ export class TaskiloAIFeatures {
     alternatives.push({
       startDate: muchLaterStart.toISOString().split('T')[0],
       benefits: ['Optimale Planung möglich', 'Beste Anbieter-Auswahl', 'Günstigere Preise'],
-      tradeoffs: ['Deutlich späterer Start']
+      tradeoffs: ['Deutlich späterer Start'],
     });
 
     return alternatives;

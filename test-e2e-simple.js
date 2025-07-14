@@ -9,17 +9,21 @@ console.log('🎯 SIMPLIFIED E2E TEST: Payout Logic Validation\n');
 
 // Simulate the real Stripe data we have
 const realStripeData = {
-  customerPayment: 6000,     // 60.00€ - what customer paid
-  applicationFee: 270,       // 2.70€ - transferred to platform automatically
-  availableBalance: 5730,    // 57.30€ - available on connected account
-  payoutId: 'po_1RkQJWD7xuklQu0n3i5465D4'
+  customerPayment: 6000, // 60.00€ - what customer paid
+  applicationFee: 270, // 2.70€ - transferred to platform automatically
+  availableBalance: 5730, // 57.30€ - available on connected account
+  payoutId: 'po_1RkQJWD7xuklQu0n3i5465D4',
 };
 
 console.log('📊 REAL STRIPE DATA (from your dashboard):');
 console.log('═'.repeat(50));
 console.log(`Customer Payment:     ${(realStripeData.customerPayment / 100).toFixed(2)}€`);
-console.log(`Application Fee:      ${(realStripeData.applicationFee / 100).toFixed(2)}€ (to platform)`);
-console.log(`Available Balance:    ${(realStripeData.availableBalance / 100).toFixed(2)}€ (for provider)`);
+console.log(
+  `Application Fee:      ${(realStripeData.applicationFee / 100).toFixed(2)}€ (to platform)`
+);
+console.log(
+  `Available Balance:    ${(realStripeData.availableBalance / 100).toFixed(2)}€ (for provider)`
+);
 console.log(`Existing Payout ID:   ${realStripeData.payoutId}`);
 
 console.log('\n🔧 TESTING OUR FIX:');

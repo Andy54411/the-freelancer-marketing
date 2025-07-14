@@ -56,7 +56,10 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       try {
         // The httpsCallable function works for both production and emulators.
         // The Firebase client SDK automatically routes the request to the emulator if it's configured.
-        const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(functionsInstance, 'getReviewsByProvider');
+        const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(
+          functionsInstance,
+          'getReviewsByProvider'
+        );
         const result = await getReviewsCallable({ anbieterId });
         const data = result.data;
 
@@ -80,7 +83,12 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
           errorMessage = `Fehler von Cloud Function (${err.code}): ${err.message}`;
         } else if (err instanceof Error) {
           errorMessage = `Netzwerkfehler: ${err.message}`;
-        } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as any).message === 'string') {
+        } else if (
+          typeof err === 'object' &&
+          err !== null &&
+          'message' in err &&
+          typeof (err as any).message === 'string'
+        ) {
           errorMessage = (err as any).message;
         }
         setError(errorMessage);
@@ -108,7 +116,9 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center">
         <FiAlertCircle className="inline mr-2" />
         <span className="block sm:inline">{error}</span>
-        <p className="mt-2 text-sm">Bitte versuchen Sie es später noch einmal oder kontaktieren Sie den Support.</p>
+        <p className="mt-2 text-sm">
+          Bitte versuchen Sie es später noch einmal oder kontaktieren Sie den Support.
+        </p>
       </div>
     );
   }
@@ -128,7 +138,7 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
         )}
       </div>
 
-      {reviews.map((review) => (
+      {reviews.map(review => (
         <div key={review.id} className="bg-white p-4 rounded-lg shadow border space-y-2">
           <div className="flex items-center gap-4">
             {review.kundeProfilePictureURL ? (

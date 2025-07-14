@@ -9,8 +9,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function GET() {
   try {
     // Lade Platform Payouts (Auszahlungen des Hauptkontos)
-    const payouts = await stripe.payouts.list({ 
-      limit: 20
+    const payouts = await stripe.payouts.list({
+      limit: 20,
     });
 
     const formattedPayouts = payouts.data.map(payout => ({
@@ -22,24 +22,27 @@ export async function GET() {
       arrival_date: payout.arrival_date,
       destination: {
         id: payout.destination,
-        bank_name: payout.destination && typeof payout.destination === 'object' ? 
-          (payout.destination as any).bank_name : undefined,
-        last4: payout.destination && typeof payout.destination === 'object' ? 
-          (payout.destination as any).last4 : undefined
-      }
+        bank_name:
+          payout.destination && typeof payout.destination === 'object'
+            ? (payout.destination as any).bank_name
+            : undefined,
+        last4:
+          payout.destination && typeof payout.destination === 'object'
+            ? (payout.destination as any).last4
+            : undefined,
+      },
     }));
 
     return NextResponse.json({
       success: true,
-      payouts: formattedPayouts
+      payouts: formattedPayouts,
     });
-
   } catch (error) {
     console.error('Error fetching platform payouts:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Fehler beim Laden der Platform-Auszahlungen' 
+      {
+        success: false,
+        message: 'Fehler beim Laden der Platform-Auszahlungen',
       },
       { status: 500 }
     );

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef, useCallback, AnimationEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,17 +9,17 @@ import { FiX, FiInfo } from 'react-icons/fi';
 import { useRegistration } from '@/contexts/Registration-Context';
 // import { PAGE_LOG, PAGE_WARN } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/constants';
 
-const STEP2_PAGE_LOG = "[Register Company Step2 LOG]";
+const STEP2_PAGE_LOG = '[Register Company Step2 LOG]';
 
 const steps = [
-  "Über Sie",
-  "Firmensitz & Einsatzgebiet",
-  "Qualifikationen",
-  "Profil anlegen",
-  "Bezahlmethode"
+  'Über Sie',
+  'Firmensitz & Einsatzgebiet',
+  'Qualifikationen',
+  'Profil anlegen',
+  'Bezahlmethode',
 ];
 
-const libraries = ['places'] as unknown as ("places")[];
+const libraries = ['places'] as unknown as 'places'[];
 
 const containerStyle = {
   width: '100%',
@@ -50,7 +50,7 @@ export default function Step2CompanyPage() {
   });
 
   useEffect(() => {
-    console.log(STEP2_PAGE_LOG, "Komponente geladen. Initialer Context für Firma:", {
+    console.log(STEP2_PAGE_LOG, 'Komponente geladen. Initialer Context für Firma:', {
       companyName: registration.companyName,
       companyStreet: registration.companyStreet,
       companyHouseNumber: registration.companyHouseNumber,
@@ -59,14 +59,16 @@ export default function Step2CompanyPage() {
       companyCountry: registration.companyCountry,
       lat: registration.lat,
       lng: registration.lng,
-      radiusKm: registration.radiusKm
+      radiusKm: registration.radiusKm,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     setLocalCompanyName(registration.companyName || '');
-    setLocalFullStreetDisplay(`${registration.companyStreet || ''}${registration.companyHouseNumber ? ' ' + registration.companyHouseNumber : ''}`.trim());
+    setLocalFullStreetDisplay(
+      `${registration.companyStreet || ''}${registration.companyHouseNumber ? ' ' + registration.companyHouseNumber : ''}`.trim()
+    );
     setLocalPostalCode(registration.companyPostalCode || '');
     setLocalCity(registration.companyCity || '');
     setLocalCountry(registration.companyCountry || 'DE');
@@ -74,25 +76,34 @@ export default function Step2CompanyPage() {
     setLocalLat(registration.lat);
     setLocalLng(registration.lng);
   }, [
-    registration.companyName, registration.companyStreet, registration.companyHouseNumber,
-    registration.companyPostalCode, registration.companyCity, registration.companyCountry,
-    registration.radiusKm, registration.lat, registration.lng
+    registration.companyName,
+    registration.companyStreet,
+    registration.companyHouseNumber,
+    registration.companyPostalCode,
+    registration.companyCity,
+    registration.companyCountry,
+    registration.radiusKm,
+    registration.lat,
+    registration.lng,
   ]);
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
     autocompleteRef.current = autocomplete;
-    console.log(STEP2_PAGE_LOG, "Google Maps Autocomplete geladen.");
+    console.log(STEP2_PAGE_LOG, 'Google Maps Autocomplete geladen.');
   }, []);
 
   const onPlaceChanged = () => {
-    console.log(STEP2_PAGE_LOG, "onPlaceChanged getriggert.");
+    console.log(STEP2_PAGE_LOG, 'onPlaceChanged getriggert.');
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
-      console.log(STEP2_PAGE_LOG, "Google Place Result:", place);
+      console.log(STEP2_PAGE_LOG, 'Google Place Result:', place);
       if (place && place.address_components) {
         const components = place.address_components;
-        let streetName = ''; let streetNum = ''; let foundCity = '';
-        let foundPostalCode = ''; let countryISO = '';
+        let streetName = '';
+        let streetNum = '';
+        let foundCity = '';
+        let foundPostalCode = '';
+        let countryISO = '';
 
         components.forEach(c => {
           if (c.types.includes('route')) streetName = c.long_name;
@@ -101,7 +112,8 @@ export default function Step2CompanyPage() {
           if (c.types.includes('locality')) foundCity = c.long_name;
           else if (c.types.includes('postal_town') && !foundCity) foundCity = c.long_name;
           else if (c.types.includes('sublocality') && !foundCity) foundCity = c.long_name;
-          else if (c.types.includes('administrative_area_level_3') && !foundCity) foundCity = c.long_name;
+          else if (c.types.includes('administrative_area_level_3') && !foundCity)
+            foundCity = c.long_name;
           if (c.types.includes('country')) countryISO = c.short_name;
         });
 
@@ -111,7 +123,14 @@ export default function Step2CompanyPage() {
         setLocalCity(foundCity);
         setLocalCountry(countryISO || 'DE');
 
-        console.log(STEP2_PAGE_LOG, "Werte aus Autocomplete (onPlaceChanged):", { streetName, streetNum, fullStreet, foundCity, foundPostalCode, countryISO });
+        console.log(STEP2_PAGE_LOG, 'Werte aus Autocomplete (onPlaceChanged):', {
+          streetName,
+          streetNum,
+          fullStreet,
+          foundCity,
+          foundPostalCode,
+          countryISO,
+        });
 
         registration.setCompanyStreet(streetName.trim());
         registration.setCompanyHouseNumber(streetNum.trim());
@@ -122,15 +141,22 @@ export default function Step2CompanyPage() {
         if (place.geometry && place.geometry.location) {
           const newLat = place.geometry.location.lat();
           const newLng = place.geometry.location.lng();
-          setLocalLat(newLat); setLocalLng(newLng);
-          registration.setLat(newLat); registration.setLng(newLng);
-          console.log(STEP2_PAGE_LOG, "Koordinaten gesetzt (onPlaceChanged):", { lat: newLat, lng: newLng });
+          setLocalLat(newLat);
+          setLocalLng(newLng);
+          registration.setLat(newLat);
+          registration.setLng(newLng);
+          console.log(STEP2_PAGE_LOG, 'Koordinaten gesetzt (onPlaceChanged):', {
+            lat: newLat,
+            lng: newLng,
+          });
         } else {
-          setLocalLat(null); setLocalLng(null);
-          registration.setLat(null); registration.setLng(null);
+          setLocalLat(null);
+          setLocalLng(null);
+          registration.setLat(null);
+          registration.setLng(null);
         }
       } else {
-        console.warn(STEP2_PAGE_LOG, "Kein valider Ort im Autocomplete-Ergebnis (onPlaceChanged).");
+        console.warn(STEP2_PAGE_LOG, 'Kein valider Ort im Autocomplete-Ergebnis (onPlaceChanged).');
       }
     }
   };
@@ -144,7 +170,10 @@ export default function Step2CompanyPage() {
       const inputElement = event.target as HTMLInputElement;
       setTimeout(() => {
         const autofilledValue = inputElement.value;
-        console.log(STEP2_PAGE_LOG, `Autofill-Event '${event.animationName}' auf Feld '${inputElement.id}', Wert: '${autofilledValue}'`);
+        console.log(
+          STEP2_PAGE_LOG,
+          `Autofill-Event '${event.animationName}' auf Feld '${inputElement.id}', Wert: '${autofilledValue}'`
+        );
         if (typeof contextSetter === 'function') {
           contextSetter(autofilledValue);
         }
@@ -159,10 +188,14 @@ export default function Step2CompanyPage() {
     const value = e.target.value;
     setLocalFullStreetDisplay(value);
     const parts = value.trim().split(/\s+/);
-    let hn = ""; let streetVal = value.trim();
+    let hn = '';
+    let streetVal = value.trim();
     if (parts.length > 1) {
       const lastPart = parts[parts.length - 1];
-      if (/\d/.test(lastPart)) { hn = lastPart; streetVal = parts.slice(0, -1).join(" "); }
+      if (/\d/.test(lastPart)) {
+        hn = lastPart;
+        streetVal = parts.slice(0, -1).join(' ');
+      }
     }
     registration.setCompanyStreet(streetVal);
     registration.setCompanyHouseNumber(hn);
@@ -172,51 +205,63 @@ export default function Step2CompanyPage() {
     const value = e.target.value;
     setLocalCompanyName(value);
     registration.setCompanyName(value);
-  }
+  };
   const handlePostalCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalPostalCode(value);
     registration.setCompanyPostalCode(value);
-  }
+  };
   const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalCity(value);
     registration.setCompanyCity(value);
-  }
+  };
   const handleCountryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const countryValue = e.target.value.toUpperCase();
     setLocalCountry(countryValue);
     registration.setCompanyCountry(countryValue);
-  }
+  };
   const handleRadiusKmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
     setLocalRadiusKm(val);
     registration.setRadiusKm(val > 0 ? val : null);
-  }
+  };
 
   const handleNext = () => {
-    console.log(STEP2_PAGE_LOG, "handleNext aufgerufen. Context für Firmenadresse vor Navigation:", {
-      name: registration.companyName, street: registration.companyStreet, hn: registration.companyHouseNumber,
-      plz: registration.companyPostalCode, city: registration.companyCity, country: registration.companyCountry,
-      lat: registration.lat, lng: registration.lng, radius: registration.radiusKm
-    });
+    console.log(
+      STEP2_PAGE_LOG,
+      'handleNext aufgerufen. Context für Firmenadresse vor Navigation:',
+      {
+        name: registration.companyName,
+        street: registration.companyStreet,
+        hn: registration.companyHouseNumber,
+        plz: registration.companyPostalCode,
+        city: registration.companyCity,
+        country: registration.companyCountry,
+        lat: registration.lat,
+        lng: registration.lng,
+        radius: registration.radiusKm,
+      }
+    );
 
-    if (!registration.companyName?.trim() ||
+    if (
+      !registration.companyName?.trim() ||
       !registration.companyStreet?.trim() ||
       !registration.companyPostalCode?.trim() ||
       !registration.companyCity?.trim() ||
       !registration.companyCountry?.trim() ||
-      (registration.companyCountry?.length !== 2)
+      registration.companyCountry?.length !== 2
     ) {
-      let errorMsg = "Bitte füllen Sie alle erforderlichen Felder aus (Firmenname, Adresse, PLZ, Stadt, Land).";
+      let errorMsg =
+        'Bitte füllen Sie alle erforderlichen Felder aus (Firmenname, Adresse, PLZ, Stadt, Land).';
       if (registration.companyCountry && registration.companyCountry.length !== 2) {
-        errorMsg = "Das Land muss als zweistelliger ISO-Code angegeben werden (z.B. DE).";
+        errorMsg = 'Das Land muss als zweistelliger ISO-Code angegeben werden (z.B. DE).';
       }
       alert(errorMsg);
       return;
     }
     if ((registration.radiusKm ?? 0) <= 0) {
-      alert("Bitte geben Sie einen gültigen Radius (größer als 0) an.");
+      alert('Bitte geben Sie einen gültigen Radius (größer als 0) an.');
       return;
     }
     router.push('/register/company/step3');
@@ -227,10 +272,16 @@ export default function Step2CompanyPage() {
     !!localFullStreetDisplay?.trim() &&
     !!localPostalCode?.trim() &&
     !!localCity?.trim() &&
-    !!localCountry?.trim() && localCountry.length === 2 &&
+    !!localCountry?.trim() &&
+    localCountry.length === 2 &&
     (localRadiusKm ?? 0) > 0;
 
-  if (!isLoaded) return <div className="flex items-center justify-center min-h-screen"><p>Lade Google Maps...</p></div>;
+  if (!isLoaded)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Lade Google Maps...</p>
+      </div>
+    );
 
   const mapCenterLat = localLat ?? 51.1657;
   const mapCenterLng = localLng ?? 10.4515;
@@ -239,15 +290,26 @@ export default function Step2CompanyPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 p-6">
       <div className="w-full max-w-7xl mb-6 flex justify-end px-6">
-        <button onClick={() => router.push('/')} className="text-[#14ad9f] text-lg flex items-center">
+        <button
+          onClick={() => router.push('/')}
+          className="text-[#14ad9f] text-lg flex items-center"
+        >
           <span className="mr-2">Abbrechen</span> <FiX />
         </button>
       </div>
-      <div className="w-full max-w-7xl mb-6"> <ProgressBar currentStep={2} totalSteps={5} /> </div>
+      <div className="w-full max-w-7xl mb-6">
+        {' '}
+        <ProgressBar currentStep={2} totalSteps={5} />{' '}
+      </div>
       <div className="w-full max-w-7xl mb-6 flex justify-between items-center px-6">
-        <p className="text-lg text-[#14ad9f] font-semibold">Schritt 2/5: Firmensitz & Einsatzgebiet</p>
+        <p className="text-lg text-[#14ad9f] font-semibold">
+          Schritt 2/5: Firmensitz & Einsatzgebiet
+        </p>
         <div className="flex items-center">
-          <button onClick={() => setIsModalOpen(true)} className="text-sm text-[#14ad9f] hover:underline mr-2">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="text-sm text-[#14ad9f] hover:underline mr-2"
+          >
             Schritte anzeigen
           </button>
           <FiInfo className="text-[#14ad9f] text-xl" />
@@ -255,24 +317,44 @@ export default function Step2CompanyPage() {
       </div>
 
       <div className="max-w-md w-full bg-white p-4 rounded-lg shadow-lg space-y-6">
-        <form onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            handleNext();
+          }}
+        >
           <div>
-            <label htmlFor="companyName" className="block text-[#14ad9f] font-semibold mb-2">Firmenname</label>
+            <label htmlFor="companyName" className="block text-[#14ad9f] font-semibold mb-2">
+              Firmenname
+            </label>
             <input
-              type="text" id="companyName" value={localCompanyName}
+              type="text"
+              id="companyName"
+              value={localCompanyName}
               onChange={handleCompanyNameChange}
-              onAnimationStart={(e) => handleAutofillSync(e, registration.setCompanyName, setLocalCompanyName)}
+              onAnimationStart={e =>
+                handleAutofillSync(e, registration.setCompanyName, setLocalCompanyName)
+              }
               required
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
           <div>
-            <label htmlFor="address" className="block text-[#14ad9f] font-semibold mb-2">Adresse (Straße und Hausnummer)</label>
-            <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}
-              options={{ componentRestrictions: { country: ["de", "at", "ch"] }, fields: ["address_components", "geometry", "formatted_address", "name"] }}
+            <label htmlFor="address" className="block text-[#14ad9f] font-semibold mb-2">
+              Adresse (Straße und Hausnummer)
+            </label>
+            <Autocomplete
+              onLoad={onLoad}
+              onPlaceChanged={onPlaceChanged}
+              options={{
+                componentRestrictions: { country: ['de', 'at', 'ch'] },
+                fields: ['address_components', 'geometry', 'formatted_address', 'name'],
+              }}
             >
               <input
-                type="text" id="address" value={localFullStreetDisplay}
+                type="text"
+                id="address"
+                value={localFullStreetDisplay}
                 onChange={handleFullStreetChange}
                 required
                 placeholder="Vollständige Adresse eingeben"
@@ -281,38 +363,59 @@ export default function Step2CompanyPage() {
             </Autocomplete>
           </div>
           <div>
-            <label htmlFor="postalCode" className="block text-[#14ad9f] font-semibold mb-2">Postleitzahl</label>
+            <label htmlFor="postalCode" className="block text-[#14ad9f] font-semibold mb-2">
+              Postleitzahl
+            </label>
             <input
-              type="text" id="postalCode" value={localPostalCode}
+              type="text"
+              id="postalCode"
+              value={localPostalCode}
               onChange={handlePostalCodeChange}
-              onAnimationStart={(e) => handleAutofillSync(e, registration.setCompanyPostalCode, setLocalPostalCode)}
+              onAnimationStart={e =>
+                handleAutofillSync(e, registration.setCompanyPostalCode, setLocalPostalCode)
+              }
               required
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
           <div>
-            <label htmlFor="city" className="block text-[#14ad9f] font-semibold mb-2">Stadt</label>
+            <label htmlFor="city" className="block text-[#14ad9f] font-semibold mb-2">
+              Stadt
+            </label>
             <input
-              type="text" id="city" value={localCity}
+              type="text"
+              id="city"
+              value={localCity}
               onChange={handleCityChange}
-              onAnimationStart={(e) => handleAutofillSync(e, registration.setCompanyCity, setLocalCity)}
+              onAnimationStart={e =>
+                handleAutofillSync(e, registration.setCompanyCity, setLocalCity)
+              }
               required
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
           <div>
-            <label htmlFor="country" className="block text-[#14ad9f] font-semibold mb-2">Land</label>
+            <label htmlFor="country" className="block text-[#14ad9f] font-semibold mb-2">
+              Land
+            </label>
             <input
-              type="text" id="country" value={localCountry}
+              type="text"
+              id="country"
+              value={localCountry}
               onChange={handleCountryChange}
-              onAnimationStart={(e) =>
+              onAnimationStart={e =>
                 handleAutofillSync(
                   e,
-                  (val) => typeof val === 'string' ? registration.setCompanyCountry(val.toUpperCase()) : undefined,
-                  (val) => typeof val === 'string' ? setLocalCountry(val.toUpperCase()) : undefined
+                  val =>
+                    typeof val === 'string'
+                      ? registration.setCompanyCountry(val.toUpperCase())
+                      : undefined,
+                  val => (typeof val === 'string' ? setLocalCountry(val.toUpperCase()) : undefined)
                 )
               }
-              required maxLength={2} placeholder="z.B. DE"
+              required
+              maxLength={2}
+              placeholder="z.B. DE"
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
@@ -321,10 +424,12 @@ export default function Step2CompanyPage() {
               Einzugsgebiet Radius (km)
             </label>
             <input
-              type="number" id="radiusKm"
+              type="number"
+              id="radiusKm"
               value={localRadiusKm}
               onChange={handleRadiusKmChange}
-              min={1} max={200}
+              min={1}
+              max={200}
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
@@ -334,22 +439,32 @@ export default function Step2CompanyPage() {
               <GoogleMap
                 mapContainerStyle={{ width: '100%', height: '100%' }}
                 center={{ lat: mapCenterLat, lng: mapCenterLng }}
-                zoom={(typeof localLat === 'number' && typeof localLng === 'number') ? 10 : 6}
+                zoom={typeof localLat === 'number' && typeof localLng === 'number' ? 10 : 6}
               >
                 {typeof localLat === 'number' && typeof localLng === 'number' && (
                   <Marker position={{ lat: localLat, lng: localLng }} />
                 )}
-                {typeof localLat === 'number' && typeof localLng === 'number' && typeof currentRadiusKmForMap === 'number' && currentRadiusKmForMap > 0 && (
-                  <Circle
-                    center={{ lat: localLat, lng: localLng }}
-                    radius={currentRadiusKmForMap * 1000}
-                    options={{
-                      fillColor: '#14ad9f', fillOpacity: 0.2, strokeColor: '#14ad9f',
-                      strokeOpacity: 0.7, strokeWeight: 2, clickable: false,
-                      draggable: false, editable: false, visible: true, zIndex: 1,
-                    }}
-                  />
-                )}
+                {typeof localLat === 'number' &&
+                  typeof localLng === 'number' &&
+                  typeof currentRadiusKmForMap === 'number' &&
+                  currentRadiusKmForMap > 0 && (
+                    <Circle
+                      center={{ lat: localLat, lng: localLng }}
+                      radius={currentRadiusKmForMap * 1000}
+                      options={{
+                        fillColor: '#14ad9f',
+                        fillOpacity: 0.2,
+                        strokeColor: '#14ad9f',
+                        strokeOpacity: 0.7,
+                        strokeWeight: 2,
+                        clickable: false,
+                        draggable: false,
+                        editable: false,
+                        visible: true,
+                        zIndex: 1,
+                      }}
+                    />
+                  )}
               </GoogleMap>
             </div>
           )}
@@ -366,11 +481,7 @@ export default function Step2CompanyPage() {
         </form>
       </div>
 
-      <PopupModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        steps={steps}
-      />
+      <PopupModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} steps={steps} />
     </div>
   );
 }

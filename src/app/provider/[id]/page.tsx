@@ -7,11 +7,27 @@ import { db } from '@/firebase/clients';
 import { User as FirebaseUser, getAuth } from 'firebase/auth';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  FiMapPin, FiMessageSquare, FiStar, FiAward, FiBriefcase, 
-  FiClock, FiCheckCircle, FiTrendingUp, FiZap, FiUser,
-  FiLoader, FiAlertCircle, FiShare2, FiEye, FiHeart,
-  FiCalendar, FiGlobe, FiPhone, FiMail, FiArrowLeft
+import {
+  FiMapPin,
+  FiMessageSquare,
+  FiStar,
+  FiAward,
+  FiBriefcase,
+  FiClock,
+  FiCheckCircle,
+  FiTrendingUp,
+  FiZap,
+  FiUser,
+  FiLoader,
+  FiAlertCircle,
+  FiShare2,
+  FiEye,
+  FiHeart,
+  FiCalendar,
+  FiGlobe,
+  FiPhone,
+  FiMail,
+  FiArrowLeft,
 } from 'react-icons/fi';
 
 interface ProviderProfile {
@@ -76,7 +92,7 @@ const ProviderProfilePage = () => {
       try {
         // Zuerst in der firma Collection suchen
         const firmaDoc = await getDoc(doc(db, 'firma', providerId));
-        
+
         if (firmaDoc.exists()) {
           const firmaData = firmaDoc.data() as ProviderProfile;
           setProfile({ ...firmaData, uid: firmaDoc.id });
@@ -97,20 +113,19 @@ const ProviderProfilePage = () => {
         try {
           const reviewsRef = collection(db, 'reviews');
           const reviewsQuery = query(
-            reviewsRef, 
-            where('providerId', '==', providerId), 
-            orderBy('date', 'desc'), 
+            reviewsRef,
+            where('providerId', '==', providerId),
+            orderBy('date', 'desc'),
             limit(10)
           );
           const reviewsSnapshot = await getDocs(reviewsQuery);
-          setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
+          setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
         } catch (reviewError) {
           console.log('Keine Bewertungen gefunden oder Index noch nicht verfügbar:', reviewError);
           setReviews([]); // Setze leere Array wenn keine Bewertungen gefunden werden
         }
-
       } catch (err) {
-        console.error("Fehler beim Laden des Profils:", err);
+        console.error('Fehler beim Laden des Profils:', err);
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);
@@ -137,7 +152,7 @@ const ProviderProfilePage = () => {
         <div className="text-center">
           <FiAlertCircle className="text-4xl text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">{error || 'Profil nicht gefunden'}</p>
-          <button 
+          <button
             onClick={() => router.back()}
             className="text-[#14ad9f] hover:text-teal-600 flex items-center gap-2 mx-auto"
           >
@@ -149,17 +164,21 @@ const ProviderProfilePage = () => {
   }
 
   const getProfileImage = () => {
-    return profile.profilePictureFirebaseUrl || 
-           profile.profilePictureURL || 
-           profile.photoURL || 
-           '/images/default-avatar.png';
+    return (
+      profile.profilePictureFirebaseUrl ||
+      profile.profilePictureURL ||
+      profile.photoURL ||
+      '/images/default-avatar.png'
+    );
   };
 
   const getProviderName = () => {
-    return profile.companyName || 
-           profile.displayName || 
-           `${profile.firstName || ''} ${profile.lastName || ''}`.trim() ||
-           'Unbekannter Anbieter';
+    return (
+      profile.companyName ||
+      profile.displayName ||
+      `${profile.firstName || ''} ${profile.lastName || ''}`.trim() ||
+      'Unbekannter Anbieter'
+    );
   };
 
   const getLocation = () => {
@@ -171,16 +190,15 @@ const ProviderProfilePage = () => {
     return 'Standort nicht angegeben';
   };
 
-  const averageRating = reviews.length > 0 
-    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length)
-    : 0;
+  const averageRating =
+    reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button 
+          <button
             onClick={() => router.back()}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
           >
@@ -191,7 +209,6 @@ const ProviderProfilePage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
           {/* Linke Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border p-6 sticky top-6">
@@ -203,7 +220,7 @@ const ProviderProfilePage = () => {
                     alt={getProviderName()}
                     fill
                     className="rounded-full object-cover"
-                    onError={(e) => {
+                    onError={e => {
                       (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                     }}
                   />
@@ -211,15 +228,13 @@ const ProviderProfilePage = () => {
                     <span className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></span>
                   )}
                 </div>
-                
-                <h1 className="text-xl font-bold text-gray-800 mb-1">
-                  {getProviderName()}
-                </h1>
-                
+
+                <h1 className="text-xl font-bold text-gray-800 mb-1">{getProviderName()}</h1>
+
                 {profile.selectedSubcategory && (
                   <p className="text-sm text-gray-600 mb-2">{profile.selectedSubcategory}</p>
                 )}
-                
+
                 <div className="flex items-center justify-center gap-1 text-sm text-gray-600 mb-3">
                   <FiMapPin size={14} />
                   {getLocation()}
@@ -229,8 +244,8 @@ const ProviderProfilePage = () => {
                 {profile.badges && profile.badges.length > 0 && (
                   <div className="flex flex-wrap gap-1 justify-center mb-4">
                     {profile.badges.slice(0, 3).map(badge => (
-                      <span 
-                        key={badge} 
+                      <span
+                        key={badge}
                         className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full"
                       >
                         {badge}
@@ -336,7 +351,7 @@ const ProviderProfilePage = () => {
                 {[
                   { id: 'overview', label: 'Übersicht', icon: FiUser },
                   { id: 'reviews', label: `Bewertungen (${reviews.length})`, icon: FiStar },
-                  { id: 'portfolio', label: 'Portfolio', icon: FiBriefcase }
+                  { id: 'portfolio', label: 'Portfolio', icon: FiBriefcase },
                 ].map(tab => {
                   const Icon = tab.icon;
                   return (
@@ -374,7 +389,7 @@ const ProviderProfilePage = () => {
                         <h3 className="text-lg font-semibold mb-3">Fähigkeiten</h3>
                         <div className="flex flex-wrap gap-2">
                           {(profile.skills || profile.services || []).map((skill, index) => (
-                            <span 
+                            <span
                               key={index}
                               className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
                             >
@@ -423,14 +438,20 @@ const ProviderProfilePage = () => {
                                     <FiStar
                                       key={i}
                                       size={14}
-                                      className={i < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}
+                                      className={
+                                        i < review.rating
+                                          ? 'text-yellow-500 fill-current'
+                                          : 'text-gray-300'
+                                      }
                                     />
                                   ))}
                                 </div>
                               </div>
                               <p className="text-gray-700 text-sm">{review.comment}</p>
                               <p className="text-gray-500 text-xs mt-1">
-                                {review.date?.toDate ? review.date.toDate().toLocaleDateString('de-DE') : 'Datum unbekannt'}
+                                {review.date?.toDate
+                                  ? review.date.toDate().toLocaleDateString('de-DE')
+                                  : 'Datum unbekannt'}
                               </p>
                             </div>
                           </div>
@@ -450,7 +471,10 @@ const ProviderProfilePage = () => {
                     {profile.portfolio && profile.portfolio.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {profile.portfolio.map((item, index) => (
-                          <div key={index} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                          <div
+                            key={index}
+                            className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                          >
                             {item.imageUrl && (
                               <div className="relative h-48">
                                 <Image

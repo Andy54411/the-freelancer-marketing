@@ -11,10 +11,10 @@ import {
   Euro as IconCurrencyEuro,
   Wallet as IconWallet,
   Download as IconDownload,
-} from "lucide-react"
+} from 'lucide-react';
 import Link from 'next/link';
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardAction,
@@ -22,7 +22,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from '@/components/ui/card';
 
 interface DashboardStats {
   monthlyRevenue: number;
@@ -86,17 +86,22 @@ export function SectionCards() {
 
         try {
           // Use the simple mock version temporarily to avoid timeout issues
-          const balanceResponse = await fetch(`/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          });
+          const balanceResponse = await fetch(
+            `/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`,
+            {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            }
+          );
 
           if (balanceResponse.ok) {
             const balanceData = await balanceResponse.json();
             availableBalance = (balanceData.available || 0) / 100; // Convert from cents to euros
             pendingBalance = (balanceData.pending || 0) / 100;
           } else {
-            console.warn(`Stripe balance API error: ${balanceResponse.status} ${balanceResponse.statusText}`);
+            console.warn(
+              `Stripe balance API error: ${balanceResponse.status} ${balanceResponse.statusText}`
+            );
             // Bei Fehlern wird Balance auf 0 gelassen
             const errorData = await balanceResponse.json().catch(() => ({}));
             console.warn('Error details:', errorData);
@@ -107,12 +112,12 @@ export function SectionCards() {
         }
 
         // Setze alle Statistiken
-        setStats({ 
-          monthlyRevenue: monthlyRevenue / 100, 
-          newOrders, 
+        setStats({
+          monthlyRevenue: monthlyRevenue / 100,
+          newOrders,
           activeOrders,
           availableBalance,
-          pendingBalance 
+          pendingBalance,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -143,10 +148,10 @@ export function SectionCards() {
 
     const confirmWithdraw = confirm(
       `Auszahlung beantragen:\n\n` +
-      `Verfügbares Guthaben: ${formatCurrency(stats.availableBalance)}\n` +
-      `Plattformgebühr (4,5%): ${formatCurrency(stats.availableBalance * 0.045)}\n` +
-      `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
-      `Möchten Sie die Auszahlung jetzt beantragen?`
+        `Verfügbares Guthaben: ${formatCurrency(stats.availableBalance)}\n` +
+        `Plattformgebühr (4,5%): ${formatCurrency(stats.availableBalance * 0.045)}\n` +
+        `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
+        `Möchten Sie die Auszahlung jetzt beantragen?`
     );
 
     if (!confirmWithdraw) return;
@@ -157,16 +162,18 @@ export function SectionCards() {
       const response = await fetch('/api/request-payout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           firebaseUserId: currentUser.uid,
           amount: Math.floor(stats.availableBalance * 100), // Convert to cents
-        })
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Auszahlung erfolgreich beantragt!\n\nPayout ID: ${result.payoutId}\nBetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\nDas Geld wird in 1-2 Werktagen auf Ihr Konto überwiesen.`);
-        
+        alert(
+          `Auszahlung erfolgreich beantragt!\n\nPayout ID: ${result.payoutId}\nBetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\nDas Geld wird in 1-2 Werktagen auf Ihr Konto überwiesen.`
+        );
+
         // Refresh stats to show updated balance
         window.location.reload();
       } else {
@@ -175,7 +182,9 @@ export function SectionCards() {
       }
     } catch (error) {
       console.error('Payout error:', error);
-      alert(`Fehler bei der Auszahlung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      alert(
+        `Fehler bei der Auszahlung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setIsWithdrawing(false);
     }
@@ -205,14 +214,16 @@ export function SectionCards() {
         </CardHeader>
         <CardContent className="pt-0 pb-4">
           <div className="flex flex-col gap-3">
-            <Badge variant="outline" className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit">
-              {stats.pendingBalance > 0 
-                ? `+${formatCurrency(stats.pendingBalance)} ausstehend` 
-                : 'Sofort verfügbar'
-              }
+            <Badge
+              variant="outline"
+              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit"
+            >
+              {stats.pendingBalance > 0
+                ? `+${formatCurrency(stats.pendingBalance)} ausstehend`
+                : 'Sofort verfügbar'}
             </Badge>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={handleWithdraw}
               disabled={isWithdrawing || stats.availableBalance <= 0}
               className="bg-green-600 hover:bg-green-700 text-white w-full"
@@ -232,7 +243,9 @@ export function SectionCards() {
 
       <Card className="@container/card h-full">
         <CardHeader>
-          <CardDescription className="flex items-center gap-2"><IconCurrencyEuro size={16} /> Monatlicher Umsatz</CardDescription>
+          <CardDescription className="flex items-center gap-2">
+            <IconCurrencyEuro size={16} /> Monatlicher Umsatz
+          </CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {formatCurrency(stats.monthlyRevenue)}
           </CardTitle>
@@ -247,12 +260,14 @@ export function SectionCards() {
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block">
         <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
-            <CardDescription className="flex items-center gap-2"><IconPackage size={16} /> Neue Aufträge</CardDescription>
+            <CardDescription className="flex items-center gap-2">
+              <IconPackage size={16} /> Neue Aufträge
+            </CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               {stats.newOrders}
             </CardTitle>
             <CardAction>
-              <Badge variant={stats.newOrders > 0 ? "destructive" : "outline"}>
+              <Badge variant={stats.newOrders > 0 ? 'destructive' : 'outline'}>
                 Warten auf Annahme
               </Badge>
             </CardAction>
@@ -262,14 +277,14 @@ export function SectionCards() {
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block">
         <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
-            <CardDescription className="flex items-center gap-2"><IconPackage size={16} /> Aktive Aufträge</CardDescription>
+            <CardDescription className="flex items-center gap-2">
+              <IconPackage size={16} /> Aktive Aufträge
+            </CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               {stats.activeOrders}
             </CardTitle>
             <CardAction>
-              <Badge variant="outline">
-                In Bearbeitung
-              </Badge>
+              <Badge variant="outline">In Bearbeitung</Badge>
             </CardAction>
           </CardHeader>
         </Card>
@@ -277,12 +292,14 @@ export function SectionCards() {
       <Link href={`/dashboard/company/${currentUser?.uid}/inbox`} className="block">
         <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
-            <CardDescription className="flex items-center gap-2"><IconMail size={16} /> Ungelesene Nachrichten</CardDescription>
+            <CardDescription className="flex items-center gap-2">
+              <IconMail size={16} /> Ungelesene Nachrichten
+            </CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               {unreadMessagesCount}
             </CardTitle>
             <CardAction>
-              <Badge variant={unreadMessagesCount > 0 ? "destructive" : "outline"}>
+              <Badge variant={unreadMessagesCount > 0 ? 'destructive' : 'outline'}>
                 Zum Posteingang
               </Badge>
             </CardAction>
@@ -290,5 +307,5 @@ export function SectionCards() {
         </Card>
       </Link>
     </div>
-  )
+  );
 }

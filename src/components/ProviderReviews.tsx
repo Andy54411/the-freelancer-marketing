@@ -3,7 +3,16 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit, orderBy, startAfter } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { Star, Award, ThumbsUp, ThumbsDown, VerifiedIcon, RotateCcw, ChevronDown, Languages } from 'lucide-react';
+import {
+  Star,
+  Award,
+  ThumbsUp,
+  ThumbsDown,
+  VerifiedIcon,
+  RotateCcw,
+  ChevronDown,
+  Languages,
+} from 'lucide-react';
 
 interface Review {
   id: string;
@@ -30,7 +39,11 @@ interface ProviderReviewsProps {
   averageRating?: number;
 }
 
-export default function ProviderReviews({ providerId, reviewCount = 0, averageRating = 0 }: ProviderReviewsProps) {
+export default function ProviderReviews({
+  providerId,
+  reviewCount = 0,
+  averageRating = 0,
+}: ProviderReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -92,7 +105,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
           isVerified: data.isVerified || false,
           isReturningCustomer: data.isReturningCustomer || false,
           helpfulVotes: data.helpfulVotes || 0,
-          providerResponse: data.providerResponse
+          providerResponse: data.providerResponse,
         };
       }) as Review[];
 
@@ -106,11 +119,10 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
       if (reviewsSnapshot.docs.length < REVIEWS_PER_PAGE) {
         setHasMore(false);
       }
-      
+
       if (reviewsSnapshot.docs.length > 0) {
         setLastVisible(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1]);
       }
-
     } catch (error) {
       console.error('Fehler beim Laden der Bewertungen:', error);
     } finally {
@@ -137,7 +149,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - reviewDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) return 'vor 1 Tag';
     if (diffDays < 7) return `vor ${diffDays} Tagen`;
     if (diffDays < 30) return `vor ${Math.ceil(diffDays / 7)} Wochen`;
@@ -153,15 +165,15 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
 
   const renderStars = (rating: number, size: 'sm' | 'md' = 'sm') => {
     const sizeClass = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
-    
+
     return (
       <div className="flex">
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`${sizeClass} ${i < rating
-              ? 'text-yellow-400 fill-current'
-              : 'text-gray-300'}`}
+            className={`${sizeClass} ${
+              i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+            }`}
           />
         ))}
       </div>
@@ -175,8 +187,14 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-red-500',
-      'bg-yellow-500', 'bg-indigo-500', 'bg-pink-500', 'bg-teal-500'
+      'bg-blue-500',
+      'bg-purple-500',
+      'bg-green-500',
+      'bg-red-500',
+      'bg-yellow-500',
+      'bg-indigo-500',
+      'bg-pink-500',
+      'bg-teal-500',
     ];
     if (!name || typeof name !== 'string') return colors[0];
     const index = name.charCodeAt(0) % colors.length;
@@ -215,7 +233,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         },
         body: JSON.stringify({
           text: text,
-          targetLang: 'de'
+          targetLang: 'de',
         }),
       });
 
@@ -258,7 +276,10 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
         </h2>
         <div className="space-y-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse border-b border-gray-200 dark:border-gray-700 pb-6">
+            <div
+              key={i}
+              className="animate-pulse border-b border-gray-200 dark:border-gray-700 pb-6"
+            >
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                 <div className="flex-1 space-y-2">
@@ -299,21 +320,25 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
 
       {reviews.length > 0 ? (
         <div className="space-y-6">
-          {reviews.map((review) => {
+          {reviews.map(review => {
             const isExpanded = expandedReviews.has(review.id);
             const reviewComment = review.comment || '';
             const shouldTruncate = reviewComment.length > 200;
-            const displayComment = isExpanded || !shouldTruncate 
-              ? reviewComment 
-              : truncateText(reviewComment);
+            const displayComment =
+              isExpanded || !shouldTruncate ? reviewComment : truncateText(reviewComment);
 
             return (
-              <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0">
+              <div
+                key={review.id}
+                className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0"
+              >
                 <div className="flex flex-col space-y-4">
                   {/* User Header */}
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      <div className={`w-12 h-12 ${getAvatarColor(review.reviewerName || 'Anonymous')} rounded-full flex items-center justify-center text-white font-semibold`}>
+                      <div
+                        className={`w-12 h-12 ${getAvatarColor(review.reviewerName || 'Anonymous')} rounded-full flex items-center justify-center text-white font-semibold`}
+                      >
                         {getAvatarInitial(review.reviewerName || 'Anonymous')}
                       </div>
                     </div>
@@ -325,13 +350,17 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                         {review.isVerified && (
                           <div className="flex items-center space-x-1 text-sm">
                             <VerifiedIcon className="w-4 h-4 text-green-500" />
-                            <span className="text-green-600 dark:text-green-400 font-medium">Verifiziert</span>
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              Verifiziert
+                            </span>
                           </div>
                         )}
                         {review.isReturningCustomer && (
                           <div className="flex items-center space-x-1 text-sm">
                             <RotateCcw className="w-4 h-4 text-blue-500" />
-                            <span className="text-[#14ad9f] dark:text-[#14ad9f] font-medium">Wiederkehrender Kunde</span>
+                            <span className="text-[#14ad9f] dark:text-[#14ad9f] font-medium">
+                              Wiederkehrender Kunde
+                            </span>
                           </div>
                         )}
                       </div>
@@ -371,7 +400,9 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                   {(reviewComment || translatedReviews.has(review.id)) && (
                     <div className="prose max-w-none">
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {translatedReviews.has(review.id) ? translatedReviews.get(review.id) : displayComment}
+                        {translatedReviews.has(review.id)
+                          ? translatedReviews.get(review.id)
+                          : displayComment}
                         {shouldTruncate && (
                           <button
                             onClick={() => toggleExpandReview(review.id)}
@@ -381,7 +412,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                           </button>
                         )}
                       </p>
-                      
+
                       {/* Translation Button */}
                       {reviewComment && (
                         <div className="mt-2 flex items-center gap-2">
@@ -398,7 +429,9 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                             ) : (
                               <>
                                 <Languages className="w-3 h-3" />
-                                {translatedReviews.has(review.id) ? 'Original anzeigen' : 'Übersetzen'}
+                                {translatedReviews.has(review.id)
+                                  ? 'Original anzeigen'
+                                  : 'Übersetzen'}
                               </>
                             )}
                           </button>
@@ -446,13 +479,17 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                             Antwort des Anbieters
                           </p>
                           <p className="text-gray-700 dark:text-gray-300 text-sm">
-                            {translatedResponses.has(review.id) ? translatedResponses.get(review.id) : review.providerResponse.comment}
+                            {translatedResponses.has(review.id)
+                              ? translatedResponses.get(review.id)
+                              : review.providerResponse.comment}
                           </p>
-                          
+
                           {/* Translation Button for Response */}
                           <div className="mt-2 flex items-center gap-2">
                             <button
-                              onClick={() => translateText(review.providerResponse!.comment, review.id, true)}
+                              onClick={() =>
+                                translateText(review.providerResponse!.comment, review.id, true)
+                              }
                               disabled={translatingResponses.has(review.id)}
                               className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
                             >
@@ -464,12 +501,14 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
                               ) : (
                                 <>
                                   <Languages className="w-3 h-3" />
-                                  {translatedResponses.has(review.id) ? 'Original anzeigen' : 'Übersetzen'}
+                                  {translatedResponses.has(review.id)
+                                    ? 'Original anzeigen'
+                                    : 'Übersetzen'}
                                 </>
                               )}
                             </button>
                           </div>
-                          
+
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {formatDate(review.providerResponse.date)}
                           </p>
@@ -524,9 +563,7 @@ export default function ProviderReviews({ providerId, reviewCount = 0, averageRa
       ) : (
         <div className="text-center py-8">
           <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">
-            Noch keine Bewertungen vorhanden
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">Noch keine Bewertungen vorhanden</p>
         </div>
       )}
     </div>

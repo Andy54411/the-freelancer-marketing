@@ -6,7 +6,10 @@ export async function POST(request: NextRequest) {
     const { text, targetLang = 'de' } = await request.json();
 
     if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Text ist erforderlich und muss ein String sein' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Text ist erforderlich und muss ein String sein' },
+        { status: 400 }
+      );
     }
 
     if (!targetLang || typeof targetLang !== 'string') {
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken.token}`,
+          Authorization: `Bearer ${accessToken.token}`,
         },
         body: JSON.stringify({
           contents: [text],
@@ -52,35 +55,43 @@ export async function POST(request: NextRequest) {
       console.error('Google Translate API Fehler:', response.status, response.statusText);
       const errorText = await response.text();
       console.error('Fehlerdetails:', errorText);
-      return NextResponse.json({ 
-        error: `Übersetzung fehlgeschlagen: ${response.status} ${response.statusText}`,
-        details: errorText 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: `Übersetzung fehlgeschlagen: ${response.status} ${response.statusText}`,
+          details: errorText,
+        },
+        { status: 500 }
+      );
     }
 
     const data = await response.json();
     console.log('Google Translate Response:', data);
-    
+
     if (!data.translations || !data.translations[0]) {
       console.error('Ungültige Antwort von Google Translate:', data);
-      return NextResponse.json({ error: 'Ungültige Antwort von Google Translate' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Ungültige Antwort von Google Translate' },
+        { status: 500 }
+      );
     }
-    
+
     const translation = data.translations[0];
 
     console.log('Übersetzung erfolgreich abgeschlossen');
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       translatedText: translation.translatedText,
       originalText: text,
-      detectedSourceLanguage: translation.detectedLanguageCode
+      detectedSourceLanguage: translation.detectedLanguageCode,
     });
-
   } catch (error) {
     console.error('Übersetzungsfehler:', error);
-    return NextResponse.json({ 
-      error: 'Interner Server-Fehler',
-      message: error instanceof Error ? error.message : 'Unbekannter Fehler'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Interner Server-Fehler',
+        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
+      { status: 500 }
+    );
   }
 }

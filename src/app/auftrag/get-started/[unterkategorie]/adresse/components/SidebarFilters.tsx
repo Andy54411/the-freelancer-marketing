@@ -15,7 +15,6 @@ import { categories } from '@/lib/categories';
 // Importiere PriceDistributionData von PriceFilter.tsx
 import type { PriceDistributionData } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/SidebarFilters_components/PriceFilter';
 
-
 interface SidebarFiltersProps {
   city: string;
   setCity: (city: string) => void;
@@ -63,15 +62,18 @@ export default function SidebarFilters({
   selectedSubcategory,
   setFinalSelectedTime,
 }: SidebarFiltersProps) {
-
   const subcategoriesToShowDateTimeFilters = useMemo(() => {
-    const handwerkSubcategories = categories.find(cat => cat.title === "Handwerk")?.subcategories || [];
-    const haushaltReinigungSubcategories = categories.find(cat => cat.title === "Haushalt & Reinigung")?.subcategories || [];
+    const handwerkSubcategories =
+      categories.find(cat => cat.title === 'Handwerk')?.subcategories || [];
+    const haushaltReinigungSubcategories =
+      categories.find(cat => cat.title === 'Haushalt & Reinigung')?.subcategories || [];
     return new Set([...handwerkSubcategories, ...haushaltReinigungSubcategories]);
   }, []);
 
   const shouldShowDateTimeFilters = useMemo(() => {
-    return selectedSubcategory !== null && subcategoriesToShowDateTimeFilters.has(selectedSubcategory);
+    return (
+      selectedSubcategory !== null && subcategoriesToShowDateTimeFilters.has(selectedSubcategory)
+    );
   }, [selectedSubcategory, subcategoriesToShowDateTimeFilters]);
 
   const autocompleteInputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +87,7 @@ export default function SidebarFilters({
       let foundPostalCode = '';
 
       // Extrahiere Stadt und Postleitzahl aus den Adresskomponenten
-      place.address_components.forEach((component) => {
+      place.address_components.forEach(component => {
         const types = component.types;
 
         // Stadt/Ort
@@ -129,8 +131,10 @@ export default function SidebarFilters({
         const originalConsoleWarn = console.warn;
         console.warn = (...args) => {
           const message = args.join(' ');
-          if (message.includes('google.maps.places.Autocomplete is not available to new customers') ||
-            message.includes('PlaceAutocompleteElement')) {
+          if (
+            message.includes('google.maps.places.Autocomplete is not available to new customers') ||
+            message.includes('PlaceAutocompleteElement')
+          ) {
             return; // Ignoriere diese spezifische Warnung
           }
           originalConsoleWarn.apply(console, args);
@@ -139,8 +143,8 @@ export default function SidebarFilters({
         autocompleteInstance = new window.google.maps.places.Autocomplete(
           autocompleteInputRef.current,
           {
-            componentRestrictions: { country: ["de", "at", "ch"] },
-            fields: ["address_components", "geometry", "formatted_address", "name"],
+            componentRestrictions: { country: ['de', 'at', 'ch'] },
+            fields: ['address_components', 'geometry', 'formatted_address', 'name'],
           }
         );
 
@@ -157,7 +161,6 @@ export default function SidebarFilters({
 
         // console.warn wiederherstellen
         console.warn = originalConsoleWarn;
-
       } catch (error) {
         console.error('Fehler beim Initialisieren der Autocomplete-Instanz:', error);
       }
@@ -178,13 +181,15 @@ export default function SidebarFilters({
     <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 flex-shrink-0 self-start">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Filter & Standort</h2>
       <div>
-        <Label className="text-base font-medium text-gray-800 dark:text-white">Ort oder Adresse</Label>
+        <Label className="text-base font-medium text-gray-800 dark:text-white">
+          Ort oder Adresse
+        </Label>
         {isLoaded ? (
           <input
             ref={autocompleteInputRef}
             type="text"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={e => setCity(e.target.value)}
             placeholder="Adresse, Stadt oder Land"
             className="w-full rounded-md border p-2 mt-2"
           />
@@ -192,7 +197,7 @@ export default function SidebarFilters({
           <input
             type="text"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={e => setCity(e.target.value)}
             placeholder="Kartenkomponente wird geladen..."
             className="w-full rounded-md border p-2 mt-2 bg-gray-100"
             disabled
@@ -204,7 +209,7 @@ export default function SidebarFilters({
         <input
           type="text"
           value={postalCode}
-          onChange={(e) => setPostalCode(e.target.value)}
+          onChange={e => setPostalCode(e.target.value)}
           placeholder="Postleitzahl"
           className="w-full rounded-md border p-2 mt-2"
         />
@@ -242,7 +247,10 @@ export default function SidebarFilters({
       <div className="pt-4 border-t border-gray-200">
         <Label className="text-sm font-medium text-gray-700">Kategorien</Label>
         <div className="mt-2 text-sm text-gray-600">
-          <div><input type="checkbox" className="mr-2 accent-[#14ad9f]" />Pro-Tasker</div>
+          <div>
+            <input type="checkbox" className="mr-2 accent-[#14ad9f]" />
+            Pro-Tasker
+          </div>
         </div>
       </div>
     </div>

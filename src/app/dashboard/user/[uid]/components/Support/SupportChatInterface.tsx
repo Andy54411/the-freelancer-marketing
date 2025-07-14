@@ -11,7 +11,8 @@ import {
   serverTimestamp,
   doc,
   setDoc, // setDoc is still needed for initial creation
-  getDoc, updateDoc
+  getDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { FiLoader, FiSend, FiUser, FiCpu } from 'react-icons/fi';
@@ -25,7 +26,8 @@ export interface SystemMessagePayload {
   agentAvatarUrl?: string | null;
 }
 
-export interface ChatMessage { // Exportiert für die Verwendung in ChatMessageBubble
+export interface ChatMessage {
+  // Exportiert für die Verwendung in ChatMessageBubble
   id: string;
   text: string;
   senderId: string;
@@ -65,18 +67,25 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
     const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
     // Richte den Listener für Nachrichten ein.
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const loadedMessages = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ChatMessage));
-      setChatMessages(loadedMessages);
-      setLoading(false); // Set loading to false after first successful fetch
-    }, (error) => {
-      console.error("Fehler beim Laden der Chat-Nachrichten:", error);
-      setChatError("Nachrichten konnten nicht geladen werden.");
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      querySnapshot => {
+        const loadedMessages = querySnapshot.docs.map(
+          doc =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            }) as ChatMessage
+        );
+        setChatMessages(loadedMessages);
+        setLoading(false); // Set loading to false after first successful fetch
+      },
+      error => {
+        console.error('Fehler beim Laden der Chat-Nachrichten:', error);
+        setChatError('Nachrichten konnten nicht geladen werden.');
+        setLoading(false);
+      }
+    );
 
     // Prüfe und erstelle das Chat-Dokument asynchron, ohne den Listener zu blockieren.
     const ensureChatDocumentExists = async () => {
@@ -87,7 +96,9 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           // KORREKTUR: Dokumentenstruktur an die 'supportChats'-Regeln anpassen.
           await setDoc(chatDocRef, {
             userId: currentUser.uid, // Wichtig für die Sicherheitsregeln
-            userName: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || `User (${currentUser.uid.substring(0, 6)})`,
+            userName:
+              `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() ||
+              `User (${currentUser.uid.substring(0, 6)})`,
             userAvatarUrl: (userProfile as any).profilePictureURL || null,
             isLocked: false,
             lastMessage: {
@@ -107,14 +118,16 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           // KORREKTUR: Setze den Status bei JEDEM Öffnen des Chats auf 'bot',
           // um sicherzustellen, dass jede neue Konversation mit dem Bot beginnt.
           if (chatData.status !== 'bot') {
-            console.log(`[SupportChat] Chat-Dokument ${chatId} existiert, aber Status ist '${chatData.status || 'undefined'}'. Setze auf 'bot' zurück...`);
+            console.log(
+              `[SupportChat] Chat-Dokument ${chatId} existiert, aber Status ist '${chatData.status || 'undefined'}'. Setze auf 'bot' zurück...`
+            );
             await updateDoc(chatDocRef, { status: 'bot' });
           }
         }
         setIsChatReady(true); // Chat ist jetzt initialisiert und bereit zum Senden.
       } catch (error) {
-        console.error("Fehler beim Sicherstellen des Chat-Dokuments:", error);
-        setChatError("Chat konnte nicht initialisiert werden.");
+        console.error('Fehler beim Sicherstellen des Chat-Dokuments:', error);
+        setChatError('Chat konnte nicht initialisiert werden.');
         setIsChatReady(false);
       }
     };
@@ -126,71 +139,81 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
   }, [chatId, currentUser, userProfile]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  const handleSendMessage = useCallback(async (e: FormEvent) => {
-    e.preventDefault();
-    const messageToSend = message.trim();
-    if (!messageToSend || !currentUser || !userProfile || !chatId || isSending) return;
+  const handleSendMessage = useCallback(
+    async (e: FormEvent) => {
+      e.preventDefault();
+      const messageToSend = message.trim();
+      if (!messageToSend || !currentUser || !userProfile || !chatId || isSending) return;
 
-    // --- VALIDIERUNG: Verhindert das Senden von E-Mails oder Telefonnummern ---
-    const sanitizedText = messageToSend.toLowerCase().replace(/\s/g, '');
-    const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
-    const phoneRegex = /\d{8,}/;
+      // --- VALIDIERUNG: Verhindert das Senden von E-Mails oder Telefonnummern ---
+      const sanitizedText = messageToSend.toLowerCase().replace(/\s/g, '');
+      const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+      const phoneRegex = /\d{8,}/;
 
-    if (emailRegex.test(sanitizedText) || phoneRegex.test(sanitizedText)) {
-      setChatError("Die Weitergabe von Kontaktdaten wie E-Mails oder Telefonnummern ist nicht gestattet.");
-      return;
-    }
+      if (emailRegex.test(sanitizedText) || phoneRegex.test(sanitizedText)) {
+        setChatError(
+          'Die Weitergabe von Kontaktdaten wie E-Mails oder Telefonnummern ist nicht gestattet.'
+        );
+        return;
+      }
 
-    setIsSending(true);
-    setChatError(null);
+      setIsSending(true);
+      setChatError(null);
 
-    // KORREKTUR: Die korrekte Collection 'supportChats' verwenden.
-    const chatDocRef = doc(db, 'supportChats', chatId);
-    const messagesCollectionRef = collection(chatDocRef, 'messages');
+      // KORREKTUR: Die korrekte Collection 'supportChats' verwenden.
+      const chatDocRef = doc(db, 'supportChats', chatId);
+      const messagesCollectionRef = collection(chatDocRef, 'messages');
 
-    const messageData = {
-      text: messageToSend,
-      senderId: currentUser.uid,
-      senderName: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Kunde',
-      senderType: 'kunde' as const,
-      timestamp: serverTimestamp(),
-      // KORREKTUR: chatUsers hinzufügen, um die 'canCreateMessage'-Sicherheitsregel zu erfüllen.
-      chatUsers: [currentUser.uid, 'support_user_placeholder'],
-    };
+      const messageData = {
+        text: messageToSend,
+        senderId: currentUser.uid,
+        senderName:
+          `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Kunde',
+        senderType: 'kunde' as const,
+        timestamp: serverTimestamp(),
+        // KORREKTUR: chatUsers hinzufügen, um die 'canCreateMessage'-Sicherheitsregel zu erfüllen.
+        chatUsers: [currentUser.uid, 'support_user_placeholder'],
+      };
 
-    try {
-      // Nachricht zur Subkollektion hinzufügen
-      await addDoc(messagesCollectionRef, messageData);
+      try {
+        // Nachricht zur Subkollektion hinzufügen
+        await addDoc(messagesCollectionRef, messageData);
 
-      // KORREKTUR: Top-Level Chat-Dokument NUR mit der letzten Nachricht aktualisieren.
-      // Dies funktioniert jetzt, da die 'update'-Regel in firestore.rules korrigiert wurde.
-      await updateDoc(chatDocRef, {
-        lastMessage: {
-          text: messageToSend,
-          timestamp: serverTimestamp(),
-          senderId: currentUser.uid,
-          isReadBySupport: false, // Eine neue Nachricht vom Kunden ist für den Support ungelesen.
-        },
-        lastUpdated: serverTimestamp(),
-      });
+        // KORREKTUR: Top-Level Chat-Dokument NUR mit der letzten Nachricht aktualisieren.
+        // Dies funktioniert jetzt, da die 'update'-Regel in firestore.rules korrigiert wurde.
+        await updateDoc(chatDocRef, {
+          lastMessage: {
+            text: messageToSend,
+            timestamp: serverTimestamp(),
+            senderId: currentUser.uid,
+            isReadBySupport: false, // Eine neue Nachricht vom Kunden ist für den Support ungelesen.
+          },
+          lastUpdated: serverTimestamp(),
+        });
 
-      setMessage('');
-    } catch (error) {
-      console.error("Fehler beim Senden der Nachricht: ", error);
-      setChatError("Nachricht konnte nicht gesendet werden.");
-    } finally {
-      setIsSending(false);
-    }
-  }, [message, currentUser, userProfile, chatId, isSending]);
+        setMessage('');
+      } catch (error) {
+        console.error('Fehler beim Senden der Nachricht: ', error);
+        setChatError('Nachricht konnte nicht gesendet werden.');
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [message, currentUser, userProfile, chatId, isSending]
+  );
 
   return (
-    <div className="flex flex-col h-[70vh] max-h-[500px] bg-white w-full -m-6"> {/* Negative margin to fill modal */}
+    <div className="flex flex-col h-[70vh] max-h-[500px] bg-white w-full -m-6">
+      {' '}
+      {/* Negative margin to fill modal */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="flex justify-center items-center h-full"><FiLoader className="animate-spin text-2xl text-teal-500" /></div>
+          <div className="flex justify-center items-center h-full">
+            <FiLoader className="animate-spin text-2xl text-teal-500" />
+          </div>
         ) : (
           chatMessages.map(msg => (
             <ChatMessageBubble
@@ -202,15 +225,15 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         )}
         <div ref={messagesEndRef} />
       </div>
-
-      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-gray-50 flex items-center space-x-3">
-        {chatError && (
-          <p className="text-xs text-red-600 flex-1">{chatError}</p>
-        )}
+      <form
+        onSubmit={handleSendMessage}
+        className="p-4 border-t border-gray-200 bg-gray-50 flex items-center space-x-3"
+      >
+        {chatError && <p className="text-xs text-red-600 flex-1">{chatError}</p>}
         <input
           type="text"
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={e => setMessage(e.target.value)}
           placeholder="Nachricht eingeben..."
           className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           autoComplete="off"

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -49,7 +49,8 @@ const translations = {
     'banner.learnMore': 'Mehr erfahren',
     'banner.close': 'Banner schließen',
     'comingSoon.title': 'Coming Soon',
-    'comingSoon.subtitle': 'Taskilo wird noch besser! Entdecken Sie die spannenden neuen Features, die wir für Sie entwickeln.',
+    'comingSoon.subtitle':
+      'Taskilo wird noch besser! Entdecken Sie die spannenden neuen Features, die wir für Sie entwickeln.',
     'comingSoon.launchCountdown': 'KI-Assistent Launch in:',
     'comingSoon.days': 'Tage',
     'comingSoon.hours': 'Stunden',
@@ -59,14 +60,17 @@ const translations = {
     'comingSoon.notify': 'Benachrichtigen',
     'comingSoon.thankYou': 'Vielen Dank! Wir benachrichtigen Sie bei neuen Updates.',
     'comingSoon.whatToExpect': 'Was erwartet Sie?',
-    'comingSoon.whatToExpectSubtitle': 'Innovative Features, die Ihre Erfahrung mit Taskilo revolutionieren werden.',
+    'comingSoon.whatToExpectSubtitle':
+      'Innovative Features, die Ihre Erfahrung mit Taskilo revolutionieren werden.',
     'comingSoon.readyForFuture': 'Bereit für die Zukunft?',
-    'comingSoon.readyForFutureText': 'Nutzen Sie bereits heute die verfügbaren Features von Taskilo und freuen Sie sich auf die kommenden Innovationen.',
+    'comingSoon.readyForFutureText':
+      'Nutzen Sie bereits heute die verfügbaren Features von Taskilo und freuen Sie sich auf die kommenden Innovationen.',
     'comingSoon.startProject': 'Projekt starten',
     'comingSoon.registerAsProvider': 'Als Anbieter registrieren',
     'comingSoon.toDashboard': 'Zum Dashboard',
     'features.aiAssistant.title': 'KI-gestützter Projektassistent',
-    'features.aiAssistant.description': 'Intelligente Projektvorschläge und automatische Anbieter-Matching',
+    'features.aiAssistant.description':
+      'Intelligente Projektvorschläge und automatische Anbieter-Matching',
     'features.mobileApp.title': 'Mobile App',
     'features.mobileApp.description': 'Native iOS und Android App für unterwegs',
     'features.reviewSystem.title': 'Erweiterte Bewertungssysteme',
@@ -76,7 +80,8 @@ const translations = {
     'features.automaticBilling.title': 'Automatisierte Rechnungsstellung',
     'features.automaticBilling.description': 'Integrierte Buchhaltung und Steuer-Management',
     'features.videoConsultation.title': 'Video-Beratung',
-    'features.videoConsultation.description': 'Direkte Video-Calls mit Anbietern für komplexe Projekte',
+    'features.videoConsultation.description':
+      'Direkte Video-Calls mit Anbietern für komplexe Projekte',
     'features.status.inDevelopment': 'In Entwicklung',
     'features.status.betaTest': 'Beta-Test',
     'features.status.planning': 'Planung',
@@ -118,13 +123,14 @@ const translations = {
     'footer.newsletter': 'Newsletter',
     'footer.emailPlaceholder': 'Your email address',
     'footer.subscribe': 'Subscribe',
-    'footer.newsletterText': 'Don\'t miss any updates!',
+    'footer.newsletterText': "Don't miss any updates!",
     'footer.copyright': '© {year} Taskilo, All rights reserved',
     'banner.text': '🚀 New features coming soon! AI Assistant, Mobile App and more...',
     'banner.learnMore': 'Learn More',
     'banner.close': 'Close Banner',
     'comingSoon.title': 'Coming Soon',
-    'comingSoon.subtitle': 'Taskilo is getting even better! Discover the exciting new features we\'re developing for you.',
+    'comingSoon.subtitle':
+      "Taskilo is getting even better! Discover the exciting new features we're developing for you.",
     'comingSoon.launchCountdown': 'AI Assistant Launch in:',
     'comingSoon.days': 'Days',
     'comingSoon.hours': 'Hours',
@@ -132,16 +138,19 @@ const translations = {
     'comingSoon.seconds': 'Seconds',
     'comingSoon.emailPlaceholder': 'Your email address',
     'comingSoon.notify': 'Notify',
-    'comingSoon.thankYou': 'Thank you! We\'ll notify you about new updates.',
+    'comingSoon.thankYou': "Thank you! We'll notify you about new updates.",
     'comingSoon.whatToExpect': 'What to Expect?',
-    'comingSoon.whatToExpectSubtitle': 'Innovative features that will revolutionize your experience with Taskilo.',
+    'comingSoon.whatToExpectSubtitle':
+      'Innovative features that will revolutionize your experience with Taskilo.',
     'comingSoon.readyForFuture': 'Ready for the Future?',
-    'comingSoon.readyForFutureText': 'Use the available features of Taskilo today and look forward to the upcoming innovations.',
+    'comingSoon.readyForFutureText':
+      'Use the available features of Taskilo today and look forward to the upcoming innovations.',
     'comingSoon.startProject': 'Start Project',
     'comingSoon.registerAsProvider': 'Register as Provider',
     'comingSoon.toDashboard': 'To Dashboard',
     'features.aiAssistant.title': 'AI-powered Project Assistant',
-    'features.aiAssistant.description': 'Intelligent project suggestions and automatic provider matching',
+    'features.aiAssistant.description':
+      'Intelligent project suggestions and automatic provider matching',
     'features.mobileApp.title': 'Mobile App',
     'features.mobileApp.description': 'Native iOS and Android app for on-the-go',
     'features.reviewSystem.title': 'Advanced Review Systems',
@@ -151,7 +160,8 @@ const translations = {
     'features.automaticBilling.title': 'Automated Billing',
     'features.automaticBilling.description': 'Integrated accounting and tax management',
     'features.videoConsultation.title': 'Video Consultation',
-    'features.videoConsultation.description': 'Direct video calls with providers for complex projects',
+    'features.videoConsultation.description':
+      'Direct video calls with providers for complex projects',
     'features.status.inDevelopment': 'In Development',
     'features.status.betaTest': 'Beta Test',
     'features.status.planning': 'Planning',
@@ -192,15 +202,16 @@ const translations = {
     'footer.cookies': 'Cookies',
     'footer.newsletter': 'Newsletter',
     'footer.emailPlaceholder': 'Votre adresse e-mail',
-    'footer.subscribe': 'S\'abonner',
+    'footer.subscribe': "S'abonner",
     'footer.newsletterText': 'Ne manquez aucune mise à jour !',
     'footer.copyright': '© {year} Taskilo, Tous droits réservés',
     'banner.text': '🚀 Nouvelles fonctionnalités bientôt ! Assistant IA, App mobile et plus...',
     'banner.learnMore': 'En savoir plus',
     'banner.close': 'Fermer la bannière',
     'comingSoon.title': 'Bientôt',
-    'comingSoon.subtitle': 'Taskilo s\'améliore encore ! Découvrez les nouvelles fonctionnalités passionnantes que nous développons pour vous.',
-    'comingSoon.launchCountdown': 'Lancement de l\'Assistant IA dans :',
+    'comingSoon.subtitle':
+      "Taskilo s'améliore encore ! Découvrez les nouvelles fonctionnalités passionnantes que nous développons pour vous.",
+    'comingSoon.launchCountdown': "Lancement de l'Assistant IA dans :",
     'comingSoon.days': 'Jours',
     'comingSoon.hours': 'Heures',
     'comingSoon.minutes': 'Minutes',
@@ -208,37 +219,44 @@ const translations = {
     'comingSoon.emailPlaceholder': 'Votre adresse e-mail',
     'comingSoon.notify': 'Notifier',
     'comingSoon.thankYou': 'Merci ! Nous vous notifierons des nouvelles mises à jour.',
-    'comingSoon.whatToExpect': 'À quoi s\'attendre ?',
-    'comingSoon.whatToExpectSubtitle': 'Des fonctionnalités innovantes qui révolutionneront votre expérience avec Taskilo.',
-    'comingSoon.readyForFuture': 'Prêt pour l\'avenir ?',
-    'comingSoon.readyForFutureText': 'Utilisez dès aujourd\'hui les fonctionnalités disponibles de Taskilo et réjouissez-vous des innovations à venir.',
+    'comingSoon.whatToExpect': "À quoi s'attendre ?",
+    'comingSoon.whatToExpectSubtitle':
+      'Des fonctionnalités innovantes qui révolutionneront votre expérience avec Taskilo.',
+    'comingSoon.readyForFuture': "Prêt pour l'avenir ?",
+    'comingSoon.readyForFutureText':
+      "Utilisez dès aujourd'hui les fonctionnalités disponibles de Taskilo et réjouissez-vous des innovations à venir.",
     'comingSoon.startProject': 'Démarrer un projet',
-    'comingSoon.registerAsProvider': 'S\'inscrire comme prestataire',
+    'comingSoon.registerAsProvider': "S'inscrire comme prestataire",
     'comingSoon.toDashboard': 'Vers le tableau de bord',
     'features.aiAssistant.title': 'Assistant de projet IA',
-    'features.aiAssistant.description': 'Suggestions de projets intelligentes et correspondance automatique des prestataires',
+    'features.aiAssistant.description':
+      'Suggestions de projets intelligentes et correspondance automatique des prestataires',
     'features.mobileApp.title': 'Application mobile',
     'features.mobileApp.description': 'Application native iOS et Android pour mobile',
-    'features.reviewSystem.title': 'Systèmes d\'évaluation avancés',
-    'features.reviewSystem.description': 'Évaluations détaillées des prestataires et assurance qualité',
-    'features.teamCollaboration.title': 'Collaboration d\'équipe',
-    'features.teamCollaboration.description': 'Plusieurs utilisateurs par entreprise et équipes de projet',
+    'features.reviewSystem.title': "Systèmes d'évaluation avancés",
+    'features.reviewSystem.description':
+      'Évaluations détaillées des prestataires et assurance qualité',
+    'features.teamCollaboration.title': "Collaboration d'équipe",
+    'features.teamCollaboration.description':
+      'Plusieurs utilisateurs par entreprise et équipes de projet',
     'features.automaticBilling.title': 'Facturation automatisée',
     'features.automaticBilling.description': 'Comptabilité intégrée et gestion fiscale',
     'features.videoConsultation.title': 'Consultation vidéo',
-    'features.videoConsultation.description': 'Appels vidéo directs avec les prestataires pour les projets complexes',
+    'features.videoConsultation.description':
+      'Appels vidéo directs avec les prestataires pour les projets complexes',
     'features.status.inDevelopment': 'En développement',
     'features.status.betaTest': 'Test bêta',
     'features.status.planning': 'Planification',
     'features.status.concept': 'Concept',
     'features.status.prototype': 'Prototype',
-    'milestones.aiLaunch.title': 'Lancement de l\'assistant IA',
+    'milestones.aiLaunch.title': "Lancement de l'assistant IA",
     'milestones.aiLaunch.description': 'Assistant de projet IA entièrement déployé',
-    'milestones.mobileBeta.title': 'Bêta de l\'application mobile',
-    'milestones.mobileBeta.description': 'Version bêta de l\'application mobile pour iOS et Android',
+    'milestones.mobileBeta.title': "Bêta de l'application mobile",
+    'milestones.mobileBeta.description': "Version bêta de l'application mobile pour iOS et Android",
     'milestones.premiumFeatures.title': 'Fonctionnalités premium',
-    'milestones.premiumFeatures.description': 'Fonctionnalités avancées pour les clients professionnels',
-    'milestones.apiLaunch.title': 'Lancement de l\'API',
+    'milestones.premiumFeatures.description':
+      'Fonctionnalités avancées pour les clients professionnels',
+    'milestones.apiLaunch.title': "Lancement de l'API",
     'milestones.apiLaunch.description': 'API publique pour les intégrations tierces',
   },
   es: {
@@ -274,7 +292,8 @@ const translations = {
     'banner.learnMore': 'Saber más',
     'banner.close': 'Cerrar banner',
     'comingSoon.title': 'Próximamente',
-    'comingSoon.subtitle': '¡Taskilo está mejorando aún más! Descubra las emocionantes nuevas funcionalidades que estamos desarrollando para usted.',
+    'comingSoon.subtitle':
+      '¡Taskilo está mejorando aún más! Descubra las emocionantes nuevas funcionalidades que estamos desarrollando para usted.',
     'comingSoon.launchCountdown': 'Lanzamiento del Asistente IA en:',
     'comingSoon.days': 'Días',
     'comingSoon.hours': 'Horas',
@@ -284,24 +303,29 @@ const translations = {
     'comingSoon.notify': 'Notificar',
     'comingSoon.thankYou': '¡Gracias! Le notificaremos sobre nuevas actualizaciones.',
     'comingSoon.whatToExpect': '¿Qué esperar?',
-    'comingSoon.whatToExpectSubtitle': 'Funcionalidades innovadoras que revolucionarán su experiencia con Taskilo.',
+    'comingSoon.whatToExpectSubtitle':
+      'Funcionalidades innovadoras que revolucionarán su experiencia con Taskilo.',
     'comingSoon.readyForFuture': '¿Listo para el futuro?',
-    'comingSoon.readyForFutureText': 'Use las funcionalidades disponibles de Taskilo hoy y espere las próximas innovaciones.',
+    'comingSoon.readyForFutureText':
+      'Use las funcionalidades disponibles de Taskilo hoy y espere las próximas innovaciones.',
     'comingSoon.startProject': 'Iniciar proyecto',
     'comingSoon.registerAsProvider': 'Registrarse como proveedor',
     'comingSoon.toDashboard': 'Al panel',
     'features.aiAssistant.title': 'Asistente de proyecto IA',
-    'features.aiAssistant.description': 'Sugerencias inteligentes de proyectos y coincidencia automática de proveedores',
+    'features.aiAssistant.description':
+      'Sugerencias inteligentes de proyectos y coincidencia automática de proveedores',
     'features.mobileApp.title': 'App móvil',
     'features.mobileApp.description': 'App nativa iOS y Android para móvil',
     'features.reviewSystem.title': 'Sistemas de reseñas avanzados',
     'features.reviewSystem.description': 'Reseñas detalladas de proveedores y control de calidad',
     'features.teamCollaboration.title': 'Colaboración en equipo',
-    'features.teamCollaboration.description': 'Múltiples usuarios por empresa y equipos de proyecto',
+    'features.teamCollaboration.description':
+      'Múltiples usuarios por empresa y equipos de proyecto',
     'features.automaticBilling.title': 'Facturación automatizada',
     'features.automaticBilling.description': 'Contabilidad integrada y gestión fiscal',
     'features.videoConsultation.title': 'Consulta por video',
-    'features.videoConsultation.description': 'Llamadas de video directas con proveedores para proyectos complejos',
+    'features.videoConsultation.description':
+      'Llamadas de video directas con proveedores para proyectos complejos',
     'features.status.inDevelopment': 'En desarrollo',
     'features.status.betaTest': 'Prueba beta',
     'features.status.planning': 'Planificación',
@@ -312,7 +336,8 @@ const translations = {
     'milestones.mobileBeta.title': 'Beta de app móvil',
     'milestones.mobileBeta.description': 'Versión beta de la app móvil para iOS y Android',
     'milestones.premiumFeatures.title': 'Funcionalidades premium',
-    'milestones.premiumFeatures.description': 'Funcionalidades avanzadas para clientes empresariales',
+    'milestones.premiumFeatures.description':
+      'Funcionalidades avanzadas para clientes empresariales',
     'milestones.apiLaunch.title': 'Lanzamiento de API',
     'milestones.apiLaunch.description': 'API pública para integraciones de terceros',
   },
@@ -352,16 +377,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const translatePageContent = async (targetLang: string) => {
     if (isTranslating) return; // Verhindere mehrfache gleichzeitige Übersetzungen
-    
+
     setIsTranslating(true);
-    
+
     try {
       // Sammle alle sichtbaren Texte von der aktuellen Seite
       const textElements = document.querySelectorAll('[data-translatable]');
       const textsToTranslate: string[] = [];
       const sourceKeys: string[] = [];
 
-      textElements.forEach((element) => {
+      textElements.forEach(element => {
         const text = element.textContent?.trim();
         if (text && text.length > 0) {
           textsToTranslate.push(text);
@@ -397,11 +422,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await response.json();
-      
+
       // Aktualisiere die dynamischen Übersetzungen
       setDynamicTranslations(prev => ({
         ...prev,
-        ...data.translations
+        ...data.translations,
       }));
 
       // Wende die Übersetzungen auf die Elemente an
@@ -414,7 +439,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       });
 
       console.log('Übersetzung erfolgreich abgeschlossen');
-
     } catch (error) {
       console.error('Fehler bei der Seitenübersetzung:', error);
     } finally {
@@ -425,7 +449,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const handleSetLanguage = (lang: string) => {
     setLanguage(lang);
     localStorage.setItem('taskilo-language', lang);
-    
+
     // Falls es keine manuelle Übersetzung für diese Sprache gibt, verwende automatische Übersetzung
     if (!translations[lang as keyof typeof translations] && lang !== 'de') {
       translatePageContent(lang);
@@ -452,15 +476,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ 
-      language, 
-      setLanguage: handleSetLanguage, 
-      t,
-      isTranslating,
-      availableLanguages,
-      translatePageContent,
-      dynamicTranslations
-    }}>
+    <LanguageContext.Provider
+      value={{
+        language,
+        setLanguage: handleSetLanguage,
+        t,
+        isTranslating,
+        availableLanguages,
+        translatePageContent,
+        dynamicTranslations,
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

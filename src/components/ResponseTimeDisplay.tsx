@@ -11,11 +11,11 @@ interface ResponseTimeDisplayProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export default function ResponseTimeDisplay({ 
-  providerId, 
-  guaranteeHours = 24, 
-  showDetailed = false, 
-  size = 'md' 
+export default function ResponseTimeDisplay({
+  providerId,
+  guaranteeHours = 24,
+  showDetailed = false,
+  size = 'md',
 }: ResponseTimeDisplayProps) {
   const [stats, setStats] = useState<ResponseTimeStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,9 +38,9 @@ export default function ResponseTimeDisplay({
 
   const getStatusIcon = () => {
     if (!stats) return <Clock className="w-4 h-4 text-gray-400" />;
-    
+
     const complianceRate = stats.guaranteeComplianceRate;
-    
+
     if (complianceRate >= 95) {
       return <CheckCircle className="w-4 h-4 text-green-600" />;
     } else if (complianceRate >= 85) {
@@ -97,17 +97,13 @@ export default function ResponseTimeDisplay({
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-center gap-3 mb-4">
         <Clock className="w-5 h-5 text-[#14ad9f]" />
-        <h3 className="font-semibold text-gray-900 dark:text-white">
-          Antwortzeit-Garantie
-        </h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white">Antwortzeit-Garantie</h3>
       </div>
 
       <div className="space-y-4">
         {/* Garantie */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Garantie
-          </span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Garantie</span>
           <span className="font-medium text-gray-900 dark:text-white">
             max. {guaranteeHours} Stunden
           </span>
@@ -117,9 +113,7 @@ export default function ResponseTimeDisplay({
           <>
             {/* Durchschnittliche Antwortzeit */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Durchschnitt
-              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Durchschnitt</span>
               <span className="font-medium text-gray-900 dark:text-white">
                 {ResponseTimeTracker.formatResponseTime(stats.averageResponseTimeHours)}
               </span>
@@ -127,9 +121,7 @@ export default function ResponseTimeDisplay({
 
             {/* Einhaltungsrate */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Einhaltungsrate
-              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Einhaltungsrate</span>
               <div className="flex items-center gap-2">
                 {getStatusIcon()}
                 <span className={`font-medium ${getStatusColor()}`}>
@@ -140,12 +132,8 @@ export default function ResponseTimeDisplay({
 
             {/* Status-Beschreibung */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Bewertung
-              </span>
-              <span className={`font-medium ${getStatusColor()}`}>
-                {getStatusText()}
-              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Bewertung</span>
+              <span className={`font-medium ${getStatusColor()}`}>{getStatusText()}</span>
             </div>
 
             {/* Statistiken */}
@@ -155,17 +143,13 @@ export default function ResponseTimeDisplay({
                   <div className="text-lg font-bold text-gray-900 dark:text-white">
                     {stats.responsesWithinGuarantee}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Pünktlich
-                  </div>
+                  <div className="text-xs text-gray-500">Pünktlich</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold text-gray-900 dark:text-white">
                     {stats.totalMessages}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Gesamt (30T)
-                  </div>
+                  <div className="text-xs text-gray-500">Gesamt (30T)</div>
                 </div>
               </div>
             </div>
@@ -182,10 +166,10 @@ export default function ResponseTimeDisplay({
                     stats.guaranteeComplianceRate >= 95
                       ? 'bg-green-500'
                       : stats.guaranteeComplianceRate >= 85
-                      ? 'bg-yellow-500'
-                      : stats.guaranteeComplianceRate >= 70
-                      ? 'bg-orange-500'
-                      : 'bg-red-500'
+                        ? 'bg-yellow-500'
+                        : stats.guaranteeComplianceRate >= 70
+                          ? 'bg-orange-500'
+                          : 'bg-red-500'
                   }`}
                   style={{ width: `${Math.min(stats.guaranteeComplianceRate, 100)}%` }}
                 ></div>
@@ -195,9 +179,7 @@ export default function ResponseTimeDisplay({
             {/* Trend-Indikator */}
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <TrendingUp className="w-3 h-3" />
-              <span>
-                Basiert auf {stats.totalMessages} Nachrichten der letzten 30 Tage
-              </span>
+              <span>Basiert auf {stats.totalMessages} Nachrichten der letzten 30 Tage</span>
             </div>
           </>
         )}
@@ -205,9 +187,7 @@ export default function ResponseTimeDisplay({
         {!stats && (
           <div className="text-center py-4">
             <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">
-              Noch keine Antwortzeit-Daten verfügbar
-            </p>
+            <p className="text-sm text-gray-500">Noch keine Antwortzeit-Daten verfügbar</p>
             <p className="text-xs text-gray-400 mt-1">
               Statistiken werden nach den ersten Nachrichten angezeigt
             </p>
@@ -219,12 +199,12 @@ export default function ResponseTimeDisplay({
 }
 
 // Vereinfachte Badge-Komponente für Listen
-export function ResponseTimeBadge({ 
-  providerId, 
-  guaranteeHours = 24 
-}: { 
-  providerId: string; 
-  guaranteeHours?: number; 
+export function ResponseTimeBadge({
+  providerId,
+  guaranteeHours = 24,
+}: {
+  providerId: string;
+  guaranteeHours?: number;
 }) {
   const [stats, setStats] = useState<ResponseTimeStats | null>(null);
 
@@ -246,21 +226,22 @@ export function ResponseTimeBadge({
   }
 
   const complianceRate = stats.guaranteeComplianceRate;
-  const badgeColor = 
-    complianceRate >= 95 ? 'bg-green-100 text-green-800' :
-    complianceRate >= 85 ? 'bg-yellow-100 text-yellow-800' :
-    complianceRate >= 70 ? 'bg-orange-100 text-orange-800' :
-    'bg-red-100 text-red-800';
+  const badgeColor =
+    complianceRate >= 95
+      ? 'bg-green-100 text-green-800'
+      : complianceRate >= 85
+        ? 'bg-yellow-100 text-yellow-800'
+        : complianceRate >= 70
+          ? 'bg-orange-100 text-orange-800'
+          : 'bg-red-100 text-red-800';
 
   return (
-    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badgeColor}`}>
+    <div
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badgeColor}`}
+    >
       <Clock className="w-3 h-3" />
-      <span>
-        {ResponseTimeTracker.formatResponseTime(stats.averageResponseTimeHours)}
-      </span>
-      <span className="text-xs opacity-75">
-        ({complianceRate.toFixed(0)}%)
-      </span>
+      <span>{ResponseTimeTracker.formatResponseTime(stats.averageResponseTimeHours)}</span>
+      <span className="text-xs opacity-75">({complianceRate.toFixed(0)}%)</span>
     </div>
   );
 }

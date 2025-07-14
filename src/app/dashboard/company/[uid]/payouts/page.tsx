@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Download, 
-  Calendar, 
-  CreditCard, 
-  Clock, 
-  CheckCircle, 
+import {
+  Download,
+  Calendar,
+  CreditCard,
+  Clock,
+  CheckCircle,
   XCircle,
   ArrowLeft,
   FileText,
-  Euro
+  Euro,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,7 +68,7 @@ export default function PayoutOverviewPage() {
       const response = await fetch('/api/get-payout-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUserId: uid })
+        body: JSON.stringify({ firebaseUserId: uid }),
       });
 
       if (!response.ok) {
@@ -87,9 +87,9 @@ export default function PayoutOverviewPage() {
   };
 
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat('de-DE', { 
-      style: 'currency', 
-      currency: currency.toUpperCase() 
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
     }).format(amount / 100); // Convert from cents
   };
 
@@ -97,37 +97,59 @@ export default function PayoutOverviewPage() {
     return new Date(timestamp * 1000).toLocaleDateString('de-DE', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const getStatusBadge = (status: Payout['status']) => {
     switch (status) {
       case 'paid':
-        return <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          <CheckCircle className="w-3 h-3 mr-1" />
-          Ausgezahlt
-        </Badge>;
+        return (
+          <Badge
+            variant="default"
+            className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+          >
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Ausgezahlt
+          </Badge>
+        );
       case 'in_transit':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-          <Clock className="w-3 h-3 mr-1" />
-          Unterwegs
-        </Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+          >
+            <Clock className="w-3 h-3 mr-1" />
+            Unterwegs
+          </Badge>
+        );
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-          <Clock className="w-3 h-3 mr-1" />
-          Ausstehend
-        </Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+          >
+            <Clock className="w-3 h-3 mr-1" />
+            Ausstehend
+          </Badge>
+        );
       case 'failed':
-        return <Badge variant="destructive">
-          <XCircle className="w-3 h-3 mr-1" />
-          Fehlgeschlagen
-        </Badge>;
+        return (
+          <Badge variant="destructive">
+            <XCircle className="w-3 h-3 mr-1" />
+            Fehlgeschlagen
+          </Badge>
+        );
       case 'canceled':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-          <XCircle className="w-3 h-3 mr-1" />
-          Storniert
-        </Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+          >
+            <XCircle className="w-3 h-3 mr-1" />
+            Storniert
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -139,10 +161,10 @@ export default function PayoutOverviewPage() {
       const response = await fetch('/api/generate-payout-invoice-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           firebaseUserId: uid,
-          payoutId: payoutId
-        })
+          payoutId: payoutId,
+        }),
       });
 
       if (!response.ok) {
@@ -151,19 +173,19 @@ export default function PayoutOverviewPage() {
       }
 
       const htmlContent = await response.text();
-      
+
       // Öffne HTML in neuem Fenster zum Drucken/Speichern
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
-        
+
         // Auto-Print Dialog öffnen
         setTimeout(() => {
           printWindow.print();
         }, 500);
-        
+
         // Erfolgsmeldung zeigen
         console.log('Rechnung erfolgreich geöffnet');
       } else {
@@ -178,17 +200,19 @@ export default function PayoutOverviewPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         // Erfolgsmeldung zeigen
         console.log('Rechnung erfolgreich heruntergeladen');
       }
     } catch (err) {
       console.error('Error downloading invoice:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-      
+
       // Zeige eine benutzerfreundlichere Fehlermeldung
       if (errorMessage.includes('Zahlungsverarbeitung nicht verfügbar')) {
-        alert('Die Rechnungsgenerierung ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.');
+        alert(
+          'Die Rechnungsgenerierung ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.'
+        );
       } else if (errorMessage.includes('Datenbankverbindung nicht verfügbar')) {
         alert('Verbindungsproblem zur Datenbank. Bitte versuchen Sie es später erneut.');
       } else {
@@ -232,9 +256,7 @@ export default function PayoutOverviewPage() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Auszahlungen
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Auszahlungen</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               Übersicht über Ihre Auszahlungen und Rechnungen
             </p>
@@ -244,12 +266,7 @@ export default function PayoutOverviewPage() {
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
             <p className="text-red-800 dark:text-red-200">{error}</p>
-            <Button 
-              onClick={loadPayoutHistory}
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-            >
+            <Button onClick={loadPayoutHistory} variant="outline" size="sm" className="mt-2">
               Erneut versuchen
             </Button>
           </div>
@@ -276,9 +293,7 @@ export default function PayoutOverviewPage() {
                   <CheckCircle className="w-4 h-4" />
                   Anzahl Auszahlungen
                 </CardDescription>
-                <CardTitle className="text-2xl font-semibold">
-                  {summary.totalPayouts}
-                </CardTitle>
+                <CardTitle className="text-2xl font-semibold">{summary.totalPayouts}</CardTitle>
               </CardHeader>
             </Card>
 
@@ -315,13 +330,14 @@ export default function PayoutOverviewPage() {
                   Keine Auszahlungen gefunden
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Ihre Auszahlungshistorie wird hier angezeigt, sobald Sie Ihre erste Auszahlung beantragt haben.
+                  Ihre Auszahlungshistorie wird hier angezeigt, sobald Sie Ihre erste Auszahlung
+                  beantragt haben.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {payouts.map((payout) => (
-                  <div 
+                {payouts.map(payout => (
+                  <div
                     key={payout.id}
                     className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
@@ -360,7 +376,7 @@ export default function PayoutOverviewPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {(payout.status === 'paid' || payout.status === 'in_transit') && (
                         <Button

@@ -9,9 +9,8 @@ import type { Company, RatingInfo } from '@/types/types';
 
 // Importiere andere benötigte Komponenten mit korrekten Pfaden
 import ProjectGallery from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/ProjectGallery'; // Beispiel für globalen Pfad
-import ReviewList from '@/components/ReviewList';       // Beispiel für globalen Pfad
-import LanguageTags from '@/components/LanguageTags';   // Beispiel für globalen Pfad
-
+import ReviewList from '@/components/ReviewList'; // Beispiel für globalen Pfad
+import LanguageTags from '@/components/LanguageTags'; // Beispiel für globalen Pfad
 
 // Hilfsfunktion zum Rendern von Sternen
 function renderStars(rating: number) {
@@ -28,7 +27,11 @@ export interface CompanyProfileDetailProps {
 }
 
 // Die Komponente selbst - kann als const oder function definiert werden
-const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ratingMap, onClose }) => {
+const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({
+  company,
+  ratingMap,
+  onClose,
+}) => {
   const companyRating = ratingMap[company.id];
 
   let displayHourlyRate: string | null = null;
@@ -41,7 +44,12 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center px-4 overflow-y-auto py-10">
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl leading-none"
+        >
+          &times;
+        </button>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
           <Image
@@ -54,23 +62,28 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
           />
 
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{company.companyName}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
+              {company.companyName}
+            </h2>
 
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               <span className="text-yellow-500">
                 {companyRating ? renderStars(companyRating.avg) : '–'}
               </span>{' '}
               {companyRating?.avg?.toFixed(1) ?? '–'} ({companyRating?.count ?? 0} Bewertungen)
-
               {companyRating?.subCounts && Object.keys(companyRating.subCounts).length > 0 && (
                 <div className="text-xs mt-1">
                   {Object.entries(companyRating.subCounts).map(([key, value]) => (
-                    <span key={key} className="mr-2">{value}x {key}</span>
+                    <span key={key} className="mr-2">
+                      {value}x {key}
+                    </span>
                   ))}
                 </div>
               )}
               {companyRating?.category && (
-                <div className="text-xs mt-1">Kategorie (Bewertungen): {companyRating.category}</div>
+                <div className="text-xs mt-1">
+                  Kategorie (Bewertungen): {companyRating.category}
+                </div>
               )}
             </div>
 
@@ -80,17 +93,25 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
               </p>
             )}
             {company.minimumHours !== undefined && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">Minimum {company.minimumHours} Stunden</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Minimum {company.minimumHours} Stunden
+              </p>
             )}
             {company.postalCode && company.city && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{company.postalCode} {company.city}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {company.postalCode} {company.city}
+              </p>
             )}
-            {company.languages && typeof company.languages === 'string' && company.languages.length > 0 && (
-              <div className="mt-2 mb-2">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sprachen:</h3>
-                <LanguageTags languages={company.languages} maxTags={5} />
-              </div>
-            )}
+            {company.languages &&
+              typeof company.languages === 'string' &&
+              company.languages.length > 0 && (
+                <div className="mt-2 mb-2">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sprachen:
+                  </h3>
+                  <LanguageTags languages={company.languages} maxTags={5} />
+                </div>
+              )}
           </div>
         </div>
 
@@ -103,7 +124,9 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
 
         {company.id && company.projectImages && company.projectImages.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Projektgalerie</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">
+              Projektgalerie
+            </h3>
             {/* WICHTIG: Stelle sicher, dass ProjectGallery.tsx eine 'images'-Prop (string[]) akzeptiert! */}
             <ProjectGallery userId={company.id} images={company.projectImages} />
           </div>
@@ -111,7 +134,9 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
 
         {company.id && (
           <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Bewertungen</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">
+              Bewertungen
+            </h3>
             <div className="reviews-wrap">
               <ul className="review-list space-y-6">
                 {/* Beispiel-Bewertung 1 */}
@@ -126,10 +151,16 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">heathernixonogt</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            heathernixonogt
+                          </p>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
-                          <img className="w-4 h-4" src="https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1fa-1f1f8.png" alt="US" />
+                          <img
+                            className="w-4 h-4"
+                            src="https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1fa-1f1f8.png"
+                            alt="US"
+                          />
                           <p className="text-sm text-gray-500 dark:text-gray-400">Deutschland</p>
                         </div>
                       </div>
@@ -141,8 +172,18 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                         <div className="flex items-center space-x-1">
                           {/* 5 Sterne */}
                           {[...Array(5)].map((_, i) => (
-                            <svg key={i} width="15" height="15" viewBox="0 0 16 15" className="text-yellow-400 fill-current">
-                              <path fillRule="evenodd" clipRule="evenodd" d="M16 5.81285C16 5.98299 15.875 6.14367 15.75 6.26654L12.2596 9.61248L13.0865 14.3384C13.0962 14.4045 13.0962 14.4612 13.0962 14.5274C13.0962 14.7732 12.9808 15 12.7019 15C12.5673 15 12.4327 14.9527 12.3173 14.8866L8 12.656L3.68269 14.8866C3.55769 14.9527 3.43269 15 3.29808 15C3.01923 15 2.89423 14.7732 2.89423 14.5274C2.89423 14.4612 2.90385 14.4045 2.91346 14.3384L3.74038 9.61248L0.240385 6.26654C0.125 6.14367 0 5.98299 0 5.81285C0 5.5293 0.298077 5.41588 0.538462 5.37807L5.36539 4.68809L7.52885 0.387524C7.61539 0.207939 7.77885 0 8 0C8.22115 0 8.38462 0.207939 8.47115 0.387524L10.6346 4.68809L15.4615 5.37807C15.6923 5.41588 16 5.5293 16 5.81285Z"></path>
+                            <svg
+                              key={i}
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 15"
+                              className="text-yellow-400 fill-current"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                clipRule="evenodd"
+                                d="M16 5.81285C16 5.98299 15.875 6.14367 15.75 6.26654L12.2596 9.61248L13.0865 14.3384C13.0962 14.4045 13.0962 14.4612 13.0962 14.5274C13.0962 14.7732 12.9808 15 12.7019 15C12.5673 15 12.4327 14.9527 12.3173 14.8866L8 12.656L3.68269 14.8866C3.55769 14.9527 3.43269 15 3.29808 15C3.01923 15 2.89423 14.7732 2.89423 14.5274C2.89423 14.4612 2.90385 14.4045 2.91346 14.3384L3.74038 9.61248L0.240385 6.26654C0.125 6.14367 0 5.98299 0 5.81285C0 5.5293 0.298077 5.41588 0.538462 5.37807L5.36539 4.68809L7.52885 0.387524C7.61539 0.207939 7.77885 0 8 0C8.22115 0 8.38462 0.207939 8.47115 0.387524L10.6346 4.68809L15.4615 5.37807C15.6923 5.41588 16 5.5293 16 5.81285Z"
+                              ></path>
                             </svg>
                           ))}
                           <strong className="text-lg font-semibold ml-2">5</strong>
@@ -154,7 +195,9 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                     {/* Bewertungstext */}
                     <div className="prose max-w-none">
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Die Zusammenarbeit mit diesem Anbieter war außergewöhnlich. Professionalität und Verständnis für unser Geschäft waren hervorragend. Ich werde definitiv wieder mit ihm arbeiten!
+                        Die Zusammenarbeit mit diesem Anbieter war außergewöhnlich. Professionalität
+                        und Verständnis für unser Geschäft waren hervorragend. Ich werde definitiv
+                        wieder mit ihm arbeiten!
                       </p>
                     </div>
 
@@ -185,7 +228,9 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                           A
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white mb-1">Antwort des Anbieters</p>
+                          <p className="font-medium text-gray-900 dark:text-white mb-1">
+                            Antwort des Anbieters
+                          </p>
                           <p className="text-gray-700 dark:text-gray-300 text-sm">
                             Vielen Dank für Ihre freundlichen Worte! Ich wünsche Ihnen alles Gute!
                           </p>
@@ -224,16 +269,33 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">max_mueller</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            max_mueller
+                          </p>
                           <div className="flex items-center space-x-1 text-sm">
-                            <svg width="16" height="16" viewBox="0 0 16 16" className="text-green-500 fill-current">
-                              <path fillRule="evenodd" clipRule="evenodd" d="m5.17 1.47 2.64 2.64a.75.75 0 0 1 0 1.06L5.17 7.81a.75.75 0 0 1-1.06-1.06l1.36-1.36H4.332c-1.392 0-2.583 1.196-2.583 2.75 0 1.553 1.19 2.75 2.583 2.75a.75.75 0 0 1 0 1.5C2.044 12.39.25 10.452.25 8.14c0-2.313 1.794-4.25 4.083-4.25H5.47L4.11 2.53A.75.75 0 0 1 5.17 1.47Zm6.497 2.42a.75.75 0 0 0 0 1.5c1.392 0 2.583 1.196 2.583 2.75 0 1.553-1.19 2.75-2.583 2.75h-.874l1.36-1.36a.75.75 0 1 0-1.061-1.06l-2.64 2.64a.75.75 0 0 0 0 1.06l2.64 2.64a.75.75 0 0 0 1.06-1.06l-1.36-1.36h.875c2.289 0 4.083-1.938 4.083-4.25 0-2.313-1.794-4.25-4.083-4.25Z"></path>
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 16 16"
+                              className="text-green-500 fill-current"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                clipRule="evenodd"
+                                d="m5.17 1.47 2.64 2.64a.75.75 0 0 1 0 1.06L5.17 7.81a.75.75 0 0 1-1.06-1.06l1.36-1.36H4.332c-1.392 0-2.583 1.196-2.583 2.75 0 1.553 1.19 2.75 2.583 2.75a.75.75 0 0 1 0 1.5C2.044 12.39.25 10.452.25 8.14c0-2.313 1.794-4.25 4.083-4.25H5.47L4.11 2.53A.75.75 0 0 1 5.17 1.47Zm6.497 2.42a.75.75 0 0 0 0 1.5c1.392 0 2.583 1.196 2.583 2.75 0 1.553-1.19 2.75-2.583 2.75h-.874l1.36-1.36a.75.75 0 1 0-1.061-1.06l-2.64 2.64a.75.75 0 0 0 0 1.06l2.64 2.64a.75.75 0 0 0 1.06-1.06l-1.36-1.36h.875c2.289 0 4.083-1.938 4.083-4.25 0-2.313-1.794-4.25-4.083-4.25Z"
+                              ></path>
                             </svg>
-                            <p className="text-gray-600 dark:text-gray-400 font-medium">Wiederkehrender Kunde</p>
+                            <p className="text-gray-600 dark:text-gray-400 font-medium">
+                              Wiederkehrender Kunde
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
-                          <img className="w-4 h-4" src="https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1fa-1f1f8.png" alt="DE" />
+                          <img
+                            className="w-4 h-4"
+                            src="https://fiverr-dev-res.cloudinary.com/general_assets/flags/1f1fa-1f1f8.png"
+                            alt="DE"
+                          />
                           <p className="text-sm text-gray-500 dark:text-gray-400">Deutschland</p>
                         </div>
                       </div>
@@ -245,8 +307,18 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                         <div className="flex items-center space-x-1">
                           {/* 5 Sterne */}
                           {[...Array(5)].map((_, i) => (
-                            <svg key={i} width="15" height="15" viewBox="0 0 16 15" className="text-yellow-400 fill-current">
-                              <path fillRule="evenodd" clipRule="evenodd" d="M16 5.81285C16 5.98299 15.875 6.14367 15.75 6.26654L12.2596 9.61248L13.0865 14.3384C13.0962 14.4045 13.0962 14.4612 13.0962 14.5274C13.0962 14.7732 12.9808 15 12.7019 15C12.5673 15 12.4327 14.9527 12.3173 14.8866L8 12.656L3.68269 14.8866C3.55769 14.9527 3.43269 15 3.29808 15C3.01923 15 2.89423 14.7732 2.89423 14.5274C2.89423 14.4612 2.90385 14.4045 2.91346 14.3384L3.74038 9.61248L0.240385 6.26654C0.125 6.14367 0 5.98299 0 5.81285C0 5.5293 0.298077 5.41588 0.538462 5.37807L5.36539 4.68809L7.52885 0.387524C7.61539 0.207939 7.77885 0 8 0C8.22115 0 8.38462 0.207939 8.47115 0.387524L10.6346 4.68809L15.4615 5.37807C15.6923 5.41588 16 5.5293 16 5.81285Z"></path>
+                            <svg
+                              key={i}
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 15"
+                              className="text-yellow-400 fill-current"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                clipRule="evenodd"
+                                d="M16 5.81285C16 5.98299 15.875 6.14367 15.75 6.26654L12.2596 9.61248L13.0865 14.3384C13.0962 14.4045 13.0962 14.4612 13.0962 14.5274C13.0962 14.7732 12.9808 15 12.7019 15C12.5673 15 12.4327 14.9527 12.3173 14.8866L8 12.656L3.68269 14.8866C3.55769 14.9527 3.43269 15 3.29808 15C3.01923 15 2.89423 14.7732 2.89423 14.5274C2.89423 14.4612 2.90385 14.4045 2.91346 14.3384L3.74038 9.61248L0.240385 6.26654C0.125 6.14367 0 5.98299 0 5.81285C0 5.5293 0.298077 5.41588 0.538462 5.37807L5.36539 4.68809L7.52885 0.387524C7.61539 0.207939 7.77885 0 8 0C8.22115 0 8.38462 0.207939 8.47115 0.387524L10.6346 4.68809L15.4615 5.37807C15.6923 5.41588 16 5.5293 16 5.81285Z"
+                              ></path>
                             </svg>
                           ))}
                           <strong className="text-lg font-semibold ml-2">5</strong>
@@ -258,7 +330,9 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({ company, ra
                     {/* Bewertungstext */}
                     <div className="prose max-w-none">
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Bereits das zweite Projekt mit diesem Anbieter und wieder ein hervorragendes Ergebnis. Expertise und Aufmerksamkeit für Details sind unglaublich. Alles wurde präzise auf unsere Bedürfnisse zugeschnitten...
+                        Bereits das zweite Projekt mit diesem Anbieter und wieder ein hervorragendes
+                        Ergebnis. Expertise und Aufmerksamkeit für Details sind unglaublich. Alles
+                        wurde präzise auf unsere Bedürfnisse zugeschnitten...
                         <button className="text-blue-600 dark:text-blue-400 hover:underline ml-1">
                           Mehr anzeigen
                         </button>

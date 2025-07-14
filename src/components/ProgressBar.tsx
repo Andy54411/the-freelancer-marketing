@@ -5,10 +5,7 @@ const ProgressBar = ({ currentStep, totalSteps }: { currentStep: number; totalSt
 
   return (
     <div className="w-full bg-gray-200 rounded-full h-3">
-      <div
-        className="bg-[#14ad9f] h-3 rounded-full"
-        style={{ width: `${progress}%` }}
-      ></div>
+      <div className="bg-[#14ad9f] h-3 rounded-full" style={{ width: `${progress}%` }}></div>
     </div>
   );
 };

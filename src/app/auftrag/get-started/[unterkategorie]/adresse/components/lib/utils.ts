@@ -25,7 +25,8 @@ export function renderStars(rating: number): string {
  * @param subcategory Die Unterkategorie des Dienstes (z.B. 'Mietkoch', 'Maler & Lackierer').
  * @returns Ein Objekt vom Typ BookingCharacteristics.
  */
-export function getBookingCharacteristics(subcategory: string | null): BookingCharacteristics { // Expliziter Rückgabetyp
+export function getBookingCharacteristics(subcategory: string | null): BookingCharacteristics {
+  // Expliziter Rückgabetyp
   switch (subcategory) {
     case 'Mietkoch':
       return {
