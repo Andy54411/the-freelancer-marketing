@@ -1,53 +1,51 @@
+'use client';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Users, Shield, Zap, Globe, TrendingUp } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function FeaturesSection() {
+  const { t } = useLanguage();
   const features = [
     {
       icon: CheckCircle,
-      title: 'Verifizierte Dienstleister',
-      description:
-        'Alle Unternehmen und Handwerker durchlaufen einen strengen Verifizierungsprozess für maximale Sicherheit und Qualität.',
+      title: t('features.verified.title'),
+      description: t('features.verified.description'),
       color: 'text-[#14ad9f]',
       bgColor: 'bg-[#14ad9f]/10',
     },
     {
       icon: Zap,
-      title: 'Blitzschnelle Buchung',
-      description:
-        'Buchen Sie professionelle Dienstleistungen in wenigen Klicks - von der Anfrage bis zur Bestätigung in Minuten.',
+      title: t('features.booking.title'),
+      description: t('features.booking.description'),
       color: 'text-blue-600',
       bgColor: 'bg-blue-600/10',
     },
     {
       icon: Shield,
-      title: 'Sichere Bezahlung',
-      description:
-        'Integrierte Zahlungsabwicklung mit Käuferschutz. Zahlen Sie erst nach erfolgreicher Leistungserbringung.',
+      title: t('features.payment.title'),
+      description: t('features.payment.description'),
       color: 'text-green-600',
       bgColor: 'bg-green-600/10',
     },
     {
       icon: Users,
-      title: 'Direkter Kontakt',
-      description:
-        'Kommunizieren Sie direkt mit Ihren Dienstleistern über unseren integrierten Chat und behalten Sie den Überblick.',
+      title: t('features.contact.title'),
+      description: t('features.contact.description'),
       color: 'text-purple-600',
       bgColor: 'bg-purple-600/10',
     },
     {
       icon: Globe,
-      title: 'Deutschlandweit verfügbar',
-      description:
-        'Finden Sie qualifizierte Dienstleister in ganz Deutschland - von Hamburg bis München.',
+      title: t('features.nationwide.title'),
+      description: t('features.nationwide.description'),
       color: 'text-orange-600',
       bgColor: 'bg-orange-600/10',
     },
     {
       icon: TrendingUp,
-      title: 'Transparente Bewertungen',
-      description:
-        'Echte Kundenbewertungen und detaillierte Profile helfen Ihnen bei der Auswahl des besten Dienstleisters.',
+      title: t('features.reviews.title'),
+      description: t('features.reviews.description'),
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-600/10',
     },
@@ -58,13 +56,10 @@ export default function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Warum
-            <span className="text-[#14ad9f]"> Taskilo </span>
-            die beste Wahl ist
+            {t('features.sectionTitle')}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Entdecken Sie, wie Taskilo die Verbindung zwischen Kunden und professionellen
-            Dienstleistern revolutioniert
+            {t('features.sectionDescription')}
           </p>
         </div>
 

@@ -682,9 +682,33 @@ const translations = {
     'categoryGrid.popular.text': 'Die beliebtesten Dienstleistungen der Woche.',
     'categoryGrid.popular.tag1': 'Top Anbieter',
     'categoryGrid.popular.tag2': 'Trending',
-    'categoryGrid.trends': 'Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige Materialien.',
+    'categoryGrid.trends':
+      'Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige Materialien.',
     'categoryGrid.loading': 'Laden...',
     'categoryGrid.imageNotAvailable': 'Bild nicht verfügbar',
+
+    // Features Section
+    'features.verified.title': 'Verifizierte Dienstleister',
+    'features.verified.description':
+      'Alle Unternehmen und Handwerker durchlaufen einen strengen Verifizierungsprozess für maximale Sicherheit und Qualität.',
+    'features.booking.title': 'Blitzschnelle Buchung',
+    'features.booking.description':
+      'Buchen Sie professionelle Dienstleistungen in wenigen Klicks - von der Anfrage bis zur Bestätigung in Minuten.',
+    'features.payment.title': 'Sichere Bezahlung',
+    'features.payment.description':
+      'Integrierte Zahlungsabwicklung mit Käuferschutz. Zahlen Sie erst nach erfolgreicher Leistungserbringung.',
+    'features.contact.title': 'Direkter Kontakt',
+    'features.contact.description':
+      'Kommunizieren Sie direkt mit Ihren Dienstleistern über unseren integrierten Chat und behalten Sie den Überblick.',
+    'features.nationwide.title': 'Deutschlandweit verfügbar',
+    'features.nationwide.description':
+      'Finden Sie qualifizierte Dienstleister in ganz Deutschland - von Hamburg bis München.',
+    'features.reviews.title': 'Transparente Bewertungen',
+    'features.reviews.description':
+      'Echte Kundenbewertungen und detaillierte Profile helfen Ihnen bei der Auswahl des besten Dienstleisters.',
+    'features.sectionTitle': 'Warum Taskilo die beste Wahl ist',
+    'features.sectionDescription':
+      'Entdecken Sie, wie Taskilo die Verbindung zwischen Kunden und professionellen Dienstleistern revolutioniert',
   },
   en: {
     // Basic UI Elements
@@ -1301,9 +1325,33 @@ const translations = {
     'categoryGrid.popular.text': 'The most popular services of the week.',
     'categoryGrid.popular.tag1': 'Top Providers',
     'categoryGrid.popular.tag2': 'Trending',
-    'categoryGrid.trends': 'Current trends: Curved sofas, computer desks and sustainable materials.',
+    'categoryGrid.trends':
+      'Current trends: Curved sofas, computer desks and sustainable materials.',
     'categoryGrid.loading': 'Loading...',
     'categoryGrid.imageNotAvailable': 'Image not available',
+
+    // Features Section
+    'features.verified.title': 'Verified Service Providers',
+    'features.verified.description':
+      'All companies and craftsmen undergo a strict verification process for maximum security and quality.',
+    'features.booking.title': 'Lightning-fast Booking',
+    'features.booking.description':
+      'Book professional services in just a few clicks - from request to confirmation in minutes.',
+    'features.payment.title': 'Secure Payment',
+    'features.payment.description':
+      'Integrated payment processing with buyer protection. Pay only after successful service delivery.',
+    'features.contact.title': 'Direct Contact',
+    'features.contact.description':
+      'Communicate directly with your service providers via our integrated chat and stay informed.',
+    'features.nationwide.title': 'Available Nationwide',
+    'features.nationwide.description':
+      'Find qualified service providers throughout Germany - from Hamburg to Munich.',
+    'features.reviews.title': 'Transparent Reviews',
+    'features.reviews.description':
+      'Real customer reviews and detailed profiles help you choose the best service provider.',
+    'features.sectionTitle': 'Why Taskilo is the best choice',
+    'features.sectionDescription':
+      'Discover how Taskilo revolutionizes the connection between customers and professional service providers',
   },
 };
 
