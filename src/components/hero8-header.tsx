@@ -11,6 +11,7 @@ import LoginPopup from '@/components/LoginPopup';
 import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { app, storage, db } from '@/firebase/clients';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,18 +28,19 @@ interface User {
   photoURL: string | null;
 }
 
-const menuItems = [
-  { name: 'Services', href: '/services' },
-  { name: 'Über uns', href: '/about' },
-  { name: 'Kontakt', href: '/contact' },
-];
-
 export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false);
   const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
   const [profilePictureUrl, setProfilePictureUrl] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const { t } = useLanguage();
+
+  const menuItems = [
+    { name: t('nav.services'), href: '/services', labelKey: 'nav.services' },
+    { name: t('nav.about'), href: '/about', labelKey: 'nav.about' },
+    { name: t('nav.contact'), href: '/contact', labelKey: 'nav.contact' },
+  ];
 
   useEffect(() => {
     const auth = getAuth(app);
@@ -131,7 +133,7 @@ export const HeroHeader = () => {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMenuState(!menuState)}
-                aria-label={menuState ? 'Menü schließen' : 'Menü öffnen'}
+                aria-label={menuState ? t('nav.closeMenu') : t('nav.openMenu')}
                 className="relative z-20 block p-2 lg:hidden"
               >
                 <Menu
@@ -190,13 +192,13 @@ export const HeroHeader = () => {
                         <DropdownMenuItem asChild>
                           <Link href="/dashboard" className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
-                            Dashboard
+                            {t('nav.dashboard')}
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href="/dashboard/profile" className="flex items-center gap-2">
                             <User className="h-4 w-4" />
-                            Profil
+                            {t('nav.profile')}
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -205,7 +207,7 @@ export const HeroHeader = () => {
                           className="flex items-center gap-2 text-red-600"
                         >
                           <LogOut className="h-4 w-4" />
-                          Abmelden
+                          {t('auth.signOut')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -215,11 +217,11 @@ export const HeroHeader = () => {
                   // Unauthenticated user
                   <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
                     <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                      <span>Login</span>
+                      <span>{t('auth.signIn')}</span>
                     </Button>
                     <Button asChild size="sm">
                       <Link href="/register/company">
-                        <span>Starte mit Taskilo</span>
+                        <span>{t('nav.startWithTaskilo')}</span>
                       </Link>
                     </Button>
                     <ModeToggle />
@@ -263,23 +265,23 @@ export const HeroHeader = () => {
                           </div>
                         </div>
                         <Button asChild size="sm" variant="outline">
-                          <Link href="/dashboard">Dashboard</Link>
+                          <Link href="/dashboard">{t('nav.dashboard')}</Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
-                          <Link href="/dashboard/profile">Profil</Link>
+                          <Link href="/dashboard/profile">{t('nav.profile')}</Link>
                         </Button>
                         <Button size="sm" variant="destructive" onClick={handleLogout}>
-                          Abmelden
+                          {t('auth.signOut')}
                         </Button>
                       </>
                     ) : (
                       // Unauthenticated user - mobile
                       <>
                         <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                          Login
+                          {t('auth.signIn')}
                         </Button>
                         <Button asChild size="sm">
-                          <Link href="/register/company">Starte mit Taskilo</Link>
+                          <Link href="/register/company">{t('nav.startWithTaskilo')}</Link>
                         </Button>
                       </>
                     ))}

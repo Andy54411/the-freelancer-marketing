@@ -287,13 +287,13 @@ export default function CompanyOrderDetailPage() {
         id: order.customerId,
         name: order.customerName,
         avatarUrl: order.customerAvatarUrl,
-        role: 'Kunde' as const,
+        role: 'customer' as const,
       }
     : {
         id: order.providerId,
         name: order.providerName,
         avatarUrl: order.providerAvatarUrl,
-        role: 'Anbieter' as const,
+        role: 'provider' as const,
       };
 
   return (

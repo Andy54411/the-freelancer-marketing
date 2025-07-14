@@ -111,7 +111,7 @@ export default function HeroSection() {
                   <span className="block">{t('hero.title.line1')}</span>
                   <span className="block">{t('hero.title.line2')}</span>
                   <span className="block">
-                    {t('hero.title.line3').replace('Taskilo', '')}
+                    {t('hero.title.line3')}
                     <span className="text-[#14ad9f]">Taskilo</span>
                   </span>
                 </h1>

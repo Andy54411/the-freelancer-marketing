@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SettingsPage from '@/components/SettingsPage';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 import {
@@ -39,15 +40,16 @@ type OrderData = {
 const isNonEmptyString = (val: unknown): val is string =>
   typeof val === 'string' && val.trim() !== '';
 
-export default function Page() {
+export default function CompanyDashboard({ params }: { params: Promise<{ uid: string }> }) {
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
 
   // Spaltendefinitionen für die DataTable
   const columns: ColumnDef<OrderData>[] = [
     {
       id: 'Dienstleistung',
       accessorKey: 'selectedSubcategory',
-      header: () => <div className="text-center">Dienstleistung</div>,
+      header: () => <div className="text-center">{t('company.table.service')}</div>,
       cell: ({ row }) => {
         const order = row.original;
         // Link zur spezifischen Auftrags-Chat-Seite
@@ -66,13 +68,13 @@ export default function Page() {
     {
       id: 'Kunde',
       accessorKey: 'customerName',
-      header: () => <div className="text-center">Kunde</div>,
+      header: () => <div className="text-center">{t('company.table.customer')}</div>,
       cell: ({ row }) => <div className="text-center">{row.original.customerName}</div>,
     },
     {
       id: 'Status',
       accessorKey: 'status',
-      header: () => <div className="text-center">Status</div>,
+      header: () => <div className="text-center">{t('company.table.status')}</div>,
       cell: ({ row }) => {
         const status = row.original.status;
         if (!status)
@@ -98,7 +100,7 @@ export default function Page() {
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Datum
+              {t('company.table.date')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -116,7 +118,7 @@ export default function Page() {
     {
       id: 'Umsatz',
       accessorKey: 'totalAmountPaidByBuyer',
-      header: () => <div className="text-center">Umsatz</div>,
+      header: () => <div className="text-center">{t('company.table.revenue')}</div>,
       cell: ({ row }) => {
         const amount = row.original.totalAmountPaidByBuyer / 100;
         const formatted = new Intl.NumberFormat('de-DE', {
@@ -219,19 +221,19 @@ export default function Page() {
           <TabsList className="grid w-full grid-cols-4 md:w-fit">
             <TabsTrigger value="dashboard">
               <FiGrid className="mr-2 h-4 w-4" />
-              Übersicht
+              {t('company.tabs.overview')}
             </TabsTrigger>
             <TabsTrigger value="calendar">
               <FiCalendar className="mr-2 h-4 w-4" />
-              Kalender
+              {t('company.tabs.calendar')}
             </TabsTrigger>
             <TabsTrigger value="profile">
               <FiUser className="mr-2 h-4 w-4" />
-              Profil
+              {t('company.tabs.profile')}
             </TabsTrigger>
             <TabsTrigger value="settings">
               <FiSettings className="mr-2 h-4 w-4" />
-              Einstellungen
+              {t('company.tabs.settings')}
             </TabsTrigger>
           </TabsList>
 
@@ -250,7 +252,7 @@ export default function Page() {
                   href={`/dashboard/company/${uid}/orders/overview`}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
                 >
-                  Alle eingegangenen Aufträge anzeigen
+                  {t('company.orders.viewAll')}
                 </Link>
               </div>
             </div>
@@ -263,19 +265,16 @@ export default function Page() {
           <TabsContent value="profile" className="mt-4">
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Company Profile verwalten</h2>
-                <p className="text-gray-600 mt-2">
-                  Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ für eine
-                  professionelle Präsentation auf Taskilo.
-                </p>
+                <h2 className="text-2xl font-bold text-gray-900">{t('company.profile.title')}</h2>
+                <p className="text-gray-600 mt-2">{t('company.profile.description')}</p>
               </div>
               {/* Platzhalter für zukünftige Profil-Features */}
               <div className="text-center py-12">
                 <FiUser className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Profil-Management</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Profil-Features werden hier implementiert.
-                </p>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  {t('company.profile.management')}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">{t('company.profile.placeholder')}</p>
               </div>
             </div>
           </TabsContent>

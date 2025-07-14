@@ -10,22 +10,15 @@ import ProgressBar from '@/components/ProgressBar';
 import { Info as FiInfo, X as FiX, Check as FiCheck } from 'lucide-react';
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { app } from '@/firebase/clients';
-import { categories, type Category } from '@/lib/categoriesData'; // Importiere Kategorien aus der zentralen Datei
+import { categories, type Category } from '@/lib/categoriesData';
 import { useRegistration } from '@/contexts/Registration-Context';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const auth = getAuth(app);
 
-const steps = [
-  'Kundentyp wählen',
-  'Kategorie wählen',
-  'Unterkategorie wählen',
-  'Auftrag beschreiben',
-];
-
-const TOTAL_STEPS = steps.length;
-
 export default function GetStartedPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const {
     customerType,
     setCustomerType,
@@ -36,6 +29,15 @@ export default function GetStartedPage() {
     description,
     setDescription,
   } = useRegistration();
+
+  const steps = [
+    t('booking.steps.customerType'),
+    t('booking.steps.category'),
+    t('booking.steps.subcategory'),
+    t('booking.steps.description'),
+  ];
+
+  const TOTAL_STEPS = steps.length;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,14 +135,12 @@ export default function GetStartedPage() {
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm text-[#14ad9f] font-medium">
-            <p>
-              Schritt {stepForDisplay}/{TOTAL_STEPS}
-            </p>
+            <p>{t('booking.steps.current', { current: stepForDisplay, total: TOTAL_STEPS })}</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="hover:underline flex items-center gap-1"
             >
-              Schritte anzeigen <FiInfo className="text-base" />
+              {t('booking.steps.showSteps')} <FiInfo className="text-base" />
             </button>
           </div>
 
@@ -150,9 +150,11 @@ export default function GetStartedPage() {
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
                 ${isClientMounted && customerType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              <h2 className="text-xl font-semibold text-primary">Ich bin Privatkunde</h2>
+              <h2 className="text-xl font-semibold text-primary">
+                {t('booking.customer.private.title')}
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Dienstleister für mein Zuhause finden und buchen.
+                {t('booking.customer.private.description')}
               </p>
             </button>
 
@@ -161,9 +163,11 @@ export default function GetStartedPage() {
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
                 ${isClientMounted && customerType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              <h2 className="text-xl font-semibold text-primary">Ich bin ein Unternehmen</h2>
+              <h2 className="text-xl font-semibold text-primary">
+                {t('booking.customer.business.title')}
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Für mein Unternehmen Hilfe buchen (B2B).
+                {t('booking.customer.business.description')}
               </p>
             </button>
           </div>

@@ -302,7 +302,7 @@ export default function CompanyChatPage() {
               userId={order.customerId}
               userName={order.customerName}
               userAvatarUrl={order.customerAvatarUrl}
-              userRole="Kunde"
+              userRole="customer"
             />
           </div>
         </aside>

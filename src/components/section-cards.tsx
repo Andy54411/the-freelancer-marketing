@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext'; // useAuth importieren
+import { useLanguage } from '@/contexts/LanguageContext';
 import { collection, query, where, getDocs } from 'firebase/firestore'; // onSnapshot, doc, getDoc entfernt
 import { db } from '@/firebase/clients';
 import {
@@ -35,6 +36,7 @@ interface DashboardStats {
 export function SectionCards() {
   // unreadMessagesCount direkt aus dem AuthContext holen
   const { user: currentUser, unreadMessagesCount } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats>({
     monthlyRevenue: 0,
     newOrders: 0,
@@ -147,11 +149,11 @@ export function SectionCards() {
     if (!currentUser || stats.availableBalance <= 0) return;
 
     const confirmWithdraw = confirm(
-      `Auszahlung beantragen:\n\n` +
-        `Verfügbares Guthaben: ${formatCurrency(stats.availableBalance)}\n` +
-        `Plattformgebühr (4,5%): ${formatCurrency(stats.availableBalance * 0.045)}\n` +
-        `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
-        `Möchten Sie die Auszahlung jetzt beantragen?`
+      `${t('cards.withdraw.confirm')}\n\n` +
+        `${t('cards.withdraw.available')}: ${formatCurrency(stats.availableBalance)}\n` +
+        `${t('cards.withdraw.fee')}: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
+        `${t('cards.withdraw.amount')}: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
+        `${t('cards.withdraw.question')}`
     );
 
     if (!confirmWithdraw) return;
@@ -183,7 +185,7 @@ export function SectionCards() {
     } catch (error) {
       console.error('Payout error:', error);
       alert(
-        `Fehler bei der Auszahlung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+        `${t('cards.withdraw.error')}: ${error instanceof Error ? error.message : t('cards.withdraw.unknownError')}`
       );
     } finally {
       setIsWithdrawing(false);
@@ -219,8 +221,8 @@ export function SectionCards() {
               className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit"
             >
               {stats.pendingBalance > 0
-                ? `+${formatCurrency(stats.pendingBalance)} ausstehend`
-                : 'Sofort verfügbar'}
+                ? `+${formatCurrency(stats.pendingBalance)} ${t('cards.balance.pending')}`
+                : t('cards.balance.available')}
             </Badge>
             <Button
               size="sm"
@@ -229,11 +231,11 @@ export function SectionCards() {
               className="bg-green-600 hover:bg-green-700 text-white w-full"
             >
               {isWithdrawing ? (
-                <span>Wird verarbeitet...</span>
+                <span>{t('cards.withdraw.processing')}</span>
               ) : (
                 <>
                   <IconDownload size={14} className="mr-1" />
-                  Auszahlen
+                  {t('cards.withdraw.button')}
                 </>
               )}
             </Button>
@@ -261,14 +263,14 @@ export function SectionCards() {
         <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
             <CardDescription className="flex items-center gap-2">
-              <IconPackage size={16} /> Neue Aufträge
+              <IconPackage size={16} /> {t('cards.newOrders.title')}
             </CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               {stats.newOrders}
             </CardTitle>
             <CardAction>
               <Badge variant={stats.newOrders > 0 ? 'destructive' : 'outline'}>
-                Warten auf Annahme
+                {t('cards.newOrders.status')}
               </Badge>
             </CardAction>
           </CardHeader>

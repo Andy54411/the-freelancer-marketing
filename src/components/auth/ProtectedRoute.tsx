@@ -3,10 +3,12 @@
 import { useEffect, useMemo, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { FiLoader } from 'react-icons/fi';
 
 function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -34,7 +36,7 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-        <span>Authentifizierung wird geprüft...</span>
+        <span>{t('auth.checking')}</span>
       </div>
     );
   }
@@ -50,12 +52,14 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
 }
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
+
   return (
     <Suspense
       fallback={
         <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
           <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-          <span>Authentifizierung wird geprüft...</span>
+          <span>{t('auth.checking')}</span>
         </div>
       }
     >

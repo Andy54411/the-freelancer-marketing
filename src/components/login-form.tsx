@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Fehlende Imports hinzugefügt
 import { Input } from '@/components/ui/input'; // Fehlender Import hinzugefügt
 import { Label } from '@/components/ui/label'; // Fehlender Import hinzugefügt
+import { useLanguage } from '@/contexts/LanguageContext';
 import React from 'react'; // Import für React und Typen wie React.FormEvent
 
 interface LoginFormProps extends React.ComponentProps<'div'> {
@@ -35,14 +36,14 @@ export function LoginForm({
   // loading,
   ...props
 }: LoginFormProps) {
+  const { t } = useLanguage();
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Anmelden</CardTitle>
-          <CardDescription>
-            Gib deine E-Mail-Adresse und dein Passwort ein, um dich anzumelden.
-          </CardDescription>
+          <CardTitle className="text-2xl">{t('login.title')}</CardTitle>
+          <CardDescription>{t('login.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmitEmailPassword}>
@@ -83,16 +84,16 @@ export function LoginForm({
               </div>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                 <span className="bg-card text-muted-foreground relative z-10 px-2">
-                  Oder fahre fort mit
+                  {t('auth.or')}
                 </span>
               </div>
               <div className="grid gap-6">
                 <div className="grid gap-3">
-                  <Label htmlFor="email">E-Mail</Label>
+                  <Label htmlFor="email">{t('form.email')}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@beispiel.de"
+                    placeholder={t('login.email')}
                     required
                     autoComplete="email"
                     value={email || ''}
@@ -103,12 +104,12 @@ export function LoginForm({
                 </div>
                 <div className="grid gap-3">
                   <div className="flex items-center">
-                    <Label htmlFor="password">Passwort</Label>
+                    <Label htmlFor="password">{t('login.password')}</Label>
                     <a
                       href="/forgot-password" // Link zum Passwort-vergessen-Flow
                       className="ml-auto text-sm underline-offset-4 hover:underline"
                     >
-                      Passwort vergessen?
+                      {t('login.forgot')}
                     </a>
                   </div>
                   <Input
@@ -127,13 +128,13 @@ export function LoginForm({
                   className="w-full bg-[#14ad9f] hover:bg-teal-700"
                   disabled={disabled}
                 >
-                  Anmelden
+                  {t('login.submit')}
                 </Button>
               </div>
               <div className="text-center text-sm">
-                Noch kein Konto?{' '}
+                {t('login.register')}
                 <a href="/register/company" className="underline underline-offset-4">
-                  Registrieren
+                  {t('register')}
                 </a>
               </div>
             </div>

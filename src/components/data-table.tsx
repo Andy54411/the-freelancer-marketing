@@ -47,6 +47,7 @@ import {
   Loader2 as FiLoader,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -90,6 +91,7 @@ function DragHandle<TData>({ row }: { row: Row<TData> }) {
   const { attributes, listeners } = useSortable({
     id: row.id,
   });
+  const { t } = useLanguage();
 
   return (
     <Button
@@ -100,7 +102,7 @@ function DragHandle<TData>({ row }: { row: Row<TData> }) {
       className="text-muted-foreground size-7 hover:bg-transparent"
     >
       <IconGripVertical className="text-muted-foreground size-3" />
-      <span className="sr-only">Drag to reorder</span>
+      <span className="sr-only">{t('table.drag.reorder')}</span>
     </Button>
   );
 }
@@ -151,6 +153,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
   onRowClick, // NEU: Prop extrahieren
 }: DataTableProps<TData, TValue>) {
   const [data, setData] = React.useState(() => initialData);
+  const { t } = useLanguage();
 
   // KORREKTUR: Dieser Effekt synchronisiert den internen Zustand der Tabelle mit den Daten, die als Prop übergeben werden.
   // Dies ist entscheidend, da die Daten von der übergeordneten Komponente asynchron geladen werden.
@@ -219,8 +222,8 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
               <IconLayoutColumns />
-              <span className="hidden lg:inline">Spalten anpassen</span>
-              <span className="lg:hidden">Spalten</span>
+              <span className="hidden lg:inline">{t('table.columns.adjust')}</span>
+              <span className="lg:hidden">{t('table.columns.short')}</span>
               <IconChevronDown />
             </Button>
           </DropdownMenuTrigger>
@@ -244,7 +247,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
         </DropdownMenu>
         <Button variant="outline" size="sm">
           <IconPlus />
-          <span className="hidden lg:inline">Abschnitt hinzufügen</span>
+          <span className="hidden lg:inline">{t('table.section.add')}</span>
         </Button>
       </div>
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
@@ -277,7 +280,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
                       <div className="flex justify-center items-center">
-                        <FiLoader className="animate-spin mr-2 h-5 w-5" /> Lade Aufträge...
+                        <FiLoader className="animate-spin mr-2 h-5 w-5" /> {t('table.loading')}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -290,7 +293,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                      Keine Ergebnisse.
+                      {t('table.noData')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -300,13 +303,16 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} von{' '}
-            {table.getFilteredRowModel().rows.length} Zeile(n) ausgewählt.
+            {t('table.pagination.showing', {
+              from: table.getFilteredSelectedRowModel().rows.length,
+              to: table.getFilteredRowModel().rows.length,
+              total: table.getFilteredRowModel().rows.length,
+            })}
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Zeilen pro Seite
+                {t('table.pagination.rows')}
               </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
@@ -327,7 +333,11 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Seite {table.getState().pagination.pageIndex + 1} von {table.getPageCount() || 1}
+              {t('table.pagination.showing', {
+                from: table.getState().pagination.pageIndex + 1,
+                to: table.getPageCount() || 1,
+                total: table.getPageCount() || 1,
+              })}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
@@ -336,7 +346,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Zur ersten Seite</span>
+                <span className="sr-only">{t('table.navigation.firstPage')}</span>
                 <IconChevronsLeft />
               </Button>
               <Button
@@ -346,7 +356,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Zur vorherigen Seite</span>
+                <span className="sr-only">{t('table.navigation.previousPage')}</span>
                 <IconChevronLeft />
               </Button>
               <Button
@@ -356,7 +366,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Zur nächsten Seite</span>
+                <span className="sr-only">{t('table.navigation.nextPage')}</span>
                 <IconChevronRight />
               </Button>
               <Button
@@ -366,7 +376,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Zur letzten Seite</span>
+                <span className="sr-only">{t('table.navigation.lastPage')}</span>
                 <IconChevronsRight />
               </Button>
             </div>

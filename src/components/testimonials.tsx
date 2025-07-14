@@ -1,69 +1,67 @@
+'use client';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Testimonials() {
+  const { t } = useLanguage();
+
   const testimonials = [
     {
       name: 'Maria Schmidt',
-      role: 'Hausbesitzerin',
-      content:
-        'Taskilo hat mir geholfen, einen fantastischen Elektriker zu finden. Schnell, professionell und zu einem fairen Preis!',
+      role: t('testimonials.role.homeowner'),
+      content: t('testimonials.content.maria'),
       rating: 5,
       avatar: 'MS',
     },
     {
       name: 'Thomas Weber',
-      role: 'Geschäftsführer',
-      content:
-        'Für unser Büro haben wir über Taskilo einen zuverlässigen Reinigungsservice gefunden. Absolute Empfehlung!',
+      role: t('testimonials.role.manager'),
+      content: t('testimonials.content.thomas'),
       rating: 5,
       avatar: 'TW',
     },
     {
       name: 'Julia Müller',
-      role: 'Mutter von 2 Kindern',
-      content:
-        'Die Kinderbetreuung über Taskilo war ein Segen. Verifizierte Betreuer und einfache Buchung.',
+      role: t('testimonials.role.mother'),
+      content: t('testimonials.content.julia'),
       rating: 5,
       avatar: 'JM',
     },
     {
       name: 'Andreas König',
-      role: 'Hausbesitzer',
-      content:
-        'Meine Küche wurde perfekt renoviert. Taskilo macht es einfach, vertrauensvolle Handwerker zu finden.',
+      role: t('testimonials.role.homeowner'),
+      content: t('testimonials.content.andreas'),
       rating: 5,
       avatar: 'AK',
     },
     {
       name: 'Sarah Fischer',
-      role: 'Apartment-Besitzerin',
-      content:
-        'Von der Buchung bis zur Bezahlung - alles lief reibungslos. Taskilo ist meine erste Wahl!',
+      role: t('testimonials.role.apartmentOwner'),
+      content: t('testimonials.content.sarah'),
       rating: 5,
       avatar: 'SF',
     },
     {
       name: 'Michael Braun',
-      role: 'IT-Unternehmer',
-      content:
-        'Für IT-Support haben wir schnell einen kompetenten Techniker gefunden. Sehr zufrieden!',
+      role: t('testimonials.role.entrepreneur'),
+      content: t('testimonials.content.michael'),
       rating: 5,
       avatar: 'MB',
     },
     {
       name: 'Lisa Wagner',
-      role: 'Gartenliebhaberin',
-      content:
-        'Mein Garten wurde wunderschön gestaltet. Die Gärtner auf Taskilo sind echte Profis.',
+      role: t('testimonials.role.gardenLover'),
+      content: t('testimonials.content.lisa'),
       rating: 5,
       avatar: 'LW',
     },
     {
       name: 'David Hoffmann',
-      role: 'Auto-Enthusiast',
-      content: 'Autowäsche und Pflege über Taskilo - schnell gebucht und perfekt ausgeführt.',
+      role: t('testimonials.role.carEnthusiast'),
+      content: t('testimonials.content.david'),
       rating: 5,
       avatar: 'DH',
     },
@@ -83,12 +81,12 @@ export default function Testimonials() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
-            Was unsere Kunden über
+            {t('testimonials.title.part1')}
             <span className="text-[#14ad9f]"> Taskilo </span>
-            sagen
+            {t('testimonials.title.part2')}
           </h2>
           <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300">
-            Über 10.000 zufriedene Kunden vertrauen bereits auf Taskilo
+            {t('testimonials.subtitle')}
           </p>
         </div>
 
@@ -128,19 +126,19 @@ export default function Testimonials() {
             <div className="text-center min-w-0 flex-1">
               <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">4.8/5</p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                Ø Bewertung
+                {t('testimonials.stats.avgRating')}
               </p>
             </div>
             <div className="text-center min-w-0 flex-1">
               <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">10.000+</p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                Zufriedene Kunden
+                {t('testimonials.stats.happyCustomers')}
               </p>
             </div>
             <div className="text-center min-w-0 flex-1">
               <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">15.000+</p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                Bewertungen
+                {t('testimonials.stats.reviews')}
               </p>
             </div>
           </div>

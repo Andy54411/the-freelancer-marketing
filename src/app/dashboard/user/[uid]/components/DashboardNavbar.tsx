@@ -8,25 +8,31 @@ import { Logo } from '@/components/logo';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { getAuth, onAuthStateChanged, signOut, User as FirebaseAuthUser } from 'firebase/auth';
 import { app } from '../../../../../firebase/clients';
 
 const auth = getAuth(app);
 
-type MenuItem = { name: string; href: string };
-
-// --- HIER WURDE DIE LISTE GELEERT ---
-const menuItems: MenuItem[] = [
-  // { name: 'Dashboard', href: '/dashboard/user/[uid]' },
-  // { name: 'Aufträge', href: '/dashboard/user/[uid]/auftraege' },
-  // { name: 'Profil', href: '/dashboard/user/[uid]/profile-settings' },
-  // { name: 'Hilfe', href: '/help' },
-];
+type MenuItem = { name: string; href: string; labelKey: string };
 
 export function DashboardNavbar({ currentUid }: { currentUid: string }) {
   const [menuState, setMenuState] = useState(false);
   const [currentUser, setCurrentUser] = useState<FirebaseAuthUser | null>(null);
+  const { t } = useLanguage();
+
+  // Dynamic menu items based on translation keys
+  const menuItems: MenuItem[] = [
+    { name: t('nav.dashboard'), href: '/dashboard/user/[uid]', labelKey: 'nav.dashboard' },
+    { name: t('nav.orders'), href: '/dashboard/user/[uid]/auftraege', labelKey: 'nav.orders' },
+    {
+      name: t('nav.profile'),
+      href: '/dashboard/user/[uid]/profile-settings',
+      labelKey: 'nav.profile',
+    },
+    { name: t('nav.help'), href: '/help', labelKey: 'nav.help' },
+  ];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -44,7 +50,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
     }
   };
 
-  const dynamicMenuItems = menuItems.map(item => ({
+  const dynamicMenuItems = menuItems.map((item: MenuItem) => ({
     ...item,
     href: item.href.replace('[uid]', currentUid),
   }));
@@ -85,9 +91,9 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
                 />
               </button>
 
-              {/* Desktop Navigation ist jetzt leer */}
+              {/* Desktop Navigation */}
               <ul className="hidden lg:flex gap-8 text-sm">
-                {dynamicMenuItems.map((item, i) => (
+                {dynamicMenuItems.map((item: MenuItem, i: number) => (
                   <li key={i}>
                     <Link
                       href={item.href}
@@ -129,7 +135,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
             {menuState && (
               <div className="lg:hidden absolute top-full left-0 w-full bg-background z-10 border-t shadow-xl">
                 <ul className="px-6 py-4 space-y-4 text-base">
-                  {dynamicMenuItems.map((item, i) => (
+                  {dynamicMenuItems.map((item: MenuItem, i: number) => (
                     <li key={i}>
                       <Link
                         href={item.href}

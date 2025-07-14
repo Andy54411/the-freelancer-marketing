@@ -6,6 +6,7 @@ import {
   ChevronDown as IconChevronDown,
   type LucideIcon as Icon,
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // import { Button } from "@/components/ui/button" // Marked as unused
 import {
@@ -29,6 +30,7 @@ export function NavMain({
     isActive?: boolean;
   }[];
 }) {
+  const { t } = useLanguage();
   const [isPostfachOpen, setPostfachOpen] = useState(false);
 
   return (
@@ -37,13 +39,13 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem className="flex flex-col gap-1">
             <SidebarMenuButton
-              tooltip="Postfach"
+              tooltip={t('navigation.inbox')}
               onClick={() => setPostfachOpen(prev => !prev)}
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
                 <IconMail />
-                <span>Postfach</span>
+                <span>{t('navigation.inbox')}</span>
               </div>
               <IconChevronDown
                 className={`transition-transform duration-200 ${isPostfachOpen ? 'rotate-180' : ''}`}
@@ -52,9 +54,9 @@ export function NavMain({
 
             {isPostfachOpen && (
               <SidebarMenuSub>
-                <SidebarMenuSubButton size="sm">Neu Anfragen</SidebarMenuSubButton>
-                <SidebarMenuSubButton size="sm">Angebot gesendet</SidebarMenuSubButton>
-                <SidebarMenuSubButton size="sm">Archiv</SidebarMenuSubButton>
+                <SidebarMenuSubButton size="sm">{t('inbox.newRequests')}</SidebarMenuSubButton>
+                <SidebarMenuSubButton size="sm">{t('inbox.sentOffers')}</SidebarMenuSubButton>
+                <SidebarMenuSubButton size="sm">{t('inbox.archive')}</SidebarMenuSubButton>
               </SidebarMenuSub>
             )}
           </SidebarMenuItem>

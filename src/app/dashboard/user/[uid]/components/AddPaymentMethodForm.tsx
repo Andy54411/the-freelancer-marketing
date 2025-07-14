@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { auth } from '@/firebase/clients';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Stripe from 'stripe'; // Importiere Stripe für Typisierungen
 
 interface AddPaymentMethodFormProps {
@@ -18,6 +19,7 @@ export default function AddPaymentMethodForm({
 }: AddPaymentMethodFormProps) {
   const stripe = useStripe();
   const elements = useElements();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -25,7 +27,7 @@ export default function AddPaymentMethodForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!stripe || !elements) {
-      setMessage('Zahlungssystem ist noch nicht bereit.');
+      setMessage(t('payment.addMethod.systemNotReady'));
       return;
     }
 
@@ -39,7 +41,7 @@ export default function AddPaymentMethodForm({
 
       if (submitError) {
         // Fehler bei der Validierung der Elements (z.B. ungültige Kartennummer)
-        const errorMessage = submitError.message || 'Fehler bei der Validierung der Zahlungsdaten.';
+        const errorMessage = submitError.message || t('payment.validationError');
         setMessage(errorMessage);
         onError(errorMessage);
         setIsSuccess(false);
@@ -60,7 +62,7 @@ export default function AddPaymentMethodForm({
       });
       // **DIESE LOGIK WIRD JETZT MIT DOPPELTER TYP-ASSERTION ANGEWENDET**
       if (result.error) {
-        const errorMessage = result.error.message || 'Unbekannter Fehler bei der Bestätigung.';
+        const errorMessage = result.error.message || t('payment.addMethod.setupFailed');
         setMessage(errorMessage);
         onError(errorMessage);
         setIsSuccess(false);
@@ -71,19 +73,18 @@ export default function AddPaymentMethodForm({
         const setupIntent = (result as unknown as { setupIntent: Stripe.SetupIntent }).setupIntent;
 
         if (setupIntent.status === 'succeeded') {
-          setMessage('Zahlungsmethode erfolgreich hinzugefügt!');
+          setMessage(t('payment.addMethod.success'));
           setIsSuccess(true);
           onSuccess();
         } else {
-          const statusMessage = `Zahlungsmethode konnte nicht bestätigt werden. Status: ${setupIntent.status}.`;
+          const statusMessage = `${t('payment.addMethod.setupFailed')} Status: ${setupIntent.status}.`;
           setMessage(statusMessage);
           onError(statusMessage);
           setIsSuccess(false);
         }
       }
     } catch (err: any) {
-      const caughtErrorMessage =
-        err.message || 'Ein unbekannter Fehler ist während des Prozesses aufgetreten.';
+      const caughtErrorMessage = err.message || t('payment.addMethod.unexpectedError');
       setMessage(caughtErrorMessage);
       onError(caughtErrorMessage);
       setIsSuccess(false);
@@ -108,7 +109,7 @@ export default function AddPaymentMethodForm({
         disabled={!stripe || loading || isSuccess}
       >
         {loading ? <FiLoader className="animate-spin mr-2" /> : <FiCheckCircle className="mr-2" />}
-        {loading ? 'Speichern...' : 'Zahlungsmethode speichern'}
+        {loading ? t('payment.addMethod.processing') : t('payment.addMethod.addButton')}
       </button>
 
       {message && (

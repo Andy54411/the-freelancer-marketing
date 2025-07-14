@@ -12,20 +12,21 @@ import {
   Briefcase,
   Shield,
 } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Assuming you have a cn utility
-
-const navItems = [
-  { href: '/dashboard/admin', label: 'Übersicht', icon: Home },
-  { href: '/dashboard/admin/companies', label: 'Firmen', icon: Users },
-  { href: '/dashboard/admin/invites', label: 'Einladungen', icon: ShieldCheck },
-  { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
-  { href: '/dashboard/admin/orders', label: 'Aufträge', icon: Briefcase },
-  { href: '/dashboard/admin/chats', label: 'Chats', icon: Bot },
-  // { href: '/dashboard/admin/ai-config', label: 'AI Konfiguration', icon: Settings }, // Temporär deaktiviert
-];
+import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const navItems = [
+    { href: '/dashboard/admin', label: t('admin.overview'), icon: Home },
+    { href: '/dashboard/admin/companies', label: t('admin.companies'), icon: Users },
+    { href: '/dashboard/admin/invites', label: t('admin.invites'), icon: ShieldCheck },
+    { href: '/dashboard/admin/support', label: t('admin.support'), icon: MessageSquare },
+    { href: '/dashboard/admin/orders', label: t('admin.orders'), icon: Briefcase },
+    { href: '/dashboard/admin/chats', label: t('admin.messages'), icon: Bot },
+  ];
 
   return (
     <aside className="hidden border-r bg-gray-100/40 lg:block dark:bg-gray-800/40">

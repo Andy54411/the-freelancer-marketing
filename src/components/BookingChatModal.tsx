@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Define a more specific type for auftrag if possible
 interface AuftragDetails {
@@ -12,6 +13,8 @@ interface BookingChatModalProps {
 }
 
 export function BookingChatModal({ auftrag, onClose }: BookingChatModalProps) {
+  const { t } = useLanguage();
+
   // Hier würdest du später die Logik zum Laden und Senden von Nachrichten implementieren
   // und den Chat-Verlauf in einem State speichern.
 
@@ -22,12 +25,12 @@ export function BookingChatModal({ auftrag, onClose }: BookingChatModalProps) {
         {/* Modal Header */}
         <div className="flex justify-between items-center p-4 border-b">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Chat mit {auftrag.customerFirstName || 'Kunden'}
+            {t('messages.chatWith')} {auftrag.customerFirstName || t('customer')}
           </h3>
           <button
             onClick={onClose} // Ruft die übergebene onClose-Funktion auf
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none"
-            aria-label="Close chat"
+            aria-label={t('modal.close')}
           >
             &times;
           </button>
@@ -36,9 +39,7 @@ export function BookingChatModal({ auftrag, onClose }: BookingChatModalProps) {
         {/* Chat Nachrichten Bereich (Platzhalter) */}
         <div className="p-4 flex-grow overflow-y-auto">
           {/* Hier werden später die Chat-Nachrichten geladen und angezeigt */}
-          <p className="text-muted-foreground text-sm font-medium">
-            Chat-Nachrichten werden hier geladen...
-          </p>
+          <p className="text-muted-foreground text-sm font-medium">{t('messages.loading')}</p>
         </div>
 
         {/* Nachricht Eingabebereich (Platzhalter) */}
@@ -46,11 +47,11 @@ export function BookingChatModal({ auftrag, onClose }: BookingChatModalProps) {
           {/* Hier kommt das Eingabefeld und der Senden-Button */}
           <input
             type="text"
-            placeholder="Nachricht eingeben..."
+            placeholder={t('message.typeMessage')}
             className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
           {/* Ein Senden-Button könnte hier hinzugefügt werden */}
-          {/* <button className="ml-2 p-2 bg-blue-500 text-white rounded-md">Senden</button> */}
+          {/* <button className="ml-2 p-2 bg-blue-500 text-white rounded-md">{t('message.send')}</button> */}
         </div>
       </div>
     </div>

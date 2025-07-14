@@ -103,15 +103,15 @@ const translations = {
     notifications: 'Benachrichtigungen',
 
     // Hero Section
-    'hero.title.line1': 'Finde zuverlässige',
-    'hero.title.line2': 'lokale Dienstleister',
-    'hero.title.line3': 'mit Taskilo',
+    'hero.title.line1': 'Finde Hilfe für jede',
+    'hero.title.line2': 'Aufgabe in deiner Nähe',
+    'hero.title.line3': 'mit ',
     'hero.description':
-      'Von Handwerkern bis zu Reinigungskräften - verbinde dich mit verifizierten Experten in deiner Nähe',
+      'Entdecke lokale Experten für alle deine Aufgaben – von Handwerkerleistungen bis hin zu professionellen Dienstleistungen. Taskilo verbindet dich schnell und einfach mit qualifizierten Anbietern in deiner Nähe.',
     'hero.button.searchHelp': 'Hilfe suchen',
     'hero.button.offerHelp': 'Hilfe anbieten',
-    'hero.newProviders': 'Neue Anbieter',
-    'hero.noProviders': 'Keine Anbieter gefunden',
+    'hero.newProviders': 'Neue Anbieter auf Taskilo',
+    'hero.noProviders': 'Keine neuen Anbieter verfügbar',
 
     // Call to Action
     'cta.title': 'Bereit für Taskilo?',
@@ -148,6 +148,381 @@ const translations = {
     'booking.duration': 'Dauer',
     'booking.notes': 'Anmerkungen',
     'booking.specialRequests': 'Besondere Wünsche',
+    'booking.selectCategory': 'Kategorie wählen',
+    'booking.selectSubcategory': 'Unterkategorie wählen',
+    'booking.orderSummary': 'Auftragszusammenfassung',
+    'booking.confirmBooking': 'Buchung bestätigen',
+    'booking.payNow': 'Jetzt bezahlen',
+
+    // Modal Komponenten
+    'modal.close': 'Modal schließen',
+    'modal.open': 'Öffnen',
+    'modal.confirm': 'Bestätigen',
+    'modal.cancel': 'Abbrechen',
+    'modal.title': 'Titel',
+
+    // Navigation erweitert
+    'navigation.home': 'Startseite',
+    'navigation.services': 'Dienstleistungen',
+    'navigation.dashboard': 'Dashboard',
+    'navigation.profile': 'Profil',
+    'navigation.orders': 'Aufträge',
+    'navigation.inbox': 'Postfach',
+    'navigation.settings': 'Einstellungen',
+    'navigation.logout': 'Abmelden',
+    'navigation.menu': 'Menü',
+    'navigation.back': 'Zurück',
+
+    // Status Nachrichten
+    'status.loading': 'Lädt...',
+    'status.saving': 'Speichert...',
+    'status.success': 'Erfolgreich',
+    'status.error': 'Fehler aufgetreten',
+    'status.notFound': 'Nicht gefunden',
+    'status.unauthorized': 'Nicht berechtigt',
+    'status.processing': 'Wird bearbeitet...',
+
+    // Admin Bereich
+    'admin.overview': 'Übersicht',
+    'admin.companies': 'Firmen',
+    'admin.orders': 'Aufträge',
+    'admin.messages': 'Nachrichten',
+    'admin.support': 'Offene Support-Tickets',
+    'admin.users': 'Benutzer',
+    'admin.invites': 'Einladungen',
+    'admin.settings': 'Einstellungen',
+    'admin.analytics': 'Statistiken',
+    'admin.reports': 'Berichte',
+    'admin.permissions': 'Berechtigungen',
+
+    // Dashboard
+    'dashboard.welcome': 'Willkommen im Dashboard',
+    'dashboard.overview': 'Übersicht',
+    'dashboard.recentOrders': 'Aktuelle Aufträge',
+    'dashboard.earnings': 'Einnahmen',
+    'dashboard.statistics': 'Statistiken',
+
+    // Login & Registrierung
+    'login.title': 'Anmelden',
+    'login.subtitle': 'Willkommen zurück',
+    'login.email': 'E-Mail-Adresse',
+    'login.password': 'Passwort',
+    'login.remember': 'Angemeldet bleiben',
+    'login.forgot': 'Passwort vergessen?',
+    'login.submit': 'Anmelden',
+    'login.register': 'Noch kein Konto? Registrieren',
+
+    // Testimonials
+    'testimonials.title.part1': 'Was unsere Kunden über',
+    'testimonials.title.part2': 'sagen',
+    'testimonials.subtitle': 'Über 10.000 zufriedene Kunden vertrauen bereits auf Taskilo',
+
+    // Testimonial Rollen
+    'testimonials.role.homeowner': 'Hausbesitzerin',
+    'testimonials.role.manager': 'Geschäftsführer',
+    'testimonials.role.mother': 'Mutter von 2 Kindern',
+    'testimonials.role.apartmentOwner': 'Apartment-Besitzerin',
+    'testimonials.role.entrepreneur': 'IT-Unternehmer',
+    'testimonials.role.gardenLover': 'Gartenliebhaberin',
+    'testimonials.role.carEnthusiast': 'Auto-Enthusiast',
+
+    // Testimonial Inhalte
+    'testimonials.content.maria':
+      'Taskilo hat mir geholfen, einen fantastischen Elektriker zu finden. Schnell, professionell und zu einem fairen Preis!',
+    'testimonials.content.thomas':
+      'Für unser Büro haben wir über Taskilo einen zuverlässigen Reinigungsservice gefunden. Absolute Empfehlung!',
+    'testimonials.content.julia':
+      'Die Kinderbetreuung über Taskilo war ein Segen. Verifizierte Betreuer und einfache Buchung.',
+    'testimonials.content.andreas':
+      'Meine Küche wurde perfekt renoviert. Taskilo macht es einfach, vertrauensvolle Handwerker zu finden.',
+    'testimonials.content.sarah':
+      'Von der Buchung bis zur Bezahlung - alles lief reibungslos. Taskilo ist meine erste Wahl!',
+    'testimonials.content.michael':
+      'Für IT-Support haben wir schnell einen kompetenten Techniker gefunden. Sehr zufrieden!',
+    'testimonials.content.lisa':
+      'Mein Garten wurde wunderschön gestaltet. Die Gärtner auf Taskilo sind echte Profis.',
+    'testimonials.content.david':
+      'Autowäsche und Pflege über Taskilo - schnell gebucht und perfekt ausgeführt.',
+
+    // Testimonial Statistiken
+    'testimonials.stats.avgRating': 'Ø Bewertung',
+    'testimonials.stats.happyCustomers': 'Zufriedene Kunden',
+    'testimonials.stats.reviews': 'Bewertungen',
+
+    // Auth zusätzlich
+    'auth.or': 'Oder fahre fort mit',
+
+    // Messages & Chat
+    'messages.chatWith': 'Chat mit',
+    'messages.loading': 'Chat-Nachrichten werden hier geladen...',
+
+    // Inbox
+    'inbox.newRequests': 'Neue Anfragen',
+    'inbox.sentOffers': 'Angebot gesendet',
+    'inbox.archive': 'Archiv',
+
+    // Sidebar Spezifisch
+    'sidebar.unknown': 'Unbekannt',
+    'sidebar.noEmail': 'Keine E-Mail verfügbar',
+    'sidebar.lifecycle': 'Lifecycle',
+    'sidebar.projects': 'Projekte',
+    'sidebar.team': 'Team',
+    'sidebar.capture': 'Erfassen',
+    'sidebar.proposal': 'Vorschlag',
+    'sidebar.prompts': 'Prompts',
+    'sidebar.activeProposals': 'Aktive Vorschläge',
+    'sidebar.archived': 'Archiviert',
+    'sidebar.getHelp': 'Hilfe erhalten',
+    'sidebar.dataLibrary': 'Datenbibliothek',
+    'sidebar.wordAssistant': 'Wort-Assistent',
+
+    // Error Messages Extended
+    'error.userNotAuthenticated': 'Benutzer ist nicht authentifiziert',
+    'error.userNotFound': 'Kein Benutzer gefunden',
+    'error.dataFetch': 'Fehler beim Abrufen der Daten',
+
+    // Navigation Extended
+    'navigation.documents': 'Dokumente',
+
+    // Common
+    'common.more': 'Mehr',
+    'common.open': 'Öffnen',
+
+    // Documents
+    'documents.open': 'Öffnen',
+    'documents.share': 'Teilen',
+
+    // Chat Component
+    'chat.title': 'Chat zum Auftrag',
+    'chat.status.unknown': 'Unbekannt',
+    'chat.status.customer': 'Kunde',
+    'chat.status.provider': 'Anbieter',
+    'chat.loading.chat': 'Chat wird geladen...',
+    'chat.loading.userdata': 'Benutzerdaten werden geladen...',
+    'chat.error.profile':
+      'Bitte melden Sie sich an oder Ihr Profil konnte nicht geladen werden, um den Chat zu nutzen.',
+    'chat.error.profileLoad': 'Fehler beim Laden Ihres Profils für den Chat.',
+    'chat.error.messageLoad':
+      'Fehler beim Laden der Nachrichten. Bitte versuchen Sie es später erneut.',
+    'chat.error.messageSend':
+      'Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+    'chat.error.emailBlocked':
+      'Die Weitergabe von E-Mail-Adressen ist im Chat nicht gestattet. Bitte halten Sie die Kommunikation auf der Plattform.',
+    'chat.error.phoneBlocked':
+      'Die Weitergabe von Telefonnummern ist im Chat nicht gestattet. Bitte halten Sie die Kommunikation auf der Plattform.',
+    'chat.messages.noMessages': 'Noch keine Nachrichten in diesem Chat. Seien Sie der Erste!',
+    'chat.messages.placeholder': 'Nachricht eingeben...',
+    'chat.timestamps.yesterday': 'Gestern',
+
+    // Payment & Checkout
+    'payment.title': 'Zahlungsdetails',
+    'payment.processing': 'Wird bearbeitet...',
+    'payment.payNow': 'Jetzt {amount} EUR zahlen',
+    'payment.success': 'Zahlung erfolgreich!',
+    'payment.stripeNotReady': 'Stripe ist noch nicht bereit. Bitte versuchen Sie es später erneut.',
+    'payment.loadingPaymentData':
+      'Zahlungsdaten werden noch geladen. Bitte warten Sie einen Moment.',
+    'payment.validationError': 'Fehler bei der Validierung der Zahlungsdaten.',
+    'payment.cardError': 'Kartenfehler oder Validierungsfehler.',
+    'payment.unexpectedError': 'Ein unerwarteter Fehler ist aufgetreten.',
+    'payment.generalError': 'Ein allgemeiner Fehler ist im Bezahlprozess aufgetreten.',
+    'payment.statusPending': 'Zahlungsstatus: {status}. Du wirst ggf. weitergeleitet.',
+    'payment.stripeApiError': 'Stripe API nicht verfügbar.',
+    'payment.clientSecretMissing': 'Client Secret fehlt.',
+    'payment.elementsValidationFailed': 'Elements-Validierung fehlgeschlagen.',
+    'payment.confirmationFailed': 'Zahlungsbestätigung fehlgeschlagen.',
+    'payment.notSuccessfulOrUnknown': 'Zahlung nicht erfolgreich oder Status unbekannt.',
+
+    // Checkout Page
+    'checkout.paymentDetails': 'Zahlungsdetails',
+    'checkout.processing': 'Verarbeite...',
+    'checkout.payNow': 'Jetzt {amount} {currency} zahlen',
+    'checkout.success': 'Zahlung erfolgreich! ID: {id}',
+    'checkout.statusPending': 'Zahlungsstatus: {status}. Du wirst ggf. weitergeleitet.',
+    'checkout.unknownResult':
+      'Unbekannter Zahlungsstatus oder Ergebnis von Stripe (kein Fehler, kein PaymentIntent).',
+    'checkout.generalError': 'Ein allgemeiner Fehler ist im Bezahlprozess aufgetreten.',
+    'checkout.confirmationError': 'Ein Fehler ist bei der Zahlungsbestätigung aufgetreten.',
+
+    // Booking Flow (Get Started)
+    'booking.steps.customerType': 'Kundentyp wählen',
+    'booking.steps.category': 'Kategorie wählen',
+    'booking.steps.subcategory': 'Unterkategorie wählen',
+    'booking.steps.description': 'Auftrag beschreiben',
+    'booking.title': 'Um welchen Auftrag handelt es sich?',
+    'booking.subtitle':
+      'Finden Sie die Dienstleistung, die Sie benötigen, um geprüfte Handwerker in Ihrer Nähe zu kontaktieren.',
+    'booking.stepProgress': 'Schritt {current}/{total}',
+    'booking.showSteps': 'Schritte anzeigen',
+    'booking.customerType.private': 'Privatkunde',
+    'booking.customerType.business': 'Geschäftskunde',
+    'booking.customerType.privateDesc': 'Für den Haushalt, Garten oder persönliche Projekte',
+    'booking.customerType.businessDesc': 'Für Ihr Unternehmen, Büro oder Gewerbe',
+    'booking.category.title': 'Welche Kategorie passt zu Ihrem Auftrag?',
+    'booking.category.search': 'Kategorie suchen...',
+    'booking.subcategory.title': 'Welche Unterkategorie passt am besten?',
+    'booking.subcategory.search': 'Unterkategorie suchen...',
+    'booking.description.title': 'Beschreiben Sie Ihren Auftrag',
+    'booking.description.placeholder': 'Beschreiben Sie hier Ihren Auftrag...',
+    'booking.description.help':
+      'Je detaillierter Ihre Beschreibung, desto besser können sich passende Anbieter bei Ihnen melden.',
+    'booking.next': 'Weiter zu Anbieter suchen',
+    'booking.error.fillAllFields': 'Bitte füllen Sie alle Felder aus.',
+    'booking.modal.title': 'Buchungsschritte',
+    'booking.modal.close': 'Schließen',
+
+    // Auth Components
+    'auth.checking': 'Authentifizierung wird geprüft...',
+    'auth.loading': 'Laden...',
+
+    // Dashboard
+    'dashboard.loading': 'Dashboard wird geladen...',
+    'dashboard.title': 'Dashboard',
+
+    // Navigation
+    'nav.dashboard': 'Dashboard',
+    'nav.orders': 'Aufträge',
+    'nav.profile': 'Profil',
+    'nav.help': 'Hilfe',
+    'nav.startWithTaskilo': 'Starte mit Taskilo',
+    'nav.services': 'Services',
+    'nav.about': 'Über uns',
+    'nav.contact': 'Kontakt',
+    'nav.openMenu': 'Menü öffnen',
+    'nav.closeMenu': 'Menü schließen',
+
+    // Admin Dashboard
+    'admin.title': 'Admin Dashboard',
+    'admin.description': 'Überblick über alle wichtigen Kennzahlen und Verwaltungsfunktionen.',
+    'admin.welcome': 'Willkommen im Admin-Dashboard',
+    'admin.platform.title': 'Plattform-Verwaltung',
+    'admin.settings.description':
+      'Verwalten Sie Plattformgebühren, Stripe-Einstellungen und andere wichtige Konfigurationen',
+
+    // Company Dashboard
+    'company.tabs.overview': 'Übersicht',
+    'company.tabs.calendar': 'Kalender',
+    'company.tabs.profile': 'Profil',
+    'company.tabs.settings': 'Einstellungen',
+    'company.table.service': 'Dienstleistung',
+    'company.table.customer': 'Kunde',
+    'company.table.status': 'Status',
+    'company.table.date': 'Datum',
+    'company.table.revenue': 'Umsatz',
+    'company.orders.viewAll': 'Alle eingegangenen Aufträge anzeigen',
+    'company.profile.title': 'Company Profile verwalten',
+    'company.profile.description':
+      'Verwalten Sie Ihr Unternehmensprofil, Services, Portfolio und FAQ für eine professionelle Präsentation auf Taskilo.',
+    'company.profile.management': 'Profil-Management',
+    'company.profile.placeholder': 'Profil-Features werden hier implementiert.',
+
+    // Chart und Datenvisualisierung
+    'chart.revenue.title': 'Umsatz Übersicht',
+    'chart.revenue.description': 'Zeigt den Gesamtumsatz über die ausgewählte Zeitperiode an',
+    'chart.revenue.loading': 'Umsatzdaten werden geladen...',
+    'chart.revenue.error': 'Die Umsatzdaten konnten nicht geladen werden.',
+    'chart.revenue.noData': 'Keine Umsatzdaten für den ausgewählten Zeitraum verfügbar.',
+    'chart.revenue.totalRevenue': 'Gesamtumsatz',
+    'chart.timeRange.7d': '7 Tage',
+    'chart.timeRange.30d': '30 Tage',
+    'chart.timeRange.90d': '90 Tage',
+    'chart.timeRange.label': 'Zeitraum auswählen',
+    'chart.tooltip.revenue': 'Umsatz',
+    'chart.tooltip.date': 'Datum',
+    'chart.axis.revenue': 'Umsatz (€)',
+    'chart.axis.date': 'Datum',
+
+    // Data Table
+    'table.columns.adjust': 'Spalten anpassen',
+    'table.columns.short': 'Spalten',
+    'table.section.add': 'Abschnitt hinzufügen',
+    'table.loading': 'Daten werden geladen...',
+    'table.noData': 'Keine Daten verfügbar',
+    'table.pagination.previous': 'Vorherige',
+    'table.pagination.next': 'Nächste',
+    'table.pagination.first': 'Erste',
+    'table.pagination.last': 'Letzte',
+    'table.pagination.rows': 'Zeilen pro Seite',
+    'table.pagination.showing': 'Seite {from} von {to}',
+    'table.search.placeholder': 'Suchen...',
+    'table.filter.all': 'Alle',
+    'table.select.all': 'Alle auswählen',
+    'table.select.none': 'Auswahl aufheben',
+    'table.drag.reorder': 'Zum Neuordnen ziehen',
+    'table.navigation.firstPage': 'Zur ersten Seite',
+    'table.navigation.previousPage': 'Zur vorherigen Seite',
+    'table.navigation.nextPage': 'Zur nächsten Seite',
+    'table.navigation.lastPage': 'Zur letzten Seite',
+
+    // Get Started Page (Booking Flow)
+    'booking.steps.title': 'Um welchen Auftrag handelt es sich?',
+    'booking.steps.subtitle':
+      'Finden Sie die Dienstleistung, die Sie benötigen, um geprüfte Handwerker in Ihrer Nähe zu kontaktieren.',
+    'booking.steps.current': 'Schritt {current}/{total}',
+    'booking.steps.showSteps': 'Schritte anzeigen',
+    'booking.customer.private.title': 'Ich bin Privatkunde',
+    'booking.customer.private.description': 'Dienstleister für mein Zuhause finden und buchen.',
+    'booking.customer.business.title': 'Ich bin ein Unternehmen',
+    'booking.customer.business.description': 'Für mein Unternehmen Hilfe buchen (B2B).',
+    'booking.category.main.label': 'Wähle eine Hauptkategorie',
+    'booking.category.main.placeholder': 'z. B. Handwerk, IT & Technik …',
+    'booking.category.sub.label': 'Wähle eine Unterkategorie',
+    'booking.category.sub.placeholder': 'z. B. Elektriker, Umzugshelfer …',
+
+    // Section Cards
+    'cards.newOrders.title': 'Neue Aufträge',
+    'cards.newOrders.status': 'Warten auf Annahme',
+    'cards.balance.pending': 'ausstehend',
+    'cards.balance.available': 'Sofort verfügbar',
+    'cards.withdraw.confirm': 'Auszahlung beantragen:',
+    'cards.withdraw.available': 'Verfügbares Guthaben',
+    'cards.withdraw.fee': 'Plattformgebühr (4,5%)',
+    'cards.withdraw.amount': 'Auszahlungsbetrag',
+    'cards.withdraw.question': 'Möchten Sie die Auszahlung jetzt beantragen?',
+    'cards.withdraw.processing': 'Wird verarbeitet...',
+    'cards.withdraw.button': 'Auszahlen',
+    'cards.withdraw.error': 'Fehler bei der Auszahlung',
+    'cards.withdraw.unknownError': 'Unbekannter Fehler',
+
+    // User Dashboard
+    'user.dashboard.loading': 'Lade dein persönliches Dashboard...',
+    'user.dashboard.errorMessage':
+      'Bitte laden Sie die Seite neu oder kontaktieren Sie den Support.',
+
+    // Add Payment Method Form
+    'payment.addMethod.title': 'Zahlungsmethode hinzufügen',
+    'payment.addMethod.processing': 'Verarbeitung läuft...',
+    'payment.addMethod.success': 'Zahlungsmethode erfolgreich hinzugefügt!',
+    'payment.addMethod.systemNotReady': 'Zahlungssystem ist noch nicht bereit.',
+    'payment.addMethod.setupFailed': 'Setup der Zahlungsmethode fehlgeschlagen.',
+    'payment.addMethod.unexpectedError': 'Ein unerwarteter Fehler ist aufgetreten.',
+    'payment.addMethod.addButton': 'Zahlungsmethode hinzufügen',
+
+    // User Info Card
+    'user.role.customer': 'Kunde',
+    'user.role.provider': 'Anbieter',
+    'user.viewProfile': 'Profil anzeigen',
+    'user.avatarAlt': '{name} Avatar',
+
+    // Reviews & Ratings
+    'reviews.title': 'Bewertungen',
+    'reviews.average': 'Durchschnittsbewertung',
+    'reviews.total': '{count} Bewertungen',
+    'reviews.noReviews': 'Noch keine Bewertungen vorhanden',
+    'reviews.loading': 'Bewertungen werden geladen...',
+    'reviews.loadMore': 'Weitere Bewertungen laden',
+    'reviews.anonymous': 'Anonymer Nutzer',
+    'reviews.verified': 'Verifizierte Bewertung',
+    'reviews.returning': 'Wiederkehrender Kunde',
+    'reviews.translate': 'Übersetzen',
+    'reviews.translating': 'Übersetzen...',
+    'reviews.showMore': 'Mehr anzeigen',
+    'reviews.showLess': 'Weniger anzeigen',
+    'reviews.helpful': 'Hilfreich',
+    'reviews.providerResponse': 'Antwort des Anbieters',
+    'reviews.projectTitle': 'Projekt',
+    'reviews.projectPrice': 'Preis',
+    'reviews.projectDuration': 'Dauer',
 
     // Provider Profile
     'provider.rating': 'Bewertung',
@@ -203,13 +578,12 @@ const translations = {
     'message.delivered': 'Zugestellt',
     'message.read': 'Gelesen',
 
-    // Payment & Billing
+    // Payment & Billing (existing)
     'payment.method': 'Zahlungsmethode',
     'payment.card': 'Kreditkarte',
     'payment.paypal': 'PayPal',
     'payment.bankTransfer': 'Überweisung',
     'payment.cash': 'Barzahlung',
-    'payment.processing': 'Zahlung wird verarbeitet...',
     'payment.successful': 'Zahlung erfolgreich',
     'payment.failed': 'Zahlung fehlgeschlagen',
     'payment.refund': 'Rückerstattung',
@@ -438,13 +812,12 @@ const translations = {
     'message.delivered': 'Delivered',
     'message.read': 'Read',
 
-    // Payment & Billing
+    // Payment & Billing (existing)
     'payment.method': 'Payment Method',
     'payment.card': 'Credit Card',
     'payment.paypal': 'PayPal',
     'payment.bankTransfer': 'Bank Transfer',
     'payment.cash': 'Cash Payment',
-    'payment.processing': 'Processing payment...',
     'payment.successful': 'Payment successful',
     'payment.failed': 'Payment failed',
     'payment.refund': 'Refund',
@@ -482,6 +855,315 @@ const translations = {
     'success.messageSent': 'Message sent',
     'success.reviewSubmitted': 'Review submitted',
     'success.passwordChanged': 'Password changed',
+
+    // Booking Process Extended
+    'booking.selectCategory': 'Select Category',
+    'booking.selectSubcategory': 'Select Subcategory',
+    'booking.orderSummary': 'Order Summary',
+    'booking.confirmBooking': 'Confirm Booking',
+    'booking.payNow': 'Pay Now',
+
+    // Modal Components
+    'modal.close': 'Close Modal',
+    'modal.open': 'Open',
+    'modal.confirm': 'Confirm',
+    'modal.cancel': 'Cancel',
+    'modal.title': 'Title',
+
+    // Navigation Extended
+    'navigation.home': 'Home',
+    'navigation.services': 'Services',
+    'navigation.dashboard': 'Dashboard',
+    'navigation.profile': 'Profile',
+    'navigation.orders': 'Orders',
+    'navigation.inbox': 'Inbox',
+    'navigation.settings': 'Settings',
+    'navigation.logout': 'Logout',
+    'navigation.menu': 'Menu',
+    'navigation.back': 'Back',
+
+    // Status Messages
+    'status.loading': 'Loading...',
+    'status.saving': 'Saving...',
+    'status.success': 'Success',
+    'status.error': 'Error occurred',
+    'status.notFound': 'Not found',
+    'status.unauthorized': 'Unauthorized',
+    'status.processing': 'Processing...',
+
+    // Admin Area
+    'admin.overview': 'Overview',
+    'admin.companies': 'Companies',
+    'admin.orders': 'Orders',
+    'admin.users': 'Users',
+    'admin.invites': 'Invites',
+    'admin.settings': 'Settings',
+    'admin.analytics': 'Analytics',
+    'admin.reports': 'Reports',
+    'admin.permissions': 'Permissions',
+
+    // Dashboard
+    'dashboard.welcome': 'Welcome to Dashboard',
+    'dashboard.overview': 'Overview',
+    'dashboard.recentOrders': 'Recent Orders',
+    'dashboard.earnings': 'Earnings',
+    'dashboard.statistics': 'Statistics',
+
+    // Login & Registration
+    'login.title': 'Sign In',
+    'login.subtitle': 'Welcome back',
+    'login.email': 'Email address',
+    'login.password': 'Password',
+    'login.remember': 'Remember me',
+    'login.forgot': 'Forgot password?',
+    'login.submit': 'Sign In',
+    'login.register': 'No account? Register',
+
+    // Testimonials
+    'testimonials.title.part1': 'What our customers say about',
+    'testimonials.title.part2': '',
+    'testimonials.subtitle': 'Over 10,000 happy customers already trust Taskilo',
+
+    // Testimonial Roles
+    'testimonials.role.homeowner': 'Homeowner',
+    'testimonials.role.manager': 'Manager',
+    'testimonials.role.mother': 'Mother of 2 children',
+    'testimonials.role.apartmentOwner': 'Apartment Owner',
+    'testimonials.role.entrepreneur': 'IT Entrepreneur',
+    'testimonials.role.gardenLover': 'Garden Enthusiast',
+    'testimonials.role.carEnthusiast': 'Car Enthusiast',
+
+    // Testimonial Content
+    'testimonials.content.maria':
+      'Taskilo helped me find a fantastic electrician. Fast, professional and at a fair price!',
+    'testimonials.content.thomas':
+      'We found a reliable cleaning service for our office through Taskilo. Absolute recommendation!',
+    'testimonials.content.julia':
+      'The childcare through Taskilo was a blessing. Verified caregivers and easy booking.',
+    'testimonials.content.andreas':
+      'My kitchen was perfectly renovated. Taskilo makes it easy to find trustworthy craftsmen.',
+    'testimonials.content.sarah':
+      'From booking to payment - everything went smoothly. Taskilo is my first choice!',
+    'testimonials.content.michael':
+      'For IT support we quickly found a competent technician. Very satisfied!',
+    'testimonials.content.lisa':
+      'My garden was beautifully designed. The gardeners on Taskilo are real professionals.',
+    'testimonials.content.david':
+      'Car washing and care through Taskilo - quickly booked and perfectly executed.',
+
+    // Testimonial Statistics
+    'testimonials.stats.avgRating': 'Avg Rating',
+    'testimonials.stats.happyCustomers': 'Happy Customers',
+    'testimonials.stats.reviews': 'Reviews',
+
+    // Auth zusätzlich
+    'auth.or': 'Or continue with',
+
+    // Messages & Chat
+    'messages.chatWith': 'Chat with',
+    'messages.loading': 'Chat messages will load here...',
+
+    // Inbox
+    'inbox.newRequests': 'New Requests',
+    'inbox.sentOffers': 'Sent Offers',
+    'inbox.archive': 'Archive',
+
+    // Sidebar Specific
+    'sidebar.unknown': 'Unknown',
+    'sidebar.noEmail': 'No email available',
+    'sidebar.lifecycle': 'Lifecycle',
+    'sidebar.projects': 'Projects',
+    'sidebar.team': 'Team',
+    'sidebar.capture': 'Capture',
+    'sidebar.proposal': 'Proposal',
+    'sidebar.prompts': 'Prompts',
+    'sidebar.activeProposals': 'Active Proposals',
+    'sidebar.archived': 'Archived',
+    'sidebar.getHelp': 'Get Help',
+    'sidebar.dataLibrary': 'Data Library',
+    'sidebar.wordAssistant': 'Word Assistant',
+
+    // Error Messages Extended
+    'error.userNotAuthenticated': 'User is not authenticated',
+    'error.userNotFound': 'No user found',
+    'error.dataFetch': 'Error fetching data',
+
+    // Navigation Extended
+    'navigation.documents': 'Documents',
+
+    // Common
+    'common.more': 'More',
+    'common.open': 'Open',
+
+    // Documents
+    'documents.open': 'Open',
+    'documents.share': 'Share',
+
+    // Chat Component
+    'chat.title': 'Chat for Order',
+    'chat.status.unknown': 'Unknown',
+    'chat.status.customer': 'Customer',
+    'chat.status.provider': 'Provider',
+    'chat.loading.chat': 'Loading chat...',
+    'chat.loading.userdata': 'Loading user data...',
+    'chat.error.profile': 'Please log in or your profile could not be loaded to use the chat.',
+    'chat.error.profileLoad': 'Error loading your profile for the chat.',
+    'chat.error.messageLoad': 'Error loading messages. Please try again later.',
+    'chat.error.messageSend': 'Message could not be sent. Please try again.',
+    'chat.error.emailBlocked':
+      'Sharing email addresses is not permitted in chat. Please keep communication on the platform.',
+    'chat.error.phoneBlocked':
+      'Sharing phone numbers is not permitted in chat. Please keep communication on the platform.',
+    'chat.messages.noMessages': 'No messages in this chat yet. Be the first!',
+    'chat.messages.placeholder': 'Enter message...',
+    'chat.timestamps.yesterday': 'Yesterday',
+
+    // Payment & Checkout
+    'payment.title': 'Payment Details',
+    'payment.processing': 'Processing...',
+    'payment.payNow': 'Pay {amount} EUR now',
+    'payment.success': 'Payment successful!',
+    'payment.stripeNotReady': 'Stripe is not ready yet. Please try again later.',
+    'payment.loadingPaymentData': 'Payment data is still loading. Please wait a moment.',
+    'payment.validationError': 'Error validating payment data.',
+    'payment.cardError': 'Card error or validation error.',
+    'payment.unexpectedError': 'An unexpected error occurred.',
+    'payment.generalError': 'A general error occurred in the payment process.',
+    'payment.statusPending': 'Payment status: {status}. You may be redirected.',
+    'payment.stripeApiError': 'Stripe API not available.',
+    'payment.clientSecretMissing': 'Client Secret missing.',
+    'payment.elementsValidationFailed': 'Elements validation failed.',
+    'payment.confirmationFailed': 'Payment confirmation failed.',
+    'payment.notSuccessfulOrUnknown': 'Payment not successful or status unknown.',
+
+    // Checkout Page
+    'checkout.paymentDetails': 'Payment Details',
+    'checkout.processing': 'Processing...',
+    'checkout.payNow': 'Pay {amount} {currency} now',
+    'checkout.success': 'Payment successful! ID: {id}',
+    'checkout.statusPending': 'Payment status: {status}. You may be redirected.',
+    'checkout.unknownResult':
+      'Unknown payment status or result from Stripe (no error, no PaymentIntent).',
+    'checkout.generalError': 'A general error occurred in the payment process.',
+    'checkout.confirmationError': 'An error occurred during payment confirmation.',
+
+    // Booking Flow (Get Started)
+    'booking.steps.customerType': 'Choose customer type',
+    'booking.steps.category': 'Choose category',
+    'booking.steps.subcategory': 'Choose subcategory',
+    'booking.steps.description': 'Describe task',
+    'booking.title': 'What kind of task is this?',
+    'booking.subtitle': 'Find the service you need to contact verified professionals in your area.',
+    'booking.stepProgress': 'Step {current}/{total}',
+    'booking.showSteps': 'Show steps',
+    'booking.customerType.private': 'Private Customer',
+    'booking.customerType.business': 'Business Customer',
+    'booking.customerType.privateDesc': 'For household, garden or personal projects',
+    'booking.customerType.businessDesc': 'For your company, office or business',
+    'booking.category.title': 'Which category fits your task?',
+    'booking.category.search': 'Search category...',
+    'booking.subcategory.title': 'Which subcategory fits best?',
+    'booking.subcategory.search': 'Search subcategory...',
+    'booking.description.title': 'Describe your task',
+    'booking.description.placeholder': 'Describe your task here...',
+    'booking.description.help':
+      'The more detailed your description, the better suitable providers can contact you.',
+    'booking.next': 'Continue to find providers',
+    'booking.error.fillAllFields': 'Please fill out all fields.',
+    'booking.modal.title': 'Booking Steps',
+    'booking.modal.close': 'Close',
+
+    // Auth Components
+    'auth.checking': 'Checking authentication...',
+    'auth.loading': 'Loading...',
+
+    // Add Payment Method Form
+    'payment.addMethod.title': 'Add Payment Method',
+    'payment.addMethod.processing': 'Processing...',
+    'payment.addMethod.success': 'Payment method successfully added!',
+    'payment.addMethod.systemNotReady': 'Payment system is not ready yet.',
+    'payment.addMethod.setupFailed': 'Payment method setup failed.',
+    'payment.addMethod.unexpectedError': 'An unexpected error occurred.',
+    'payment.addMethod.addButton': 'Add Payment Method',
+
+    // User Info Card
+    'user.role.customer': 'Customer',
+    'user.role.provider': 'Provider',
+    'user.viewProfile': 'View Profile',
+    'user.avatarAlt': '{name} Avatar',
+
+    // Reviews & Ratings
+    'reviews.title': 'Reviews',
+    'reviews.average': 'Average Rating',
+    'reviews.total': '{count} Reviews',
+    'reviews.noReviews': 'No reviews available yet',
+    'reviews.loading': 'Loading reviews...',
+    'reviews.loadMore': 'Load more reviews',
+    'reviews.anonymous': 'Anonymous User',
+    'reviews.verified': 'Verified Review',
+    'reviews.returning': 'Returning Customer',
+    'reviews.translate': 'Translate',
+    'reviews.translating': 'Translating...',
+    'reviews.showMore': 'Show more',
+    'reviews.showLess': 'Show less',
+    'reviews.helpful': 'Helpful',
+    'reviews.providerResponse': 'Provider Response',
+    'reviews.projectTitle': 'Project',
+    'reviews.projectPrice': 'Price',
+    'reviews.projectDuration': 'Duration',
+
+    // Chart and Data Visualization
+    'chart.revenue.title': 'Revenue Overview',
+    'chart.revenue.description': 'Shows total revenue over the selected time period',
+    'chart.revenue.loading': 'Loading revenue data...',
+    'chart.revenue.error': 'Revenue data could not be loaded.',
+    'chart.revenue.noData': 'No revenue data available for the selected period.',
+    'chart.revenue.totalRevenue': 'Total Revenue',
+    'chart.timeRange.7d': '7 Days',
+    'chart.timeRange.30d': '30 Days',
+    'chart.timeRange.90d': '90 Days',
+    'chart.timeRange.label': 'Select time range',
+    'chart.tooltip.revenue': 'Revenue',
+    'chart.tooltip.date': 'Date',
+    'chart.axis.revenue': 'Revenue (€)',
+    'chart.axis.date': 'Date',
+
+    // Data Table
+    'table.columns.adjust': 'Adjust columns',
+    'table.columns.short': 'Columns',
+    'table.section.add': 'Add section',
+    'table.loading': 'Loading data...',
+    'table.noData': 'No data available',
+    'table.pagination.previous': 'Previous',
+    'table.pagination.next': 'Next',
+    'table.pagination.first': 'First',
+    'table.pagination.last': 'Last',
+    'table.pagination.rows': 'Rows per page',
+    'table.pagination.showing': 'Page {from} of {to}',
+    'table.search.placeholder': 'Search...',
+    'table.filter.all': 'All',
+    'table.select.all': 'Select all',
+    'table.select.none': 'Deselect all',
+    'table.drag.reorder': 'Drag to reorder',
+    'table.navigation.firstPage': 'Go to first page',
+    'table.navigation.previousPage': 'Go to previous page',
+    'table.navigation.nextPage': 'Go to next page',
+    'table.navigation.lastPage': 'Go to last page',
+
+    // Get Started Page (Booking Flow)
+    'booking.steps.title': 'What kind of task is this?',
+    'booking.steps.subtitle':
+      'Find the service you need to contact verified professionals in your area.',
+    'booking.steps.current': 'Step {current}/{total}',
+    'booking.steps.showSteps': 'Show steps',
+    'booking.customer.private.title': 'I am a private customer',
+    'booking.customer.private.description': 'Find and book service providers for my home.',
+    'booking.customer.business.title': 'I am a business',
+    'booking.customer.business.description': 'Book help for my company (B2B).',
+    'booking.category.main.label': 'Choose a main category',
+    'booking.category.main.placeholder': 'e.g. Handyman, IT & Technology …',
+    'booking.category.sub.label': 'Choose a subcategory',
+    'booking.category.sub.placeholder': 'e.g. Electrician, Moving helper …',
   },
 };
 

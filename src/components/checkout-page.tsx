@@ -5,6 +5,7 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import { PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { StripePaymentElementOptions, StripeError, PaymentIntent } from '@stripe/stripe-js'; // PaymentIntent importieren
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StripeCardCheckoutProps {
   taskAmount: number;
@@ -37,6 +38,7 @@ export const StripeCardCheckout = ({
 }: StripeCardCheckoutProps) => {
   const stripe = useStripe();
   const elements = useElements();
+  const { t } = useLanguage();
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

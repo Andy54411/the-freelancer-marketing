@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/auth/ProtectedRoute'; // Import ProtectedRoute
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   doc,
   getDoc,
@@ -67,6 +68,7 @@ export default function UserDashboardPage() {
   const router = useRouter();
   const params = useParams();
   const pageUid = typeof params.uid === 'string' ? params.uid : ''; // Umbenannt, um Konflikt mit user.uid zu vermeiden
+  const { t } = useLanguage();
 
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -470,7 +472,7 @@ export default function UserDashboardPage() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-        Lade dein persönliches Dashboard...
+        {t('user.dashboard.loading')}
       </div>
     );
   }
@@ -483,11 +485,9 @@ export default function UserDashboardPage() {
           role="alert"
         >
           <FiAlertCircle size={24} className="inline mr-2" />
-          <strong className="font-bold">Fehler:</strong>
+          <strong className="font-bold">{t('common.error')}:</strong>
           <span className="block sm:inline ml-1">{error || ordersError}</span>
-          <p className="mt-2 text-sm">
-            Bitte laden Sie die Seite neu oder kontaktieren Sie den Support.
-          </p>
+          <p className="mt-2 text-sm">{t('user.dashboard.errorMessage')}</p>
         </div>
       </div>
     );
