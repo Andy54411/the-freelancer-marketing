@@ -9,9 +9,10 @@ test-*.js
 scripts/
 
 # Large files that don't need to be in build
-public/images/*.jpeg
-public/images/*.jpg
-public/images/*.png
+# NOTE: Bilder sind jetzt wieder aktiviert für die Website
+# public/images/*.jpeg
+# public/images/*.jpg
+# public/images/*.png
 
 # Database files
 *.rules

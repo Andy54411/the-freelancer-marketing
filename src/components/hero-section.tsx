@@ -148,7 +148,7 @@ export default function HeroSection() {
               <div className="w-full max-w-xl lg:w-1/2">
                 <img
                   className="h-auto w-full object-contain"
-                  src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3"
+                  src="/images/AdobeStock_163577338.jpeg"
                   alt="Taskilo Hero"
                   loading="lazy"
                   onError={e => {

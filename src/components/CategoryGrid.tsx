@@ -19,8 +19,7 @@ const categories = [
       />
     ),
     tags: ['Möbelmontage', 'IKEA Montage'],
-    image:
-      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3',
+    image: '/images/AdobeStock_298445672.jpeg',
     title: 'Möbelmontage',
     text: 'Hilfe beim Aufbau von Möbeln und IKEA-Produkten.',
   },
