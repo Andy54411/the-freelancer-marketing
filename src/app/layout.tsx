@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'TASKILO',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   formatDetection: {
     telephone: false,
   },
