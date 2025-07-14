@@ -2,6 +2,10 @@
 
 Taskilo ist eine moderne Plattform, die Kunden mit verifizierten Dienstleistern verbindet. Von Handwerk bis Haushaltsservice - finden Sie den perfekten Anbieter für Ihr Projekt.
 
+## 🧹 Projekt-Wartung
+
+**Für Entwickler:** Nutzen Sie unsere [Cleanup-Tools](docs/guides/CLEANUP_README.md) um ungenutzte Dateien und Komponenten zu identifizieren und sicher zu entfernen.
+
 ## Features
 
 - 🔍 **Service-Suche**: Finden Sie qualifizierte Dienstleister in Ihrer Nähe

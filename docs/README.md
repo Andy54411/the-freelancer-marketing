@@ -6,9 +6,9 @@ Diese Datei bietet eine Übersicht über die gesamte Projektdokumentation.
 
 ### **Root-Verzeichnis**
 - **`README.md`** - Haupt-Projektdokumentation
-- **`CLEANUP_README.md`** - Projekt-Cleanup Tools und Anleitungen
 
 ### **`docs/guides/`** - Aktuelle Handbücher
+- **`CLEANUP_README.md`** - Projekt-Cleanup Tools und Anleitungen
 - **`GOOGLE_ANALYTICS_GUIDE.md`** - Google Analytics Integration
 - **`INTEGRATION_GUIDE.md`** - System-Integrationen
 
@@ -25,7 +25,7 @@ Diese Datei bietet eine Übersicht über die gesamte Projektdokumentation.
 ## 🎯 Zweck der Reorganisation
 
 ### ✅ **Vorher:** 14 MD-Dateien im Root
-### ✅ **Nachher:** 2 wichtige MD-Dateien im Root + strukturierte Docs
+### ✅ **Nachher:** 1 wichtige MD-Datei im Root + strukturierte Docs
 
 ### **Vorteile:**
 - 🧹 **Sauberer Root-Bereich** - nur essenzielle Dokumente
@@ -38,10 +38,10 @@ Diese Datei bietet eine Übersicht über die gesamte Projektdokumentation.
 ### **Für neue Entwickler:**
 1. Starte mit `README.md`
 2. Siehe `docs/guides/INTEGRATION_GUIDE.md` für Setup
-3. Nutze `CLEANUP_README.md` für Projekt-Wartung
+3. Nutze `docs/guides/CLEANUP_README.md` für Projekt-Wartung
 
 ### **Für Wartung:**
-1. `CLEANUP_README.md` - Projekt aufräumen
+1. `docs/guides/CLEANUP_README.md` - Projekt aufräumen
 2. `docs/guides/` - Aktuelle Verfahren
 3. `docs/archive/` - Historische Problemlösungen
 
