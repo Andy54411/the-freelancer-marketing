@@ -8,7 +8,6 @@ import { Logo } from '@/components/logo';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 import { getAuth, onAuthStateChanged, signOut, User as FirebaseAuthUser } from 'firebase/auth';
 import { app } from '../../../../../firebase/clients';
@@ -20,18 +19,17 @@ type MenuItem = { name: string; href: string; labelKey: string };
 export function DashboardNavbar({ currentUid }: { currentUid: string }) {
   const [menuState, setMenuState] = useState(false);
   const [currentUser, setCurrentUser] = useState<FirebaseAuthUser | null>(null);
-  const { t } = useLanguage();
 
   // Dynamic menu items based on translation keys
   const menuItems: MenuItem[] = [
-    { name: t('nav.dashboard'), href: '/dashboard/user/[uid]', labelKey: 'nav.dashboard' },
-    { name: t('nav.orders'), href: '/dashboard/user/[uid]/auftraege', labelKey: 'nav.orders' },
+    { name: 'Dashboard', href: '/dashboard/user/[uid]', labelKey: 'nav.dashboard' },
+    { name: 'Aufträge', href: '/dashboard/user/[uid]/auftraege', labelKey: 'nav.orders' },
     {
-      name: t('nav.profile'),
+      name: 'Profil',
       href: '/dashboard/user/[uid]/profile-settings',
       labelKey: 'nav.profile',
     },
-    { name: t('nav.help'), href: '/help', labelKey: 'nav.help' },
+    { name: 'Hilfe', href: '/help', labelKey: 'nav.help' },
   ];
 
   useEffect(() => {

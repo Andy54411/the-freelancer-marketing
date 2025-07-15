@@ -8,34 +8,34 @@ export default function IntegrationsSection1() {
       icon: Users,
       number: '10.000+',
       label: 'Zufriedene Kunden',
-      color: 'text-[#14ad9f]',
+      color: 'text-white',
       bgColor: 'bg-[#14ad9f]/10',
     },
     {
       icon: Shield,
       number: '5.000+',
       label: 'Verifizierte Anbieter',
-      color: 'text-blue-600',
+      color: 'text-white',
       bgColor: 'bg-blue-600/10',
     },
     {
       icon: Star,
       number: '4.8/5',
       label: 'Ø Bewertung',
-      color: 'text-yellow-600',
+      color: 'text-white',
       bgColor: 'bg-yellow-600/10',
     },
     {
       icon: TrendingUp,
       number: '99%',
       label: 'Erfolgreiche Projekte',
-      color: 'text-green-600',
+      color: 'text-white',
       bgColor: 'bg-green-600/10',
     },
   ];
 
   return (
-    <section className="py-12 sm:py-16 md:py-24 bg-white dark:bg-gray-900">
+    <section className="py-12 sm:py-16 md:py-24 bg-transparent">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left Content */}
@@ -44,18 +44,18 @@ export default function IntegrationsSection1() {
               Vertrauen Sie auf Qualität
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-6">
               Über 10.000 Kunden vertrauen bereits auf
               <span className="text-[#14ad9f]"> Taskilo</span>
             </h2>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+            <p className="text-lg text-white/90 drop-shadow-md mb-8">
               Taskilo hat sich als führende Plattform für professionelle Dienstleistungen etabliert.
               Unsere Zahlen sprechen für sich und zeigen das Vertrauen unserer Kunden.
             </p>
 
             {/* Customer Testimonial */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-8">
+            <div className="bg-transparent rounded-xl p-6 mb-8">
               <div className="flex items-center mb-4">
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
@@ -63,7 +63,7 @@ export default function IntegrationsSection1() {
                   ))}
                 </div>
               </div>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <p className="text-white/90 drop-shadow-md mb-4">
                 &ldquo;Taskilo hat mir geholfen, schnell und unkompliziert einen zuverlässigen
                 Handwerker zu finden. Die Qualität der Arbeit war ausgezeichnet!&rdquo;
               </p>
@@ -72,8 +72,8 @@ export default function IntegrationsSection1() {
                   MS
                 </div>
                 <div className="ml-3">
-                  <p className="font-semibold text-gray-900 dark:text-white">Maria Schmidt</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="font-semibold text-white drop-shadow-md">Maria Schmidt</p>
+                  <p className="text-sm text-white/80 drop-shadow-md">
                     Hausbesitzerin aus München
                   </p>
                 </div>
@@ -90,18 +90,16 @@ export default function IntegrationsSection1() {
             {stats.map((stat, index) => (
               <Card
                 key={index}
-                className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white dark:bg-gray-800"
+                className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-transparent"
               >
                 <CardContent className="p-4 sm:p-6 lg:p-8">
-                  <div
-                    className={`inline-flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl ${stat.bgColor} mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300`}
-                  >
-                    <stat.icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
+                  <div className="inline-flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-transparent mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <div className={`text-2xl sm:text-3xl font-bold mb-2 ${stat.color}`}>
+                  <div className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-lg">
                     {stat.number}
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium leading-tight">
+                  <p className="text-xs sm:text-sm text-white drop-shadow-md font-medium leading-tight">
                     {stat.label}
                   </p>
                 </CardContent>

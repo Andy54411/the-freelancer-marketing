@@ -9,7 +9,6 @@ import { ProgressiveBlur } from '@/components/ui/progressive-blur';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAnalyticsContext } from '@/contexts/AnalyticsContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompanyLogo {
   id: string; // WICHTIG: Eindeutige ID für den React-Key
@@ -22,7 +21,6 @@ export default function HeroSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
   const { trackEvent, trackNavigation } = useAnalyticsContext();
-  const { t } = useLanguage();
 
   const handleSearchClick = () => {
     trackEvent('hero_cta_click', 'user_engagement', 'search_help');
@@ -107,17 +105,17 @@ export default function HeroSection() {
           <div className="pb-16 pt-8 sm:pb-20 md:pb-32 lg:pb-56 lg:pt-44">
             <div className="relative mx-auto max-w-6xl px-6 flex flex-col-reverse items-center gap-8 sm:gap-10 lg:flex-row lg:items-center">
               <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
-                <h1 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight md:text-4xl xl:text-5xl">
-                  <span className="block">{t('hero.title.line1')}</span>
-                  <span className="block">{t('hero.title.line2')}</span>
+                <h1 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight md:text-4xl xl:text-5xl text-white drop-shadow-lg">
+                  <span className="block">Die beste Plattform für</span>
+                  <span className="block">lokale Dienstleistungen</span>
                   <span className="block">
-                    {t('hero.title.line3')}
-                    <span className="text-[#14ad9f]">Taskilo</span>
+                    finden Sie auf
+                    <span className="text-[#14ad9f]"> Taskilo</span>
                   </span>
                 </h1>
 
-                <p className="mt-6 sm:mt-8 max-w-2xl text-pretty text-base sm:text-lg text-foreground">
-                  {t('hero.description')}
+                <p className="mt-6 sm:mt-8 max-w-2xl text-pretty text-base sm:text-lg text-white/90 drop-shadow-md">
+                  Verbinden Sie sich mit vertrauenswürdigen Dienstleistern in Ihrer Nähe. Schnell, sicher und zu fairen Preisen.
                 </p>
 
                 <div className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-3 sm:gap-2 sm:flex-row lg:justify-start">
@@ -128,7 +126,7 @@ export default function HeroSection() {
                     onClick={handleSearchClick}
                   >
                     <Link href="/auftrag/get-started">
-                      <span className="text-nowrap">{t('hero.button.searchHelp')}</span>
+                      <span className="text-nowrap">Hilfe suchen</span>
                     </Link>
                   </Button>
                   <Button
@@ -140,7 +138,7 @@ export default function HeroSection() {
                     onClick={handleProviderClick}
                   >
                     <Link href="#link">
-                      <span className="text-nowrap">{t('hero.button.offerHelp')}</span>
+                      <span className="text-nowrap">Hilfe anbieten</span>
                     </Link>
                   </Button>
                 </div>
@@ -167,12 +165,12 @@ export default function HeroSection() {
           </div>
         </section>
 
-        <section className="bg-background pb-16 md:pb-32">
+        <section className="bg-transparent pb-16 md:pb-32">
           <div className="group relative m-auto max-w-6xl px-6">
             <div className="flex flex-col items-center md:flex-row">
-              <div className="md:max-w-44 md:border-r md:pr-6">
-                <p className="text-end text-sm font-medium text-foreground">
-                  {t('hero.newProviders')}
+              <div className="md:max-w-44 md:pr-6">
+                <p className="text-end text-sm font-medium text-white/90 drop-shadow-md">
+                  Neue Anbieter
                 </p>
               </div>
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
@@ -183,7 +181,7 @@ export default function HeroSection() {
                       Array.from({ length: 8 }).map((_, i) => (
                         <div
                           key={i}
-                          className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                          className="h-6 w-24 bg-transparent dark:bg-gray-700 rounded animate-pulse"
                         />
                       ))
                       : newCompanies
@@ -235,23 +233,23 @@ export default function HeroSection() {
                   <div className="text-center text-sm font-medium text-red-500">{error}</div>
                 )}
                 {!loading && !error && newCompanies.length === 0 && (
-                  <div className="text-center text-sm font-medium text-gray-500">
-                    {t('hero.noProviders')}
+                  <div className="text-center text-sm font-medium text-white/90">
+                    Keine neuen Anbieter verfügbar
                   </div>
                 )}
 
-                <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>
-                <div className="bg-linear-to-l from-background absolute inset-y-0 right-0 w-20"></div>
+                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#14ad9f]/50 via-teal-600/30 to-transparent"></div>
+                <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#14ad9f]/50 via-teal-600/30 to-transparent"></div>
 
                 <ProgressiveBlur
                   className="pointer-events-none absolute left-0 top-0 h-full w-20"
                   direction="left"
-                  blurIntensity={1}
+                  blurIntensity={2}
                 />
                 <ProgressiveBlur
                   className="pointer-events-none absolute right-0 top-0 h-full w-20"
                   direction="right"
-                  blurIntensity={1}
+                  blurIntensity={2}
                 />
               </div>
             </div>

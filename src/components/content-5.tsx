@@ -26,16 +26,16 @@ export default function ContentSection() {
   ];
 
   return (
-    <section className="py-16 md:py-32 bg-white dark:bg-gray-900">
+    <section className="py-16 md:py-32 bg-transparent">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <h2 className="text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
+            <h2 className="text-4xl font-semibold lg:text-5xl text-white drop-shadow-lg">
               Die Plattform, die
               <span className="text-[#14ad9f]"> Dienstleister und Kunden </span>
               perfekt zusammenbringt
             </h2>
-            <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
+            <p className="mt-6 text-lg text-white/90 drop-shadow-md">
               Taskilo macht es einfach, den perfekten Dienstleister für Ihr Projekt zu finden. Von
               der Suche bis zur Bezahlung - alles aus einer Hand.
             </p>
@@ -47,8 +47,8 @@ export default function ContentSection() {
                     <feature.icon className="h-5 w-5 text-[#14ad9f]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{feature.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <h3 className="font-semibold text-white drop-shadow-lg">{feature.title}</h3>
+                    <p className="text-sm text-white/90 drop-shadow-md">
                       {feature.description}
                     </p>
                   </div>
@@ -62,7 +62,7 @@ export default function ContentSection() {
               <div className="flex h-full w-full items-center justify-center">
                 <div className="text-center">
                   <Users className="mx-auto h-16 w-16 text-[#14ad9f]" />
-                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Taskilo Platform</p>
+                  <p className="mt-4 text-sm text-white/80 drop-shadow-md">Taskilo Platform</p>
                 </div>
               </div>
             </div>

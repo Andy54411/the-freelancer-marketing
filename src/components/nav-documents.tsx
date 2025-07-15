@@ -7,7 +7,6 @@ import {
   Trash2 as IconTrash,
   type LucideIcon as Icon,
 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 import {
   DropdownMenu,
@@ -35,12 +34,11 @@ export function NavDocuments({
     icon: Icon;
   }[];
 }) {
-  const { t } = useLanguage();
   const { isMobile } = useSidebar();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>{t('navigation.documents')}</SidebarGroupLabel>
+      <SidebarGroupLabel>Dokumente</SidebarGroupLabel>
       <SidebarMenu>
         {items.map(item => (
           <SidebarMenuItem key={item.name}>
@@ -54,7 +52,7 @@ export function NavDocuments({
               <DropdownMenuTrigger asChild>
                 <SidebarMenuAction showOnHover className="data-[state=open]:bg-accent rounded-sm">
                   <IconDots />
-                  <span className="sr-only">{t('common.more')}</span>
+                  <span className="sr-only">Mehr</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -64,16 +62,16 @@ export function NavDocuments({
               >
                 <DropdownMenuItem>
                   <IconFolder />
-                  <span>{t('documents.open')}</span>
+                  <span>Öffnen</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <IconShare3 />
-                  <span>{t('documents.share')}</span>
+                  <span>Teilen</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
                   <IconTrash />
-                  <span>{t('delete')}</span>
+                  <span>Löschen</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -82,7 +80,7 @@ export function NavDocuments({
         <SidebarMenuItem>
           <SidebarMenuButton className="text-sidebar-foreground/70">
             <IconDots className="text-sidebar-foreground/70" />
-            <span>{t('common.more')}</span>
+            <span>Mehr</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

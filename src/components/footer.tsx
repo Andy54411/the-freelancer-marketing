@@ -7,106 +7,103 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
 import Link from 'next/link';
-import { useLanguage } from '@/contexts/LanguageContext';
-
-import LanguageSelector from '@/components/LanguageSelector';
+import GoogleTranslateWidget from '@/components/GoogleTranslateWidget';
+import CookieSettings from '@/components/CookieSettings';
 
 export default function FooterSection() {
-  const { language, setLanguage, t } = useLanguage();
-
   const links = [
     {
-      group: t('footer.product'),
+      group: 'Produkt',
       items: [
         {
-          title: t('footer.features'),
+          title: 'Features',
           href: '#features',
         },
         {
-          title: t('footer.comingSoon'),
+          title: 'Demnächst',
           href: '/coming-soon',
         },
         {
-          title: t('footer.categories'),
+          title: 'Kategorien',
           href: '#kategorien',
         },
         {
-          title: t('footer.pricing'),
+          title: 'Preise',
           href: '#preise',
         },
         {
-          title: t('footer.help'),
+          title: 'Hilfe',
           href: '#hilfe',
         },
       ],
     },
     {
-      group: t('footer.solutions'),
+      group: 'Lösungen',
       items: [
         {
-          title: t('footer.forCompanies'),
+          title: 'Für Unternehmen',
           href: '/register/company',
         },
         {
-          title: t('footer.forFreelancers'),
+          title: 'Für Freelancer',
           href: '/register/company',
         },
         {
-          title: t('footer.forCustomers'),
+          title: 'Für Kunden',
           href: '/register/user',
         },
         {
-          title: t('footer.startProject'),
+          title: 'Projekt starten',
           href: '/auftrag/get-started',
         },
         {
-          title: t('footer.becomeProvider'),
+          title: 'Anbieter werden',
           href: '/register/company',
         },
       ],
     },
     {
-      group: t('footer.company'),
+      group: 'Unternehmen',
       items: [
         {
-          title: t('footer.about'),
+          title: 'Über uns',
           href: '/about',
         },
         {
-          title: t('footer.careers'),
+          title: 'Karriere',
           href: '/careers',
         },
         {
-          title: t('footer.blog'),
+          title: 'Blog',
           href: '/blog',
         },
         {
-          title: t('footer.press'),
+          title: 'Presse',
           href: '/press',
         },
         {
-          title: t('footer.contact'),
+          title: 'Kontakt',
           href: '/contact',
         },
       ],
     },
     {
-      group: t('footer.legal'),
+      group: 'Rechtliches',
       items: [
         {
-          title: t('footer.imprint'),
+          title: 'Impressum',
           href: '/impressum',
         },
         {
-          title: t('footer.privacy'),
+          title: 'Datenschutz',
           href: '/datenschutz',
         },
         {
-          title: t('footer.terms'),
+          title: 'AGB',
           href: '/agb',
         },
         {
-          title: t('footer.cookies'),
+          title: 'Cookies',
           href: '/cookies',
         },
       ],
@@ -114,8 +111,8 @@ export default function FooterSection() {
   ];
 
   return (
-    <footer className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 text-white pt-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-black/10"></div>
+    <footer className="bg-gradient-to-tr from-[#14ad9f] via-teal-600 to-blue-600 text-white pt-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-black/20"></div>
       <div className="relative z-10 mb-8 border-b border-white/20 md:mb-12">
         <div className="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-6 px-6 pb-6">
           <Link href="/" aria-label="go home" className="block size-fit">
@@ -271,29 +268,34 @@ export default function FooterSection() {
           <form className="row-start-1 border-b border-white/20 pb-8 text-sm md:col-span-2 md:border-none lg:col-span-1">
             <div className="space-y-4">
               <Label htmlFor="mail" className="block font-medium text-white">
-                {t('footer.newsletter')}
+                Newsletter
               </Label>
               <div className="flex gap-2">
                 <Input
                   type="email"
                   id="mail"
                   name="mail"
-                  placeholder={t('footer.emailPlaceholder')}
+                  placeholder="E-Mail-Adresse"
                   className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 />
                 <Button size="sm" className="bg-white text-[#14ad9f] hover:bg-white/90">
-                  {t('footer.subscribe')}
+                  Abonnieren
                 </Button>
               </div>
-              <span className="text-white/70 block text-sm">{t('footer.newsletterText')}</span>
+              <span className="text-white/70 block text-sm">
+                Bleiben Sie über Updates und neue Features informiert.
+              </span>
             </div>
           </form>
         </div>
         <div className="mt-12 flex flex-wrap items-end justify-between gap-6 border-t border-white/20 py-6">
           <small className="text-white/70 order-last block text-center text-sm md:order-first">
-            {t('footer.copyright', { year: new Date().getFullYear() })}
+            © {new Date().getFullYear()} Taskilo. Alle Rechte vorbehalten.
           </small>
-          <LanguageSelector />
+          <div className="flex items-center gap-4">
+            <CookieSettings />
+            <GoogleTranslateWidget />
+          </div>
         </div>
       </div>
     </footer>

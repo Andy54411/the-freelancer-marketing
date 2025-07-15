@@ -42,13 +42,13 @@ export default function IntegrationsSection() {
   ];
 
   return (
-    <section className="py-16 md:py-32 bg-white dark:bg-gray-900">
+    <section className="py-16 md:py-32 bg-transparent">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-semibold lg:text-4xl text-gray-900 dark:text-white">
+          <h2 className="text-3xl font-semibold lg:text-4xl text-white drop-shadow-lg">
             Unsere Service-Kategorien
           </h2>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+          <p className="mt-4 text-lg text-white/90 drop-shadow-md">
             Finden Sie den passenden Dienstleister für jeden Bereich
           </p>
         </div>
@@ -57,7 +57,7 @@ export default function IntegrationsSection() {
           {serviceCategories.map(category => (
             <Card
               key={category.name}
-              className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-sm bg-white dark:bg-gray-800"
+              className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-sm bg-white/90 backdrop-blur-sm"
             >
               <CardContent className="p-6 text-center">
                 <div className="flex justify-center mb-4">
@@ -65,10 +65,10 @@ export default function IntegrationsSection() {
                     <category.icon className="w-8 h-8 text-[#14ad9f]" />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 drop-shadow-lg mb-2">
                   {category.name}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-3">{category.description}</p>
+                <p className="text-gray-700 drop-shadow-md mb-3">{category.description}</p>
                 <div className="text-sm font-medium text-[#14ad9f]">
                   {category.count} Dienstleister
                 </div>

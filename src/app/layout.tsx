@@ -4,13 +4,14 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Providers } from './providers';
 import { ThemeProvider } from '@/components/theme-provider';
-import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import Chatbot from '@/components/Chatbot';
 import FooterSection from '@/components/footer';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import CookieBanner from '@/components/CookieBanner';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
   title: 'TASKILO',
@@ -34,18 +35,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="de" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <LanguageProvider>
-            <AnalyticsProvider>
-              <Providers>
-                {children}
-                <FooterSection />
-                <Chatbot />
-                <GoogleAnalytics />
-                <Analytics />
-                <SpeedInsights />
-              </Providers>
-            </AnalyticsProvider>
-          </LanguageProvider>
+          <AnalyticsProvider>
+            <Providers>
+              {children}
+              <Footer />
+              <Chatbot />
+              <CookieBanner />
+              <GoogleAnalytics />
+              <Analytics />
+              <SpeedInsights />
+            </Providers>
+          </AnalyticsProvider>
         </ThemeProvider>
       </body>
     </html>

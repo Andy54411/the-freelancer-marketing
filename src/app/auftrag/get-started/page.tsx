@@ -12,13 +12,11 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { app } from '@/firebase/clients';
 import { categories, type Category } from '@/lib/categoriesData';
 import { useRegistration } from '@/contexts/Registration-Context';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 const auth = getAuth(app);
 
 export default function GetStartedPage() {
   const router = useRouter();
-  const { t } = useLanguage();
   const {
     customerType,
     setCustomerType,
@@ -31,10 +29,10 @@ export default function GetStartedPage() {
   } = useRegistration();
 
   const steps = [
-    t('booking.steps.customerType'),
-    t('booking.steps.category'),
-    t('booking.steps.subcategory'),
-    t('booking.steps.description'),
+    'Kundentyp',
+    'Kategorie',
+    'Unterkategorie',
+    'Beschreibung',
   ];
 
   const TOTAL_STEPS = steps.length;
@@ -135,12 +133,12 @@ export default function GetStartedPage() {
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm text-[#14ad9f] font-medium">
-            <p>{t('booking.steps.current', { current: stepForDisplay, total: TOTAL_STEPS })}</p>
+            <p>Schritt {stepForDisplay} von {TOTAL_STEPS}</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="hover:underline flex items-center gap-1"
             >
-              {t('booking.steps.showSteps')} <FiInfo className="text-base" />
+              Schritte anzeigen <FiInfo className="text-base" />
             </button>
           </div>
 
@@ -151,10 +149,10 @@ export default function GetStartedPage() {
                 ${isClientMounted && customerType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <h2 className="text-xl font-semibold text-primary">
-                {t('booking.customer.private.title')}
+                Privatperson
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('booking.customer.private.description')}
+                Ich buche für meinen privaten Bedarf
               </p>
             </button>
 
@@ -164,10 +162,10 @@ export default function GetStartedPage() {
                 ${isClientMounted && customerType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <h2 className="text-xl font-semibold text-primary">
-                {t('booking.customer.business.title')}
+                Geschäftskunde
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('booking.customer.business.description')}
+                Ich buche für mein Unternehmen
               </p>
             </button>
           </div>

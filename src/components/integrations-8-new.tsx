@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Users, Star, TrendingUp } from 'lucide-react';
@@ -21,7 +23,7 @@ export default function IntegrationsSection1() {
     {
       icon: Star,
       number: '4.8/5',
-      label: 'Durchschnittsbewertung',
+      label: 'Kundenbewertung',
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-600/10',
     },
@@ -35,27 +37,27 @@ export default function IntegrationsSection1() {
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-white">
+    <section className="py-16 md:py-24 bg-transparent">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
           <div>
-            <div className="inline-flex items-center rounded-full bg-[#14ad9f]/10 px-4 py-2 text-sm font-medium text-[#14ad9f] mb-6">
+            <div className="inline-flex items-center rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-[#14ad9f] mb-6 shadow-md">
               Vertrauen Sie auf Qualität
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-6">
               Über 10.000 Kunden vertrauen bereits auf
               <span className="text-[#14ad9f]"> Taskilo</span>
             </h2>
 
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-white/90 drop-shadow-md mb-8">
               Taskilo hat sich als führende Plattform für professionelle Dienstleistungen etabliert.
               Unsere Zahlen sprechen für sich und zeigen das Vertrauen unserer Kunden.
             </p>
 
             {/* Customer Testimonial */}
-            <div className="bg-gray-50 rounded-xl p-6 mb-8">
+            <div className="bg-white rounded-xl p-6 mb-8 shadow-lg">
               <div className="flex items-center mb-4">
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
@@ -78,7 +80,7 @@ export default function IntegrationsSection1() {
               </div>
             </div>
 
-            <Button asChild size="lg" className="bg-[#14ad9f] hover:bg-[#0f9d84]">
+            <Button asChild size="lg" className="bg-white text-[#14ad9f] hover:bg-gray-50 border-2 border-[#14ad9f] font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
               <a href="/register/user">Jetzt kostenlos registrieren</a>
             </Button>
           </div>
@@ -88,7 +90,7 @@ export default function IntegrationsSection1() {
             {stats.map((stat, index) => (
               <Card
                 key={index}
-                className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm"
+                className="text-center group hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white"
               >
                 <CardContent className="p-8">
                   <div
@@ -96,7 +98,7 @@ export default function IntegrationsSection1() {
                   >
                     <stat.icon className={`h-8 w-8 ${stat.color}`} />
                   </div>
-                  <div className={`text-3xl font-bold mb-2 ${stat.color}`}>{stat.number}</div>
+                  <div className="text-3xl font-bold mb-2 text-gray-900">{stat.number}</div>
                   <p className="text-sm text-gray-600 font-medium">{stat.label}</p>
                 </CardContent>
               </Card>

@@ -1,64 +1,69 @@
 'use client';
 
 import { HeroHeader } from '@/components/hero8-header';
-import { useLanguage } from '@/contexts/LanguageContext';
+
 
 export default function AGBPage() {
-  const { t } = useLanguage();
 
   return (
     <>
       <HeroHeader />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
-        <div className="max-w-4xl mx-auto px-6">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">
-            Allgemeine Geschäftsbedingungen (AGB)
-          </h1>
+      {/* Gradient Container */}
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/20" />
+        
+        {/* Content */}
+        <div className="relative z-10 py-20">
+          <div className="max-w-4xl mx-auto px-6">
+            <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-8">
+              Allgemeine Geschäftsbedingungen (AGB)
+            </h1>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6">
-            <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                § 1 Geltungsbereich
-              </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
-                <p>
-                  Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge, die
-                  zwischen der Taskilo GmbH (nachfolgend &ldquo;Taskilo&rdquo; oder
-                  &ldquo;wir&rdquo;) und ihren Kunden (nachfolgend &ldquo;Nutzer&rdquo; oder
-                  &ldquo;Sie&rdquo;) über die Nutzung der Taskilo-Plattform geschlossen werden.
-                </p>
-                <p>
-                  Die Taskilo-Plattform ist ein Online-Marktplatz, der es Nutzern ermöglicht,
-                  Dienstleistungsanfragen zu stellen und Angebote von registrierten Dienstleistern
-                  zu erhalten.
-                </p>
-              </div>
-            </section>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-8 space-y-6">
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  § 1 Geltungsbereich
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <p>
+                    Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge, die
+                    zwischen der Taskilo GmbH (nachfolgend &ldquo;Taskilo&rdquo; oder
+                    &ldquo;wir&rdquo;) und ihren Kunden (nachfolgend &ldquo;Nutzer&rdquo; oder
+                    &ldquo;Sie&rdquo;) über die Nutzung der Taskilo-Plattform geschlossen werden.
+                  </p>
+                  <p>
+                    Die Taskilo-Plattform ist ein Online-Marktplatz, der es Nutzern ermöglicht,
+                    Dienstleistungsanfragen zu stellen und Angebote von registrierten Dienstleistern
+                    zu erhalten.
+                  </p>
+                </div>
+              </section>
 
-            <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                § 2 Vertragsgegenstand
-              </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
-                <p>Taskilo stellt eine Online-Plattform zur Verfügung, über die:</p>
-                <ul className="list-disc list-inside ml-4 space-y-2">
-                  <li>Kunden Dienstleistungsanfragen erstellen können</li>
-                  <li>Dienstleister Angebote für diese Anfragen abgeben können</li>
-                  <li>Die Kommunikation zwischen Kunden und Dienstleistern ermöglicht wird</li>
-                  <li>Bewertungen und Rezensionen verwaltet werden</li>
-                </ul>
-                <p>
-                  Taskilo ist nicht selbst Vertragspartner der zwischen Kunden und Dienstleistern
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  § 2 Vertragsgegenstand
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <p>Taskilo stellt eine Online-Plattform zur Verfügung, über die:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-2">
+                    <li>Kunden Dienstleistungsanfragen erstellen können</li>
+                    <li>Dienstleister Angebote für diese Anfragen abgeben können</li>
+                    <li>Die Kommunikation zwischen Kunden und Dienstleistern ermöglicht wird</li>
+                    <li>Bewertungen und Rezensionen verwaltet werden</li>
+                  </ul>
+                  <p>
+                    Taskilo ist nicht selbst Vertragspartner der zwischen Kunden und Dienstleistern
                   geschlossenen Dienstleistungsverträge.
                 </p>
               </div>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 § 3 Registrierung und Nutzerkonto
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <p>
                   Für die Nutzung bestimmter Funktionen der Plattform ist eine Registrierung
                   erforderlich. Bei der Registrierung müssen Sie wahrheitsgemäße und vollständige
@@ -76,10 +81,10 @@ export default function AGBPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 § 4 Nutzung der Plattform
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <p>
                   Die Nutzung der Plattform ist nur für rechtliche Zwecke gestattet. Insbesondere
                   ist es untersagt:
@@ -95,10 +100,10 @@ export default function AGBPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 § 5 Gebühren und Zahlungen
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <p>
                   Die Nutzung der Grundfunktionen der Plattform ist kostenlos. Für bestimmte
                   Premium-Features können Gebühren anfallen, die vor der Nutzung transparent
@@ -110,10 +115,10 @@ export default function AGBPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 § 6 Haftung
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <p>
                   Taskilo haftet nur für Schäden, die auf einer vorsätzlichen oder grob fahrlässigen
                   Pflichtverletzung beruhen.
@@ -127,10 +132,10 @@ export default function AGBPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 § 7 Datenschutz
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <p>
                   Der Schutz Ihrer personenbezogenen Daten ist uns wichtig. Einzelheiten zur
                   Datenverarbeitung finden Sie in unserer Datenschutzerklärung.
@@ -139,10 +144,10 @@ export default function AGBPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 § 8 Schlussbestimmungen
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <p>
                   Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des
                   UN-Kaufrechts.
@@ -155,8 +160,8 @@ export default function AGBPage() {
               </div>
             </section>
 
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mt-8">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg mt-8">
+              <p className="text-sm text-white/90 drop-shadow-lg">
                 <strong>Stand:</strong> Juli 2025
                 <br />
                 <strong>Taskilo GmbH</strong>
@@ -164,9 +169,10 @@ export default function AGBPage() {
                 Musterstraße 123, 12345 Musterstadt
               </p>
             </div>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 }

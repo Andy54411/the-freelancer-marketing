@@ -5,7 +5,7 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AlertCircle as FiAlertCircle, Loader2 as FiLoader } from 'lucide-react';
 import {
@@ -51,7 +51,6 @@ const chartConfigStatic = {
 export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
   const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
   const [timeRange, setTimeRange] = React.useState('90d');
   const [orders, setOrders] = React.useState<OrderData[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -62,11 +61,11 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
     () =>
       ({
         umsatz: {
-          label: t('chart.tooltip.revenue'),
+          label: 'Umsatz',
           color: 'var(--primary)',
         },
       }) satisfies ChartConfig,
-    [t]
+    []
   );
 
   React.useEffect(() => {
@@ -92,7 +91,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         setOrders(result.orders || []);
       } catch (err: any) {
         console.error('Fehler beim Laden der Aufträge für den Chart:', err);
-        setError(err.message || t('chart.revenue.error'));
+        setError(err.message || 'Fehler beim Laden der Umsatzdaten');
       } finally {
         setLoading(false);
       }
@@ -147,7 +146,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
     return (
       <Card className="flex h-[350px] w-full items-center justify-center">
         <FiLoader className="h-8 w-8 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">{t('chart.revenue.loading')}</span>
+        <span className="ml-2 text-muted-foreground">Lade Daten...</span>
       </Card>
     );
   }
@@ -165,7 +164,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
     return (
       <Card className="flex h-[350px] w-full flex-col items-center justify-center">
         <FiAlertCircle className="mb-2 h-8 w-8 text-muted-foreground" />
-        <p className="text-muted-foreground">{t('chart.revenue.noData')}</p>
+        <p className="text-muted-foreground">Keine Daten verfügbar</p>
       </Card>
     );
   }
@@ -173,9 +172,9 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>{t('chart.revenue.title')}</CardTitle>
+        <CardTitle>Umsatz</CardTitle>
         <CardDescription>
-          {t('chart.revenue.description')}{' '}
+          Gesamtumsatz im ausgewählten Zeitraum{' '}
           <span className="font-bold">{totalRevenue.toFixed(2)} €</span>
         </CardDescription>
         <CardAction>
@@ -186,27 +185,27 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">{t('chart.timeRange.90d')}</ToggleGroupItem>
-            <ToggleGroupItem value="30d">{t('chart.timeRange.30d')}</ToggleGroupItem>
-            <ToggleGroupItem value="7d">{t('chart.timeRange.7d')}</ToggleGroupItem>
+            <ToggleGroupItem value="90d">90 Tage</ToggleGroupItem>
+            <ToggleGroupItem value="30d">30 Tage</ToggleGroupItem>
+            <ToggleGroupItem value="7d">7 Tage</ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label={t('chart.timeRange.label')}
+              aria-label="Zeitraum auswählen"
             >
-              <SelectValue placeholder={t('chart.timeRange.90d')} />
+              <SelectValue placeholder="90 Tage" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                {t('chart.timeRange.90d')}
+                90 Tage
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
-                {t('chart.timeRange.30d')}
+                30 Tage
               </SelectItem>
               <SelectItem value="7d" className="rounded-lg">
-                {t('chart.timeRange.7d')}
+                7 Tage
               </SelectItem>
             </SelectContent>
           </Select>

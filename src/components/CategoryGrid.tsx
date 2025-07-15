@@ -1,172 +1,237 @@
-'use client';
-import { useState, useCallback } from 'react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
+'use client'
+import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
+import { db } from '@/firebase/clients'
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+
+const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) => [
+  {
+    id: 'moebel',
+    label: 'Möbelmontage',
+    icon: (
+      <Image
+        src="/icon/AdobeStock_439527548.svg"
+        alt="Icon"
+        width={40}
+        height={40}
+        className="w-10 h-10 text-[#14ad9f]"
+      />
+    ),
+    tags: categoryTags['Möbelmontage'] || ['IKEA Möbel aufbauen', 'Küchenmontage'],
+    image: '/images/AdobeStock_298445672.jpeg',
+    title: 'Möbelmontage',
+    text: 'Hilfe beim Aufbau von Möbeln und IKEA-Produkten.',
+  },
+  {
+    id: 'mietkoeche',
+    label: 'Mietköche',
+    icon: (
+      <Image
+        src="/icon/AdobeStock_574841528.svg"
+        alt="Icon"
+        width={40}
+        height={40}
+        className="w-10 h-10 text-[#14ad9f]"
+      />
+    ),
+    tags: categoryTags['Mietköche'] || ['Hochzeitsköche', 'Privat-Dinner'],
+    image: '/images/AdobeStock_136993219.jpeg',
+    title: 'Mietköche',
+    text: 'Flexible Köche für Events, Zuhause oder Gastronomie.',
+  },
+  {
+    id: 'elektro',
+    label: 'Elektrikarbeiten',
+    icon: (
+      <Image
+        src="/icon/AdobeStock_547824942.svg"
+        alt="Icon"
+        width={40}
+        height={40}
+        className="w-10 h-10 text-[#14ad9f]"
+      />
+    ),
+    tags: categoryTags['Elektrikarbeiten'] || ['Lampen installieren', 'Steckdosen erneuern'],
+    image: '/images/AdobeStock_377954036.jpeg',
+    title: 'Elektrikarbeiten',
+    text: 'Professionelle Unterstützung bei Elektroarbeiten.',
+  },
+  {
+    id: 'reparatur',
+    label: 'Reparaturen im Haus',
+    icon: (
+      <Image
+        src="/icon/AdobeStock_227384966.svg"
+        alt="Icon"
+        width={40}
+        height={40}
+        className="w-10 h-10 text-[#14ad9f]"
+      />
+    ),
+    tags: categoryTags['Reparaturen im Haus'] || ['Wasserhahn reparieren', 'Wände streichen'],
+    image: '/images/AdobeStock_221207083.jpeg',
+    title: 'Reparaturen',
+    text: 'Hilfe bei kleinen Reparaturen und Wartungen.',
+  },
+  {
+    id: 'umzug',
+    label: 'Umzug',
+    icon: (
+      <Image
+        src="/icon/AdobeStock_452856534.svg"
+        alt="Icon"
+        width={40}
+        height={40}
+        className="w-10 h-10 text-[#14ad9f]"
+      />
+    ),
+    tags: categoryTags['Umzug'] || ['Wohnungsumzug', 'Möbel transportieren'],
+    image: '/images/AdobeStock_171302559.jpeg',
+    title: 'Umzug',
+    text: 'Ein- und Auspacken, Tragen und Möbeltransport.',
+  },
+  {
+    id: 'beliebt',
+    label: 'Beliebt',
+    icon: (
+      <Image
+        src="/icon/AdobeStock_558879898.svg"
+        alt="Icon"
+        width={40}
+        height={40}
+        className="w-10 h-10 text-[#14ad9f]"
+      />
+    ),
+    tags: categoryTags['Beliebte Tasks'] || ['Reinigungsservice', 'Gartenarbeiten'],
+    image: '/images/AdobeStock_369265805.jpeg',
+    title: 'Beliebte Tasks',
+    text: 'Die beliebtesten Dienstleistungen der Woche.',
+  },
+]
+
+// Hook für dynamische Kategoriedaten aus der Datenbank
+const useCategoryData = () => {
+  const [categoryTags, setCategoryTags] = useState<Record<string, string[]>>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPopularSubcategories = async () => {
+      try {
+        // Abfrage der orders Collection mit Limit für Performance
+        const ordersRef = collection(db, 'orders')
+        const recentOrdersQuery = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000))
+        const ordersSnapshot = await getDocs(recentOrdersQuery)
+        
+        // Gruppiere nach Kategorie und zähle Subkategorien
+        const categoryStats: Record<string, Record<string, number>> = {}
+        
+        ordersSnapshot.docs.forEach(doc => {
+          const data = doc.data()
+          const category = data.selectedCategory
+          const subcategory = data.selectedSubcategory
+          
+          if (category && subcategory) {
+            if (!categoryStats[category]) {
+              categoryStats[category] = {}
+            }
+            categoryStats[category][subcategory] = (categoryStats[category][subcategory] || 0) + 1
+          }
+        })
+        
+        // Ermittle die Top 2 Subkategorien pro Kategorie
+        const topSubcategories: Record<string, string[]> = {}
+        
+        Object.entries(categoryStats).forEach(([category, subcategories]) => {
+          const sorted = Object.entries(subcategories)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 2)
+            .map(([name]) => name)
+          topSubcategories[category] = sorted
+        })
+        
+        setCategoryTags(topSubcategories)
+      } catch (error) {
+        console.error('Fehler beim Laden der Kategoriedaten:', error)
+        // Fallback zu statischen Daten
+        setCategoryTags({
+          'Möbelmontage': ['IKEA Möbel aufbauen', 'Küchenmontage'],
+          'Mietköche': ['Hochzeitsköche', 'Privat-Dinner'],
+          'Elektrikarbeiten': ['Lampen installieren', 'Steckdosen erneuern'],
+          'Reparaturen im Haus': ['Wasserhahn reparieren', 'Wände streichen'],
+          'Umzug': ['Wohnungsumzug', 'Möbel transportieren'],
+          'Beliebte Tasks': ['Reinigungsservice', 'Gartenarbeiten']
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPopularSubcategories()
+  }, [])
+
+  return { categoryTags, loading }
+}
 
 export default function CategoryGrid() {
-  const { t } = useLanguage();
-  const [active, setActive] = useState('moebel');
+  const [active, setActive] = useState('moebel')
+  const { categoryTags, loading } = useCategoryData()
+  
+  // Dynamische Kategorien mit aktuellen Tags
+  const categories = getCategoriesWithDynamicTags(categoryTags)
+  const selected = categories.find((cat) => cat.id === active)!
 
-  const categories = [
-    {
-      id: 'moebel',
-      label: t('categoryGrid.furniture.label'),
-      icon: (
-        <img
-          src="/icon/AdobeStock_439527548.svg"
-          alt="Icon"
-          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-          loading="lazy"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ),
-      tags: [t('categoryGrid.furniture.tag1'), t('categoryGrid.furniture.tag2')],
-      image: '/images/AdobeStock_298445672.jpeg',
-      title: t('categoryGrid.furniture.title'),
-      text: t('categoryGrid.furniture.text'),
-    },
-    {
-      id: 'mietkoeche',
-      label: t('categoryGrid.chef.label'),
-      icon: (
-        <img
-          src="/icon/AdobeStock_574841528.svg"
-          alt="Icon"
-          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-          loading="lazy"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ),
-      tags: [t('categoryGrid.chef.tag1'), t('categoryGrid.chef.tag2')],
-      image: '/images/AdobeStock_136993219.jpeg',
-      title: t('categoryGrid.chef.title'),
-      text: t('categoryGrid.chef.text'),
-    },
-    {
-      id: 'elektro',
-      label: t('categoryGrid.electrical.label'),
-      icon: (
-        <img
-          src="/icon/AdobeStock_547824942.svg"
-          alt="Icon"
-          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-          loading="lazy"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ),
-      tags: [t('categoryGrid.electrical.tag1'), t('categoryGrid.electrical.tag2')],
-      image: '/images/AdobeStock_377954036.jpeg',
-      title: t('categoryGrid.electrical.title'),
-      text: t('categoryGrid.electrical.text'),
-    },
-    {
-      id: 'reparatur',
-      label: t('categoryGrid.repair.label'),
-      icon: (
-        <img
-          src="/icon/AdobeStock_227384966.svg"
-          alt="Icon"
-          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-          loading="lazy"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ),
-      tags: [t('categoryGrid.repair.tag1'), t('categoryGrid.repair.tag2')],
-      image: '/images/AdobeStock_221207083.jpeg',
-      title: t('categoryGrid.repair.title'),
-      text: t('categoryGrid.repair.text'),
-    },
-    {
-      id: 'umzug',
-      label: t('categoryGrid.moving.label'),
-      icon: (
-        <img
-          src="/icon/AdobeStock_452856534.svg"
-          alt="Icon"
-          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-          loading="lazy"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ),
-      tags: [t('categoryGrid.moving.tag1'), t('categoryGrid.moving.tag2')],
-      image: '/images/AdobeStock_171302559.jpeg',
-      title: t('categoryGrid.moving.title'),
-      text: t('categoryGrid.moving.text'),
-    },
-    {
-      id: 'beliebt',
-      label: t('categoryGrid.popular.label'),
-      icon: (
-        <img
-          src="/icon/AdobeStock_558879898.svg"
-          alt="Icon"
-          className="w-8 h-8 sm:w-10 sm:h-10 text-[#14ad9f]"
-          loading="lazy"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ),
-      tags: [t('categoryGrid.popular.tag1'), t('categoryGrid.popular.tag2')],
-      image: '/images/AdobeStock_369265805.jpeg',
-      title: t('categoryGrid.popular.title'),
-      text: t('categoryGrid.popular.text'),
-    },
-  ];
-
-  const selected = categories.find(cat => cat.id === active)!;
-
-  const handleCategoryChange = useCallback((categoryId: string) => {
-    setActive(categoryId);
-  }, []);
+  if (loading) {
+    return (
+      <div className="w-full max-w-6xl mx-auto px-4 space-y-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-white/80 drop-shadow-md">Lade Kategorien...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 space-y-6 sm:space-y-8">
-      {/* Kategorie-Icons im 2x3 Grid für Mobile, 3x2 für Tablet, 6x1 für Desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 justify-items-center border-b pb-4 sm:pb-6">
-        {categories.map(cat => (
+    <div className="w-full max-w-6xl mx-auto px-4 space-y-8">
+      {/* Kategorie-Icons im 3x2 Grid */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-6 justify-items-center border-b pb-6">
+        {categories.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => handleCategoryChange(cat.id)}
-            className="flex flex-col items-center group min-h-[80px] sm:min-h-[auto]"
+            onClick={() => setActive(cat.id)}
+            className="flex flex-col items-center group"
           >
             <div
               className={cn(
-                'flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full mb-1 transition-all',
-                active === cat.id ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]' : 'bg-gray-100'
+                'flex items-center justify-center w-16 h-16 rounded-full mb-1 transition-all',
+                active === cat.id
+                  ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]'
+                  : 'bg-gray-100'
               )}
             >
               {cat.icon}
             </div>
             <span
               className={cn(
-                'text-xs sm:text-sm mt-1 text-center leading-tight',
-                active === cat.id ? 'text-[#14ad9f] font-semibold' : 'text-gray-600'
+                'text-sm mt-1 text-center',
+                active === cat.id ? 'text-white font-semibold drop-shadow-md' : 'text-white/80 drop-shadow-md'
               )}
             >
               {cat.label}
             </span>
-            {active === cat.id && <div className="h-1 w-6 mt-2 bg-[#14ad9f] rounded" />}
+            {active === cat.id && (
+              <div className="h-1 w-6 mt-2 bg-[#14ad9f] rounded" />
+            )}
           </button>
         ))}
       </div>
 
       {/* Tags */}
       <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-        {selected.tags.map(tag => (
+        {selected.tags.map((tag) => (
           <button
             key={tag}
-            className="px-6 py-2 border border-black rounded-full text-base font-medium hover:bg-gray-100 transition"
+            className="px-6 py-2 border border-white/30 rounded-full text-base font-medium text-white/90 hover:bg-white/10 transition drop-shadow-md"
           >
             {tag}
           </button>
@@ -174,7 +239,7 @@ export default function CategoryGrid() {
       </div>
 
       {/* Bild & Infobox */}
-      <div className="relative bg-[#e1f5fe] rounded-2xl p-6 overflow-hidden">
+      <div className="relative bg-transparent rounded-2xl p-6 overflow-hidden">
         <div className="relative flex flex-col md:flex-row items-center md:items-start md:justify-start">
           {/* Infobox */}
           <div className="md:absolute md:left-6 md:top-1/2 md:-translate-y-1/2 bg-white p-6 rounded-xl shadow-lg z-10 w-full max-w-sm">
@@ -187,37 +252,25 @@ export default function CategoryGrid() {
               <li className="flex gap-2">
                 <span className="text-[#14ad9f]">✓</span>
                 <span>
-                  {t('categoryGrid.trends')}
+                  Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige Materialien.
                 </span>
               </li>
             </ul>
           </div>
 
-          <div className="md:ml-[200px] w-full mt-4 sm:mt-6 md:mt-0">
-            <div className="relative w-full h-64 sm:h-80 md:h-96 bg-gray-200 rounded-2xl overflow-hidden">
-              <img
-                key={selected.id} // Key hinzugefügt für sauberen Re-render
-                src={selected.image}
-                alt={selected.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="lazy"
-                onError={e => {
-                  console.error('Category image failed to load:', selected.image);
-                  e.currentTarget.style.display = 'none';
-                  const fallback = e.currentTarget.parentElement?.querySelector('.fallback');
-                  if (fallback) {
-                    (fallback as HTMLElement).style.display = 'flex';
-                  }
-                }}
-              />
-              {/* Fallback wenn Bild nicht lädt */}
-              <div className="fallback absolute inset-0 hidden items-center justify-center bg-gray-100 text-gray-500">
-                <span>{t('categoryGrid.imageNotAvailable')}</span>
-              </div>
-            </div>
+          {/* Bild */}
+          <div className="md:ml-[200px] w-full mt-6 md:mt-0">
+            <Image
+              src={selected.image}
+              alt={selected.title}
+              width={800} // Example width, adjust for aspect ratio
+              height={450} // Example height, adjust for aspect ratio
+              className="rounded-2xl w-full h-auto object-cover"
+              priority // This image changes dynamically, consider if priority is always needed
+            />
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

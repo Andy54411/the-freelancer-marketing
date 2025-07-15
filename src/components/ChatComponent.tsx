@@ -19,7 +19,6 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Send as FiSend, Loader2 as FiLoader } from 'lucide-react';
 import { Badge } from '@/components/ui/badge'; // Badge für Statusanzeige importieren
 
@@ -52,8 +51,7 @@ interface ChatComponentProps {
 
 // NEUE HILFSFUNKTION: Formatiert den Zeitstempel für eine bessere Lesbarkeit
 const formatMessageTimestamp = (
-  timestamp: Timestamp | undefined,
-  t: (key: string) => string
+  timestamp: Timestamp | undefined
 ): string => {
   if (!timestamp) return '';
   const date = timestamp.toDate();
@@ -68,15 +66,15 @@ const formatMessageTimestamp = (
   }
   if (date >= startOfYesterday) {
     // Gestern: "Gestern, HH:mm"
-    return `${t('chat.timestamps.yesterday')}, ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    return `Gestern, ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
   }
   // Älter: "TT.MM.JJJJ"
   return date.toLocaleDateString('de-DE');
 };
 
 // NEU: Hilfsfunktion zum Formatieren des Status
-const formatStatus = (status: string | null | undefined, t: (key: string) => string): string => {
-  if (!status) return t('chat.status.unknown');
+const formatStatus = (status: string | null | undefined): string => {
+  if (!status) return 'Unbekannt';
   // Ersetzt Unterstriche durch Leerzeichen und macht den ersten Buchstaben jedes Wortes groß
   return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
@@ -84,7 +82,6 @@ const formatStatus = (status: string | null | undefined, t: (key: string) => str
 const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, orderStatus }) => {
   const authContext = useAuth();
   const currentUser = authContext?.user || null;
-  const { t } = useLanguage();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
@@ -120,7 +117,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           }
         } catch (error) {
           console.error('ChatComponent: Fehler beim Laden des Benutzerprofils:', error);
-          setChatError(t('chat.error.profileLoad'));
+          setChatError('Fehler beim Laden des Benutzerprofils');
         } finally {
           setUserProfileLoading(false);
         }
@@ -178,7 +175,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           `[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`,
           error
         );
-        setChatError(t('chat.error.messageLoad'));
+        setChatError('Fehler beim Laden der Nachrichten');
         setChatLoading(false);
       }
     );
@@ -217,7 +214,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
 
     if (emailRegex.test(sanitizedText)) {
-      setChatError(t('chat.error.emailBlocked'));
+      setChatError('E-Mail-Adresse wurde blockiert');
       return; // Senden blockieren
     }
 
@@ -226,7 +223,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     const digitsOnly = messageToSend.replace(/\D/g, '');
     const phoneRegex = /\d{8,}/; // Sucht nach 8 oder mehr aufeinanderfolgenden Ziffern
     if (phoneRegex.test(digitsOnly)) {
-      setChatError(t('chat.error.phoneBlocked'));
+      setChatError('Telefonnummer wurde blockiert');
       return; // Senden blockieren
     }
     // --- ENDE VALIDIERUNG ---
@@ -281,7 +278,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
     } catch (error) {
       console.error('Fehler beim Senden der Nachricht:', error);
-      setChatError(t('chat.error.messageSend'));
+      setChatError('Fehler beim Senden der Nachricht');
     } finally {
       setIsSendingMessage(false); // Sende-Vorgang beenden
     }
@@ -293,7 +290,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     return (
       <div className="flex justify-center items-center h-64">
         <FiLoader className="animate-spin text-3xl text-[#14ad9f] mr-2" />
-        {chatLoading ? t('chat.loading.chat') : t('chat.loading.userdata')}
+        {chatLoading ? 'Lade Chat...' : 'Lade Benutzerdaten...'}
       </div>
     );
   }
@@ -301,7 +298,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
   // Zeige Fehler, wenn kein Benutzer angemeldet ist oder Profil nicht geladen werden konnte
   if (!currentUser || !loggedInUserProfile) {
     return (
-      <div className="text-center p-4 text-gray-600">{chatError || t('chat.error.profile')}</div>
+      <div className="text-center p-4 text-gray-600">{chatError || 'Fehler beim Laden des Profils'}</div>
     );
   }
 
@@ -311,19 +308,19 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         {/* Header mit Auftrags-ID und Status-Badge */}
         <div className="flex justify-between items-center gap-4">
           <h3 className="text-lg font-semibold text-gray-800 truncate">
-            {t('chat.title')}: {orderId}
+            Chat: {orderId}
           </h3>
           {/* Zeige den Status-Badge nur an, wenn ein Status übergeben wurde */}
           {orderStatus && (
             <Badge variant="outline" className="flex-shrink-0">
-              {formatStatus(orderStatus, t)}
+              {formatStatus(orderStatus)}
             </Badge>
           )}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-10">{t('chat.messages.noMessages')}</div>
+          <div className="text-center text-gray-500 py-10">Keine Nachrichten vorhanden</div>
         ) : (
           messages.map(msg => (
             <div
@@ -332,20 +329,20 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             >
               <div
                 className={`max-w-[70%] p-3 rounded-lg ${msg.senderId === currentUser.uid
-                    ? 'bg-[#14ad9f] text-white'
-                    : 'bg-gray-200 text-gray-800'
+                  ? 'bg-[#14ad9f] text-white'
+                  : 'bg-gray-200 text-gray-800'
                   }`}
               >
                 <p className="text-xs font-semibold mb-1">
                   {msg.senderName} (
                   {msg.senderType === 'kunde'
-                    ? t('chat.status.customer')
-                    : t('chat.status.provider')}
+                    ? 'Kunde'
+                    : 'Anbieter'}
                   )
                 </p>
                 <p className="text-sm break-words">{msg.text}</p>
                 <p className="text-right text-xs mt-1 opacity-75">
-                  {formatMessageTimestamp(msg.timestamp, t)}
+                  {formatMessageTimestamp(msg.timestamp)}
                 </p>
               </div>
             </div>
@@ -357,7 +354,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         <textarea
           value={newMessageText}
           onChange={e => setNewMessageText(e.target.value)}
-          placeholder={t('chat.messages.placeholder')}
+          placeholder="Nachricht eingeben..."
           className="flex-1 p-2 border border-gray-300 rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
           rows={1}
           onKeyPress={e => {

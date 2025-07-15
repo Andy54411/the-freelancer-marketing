@@ -11,7 +11,7 @@ import LoginPopup from '@/components/LoginPopup';
 import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { app, storage, db } from '@/firebase/clients';
-import { useLanguage } from '@/contexts/LanguageContext';
+import GoogleTranslateWidget from '@/components/GoogleTranslateWidget';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,12 +34,11 @@ export const HeroHeader = () => {
   const [user, setUser] = React.useState<User | null>(null);
   const [profilePictureUrl, setProfilePictureUrl] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const { t } = useLanguage();
 
   const menuItems = [
-    { name: t('nav.services'), href: '/services', labelKey: 'nav.services' },
-    { name: t('nav.about'), href: '/about', labelKey: 'nav.about' },
-    { name: t('nav.contact'), href: '/contact', labelKey: 'nav.contact' },
+    { name: 'Dienstleistungen', href: '/services', labelKey: 'nav.services' },
+    { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
+    { name: 'Kontakt', href: '/contact', labelKey: 'nav.contact' },
   ];
 
   useEffect(() => {
@@ -127,13 +126,13 @@ export const HeroHeader = () => {
             {/* Left Section */}
             <div className="flex items-center justify-between w-full lg:w-auto gap-8">
               <Link href="/" className="flex items-center space-x-2" aria-label="Taskilo Home">
-                <Logo variant="default" />
+                <Logo variant="white" />
               </Link>
 
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMenuState(!menuState)}
-                aria-label={menuState ? t('nav.closeMenu') : t('nav.openMenu')}
+                aria-label={menuState ? 'Menü schließen' : 'Menü öffnen'}
                 className="relative z-20 block p-2 lg:hidden"
               >
                 <Menu
@@ -156,7 +155,7 @@ export const HeroHeader = () => {
                   <li key={i}>
                     <Link
                       href={item.href}
-                      className="text-muted-foreground hover:text-accent-foreground transition-colors"
+                      className="text-white/90 hover:text-white font-medium drop-shadow-md transition-colors"
                     >
                       {item.name}
                     </Link>
@@ -192,13 +191,13 @@ export const HeroHeader = () => {
                         <DropdownMenuItem asChild>
                           <Link href="/dashboard" className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
-                            {t('nav.dashboard')}
+                            Dashboard
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href="/dashboard/profile" className="flex items-center gap-2">
                             <User className="h-4 w-4" />
-                            {t('nav.profile')}
+                            Profil
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -207,23 +206,25 @@ export const HeroHeader = () => {
                           className="flex items-center gap-2 text-red-600"
                         >
                           <LogOut className="h-4 w-4" />
-                          {t('auth.signOut')}
+                          Abmelden
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    <GoogleTranslateWidget />
                     <ModeToggle />
                   </div>
                 ) : (
                   // Unauthenticated user
                   <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
                     <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                      <span>{t('auth.signIn')}</span>
+                      <span>Anmelden</span>
                     </Button>
-                    <Button asChild size="sm">
+                    <Button asChild size="sm" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300">
                       <Link href="/register/company">
-                        <span>{t('nav.startWithTaskilo')}</span>
+                        <span>Mit Taskilo starten</span>
                       </Link>
                     </Button>
+                    <GoogleTranslateWidget />
                     <ModeToggle />
                   </div>
                 ))}
@@ -237,7 +238,7 @@ export const HeroHeader = () => {
                     <li key={i}>
                       <Link
                         href={item.href}
-                        className="block text-muted-foreground hover:text-accent-foreground transition"
+                        className="block text-foreground hover:text-[#14ad9f] font-medium transition"
                       >
                         {item.name}
                       </Link>
@@ -265,26 +266,27 @@ export const HeroHeader = () => {
                           </div>
                         </div>
                         <Button asChild size="sm" variant="outline">
-                          <Link href="/dashboard">{t('nav.dashboard')}</Link>
+                          <Link href="/dashboard">Dashboard</Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
-                          <Link href="/dashboard/profile">{t('nav.profile')}</Link>
+                          <Link href="/dashboard/profile">Profil</Link>
                         </Button>
                         <Button size="sm" variant="destructive" onClick={handleLogout}>
-                          {t('auth.signOut')}
+                          Abmelden
                         </Button>
                       </>
                     ) : (
                       // Unauthenticated user - mobile
                       <>
                         <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                          {t('auth.signIn')}
+                          Anmelden
                         </Button>
-                        <Button asChild size="sm">
-                          <Link href="/register/company">{t('nav.startWithTaskilo')}</Link>
+                        <Button asChild size="sm" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300">
+                          <Link href="/register/company">Mit Taskilo starten</Link>
                         </Button>
                       </>
                     ))}
+                  <GoogleTranslateWidget />
                   <ModeToggle />
                 </div>
               </div>

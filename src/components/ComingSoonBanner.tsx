@@ -5,11 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ComingSoonBanner() {
   const [isVisible, setIsVisible] = useState(true);
-  const { t } = useLanguage();
 
   if (!isVisible) return null;
 
@@ -25,7 +23,7 @@ export default function ComingSoonBanner() {
         <div className="max-w-7xl mx-auto flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 animate-pulse" />
-            <span className="font-medium text-sm md:text-base">{t('banner.text')}</span>
+            <span className="font-medium text-sm md:text-base">Bald verfügbar</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -35,14 +33,14 @@ export default function ComingSoonBanner() {
                 variant="secondary"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/30 text-sm"
               >
-                {t('banner.learnMore')}
+                Mehr erfahren
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <button
               onClick={() => setIsVisible(false)}
               className="p-1 hover:bg-white/20 rounded-full transition-colors"
-              aria-label={t('banner.close')}
+              aria-label="Schließen"
             >
               <X className="h-4 w-4" />
             </button>

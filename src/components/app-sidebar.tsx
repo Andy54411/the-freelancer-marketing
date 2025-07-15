@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
 import { listAll, getDownloadURL, ref } from 'firebase/storage';
 import { db, storage } from '../firebase/clients';
-import { useLanguage } from '@/contexts/LanguageContext';
+
 import {
   Camera as IconCamera,
   BarChart as IconChartBar,
@@ -50,7 +50,6 @@ export function AppSidebar({
   activeView = 'dashboard',
   ...sidebarProps
 }: AppSidebarProps) {
-  const { t } = useLanguage();
   const [userData, setUserData] = useState<RawFirestoreUserData | null>(null);
   const [profilePictureURL, setProfilePictureURL] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +60,7 @@ export function AppSidebar({
     const userUid = auth.currentUser?.uid;
 
     if (!userUid) {
-      setError(t('error.userNotAuthenticated'));
+      setError('Benutzer nicht authentifiziert');
       setLoading(false);
       return;
     }
@@ -73,7 +72,7 @@ export function AppSidebar({
       if (userDoc.exists()) {
         setUserData(userDoc.data() as RawFirestoreUserData); // Cast to specific type
       } else {
-        setError(t('error.userNotFound'));
+        setError('Benutzer nicht gefunden');
       }
 
       const folderRef = ref(storage, `profilePictures/${userUid}`);
@@ -86,7 +85,7 @@ export function AppSidebar({
       }
     } catch (err) {
       console.error('Fehler beim Abrufen der Daten:', err);
-      setError(t('error.dataFetch'));
+      setError('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);
     }
@@ -105,16 +104,16 @@ export function AppSidebar({
     };
   }, []);
 
-  if (loading) return <div>{t('status.loading')}</div>;
+  if (loading) return <div>Laden...</div>;
   if (error)
     return (
       <div>
-        {t('error')}: {error}
+        Fehler: {error}
       </div>
     );
 
-  const firstName = userData?.step1?.firstName || t('sidebar.unknown');
-  const lastName = userData?.step1?.lastName || t('sidebar.unknown');
+  const firstName = userData?.step1?.firstName || 'Unbekannt';
+  const lastName = userData?.step1?.lastName || 'Unbekannt';
 
   let displayEmail: string;
   const step1Email = userData?.step1?.email; // Type: unknown
@@ -125,7 +124,7 @@ export function AppSidebar({
   } else if (typeof rootEmail === 'string' && rootEmail.trim() !== '') {
     displayEmail = rootEmail;
   } else {
-    displayEmail = t('sidebar.noEmail');
+    displayEmail = 'Keine E-Mail verfügbar';
   }
 
   // Daten fürs Menü mit aktiver Markierung
@@ -137,32 +136,32 @@ export function AppSidebar({
     },
     navMain: [
       {
-        title: t('navigation.dashboard'),
+        title: 'Dashboard',
         url: '#',
         icon: IconDashboard,
         isActive: activeView === 'dashboard',
         onClick: () => setView?.('dashboard'),
       },
       {
-        title: t('sidebar.lifecycle'),
+        title: 'Lebenszyklus',
         url: '#',
         icon: IconListDetails,
         isActive: false,
       },
       {
-        title: t('admin.analytics'),
+        title: 'Analytics',
         url: '#',
         icon: IconChartBar,
         isActive: false,
       },
       {
-        title: t('sidebar.projects'),
+        title: 'Projekte',
         url: '#',
         icon: IconFolder,
         isActive: false,
       },
       {
-        title: t('sidebar.team'),
+        title: 'Team',
         url: '#',
         icon: IconUsers,
         isActive: false,
@@ -170,48 +169,48 @@ export function AppSidebar({
     ],
     navClouds: [
       {
-        title: t('sidebar.capture'),
+        title: 'Erfassen',
         icon: IconCamera,
         isActive: true,
         url: '#',
         items: [
-          { title: t('sidebar.activeProposals'), url: '#' },
-          { title: t('sidebar.archived'), url: '#' },
+          { title: 'Aktive Vorschläge', url: '#' },
+          { title: 'Archiviert', url: '#' },
         ],
       },
       {
-        title: t('sidebar.proposal'),
+        title: 'Vorschlag',
         icon: IconFileDescription,
         url: '#',
         items: [
-          { title: t('sidebar.activeProposals'), url: '#' },
-          { title: t('sidebar.archived'), url: '#' },
+          { title: 'Aktive Vorschläge', url: '#' },
+          { title: 'Archiviert', url: '#' },
         ],
       },
       {
-        title: t('sidebar.prompts'),
+        title: 'Prompts',
         icon: IconFileAi,
         url: '#',
         items: [
-          { title: t('sidebar.activeProposals'), url: '#' },
-          { title: t('sidebar.archived'), url: '#' },
+          { title: 'Aktive Angebote', url: '#' },
+          { title: 'Archiviert', url: '#' },
         ],
       },
     ],
     navSecondary: [
       {
-        title: t('navigation.settings'),
+        title: 'Einstellungen',
         url: '#',
         icon: IconSettings,
         onClick: () => setView?.('settings'),
       },
-      { title: t('sidebar.getHelp'), url: '#', icon: IconHelp },
-      { title: t('search'), url: '#', icon: IconSearch },
+      { title: 'Hilfe erhalten', url: '#', icon: IconHelp },
+      { title: 'Suche', url: '#', icon: IconSearch },
     ],
     documents: [
-      { name: t('sidebar.dataLibrary'), url: '#', icon: IconDatabase },
-      { name: t('admin.reports'), url: '#', icon: IconReport },
-      { name: t('sidebar.wordAssistant'), url: '#', icon: IconFileWord },
+      { name: 'Datenbibliothek', url: '#', icon: IconDatabase },
+      { name: 'Berichte', url: '#', icon: IconReport },
+      { name: 'Wort-Assistent', url: '#', icon: IconFileWord },
     ],
   };
 

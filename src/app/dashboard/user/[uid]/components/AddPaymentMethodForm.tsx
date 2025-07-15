@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { auth } from '@/firebase/clients';
-import { useLanguage } from '@/contexts/LanguageContext';
 import Stripe from 'stripe'; // Importiere Stripe für Typisierungen
 
 interface AddPaymentMethodFormProps {
@@ -19,7 +18,6 @@ export default function AddPaymentMethodForm({
 }: AddPaymentMethodFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -27,7 +25,7 @@ export default function AddPaymentMethodForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!stripe || !elements) {
-      setMessage(t('payment.addMethod.systemNotReady'));
+      setMessage('System nicht bereit. Bitte versuchen Sie es später erneut.');
       return;
     }
 
@@ -41,7 +39,7 @@ export default function AddPaymentMethodForm({
 
       if (submitError) {
         // Fehler bei der Validierung der Elements (z.B. ungültige Kartennummer)
-        const errorMessage = submitError.message || t('payment.validationError');
+        const errorMessage = submitError.message || 'Validierungsfehler bei der Zahlungsmethode';
         setMessage(errorMessage);
         onError(errorMessage);
         setIsSuccess(false);
@@ -62,7 +60,7 @@ export default function AddPaymentMethodForm({
       });
       // **DIESE LOGIK WIRD JETZT MIT DOPPELTER TYP-ASSERTION ANGEWENDET**
       if (result.error) {
-        const errorMessage = result.error.message || t('payment.addMethod.setupFailed');
+        const errorMessage = result.error.message || 'Einrichtung der Zahlungsmethode fehlgeschlagen';
         setMessage(errorMessage);
         onError(errorMessage);
         setIsSuccess(false);
@@ -73,18 +71,18 @@ export default function AddPaymentMethodForm({
         const setupIntent = (result as unknown as { setupIntent: Stripe.SetupIntent }).setupIntent;
 
         if (setupIntent.status === 'succeeded') {
-          setMessage(t('payment.addMethod.success'));
+          setMessage('Zahlungsmethode erfolgreich hinzugefügt');
           setIsSuccess(true);
           onSuccess();
         } else {
-          const statusMessage = `${t('payment.addMethod.setupFailed')} Status: ${setupIntent.status}.`;
+          const statusMessage = `Einrichtung der Zahlungsmethode fehlgeschlagen. Status: ${setupIntent.status}.`;
           setMessage(statusMessage);
           onError(statusMessage);
           setIsSuccess(false);
         }
       }
     } catch (err: any) {
-      const caughtErrorMessage = err.message || t('payment.addMethod.unexpectedError');
+      const caughtErrorMessage = err.message || 'Unerwarteter Fehler beim Hinzufügen der Zahlungsmethode';
       setMessage(caughtErrorMessage);
       onError(caughtErrorMessage);
       setIsSuccess(false);
@@ -109,7 +107,7 @@ export default function AddPaymentMethodForm({
         disabled={!stripe || loading || isSuccess}
       >
         {loading ? <FiLoader className="animate-spin mr-2" /> : <FiCheckCircle className="mr-2" />}
-        {loading ? t('payment.addMethod.processing') : t('payment.addMethod.addButton')}
+        {loading ? 'Verarbeitung...' : 'Zahlungsmethode hinzufügen'}
       </button>
 
       {message && (

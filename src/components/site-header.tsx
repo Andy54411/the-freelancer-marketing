@@ -4,7 +4,7 @@
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ModeToggle } from '@/components/mode-toggle'; // Pfad anpassen, falls nötig
-import { useLanguage } from '@/contexts/LanguageContext';
+
 
 interface SiteHeaderProps {
   currentTab: string;
@@ -17,10 +17,9 @@ export function SiteHeader({
   showSidebarTrigger = true,
   translateCurrentTab = false,
 }: SiteHeaderProps) {
-  const { t } = useLanguage();
 
   // Übersetze currentTab falls translateCurrentTab true ist
-  const displayTab = translateCurrentTab ? t(currentTab) : currentTab;
+  const displayTab = translateCurrentTab ? currentTab : currentTab;
 
   // Standardwert ist true, um bestehende Verwendungen nicht zu beeinflussen
   return (

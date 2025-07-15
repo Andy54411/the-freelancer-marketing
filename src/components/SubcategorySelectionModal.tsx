@@ -3,7 +3,6 @@
 
 import React from 'react';
 import { X as FiX, ChevronRight as FiChevronRight } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SubcategorySelectionModalProps {
   isOpen: boolean;
@@ -22,7 +21,6 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
   onSelectSubcategory,
   currentlySelectedSubcategory,
 }) => {
-  const { t } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -31,12 +29,12 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100">
-            {t('booking.selectSubcategory')} &quot;{mainCategoryTitle}&quot;
+            Unterkategorie auswählen &quot;{mainCategoryTitle}&quot;
           </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            aria-label={t('modal.close')}
+            aria-label="Schließen"
           >
             <FiX size={24} />
           </button>
@@ -67,7 +65,7 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 transition-colors"
           >
-            {t('modal.cancel')}
+            Abbrechen
           </button>
         </div>
       </div>

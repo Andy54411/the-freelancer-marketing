@@ -3,65 +3,63 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Testimonials() {
-  const { t } = useLanguage();
 
   const testimonials = [
     {
       name: 'Maria Schmidt',
-      role: t('testimonials.role.homeowner'),
-      content: t('testimonials.content.maria'),
+      role: 'Hausbesitzer',
+      content: 'Taskilo hat mir geholfen, einen zuverlässigen Handwerker zu finden. Schnell und unkompliziert!',
       rating: 5,
       avatar: 'MS',
     },
     {
       name: 'Thomas Weber',
-      role: t('testimonials.role.manager'),
-      content: t('testimonials.content.thomas'),
+      role: 'Manager',
+      content: 'Perfekter Service! Die Plattform ist benutzerfreundlich und die Dienstleister sind professionell.',
       rating: 5,
       avatar: 'TW',
     },
     {
       name: 'Julia Müller',
-      role: t('testimonials.role.mother'),
-      content: t('testimonials.content.julia'),
+      role: 'Mutter',
+      content: 'Als berufstätige Mutter schätze ich die Zeitersparnis. Alles läuft reibungslos ab.',
       rating: 5,
       avatar: 'JM',
     },
     {
       name: 'Andreas König',
-      role: t('testimonials.role.homeowner'),
-      content: t('testimonials.content.andreas'),
+      role: 'Hausbesitzer',
+      content: 'Hochwertige Dienstleister und faire Preise. Kann ich jedem empfehlen!',
       rating: 5,
       avatar: 'AK',
     },
     {
       name: 'Sarah Fischer',
-      role: t('testimonials.role.apartmentOwner'),
-      content: t('testimonials.content.sarah'),
+      role: 'Wohnungsbesitzer',
+      content: 'Die Qualität der Arbeit war ausgezeichnet. Ich nutze Taskilo immer wieder.',
       rating: 5,
       avatar: 'SF',
     },
     {
       name: 'Michael Braun',
-      role: t('testimonials.role.entrepreneur'),
-      content: t('testimonials.content.michael'),
+      role: 'Unternehmer',
+      content: 'Für mein Unternehmen die perfekte Lösung. Zuverlässige Partner für alle Projekte.',
       rating: 5,
       avatar: 'MB',
     },
     {
       name: 'Lisa Wagner',
-      role: t('testimonials.role.gardenLover'),
-      content: t('testimonials.content.lisa'),
+      role: 'Gartenliebhaber',
+      content: 'Mein Garten sieht fantastisch aus! Die Gartenprofis waren sehr kompetent.',
       rating: 5,
       avatar: 'LW',
     },
     {
       name: 'David Hoffmann',
-      role: t('testimonials.role.carEnthusiast'),
-      content: t('testimonials.content.david'),
+      role: 'Autoliebhaber',
+      content: 'Autoservice war top! Schnelle Terminvereinbarung und faire Preise.',
       rating: 5,
       avatar: 'DH',
     },
@@ -77,16 +75,16 @@ export default function Testimonials() {
   };
 
   return (
-    <section className="py-16 md:py-32 bg-gray-50 dark:bg-gray-900">
+    <section className="py-16 md:py-32 bg-transparent">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold lg:text-5xl text-gray-900 dark:text-white">
-            {t('testimonials.title.part1')}
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold lg:text-5xl text-white drop-shadow-lg">
+            Was unsere Kunden über
             <span className="text-[#14ad9f]"> Taskilo </span>
-            {t('testimonials.title.part2')}
+            sagen
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300">
-            {t('testimonials.subtitle')}
+          <p className="mt-4 text-base sm:text-lg text-white/90 drop-shadow-md">
+            Tausende zufriedene Kunden vertrauen bereits auf unsere Plattform
           </p>
         </div>
 
@@ -94,7 +92,7 @@ export default function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow"
             >
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
@@ -122,23 +120,23 @@ export default function Testimonials() {
         </div>
 
         <div className="mt-8 sm:mt-12 text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8 bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-8 shadow-sm border dark:border-gray-700">
+          <div className="inline-flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8 bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-8 shadow-sm border border-white/20">
             <div className="text-center min-w-0 flex-1">
               <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">4.8/5</p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                {t('testimonials.stats.avgRating')}
+                Durchschnittliche Bewertung
               </p>
             </div>
             <div className="text-center min-w-0 flex-1">
               <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">10.000+</p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                {t('testimonials.stats.happyCustomers')}
+                Zufriedene Kunden
               </p>
             </div>
             <div className="text-center min-w-0 flex-1">
               <p className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">15.000+</p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                {t('testimonials.stats.reviews')}
+                Bewertungen
               </p>
             </div>
           </div>

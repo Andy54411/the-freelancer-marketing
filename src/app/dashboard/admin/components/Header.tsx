@@ -4,13 +4,11 @@ import React from 'react';
 import NotificationBell from './NotificationBell';
 import { LogOut as FiLogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const { logout } = useAuth();
-  const { t } = useLanguage();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -32,7 +30,7 @@ export default function Header() {
           size="icon"
           className="rounded-full"
           onClick={handleLogout}
-          title={t('navigation.logout')}
+          title="Abmelden"
         >
           <FiLogOut className="h-5 w-5 text-gray-600 dark:text-gray-300" />
         </Button>

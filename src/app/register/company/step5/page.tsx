@@ -1208,14 +1208,13 @@ export default function Step5CompanyPage() {
               (hasAttemptedSubmit && !isFormValid())
             }
             className={`w-full py-3 px-6 rounded-lg font-semibold text-lg text-white transition-colors duration-150 ease-in-out
-              ${
-                !isFormValid() ||
+              ${!isFormValid() ||
                 isLoading ||
                 isConvertingImage ||
                 isProcessingImage ||
                 isRedirecting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
               }`}
           >
             {isLoading || isConvertingImage || isProcessingImage || isRedirecting ? (

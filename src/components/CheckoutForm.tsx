@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { PAGE_LOG, PAGE_ERROR } from '@/lib/constants';
 import { Label } from '@/components/ui/label'; // Label-Komponente importiert
-import { useLanguage } from '@/contexts/LanguageContext';
+
 
 interface StripeCardCheckoutProps {
   taskAmount: number;
@@ -37,7 +37,6 @@ export const StripeCardCheckout = ({
 }: StripeCardCheckoutProps) => {
   const stripe = useStripe();
   const elements = useElements();
-  const { t } = useLanguage();
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,13 +80,13 @@ export const StripeCardCheckout = ({
     );
 
     if (!stripe || !elements) {
-      setMessage(t('payment.stripeNotReady'));
-      onPaymentError(t('payment.stripeApiError'));
+      setMessage('Stripe ist noch nicht bereit');
+      onPaymentError('Stripe API Fehler');
       return;
     }
     if (!clientSecret) {
-      setMessage(t('payment.loadingPaymentData'));
-      onPaymentError(t('payment.clientSecretMissing'));
+      setMessage('Lade Zahlungsdaten...');
+      onPaymentError('Client Secret fehlt');
       return;
     }
 
@@ -104,8 +103,8 @@ export const StripeCardCheckout = ({
       if (submitError) {
         // Fehler bei der Validierung der Elements (z.B. ungültige Kartennummer, fehlende Adresse)
         console.error(PAGE_ERROR, 'StripeCardCheckout: Fehler bei elements.submit():', submitError);
-        setMessage(submitError.message || t('payment.validationError'));
-        onPaymentError(submitError.message || t('payment.elementsValidationFailed'));
+        setMessage(submitError.message || 'Validierungsfehler');
+        onPaymentError(submitError.message || 'Formular-Validierung fehlgeschlagen');
         setIsLoading(false);
         return;
       }
@@ -136,11 +135,11 @@ export const StripeCardCheckout = ({
           confirmError
         );
         if (confirmError.type === 'card_error' || confirmError.type === 'validation_error') {
-          setMessage(confirmError.message || t('payment.cardError'));
+          setMessage(confirmError.message || 'Karten-Fehler');
         } else {
-          setMessage(t('payment.unexpectedError'));
+          setMessage('Unerwarteter Fehler');
         }
-        onPaymentError(confirmError.message || t('payment.confirmationFailed'));
+        onPaymentError(confirmError.message || 'Bestätigung fehlgeschlagen');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Zahlung erfolgreich
         console.log(
@@ -148,7 +147,7 @@ export const StripeCardCheckout = ({
           'StripeCardCheckout: Zahlung erfolgreich! PaymentIntent:',
           paymentIntent.id
         );
-        setMessage(t('payment.success'));
+        setMessage('Zahlung erfolgreich');
         onPaymentSuccess(paymentIntent.id); // Callback für Erfolg
       } else {
         // Zahlung noch ausstehend oder anderer Status (z.B. requires_action)
@@ -157,12 +156,12 @@ export const StripeCardCheckout = ({
           "StripeCardCheckout: Zahlungsstatus nicht 'succeeded', PaymentIntent:",
           paymentIntent
         );
-        setMessage(t('payment.statusPending', { status: paymentIntent?.status || 'unbekannt' }));
-        onPaymentError(t('payment.notSuccessfulOrUnknown'));
+        setMessage(`Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`);
+        onPaymentError('Zahlung nicht erfolgreich oder unbekannter Status');
       }
     } catch (error: unknown) {
       console.error(PAGE_ERROR, 'StripeCardCheckout: Allgemeiner Fehler in handleSubmit:', error);
-      let errorMessage = t('payment.generalError');
+      let errorMessage = 'Allgemeiner Fehler bei der Zahlung';
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
@@ -199,7 +198,7 @@ export const StripeCardCheckout = ({
       onSubmit={handleSubmit}
       className="space-y-6 p-4 border rounded-lg shadow-sm bg-white"
     >
-      <h3 className="text-lg font-semibold mb-4">{t('payment.title')}</h3>
+      <h3 className="text-lg font-semibold mb-4">Zahlung</h3>
       {/* AddressElement sammelt die Rechnungsadresse */}
 
       <button
@@ -209,19 +208,19 @@ export const StripeCardCheckout = ({
       >
         {isLoading ? (
           <>
-            <FiLoader className="animate-spin mr-2" /> {t('payment.processing')}
+            <FiLoader className="animate-spin mr-2" /> Verarbeite...
           </>
         ) : (
-          t('payment.payNow', { amount: (taskAmount / 100).toFixed(2) })
+          `Jetzt bezahlen ${(taskAmount / 100).toFixed(2)} €`
         )}
       </button>
 
       {message && (
         <div
           id="payment-message"
-          className={`mt-4 p-3 rounded-md text-sm flex items-center justify-center ${message.includes(t('payment.success').toLowerCase()) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+          className={`mt-4 p-3 rounded-md text-sm flex items-center justify-center ${message.includes('erfolgreich') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
         >
-          {message.includes(t('payment.success').toLowerCase()) ? (
+          {message.includes('erfolgreich') ? (
             <FiCheckCircle className="mr-2" />
           ) : (
             <FiXCircle className="mr-2" />

@@ -1,24 +1,28 @@
 'use client';
 
 import { HeroHeader } from '@/components/hero8-header';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ImpressumPage() {
-  const { t } = useLanguage();
 
   return (
     <>
       <HeroHeader />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
-        <div className="max-w-4xl mx-auto px-6">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">Impressum</h1>
+      {/* Gradient Container */}
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/20" />
+        
+        {/* Content */}
+        <div className="relative z-10 py-20">
+          <div className="max-w-4xl mx-auto px-6">
+            <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-8">Impressum</h1>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-8 space-y-6">
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 Angaben gemäß § 5 TMG
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-2">
+              <div className="text-white/90 drop-shadow-lg space-y-2">
                 <p>
                   <strong>Taskilo GmbH</strong>
                 </p>
@@ -29,8 +33,8 @@ export default function ImpressumPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Kontakt</h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-2">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
+              <div className="text-white/90 drop-shadow-lg space-y-2">
                 <p>
                   <strong>Telefon:</strong> +49 (0) 123 456789
                 </p>
@@ -41,10 +45,10 @@ export default function ImpressumPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 Handelsregister
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-2">
+              <div className="text-white/90 drop-shadow-lg space-y-2">
                 <p>
                   <strong>Handelsregister:</strong> Amtsgericht Musterstadt
                 </p>
@@ -55,10 +59,10 @@ export default function ImpressumPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 Umsatzsteuer-ID
               </h2>
-              <div className="text-gray-700 dark:text-gray-300">
+              <div className="text-white/90 drop-shadow-lg">
                 <p>
                   <strong>
                     Umsatzsteuer-Identifikationsnummer gemäß §27 a Umsatzsteuergesetz:
@@ -69,10 +73,10 @@ export default function ImpressumPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-2">
+              <div className="text-white/90 drop-shadow-lg space-y-2">
                 <p>Max Mustermann</p>
                 <p>Musterstraße 123</p>
                 <p>12345 Musterstadt</p>
@@ -80,10 +84,10 @@ export default function ImpressumPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
                 Haftungsausschluss
               </h2>
-              <div className="text-gray-700 dark:text-gray-300 space-y-4">
+              <div className="text-white/90 drop-shadow-lg space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">Haftung für Inhalte</h3>
                   <p>
@@ -92,6 +96,23 @@ export default function ImpressumPage() {
                     wir als Diensteanbieter jedoch nicht unter der Verpflichtung, übermittelte oder
                     gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen,
                     die auf eine rechtswidrige Tätigkeit hinweisen.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">Hosting</h3>
+                  <p>
+                    Diese Website wird gehostet bei:
+                  </p>
+                  <p className="mt-2">
+                    <strong>Siteground</strong><br />
+                    Siteground Spain S.L.<br />
+                    Calle Miquel Granell, 11<br />
+                    03203 Elche, Spanien
+                  </p>
+                  <p className="mt-2">
+                    Domain: taskilo.de<br />
+                    Registrar: Siteground
                   </p>
                 </div>
 
@@ -106,9 +127,10 @@ export default function ImpressumPage() {
                 </div>
               </div>
             </section>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 }

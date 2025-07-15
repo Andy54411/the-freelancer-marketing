@@ -3,7 +3,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { User as FiUser } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserInfoCardProps {
   userId: string;
@@ -20,18 +19,17 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   userRole,
   className,
 }) => {
-  const { t } = useLanguage();
 
   // A company/provider might have a public-facing profile, a customer usually does not.
   const profileLink = userRole === 'provider' ? `/dashboard/company/${userId}` : null;
-  const roleDisplay = userRole === 'customer' ? t('user.role.customer') : t('user.role.provider');
+  const roleDisplay = userRole === 'customer' ? 'Kunde' : 'Anbieter';
 
   return (
     <div className={cn('flex items-center gap-3 p-3 bg-gray-50 rounded-md', className)}>
       {userAvatarUrl ? (
         <Image
           src={userAvatarUrl}
-          alt={t('user.avatarAlt', { name: userName })}
+          alt={`Profilbild von ${userName}`}
           width={40}
           height={40}
           className="rounded-full object-cover"
@@ -46,7 +44,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
         <p className="text-sm text-gray-600">{roleDisplay}</p>
         {profileLink && (
           <Link href={profileLink} className="text-[#14ad9f] text-sm hover:underline mt-1 block">
-            {t('user.viewProfile')}
+            Profil anzeigen
           </Link>
         )}
       </div>

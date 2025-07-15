@@ -10,7 +10,6 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SettingsPage from '@/components/SettingsPage';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 import {
@@ -42,14 +41,13 @@ const isNonEmptyString = (val: unknown): val is string =>
 
 export default function CompanyDashboard({ params }: { params: Promise<{ uid: string }> }) {
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
 
   // Spaltendefinitionen für die DataTable
   const columns: ColumnDef<OrderData>[] = [
     {
       id: 'Dienstleistung',
       accessorKey: 'selectedSubcategory',
-      header: () => <div className="text-center">{t('company.table.service')}</div>,
+      header: () => <div className="text-center">Dienstleistung</div>,
       cell: ({ row }) => {
         const order = row.original;
         // Link zur spezifischen Auftrags-Chat-Seite
@@ -68,13 +66,13 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     {
       id: 'Kunde',
       accessorKey: 'customerName',
-      header: () => <div className="text-center">{t('company.table.customer')}</div>,
+      header: () => <div className="text-center">Kunde</div>,
       cell: ({ row }) => <div className="text-center">{row.original.customerName}</div>,
     },
     {
       id: 'Status',
       accessorKey: 'status',
-      header: () => <div className="text-center">{t('company.table.status')}</div>,
+      header: () => <div className="text-center">Status</div>,
       cell: ({ row }) => {
         const status = row.original.status;
         if (!status)
@@ -100,7 +98,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              {t('company.table.date')}
+              Datum
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -118,7 +116,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     {
       id: 'Umsatz',
       accessorKey: 'totalAmountPaidByBuyer',
-      header: () => <div className="text-center">{t('company.table.revenue')}</div>,
+      header: () => <div className="text-center">Umsatz</div>,
       cell: ({ row }) => {
         const amount = row.original.totalAmountPaidByBuyer / 100;
         const formatted = new Intl.NumberFormat('de-DE', {
@@ -221,19 +219,19 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           <TabsList className="grid w-full grid-cols-4 md:w-fit">
             <TabsTrigger value="dashboard">
               <FiGrid className="mr-2 h-4 w-4" />
-              {t('company.tabs.overview')}
+              Übersicht
             </TabsTrigger>
             <TabsTrigger value="calendar">
               <FiCalendar className="mr-2 h-4 w-4" />
-              {t('company.tabs.calendar')}
+              Kalender
             </TabsTrigger>
             <TabsTrigger value="profile">
               <FiUser className="mr-2 h-4 w-4" />
-              {t('company.tabs.profile')}
+              Profil
             </TabsTrigger>
             <TabsTrigger value="settings">
               <FiSettings className="mr-2 h-4 w-4" />
-              {t('company.tabs.settings')}
+              Einstellungen
             </TabsTrigger>
           </TabsList>
 
@@ -252,7 +250,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                   href={`/dashboard/company/${uid}/orders/overview`}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
                 >
-                  {t('company.orders.viewAll')}
+                  Alle Aufträge anzeigen
                 </Link>
               </div>
             </div>
@@ -265,16 +263,16 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           <TabsContent value="profile" className="mt-4">
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">{t('company.profile.title')}</h2>
-                <p className="text-gray-600 mt-2">{t('company.profile.description')}</p>
+                <h2 className="text-2xl font-bold text-gray-900">Firmenprofil</h2>
+                <p className="text-gray-600 mt-2">Verwalten Sie Ihr Unternehmensprofil</p>
               </div>
               {/* Platzhalter für zukünftige Profil-Features */}
               <div className="text-center py-12">
                 <FiUser className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">
-                  {t('company.profile.management')}
+                  Profilverwaltung
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">{t('company.profile.placeholder')}</p>
+                <p className="mt-1 text-sm text-gray-500">Kommt bald - Profilverwaltung wird hier verfügbar sein</p>
               </div>
             </div>
           </TabsContent>
