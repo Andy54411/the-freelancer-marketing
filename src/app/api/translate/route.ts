@@ -3,11 +3,15 @@ import { GoogleAuth } from 'google-auth-library';
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, targetLang = 'de' } = await request.json();
+    const { texts, targetLanguage, sourceLanguage = 'de' } = await request.json();
 
-    if (!text || typeof text !== 'string') {
+    // Unterstütze sowohl einzelne Texte als auch Arrays
+    const textArray = Array.isArray(texts) ? texts : [texts || ''];
+    const targetLang = targetLanguage || 'de';
+
+    if (!textArray.length || textArray.every(text => !text || typeof text !== 'string')) {
       return NextResponse.json(
-        { error: 'Text ist erforderlich und muss ein String sein' },
+        { error: 'Texte sind erforderlich und müssen Strings sein' },
         { status: 400 }
       );
     }
@@ -16,9 +20,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Target language ist erforderlich' }, { status: 400 });
     }
 
-    console.log('Übersetzung gestartet:', { textLength: text.length, targetLang });
+    console.log('Übersetzung gestartet:', { textCount: textArray.length, targetLang });
 
-    // Google Auth mit Service Account
+    // Google Auth mit Service Account für v2 API
     const auth = new GoogleAuth({
       keyFile: './firebase-service-account-key.json',
       scopes: ['https://www.googleapis.com/auth/cloud-translation'],
@@ -32,21 +36,20 @@ export async function POST(request: NextRequest) {
       throw new Error('Konnte kein Access Token erhalten');
     }
 
-    const projectId = 'tilvo-f142f'; // Ihr Firebase Projekt-ID
-
-    // Google Cloud Translation API v3 verwenden
+    // Google Cloud Translation API v2 verwenden (einfacher)
     const response = await fetch(
-      `https://translation.googleapis.com/v3/projects/${projectId}/locations/global:translateText`,
+      `https://translation.googleapis.com/language/translate/v2`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken.token}`,
+          'Authorization': `Bearer ${accessToken.token}`,
         },
         body: JSON.stringify({
-          contents: [text],
-          targetLanguageCode: targetLang,
-          sourceLanguageCode: 'auto', // Automatische Spracherkennung
+          q: textArray,
+          target: targetLang,
+          source: sourceLanguage === 'auto' ? undefined : sourceLanguage,
+          format: 'text',
         }),
       }
     );
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     console.log('Google Translate Response:', data);
 
-    if (!data.translations || !data.translations[0]) {
+    if (!data.data || !data.data.translations || !Array.isArray(data.data.translations)) {
       console.error('Ungültige Antwort von Google Translate:', data);
       return NextResponse.json(
         { error: 'Ungültige Antwort von Google Translate' },
@@ -75,14 +78,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const translation = data.translations[0];
+    // Extrahiere übersetzten Text aus der v2 API Antwort
+    const translations = data.data.translations.map((translation: any) => translation.translatedText);
 
     console.log('Übersetzung erfolgreich abgeschlossen');
 
     return NextResponse.json({
-      translatedText: translation.translatedText,
-      originalText: text,
-      detectedSourceLanguage: translation.detectedLanguageCode,
+      translations: translations,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLang,
+      detectedSourceLanguage: data.data.translations[0]?.detectedSourceLanguage,
     });
   } catch (error) {
     console.error('Übersetzungsfehler:', error);

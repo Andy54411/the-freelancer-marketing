@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
 import Link from 'next/link';
-import GoogleTranslateWidget from '@/components/GoogleTranslateWidget';
 import CookieSettings from '@/components/CookieSettings';
 
 export default function FooterSection() {
@@ -294,7 +293,6 @@ export default function FooterSection() {
           </small>
           <div className="flex items-center gap-4">
             <CookieSettings />
-            <GoogleTranslateWidget />
           </div>
         </div>
       </div>

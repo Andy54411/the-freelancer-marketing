@@ -21,7 +21,7 @@ import {
   FiBell,
 } from 'react-icons/fi';
 import Link from 'next/link';
-import GoogleTranslateWidget from '@/components/GoogleTranslateWidget';
+import CachedTranslateWidget from '@/components/CachedTranslateWidget';
 
 const getFeatures = () => [
   {

@@ -11,7 +11,7 @@ import LoginPopup from '@/components/LoginPopup';
 import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { app, storage, db } from '@/firebase/clients';
-import GoogleTranslateWidget from '@/components/GoogleTranslateWidget';
+import CachedTranslateWidget from '@/components/CachedTranslateWidget';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -210,22 +210,32 @@ export const HeroHeader = () => {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <GoogleTranslateWidget />
-                    <ModeToggle />
+                    <div className="flex items-center gap-2">
+                      <CachedTranslateWidget />
+                      <ModeToggle />
+                    </div>
                   </div>
                 ) : (
                   // Unauthenticated user
                   <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
-                    <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                      <span>Anmelden</span>
-                    </Button>
-                    <Button asChild size="sm" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300">
-                      <Link href="/register/company">
-                        <span>Mit Taskilo starten</span>
-                      </Link>
-                    </Button>
-                    <GoogleTranslateWidget />
-                    <ModeToggle />
+                    <div className="flex items-center gap-3">
+                      <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
+                        <span>Anmelden</span>
+                      </Button>
+                      <Button
+                        asChild
+                        size="sm"
+                        className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300"
+                      >
+                        <Link href="/register/company">
+                          <span>Mit Taskilo starten</span>
+                        </Link>
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CachedTranslateWidget />
+                      <ModeToggle />
+                    </div>
                   </div>
                 ))}
             </div>
@@ -281,13 +291,19 @@ export const HeroHeader = () => {
                         <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
                           Anmelden
                         </Button>
-                        <Button asChild size="sm" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300">
+                        <Button
+                          asChild
+                          size="sm"
+                          className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300"
+                        >
                           <Link href="/register/company">Mit Taskilo starten</Link>
                         </Button>
                       </>
                     ))}
-                  <GoogleTranslateWidget />
-                  <ModeToggle />
+                  <div className="flex items-center gap-2 pt-3 border-t">
+                    <CachedTranslateWidget />
+                    <ModeToggle />
+                  </div>
                 </div>
               </div>
             )}

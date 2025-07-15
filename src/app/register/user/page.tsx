@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
+import CachedTranslateWidget from '@/components/CachedTranslateWidget';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
 
@@ -307,6 +308,11 @@ function UserRegisterFormContent() {
   return (
     <>
       <main className="bg-gradient-to-r from-blue-100 to-teal-200 grid place-items-center min-h-screen mx-auto p-6 md:p-12">
+        {/* Translation Widget */}
+        <div className="fixed top-4 right-4 z-50">
+          <CachedTranslateWidget />
+        </div>
+        
         <Card className="w-full max-w-md shadow-lg rounded-lg bg-white">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold text-[#14ad9f]">
