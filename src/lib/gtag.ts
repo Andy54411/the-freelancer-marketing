@@ -18,12 +18,12 @@ declare global {
 export const initializeConsent = () => {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
-    
+
     // Definiere gtag function
-    window.gtag = function() {
-      window.dataLayer.push(arguments);
+    window.gtag = function (...args: any[]) {
+      window.dataLayer.push(args);
     };
-    
+
     // Setze default consent state (denied für alle bis User zustimmt)
     window.gtag('consent', 'default', {
       analytics_storage: 'denied',
@@ -35,7 +35,7 @@ export const initializeConsent = () => {
       security_storage: 'granted', // Immer granted für Sicherheit
       wait_for_update: 2000, // Warte 2 Sekunden auf User-Consent
     });
-    
+
     // Setze current date
     window.gtag('js', new Date());
   }
@@ -45,11 +45,11 @@ export const initializeConsent = () => {
 export const initializeGTM = () => {
   if (typeof window !== 'undefined' && GTM_ID) {
     window.dataLayer = window.dataLayer || [];
-    
+
     // Push GTM initialization event
     window.dataLayer.push({
       'gtm.start': new Date().getTime(),
-      event: 'gtm.js'
+      event: 'gtm.js',
     });
   }
 };
