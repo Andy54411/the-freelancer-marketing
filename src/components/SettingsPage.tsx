@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../firebase/clients';
-import { getFunctions, httpsCallable, FunctionsError } from 'firebase/functions'; // FunctionsError hinzugefügt
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
@@ -720,9 +720,9 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     } catch (error: unknown) {
       console.error(PAGE_ERROR, '[SettingsPage] Fehler beim Speichern:', error);
       let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
-      if (error instanceof FunctionsError) {
+      if (error && typeof error === 'object' && 'message' in error) {
         // Use the specific message from the backend (which now includes the Stripe error)
-        errorMessage = error.message;
+        errorMessage = (error as { message: string }).message;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }

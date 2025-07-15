@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { getAuth } from 'firebase/auth';
-import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions';
+import { httpsCallable, getFunctions } from 'firebase/functions';
 import { app } from '@/firebase/clients';
 
 // Funktionen-Instanz initialisieren
@@ -87,8 +87,9 @@ export default function ReviewForm({
     } catch (err: unknown) {
       console.error('Fehler beim Senden der Bewertung:', err);
       let errorMessage = 'Bewertung konnte nicht gesendet werden.';
-      if (err instanceof FunctionsError) {
-        errorMessage = `Fehler von Cloud Function (${err.code}): ${err.message}`;
+      if (err && typeof err === 'object' && 'code' in err && 'message' in err) {
+        const errorObj = err as { code: string; message: string };
+        errorMessage = `Fehler von Cloud Function (${errorObj.code}): ${errorObj.message}`;
       } else if (err instanceof Error) {
         errorMessage = `Netzwerkfehler: ${err.message}`;
       } else if (

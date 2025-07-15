@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import { httpsCallable, getFunctions, FunctionsError } from 'firebase/functions';
+import { httpsCallable, getFunctions } from 'firebase/functions';
 import { app } from '@/firebase/clients';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, User as FiUser } from 'lucide-react';
 
@@ -79,8 +79,9 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
         console.error('Fehler beim Laden der Bewertungen:', err);
 
         let errorMessage = 'Ein unbekannter Fehler ist beim Laden der Bewertungen aufgetreten.';
-        if (err instanceof FunctionsError) {
-          errorMessage = `Fehler von Cloud Function (${err.code}): ${err.message}`;
+        if (err && typeof err === 'object' && 'code' in err && 'message' in err) {
+          const errorObj = err as { code: string; message: string };
+          errorMessage = `Fehler von Cloud Function (${errorObj.code}): ${errorObj.message}`;
         } else if (err instanceof Error) {
           errorMessage = `Netzwerkfehler: ${err.message}`;
         } else if (

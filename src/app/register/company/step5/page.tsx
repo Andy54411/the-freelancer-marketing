@@ -30,7 +30,7 @@ import {
 } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
-import { httpsCallable, FunctionsError } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 import type Stripe from 'stripe';
 
@@ -997,8 +997,9 @@ export default function Step5CompanyPage() {
       console.error(PAGE_ERROR, '[Step5] Fehler im Registrierungsprozess:', error);
       let specificErrorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
 
-      if (error instanceof FunctionsError) {
-        specificErrorMessage = `Serverfehler (${error.code}): ${error.message} ${error.details ? `(Details: ${JSON.stringify(error.details)})` : ''}`;
+      if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+        const errorObj = error as { code: string; message: string; details?: any };
+        specificErrorMessage = `Serverfehler (${errorObj.code}): ${errorObj.message} ${errorObj.details ? `(Details: ${JSON.stringify(errorObj.details)})` : ''}`;
       } else if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
         specificErrorMessage = `Firebase Fehler (${(error as { code: string }).code}): ${(error as { message: string }).message}`;
       } else if (error instanceof Error) {

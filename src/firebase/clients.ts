@@ -2,10 +2,13 @@
 
 import { initializeApp, getApps, FirebaseApp, getApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, onAuthStateChanged, signOut } from 'firebase/auth';
-import type { Auth, User } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator, Functions } from 'firebase/functions';
+
+// Typen durch Rückgabewerte ableiten
+type Auth = ReturnType<typeof getAuth>;
+type User = NonNullable<Auth['currentUser']>;
 
 // --- Konfiguration ---
 const firebaseConfig = {

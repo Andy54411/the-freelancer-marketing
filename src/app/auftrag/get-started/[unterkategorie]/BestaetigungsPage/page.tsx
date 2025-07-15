@@ -11,7 +11,7 @@ import {
 import BestaetigungsContent from './components/BestaetigungsContent';
 import { StripeCardCheckout } from '@/components/CheckoutForm';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { httpsCallable, FunctionsError } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { app, functions, db } from '@/firebase/clients';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { PAGE_LOG, PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
@@ -827,7 +827,7 @@ export default function BestaetigungsPage() {
             error
           );
           let specificErrorMessage = 'Ein Fehler ist bei der Auftragsvorbereitung aufgetreten.';
-          if (error instanceof FunctionsError) {
+          if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
             if (error.code === 'not-found' || error.code === 'failed-precondition') {
               specificErrorMessage =
                 'Der ausgewählte Anbieter ist nicht mehr verfügbar oder existiert nicht. Bitte wählen Sie einen anderen Anbieter aus.';
@@ -891,7 +891,7 @@ export default function BestaetigungsPage() {
           );
           let specificErrorMessage =
             'Ein Fehler bei der Synchronisierung Ihres Kundenprofils ist aufgetreten.';
-          if (error instanceof FunctionsError) {
+          if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
             // Hier ist 'not-found' ein technischer Fehler (Funktion nicht gefunden), keine Geschäftslogik.
             specificErrorMessage = `Fehler bei der Kommunikation mit dem Zahlungssystem (${error.code}): ${error.message}. Bitte versuchen Sie es später erneut.`;
           } else if (error instanceof Error) {
