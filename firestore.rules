@@ -110,9 +110,7 @@ service cloud.firestore {
       allow update: if (request.auth != null && request.auth.uid == firmaId && isCompany()) || isSupportStaff();
 
       allow delete: if false; // Löschen zur Sicherheit explizit verweigern.
-    }
-
-    // --- auftraege Collection ---
+    }    // --- auftraege Collection ---
     match /auftraege/{auftragId} {
       allow get: if request.auth != null && resource != null && (
         resource.data.customerFirebaseUid == request.auth.uid ||
@@ -124,6 +122,7 @@ service cloud.firestore {
       // Erlaubt Abfragen (`list`) nur, wenn sie explizit nach der UID des Anbieters
       // oder Kunden filtern. Dies ist entscheidend für die `getProviderOrders`-Funktion.
       // Support-Staff darf alle Aufträge ohne Einschränkungen abfragen.
+      // HINZUGEFÜGT: Öffentlicher Lesezugriff für CategoryGrid-Komponente zur Tag-Generierung
       allow list: if request.auth != null &&
                    (
                      isSupportStaff() ||
@@ -148,10 +147,12 @@ service cloud.firestore {
                        // Fallback für getDoc calls ohne where-Filter
                        // Sicher, da die get-Regel bereits überprüft, ob der Benutzer Zugriff hat
                        !('where' in request.query) || 
-                       request.query.where == null || 
+                       request.query.where == null ||
                        request.query.where.size() == 0
                      )
-                   );
+                   ) ||
+                   // Öffentlicher Lesezugriff für CategoryGrid (begrenzt auf 500 Dokumente)
+                   (request.query.limit <= 500);
 
       allow create,
             update,

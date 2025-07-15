@@ -4,9 +4,17 @@ import fs from 'fs';
 import path from 'path';
 
 // Lade lokale Übersetzungen
-function loadLocalTranslations(sourceLanguage: string, targetLanguage: string): Record<string, string> {
+function loadLocalTranslations(
+  sourceLanguage: string,
+  targetLanguage: string
+): Record<string, string> {
   try {
-    const translationsPath = path.join(process.cwd(), 'public', 'translations', `${sourceLanguage}-${targetLanguage}.json`);
+    const translationsPath = path.join(
+      process.cwd(),
+      'public',
+      'translations',
+      `${sourceLanguage}-${targetLanguage}.json`
+    );
     if (fs.existsSync(translationsPath)) {
       const data = fs.readFileSync(translationsPath, 'utf-8');
       return JSON.parse(data);
@@ -18,20 +26,26 @@ function loadLocalTranslations(sourceLanguage: string, targetLanguage: string): 
 }
 
 // Speichere neue Übersetzungen in lokaler Datei
-function saveLocalTranslations(sourceLanguage: string, targetLanguage: string, translations: Record<string, string>): void {
+function saveLocalTranslations(
+  sourceLanguage: string,
+  targetLanguage: string,
+  translations: Record<string, string>
+): void {
   try {
     const translationsDir = path.join(process.cwd(), 'public', 'translations');
     if (!fs.existsSync(translationsDir)) {
       fs.mkdirSync(translationsDir, { recursive: true });
     }
-    
+
     const translationsPath = path.join(translationsDir, `${sourceLanguage}-${targetLanguage}.json`);
     const existingTranslations = loadLocalTranslations(sourceLanguage, targetLanguage);
-    
+
     const mergedTranslations = { ...existingTranslations, ...translations };
-    
+
     fs.writeFileSync(translationsPath, JSON.stringify(mergedTranslations, null, 2), 'utf-8');
-    console.log(`Lokale Übersetzungen gespeichert: ${Object.keys(translations).length} neue Einträge`);
+    console.log(
+      `Lokale Übersetzungen gespeichert: ${Object.keys(translations).length} neue Einträge`
+    );
   } catch (error) {
     console.error('Fehler beim Speichern der lokalen Übersetzungen:', error);
   }
@@ -60,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Lade lokale Übersetzungen
     const localTranslations = loadLocalTranslations(sourceLanguage, targetLang);
-    
+
     // 2. Trenne lokale und zu übersetzende Texte
     const localResults: string[] = [];
     const textsToTranslate: string[] = [];
@@ -76,7 +90,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log(`Lokale Treffer: ${textArray.length - textsToTranslate.length}/${textArray.length}`);
+    console.log(
+      `Lokale Treffer: ${textArray.length - textsToTranslate.length}/${textArray.length}`
+    );
     console.log(`Zu übersetzen über API: ${textsToTranslate.length}`);
 
     // 3. Wenn alle Texte lokal verfügbar sind, gib sie zurück
@@ -86,13 +102,13 @@ export async function POST(request: NextRequest) {
         sourceLanguage: sourceLanguage,
         targetLanguage: targetLang,
         localHits: textArray.length,
-        apiCalls: 0
+        apiCalls: 0,
       });
     }
 
     // 4. Übersetze verbleibende Texte über Google API
     const auth = new GoogleAuth({
-      keyFile: './firebase-service-account-key.json',
+      keyFile: path.join(process.cwd(), 'firebase-service-account-key.json'),
       scopes: ['https://www.googleapis.com/auth/cloud-translation'],
     });
 
@@ -104,22 +120,19 @@ export async function POST(request: NextRequest) {
       throw new Error('Konnte kein Access Token erhalten');
     }
 
-    const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken.token}`,
-        },
-        body: JSON.stringify({
-          q: textsToTranslate,
-          target: targetLang,
-          source: sourceLanguage === 'auto' ? undefined : sourceLanguage,
-          format: 'text',
-        }),
-      }
-    );
+    const response = await fetch(`https://translation.googleapis.com/language/translate/v2`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken.token}`,
+      },
+      body: JSON.stringify({
+        q: textsToTranslate,
+        target: targetLang,
+        source: sourceLanguage === 'auto' ? undefined : sourceLanguage,
+        format: 'text',
+      }),
+    });
 
     if (!response.ok) {
       console.error('Google Translate API Fehler:', response.status, response.statusText);
@@ -145,7 +158,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Extrahiere API-Übersetzungen
-    const apiTranslations = data.data.translations.map((translation: any) => translation.translatedText);
+    const apiTranslations = data.data.translations.map(
+      (translation: any) => translation.translatedText
+    );
 
     // 6. Kombiniere lokale und API-Ergebnisse
     const finalTranslations = [...localResults];
@@ -168,7 +183,7 @@ export async function POST(request: NextRequest) {
       targetLanguage: targetLang,
       detectedSourceLanguage: data.data.translations[0]?.detectedSourceLanguage,
       localHits: textArray.length - textsToTranslate.length,
-      apiCalls: textsToTranslate.length
+      apiCalls: textsToTranslate.length,
     });
   } catch (error) {
     console.error('Übersetzungsfehler:', error);
