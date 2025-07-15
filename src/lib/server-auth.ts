@@ -13,7 +13,8 @@ import { admin } from '@/firebase/server';
  */
 export async function verifyAdmin(sessionCookieValue?: string) {
   try {
-    const sessionCookie = sessionCookieValue || cookies().get('__session')?.value;
+    const cookieStore = await cookies();
+    const sessionCookie = sessionCookieValue || cookieStore.get('__session')?.value;
 
     if (!sessionCookie) {
       throw new Error('Nicht authentifiziert. Session-Cookie nicht gefunden.');

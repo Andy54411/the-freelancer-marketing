@@ -72,7 +72,8 @@ export async function deactivateCompany(companyId: string, shouldDeactivate: boo
 export async function deleteCompany(companyId: string) {
   console.log(`[Action] Starte Löschvorgang für Firma: ${companyId}`);
 
-  const sessionCookie = cookies().get('__session')?.value;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('__session')?.value;
   if (!sessionCookie) {
     console.error('[Action] Abbruch: Kein Session-Cookie gefunden.');
     return { error: 'Authentifizierung fehlgeschlagen. Bitte neu anmelden.' };

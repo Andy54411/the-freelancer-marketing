@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       newFeeRate: feeRate,
       adminUserId,
       timestamp: Math.floor(Date.now() / 1000),
-      ipAddress: req.ip || 'unknown',
+      ipAddress: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
     });
 
     console.log(`Platform fee updated to ${(feeRate * 100).toFixed(1)}% by admin ${adminUserId}`);
