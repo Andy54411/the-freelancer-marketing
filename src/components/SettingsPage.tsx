@@ -254,22 +254,28 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
             'step2.companyPhoneNumber',
             get('companyPhoneNumber', get('companyPhoneNumberForBackend', get('phoneNumber', '')))
           ),
-          legalForm: get('step2.legalForm', get('legalForm', get('legalFormForBackend', null))),
+          legalForm: get('step2.legalForm', get('legalForm', null)),
           address: get(
             'step2.address',
-            get('companyAddressLine1ForBackend', get('address', get('street', '')))
+            get('companyAddressLine1ForBackend', get('personalStreet', get('address', '')))
           ),
           street: get(
             'step2.street',
-            get('companyAddressLine1ForBackend', get('street', get('address', '')))
+            get('companyAddressLine1ForBackend', get('personalStreet', get('street', '')))
           ),
-          houseNumber: get('step2.houseNumber', get('companyHouseNumber', get('houseNumber', ''))),
+          houseNumber: get('step2.houseNumber', get('personalHouseNumber', get('houseNumber', ''))),
           postalCode: get(
             'step2.postalCode',
-            get('companyPostalCodeForBackend', get('postalCode', get('zip', '')))
+            get('companyPostalCodeForBackend', get('personalPostalCode', get('postalCode', '')))
           ),
-          city: get('step2.city', get('companyCityForBackend', get('city', ''))),
-          country: get('step2.country', get('companyCountryForBackend', get('country', 'DE'))),
+          city: get(
+            'step2.city',
+            get('companyCityForBackend', get('personalCity', get('city', '')))
+          ),
+          country: get(
+            'step2.country',
+            get('companyCountryForBackend', get('personalCountry', get('country', 'DE')))
+          ),
           website: get('step2.website', get('companyWebsiteForBackend', get('website', ''))),
           fax: get('step2.fax', get('fax', '')),
           languages: get('step2.languages', get('languages', '')),
@@ -277,12 +283,9 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           employees: get('step2.employees', get('employees', '')),
           industry: get(
             'step2.industry',
-            get(
-              'selectedCategory',
-              get('selectedSubcategory', null) === 'Mietkoch'
-                ? 'Hotel & Gastronomie'
-                : get('industry', '')
-            )
+            get('selectedSubcategory', null) === 'Mietkoch'
+              ? 'Hotel & Gastronomie'
+              : get('selectedCategory', get('industry', ''))
           ),
           industryMcc: get('step2.industryMcc', get('industryMcc', '')),
         },
@@ -335,28 +338,53 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           lastName: get('step1.lastName', get('lastName', '')),
           phoneNumber: get('step1.phoneNumber', get('phoneNumber', '')),
           email: get('step1.email', get('email', '')),
+          personalStreet: get('step1.personalStreet', get('personalStreet', '')),
+          personalPostalCode: get('step1.personalPostalCode', get('personalPostalCode', '')),
+          personalCity: get('step1.personalCity', get('personalCity', '')),
         },
         step2: {
           companyName: get('step2.companyName', get('companyName', '')),
           companySuffix: get('step2.companySuffix', get('companySuffix', '')),
-          legalForm: get('step2.legalForm', get('legalForm', get('legalFormForBackend', null))),
+          legalForm: get('step2.legalForm', get('legalForm', null)),
           address: get(
             'step2.address',
-            get('companyAddressLine1ForBackend', get('address', get('street', '')))
+            get('companyAddressLine1ForBackend', get('personalStreet', get('address', '')))
           ),
           street: get(
             'step2.street',
-            get('companyAddressLine1ForBackend', get('street', get('address', '')))
+            get('companyAddressLine1ForBackend', get('personalStreet', get('street', '')))
           ),
           postalCode: get(
             'step2.postalCode',
-            get('companyPostalCodeForBackend', get('postalCode', get('zip', '')))
+            get('companyPostalCodeForBackend', get('personalPostalCode', get('postalCode', '')))
           ),
-          city: get('step2.city', get('companyCityForBackend', get('city', ''))),
+          city: get(
+            'step2.city',
+            get('companyCityForBackend', get('personalCity', get('city', '')))
+          ),
           companyPhoneNumber: get(
             'step2.companyPhoneNumber',
             get('companyPhoneNumber', get('companyPhoneNumberForBackend', get('phoneNumber', '')))
           ),
+          industry: get(
+            'step2.industry',
+            get('selectedSubcategory', null) === 'Mietkoch'
+              ? 'Hotel & Gastronomie'
+              : get('selectedCategory', get('industry', ''))
+          ),
+          description: get('step2.description', get('publicDescription', get('description', ''))),
+        },
+        // Debug: Zeige auch die rohen Datenbank-Werte
+        rawData: {
+          personalStreet: get('personalStreet', ''),
+          personalPostalCode: get('personalPostalCode', ''),
+          personalCity: get('personalCity', ''),
+          legalForm: get('legalForm', ''),
+          companyAddressLine1ForBackend: get('companyAddressLine1ForBackend', ''),
+          companyPostalCodeForBackend: get('companyPostalCodeForBackend', ''),
+          companyCityForBackend: get('companyCityForBackend', ''),
+          selectedSubcategory: get('selectedSubcategory', ''),
+          selectedCategory: get('selectedCategory', ''),
         },
       });
     }
