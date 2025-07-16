@@ -11,8 +11,8 @@ import { setGlobalOptions } from 'firebase-functions/v2/options';
 setGlobalOptions({
     region: "europe-west1", // <-- HIER die korrekte Region global festlegen
     timeoutSeconds: 540,
-    memory: '128MiB', // <-- EXTREM REDUZIERT: Speicher auf 128MiB gesenkt als letzter Versuch, Quota-Probleme zu beheben.
-    cpu: 0.1, // <-- NOCHMALS REDUZIERT: CPU-Anforderung weiter gesenkt, um das Quota-Limit sicher einzuhalten.
+    memory: '256MiB', // <-- AUSGEWOGEN: Speicher auf 256MiB erhöht, um Memory-Limit-Probleme zu beheben ohne CPU-Quota zu überschreiten.
+    cpu: 0.1, // <-- MINIMAL: CPU-Anforderung minimiert, um Quota-Probleme zu vermeiden.
     concurrency: 1, // <-- Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
 });
 

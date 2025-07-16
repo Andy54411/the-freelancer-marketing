@@ -118,8 +118,6 @@ export const createTemporaryJobDraft = onCall(
   },
   async (request: CallableRequest<TemporaryJobDraftData>): Promise<TemporaryJobDraftResult> => {
     try {
-      logger.info("[createTemporaryJobDraft] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
-
       if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Nutzer muss authentifiziert sein.');
       }
@@ -155,56 +153,38 @@ export const createTemporaryJobDraft = onCall(
             customerInfo.lastName = data.lastName || '';
             customerInfo.email = data.email || customerInfo.email;
           }
-          logger.info(`[createTemporaryJobDraft] Kundendaten für ${kundeId} geladen.`);
-        } else {
-          logger.warn(`[createTemporaryJobDraft] Konnte kein User-Dokument für Kunde ${kundeId} finden.`);
         }
       } catch (e: any) {
-        logger.error(`[createTemporaryJobDraft] Fehler beim Laden der Kundendaten für ${kundeId}:`, e.message);
+        // Minimaler Logging für Memory-Optimierung
       }
 
       let anbieterStripeAccountId: string;
       let providerName: string = UNKNOWN_PROVIDER_NAME;
 
       if (!jobDetails.selectedAnbieterId) {
-        logger.error("[createTemporaryJobDraft] selectedAnbieterId ist leer."); // Added log
         throw new HttpsError('invalid-argument', "Die ID des ausgewählten Anbieters ist erforderlich.");
       }
 
-      // The 'users' document is the single source of truth for a provider's existence and type.
       const anbieterUserDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
       const anbieterUserDoc = await anbieterUserDocRef.get();
 
       if (!anbieterUserDoc.exists) {
-        // This is a critical error. The provider selected by the client does not exist in our system.
-        logger.error(`[createTemporaryJobDraft] Anbieter-Nutzerdokument für ID ${jobDetails.selectedAnbieterId} nicht gefunden. Auftrag kann nicht erstellt werden.`);
         throw new HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.");
       }
 
       const anbieterData = anbieterUserDoc.data();
       if (anbieterData?.user_type !== 'firma') {
-        // The user exists but is not a company, which is a precondition for creating a job draft against them.
-        logger.error(`[createTemporaryJobDraft] Anbieter ${jobDetails.selectedAnbieterId} ist kein Firmenkonto. user_type: ${anbieterData?.user_type}`);
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
 
-      // Now that we've validated the provider, let's get their public profile data.
-      // The 'companies' document might not exist yet due to replication lag from triggers,
-      // so we handle this gracefully.
       const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
-      if (!anbieterCompanyDoc.exists) {
-        logger.warn(`[createTemporaryJobDraft] Firmenprofil für Anbieter ${jobDetails.selectedAnbieterId} nicht in 'companies' gefunden. Dies deutet auf eine Replikationsverzögerung hin. Fahre mit Daten aus 'users' fort.`);
-      }
-
-      // Logik zur Namensfindung: Priorisiere Daten aus dem 'companies'-Dokument (die öffentliche Ansicht),
-      // aber nutze das 'users'-Dokument als Fallback, um einen Namen zu finden.
+      
       const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterUserDoc.data();
       providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
 
       if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
         anbieterStripeAccountId = anbieterData.stripeAccountId;
       } else {
-        logger.error(`[createTemporaryJobDraft] Gültige Stripe Account ID für Anbieter ${jobDetails.selectedAnbieterId} nicht gefunden.`);
         throw new HttpsError('failed-precondition', "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
       }
 
@@ -236,16 +216,13 @@ export const createTemporaryJobDraft = onCall(
       };
 
       const docRef = await db.collection("temporaryJobDrafts").add(draftDataToSave);
-      logger.info(`[createTemporaryJobDraft] Draft ${docRef.id} für Kunde ${kundeId} erstellt.`);
 
-      // Return the result in the format expected by the onCall client
       return {
         tempDraftId: docRef.id,
         anbieterStripeAccountId: anbieterStripeAccountId,
       };
 
     } catch (error: any) {
-      logger.error(`[createTemporaryJobDraft] Unerwarteter Fehler:`, error);
       if (error instanceof HttpsError) throw error;
       throw new HttpsError('internal', error.message || "Ein interner Serverfehler ist aufgetreten.");
     }

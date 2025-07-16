@@ -633,26 +633,24 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
     secrets: [STRIPE_SECRET_KEY]
   },
   async (request: CallableRequest<GetOrCreateStripeCustomerPayload>): Promise<GetOrCreateStripeCustomerResult> => {
-    loggerV2.info("[getOrCreateStripeCustomer] Aufgerufen mit Daten:", JSON.stringify(request.data, null, 2));
+    // Minimaler Logging für Memory-Optimierung
     const db = getDb();
-    const stripeKey = getStripeSecretKey(); // Verwende die neue Hilfsfunktion
-    const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
+    const stripeKey = getStripeSecretKey();
+    const localStripe = getStripeInstance(stripeKey);
 
     if (!request.auth?.uid) { throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert."); }
     const firebaseUserId = request.auth.uid;
     const payload = request.data;
 
     if (!payload.email) {
-      loggerV2.error("[getOrCreateStripeCustomer] Fehlende E-Mail im Payload.");
       throw new HttpsError("invalid-argument", "E-Mail ist im Payload erforderlich.");
     }
 
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
       let userDoc = await userDocRef.get();
+      
       if (!userDoc.exists) {
-        loggerV2.warn(`[getOrCreateStripeCustomer] Nutzerprofil für ${firebaseUserId} nicht gefunden. Erstelle ein neues Profil aus den Payload-Daten.`);
-
         const [firstName, ...lastNameParts] = (payload.name || "").split(" ");
         const lastName = lastNameParts.join(" ");
 
@@ -664,7 +662,7 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
           phoneNumber: payload.phone || null,
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
-          user_type: 'kunde', // Default to 'customer' type
+          user_type: 'kunde',
           savedAddresses: payload.address && payload.address.line1 ? [{
             id: `addr_${new Date().getTime()}`,
             name: payload.name || `Rechnungsadresse`,
@@ -680,13 +678,9 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
         };
 
         await userDocRef.set(newUserProfileData, { merge: true });
-        loggerV2.info(`[getOrCreateStripeCustomer] Neues Nutzerprofil für ${firebaseUserId} erfolgreich erstellt.`);
-
-        // Re-fetch the document to proceed with consistent data
         userDoc = await userDocRef.get();
       }
 
-      // Define a type for userData to increase type safety
       interface FirestoreUserData {
         stripeCustomerId?: string;
         firstName?: string;
@@ -703,8 +697,7 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
       if (!userData) { throw new HttpsError("internal", "Fehler Lesen Nutzerdaten."); }
       if (userData.stripeCustomerId?.startsWith("cus_")) { return { stripeCustomerId: userData.stripeCustomerId }; }
 
-      // Prioritize data from the payload, fallback to Firestore data
-      const customerEmailForStripe = payload.email; // Email from payload is mandatory
+      const customerEmailForStripe = payload.email;
       const customerNameForStripe = payload.name || `${userData.firstName || userData.step1?.firstName || ""} ${userData.lastName || userData.step1?.lastName || ""}`.trim() || undefined;
       const customerPhoneForStripe = payload.phone || undefined;
 
@@ -716,7 +709,6 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
       };
 
       if (payload.address) {
-        // Ensure null values are converted to undefined for type compatibility
         stripeCustomerParams.address = {
           line1: payload.address.line1 || undefined,
           line2: payload.address.line2 || undefined,
@@ -729,7 +721,6 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
 
       const stripeCustomer = await localStripe.customers.create(stripeCustomerParams);
       await userDocRef.update({ stripeCustomerId: stripeCustomer.id });
-      loggerV2.info(`[getOrCreateStripeCustomer] Stripe Customer ${stripeCustomer.id} für ${firebaseUserId} erstellt.`);
       return { stripeCustomerId: stripeCustomer.id };
     } catch (e: any) {
       loggerV2.error(`[getOrCreateStripeCustomer] Fehler für ${firebaseUserId}:`, e);

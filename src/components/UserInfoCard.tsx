@@ -19,9 +19,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   userRole,
   className,
 }) => {
-
   // A company/provider might have a public-facing profile, a customer usually does not.
-  const profileLink = userRole === 'provider' ? `/dashboard/company/${userId}` : null;
+  const profileLink = userRole === 'provider' ? `/profile/${userId}` : null;
   const roleDisplay = userRole === 'customer' ? 'Kunde' : 'Anbieter';
 
   return (
