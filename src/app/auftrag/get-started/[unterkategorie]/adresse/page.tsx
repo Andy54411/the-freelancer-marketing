@@ -20,6 +20,8 @@ import {
   PAGE_LOG,
   PAGE_WARN,
   TRUST_AND_SUPPORT_FEE_EUR,
+  DATA_FOR_SUBCATEGORY_API_URL,
+  SEARCH_API_URL,
 } from '../../../../../lib/constants';
 import SidebarFilters from './components/SidebarFilters';
 import CompanyResultsList from './components/CompanyResultsList';
@@ -258,10 +260,8 @@ export default function AddressPage() {
       }
       setLoadingSubcategoryData(true);
       try {
-        const apiBaseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
         const res = await fetch(
-          `${apiBaseUrl}/getDataForSubcategory?subcategory=${encodeURIComponent(subcategory)}`
+          `${DATA_FOR_SUBCATEGORY_API_URL}?subcategory=${encodeURIComponent(subcategory)}`
         );
         if (!res.ok) {
           const errorText = await res.text();
@@ -306,9 +306,7 @@ export default function AddressPage() {
     setLoadingProfiles(true);
     setError(null);
     try {
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5001/tilvo-f142f/europe-west1';
-      let apiUrl = `${apiBaseUrl}/searchCompanyProfiles?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(selectedSubcategory)}&minPrice=${dynamicSliderMin}&maxPrice=${currentMaxPrice}`;
+      let apiUrl = `${SEARCH_API_URL}?postalCode=${postalCode}&selectedSubcategory=${encodeURIComponent(selectedSubcategory)}&minPrice=${dynamicSliderMin}&maxPrice=${currentMaxPrice}`;
       if (finalSelectedDateRange?.from && isValid(finalSelectedDateRange.from)) {
         apiUrl += `&dateFrom=${format(finalSelectedDateRange.from, 'yyyy-MM-dd')}`;
         if (

@@ -406,10 +406,7 @@ export default function Step5CompanyPage() {
       const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f';
       const region = 'europe-west1';
 
-      const uploadUrl =
-        process.env.NODE_ENV === 'development'
-          ? `http://127.0.0.1:5001/${projectId}/${region}/uploadStripeFile`
-          : `https://${region}-${projectId}.cloudfunctions.net/uploadStripeFile`;
+      const uploadUrl = `https://${region}-${projectId}.cloudfunctions.net/uploadStripeFile`;
 
       if (!uploadUrl || uploadUrl.includes('undefined')) {
         throw new Error(
@@ -1208,13 +1205,14 @@ export default function Step5CompanyPage() {
               (hasAttemptedSubmit && !isFormValid())
             }
             className={`w-full py-3 px-6 rounded-lg font-semibold text-lg text-white transition-colors duration-150 ease-in-out
-              ${!isFormValid() ||
+              ${
+                !isFormValid() ||
                 isLoading ||
                 isConvertingImage ||
                 isProcessingImage ||
                 isRedirecting
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
               }`}
           >
             {isLoading || isConvertingImage || isProcessingImage || isRedirecting ? (
