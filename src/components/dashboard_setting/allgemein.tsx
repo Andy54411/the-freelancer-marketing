@@ -129,8 +129,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Straße</label>
           <input
-            value={step2.address || ''}
-            onChange={e => handleChange('step2.address', e.target.value)}
+            value={step2.street || step2.address || ''}
+            onChange={e => handleChange('step2.street', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
@@ -209,7 +209,18 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           >
             <option value="">Bitte wählen</option>
-            {/* ... deine Optionen */}
+            <option value="Handwerk">Handwerk</option>
+            <option value="Haushalt & Reinigung">Haushalt & Reinigung</option>
+            <option value="Transport & Logistik">Transport & Logistik</option>
+            <option value="Hotel & Gastronomie">Hotel & Gastronomie</option>
+            <option value="IT & Technik">IT & Technik</option>
+            <option value="Marketing & Vertrieb">Marketing & Vertrieb</option>
+            <option value="Finanzen & Recht">Finanzen & Recht</option>
+            <option value="Gesundheit & Wellness">Gesundheit & Wellness</option>
+            <option value="Bildung & Nachhilfe">Bildung & Nachhilfe</option>
+            <option value="Kunst & Kultur">Kunst & Kultur</option>
+            <option value="Veranstaltungen & Events">Veranstaltungen & Events</option>
+            <option value="Tiere & Pflanzen">Tiere & Pflanzen</option>
           </select>
         </div>
         <div className="flex flex-col col-span-2">
