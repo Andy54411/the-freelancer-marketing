@@ -231,12 +231,12 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           lastName: get('step1.lastName', get('lastName', '')),
           phoneNumber: get('step1.phoneNumber', get('phoneNumber', '')),
           email: get('step1.email', get('email', '')),
-          dateOfBirth: get('step1.dateOfBirth', ''),
-          personalStreet: get('step1.personalStreet', ''),
-          personalHouseNumber: get('step1.personalHouseNumber', ''),
-          personalPostalCode: get('step1.personalPostalCode', ''),
-          personalCity: get('step1.personalCity', ''),
-          personalCountry: get('step1.personalCountry', null),
+          dateOfBirth: get('step1.dateOfBirth', get('dateOfBirth', '')),
+          personalStreet: get('step1.personalStreet', get('personalStreet', '')),
+          personalHouseNumber: get('step1.personalHouseNumber', get('personalHouseNumber', '')),
+          personalPostalCode: get('step1.personalPostalCode', get('personalPostalCode', '')),
+          personalCity: get('step1.personalCity', get('personalCity', '')),
+          personalCountry: get('step1.personalCountry', get('personalCountry', 'DE')),
           isManagingDirectorOwner: get(
             'step1.isManagingDirectorOwner',
             get('isManagingDirectorOwner', true)
@@ -247,7 +247,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           companySuffix: get('step2.companySuffix', get('companySuffix', '')),
           companyPhoneNumber: get(
             'step2.companyPhoneNumber',
-            get('companyPhoneNumber', get('companyPhoneNumberForBackend', ''))
+            get('companyPhoneNumber', get('companyPhoneNumberForBackend', get('phoneNumber', '')))
           ),
           legalForm: get('step2.legalForm', get('legalForm', null)),
           address: get('step2.address', get('companyAddressLine1ForBackend', get('address', ''))),
@@ -264,7 +264,15 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           languages: get('step2.languages', get('languages', '')),
           description: get('step2.description', get('publicDescription', '')),
           employees: get('step2.employees', get('employees', '')),
-          industry: get('step2.industry', get('selectedCategory', '')),
+          industry: get(
+            'step2.industry',
+            get(
+              'selectedCategory',
+              get('selectedSubcategory', null) === 'Mietkoch'
+                ? 'Hotel & Gastronomie'
+                : get('industry', '')
+            )
+          ),
           industryMcc: get('step2.industryMcc', get('industryMcc', '')),
         },
         step3: {
@@ -554,6 +562,14 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       'step4.accountHolder': updatedForm.step4.accountHolder,
       'step4.iban': updatedForm.step4.iban,
       'step4.bankCountry': updatedForm.step4.bankCountry,
+      firstName: updatedForm.step1.firstName,
+      lastName: updatedForm.step1.lastName,
+      phoneNumber: updatedForm.step1.phoneNumber,
+      personalStreet: updatedForm.step1.personalStreet,
+      personalHouseNumber: updatedForm.step1.personalHouseNumber,
+      personalPostalCode: updatedForm.step1.personalPostalCode,
+      personalCity: updatedForm.step1.personalCity,
+      personalCountry: updatedForm.step1.personalCountry,
       companyName: updatedForm.step2.companyName,
       companyPhoneNumber: updatedForm.step2.companyPhoneNumber,
       companyAddressLine1ForBackend: updatedForm.step2.address,
