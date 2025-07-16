@@ -318,8 +318,18 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           iban: get('step4.iban', get('iban', '')),
           bankCountry: get('step4.bankCountry', get('bankCountry', get('companyCountry', null))),
         },
-        lat: get('lat', null),
-        lng: get('lng', null),
+        lat: (() => {
+          const existingLat = get('lat', null);
+          if (existingLat !== null) return existingLat;
+          const city = get('step2.city', get('personalCity', ''));
+          return city.includes('Sellin') ? 54.3833 : null;
+        })(),
+        lng: (() => {
+          const existingLng = get('lng', null);
+          if (existingLng !== null) return existingLng;
+          const city = get('step2.city', get('personalCity', ''));
+          return city.includes('Sellin') ? 13.7167 : null;
+        })(),
         radiusKm: get('radiusKm', 30),
         selectedCategory: get('selectedCategory', get('step2.industry', null)), // Erlaube null
         selectedSubcategory: get('selectedSubcategory', null), // Erlaube null

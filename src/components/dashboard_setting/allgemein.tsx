@@ -95,6 +95,12 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
     addressFallback: step2.address || step2.street || step1.personalStreet || '',
     postalCodeFallback: step2.postalCode || step1.personalPostalCode || '',
     companySuffixFallback: step2.companySuffix || '',
+    coordinates: {
+      lat: lat,
+      lng: lng,
+      radiusKm: radiusKm,
+      city: step2.city || step1.personalCity || '',
+    },
   });
 
   return (
