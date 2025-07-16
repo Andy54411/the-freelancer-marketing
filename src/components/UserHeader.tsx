@@ -23,6 +23,7 @@ import {
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
 import { Logo } from '@/components/logo'; // Logo component
 import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
+import CachedTranslateWidget from '@/components/CachedTranslateWidget'; // Übersetzung in Navigation
 import {
   Search as FiSearch,
   Bell as FiBell,
@@ -541,6 +542,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                   </div>
                 )}
               </div>
+              {/* Übersetzung Widget */}
+              <CachedTranslateWidget />
               <button
                 onClick={handleHelpClick}
                 className="text-gray-600 hover:text-[#14ad9f]"
