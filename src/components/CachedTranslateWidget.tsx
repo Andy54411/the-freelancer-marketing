@@ -23,8 +23,21 @@ const availableLanguages = [
   { code: 'zh', name: '中文', flag: '🇨🇳' },
 ];
 
-// Lade lokale Übersetzungen aus public/translations
-async function loadLocalTranslations(sourceLanguage: string, targetLanguage: string): Promise<Record<string, string>> {
+// Lade Übersetzungen aus kombinierter Quelle (lokale JSON + Firestore)
+async function loadLocalTranslations(
+  sourceLanguage: string,
+  targetLanguage: string
+): Promise<Record<string, string>> {
+  try {
+    const response = await fetch(`/api/translations/${sourceLanguage}-${targetLanguage}`);
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der kombinierten Übersetzungen:', error);
+  }
+
+  // Fallback zur statischen JSON-Datei
   try {
     const response = await fetch(`/translations/${sourceLanguage}-${targetLanguage}.json`);
     if (response.ok) {
@@ -33,6 +46,7 @@ async function loadLocalTranslations(sourceLanguage: string, targetLanguage: str
   } catch (error) {
     console.error('Fehler beim Laden der lokalen Übersetzungen:', error);
   }
+
   return {};
 }
 
@@ -66,12 +80,12 @@ export default function CachedTranslateWidget() {
   useEffect(() => {
     if (currentLanguage === 'de') return;
 
-    const observer = new MutationObserver((mutations) => {
+    const observer = new MutationObserver(mutations => {
       let shouldTranslate = false;
-      
-      mutations.forEach((mutation) => {
+
+      mutations.forEach(mutation => {
         if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach((node) => {
+          mutation.addedNodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               shouldTranslate = true;
             }
@@ -88,7 +102,7 @@ export default function CachedTranslateWidget() {
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     return () => observer.disconnect();
@@ -102,62 +116,63 @@ export default function CachedTranslateWidget() {
     }
 
     setIsTranslating(true);
-    
+
     try {
       // Sammle alle Textknoten
-      const textNodesToTranslate: { node: Text, originalText: string }[] = [];
-      
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-        {
-          acceptNode: (node: Text) => {
-            const parent = node.parentElement;
-            
-            if (!parent || 
-                parent.closest('script') ||
-                parent.closest('style') ||
-                parent.closest('noscript') ||
-                parent.closest('[data-no-translate]') ||
-                parent.tagName === 'SCRIPT' ||
-                parent.tagName === 'STYLE' ||
-                parent.tagName === 'NOSCRIPT') {
-              return NodeFilter.FILTER_REJECT;
-            }
+      const textNodesToTranslate: { node: Text; originalText: string }[] = [];
 
-            const text = node.textContent?.trim();
-            
-            if (text && text.length > 1 && 
-                text !== 'TASKILO' && 
-                text !== 'Toggle language' &&
-                text !== 'Toggle theme' &&
-                text !== 'Icon' &&
-                text !== '©' &&
-                text !== '✓' &&
-                text !== '‚' &&
-                text !== '+' &&
-                text !== '-' &&
-                text !== '×' &&
-                text !== '/' &&
-                text !== '\\' &&
-                text !== '|' &&
-                text !== '€' &&
-                text !== '$' &&
-                text !== '%' &&
-                !/^\d+$/.test(text) &&
-                !/^[\d\s,.:;!?]+$/.test(text)) {
-              return NodeFilter.FILTER_ACCEPT;
-            }
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node: Text) => {
+          const parent = node.parentElement;
 
+          if (
+            !parent ||
+            parent.closest('script') ||
+            parent.closest('style') ||
+            parent.closest('noscript') ||
+            parent.closest('[data-no-translate]') ||
+            parent.tagName === 'SCRIPT' ||
+            parent.tagName === 'STYLE' ||
+            parent.tagName === 'NOSCRIPT'
+          ) {
             return NodeFilter.FILTER_REJECT;
           }
-        }
-      );
+
+          const text = node.textContent?.trim();
+
+          if (
+            text &&
+            text.length > 1 &&
+            text !== 'TASKILO' &&
+            text !== 'Toggle language' &&
+            text !== 'Toggle theme' &&
+            text !== 'Icon' &&
+            text !== '©' &&
+            text !== '✓' &&
+            text !== '‚' &&
+            text !== '+' &&
+            text !== '-' &&
+            text !== '×' &&
+            text !== '/' &&
+            text !== '\\' &&
+            text !== '|' &&
+            text !== '€' &&
+            text !== '$' &&
+            text !== '%' &&
+            !/^\d+$/.test(text) &&
+            !/^[\d\s,.:;!?]+$/.test(text)
+          ) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+
+          return NodeFilter.FILTER_REJECT;
+        },
+      });
 
       let node: Text | null;
       const seenTexts = new Set<string>();
-      
-      while (node = walker.nextNode() as Text) {
+
+      while ((node = walker.nextNode() as Text)) {
         const text = node.textContent?.trim();
         if (text && text.length > 0 && !seenTexts.has(text)) {
           seenTexts.add(text);
@@ -169,11 +184,11 @@ export default function CachedTranslateWidget() {
 
       // 1. Erst lokale Übersetzungen anwenden
       let localHits = 0;
-      const textsForAPI: { node: Text, originalText: string }[] = [];
+      const textsForAPI: { node: Text; originalText: string }[] = [];
 
       textNodesToTranslate.forEach(({ node, originalText }) => {
         let translated = false;
-        
+
         // Exakte Übereinstimmung prüfen
         if (localTranslations[originalText]) {
           node.textContent = localTranslations[originalText];
@@ -182,7 +197,7 @@ export default function CachedTranslateWidget() {
         } else {
           // Prüfe auf Teilübereinstimmungen und wende aggressive Ersetzung an
           let text = originalText;
-          
+
           // Aggressive Ersetzung für häufige Begriffe
           const aggressiveReplacements = [
             { from: /\bDienstleister\b/g, to: 'Service providers' },
@@ -196,22 +211,22 @@ export default function CachedTranslateWidget() {
             { from: /\bDienstleistungen\b/g, to: 'Services' },
             { from: /(\d+[\+\s]*)(Dienstleister)/g, to: '$1Service providers' },
             { from: /(\d+[\+\s]*)(Anbieter)/g, to: '$1Providers' },
-            { from: /(\d+[\+\s]*)(Handwerker)/g, to: '$1Craftsmen' }
+            { from: /(\d+[\+\s]*)(Handwerker)/g, to: '$1Craftsmen' },
           ];
-          
+
           aggressiveReplacements.forEach(({ from, to }) => {
             if (from.test(text)) {
               text = text.replace(from, to);
               translated = true;
             }
           });
-          
+
           if (translated) {
             node.textContent = text;
             localHits++;
           }
         }
-        
+
         if (!translated) {
           textsForAPI.push({ node, originalText });
         }
@@ -231,9 +246,12 @@ export default function CachedTranslateWidget() {
       const batchSize = 10;
       for (let i = 0; i < textsForAPI.length; i += batchSize) {
         const batch = textsForAPI.slice(i, i + batchSize);
-        
-        console.log(`Übersetze Batch ${Math.floor(i/batchSize) + 1}:`, batch.map(item => item.originalText));
-        
+
+        console.log(
+          `Übersetze Batch ${Math.floor(i / batchSize) + 1}:`,
+          batch.map(item => item.originalText)
+        );
+
         const response = await fetch('/api/translate-with-cache', {
           method: 'POST',
           headers: {
@@ -242,15 +260,15 @@ export default function CachedTranslateWidget() {
           body: JSON.stringify({
             texts: batch.map(item => item.originalText),
             targetLanguage: targetLanguage,
-            sourceLanguage: 'de'
+            sourceLanguage: 'de',
           }),
         });
 
         if (response.ok) {
           const { translations, localHits: apiLocalHits, apiCalls } = await response.json();
-          
+
           console.log(`API Response - Lokale Treffer: ${apiLocalHits}, API Aufrufe: ${apiCalls}`);
-          
+
           // Wende Übersetzungen an
           translations.forEach((translation: string, index: number) => {
             const item = batch[index];
@@ -266,7 +284,10 @@ export default function CachedTranslateWidget() {
           });
           setLocalTranslations(newLocalTranslations);
         } else {
-          console.error('Übersetzung fehlgeschlagen für Batch:', batch.map(item => item.originalText));
+          console.error(
+            'Übersetzung fehlgeschlagen für Batch:',
+            batch.map(item => item.originalText)
+          );
         }
       }
 
@@ -283,28 +304,24 @@ export default function CachedTranslateWidget() {
         { from: /\bDienstleistungen\b/g, to: 'Services' },
         { from: /(\d+[\+\s]*)(Dienstleister)/g, to: '$1Service providers' },
         { from: /(\d+[\+\s]*)(Anbieter)/g, to: '$1Providers' },
-        { from: /(\d+[\+\s]*)(Handwerker)/g, to: '$1Craftsmen' }
+        { from: /(\d+[\+\s]*)(Handwerker)/g, to: '$1Craftsmen' },
       ];
 
       // Führe finale Ersetzung durch
       let finalReplacements = 0;
       document.querySelectorAll('*').forEach(element => {
         if (element.nodeType === Node.ELEMENT_NODE) {
-          const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null
-          );
-          
+          const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+
           let textNode;
-          while (textNode = walker.nextNode()) {
+          while ((textNode = walker.nextNode())) {
             let text = textNode.textContent || '';
-            let originalText = text;
-            
+            const originalText = text;
+
             finalAggressiveReplacements.forEach(({ from, to }) => {
               text = text.replace(from, to);
             });
-            
+
             if (text !== originalText) {
               textNode.textContent = text;
               finalReplacements++;
@@ -325,11 +342,11 @@ export default function CachedTranslateWidget() {
 
   const handleLanguageChange = (langCode: string) => {
     setCurrentLanguage(langCode);
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('selectedLanguage', langCode);
     }
-    
+
     translatePage(langCode);
   };
 
@@ -348,8 +365,8 @@ export default function CachedTranslateWidget() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {availableLanguages.map(lang => (
-          <DropdownMenuItem 
-            key={lang.code} 
+          <DropdownMenuItem
+            key={lang.code}
             onClick={() => handleLanguageChange(lang.code)}
             disabled={isTranslating}
           >

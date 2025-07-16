@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleAuth } from 'google-auth-library';
 import fs from 'fs';
 import path from 'path';
+import { db } from '@/firebase/server';
 
 // Lade lokale Übersetzungen
 function loadLocalTranslations(
@@ -51,6 +52,61 @@ function saveLocalTranslations(
   }
 }
 
+// Lade Übersetzungen aus Firestore
+async function loadFirestoreTranslations(
+  sourceLanguage: string,
+  targetLanguage: string
+): Promise<Record<string, string>> {
+  try {
+    const translationKey = `${sourceLanguage}-${targetLanguage}`;
+    const docRef = db.collection('translations').doc(translationKey);
+    const doc = await docRef.get();
+
+    if (doc.exists) {
+      const data = doc.data();
+      return data?.translations || {};
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Firestore-Übersetzungen:', error);
+  }
+  return {};
+}
+
+// Speichere neue Übersetzungen in Firestore
+async function saveFirestoreTranslations(
+  sourceLanguage: string,
+  targetLanguage: string,
+  newTranslations: Record<string, string>
+): Promise<void> {
+  try {
+    const translationKey = `${sourceLanguage}-${targetLanguage}`;
+    const docRef = db.collection('translations').doc(translationKey);
+
+    // Lade existierende Übersetzungen
+    const existingTranslations = await loadFirestoreTranslations(sourceLanguage, targetLanguage);
+
+    // Merge neue mit existierenden Übersetzungen
+    const mergedTranslations = { ...existingTranslations, ...newTranslations };
+
+    // Speichere in Firestore
+    await docRef.set(
+      {
+        translations: mergedTranslations,
+        lastUpdated: new Date().toISOString(),
+        sourceLanguage,
+        targetLanguage,
+      },
+      { merge: true }
+    );
+
+    console.log(
+      `Firestore-Übersetzungen gespeichert: ${Object.keys(newTranslations).length} neue Einträge`
+    );
+  } catch (error) {
+    console.error('Fehler beim Speichern der Firestore-Übersetzungen:', error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { texts, targetLanguage, sourceLanguage = 'de' } = await request.json();
@@ -72,28 +128,32 @@ export async function POST(request: NextRequest) {
 
     console.log('Übersetzung gestartet:', { textCount: textArray.length, targetLang });
 
-    // 1. Lade lokale Übersetzungen
+    // 1. Lade lokale Übersetzungen (JSON-Datei)
     const localTranslations = loadLocalTranslations(sourceLanguage, targetLang);
 
-    // 2. Trenne lokale und zu übersetzende Texte
+    // 2. Lade Firestore-Übersetzungen
+    const firestoreTranslations = await loadFirestoreTranslations(sourceLanguage, targetLang);
+
+    // 3. Kombiniere lokale und Firestore-Übersetzungen
+    const allTranslations = { ...localTranslations, ...firestoreTranslations };
+
+    // 4. Trenne bereits übersetzte und zu übersetzende Texte
     const localResults: string[] = [];
     const textsToTranslate: string[] = [];
     const indexMapping: number[] = [];
 
     textArray.forEach((text, index) => {
-      if (localTranslations[text]) {
-        localResults[index] = localTranslations[text];
-        console.log(`Lokale Übersetzung gefunden: "${text}" -> "${localTranslations[text]}"`);
+      if (allTranslations[text]) {
+        localResults[index] = allTranslations[text];
+        console.log(`Cached translation found: "${text}" -> "${allTranslations[text]}"`);
       } else {
         textsToTranslate.push(text);
         indexMapping.push(index);
       }
     });
 
-    console.log(
-      `Lokale Treffer: ${textArray.length - textsToTranslate.length}/${textArray.length}`
-    );
-    console.log(`Zu übersetzen über API: ${textsToTranslate.length}`);
+    console.log(`Cache hits: ${textArray.length - textsToTranslate.length}/${textArray.length}`);
+    console.log(`To translate via API: ${textsToTranslate.length}`);
 
     // 3. Wenn alle Texte lokal verfügbar sind, gib sie zurück
     if (textsToTranslate.length === 0) {
@@ -174,6 +234,7 @@ export async function POST(request: NextRequest) {
       newTranslations[text] = apiTranslations[index];
     });
     saveLocalTranslations(sourceLanguage, targetLang, newTranslations);
+    await saveFirestoreTranslations(sourceLanguage, targetLang, newTranslations);
 
     console.log('Übersetzung erfolgreich abgeschlossen');
 
