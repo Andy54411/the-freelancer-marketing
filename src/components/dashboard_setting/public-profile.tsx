@@ -16,10 +16,12 @@ import {
   FiShield,
   FiCheck,
   FiX,
+  FiLoader,
 } from 'react-icons/fi';
 import { UserDataForSettings } from '../SettingsPage';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { Gemini } from '@/components/logos';
 
 interface PublicProfileFormProps {
   formData: UserDataForSettings;
@@ -99,6 +101,7 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
   >('basic');
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
   // Handler für Profile-Daten Updates
   const updateProfileData = (key: keyof PublicProfileData, value: any) => {
@@ -134,6 +137,41 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
 
     setPublicProfileData(prev => ({ ...prev, [key]: sanitizedValue }));
     handleChange(`publicProfile.${key}`, sanitizedValue);
+  };
+
+  // Gemini-Beschreibung generieren
+  const generateDescription = async () => {
+    setIsGeneratingDescription(true);
+    try {
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyName: formData.step2.companyName,
+          industry: formData.step2.industry,
+          selectedSubcategory: formData.selectedSubcategory,
+          city: formData.step2.city,
+          country: formData.step2.country,
+          website: formData.step2.website,
+          currentDescription: publicProfileData.publicDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler bei der Beschreibungsgenerierung');
+      }
+
+      const data = await response.json();
+      updateProfileData('publicDescription', data.description);
+      toast.success('Beschreibung erfolgreich generiert!');
+    } catch (error) {
+      console.error('Fehler bei der Beschreibungsgenerierung:', error);
+      toast.error('Fehler bei der Generierung der Beschreibung');
+    } finally {
+      setIsGeneratingDescription(false);
+    }
   };
 
   // Spezialität hinzufügen
@@ -251,19 +289,50 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
       {activeSection === 'basic' && (
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Öffentliche Firmenbeschreibung
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Öffentliche Firmenbeschreibung
+              </label>
+              <button
+                onClick={generateDescription}
+                disabled={isGeneratingDescription}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {isGeneratingDescription ? (
+                  <FiLoader className="animate-spin" size={16} />
+                ) : (
+                  <Gemini className="w-4 h-4" />
+                )}
+                {isGeneratingDescription ? 'Wird generiert...' : 'Mit Gemini generieren'}
+              </button>
+            </div>
             <textarea
               value={publicProfileData.publicDescription}
               onChange={e => updateProfileData('publicDescription', e.target.value)}
               rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+              disabled={isGeneratingDescription}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="Beschreiben Sie Ihr Unternehmen für potenzielle Kunden. Was macht Sie besonders? Welche Erfahrungen haben Sie?"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Diese Beschreibung wird auf Ihrem öffentlichen Profil angezeigt
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-gray-500">
+                Diese Beschreibung wird auf Ihrem öffentlichen Profil angezeigt
+              </p>
+              <span className="text-xs text-gray-400">
+                {publicProfileData.publicDescription.length} Zeichen
+              </span>
+            </div>
+            {isGeneratingDescription && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <Gemini className="w-4 h-4" />
+                  <span className="text-sm font-medium">Gemini KI arbeitet...</span>
+                </div>
+                <p className="text-blue-600 text-xs mt-1">
+                  Die KI erstellt eine professionelle Beschreibung basierend auf Ihren Firmendaten.
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
