@@ -520,17 +520,37 @@ export default function BestaetigungsPage() {
 
   // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
   const priceFromUrl = useMemo(() => {
+    console.log(PAGE_LOG, 'BestaetigungsPage: useMemo priceFromUrl wird berechnet');
+
+    // DEBUG: Zeige alle verfügbaren searchParams
+    if (searchParams) {
+      console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren searchParams in useMemo:');
+      for (const [key, value] of searchParams.entries()) {
+        console.log(PAGE_LOG, `  ${key}: "${value}"`);
+      }
+    }
+
     const totalCostString = searchParams?.get('additionalData[totalcost]');
     const priceString = searchParams?.get('price');
+
+    console.log(PAGE_LOG, `BestaetigungsPage: Preis-Parameter in useMemo:`, {
+      totalCostString,
+      priceString,
+    });
 
     if (totalCostString) {
       // totalcost ist bereits in Cents, wenn es vom Frontend kommt
       const totalCents = parseInt(totalCostString, 10);
-      return isNaN(totalCents) ? null : totalCents;
+      const result = isNaN(totalCents) ? null : totalCents;
+      console.log(PAGE_LOG, `BestaetigungsPage: useMemo Preis aus totalCostString: ${result}`);
+      return result;
     } else if (priceString) {
       // price ist in Euro, konvertiere zu Cents
-      return Math.round(parseFloat(priceString) * 100);
+      const result = Math.round(parseFloat(priceString) * 100);
+      console.log(PAGE_LOG, `BestaetigungsPage: useMemo Preis aus priceString: ${result}`);
+      return result;
     }
+    console.log(PAGE_LOG, 'BestaetigungsPage: useMemo kein Preis gefunden, return null');
     return null;
   }, [searchParams]);
   const tempDraftIdFromUrl = useMemo(() => searchParams?.get('tempDraftId') ?? '', [searchParams]);
@@ -698,17 +718,50 @@ export default function BestaetigungsPage() {
           '';
         const descriptionFromUrlDirect = searchParams?.get('description') ?? '';
 
+        // DEBUG: Zeige alle verwendeten Parameter
+        console.log(PAGE_LOG, 'BestaetigungsPage: Extrahierte Parameter aus URL:');
+        console.log(PAGE_LOG, `  auftragsDauerUrlDirect: "${auftragsDauerUrlDirect}"`);
+        console.log(PAGE_LOG, `  descriptionFromUrlDirect: "${descriptionFromUrlDirect}"`);
+        console.log(PAGE_LOG, `  dateFromUrlDirect: "${dateFromUrlDirect}"`);
+        console.log(PAGE_LOG, `  timeUrlDirect: "${timeUrlDirect}"`);
+
+        // DEBUG: Zeige alle verfügbaren searchParams
+        console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren searchParams:');
+        if (searchParams) {
+          for (const [key, value] of searchParams.entries()) {
+            console.log(PAGE_LOG, `  ${key}: "${value}"`);
+          }
+        }
+
         // KORRIGIERT: Preis aus URL-Parameter direkt extrahieren
         const priceFromUrlDirect = (() => {
+          // DEBUG: Zeige alle verfügbaren searchParams
+          console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren searchParams:');
+          if (searchParams) {
+            for (const [key, value] of searchParams.entries()) {
+              console.log(PAGE_LOG, `  ${key}: "${value}"`);
+            }
+          }
+
           const totalCostString = searchParams?.get('additionalData[totalcost]');
           const priceString = searchParams?.get('price');
 
+          console.log(PAGE_LOG, `BestaetigungsPage: Preis-Parameter gefunden:`, {
+            totalCostString,
+            priceString,
+          });
+
           if (totalCostString) {
             const totalCents = parseInt(totalCostString, 10);
-            return isNaN(totalCents) ? null : totalCents;
+            const result = isNaN(totalCents) ? null : totalCents;
+            console.log(PAGE_LOG, `BestaetigungsPage: Preis aus totalCostString: ${result}`);
+            return result;
           } else if (priceString) {
-            return Math.round(parseFloat(priceString) * 100);
+            const result = Math.round(parseFloat(priceString) * 100);
+            console.log(PAGE_LOG, `BestaetigungsPage: Preis aus priceString: ${result}`);
+            return result;
           }
+          console.log(PAGE_LOG, 'BestaetigungsPage: Kein Preis-Parameter gefunden, return null');
           return null;
         })();
 
