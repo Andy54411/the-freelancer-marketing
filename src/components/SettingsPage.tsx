@@ -581,17 +581,17 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       radiusKm: updatedForm.radiusKm,
       selectedCategory: updatedForm.selectedCategory,
       selectedSubcategory: updatedForm.selectedSubcategory,
-      // Öffentliche Profil-Daten hinzufügen
-      publicDescription: (updatedForm as any).publicProfile?.publicDescription,
-      specialties: (updatedForm as any).publicProfile?.specialties,
-      servicePackages: (updatedForm as any).publicProfile?.servicePackages,
-      workingHours: (updatedForm as any).publicProfile?.workingHours,
-      instantBooking: (updatedForm as any).publicProfile?.instantBooking,
-      responseTimeGuarantee: (updatedForm as any).publicProfile?.responseTimeGuarantee,
-      faqs: (updatedForm as any).publicProfile?.faqs,
-      profileBannerImage: (updatedForm as any).publicProfile?.profileBannerImage,
-      businessLicense: (updatedForm as any).publicProfile?.businessLicense,
-      certifications: (updatedForm as any).publicProfile?.certifications,
+      // Öffentliche Profil-Daten hinzufügen (mit Fallback-Werten)
+      publicDescription: (updatedForm as any).publicProfile?.publicDescription || '',
+      specialties: (updatedForm as any).publicProfile?.specialties || [],
+      servicePackages: (updatedForm as any).publicProfile?.servicePackages || [],
+      workingHours: (updatedForm as any).publicProfile?.workingHours || [],
+      instantBooking: (updatedForm as any).publicProfile?.instantBooking ?? false,
+      responseTimeGuarantee: (updatedForm as any).publicProfile?.responseTimeGuarantee || 24,
+      faqs: (updatedForm as any).publicProfile?.faqs || [],
+      profileBannerImage: (updatedForm as any).publicProfile?.profileBannerImage || '',
+      businessLicense: (updatedForm as any).publicProfile?.businessLicense || '',
+      certifications: (updatedForm as any).publicProfile?.certifications || [],
       updatedAt: serverTimestamp(),
     };
 

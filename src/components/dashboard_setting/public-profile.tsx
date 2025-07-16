@@ -57,8 +57,8 @@ interface PublicProfileData {
   instantBooking: boolean;
   responseTimeGuarantee: number; // in Stunden
   faqs: FAQ[];
-  profileBannerImage: string | null;
-  businessLicense: string | null;
+  profileBannerImage: string;
+  businessLicense: string;
   certifications: Array<{
     id: string;
     name: string;
@@ -89,8 +89,8 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
     instantBooking: (formData as any).instantBooking ?? false,
     responseTimeGuarantee: (formData as any).responseTimeGuarantee || 24,
     faqs: (formData as any).faqs || [],
-    profileBannerImage: (formData as any).profileBannerImage || null,
-    businessLicense: (formData as any).businessLicense || null,
+    profileBannerImage: (formData as any).profileBannerImage || '',
+    businessLicense: (formData as any).businessLicense || '',
     certifications: (formData as any).certifications || [],
   });
 
@@ -102,8 +102,38 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
 
   // Handler für Profile-Daten Updates
   const updateProfileData = (key: keyof PublicProfileData, value: any) => {
-    setPublicProfileData(prev => ({ ...prev, [key]: value }));
-    handleChange(`publicProfile.${key}`, value);
+    // Stelle sicher, dass undefined-Werte durch entsprechende Standardwerte ersetzt werden
+    let sanitizedValue = value;
+
+    if (value === undefined || value === null) {
+      switch (key) {
+        case 'servicePackages':
+        case 'specialties':
+        case 'faqs':
+        case 'certifications':
+          sanitizedValue = [];
+          break;
+        case 'workingHours':
+          sanitizedValue = defaultWorkingHours;
+          break;
+        case 'publicDescription':
+        case 'profileBannerImage':
+        case 'businessLicense':
+          sanitizedValue = '';
+          break;
+        case 'instantBooking':
+          sanitizedValue = false;
+          break;
+        case 'responseTimeGuarantee':
+          sanitizedValue = 24;
+          break;
+        default:
+          sanitizedValue = value;
+      }
+    }
+
+    setPublicProfileData(prev => ({ ...prev, [key]: sanitizedValue }));
+    handleChange(`publicProfile.${key}`, sanitizedValue);
   };
 
   // Spezialität hinzufügen

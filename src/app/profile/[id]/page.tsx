@@ -214,23 +214,25 @@ export default function ProfilePage() {
     );
   }
 
-  // Formatiere die Adresse - prioritäre Verwendung von Dashboard-Daten
-  const fullAddress = [
-    // Primär: Dashboard-Daten
-    profile.city && profile.country ? `${profile.city}, ${profile.country}` : null,
-    // Fallback: Backend-Daten
-    !profile.city && profile.companyAddressLine1ForBackend
-      ? profile.companyAddressLine1ForBackend
-      : null,
-    !profile.city && profile.companyPostalCodeForBackend && profile.companyCityForBackend
-      ? `${profile.companyPostalCodeForBackend} ${profile.companyCityForBackend}`
-      : null,
-    !profile.country && profile.companyCountryForBackend === 'DE'
-      ? 'Deutschland'
-      : profile.companyCountryForBackend,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  // Formatiere die Adresse - zeige nur PLZ, Stadt, Land
+  const fullAddress = (() => {
+    // Primär: Dashboard-Daten verwenden
+    if (profile.city && profile.country) {
+      return `${profile.city}, ${profile.country}`;
+    }
+
+    // Fallback: Backend-Daten verwenden
+    const postalCode = profile.companyPostalCodeForBackend;
+    const city = profile.companyCityForBackend;
+    const country =
+      profile.companyCountryForBackend === 'DE' ? 'Deutschland' : profile.companyCountryForBackend;
+
+    if (postalCode && city && country) {
+      return `${postalCode} ${city}, ${country}`;
+    }
+
+    return null;
+  })();
 
   return (
     <>
