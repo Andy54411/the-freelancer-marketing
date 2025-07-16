@@ -129,8 +129,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Straße</label>
           <input
-            value={step2.street || step2.address || ''}
-            onChange={e => handleChange('step2.street', e.target.value)}
+            value={step2.address || step2.street || ''}
+            onChange={e => handleChange('step2.address', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
         </div>
@@ -163,7 +163,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Telefon</label>
           <input
-            value={step2.companyPhoneNumber || ''}
+            value={step2.companyPhoneNumber || step1.phoneNumber || ''}
             onChange={e => handleChange('step2.companyPhoneNumber', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
