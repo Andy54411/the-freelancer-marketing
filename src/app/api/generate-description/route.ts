@@ -40,17 +40,21 @@ Deine Aufgabe ist es, eine professionelle, kundenorientierte Firmenbeschreibung 
 - Professionell und vertrauenswürdig klingt
 - Die Expertise und Erfahrung des Unternehmens hervorhebt
 - Kundennutzen und Vorteile betont
-- Zur Kontaktaufnahme motiviert
 - Zwischen 150-300 Wörtern lang ist
 - Authentisch und nicht übertrieben wirkt
+- Informativ und sachlich bleibt
 
-Vermeide:
+Vermeide UNBEDINGT:
 - Übertriebene Superlative
 - Klischeehafte Formulierungen
 - Zu technische Details
 - Rechtschreibfehler
+- Direkte Aufforderungen wie "Rufen Sie an", "Schreiben Sie mir", "Kontaktieren Sie mich"
+- Persönliche Ansprachen wie "ich bin gespannt auf Ihre Anfrage"
+- Call-to-Action Formulierungen
+- Direkte Kontaktaufforderungen
 
-Schreibe in professionellem Deutsch und verwende die "Sie"-Form für Kunden.`;
+Schreibe in professionellem Deutsch und verwende die "Sie"-Form für Kunden. Fokussiere dich auf die Leistungen und Kompetenzen des Unternehmens, nicht auf Kontaktaufforderungen.`;
 
     const model = genAI.getGenerativeModel({
       model: MODEL_NAME,
@@ -99,7 +103,7 @@ Standort: ${city}, ${country}`;
       prompt += `\n\nAktuelle Beschreibung (als Referenz): ${currentDescription}`;
     }
 
-    prompt += `\n\nErstelle eine ansprechende, professionelle Firmenbeschreibung, die potenzielle Kunden überzeugt und zur Kontaktaufnahme motiviert.`;
+    prompt += `\n\nErstelle eine ansprechende, professionelle Firmenbeschreibung, die die Kompetenzen und Leistungen des Unternehmens hervorhebt. Fokussiere dich auf Expertise, Erfahrung und Kundennutzen - OHNE direkte Kontaktaufforderungen.`;
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
