@@ -900,12 +900,25 @@ export default function BestaetigungsPage() {
           setTotalAmountPayableInCents(initialJobPrice);
           console.log(
             PAGE_LOG,
-            'BestaetigungsPage: Initialer Basis-Preis (jobPrice) und Gesamtbetrag aus draftData gesetzt.'
+            'BestaetigungsPage: Initialer Basis-Preis (jobPrice) und Gesamtbetrag aus draftData gesetzt.',
+            { initialJobPrice }
           );
         } else if (jobPriceInCents === null && (initialJobPrice == null || initialJobPrice <= 0)) {
           console.warn(
             PAGE_WARN,
-            'BestaetigungsPage: jobCalculatedPriceInCents (Basis-Preis) ist ungültig oder 0 aus draftData bei Initialisierung. Preis kann nicht gesetzt werden.'
+            'BestaetigungsPage: jobCalculatedPriceInCents (Basis-Preis) ist ungültig oder 0 aus draftData bei Initialisierung.',
+            {
+              initialJobPrice,
+              priceFromUrlDirect,
+              allSearchParams: searchParams ? Object.fromEntries(searchParams.entries()) : null,
+              registrationContextPrice: registration.jobCalculatedPriceInCents,
+            }
+          );
+        } else {
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Basis-Preis bereits gesetzt, überspringe Initialisierung.',
+            { jobPriceInCents, initialJobPrice }
           );
         }
 

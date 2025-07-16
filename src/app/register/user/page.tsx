@@ -164,9 +164,11 @@ function UserRegisterFormContent() {
         console.log(PAGE_LOG, `Ziel-URL für AuthContext gespeichert: ${redirectToFromParams}`);
       }
 
+      // KORREKTUR: Verkürze die Wartezeit für bessere UX
       const timer = setTimeout(() => {
+        console.log(PAGE_LOG, `Führe Weiterleitung aus zu: ${finalRedirectUrl}`);
         window.location.assign(finalRedirectUrl);
-      }, 2000); // 2 Sekunden Verzögerung, um die Erfolgsmeldung anzuzeigen.
+      }, 1500); // 1.5 Sekunden Verzögerung, um die Erfolgsmeldung anzuzeigen.
 
       return () => clearTimeout(timer); // Cleanup-Funktion für den Timer
     }
@@ -278,9 +280,8 @@ function UserRegisterFormContent() {
       try {
         const urlObj = new URL(redirectToUrl, window.location.origin);
         const extractedJobId = urlObj.searchParams.get('jobId');
-        // Annahme: Wenn ein Job über redirectToFromParams verknüpft wurde,
-        // dass die Adressparameter bereits in dieser URL enthalten sind
-        // und nicht erneut hinzugefügt werden müssen.
+        // KORREKTUR: Behalte alle bestehenden Parameter bei der Weiterleitung
+        // Dies ist wichtig für die BestätigungsPage, die alle Parameter für die Preisberechnung benötigt
 
         if (extractedJobId) {
           await linkJobToUser(extractedJobId, loggedInUser.uid, 'login');
@@ -312,7 +313,7 @@ function UserRegisterFormContent() {
         <div className="fixed top-4 right-4 z-50">
           <CachedTranslateWidget />
         </div>
-        
+
         <Card className="w-full max-w-md shadow-lg rounded-lg bg-white">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold text-[#14ad9f]">
