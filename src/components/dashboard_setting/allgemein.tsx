@@ -87,6 +87,16 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
   onOpenManagingDirectorPersonalModal,
 }) => {
   const { step1, step2, lat, lng, radiusKm } = formData;
+
+  // Debug-Ausgaben für Formularwerte
+  console.log('FormData in allgemein.tsx:', {
+    step1: step1,
+    step2: step2,
+    addressFallback: step2.address || step2.street || step1.personalStreet || '',
+    postalCodeFallback: step2.postalCode || step1.personalPostalCode || '',
+    companySuffixFallback: step2.companySuffix || '',
+  });
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 space-y-6">
       {/* ... gesamter Inhalt von GeneralForm bleibt unverändert ... */}
@@ -131,7 +141,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Straße</label>
           <input
-            value={step2.address || step2.street || ''}
+            value={step2.address || step2.street || step1.personalStreet || ''}
             onChange={e => handleChange('step2.address', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="Straße und Hausnummer"
@@ -141,7 +151,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">PLZ</label>
             <input
-              value={step2.postalCode || ''}
+              value={step2.postalCode || step1.personalPostalCode || ''}
               onChange={e => handleChange('step2.postalCode', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
