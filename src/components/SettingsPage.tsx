@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, app as firebaseApp } from '../firebase/clients';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
@@ -17,7 +16,7 @@ import { toast } from 'sonner';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
 import Stripe from 'stripe';
 
-const firebaseFunctions = getFunctions(firebaseApp);
+// Firebase Storage wird noch für Bild-Uploads verwendet
 
 type FormDataStep1 = UserDataForSettings['step1'];
 
@@ -195,38 +194,6 @@ export interface UserDataForSettings {
 interface SettingsPageProps {
   userData: RawFirestoreUserData | null;
   onDataSaved: () => void;
-}
-
-interface UpdateStripeCompanyDetailsClientData {
-  phoneNumber?: string | null;
-  companyWebsite?: string;
-  taxNumber?: string;
-  vatId?: string;
-  companyRegister?: string | null;
-  mcc?: string;
-  iban?: string;
-  accountHolder?: string;
-  bankCountry?: string | null;
-  representativeFirstName?: string;
-  representativeLastName?: string;
-  representativeEmail?: string;
-  representativePhone?: string;
-  representativeDateOfBirth?: string;
-  representativeAddressStreet?: string;
-  representativeAddressHouseNumber?: string;
-  representativeAddressPostalCode?: string;
-  representativeAddressCity?: string;
-  representativeAddressCountry?: string | null;
-  isManagingDirectorOwner?: boolean | null; // Erlaube `null`
-  identityFrontFileId?: string | null;
-  identityBackFileId?: string | null;
-  businessLicenseStripeFileId?: string | null;
-}
-
-interface UpdateStripeCompanyDetailsCallableResult {
-  success: boolean;
-  message: string;
-  accountLinkUrl?: string;
 }
 
 const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
@@ -645,77 +612,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         );
       }
 
-      const stripeUpdatePayload: UpdateStripeCompanyDetailsClientData = {
-        phoneNumber: updatedForm.step2.companyPhoneNumber,
-        companyWebsite: updatedForm.step2.website,
-        taxNumber: updatedForm.step3.taxNumber,
-        vatId: updatedForm.step3.vatId,
-        companyRegister: updatedForm.step3.companyRegister,
-        mcc:
-          mapIndustryToMcc(updatedForm.step2.industry) ||
-          updatedForm.step2.industryMcc ||
-          undefined,
-        iban: updatedForm.step4.iban,
-        accountHolder: updatedForm.step4.accountHolder,
-        bankCountry: updatedForm.step4.bankCountry || updatedForm.step2.country,
-        representativeFirstName: updatedForm.step1.firstName,
-        representativeLastName: updatedForm.step1.lastName,
-        representativeEmail: updatedForm.step1.email,
-        representativePhone: updatedForm.step1.phoneNumber,
-        representativeDateOfBirth: updatedForm.step1.dateOfBirth,
-        representativeAddressStreet: updatedForm.step1.personalStreet,
-        representativeAddressHouseNumber: updatedForm.step1.personalHouseNumber,
-        representativeAddressPostalCode: updatedForm.step1.personalPostalCode,
-        representativeAddressCity: updatedForm.step1.personalCity,
-        representativeAddressCountry: updatedForm.step1.personalCountry,
-        isManagingDirectorOwner: updatedForm.step1.isManagingDirectorOwner,
-        identityFrontFileId:
-          uploadedStripeFileIds.identityFrontStripeFileId !== undefined
-            ? uploadedStripeFileIds.identityFrontStripeFileId
-            : form.identityFrontFile === null
-              ? null
-              : form.step3.identityFrontUrl,
-        identityBackFileId:
-          uploadedStripeFileIds.identityBackStripeFileId !== undefined
-            ? uploadedStripeFileIds.identityBackStripeFileId
-            : form.identityBackFile === null
-              ? null
-              : form.step3.identityBackUrl,
-        businessLicenseStripeFileId:
-          uploadedStripeFileIds.businessLicenseStripeFileId ||
-          (form.businessLicenseFile === null ? null : form.step3.businessLicenseURL),
-      };
-
-      const cleanedStripePayload = Object.fromEntries(
-        Object.entries(stripeUpdatePayload).filter(
-          ([, value]) =>
-            value !== undefined &&
-            value !== null &&
-            (typeof value !== 'string' || value.trim() !== '')
-        )
-      ) as UpdateStripeCompanyDetailsClientData;
-
-      if (Object.keys(cleanedStripePayload).length > 0) {
-        const updateStripeFunc = httpsCallable<
-          UpdateStripeCompanyDetailsClientData,
-          UpdateStripeCompanyDetailsCallableResult
-        >(firebaseFunctions, 'updateStripeCompanyDetails');
-        const result = await updateStripeFunc(cleanedStripePayload);
-
-        if (result.data.success) {
-          toast.success(result.data.message || 'Stripe-Details erfolgreich aktualisiert.');
-          if (result.data.accountLinkUrl) {
-            toast.info('Zusätzliche Angaben bei Stripe erforderlich. Sie werden weitergeleitet...');
-            setTimeout(() => {
-              window.location.href = result.data.accountLinkUrl!;
-            }, 2000);
-          }
-        } else {
-          toast.error(result.data.message || 'Fehler beim Aktualisieren der Stripe-Details.');
-        }
-      } else {
-        toast.info('Keine Änderungen für Stripe vorhanden.');
-      }
+      // Stripe-Update entfernt - Daten werden nur in Firestore gespeichert
+      toast.success('Profildaten erfolgreich gespeichert!');
       onDataSaved();
     } catch (error: unknown) {
       console.error(PAGE_ERROR, '[SettingsPage] Fehler beim Speichern:', error);
