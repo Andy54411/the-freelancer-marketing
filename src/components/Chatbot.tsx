@@ -19,9 +19,7 @@ interface Message {
 
 const initialMessage: Message = {
   role: 'model',
-  parts: [
-    { text: 'Hallo! Ich bin Elisabeth der Bot von Taskilo. Wie kann ich Ihnen heute helfen?' },
-  ],
+  parts: [{ text: 'Hallo! Ich bin Ihr Support Bot von Taskilo. Wie kann ich Ihnen heute helfen?' }],
 };
 
 const Chatbot = () => {
