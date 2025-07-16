@@ -26,6 +26,22 @@ import { doc, getDoc } from 'firebase/firestore';
 
 const auth = getAuth(app);
 
+// Utility-Funktion um Stunden aus Duration-String zu extrahieren
+function parseDurationStringToHours(durationStr?: string): number | null {
+  if (!durationStr || typeof durationStr !== 'string') {
+    return null;
+  }
+  const match = durationStr.match(/(\d+(\.\d+)?)/);
+  if (match && match[1]) {
+    const hours = parseFloat(match[1]);
+    return isNaN(hours) ? null : hours;
+  }
+  const parsedNum = parseFloat(durationStr);
+  if (!isNaN(parsedNum)) return parsedNum;
+  console.warn(PAGE_WARN, `parseDuration: Konnte keine Zahl extrahieren aus "${durationStr}"`);
+  return null;
+}
+
 // --- KORRIGIERTE INTERFACE DEFINITIONEN ---
 interface TemporaryJobDraftData {
   customerType: 'private' | 'business' | null;
@@ -266,8 +282,8 @@ export default function BestaetigungsPage() {
 
     if (auftragsDauerUrl) {
       registration.setJobDurationString?.(auftragsDauerUrl);
-      const totalHours = parseInt(auftragsDauerUrl, 10);
-      if (!isNaN(totalHours) && registration.setJobTotalCalculatedHours) {
+      const totalHours = parseDurationStringToHours(auftragsDauerUrl);
+      if (totalHours !== null && totalHours > 0 && registration.setJobTotalCalculatedHours) {
         registration.setJobTotalCalculatedHours(totalHours);
       }
       console.log(
@@ -1301,8 +1317,8 @@ export default function BestaetigungsPage() {
                 gespeichert.
               </p>
               {billingAddressDetails &&
-                billingAddressDetails.address?.line1 &&
-                billingAddressDetails.address?.postal_code ? (
+              billingAddressDetails.address?.line1 &&
+              billingAddressDetails.address?.postal_code ? (
                 <div className="text-gray-800">
                   <p className="font-medium">
                     {billingAddressDetails.name ||
@@ -1395,56 +1411,56 @@ export default function BestaetigungsPage() {
                 </div>
               </Elements>
             ) : /* Fall 2: Entweder allgemeines Laden ODER clientSecret wird gerade (neu) geladen */
-              isLoadingOverall ||
-                (prerequisitesForClientSecretFetchAreMet &&
-                  !clientSecret &&
-                  !paymentIntentError &&
-                  !pageError) ? (
+            isLoadingOverall ||
+              (prerequisitesForClientSecretFetchAreMet &&
+                !clientSecret &&
+                !paymentIntentError &&
+                !pageError) ? (
+              <div className="flex flex-col items-center justify-center p-6 text-gray-600">
+                <FiLoader className="animate-spin text-3xl text-[#14ad9f] mb-3" />
+                <span>
+                  {isLoadingPageData
+                    ? 'Seitendaten werden geladen...'
+                    : 'Zahlungsformular wird vorbereitet...'}
+                </span>
+              </div>
+            ) : (
+              /* Fall 3: Grundlegende Daten fehlen oder es gibt einen Fehler, der das Laden des clientSecret verhindert */
+              // Dies ist der 'else'-Teil des zweiten Ternary-Operators
+              !paymentMessage && ( // Bedingtes Rendern innerhalb des 'else'-Blocks
                 <div className="flex flex-col items-center justify-center p-6 text-gray-600">
-                  <FiLoader className="animate-spin text-3xl text-[#14ad9f] mb-3" />
                   <span>
-                    {isLoadingPageData
-                      ? 'Seitendaten werden geladen...'
-                      : 'Zahlungsformular wird vorbereitet...'}
+                    {pageError ||
+                      paymentIntentError ||
+                      'Wichtige Informationen für die Zahlung fehlen. Bitte überprüfen Sie die vorherigen Schritte.'}
                   </span>
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-4 text-xs text-left bg-gray-100 p-2 rounded">
+                      <p className="font-semibold">
+                        Debug-Info (Bedingung für Zahlungsformular nicht erfüllt):
+                      </p>
+                      <p>clientSecret: {String(!!clientSecret)}</p>
+                      <p>kundeStripeCustomerId: {String(!!kundeStripeCustomerId)}</p>
+                      <p>tempJobDraftId: {String(!!tempJobDraftId)}</p>
+                      <p>currentUser: {String(!!currentUser)}</p>
+                      <p>anbieterStripeConnectId: {String(!!anbieterStripeConnectId)}</p>
+                      <p>pageError: {String(!!pageError)}</p>
+                      <p>paymentIntentError: {String(!!paymentIntentError)}</p>
+                      <p>jobPriceInCents: {String(!!jobPriceInCents)}</p>
+                      <p>totalAmountPayableInCents: {String(!!totalAmountPayableInCents)}</p>
+                      <p className="font-semibold mt-2">Billing Address Details Debug:</p>
+                      <p>billingAddressDetails: {String(!!billingAddressDetails)}</p>
+                      <p>address.line1: {String(billingAddressDetails?.address?.line1)}</p>
+                      <p>
+                        address.postal_code: {String(billingAddressDetails?.address?.postal_code)}
+                      </p>
+                      <p>address.city: {String(billingAddressDetails?.address?.city)}</p>
+                      <p>address.country: {String(billingAddressDetails?.address?.country)}</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                /* Fall 3: Grundlegende Daten fehlen oder es gibt einen Fehler, der das Laden des clientSecret verhindert */
-                // Dies ist der 'else'-Teil des zweiten Ternary-Operators
-                !paymentMessage && ( // Bedingtes Rendern innerhalb des 'else'-Blocks
-                  <div className="flex flex-col items-center justify-center p-6 text-gray-600">
-                    <span>
-                      {pageError ||
-                        paymentIntentError ||
-                        'Wichtige Informationen für die Zahlung fehlen. Bitte überprüfen Sie die vorherigen Schritte.'}
-                    </span>
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="mt-4 text-xs text-left bg-gray-100 p-2 rounded">
-                        <p className="font-semibold">
-                          Debug-Info (Bedingung für Zahlungsformular nicht erfüllt):
-                        </p>
-                        <p>clientSecret: {String(!!clientSecret)}</p>
-                        <p>kundeStripeCustomerId: {String(!!kundeStripeCustomerId)}</p>
-                        <p>tempJobDraftId: {String(!!tempJobDraftId)}</p>
-                        <p>currentUser: {String(!!currentUser)}</p>
-                        <p>anbieterStripeConnectId: {String(!!anbieterStripeConnectId)}</p>
-                        <p>pageError: {String(!!pageError)}</p>
-                        <p>paymentIntentError: {String(!!paymentIntentError)}</p>
-                        <p>jobPriceInCents: {String(!!jobPriceInCents)}</p>
-                        <p>totalAmountPayableInCents: {String(!!totalAmountPayableInCents)}</p>
-                        <p className="font-semibold mt-2">Billing Address Details Debug:</p>
-                        <p>billingAddressDetails: {String(!!billingAddressDetails)}</p>
-                        <p>address.line1: {String(billingAddressDetails?.address?.line1)}</p>
-                        <p>
-                          address.postal_code: {String(billingAddressDetails?.address?.postal_code)}
-                        </p>
-                        <p>address.city: {String(billingAddressDetails?.address?.city)}</p>
-                        <p>address.country: {String(billingAddressDetails?.address?.country)}</p>
-                      </div>
-                    )}
-                  </div>
-                )
-              )}
+              )
+            )}
           </div>
         </div>
       </div>
