@@ -22,14 +22,7 @@ const nextConfig = {
     optimizePackageImports: ['react-icons'],
   },
 
-  // Turbopack configuration (moved from experimental)
-  turbo: {
-    rules: {
-      '*.svg': ['@svgr/webpack'],
-    },
-  },
-
-  // Server external packages (moved from experimental)
+  // Server external packages
   serverExternalPackages: ['firebase-admin', 'stripe'],
 
   // Headers für bessere Performance
