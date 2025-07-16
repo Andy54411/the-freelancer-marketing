@@ -682,46 +682,88 @@ export default function BestaetigungsPage() {
         }
 
         // --- Datenquelle für DraftData (Priorität: Context > URL-Parameter > Fallbacks) ---
+        // KORREKTUR: Verwende die URL-Parameter direkt, nicht die useMemo-Variablen
+        const anbieterIdFromUrlDirect = searchParams?.get('anbieterId') ?? '';
+        const unterkategorieAusPfadDirect =
+          typeof pathParams?.unterkategorie === 'string'
+            ? decodeURIComponent(pathParams.unterkategorie as string)
+            : '';
+        const postalCodeFromUrlDirect = searchParams?.get('postalCode') ?? '';
+        const dateFromUrlDirect =
+          (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
+        const timeUrlDirect =
+          (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
+        const auftragsDauerUrlDirect =
+          (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ??
+          '';
+        const descriptionFromUrlDirect = searchParams?.get('description') ?? '';
+
+        // KORRIGIERT: Preis aus URL-Parameter direkt extrahieren
+        const priceFromUrlDirect = (() => {
+          const totalCostString = searchParams?.get('additionalData[totalcost]');
+          const priceString = searchParams?.get('price');
+
+          if (totalCostString) {
+            const totalCents = parseInt(totalCostString, 10);
+            return isNaN(totalCents) ? null : totalCents;
+          } else if (priceString) {
+            return Math.round(parseFloat(priceString) * 100);
+          }
+          return null;
+        })();
+
+        console.log(PAGE_LOG, 'BestaetigungsPage: Direkte URL-Parameter für draftData:', {
+          anbieterIdFromUrlDirect,
+          unterkategorieAusPfadDirect,
+          postalCodeFromUrlDirect,
+          dateFromUrlDirect,
+          timeUrlDirect,
+          auftragsDauerUrlDirect,
+          descriptionFromUrlDirect,
+          priceFromUrlDirect,
+        });
+
         const customerTypeToUse = registration.customerType || userProfileData.user_type || null;
         // VERSUCH, selectedCategory abzuleiten, falls nicht im Context
         let selectedCategoryToUse = registration.selectedCategory || null; // Beginne mit dem Wert aus dem Context
-        if (!selectedCategoryToUse && unterkategorieAusPfad) {
+        if (!selectedCategoryToUse && unterkategorieAusPfadDirect) {
           // Wenn im Context keine Kategorie ist, versuche sie über die Unterkategorie aus dem Pfad zu finden
-          const foundCategory = findCategoryBySubcategory(unterkategorieAusPfad);
+          const foundCategory = findCategoryBySubcategory(unterkategorieAusPfadDirect);
           if (foundCategory) {
             selectedCategoryToUse = foundCategory;
             console.log(
               PAGE_LOG,
-              `BestaetigungsPage: Kategorie "${foundCategory}" wurde für Unterkategorie "${unterkategorieAusPfad}" über Mapping gefunden.`
+              `BestaetigungsPage: Kategorie "${foundCategory}" wurde für Unterkategorie "${unterkategorieAusPfadDirect}" über Mapping gefunden.`
             );
           } else {
             console.warn(
               PAGE_WARN,
-              `BestaetigungsPage: Keine Hauptkategorie für Unterkategorie "${unterkategorieAusPfad}" im Mapping gefunden. 'selectedCategoryToUse' bleibt: ${selectedCategoryToUse}`
+              `BestaetigungsPage: Keine Hauptkategorie für Unterkategorie "${unterkategorieAusPfadDirect}" im Mapping gefunden. 'selectedCategoryToUse' bleibt: ${selectedCategoryToUse}`
             );
           }
         }
         const selectedSubcategoryToUse =
-          registration.selectedSubcategory || unterkategorieAusPfad || null;
-        const descriptionToUse = registration.description || descriptionFromUrl || '';
+          registration.selectedSubcategory || unterkategorieAusPfadDirect || null;
+        const descriptionToUse = registration.description || descriptionFromUrlDirect || '';
         // FIX: Sicherstellen, dass Adressfelder niemals undefined sind, sondern null
         const jobStreetToUse = registration.jobStreet || null;
-        const jobPostalCodeToUse = registration.jobPostalCode || postalCodeFromUrl || null;
+        const jobPostalCodeToUse = registration.jobPostalCode || postalCodeFromUrlDirect || null;
         const jobCityToUse = registration.jobCity || null;
         const jobCountryToUse = registration.jobCountry || null;
 
-        const jobDateFromToUse = registration.jobDateFrom || dateFromUrl || null;
+        const jobDateFromToUse = registration.jobDateFrom || dateFromUrlDirect || null;
         const jobDateToToUse = registration.jobDateTo || null;
-        const jobTimePreferenceToUse = registration.jobTimePreference || timeUrl || null;
+        const jobTimePreferenceToUse = registration.jobTimePreference || timeUrlDirect || null;
         // FIX: Prioritize the anbieterId from the URL, as it's the source of truth for this page.
         const selectedAnbieterIdToUse =
-          anbieterIdFromUrl || registration.selectedAnbieterId || null;
-        const jobDurationStringToUse = registration.jobDurationString || auftragsDauerUrl || null;
+          anbieterIdFromUrlDirect || registration.selectedAnbieterId || null;
+        const jobDurationStringToUse =
+          registration.jobDurationString || auftragsDauerUrlDirect || null;
         const jobTotalCalculatedHoursToUse =
           registration.jobTotalCalculatedHours ||
-          (auftragsDauerUrl ? parseInt(auftragsDauerUrl, 10) : null);
+          (auftragsDauerUrlDirect ? parseDurationStringToHours(auftragsDauerUrlDirect) : null);
         const jobCalculatedPriceInCentsToUse =
-          registration.jobCalculatedPriceInCents || priceFromUrl || null;
+          registration.jobCalculatedPriceInCents || priceFromUrlDirect || null;
 
         const draftData: TemporaryJobDraftData = {
           customerType: customerTypeToUse,
@@ -742,6 +784,56 @@ export default function BestaetigungsPage() {
           tempDraftId: tempDraftIdFromUrl || null,
           billingDetails: billingAddressDetails, // Rechnungsdetails hier hinzufügen
         };
+
+        // --- DEBUG: Detaillierte Logs für jeden Wert ---
+        console.log(PAGE_LOG, 'BestaetigungsPage: Einzelwerte für draftData:');
+        console.log(
+          PAGE_LOG,
+          `  jobPostalCodeToUse: "${jobPostalCodeToUse}" (Context: "${registration.jobPostalCode}", URL: "${postalCodeFromUrlDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  jobDateFromToUse: "${jobDateFromToUse}" (Context: "${registration.jobDateFrom}", URL: "${dateFromUrlDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  jobTimePreferenceToUse: "${jobTimePreferenceToUse}" (Context: "${registration.jobTimePreference}", URL: "${timeUrlDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  jobDurationStringToUse: "${jobDurationStringToUse}" (Context: "${registration.jobDurationString}", URL: "${auftragsDauerUrlDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  jobTotalCalculatedHoursToUse: ${jobTotalCalculatedHoursToUse} (Context: ${registration.jobTotalCalculatedHours}, parsed: ${auftragsDauerUrlDirect ? parseDurationStringToHours(auftragsDauerUrlDirect) : 'null'})`
+        );
+        console.log(
+          PAGE_LOG,
+          `  jobCalculatedPriceInCentsToUse: ${jobCalculatedPriceInCentsToUse} (Context: ${registration.jobCalculatedPriceInCents}, URL: ${priceFromUrlDirect})`
+        );
+        console.log(
+          PAGE_LOG,
+          `  selectedAnbieterIdToUse: "${selectedAnbieterIdToUse}" (URL: "${anbieterIdFromUrlDirect}", Context: "${registration.selectedAnbieterId}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  descriptionToUse: "${descriptionToUse}" (Context: "${registration.description}", URL: "${descriptionFromUrlDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  selectedSubcategoryToUse: "${selectedSubcategoryToUse}" (Context: "${registration.selectedSubcategory}", URL: "${unterkategorieAusPfadDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  selectedCategoryToUse: "${selectedCategoryToUse}" (Context: "${registration.selectedCategory}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  customerTypeToUse: "${customerTypeToUse}" (Context: "${registration.customerType}", Profile: "${userProfileData.user_type}")`
+        );
+        console.log(PAGE_LOG, `  tempDraftIdFromUrl: "${tempDraftIdFromUrl}"`);
+        console.log(PAGE_LOG, `  billingAddressDetails: `, billingAddressDetails);
+        // --- ENDE DEBUG LOGS ---
 
         // jobCalculatedPriceInCents ist der Basis-Preis des Anbieters
         const initialJobPrice = draftData.jobCalculatedPriceInCents;
