@@ -21,6 +21,8 @@ export async function POST(request: Request) {
       currentDescription,
     } = await request.json();
 
+    console.log('Received request:', { companyName, industry, selectedSubcategory, city, country });
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -30,6 +32,8 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    console.log('API Key found, initializing Gemini...');
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -105,20 +109,52 @@ Standort: ${city}, ${country}`;
 
     prompt += `\n\nErstelle eine ansprechende, professionelle Firmenbeschreibung, die die Kompetenzen und Leistungen des Unternehmens hervorhebt. Fokussiere dich auf Expertise, Erfahrung und Kundennutzen - OHNE direkte Kontaktaufforderungen.`;
 
+    console.log('Sending prompt to Gemini API...');
+
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig,
       safetySettings,
     });
 
+    console.log('Gemini API response received successfully');
+
     const response = result.response;
     const generatedText = response.text();
+
+    console.log('Generated text length:', generatedText.length);
 
     return NextResponse.json({ description: generatedText });
   } catch (error) {
     console.error('Fehler bei der Beschreibungsgenerierung:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'Error';
+
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      name: errorName,
+    });
+
+    // Spezifischere Fehlerbehandlung
+    if (errorMessage.includes('API key')) {
+      return NextResponse.json(
+        { error: 'API-Schlüssel ist ungültig oder nicht konfiguriert' },
+        { status: 500 }
+      );
+    }
+
+    if (errorMessage.includes('quota')) {
+      return NextResponse.json(
+        { error: 'API-Limit erreicht. Versuchen Sie es später erneut.' },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Fehler bei der Generierung der Beschreibung' },
+      { error: 'Fehler bei der Generierung der Beschreibung. Bitte versuchen Sie es erneut.' },
       { status: 500 }
     );
   }
