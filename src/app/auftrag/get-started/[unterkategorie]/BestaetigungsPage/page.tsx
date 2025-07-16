@@ -188,7 +188,7 @@ export default function BestaetigungsPage() {
       return;
     }
 
-    console.log(PAGE_LOG, 'BestaetigungsPage: Loading URL parameters into RegistrationContext');
+    console.log(PAGE_LOG, '=== BestaetigungsPage URL-Parameter-Loading ===');
     console.log(PAGE_LOG, 'BestaetigungsPage: searchParams object:', searchParams);
     console.log(PAGE_LOG, 'BestaetigungsPage: pathParams object:', pathParams);
     console.log(
@@ -196,6 +196,16 @@ export default function BestaetigungsPage() {
       'BestaetigungsPage: window.location.href:',
       typeof window !== 'undefined' ? window.location.href : 'undefined'
     );
+
+    // DEBUG: Zeige alle verfügbaren URL-Parameter
+    if (searchParams) {
+      console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren URL-Parameter:');
+      for (const [key, value] of searchParams.entries()) {
+        console.log(PAGE_LOG, `  ${key}: "${value}"`);
+      }
+    } else {
+      console.warn(PAGE_WARN, 'BestaetigungsPage: searchParams ist null/undefined!');
+    }
 
     // Hole alle URL-Parameter
     const anbieterIdFromUrl = searchParams?.get('anbieterId') ?? '';
@@ -230,6 +240,7 @@ export default function BestaetigungsPage() {
     })();
 
     // DEBUG: Log aller URL-Parameter
+    console.log(PAGE_LOG, '=== URL-Parameter-Extraktion ===');
     console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter gefunden:', {
       anbieterIdFromUrl,
       unterkategorieAusPfad,
@@ -240,6 +251,29 @@ export default function BestaetigungsPage() {
       descriptionFromUrl,
       priceFromUrl,
     });
+
+    // DEBUG: Prüfe, ob die URL vollständig ist
+    const expectedParams = [
+      'anbieterId',
+      'postalCode',
+      'dateFrom',
+      'time',
+      'auftragsDauer',
+      'price',
+    ];
+    const missingParams = expectedParams.filter(param => !searchParams?.get(param));
+    if (missingParams.length > 0) {
+      console.warn(PAGE_WARN, 'BestaetigungsPage: Fehlende URL-Parameter:', missingParams);
+      console.warn(PAGE_WARN, 'BestaetigungsPage: Mögliche Ursachen:');
+      console.warn(
+        PAGE_WARN,
+        '  1. URL-Parameter wurden bei der Registrierung nicht richtig weitergeleitet'
+      );
+      console.warn(PAGE_WARN, '  2. URL-Encoding/Decoding-Problem');
+      console.warn(PAGE_WARN, '  3. Redirect-Problem von der Adresse-Seite');
+    } else {
+      console.log(PAGE_LOG, 'BestaetigungsPage: Alle erwarteten URL-Parameter sind vorhanden ✓');
+    }
 
     // KORREKTUR: Lade Parameter in den Context, auch wenn der Context bereits Werte hat
     // Dies ist wichtig, da die URL die "source of truth" für diese Seite ist

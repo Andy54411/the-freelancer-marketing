@@ -557,15 +557,57 @@ export default function AddressPage() {
 
         const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
 
+        // DEBUG: Ausführliches Logging für URL-Parameter-Debugging
+        console.log(PAGE_LOG, '=== URL-Parameter-Erstellung in Adresse-Seite ===');
+        console.log(PAGE_LOG, 'Einzelne Parameter:');
+        console.log(PAGE_LOG, `  anbieterId: "${selectedCompanyForPopup.id}"`);
+        console.log(PAGE_LOG, `  postalCode: "${postalCode}"`);
+        console.log(PAGE_LOG, `  dateFrom: "${dateFromFormatted}"`);
+        console.log(PAGE_LOG, `  dateTo: "${dateToFormatted}"`);
+        console.log(PAGE_LOG, `  time: "${finalTimeParam}"`);
+        console.log(PAGE_LOG, `  auftragsDauer: "${finalDurationStringInput}"`);
+        console.log(
+          PAGE_LOG,
+          `  price: "${totalPriceInCents ? (totalPriceInCents / 100).toFixed(2) : 'null'}"`
+        );
+        console.log(PAGE_LOG, `  description: "${registration.description}"`);
+        console.log(
+          PAGE_LOG,
+          `bestaetigungsPageParams.toString(): "${bestaetigungsPageParams.toString()}"`
+        );
+        console.log(PAGE_LOG, `Finale URL: "${bestaetigungsPagePath}"`);
+
+        // DEBUG: Teste URL-Parsing
+        try {
+          const testUrl = new URL(bestaetigungsPagePath, window.location.origin);
+          console.log(PAGE_LOG, 'URL-Test erfolgreich:', testUrl.href);
+          console.log(
+            PAGE_LOG,
+            'Alle Parameter in URL:',
+            Object.fromEntries(testUrl.searchParams.entries())
+          );
+        } catch (urlError) {
+          console.error(PAGE_ERROR, 'URL-Test fehlgeschlagen:', urlError);
+        }
+
         // BENUTZER-AUTHENTIFIZIERUNG: Prüfung beim Klick auf Bestätigen von Datum/Uhrzeit
         const user = auth.currentUser;
         if (user) {
           // Wenn der Benutzer bereits eingeloggt ist, leiten Sie ihn direkt zur Bestätigungsseite weiter.
           // Die vorherige Logik, die hier zum Dashboard weiterleitete, verhinderte, dass bestehende Benutzer neue Aufträge erstellen konnten.
+          console.log(
+            PAGE_LOG,
+            `Benutzer bereits eingeloggt, direkte Weiterleitung zu: ${bestaetigungsPagePath}`
+          );
           router.push(bestaetigungsPagePath);
         } else {
           // Nicht angemeldet, leite zur Registrierungsseite weiter
-          router.push(`/register/user?redirectTo=${bestaetigungsPagePath}`);
+          const registrationRedirectUrl = `/register/user?redirectTo=${encodeURIComponent(bestaetigungsPagePath)}`;
+          console.log(PAGE_LOG, `Benutzer nicht eingeloggt, Weiterleitung zur Registrierung:`);
+          console.log(PAGE_LOG, `  Original URL: ${bestaetigungsPagePath}`);
+          console.log(PAGE_LOG, `  Encoded URL: ${encodeURIComponent(bestaetigungsPagePath)}`);
+          console.log(PAGE_LOG, `  Finale Registrierungs-URL: ${registrationRedirectUrl}`);
+          router.push(registrationRedirectUrl);
         }
       } else if (dateFromFormatted) {
         console.log(`${PAGE_LOG} Nur Datum/Zeit im Filter geändert. Lade Profile neu.`);

@@ -152,11 +152,34 @@ function UserRegisterFormContent() {
   useEffect(() => {
     if (registrationSuccess) {
       const finalRedirectUrl = redirectToFromParams || `/auftrag/get-started`;
+
+      // DEBUG: Detaillierte Logging für URL-Parameter-Debugging
+      console.log(PAGE_LOG, `=== URL-Parameter-Debugging beim Registrierung-Redirect ===`);
+      console.log(PAGE_LOG, `redirectToFromParams RAW:`, redirectToFromParams);
+      console.log(PAGE_LOG, `finalRedirectUrl:`, finalRedirectUrl);
+
+      if (redirectToFromParams) {
+        try {
+          // Teste, ob die URL bereits alle Parameter enthält
+          const testUrl = new URL(redirectToFromParams, window.location.origin);
+          console.log(
+            PAGE_LOG,
+            `URL-Test erfolgreich. Pfad: ${testUrl.pathname}, Query: ${testUrl.search}`
+          );
+          console.log(
+            PAGE_LOG,
+            `Alle URL-Parameter:`,
+            Object.fromEntries(testUrl.searchParams.entries())
+          );
+        } catch (urlError) {
+          console.error(PAGE_ERROR, `URL-Test fehlgeschlagen:`, urlError);
+        }
+      }
+
       console.log(
         PAGE_LOG,
-        `Weiterleitung nach erfolgreicher Registrierung in 2 Sekunden zu: ${finalRedirectUrl}`
+        `Weiterleitung nach erfolgreicher Registrierung in 1.5 Sekunden zu: ${finalRedirectUrl}`
       );
-      console.log(PAGE_LOG, `redirectToFromParams Inhalt:`, redirectToFromParams);
 
       // KORREKTUR: Speichere die Ziel-URL im sessionStorage für den AuthContext
       if (redirectToFromParams) {
