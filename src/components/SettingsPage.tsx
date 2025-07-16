@@ -207,6 +207,11 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
   useEffect(() => {
     if (userData) {
+      // Debug-Logging für Datenbank-Struktur
+      console.log('Raw userData from database:', userData);
+      console.log('step1 data:', userData.step1);
+      console.log('step2 data:', userData.step2);
+
       const get = <T,>(path: string, fallback: T): T => {
         const keys = path.split('.');
         let current: unknown = userData;
@@ -249,20 +254,26 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
             'step2.companyPhoneNumber',
             get('companyPhoneNumber', get('companyPhoneNumberForBackend', get('phoneNumber', '')))
           ),
-          legalForm: get('step2.legalForm', get('legalForm', null)),
-          address: get('step2.address', get('companyAddressLine1ForBackend', get('address', ''))),
-          street: get('step2.street', get('companyAddressLine1ForBackend', get('street', ''))),
-          houseNumber: get('step2.houseNumber', get('companyHouseNumber', '')),
+          legalForm: get('step2.legalForm', get('legalForm', get('legalFormForBackend', null))),
+          address: get(
+            'step2.address',
+            get('companyAddressLine1ForBackend', get('address', get('street', '')))
+          ),
+          street: get(
+            'step2.street',
+            get('companyAddressLine1ForBackend', get('street', get('address', '')))
+          ),
+          houseNumber: get('step2.houseNumber', get('companyHouseNumber', get('houseNumber', ''))),
           postalCode: get(
             'step2.postalCode',
-            get('companyPostalCodeForBackend', get('postalCode', ''))
+            get('companyPostalCodeForBackend', get('postalCode', get('zip', '')))
           ),
           city: get('step2.city', get('companyCityForBackend', get('city', ''))),
           country: get('step2.country', get('companyCountryForBackend', get('country', 'DE'))),
           website: get('step2.website', get('companyWebsiteForBackend', get('website', ''))),
           fax: get('step2.fax', get('fax', '')),
           languages: get('step2.languages', get('languages', '')),
-          description: get('step2.description', get('publicDescription', '')),
+          description: get('step2.description', get('publicDescription', get('description', ''))),
           employees: get('step2.employees', get('employees', '')),
           industry: get(
             'step2.industry',
@@ -315,6 +326,38 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         masterCraftsmanCertificateFile: null,
         identityFrontFile: null,
         identityBackFile: null,
+      });
+
+      // Debug-Logging für gemappte Formularwerte
+      console.log('Mapped form data:', {
+        step1: {
+          firstName: get('step1.firstName', get('firstName', '')),
+          lastName: get('step1.lastName', get('lastName', '')),
+          phoneNumber: get('step1.phoneNumber', get('phoneNumber', '')),
+          email: get('step1.email', get('email', '')),
+        },
+        step2: {
+          companyName: get('step2.companyName', get('companyName', '')),
+          companySuffix: get('step2.companySuffix', get('companySuffix', '')),
+          legalForm: get('step2.legalForm', get('legalForm', get('legalFormForBackend', null))),
+          address: get(
+            'step2.address',
+            get('companyAddressLine1ForBackend', get('address', get('street', '')))
+          ),
+          street: get(
+            'step2.street',
+            get('companyAddressLine1ForBackend', get('street', get('address', '')))
+          ),
+          postalCode: get(
+            'step2.postalCode',
+            get('companyPostalCodeForBackend', get('postalCode', get('zip', '')))
+          ),
+          city: get('step2.city', get('companyCityForBackend', get('city', ''))),
+          companyPhoneNumber: get(
+            'step2.companyPhoneNumber',
+            get('companyPhoneNumber', get('companyPhoneNumberForBackend', get('phoneNumber', '')))
+          ),
+        },
       });
     }
   }, [userData]);

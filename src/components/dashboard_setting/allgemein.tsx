@@ -105,6 +105,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
             value={step2.companySuffix || ''}
             onChange={e => handleChange('step2.companySuffix', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            placeholder="z.B. GmbH, UG, e.K."
           />
         </div>
 
@@ -124,6 +125,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
             value={step2.legalForm || ''}
             onChange={e => handleChange('step2.legalForm', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            placeholder="z.B. Einzelunternehmen, GmbH, UG"
           />
         </div>
         <div className="flex flex-col">
@@ -132,6 +134,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
             value={step2.address || step2.street || ''}
             onChange={e => handleChange('step2.address', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
+            placeholder="Straße und Hausnummer"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
