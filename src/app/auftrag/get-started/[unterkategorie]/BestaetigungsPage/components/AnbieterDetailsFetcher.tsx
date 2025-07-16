@@ -138,7 +138,22 @@ export default function AnbieterDetailsFetcher({
             localDurationError = 'Das Enddatum darf nicht vor dem Startdatum liegen.';
           }
         } else {
-          numberOfDays = 1;
+          // KORRIGIERT: Wenn nur dateFrom gesetzt ist, prüfe ob dateTo aus dem Context verfügbar ist
+          const contextDateTo = registration.jobDateTo;
+          if (contextDateTo && isValidDate(parseISO(contextDateTo))) {
+            const endDate = parseISO(contextDateTo);
+            if (endDate >= startDate) {
+              numberOfDays = differenceInCalendarDays(endDate, startDate) + 1;
+              console.log(
+                PAGE_LOG,
+                `AnbieterDetailsFetcher: dateTo aus Context verwendet. Anzahl Tage: ${numberOfDays}`
+              );
+            } else {
+              localDurationError = 'Das Enddatum darf nicht vor dem Startdatum liegen.';
+            }
+          } else {
+            numberOfDays = 1;
+          }
         }
       } else if (dateF || dateT) {
         localDurationError = 'Ungültiges Datumsformat für Preisberechnung.';
@@ -170,6 +185,15 @@ export default function AnbieterDetailsFetcher({
       let totalCalculatedHours: number;
       let displayDuration = '';
       const isMietkoch = unterkategorie?.toLowerCase().includes('mietkoch');
+
+      console.log(PAGE_LOG, `AnbieterDetailsFetcher: Berechnungsdetails:`, {
+        isMietkoch,
+        numberOfDays,
+        hoursPerDayOrTotalFromInput,
+        dateF,
+        dateT,
+        contextDateTo: registration.jobDateTo,
+      });
 
       if (isMietkoch && numberOfDays > 0) {
         totalCalculatedHours = numberOfDays * hoursPerDayOrTotalFromInput!;
@@ -280,11 +304,9 @@ export default function AnbieterDetailsFetcher({
           if (response.status === 404) {
             throw new Error(`Anbieter mit ID '${anbieterId}' nicht gefunden.`);
           } else {
-            const errData = await response
-              .json()
-              .catch(() => ({
-                message: `Anbieterdetails nicht geladen (Status: ${response.status})`,
-              }));
+            const errData = await response.json().catch(() => ({
+              message: `Anbieterdetails nicht geladen (Status: ${response.status})`,
+            }));
             throw new Error(errData.message);
           }
         }

@@ -218,6 +218,7 @@ export default function BestaetigungsPage() {
     // KORRIGIERT: Unterstütze sowohl neue (additionalData) als auch alte Parameter-Namen
     const dateFromUrl =
       (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
+    const dateToUrl = searchParams?.get('dateTo') ?? '';
     const timeUrl = (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
     const auftragsDauerUrl =
       (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ?? '';
@@ -246,6 +247,7 @@ export default function BestaetigungsPage() {
       unterkategorieAusPfad,
       postalCodeFromUrl,
       dateFromUrl,
+      dateToUrl,
       timeUrl,
       auftragsDauerUrl,
       descriptionFromUrl,
@@ -273,6 +275,16 @@ export default function BestaetigungsPage() {
       console.warn(PAGE_WARN, '  3. Redirect-Problem von der Adresse-Seite');
     } else {
       console.log(PAGE_LOG, 'BestaetigungsPage: Alle erwarteten URL-Parameter sind vorhanden ✓');
+    }
+
+    // DEBUG: Zusätzliche Info über dateTo Parameter
+    if (dateToUrl) {
+      console.log(PAGE_LOG, `BestaetigungsPage: dateTo Parameter gefunden: ${dateToUrl}`);
+    } else {
+      console.log(
+        PAGE_LOG,
+        'BestaetigungsPage: dateTo Parameter nicht gefunden (möglicherweise Single-Day-Booking)'
+      );
     }
 
     // KORREKTUR: Lade Parameter in den Context, auch wenn der Context bereits Werte hat
@@ -307,6 +319,11 @@ export default function BestaetigungsPage() {
     if (dateFromUrl) {
       registration.setJobDateFrom?.(dateFromUrl);
       console.log(PAGE_LOG, `BestaetigungsPage: Set jobDateFrom: ${dateFromUrl}`);
+    }
+
+    if (dateToUrl) {
+      registration.setJobDateTo?.(dateToUrl);
+      console.log(PAGE_LOG, `BestaetigungsPage: Set jobDateTo: ${dateToUrl}`);
     }
 
     if (timeUrl) {
