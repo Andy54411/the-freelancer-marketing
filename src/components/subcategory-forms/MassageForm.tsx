@@ -1,0 +1,212 @@
+import React, { useState, useEffect } from 'react';
+import { MassageData } from '@/types/subcategory-forms';
+import {
+  FormField,
+  FormSelect,
+  FormInput,
+  FormTextarea,
+  FormCheckboxGroup,
+  FormRadioGroup,
+} from './FormComponents';
+
+interface MassageFormProps {
+  data: MassageData;
+  onDataChange: (data: MassageData) => void;
+  onValidationChange: (isValid: boolean) => void;
+}
+
+const MassageForm: React.FC<MassageFormProps> = ({ data, onDataChange, onValidationChange }) => {
+  const [formData, setFormData] = useState<MassageData>(data);
+
+  const serviceTypeOptions = [
+    { value: 'klassische_massage', label: 'Klassische Massage' },
+    { value: 'tiefengewebsmassage', label: 'Tiefengewebsmassage' },
+    { value: 'sportmassage', label: 'Sportmassage' },
+    { value: 'entspannungsmassage', label: 'Entspannungsmassage' },
+    { value: 'hot_stone', label: 'Hot Stone Massage' },
+    { value: 'thai_massage', label: 'Thai Massage' },
+    { value: 'reflexzonenmassage', label: 'Reflexzonenmassage' },
+    { value: 'lymphdrainage', label: 'Lymphdrainage' },
+    { value: 'aromamassage', label: 'Aromamassage' },
+    { value: 'schwangerschaftsmassage', label: 'Schwangerschaftsmassage' },
+  ];
+
+  const bodyAreaOptions = [
+    { value: 'ganzkörper', label: 'Ganzkörper' },
+    { value: 'rücken', label: 'Rücken' },
+    { value: 'nacken_schultern', label: 'Nacken & Schultern' },
+    { value: 'kopf', label: 'Kopf' },
+    { value: 'füße', label: 'Füße' },
+    { value: 'hände', label: 'Hände' },
+    { value: 'beine', label: 'Beine' },
+    { value: 'arme', label: 'Arme' },
+    { value: 'gesicht', label: 'Gesicht' },
+  ];
+
+  const durationOptions = [
+    { value: '30', label: '30 Minuten' },
+    { value: '45', label: '45 Minuten' },
+    { value: '60', label: '60 Minuten' },
+    { value: '90', label: '90 Minuten' },
+    { value: '120', label: '120 Minuten' },
+  ];
+
+  const frequencyOptions = [
+    { value: 'einmalig', label: 'Einmalig' },
+    { value: 'wöchentlich', label: 'Wöchentlich' },
+    { value: 'zweiwöchentlich', label: 'Alle 2 Wochen' },
+    { value: 'monatlich', label: 'Monatlich' },
+    { value: 'nach_bedarf', label: 'Nach Bedarf' },
+  ];
+
+  const budgetRangeOptions = [
+    { value: 'bis_50', label: 'Bis 50 €' },
+    { value: '50_80', label: '50 - 80 €' },
+    { value: '80_120', label: '80 - 120 €' },
+    { value: '120_150', label: '120 - 150 €' },
+    { value: 'über_150', label: 'Über 150 €' },
+  ];
+
+  const handleInputChange = (field: keyof MassageData, value: any) => {
+    const updatedData = { ...formData, [field]: value };
+    setFormData(updatedData);
+    onDataChange(updatedData);
+  };
+
+  useEffect(() => {
+    const isValid = !!(
+      formData.serviceType &&
+      formData.bodyArea &&
+      formData.duration &&
+      formData.frequency
+    );
+    onValidationChange(isValid);
+  }, [formData, onValidationChange]);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Massage-Projektdetails
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Art der Massage" required>
+            <FormSelect
+              value={formData.serviceType || ''}
+              onChange={value => handleInputChange('serviceType', value)}
+              options={serviceTypeOptions}
+              placeholder="Wählen Sie die Art der Massage"
+            />
+          </FormField>
+
+          <FormField label="Körperbereich" required>
+            <FormSelect
+              value={formData.bodyArea || ''}
+              onChange={value => handleInputChange('bodyArea', value)}
+              options={bodyAreaOptions}
+              placeholder="Wählen Sie den Körperbereich"
+            />
+          </FormField>
+
+          <FormField label="Dauer" required>
+            <FormSelect
+              value={formData.duration || ''}
+              onChange={value => handleInputChange('duration', value)}
+              options={durationOptions}
+              placeholder="Wählen Sie die Dauer"
+            />
+          </FormField>
+
+          <FormField label="Häufigkeit" required>
+            <FormSelect
+              value={formData.frequency || ''}
+              onChange={value => handleInputChange('frequency', value)}
+              options={frequencyOptions}
+              placeholder="Wählen Sie die Häufigkeit"
+            />
+          </FormField>
+
+          <FormField label="Budget-Rahmen">
+            <FormSelect
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              options={budgetRangeOptions}
+              placeholder="Wählen Sie den Budget-Rahmen"
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Ort der Massage">
+            <FormRadioGroup
+              name="location"
+              value={formData.location || ''}
+              onChange={value => handleInputChange('location', value)}
+              options={[
+                { value: 'bei_mir', label: 'Bei mir zu Hause' },
+                { value: 'praxis', label: 'In der Praxis' },
+                { value: 'flexibel', label: 'Flexibel' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Bevorzugte Tageszeit">
+            <FormRadioGroup
+              name="timePreference"
+              value={formData.timePreference || ''}
+              onChange={value => handleInputChange('timePreference', value)}
+              options={[
+                { value: 'vormittags', label: 'Vormittags' },
+                { value: 'nachmittags', label: 'Nachmittags' },
+                { value: 'abends', label: 'Abends' },
+                { value: 'flexibel', label: 'Flexibel' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Geschlecht des Masseurs">
+            <FormRadioGroup
+              name="gender"
+              value={formData.gender || ''}
+              onChange={value => handleInputChange('gender', value)}
+              options={[
+                { value: 'weiblich', label: 'Weiblich' },
+                { value: 'männlich', label: 'Männlich' },
+                { value: 'egal', label: 'Egal' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Gesundheitliche Beschwerden">
+            <FormTextarea
+              value={formData.healthIssues || ''}
+              onChange={value => handleInputChange('healthIssues', value)}
+              placeholder="Beschreiben Sie gesundheitliche Beschwerden oder Problembereiche"
+              rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Weitere Informationen">
+            <FormTextarea
+              value={formData.additionalInfo || ''}
+              onChange={value => handleInputChange('additionalInfo', value)}
+              placeholder="Weitere wichtige Informationen"
+              rows={3}
+            />
+          </FormField>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MassageForm;

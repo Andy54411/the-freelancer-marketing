@@ -8,14 +8,14 @@ const nextConfig = {
     removeConsole:
       process.env.NODE_ENV === 'production'
         ? {
-            exclude: ['error', 'warn'],
-          }
+          exclude: ['error', 'warn'],
+        }
         : false,
   },
 
   // Performance Optimizations
   poweredByHeader: false,
-  
+
   // Experimental features for faster builds
   experimental: {
     optimizeCss: true,

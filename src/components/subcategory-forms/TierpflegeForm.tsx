@@ -1,0 +1,246 @@
+import React, { useState, useEffect } from 'react';
+import { TierpflegeData } from '@/types/subcategory-forms';
+import {
+  FormField,
+  FormSelect,
+  FormInput,
+  FormTextarea,
+  FormCheckboxGroup,
+  FormRadioGroup,
+} from './FormComponents';
+
+interface TierpflegeFormProps {
+  data: TierpflegeData;
+  onDataChange: (data: TierpflegeData) => void;
+  onValidationChange: (isValid: boolean) => void;
+}
+
+const TierpflegeForm: React.FC<TierpflegeFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
+  const [formData, setFormData] = useState<TierpflegeData>(data);
+
+  const serviceTypeOptions = [
+    { value: 'fellpflege', label: 'Fellpflege' },
+    { value: 'scheren', label: 'Scheren' },
+    { value: 'baden', label: 'Baden' },
+    { value: 'krallenschneiden', label: 'Krallenschneiden' },
+    { value: 'zahnpflege', label: 'Zahnpflege' },
+    { value: 'ohrenpflege', label: 'Ohrenpflege' },
+    { value: 'entwurmen', label: 'Entwurmen' },
+    { value: 'impfung', label: 'Impfung' },
+    { value: 'gesundheitscheck', label: 'Gesundheitscheck' },
+    { value: 'erste_hilfe', label: 'Erste Hilfe' },
+  ];
+
+  const animalTypeOptions = [
+    { value: 'hund', label: 'Hund' },
+    { value: 'katze', label: 'Katze' },
+    { value: 'kaninchen', label: 'Kaninchen' },
+    { value: 'meerschweinchen', label: 'Meerschweinchen' },
+    { value: 'hamster', label: 'Hamster' },
+    { value: 'vogel', label: 'Vogel' },
+    { value: 'reptil', label: 'Reptil' },
+    { value: 'pferd', label: 'Pferd' },
+    { value: 'schaf', label: 'Schaf' },
+    { value: 'ziege', label: 'Ziege' },
+    { value: 'sonstiges', label: 'Sonstiges' },
+  ];
+
+  const sizeOptions = [
+    { value: 'sehr_klein', label: 'Sehr klein (bis 5kg)' },
+    { value: 'klein', label: 'Klein (5-15kg)' },
+    { value: 'mittel', label: 'Mittel (15-30kg)' },
+    { value: 'groß', label: 'Groß (30-50kg)' },
+    { value: 'sehr_groß', label: 'Sehr groß (über 50kg)' },
+  ];
+
+  const frequencyOptions = [
+    { value: 'einmalig', label: 'Einmalig' },
+    { value: 'wöchentlich', label: 'Wöchentlich' },
+    { value: 'monatlich', label: 'Monatlich' },
+    { value: 'vierteljährlich', label: 'Vierteljährlich' },
+    { value: 'halbjährlich', label: 'Halbjährlich' },
+    { value: 'nach_bedarf', label: 'Nach Bedarf' },
+  ];
+
+  const budgetRangeOptions = [
+    { value: 'bis_30', label: 'Bis 30 €' },
+    { value: '30_50', label: '30 - 50 €' },
+    { value: '50_80', label: '50 - 80 €' },
+    { value: '80_120', label: '80 - 120 €' },
+    { value: 'über_120', label: 'Über 120 €' },
+  ];
+
+  const handleInputChange = (field: keyof TierpflegeData, value: any) => {
+    const updatedData = { ...formData, [field]: value };
+    setFormData(updatedData);
+    onDataChange(updatedData);
+  };
+
+  useEffect(() => {
+    const isValid = !!(
+      formData.serviceType &&
+      formData.animalType &&
+      formData.size &&
+      formData.frequency
+    );
+    onValidationChange(isValid);
+  }, [formData, onValidationChange]);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Tierpflege-Projektdetails
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Art der Pflege" required>
+            <FormSelect
+              value={formData.serviceType || ''}
+              onChange={value => handleInputChange('serviceType', value)}
+              options={serviceTypeOptions}
+              placeholder="Wählen Sie die Art der Pflege"
+            />
+          </FormField>
+
+          <FormField label="Tierart" required>
+            <FormSelect
+              value={formData.animalType || ''}
+              onChange={value => handleInputChange('animalType', value)}
+              options={animalTypeOptions}
+              placeholder="Wählen Sie die Tierart"
+            />
+          </FormField>
+
+          <FormField label="Größe/Gewicht" required>
+            <FormSelect
+              value={formData.size || ''}
+              onChange={value => handleInputChange('size', value)}
+              options={sizeOptions}
+              placeholder="Wählen Sie die Größe"
+            />
+          </FormField>
+
+          <FormField label="Häufigkeit" required>
+            <FormSelect
+              value={formData.frequency || ''}
+              onChange={value => handleInputChange('frequency', value)}
+              options={frequencyOptions}
+              placeholder="Wählen Sie die Häufigkeit"
+            />
+          </FormField>
+
+          <FormField label="Name des Tieres">
+            <FormInput
+              type="text"
+              value={formData.animalName || ''}
+              onChange={value => handleInputChange('animalName', value)}
+              placeholder="Name des Tieres"
+            />
+          </FormField>
+
+          <FormField label="Alter des Tieres">
+            <FormInput
+              type="number"
+              value={formData.animalAge?.toString() || ''}
+              onChange={value =>
+                handleInputChange('animalAge', typeof value === 'string' ? parseInt(value) : value)
+              }
+              placeholder="Alter in Jahren"
+            />
+          </FormField>
+
+          <FormField label="Rasse">
+            <FormInput
+              type="text"
+              value={formData.breed || ''}
+              onChange={value => handleInputChange('breed', value)}
+              placeholder="Rasse des Tieres"
+            />
+          </FormField>
+
+          <FormField label="Budget-Rahmen">
+            <FormSelect
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              options={budgetRangeOptions}
+              placeholder="Wählen Sie den Budget-Rahmen"
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Ort der Pflege">
+            <FormRadioGroup
+              name="location"
+              value={formData.location || ''}
+              onChange={value => handleInputChange('location', value)}
+              options={[
+                { value: 'bei_mir', label: 'Bei mir zu Hause' },
+                { value: 'beim_pfleger', label: 'Beim Tierpfleger' },
+                { value: 'mobil', label: 'Mobiler Service' },
+                { value: 'flexibel', label: 'Flexibel' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Temperament des Tieres">
+            <FormRadioGroup
+              name="temperament"
+              value={formData.temperament || ''}
+              onChange={value => handleInputChange('temperament', value)}
+              options={[
+                { value: 'ruhig', label: 'Ruhig und entspannt' },
+                { value: 'lebhaft', label: 'Lebhaft aber gutmütig' },
+                { value: 'ängstlich', label: 'Ängstlich/scheu' },
+                { value: 'aggressiv', label: 'Kann aggressiv werden' },
+                { value: 'unbekannt', label: 'Unbekannt' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Gesundheitszustand">
+            <FormTextarea
+              value={formData.healthStatus || ''}
+              onChange={value => handleInputChange('healthStatus', value)}
+              placeholder="Gesundheitszustand, Krankheiten, Allergien, etc."
+              rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Besondere Anforderungen">
+            <FormTextarea
+              value={formData.specialRequirements || ''}
+              onChange={value => handleInputChange('specialRequirements', value)}
+              placeholder="Besondere Anforderungen oder Wünsche"
+              rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Weitere Informationen">
+            <FormTextarea
+              value={formData.additionalInfo || ''}
+              onChange={value => handleInputChange('additionalInfo', value)}
+              placeholder="Weitere wichtige Informationen"
+              rows={3}
+            />
+          </FormField>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TierpflegeForm;

@@ -12,6 +12,8 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { app } from '@/firebase/clients';
 import { categories, type Category } from '@/lib/categoriesData';
 import { useRegistration } from '@/contexts/Registration-Context';
+import SubcategoryFormManager from '@/components/subcategory-forms/SubcategoryFormManager';
+import { SubcategoryData } from '@/types/subcategory-forms';
 
 const auth = getAuth(app);
 
@@ -26,20 +28,18 @@ export default function GetStartedPage() {
     setSelectedSubcategory,
     description,
     setDescription,
+    subcategoryData,
+    setSubcategoryData,
   } = useRegistration();
 
-  const steps = [
-    'Kundentyp',
-    'Kategorie',
-    'Unterkategorie',
-    'Beschreibung',
-  ];
+  const steps = ['Kundentyp', 'Kategorie', 'Unterkategorie', 'Projektdetails', 'Beschreibung'];
 
   const TOTAL_STEPS = steps.length;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isClientMounted, setIsClientMounted] = useState(false);
+  const [isSubcategoryFormValid, setIsSubcategoryFormValid] = useState(false);
 
   // Effect to mark client mount
   useEffect(() => {
@@ -55,10 +55,11 @@ export default function GetStartedPage() {
       !!customerType,
       !!selectedCategory,
       !!selectedSubcategory,
+      isSubcategoryFormValid,
       description.trim().length > 0,
     ];
     return stepsCompleted.filter(Boolean).length;
-  }, [customerType, selectedCategory, selectedSubcategory, description]);
+  }, [customerType, selectedCategory, selectedSubcategory, isSubcategoryFormValid, description]);
 
   // Determine the step to display, ensuring server and initial client render match
   const stepForDisplay = isClientMounted ? logicalCurrentStep : 0;
@@ -80,10 +81,22 @@ export default function GetStartedPage() {
     setDescription(descValue);
   };
 
+  const handleSubcategoryDataChange = (data: SubcategoryData) => {
+    setSubcategoryData(data);
+  };
+
+  const handleSubcategoryFormValidation = (isValid: boolean) => {
+    setIsSubcategoryFormValid(isValid);
+  };
+
   const availableSubcategories =
     categories.find(cat => cat.title === selectedCategory)?.subcategories || [];
 
-  const showDescriptionField = customerType && selectedCategory && selectedSubcategory;
+  // Zeige Projektdetails-Form wenn Unterkategorie ausgewählt ist
+  const showSubcategoryForm = customerType && selectedCategory && selectedSubcategory;
+
+  // Zeige Beschreibungsfeld nur wenn Projektdetails gültig sind
+  const showDescriptionField = showSubcategoryForm && isSubcategoryFormValid;
 
   const handleNextClick = () => {
     setError(null);
@@ -93,6 +106,7 @@ export default function GetStartedPage() {
       !customerType ||
       !selectedCategory ||
       !selectedSubcategory ||
+      !isSubcategoryFormValid ||
       description.trim().length === 0
     ) {
       setError('Bitte füllen Sie alle Felder aus.');
@@ -104,6 +118,7 @@ export default function GetStartedPage() {
       customerType: customerType,
       selectedCategory: selectedCategory,
       selectedSubcategory: selectedSubcategory,
+      subcategoryData: subcategoryData,
       description: description,
     });
 
@@ -133,7 +148,9 @@ export default function GetStartedPage() {
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm text-[#14ad9f] font-medium">
-            <p>Schritt {stepForDisplay} von {TOTAL_STEPS}</p>
+            <p>
+              Schritt {stepForDisplay} von {TOTAL_STEPS}
+            </p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="hover:underline flex items-center gap-1"
@@ -148,9 +165,7 @@ export default function GetStartedPage() {
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
                 ${isClientMounted && customerType === 'private' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              <h2 className="text-xl font-semibold text-primary">
-                Privatperson
-              </h2>
+              <h2 className="text-xl font-semibold text-primary">Privatperson</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Ich buche für meinen privaten Bedarf
               </p>
@@ -161,9 +176,7 @@ export default function GetStartedPage() {
               className={`w-full rounded-xl border p-6 shadow transition flex flex-col items-center justify-center text-center gap-2 min-h-[140px] sm:min-h-[160px]
                 ${isClientMounted && customerType === 'business' ? 'bg-[#ecfdfa] border-[#14ad9f]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              <h2 className="text-xl font-semibold text-primary">
-                Geschäftskunde
-              </h2>
+              <h2 className="text-xl font-semibold text-primary">Geschäftskunde</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Ich buche für mein Unternehmen
               </p>
@@ -198,19 +211,35 @@ export default function GetStartedPage() {
             </div>
           )}
 
+          {/* Kategorie-spezifisches Formular */}
+          {isClientMounted && showSubcategoryForm && (
+            <div className="mt-8 w-full">
+              <SubcategoryFormManager
+                subcategory={selectedSubcategory!}
+                onDataChange={handleSubcategoryDataChange}
+                onValidationChange={handleSubcategoryFormValidation}
+              />
+            </div>
+          )}
+
+          {/* Beschreibungsfeld */}
           {isClientMounted && showDescriptionField && (
-            <div className="mt-6 w-full">
+            <div className="mt-8 w-full">
               <Label
                 htmlFor="auftragBeschreibung"
                 className="text-base font-medium text-gray-800 dark:text-white"
               >
-                Beschreiben Sie Ihren Auftrag!
+                Zusätzliche Beschreibung
               </Label>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Gibt es noch weitere wichtige Details zu Ihrem Auftrag?
+              </p>
               <Textarea
                 id="auftragBeschreibung"
-                placeholder="Beschreiben Sie hier, was genau gemacht werden soll …"
+                placeholder="z.B. besondere Wünsche, Termine, Zugangsinformationen..."
                 value={description}
                 onChange={e => handleDescriptionChange(e.target.value)}
+                rows={4}
               />
             </div>
           )}

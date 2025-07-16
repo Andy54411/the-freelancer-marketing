@@ -21,7 +21,11 @@
       "purpose": "any"
     }
   ],
-  "categories": ["business", "productivity", "utilities"],
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
   "lang": "de",
   "dir": "ltr"
 }

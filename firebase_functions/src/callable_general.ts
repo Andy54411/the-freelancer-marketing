@@ -178,7 +178,7 @@ export const createTemporaryJobDraft = onCall(
       }
 
       const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
-      
+
       const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterUserDoc.data();
       providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
 

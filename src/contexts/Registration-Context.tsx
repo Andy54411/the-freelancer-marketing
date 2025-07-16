@@ -10,6 +10,7 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
+import { SubcategoryData } from '@/types/subcategory-forms';
 
 // NEU: jobId hinzugefügt
 interface RegistrationData {
@@ -18,6 +19,8 @@ interface RegistrationData {
   selectedCategory: string | null;
   selectedSubcategory: string | null;
   description: string;
+  // NEU: Strukturierte Daten für Unterkategorien
+  subcategoryData?: SubcategoryData | null;
   jobStreet?: string;
   jobPostalCode?: string;
   jobCity?: string;
@@ -88,6 +91,8 @@ export interface RegistrationContextType extends RegistrationData {
   setSelectedCategory: Dispatch<SetStateAction<string | null>>;
   setSelectedSubcategory: Dispatch<SetStateAction<string | null>>;
   setDescription: Dispatch<SetStateAction<string>>;
+  // NEU: Setter für strukturierte Unterkategorie-Daten
+  setSubcategoryData: Dispatch<SetStateAction<SubcategoryData | null | undefined>>;
   setJobStreet: Dispatch<SetStateAction<string | undefined>>;
   setJobPostalCode: Dispatch<SetStateAction<string | undefined>>;
   setJobCity: Dispatch<SetStateAction<string | undefined>>;
@@ -173,6 +178,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
             selectedCategory: parsedData.selectedCategory || null,
             selectedSubcategory: parsedData.selectedSubcategory || null,
             description: parsedData.description || '',
+            subcategoryData: null,
             jobStreet: parsedData.jobStreet || '',
             jobPostalCode: parsedData.jobPostalCode || '',
             jobCity: parsedData.jobCity || '',
@@ -247,6 +253,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       selectedCategory: null,
       selectedSubcategory: null,
       description: '',
+      subcategoryData: null,
       jobStreet: '',
       jobPostalCode: '',
       jobCity: '',
@@ -347,6 +354,12 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     setRegistrationState(prev => ({
       ...prev,
       description: typeof value === 'function' ? value(prev.description) : value,
+    }));
+  // NEU: Setter für strukturierte Unterkategorie-Daten
+  const setSubcategoryDataState = (value: SetStateAction<SubcategoryData | null | undefined>) =>
+    setRegistrationState(prev => ({
+      ...prev,
+      subcategoryData: typeof value === 'function' ? value(prev.subcategoryData) : value,
     }));
   const setJobStreetState = (value: SetStateAction<string | undefined>) =>
     setRegistrationState(prev => ({
@@ -658,6 +671,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     setSelectedCategory: setSelectedCategoryState,
     setSelectedSubcategory: setSelectedSubcategoryState,
     setDescription: setDescriptionState,
+    setSubcategoryData: setSubcategoryDataState,
     setJobStreet: setJobStreetState,
     setJobPostalCode: setJobPostalCodeState,
     setJobCity: setJobCityState,

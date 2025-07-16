@@ -649,7 +649,7 @@ export const getOrCreateStripeCustomer = onCall<GetOrCreateStripeCustomerPayload
     try {
       const userDocRef = db.collection("users").doc(firebaseUserId);
       let userDoc = await userDocRef.get();
-      
+
       if (!userDoc.exists) {
         const [firstName, ...lastNameParts] = (payload.name || "").split(" ");
         const lastName = lastNameParts.join(" ");
