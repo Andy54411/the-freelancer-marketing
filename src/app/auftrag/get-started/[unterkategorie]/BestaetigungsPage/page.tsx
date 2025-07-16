@@ -331,80 +331,107 @@ export default function BestaetigungsPage() {
     console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter erfolgreich geladen und markiert.');
   }, [searchParams, pathParams]);
 
-  // --- NEU: Frühe Pflichtdaten-Prüfung und Redirect, bevor irgendetwas anderes passiert ---
+  // --- NEU: Frühe Pflichtdaten-Prüfung und Redirect, nur wenn URL-Parameter geladen wurden ---
   React.useEffect(() => {
-    // Hilfsfunktionen für Pflichtdaten aus Context/URL
-    const unterkategorieAusPfad =
-      typeof pathParams?.unterkategorie === 'string'
-        ? decodeURIComponent(pathParams.unterkategorie as string)
-        : '';
-    const anbieterIdFromUrl = searchParams?.get('anbieterId') ?? '';
-    const postalCodeFromUrl = searchParams?.get('postalCode') ?? '';
-
-    // KORRIGIERT: Unterstütze sowohl neue (additionalData) als auch alte Parameter-Namen
-    const dateFromUrl =
-      (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
-    const timeUrl = (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
-    const auftragsDauerUrl =
-      (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ?? '';
-
-    // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
-    const priceFromUrl = (() => {
-      const totalCostString = searchParams?.get('additionalData[totalcost]');
-      const priceString = searchParams?.get('price');
-
-      if (totalCostString) {
-        // totalcost ist bereits in Cents, wenn es vom Frontend kommt
-        const totalCents = parseInt(totalCostString, 10);
-        return isNaN(totalCents) ? null : totalCents;
-      } else if (priceString) {
-        // price ist in Euro, konvertiere zu Cents
-        return Math.round(parseFloat(priceString) * 100);
-      }
-      return null;
-    })();
-    const descriptionFromUrl = searchParams?.get('description') ?? '';
-
-    // Context/URL-Mix für Pflichtfelder
-    const requiredFields = {
-      customerType: registration.customerType,
-      selectedCategory:
-        registration.selectedCategory ||
-        (unterkategorieAusPfad ? findCategoryBySubcategory(unterkategorieAusPfad) : null),
-      selectedSubcategory: registration.selectedSubcategory || unterkategorieAusPfad,
-      description: registration.description || descriptionFromUrl,
-      jobPostalCode: registration.jobPostalCode || postalCodeFromUrl,
-      jobDateFrom: registration.jobDateFrom || dateFromUrl,
-      jobTimePreference: registration.jobTimePreference || timeUrl,
-      selectedAnbieterId: anbieterIdFromUrl || registration.selectedAnbieterId,
-      jobDurationString: registration.jobDurationString || auftragsDauerUrl,
-      jobTotalCalculatedHours:
-        registration.jobTotalCalculatedHours ||
-        (auftragsDauerUrl ? parseInt(auftragsDauerUrl, 10) : null),
-      jobCalculatedPriceInCents: registration.jobCalculatedPriceInCents || priceFromUrl,
-    };
-    // Prüfe auf fehlende Pflichtfelder
-    const missing = [];
-    if (!requiredFields.customerType) missing.push('Kundentyp');
-    if (!requiredFields.selectedCategory) missing.push('Kategorie');
-    if (!requiredFields.selectedSubcategory) missing.push('Unterkategorie');
-    if (!requiredFields.description || requiredFields.description.trim().length === 0)
-      missing.push('Beschreibung');
-    if (!requiredFields.jobPostalCode) missing.push('PLZ');
-    if (!requiredFields.jobDateFrom) missing.push('Datum');
-    if (!requiredFields.jobTimePreference) missing.push('Uhrzeit');
-    if (!requiredFields.selectedAnbieterId) missing.push('Anbieter');
-    if (!requiredFields.jobDurationString) missing.push('Dauer');
-    if (!requiredFields.jobTotalCalculatedHours || requiredFields.jobTotalCalculatedHours <= 0)
-      missing.push('Gesamtdauer');
-    if (!requiredFields.jobCalculatedPriceInCents || requiredFields.jobCalculatedPriceInCents <= 0)
-      missing.push('Preis');
-
-    if (missing.length > 0) {
-      // Sofortige Weiterleitung zurück zum Start der Auftragserstellung
-      router.replace('/auftrag/get-started');
+    // Nur ausführen, wenn URL-Parameter bereits geladen wurden
+    if (!urlParamsLoaded.current) {
+      console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter noch nicht geladen, warte...');
+      return;
     }
-  }, [registration, searchParams, pathParams, router]);
+
+    // Zusätzliche Verzögerung, um sicherzustellen, dass alle Context-Updates abgeschlossen sind
+    const timeoutId = setTimeout(() => {
+      console.log(PAGE_LOG, 'BestaetigungsPage: Starte frühe Pflichtdaten-Prüfung');
+
+      // Hilfsfunktionen für Pflichtdaten aus Context/URL
+      const unterkategorieAusPfad =
+        typeof pathParams?.unterkategorie === 'string'
+          ? decodeURIComponent(pathParams.unterkategorie as string)
+          : '';
+      const anbieterIdFromUrl = searchParams?.get('anbieterId') ?? '';
+      const postalCodeFromUrl = searchParams?.get('postalCode') ?? '';
+
+      // KORRIGIERT: Unterstütze sowohl neue (additionalData) als auch alte Parameter-Namen
+      const dateFromUrl =
+        (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
+      const timeUrl =
+        (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
+      const auftragsDauerUrl =
+        (searchParams?.get('additionalData[duration]') || searchParams?.get('auftragsDauer')) ?? '';
+
+      // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
+      const priceFromUrl = (() => {
+        const totalCostString = searchParams?.get('additionalData[totalcost]');
+        const priceString = searchParams?.get('price');
+
+        if (totalCostString) {
+          // totalcost ist bereits in Cents, wenn es vom Frontend kommt
+          const totalCents = parseInt(totalCostString, 10);
+          return isNaN(totalCents) ? null : totalCents;
+        } else if (priceString) {
+          // price ist in Euro, konvertiere zu Cents
+          return Math.round(parseFloat(priceString) * 100);
+        }
+        return null;
+      })();
+      const descriptionFromUrl = searchParams?.get('description') ?? '';
+
+      // Context/URL-Mix für Pflichtfelder
+      const requiredFields = {
+        customerType: registration.customerType,
+        selectedCategory:
+          registration.selectedCategory ||
+          (unterkategorieAusPfad ? findCategoryBySubcategory(unterkategorieAusPfad) : null),
+        selectedSubcategory: registration.selectedSubcategory || unterkategorieAusPfad,
+        description: registration.description || descriptionFromUrl,
+        jobPostalCode: registration.jobPostalCode || postalCodeFromUrl,
+        jobDateFrom: registration.jobDateFrom || dateFromUrl,
+        jobTimePreference: registration.jobTimePreference || timeUrl,
+        selectedAnbieterId: anbieterIdFromUrl || registration.selectedAnbieterId,
+        jobDurationString: registration.jobDurationString || auftragsDauerUrl,
+        jobTotalCalculatedHours:
+          registration.jobTotalCalculatedHours ||
+          (auftragsDauerUrl ? parseDurationStringToHours(auftragsDauerUrl) : null),
+        jobCalculatedPriceInCents: registration.jobCalculatedPriceInCents || priceFromUrl,
+      };
+
+      console.log(PAGE_LOG, 'BestaetigungsPage: Prüfe Pflichtfelder:', requiredFields);
+
+      // Prüfe auf fehlende Pflichtfelder
+      const missing = [];
+      if (!requiredFields.customerType) missing.push('Kundentyp');
+      if (!requiredFields.selectedCategory) missing.push('Kategorie');
+      if (!requiredFields.selectedSubcategory) missing.push('Unterkategorie');
+      if (!requiredFields.description || requiredFields.description.trim().length === 0)
+        missing.push('Beschreibung');
+      if (!requiredFields.jobPostalCode) missing.push('PLZ');
+      if (!requiredFields.jobDateFrom) missing.push('Datum');
+      if (!requiredFields.jobTimePreference) missing.push('Uhrzeit');
+      if (!requiredFields.selectedAnbieterId) missing.push('Anbieter');
+      if (!requiredFields.jobDurationString) missing.push('Dauer');
+      if (!requiredFields.jobTotalCalculatedHours || requiredFields.jobTotalCalculatedHours <= 0)
+        missing.push('Gesamtdauer');
+      if (
+        !requiredFields.jobCalculatedPriceInCents ||
+        requiredFields.jobCalculatedPriceInCents <= 0
+      )
+        missing.push('Preis');
+
+      if (missing.length > 0) {
+        console.log(
+          PAGE_LOG,
+          'BestaetigungsPage: Fehlende Pflichtfelder nach URL-Param-Load:',
+          missing
+        );
+        // Sofortige Weiterleitung zurück zum Start der Auftragserstellung
+        router.replace('/auftrag/get-started');
+      } else {
+        console.log(PAGE_LOG, 'BestaetigungsPage: Alle Pflichtfelder vorhanden, zeige Seite an');
+      }
+    }, 100); // 100ms Verzögerung für Context-Updates
+
+    return () => clearTimeout(timeoutId);
+  }, [registration, searchParams, pathParams, router, urlParamsLoaded.current]);
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [kundeStripeCustomerId, setKundeStripeCustomerId] = useState<string | null>(null);
