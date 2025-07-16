@@ -3,7 +3,7 @@ import path from 'path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Build Performance Optimizations
-  swcMinify: true,
+  compress: true,
   compiler: {
     removeConsole:
       process.env.NODE_ENV === 'production'
@@ -15,19 +15,22 @@ const nextConfig = {
 
   // Performance Optimizations
   poweredByHeader: false,
-  compress: true,
   
   // Experimental features for faster builds
   experimental: {
-    turbo: {
-      rules: {
-        '*.svg': ['@svgr/webpack'],
-      },
-    },
-    serverComponentsExternalPackages: ['firebase-admin', 'stripe'],
     optimizeCss: true,
     optimizePackageImports: ['react-icons'],
   },
+
+  // Turbopack configuration (moved from experimental)
+  turbo: {
+    rules: {
+      '*.svg': ['@svgr/webpack'],
+    },
+  },
+
+  // Server external packages (moved from experimental)
+  serverExternalPackages: ['firebase-admin', 'stripe'],
 
   // Headers für bessere Performance
   async headers() {
