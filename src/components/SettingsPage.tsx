@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
 import Stripe from 'stripe';
+import { findCategoryBySubcategory } from '@/lib/categoriesData'; // Import der Kategorie-Mapping-Funktion
 
 // Firebase Storage wird noch für Bild-Uploads verwendet
 
@@ -281,12 +282,45 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           languages: get('step2.languages', get('languages', '')),
           description: get('step2.description', get('publicDescription', get('description', ''))),
           employees: get('step2.employees', get('employees', '')),
-          industry: get(
-            'step2.industry',
-            get('selectedSubcategory', null) === 'Mietkoch'
-              ? 'Hotel & Gastronomie'
-              : get('selectedCategory', get('industry', ''))
-          ),
+          industry: (() => {
+            // Prüfe zuerst, ob bereits eine Branche in step2.industry gesetzt ist
+            const existingIndustry = get('step2.industry', '');
+            if (
+              existingIndustry &&
+              existingIndustry !== 'Bitte wählen' &&
+              existingIndustry !== ''
+            ) {
+              return existingIndustry;
+            }
+
+            // Wenn nicht, prüfe selectedSubcategory für automatische Zuordnung
+            const subcategory = get('selectedSubcategory', '') as string;
+            console.log('Industry mapping - selectedSubcategory:', subcategory);
+            if (subcategory && subcategory !== '') {
+              // Verwende findCategoryBySubcategory um die richtige Kategorie zu finden
+              const mappedCategory = findCategoryBySubcategory(subcategory);
+              console.log('Industry mapping - mapped category for subcategory:', mappedCategory);
+              if (mappedCategory) {
+                return mappedCategory;
+              }
+            }
+
+            // Versuche Kategorie-Mapping basierend auf selectedCategory
+            const selectedCategory = get('selectedCategory', '') as string;
+            console.log('Industry mapping - selectedCategory:', selectedCategory);
+            if (
+              selectedCategory &&
+              selectedCategory !== 'Bitte wählen' &&
+              selectedCategory !== ''
+            ) {
+              return selectedCategory;
+            }
+
+            // Ansonsten verwende industry als Fallback
+            const fallback = get('industry', '');
+            console.log('Industry mapping - fallback:', fallback);
+            return fallback;
+          })(),
           industryMcc: get('step2.industryMcc', get('industryMcc', '')),
         },
         step3: {

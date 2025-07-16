@@ -95,6 +95,11 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
     addressFallback: step2.address || step2.street || step1.personalStreet || '',
     postalCodeFallback: step2.postalCode || step1.personalPostalCode || '',
     companySuffixFallback: step2.companySuffix || '',
+    industryDebug: {
+      step2Industry: step2.industry,
+      industryValue: step2.industry || '',
+      shouldBeHotelGastronomie: step2.industry === 'Hotel & Gastronomie',
+    },
     coordinates: {
       lat: lat,
       lng: lng,
