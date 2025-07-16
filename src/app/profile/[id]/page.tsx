@@ -8,34 +8,39 @@ import {
   FiLoader,
   FiAlertCircle,
   FiMapPin,
-  FiPhone,
-  FiMail,
   FiUser,
   FiArrowLeft,
   FiStar,
   FiClock,
   FiCheckCircle,
+  FiHome,
+  FiAward,
 } from 'react-icons/fi';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface CompanyProfile {
   id: string;
   companyName: string;
-  companyDescription?: string;
-  companyStreet?: string;
-  companyHouseNumber?: string;
-  companyPostalCode?: string;
-  companyCity?: string;
-  companyCountry?: string;
-  phoneNumber?: string;
-  email?: string;
+  selectedSubcategory?: string;
+  selectedCategory?: string;
+  profilePictureFirebaseUrl?: string;
   profilePictureUrl?: string;
+  profilePictureURL?: string;
   isVerified?: boolean;
+  hourlyRate?: number;
+  radiusKm?: number;
+  // Adresse aus companyCityForBackend und companyPostalCodeForBackend
+  companyCityForBackend?: string;
+  companyPostalCodeForBackend?: string;
+  companyCountryForBackend?: string;
+  companyAddressLine1ForBackend?: string;
   // Zusätzliche Felder für die Anzeige
   averageRating?: number;
   totalReviews?: number;
   responseTime?: string;
   completedJobs?: number;
+  stripeVerificationStatus?: string;
 }
 
 export default function ProfilePage() {
@@ -62,19 +67,28 @@ export default function ProfilePage() {
 
         if (companiesDoc.exists()) {
           const companyData = companiesDoc.data();
+
+          // Prüfe alle möglichen Profilbild-URLs
+          const profilePicture =
+            companyData.profilePictureFirebaseUrl ||
+            companyData.profilePictureUrl ||
+            companyData.profilePictureURL ||
+            companyData.step3?.profilePictureURL;
+
           setProfile({
             id: companyId,
             companyName: companyData.companyName || 'Unbekannte Firma',
-            companyDescription: companyData.companyDescription,
-            companyStreet: companyData.companyStreet,
-            companyHouseNumber: companyData.companyHouseNumber,
-            companyPostalCode: companyData.companyPostalCode,
-            companyCity: companyData.companyCity,
-            companyCountry: companyData.companyCountry,
-            phoneNumber: companyData.phoneNumber,
-            email: companyData.email,
-            profilePictureUrl: companyData.profilePictureUrl,
-            isVerified: companyData.isVerified || false,
+            selectedSubcategory: companyData.selectedSubcategory,
+            selectedCategory: companyData.selectedCategory,
+            profilePictureFirebaseUrl: profilePicture,
+            companyCityForBackend: companyData.companyCityForBackend,
+            companyPostalCodeForBackend: companyData.companyPostalCodeForBackend,
+            companyCountryForBackend: companyData.companyCountryForBackend,
+            companyAddressLine1ForBackend: companyData.companyAddressLine1ForBackend,
+            isVerified: companyData.stripeVerificationStatus === 'verified',
+            hourlyRate: companyData.hourlyRate,
+            radiusKm: companyData.radiusKm,
+            stripeVerificationStatus: companyData.stripeVerificationStatus,
             averageRating: companyData.averageRating || 0,
             totalReviews: companyData.totalReviews || 0,
             responseTime: companyData.responseTime || 'Unbekannt',
@@ -87,22 +101,31 @@ export default function ProfilePage() {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
+
+            // Prüfe alle möglichen Profilbild-URLs
+            const profilePicture =
+              userData.profilePictureFirebaseUrl ||
+              userData.profilePictureUrl ||
+              userData.profilePictureURL ||
+              userData.step3?.profilePictureURL;
+
             setProfile({
               id: companyId,
               companyName:
                 userData.companyName ||
                 userData.firstName + ' ' + userData.lastName ||
                 'Unbekannte Firma',
-              companyDescription: userData.companyDescription,
-              companyStreet: userData.companyStreet,
-              companyHouseNumber: userData.companyHouseNumber,
-              companyPostalCode: userData.companyPostalCode,
-              companyCity: userData.companyCity,
-              companyCountry: userData.companyCountry,
-              phoneNumber: userData.phoneNumber,
-              email: userData.email,
-              profilePictureUrl: userData.profilePictureUrl,
-              isVerified: userData.isVerified || false,
+              selectedSubcategory: userData.selectedSubcategory,
+              selectedCategory: userData.selectedCategory,
+              profilePictureFirebaseUrl: profilePicture,
+              companyCityForBackend: userData.companyCityForBackend,
+              companyPostalCodeForBackend: userData.companyPostalCodeForBackend,
+              companyCountryForBackend: userData.companyCountryForBackend,
+              companyAddressLine1ForBackend: userData.companyAddressLine1ForBackend,
+              isVerified: userData.stripeVerificationStatus === 'verified',
+              hourlyRate: userData.hourlyRate,
+              radiusKm: userData.radiusKm,
+              stripeVerificationStatus: userData.stripeVerificationStatus,
             });
           } else {
             setError('Firma nicht gefunden');
@@ -156,38 +179,48 @@ export default function ProfilePage() {
         <span>Firmenprofil nicht gefunden</span>
       </div>
     );
-  }
-
-  // Formatiere die Adresse
+  } // Formatiere die Adresse aus den Backend-Feldern
   const fullAddress = [
-    profile.companyStreet && profile.companyHouseNumber
-      ? `${profile.companyStreet} ${profile.companyHouseNumber}`
-      : profile.companyStreet,
-    profile.companyPostalCode && profile.companyCity
-      ? `${profile.companyPostalCode} ${profile.companyCity}`
+    profile.companyAddressLine1ForBackend,
+    profile.companyPostalCodeForBackend && profile.companyCityForBackend
+      ? `${profile.companyPostalCodeForBackend} ${profile.companyCityForBackend}`
       : null,
-    profile.companyCountry,
+    profile.companyCountryForBackend === 'DE' ? 'Deutschland' : profile.companyCountryForBackend,
   ]
     .filter(Boolean)
     .join(', ');
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => router.back()}
-          className="text-[#14ad9f] hover:underline flex items-center gap-2 mb-6"
-        >
-          <FiArrowLeft /> Zurück
-        </button>
+    <main className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center text-gray-600 hover:text-gray-900">
+                <FiHome size={20} className="mr-2" />
+                <span className="font-medium">Tasko</span>
+              </Link>
+            </div>
+            <button
+              onClick={() => router.back()}
+              className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
+            >
+              <FiArrowLeft size={18} />
+              <span>Zurück</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
+      <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           {/* Header Section */}
           <div className="bg-gradient-to-r from-[#14ad9f] to-[#0d8a7a] p-6 text-white">
             <div className="flex items-center gap-4">
-              {profile.profilePictureUrl ? (
+              {profile.profilePictureFirebaseUrl ? (
                 <Image
-                  src={profile.profilePictureUrl}
+                  src={profile.profilePictureFirebaseUrl}
                   alt={`Profilbild von ${profile.companyName}`}
                   width={80}
                   height={80}
@@ -203,7 +236,7 @@ export default function ProfilePage() {
                   {profile.companyName}
                   {profile.isVerified && <FiCheckCircle className="text-green-300" size={24} />}
                 </h1>
-                <p className="text-white/90 text-lg">Anbieter</p>
+                <p className="text-white/90 text-lg">{profile.selectedSubcategory || 'Anbieter'}</p>
               </div>
             </div>
           </div>
@@ -211,37 +244,47 @@ export default function ProfilePage() {
           {/* Content Section */}
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Linke Spalte - Informationen */}
+              {/* Linke Spalte - Service-Informationen */}
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Kontaktinformationen</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Service-Informationen</h2>
 
                 {fullAddress && (
                   <div className="flex items-start gap-3">
                     <FiMapPin className="text-gray-500 mt-1 flex-shrink-0" size={18} />
                     <div>
                       <p className="text-gray-700">{fullAddress}</p>
+                      <p className="text-sm text-gray-500">Standort</p>
                     </div>
                   </div>
                 )}
 
-                {profile.phoneNumber && (
-                  <div className="flex items-center gap-3">
-                    <FiPhone className="text-gray-500 flex-shrink-0" size={18} />
-                    <p className="text-gray-700">{profile.phoneNumber}</p>
+                {profile.hourlyRate && (
+                  <div className="flex items-start gap-3">
+                    <FiAward className="text-gray-500 mt-1 flex-shrink-0" size={18} />
+                    <div>
+                      <p className="text-gray-700">{profile.hourlyRate}€/Stunde</p>
+                      <p className="text-sm text-gray-500">Stundensatz</p>
+                    </div>
                   </div>
                 )}
 
-                {profile.email && (
-                  <div className="flex items-center gap-3">
-                    <FiMail className="text-gray-500 flex-shrink-0" size={18} />
-                    <p className="text-gray-700">{profile.email}</p>
+                {profile.radiusKm && (
+                  <div className="flex items-start gap-3">
+                    <FiMapPin className="text-gray-500 mt-1 flex-shrink-0" size={18} />
+                    <div>
+                      <p className="text-gray-700">{profile.radiusKm} km</p>
+                      <p className="text-sm text-gray-500">Arbeitsradius</p>
+                    </div>
                   </div>
                 )}
 
-                {profile.companyDescription && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Über uns</h3>
-                    <p className="text-gray-700 leading-relaxed">{profile.companyDescription}</p>
+                {profile.selectedCategory && (
+                  <div className="flex items-start gap-3">
+                    <FiUser className="text-gray-500 mt-1 flex-shrink-0" size={18} />
+                    <div>
+                      <p className="text-gray-700">{profile.selectedCategory}</p>
+                      <p className="text-sm text-gray-500">Kategorie</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -282,6 +325,23 @@ export default function ProfilePage() {
                         <span className="font-semibold text-gray-800">{profile.responseTime}</span>
                       </div>
                       <p className="text-sm text-gray-600">Antwortzeit</p>
+                    </div>
+                  )}
+
+                  {profile.stripeVerificationStatus && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FiCheckCircle
+                          className={`${profile.stripeVerificationStatus === 'verified' ? 'text-green-500' : 'text-orange-500'}`}
+                          size={18}
+                        />
+                        <span className="font-semibold text-gray-800">
+                          {profile.stripeVerificationStatus === 'verified'
+                            ? 'Verifiziert'
+                            : 'In Bearbeitung'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">Verifikationsstatus</p>
                     </div>
                   )}
                 </div>
