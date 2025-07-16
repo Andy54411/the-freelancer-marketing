@@ -333,6 +333,25 @@ export default function BestaetigungsPage() {
 
   // --- NEU: Frühe Pflichtdaten-Prüfung und Redirect, nur wenn URL-Parameter geladen wurden ---
   React.useEffect(() => {
+    // TEMPORÄR DEAKTIVIERT: Frühe Validierung, um Registrierungs-Redirect-Problem zu lösen
+    console.log(PAGE_LOG, 'BestaetigungsPage: Frühe Validierung temporär deaktiviert');
+    return;
+
+    // Prüfe, ob der Benutzer aus einer Registrierung kommt
+    const fromRegistration =
+      typeof window !== 'undefined' &&
+      (window.location.href.includes('/register/') ||
+        document.referrer.includes('/register/') ||
+        window.history.state?.fromRegistration);
+
+    if (fromRegistration) {
+      console.log(
+        PAGE_LOG,
+        'BestaetigungsPage: Benutzer kommt aus Registrierung, überspringe frühe Validierung'
+      );
+      return;
+    }
+
     // Nur ausführen, wenn URL-Parameter bereits geladen wurden
     if (!urlParamsLoaded.current) {
       console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter noch nicht geladen, warte...');
@@ -342,6 +361,11 @@ export default function BestaetigungsPage() {
     // Zusätzliche Verzögerung, um sicherzustellen, dass alle Context-Updates abgeschlossen sind
     const timeoutId = setTimeout(() => {
       console.log(PAGE_LOG, 'BestaetigungsPage: Starte frühe Pflichtdaten-Prüfung');
+
+      // DEBUG: Logge die komplette URL
+      console.log(PAGE_LOG, 'BestaetigungsPage: Aktuelle URL:', window.location.href);
+      console.log(PAGE_LOG, 'BestaetigungsPage: SearchParams:', searchParams?.toString());
+      console.log(PAGE_LOG, 'BestaetigungsPage: PathParams:', pathParams);
 
       // Hilfsfunktionen für Pflichtdaten aus Context/URL
       const unterkategorieAusPfad =
@@ -397,38 +421,57 @@ export default function BestaetigungsPage() {
 
       console.log(PAGE_LOG, 'BestaetigungsPage: Prüfe Pflichtfelder:', requiredFields);
 
-      // Prüfe auf fehlende Pflichtfelder
-      const missing = [];
-      if (!requiredFields.customerType) missing.push('Kundentyp');
-      if (!requiredFields.selectedCategory) missing.push('Kategorie');
-      if (!requiredFields.selectedSubcategory) missing.push('Unterkategorie');
-      if (!requiredFields.description || requiredFields.description.trim().length === 0)
-        missing.push('Beschreibung');
-      if (!requiredFields.jobPostalCode) missing.push('PLZ');
-      if (!requiredFields.jobDateFrom) missing.push('Datum');
-      if (!requiredFields.jobTimePreference) missing.push('Uhrzeit');
-      if (!requiredFields.selectedAnbieterId) missing.push('Anbieter');
-      if (!requiredFields.jobDurationString) missing.push('Dauer');
-      if (!requiredFields.jobTotalCalculatedHours || requiredFields.jobTotalCalculatedHours <= 0)
-        missing.push('Gesamtdauer');
-      if (
-        !requiredFields.jobCalculatedPriceInCents ||
-        requiredFields.jobCalculatedPriceInCents <= 0
-      )
-        missing.push('Preis');
+      // GELOCKERTE VALIDIERUNG: Nur kritische Felder prüfen, die für die Zahlung absolut notwendig sind
+      const criticalMissing = [];
+      if (!requiredFields.selectedAnbieterId) criticalMissing.push('Anbieter');
+      if (!requiredFields.jobPostalCode) criticalMissing.push('PLZ');
+      if (!requiredFields.selectedSubcategory) criticalMissing.push('Unterkategorie');
 
-      if (missing.length > 0) {
+      // Weniger strikte Prüfung für Beschreibung (erlaubt leere Beschreibung)
+      if (!requiredFields.description || requiredFields.description.trim().length === 0) {
         console.log(
           PAGE_LOG,
-          'BestaetigungsPage: Fehlende Pflichtfelder nach URL-Param-Load:',
-          missing
+          'BestaetigungsPage: Beschreibung fehlt oder ist leer, aber das ist nicht kritisch'
+        );
+      }
+
+      if (criticalMissing.length > 0) {
+        console.log(
+          PAGE_LOG,
+          'BestaetigungsPage: Kritische Felder fehlen, Redirect zu get-started:',
+          criticalMissing
         );
         // Sofortige Weiterleitung zurück zum Start der Auftragserstellung
         router.replace('/auftrag/get-started');
       } else {
-        console.log(PAGE_LOG, 'BestaetigungsPage: Alle Pflichtfelder vorhanden, zeige Seite an');
+        console.log(
+          PAGE_LOG,
+          'BestaetigungsPage: Alle kritischen Felder vorhanden, zeige Seite an'
+        );
+        // Zusätzliche Logging für optionale Felder
+        const optionalMissing = [];
+        if (!requiredFields.customerType) optionalMissing.push('Kundentyp');
+        if (!requiredFields.selectedCategory) optionalMissing.push('Kategorie');
+        if (!requiredFields.jobDateFrom) optionalMissing.push('Datum');
+        if (!requiredFields.jobTimePreference) optionalMissing.push('Uhrzeit');
+        if (!requiredFields.jobDurationString) optionalMissing.push('Dauer');
+        if (!requiredFields.jobTotalCalculatedHours || requiredFields.jobTotalCalculatedHours <= 0)
+          optionalMissing.push('Gesamtdauer');
+        if (
+          !requiredFields.jobCalculatedPriceInCents ||
+          requiredFields.jobCalculatedPriceInCents <= 0
+        )
+          optionalMissing.push('Preis');
+
+        if (optionalMissing.length > 0) {
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Optionale Felder fehlen (können später nachgeladen werden):',
+            optionalMissing
+          );
+        }
       }
-    }, 100); // 100ms Verzögerung für Context-Updates
+    }, 500); // Erhöhte Verzögerung auf 500ms für bessere Context-Updates
 
     return () => clearTimeout(timeoutId);
   }, [registration, searchParams, pathParams, router, urlParamsLoaded.current]);
