@@ -3,9 +3,12 @@ import { db } from '@/firebase/server';
 import fs from 'fs';
 import path from 'path';
 
-export async function GET(request: NextRequest, { params }: { params: { language: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ language: string }> }
+) {
   try {
-    const { language } = params;
+    const { language } = await params;
 
     // Validiere Sprach-Parameter (z.B. de-en)
     if (!language || !language.includes('-')) {
