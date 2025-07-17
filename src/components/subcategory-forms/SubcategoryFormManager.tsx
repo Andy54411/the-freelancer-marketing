@@ -1,10 +1,12 @@
 // Hauptkomponente für dynamische Unterkategorie-Formulare
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   SubcategoryData,
   getSubcategoryType,
   validateSubcategoryData,
 } from '@/types/subcategory-forms';
+import { useRegistration } from '@/contexts/Registration-Context';
 import AppEntwicklungForm from './AppEntwicklungForm';
 import ArchivierungForm from './ArchivierungForm';
 import AutoreparaturForm from './AutoreparaturForm';
@@ -25,7 +27,6 @@ import DatenbankentwicklungForm from './DatenbankentwicklungForm';
 import DatenerfassungForm from './DatenerfassungForm';
 import DekorationForm from './DekorationForm';
 import ElektrikerForm from './ElektrikerForm';
-import ElektrikerFormNew from './ElektrikerFormNew';
 import EntrümpelungForm from './EntrümpelungForm';
 import ErnährungsberatungForm from './ErnährungsberatungForm';
 import EventOrganisationForm from './EventOrganisationForm';
@@ -135,6 +136,8 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
 }) => {
   const [formData, setFormData] = useState<SubcategoryData | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const router = useRouter();
+  const { customerType, selectedCategory, selectedSubcategory } = useRegistration();
 
   // Initialisiere Formulardaten basierend auf Unterkategorie
   useEffect(() => {
@@ -1293,6 +1296,121 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
     setFormData(newData);
   };
 
+  // Validierungslogik für alle Formulare
+  const isFormValid = () => {
+    if (!formData) return false;
+
+    // Prüfe ob Formulardaten vorhanden sind
+    const hasFormData = Object.keys(formData).length > 0;
+    if (!hasFormData) return false;
+
+    // Definiere explizit optionale Felder
+    const optionalFields = [
+      'additionalInfo',
+      'specialRequirements',
+      'additionalNotes',
+      'zusätzlicheInfos',
+      'besondereAnforderungen',
+      'subcategory',
+      'additionalServices',
+      'budget',
+      'budgetRange',
+      'timeframe',
+      'specialNotes',
+      'description',
+      'notes',
+      'comment',
+      'remarks',
+      'extras',
+      'additional',
+      'allergien',
+      'allergies',
+      'menüwünsche',
+      'menuWishes',
+      'specialRequests',
+      'kitchenSize',
+      'kitchenEquipment',
+      'küchengröße',
+      'küchenaustattung',
+      'startTime',
+      'startzeit',
+      'duration',
+      'dauer',
+      'budgetPerPerson',
+      'budgetProPerson',
+      'pricePerPerson',
+      'preisProPerson',
+    ];
+
+    // Prüfe alle Felder auf Vollständigkeit
+    const missingFields: string[] = [];
+    Object.entries(formData).forEach(([key, value]) => {
+      // Überspringen von optionalen Feldern
+      if (
+        optionalFields.includes(key) ||
+        key.includes('optional') ||
+        key.includes('Optional') ||
+        key.includes('zusätzlich') ||
+        key.includes('additional') ||
+        key.includes('extra') ||
+        key.includes('Extra') ||
+        key.includes('budget') ||
+        key.includes('Budget') ||
+        key.includes('time') ||
+        key.includes('Time') ||
+        key.includes('zeit') ||
+        key.includes('Zeit') ||
+        key.includes('dauer') ||
+        key.includes('Dauer') ||
+        key.includes('duration') ||
+        key.includes('Duration')
+      ) {
+        return;
+      }
+
+      // Prüfe ob das Feld leer ist oder Platzhalter enthält
+      if (
+        value === null ||
+        value === undefined ||
+        value === '' ||
+        (Array.isArray(value) && value.length === 0) ||
+        // Überspringe Platzhalter-Werte
+        value === 'HH:MM' ||
+        value === 'Dauer in Stunden' ||
+        value === 'Budget pro Person in €' ||
+        value === 'Klein, Mittel, Groß oder Professionell' ||
+        value === 'vorhanden' ||
+        (typeof value === 'string' && value.includes('Platzhalter')) ||
+        (typeof value === 'string' && value.includes('placeholder'))
+      ) {
+        missingFields.push(key);
+      }
+    });
+
+    const allRequiredFieldsFilled = missingFields.length === 0;
+
+    console.log('SubcategoryFormManager validation:', {
+      subcategory,
+      totalFields: Object.keys(formData).length,
+      missingFields,
+      allRequiredFieldsFilled,
+      formData,
+    });
+
+    return allRequiredFieldsFilled;
+  };
+
+  const handleNextClick = () => {
+    if (!isFormValid()) {
+      console.log('Form is not valid, cannot proceed');
+      return;
+    }
+
+    console.log('Form is valid, proceeding to address page');
+    const encodedSubcategory = encodeURIComponent(subcategory);
+    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
+  };
+
   if (!formData) {
     return <div>Lade Formular...</div>;
   }
@@ -2247,6 +2365,47 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   return (
     <div className="space-y-6">
       {renderForm()}
+
+      {/* Validierungsanzeige und Button */}
+      {formData && (
+        <>
+          {!isFormValid() && (
+            <div className="mt-6 text-center">
+              <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3 text-[#14ad9f]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="text-gray-700 font-medium">
+                  Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Button wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
+          {isFormValid() && (
+            <div className="mt-10 text-center">
+              <button
+                className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition"
+                onClick={handleNextClick}
+              >
+                Weiter zur Adresseingabe
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Fehleranzeige */}
       {errors.length > 0 && (

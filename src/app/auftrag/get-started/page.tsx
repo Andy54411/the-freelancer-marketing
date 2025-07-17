@@ -107,94 +107,7 @@ export default function GetStartedPage() {
 
   const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
     setSubcategoryData(data);
-    // Entferne die automatische Validierung hier - wir prüfen das in isFormValid
   }, []);
-
-  // Hilfsfunktion, die prüft, ob alle erforderlichen Daten vorhanden sind
-  const isFormValid = useCallback(() => {
-    // Prüfe ob Grunddaten existieren
-    if (!customerType || !selectedCategory || !selectedSubcategory || !subcategoryData) {
-      return false;
-    }
-
-    // Prüfe ob Formulardaten vorhanden sind
-    const hasSubcategoryData = Object.keys(subcategoryData).length > 0;
-    if (!hasSubcategoryData) {
-      return false;
-    }
-
-    // Prüfe ALLE Felder in den Formulardaten auf Vollständigkeit
-    const missingFields: string[] = [];
-
-    // Prüfe alle Felder außer den explizit optionalen
-    Object.entries(subcategoryData).forEach(([key, value]) => {
-      // Definiere explizit optionale Felder (die immer optional sind)
-      const optionalFields = [
-        'additionalInfo',
-        'specialRequirements',
-        'additionalNotes',
-        'zusätzlicheInfos',
-        'besondereAnforderungen',
-        'subcategory',
-        'additionalServices',
-        'budget',
-        'budgetRange',
-        'timeframe',
-        'specialNotes',
-        'description',
-        'notes',
-        'comment',
-        'remarks',
-        'extras',
-        'additional',
-        'allergien',
-        'allergies',
-        'menüwünsche',
-        'menuWishes',
-        'specialRequests',
-        'kitchenSize',
-        'kitchenEquipment',
-        'küchengröße',
-        'küchenaustattung',
-      ];
-
-      // Überspringen von optionalen Feldern
-      if (
-        optionalFields.includes(key) ||
-        key.includes('optional') ||
-        key.includes('Optional') ||
-        key.includes('zusätzlich') ||
-        key.includes('additional') ||
-        key.includes('extra') ||
-        key.includes('Extra')
-      ) {
-        return;
-      }
-
-      // Prüfe ob das Feld leer ist
-      if (
-        value === null ||
-        value === undefined ||
-        value === '' ||
-        (Array.isArray(value) && value.length === 0)
-      ) {
-        missingFields.push(key);
-      }
-    });
-
-    const allRequiredFieldsFilled = missingFields.length === 0;
-
-    // Debug-Ausgabe
-    console.log('Form validation check:', {
-      subcategory: selectedSubcategory,
-      totalFields: Object.keys(subcategoryData).length,
-      missingFields,
-      allRequiredFieldsFilled,
-      subcategoryData,
-    });
-
-    return allRequiredFieldsFilled;
-  }, [customerType, selectedCategory, selectedSubcategory, subcategoryData]);
 
   const handleSubcategoryFormValidation = useCallback((isValid: boolean) => {
     setIsSubcategoryFormValid(isValid);
@@ -205,29 +118,6 @@ export default function GetStartedPage() {
 
   // Zeige Projektdetails-Form wenn Unterkategorie ausgewählt ist
   const showSubcategoryForm = customerType && selectedCategory && selectedSubcategory;
-
-  const handleNextClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // Verhindert unbeabsichtigte Formularübermittlungen
-    setError(null);
-
-    // Verwende die isFormValid-Funktion für konsistente Validierung
-    if (!isFormValid()) {
-      setError('Bitte füllen Sie alle Pflichtfelder aus.');
-      return;
-    }
-
-    console.log('GetStartedPage: Daten im Context sind aktuell. Navigiere zu Adresse-Seite.');
-    console.log('Context Daten für nächste Seite:', {
-      customerType: customerType,
-      selectedCategory: selectedCategory,
-      selectedSubcategory: selectedSubcategory,
-      subcategoryData: subcategoryData,
-    });
-
-    const encodedSubcategory = encodeURIComponent(selectedSubcategory!);
-
-    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-  };
 
   return (
     <>
@@ -325,47 +215,6 @@ export default function GetStartedPage() {
             <div className="text-red-500 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
               {error}
             </div>
-          )}
-
-          {/* Zeige immer einen Button an, aber mit unterschiedlichem Aussehen je nach Validierungsstatus */}
-          {isClientMounted && showSubcategoryForm && (
-            <>
-              {!isFormValid() && (
-                <div className="mt-6 text-center">
-                  <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-3 text-[#14ad9f]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span className="text-gray-700 font-medium">
-                      Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Button wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
-              {isFormValid() && (
-                <div className="mt-10 text-center">
-                  <button
-                    className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition"
-                    onClick={handleNextClick}
-                  >
-                    Weiter zur Adresseingabe
-                  </button>
-                </div>
-              )}
-            </>
           )}
         </div>
 
