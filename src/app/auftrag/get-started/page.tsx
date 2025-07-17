@@ -110,8 +110,15 @@ export default function GetStartedPage() {
   const handleNextClick = () => {
     setError(null);
 
-    // Use context state for validation - description is optional now
-    if (!customerType || !selectedCategory || !selectedSubcategory || !isSubcategoryFormValid) {
+    // Use context state for validation - check all required fields
+    if (
+      !customerType ||
+      !selectedCategory ||
+      !selectedSubcategory ||
+      !isSubcategoryFormValid ||
+      !subcategoryData ||
+      Object.keys(subcategoryData).length === 0
+    ) {
       setError('Bitte füllen Sie alle Felder aus.');
       return;
     }
@@ -227,17 +234,20 @@ export default function GetStartedPage() {
             </div>
           )}
 
-          {/* Button wird nur angezeigt wenn alle 4 Schritte vollständig sind */}
-          {isClientMounted && logicalCurrentStep === TOTAL_STEPS && (
-            <div className="mt-10">
-              <button
-                className="bg-[#14ad9f] text-white font-medium py-3 px-6 rounded-lg shadow hover:bg-teal-700 transition"
-                onClick={handleNextClick}
-              >
-                Weiter zur Adresseingabe
-              </button>
-            </div>
-          )}
+          {/* Button wird nur angezeigt wenn alle 4 Schritte vollständig sind und Formulardaten vorhanden sind */}
+          {isClientMounted &&
+            logicalCurrentStep === TOTAL_STEPS &&
+            subcategoryData &&
+            Object.keys(subcategoryData).length > 0 && (
+              <div className="mt-10">
+                <button
+                  className="bg-[#14ad9f] text-white font-medium py-3 px-6 rounded-lg shadow hover:bg-teal-700 transition"
+                  onClick={handleNextClick}
+                >
+                  Weiter zur Adresseingabe
+                </button>
+              </div>
+            )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 w-full max-w-6xl">
