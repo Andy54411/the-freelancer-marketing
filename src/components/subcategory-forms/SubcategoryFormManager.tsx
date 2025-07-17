@@ -1304,6 +1304,38 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
     const hasFormData = Object.keys(formData).length > 0;
     if (!hasFormData) return false;
 
+    // Spezielle Behandlung für Mietkoch
+    if (subcategory === 'Mietkoch') {
+      const requiredMietkochFields = [
+        'serviceType',
+        'cuisineType',
+        'eventType',
+        'level',
+        'numberOfGuests',
+        'location',
+        'eventDate',
+      ];
+
+      const missingMietkochFields = requiredMietkochFields.filter(field => {
+        const value = formData[field];
+        return (
+          value === null ||
+          value === undefined ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0)
+        );
+      });
+
+      console.log('Mietkoch specific validation:', {
+        requiredFields: requiredMietkochFields,
+        missingFields: missingMietkochFields,
+        formData,
+        isValid: missingMietkochFields.length === 0,
+      });
+
+      return missingMietkochFields.length === 0;
+    }
+
     // Definiere explizit optionale Felder
     const optionalFields = [
       'additionalInfo',
@@ -1340,6 +1372,10 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       'budgetProPerson',
       'pricePerPerson',
       'preisProPerson',
+      // Spezifische Mietkoch-Felder
+      'menuWishes',
+      'serviceType', // Wird automatisch gesetzt
+      'additionalServices', // Checkboxes können leer sein
     ];
 
     // Prüfe alle Felder auf Vollständigkeit
@@ -1395,6 +1431,34 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       missingFields,
       allRequiredFieldsFilled,
       formData,
+      // Debug: Zeige alle Felder und ihre Werte
+      fieldDetails: Object.entries(formData).map(([key, value]) => ({
+        field: key,
+        value,
+        isEmpty:
+          value === null ||
+          value === undefined ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0),
+        isOptional:
+          optionalFields.includes(key) ||
+          key.includes('optional') ||
+          key.includes('Optional') ||
+          key.includes('zusätzlich') ||
+          key.includes('additional') ||
+          key.includes('extra') ||
+          key.includes('Extra') ||
+          key.includes('budget') ||
+          key.includes('Budget') ||
+          key.includes('time') ||
+          key.includes('Time') ||
+          key.includes('zeit') ||
+          key.includes('Zeit') ||
+          key.includes('dauer') ||
+          key.includes('Dauer') ||
+          key.includes('duration') ||
+          key.includes('Duration'),
+      })),
     });
 
     return allRequiredFieldsFilled;
