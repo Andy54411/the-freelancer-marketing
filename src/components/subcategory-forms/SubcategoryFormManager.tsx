@@ -609,6 +609,15 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             loadingHelp: true,
             vehicleType: 'transporter',
           } as any;
+        case 'Frachtführer':
+          return {
+            subcategory: 'Frachtführer',
+            serviceType: 'fracht',
+            goodsType: 'palette',
+            distance: 'fernverkehr',
+            loadingHelp: true,
+            vehicleType: 'lkw',
+          } as any;
         case 'Buchhaltung':
           return {
             subcategory: 'Buchhaltung',
@@ -1862,6 +1871,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
           />
         );
       case 'Transportdienstleistungen':
+        return (
+          <TransportdienstleistungenForm
+            data={formData as any}
+            onDataChange={handleDataChange}
+            onValidationChange={() => {}}
+          />
+        );
+      case 'Frachtführer':
         return (
           <TransportdienstleistungenForm
             data={formData as any}
