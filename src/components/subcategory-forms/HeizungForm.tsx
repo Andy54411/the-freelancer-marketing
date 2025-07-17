@@ -315,24 +315,6 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
             />
           </FormField>
 
-          <FormField label="Gewünschter Termin">
-            <FormInput
-              type="text"
-              value={formData.preferredDate || ''}
-              onChange={value => handleInputChange('preferredDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Gewünschte Uhrzeit">
-            <FormInput
-              type="text"
-              value={formData.preferredTime || ''}
-              onChange={value => handleInputChange('preferredTime', value)}
-              placeholder="HH:MM"
-            />
-          </FormField>
-
           <FormField label="Kontaktperson">
             <FormInput
               type="text"
@@ -356,15 +338,6 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
               value={formData.estimatedDuration || ''}
               onChange={value => handleInputChange('estimatedDuration', value)}
               placeholder="Tage"
-            />
-          </FormField>
-
-          <FormField label="Letzte Wartung">
-            <FormInput
-              type="text"
-              value={formData.lastMaintenance || ''}
-              onChange={value => handleInputChange('lastMaintenance', value)}
-              placeholder="TT.MM.JJJJ"
             />
           </FormField>
 

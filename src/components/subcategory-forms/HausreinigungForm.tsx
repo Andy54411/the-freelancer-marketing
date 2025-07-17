@@ -291,24 +291,6 @@ const HausreinigungForm: React.FC<HausreinigungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
           <FormField label="Geschätzter Zeitaufwand">
             <FormInput
               type="number"

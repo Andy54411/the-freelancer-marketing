@@ -140,42 +140,6 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Abholadresse" required>
-            <FormInput
-              type="text"
-              value={formData.pickupAddress || ''}
-              onChange={value => handleInputChange('pickupAddress', value)}
-              placeholder="Vollständige Abholadresse"
-            />
-          </FormField>
-
-          <FormField label="Lieferadresse" required>
-            <FormInput
-              type="text"
-              value={formData.deliveryAddress || ''}
-              onChange={value => handleInputChange('deliveryAddress', value)}
-              placeholder="Vollständige Lieferadresse"
-            />
-          </FormField>
-
-          <FormField label="Gewünschte Abholzeit">
-            <FormInput
-              type="text"
-              value={formData.pickupTime || ''}
-              onChange={value => handleInputChange('pickupTime', value)}
-              placeholder="TT.MM.JJJJ HH:MM"
-            />
-          </FormField>
-
-          <FormField label="Gewünschte Lieferzeit">
-            <FormInput
-              type="text"
-              value={formData.deliveryTime || ''}
-              onChange={value => handleInputChange('deliveryTime', value)}
-              placeholder="TT.MM.JJJJ HH:MM"
-            />
-          </FormField>
-
           <FormField label="Ansprechpartner Abholung">
             <FormInput
               type="text"

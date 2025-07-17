@@ -323,66 +323,12 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Letzte Inspektion">
-            <FormInput
-              type="text"
-              value={formData.lastInspection || ''}
-              onChange={value => handleInputChange('lastInspection', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Gewünschter Termin">
-            <FormInput
-              type="text"
-              value={formData.preferredDate || ''}
-              onChange={value => handleInputChange('preferredDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Gewünschte Uhrzeit">
-            <FormInput
-              type="text"
-              value={formData.preferredTime || ''}
-              onChange={value => handleInputChange('preferredTime', value)}
-              placeholder="HH:MM"
-            />
-          </FormField>
-
           <FormField label="Kontaktperson">
             <FormInput
               type="text"
               value={formData.contactPerson || ''}
               onChange={value => handleInputChange('contactPerson', value)}
               placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
             />
           </FormField>
 

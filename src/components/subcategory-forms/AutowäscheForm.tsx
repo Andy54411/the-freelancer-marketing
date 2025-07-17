@@ -346,42 +346,6 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
             />
           </FormField>
 
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
-          <FormField label="Gewünschter Termin">
-            <FormInput
-              type="text"
-              value={formData.preferredDate || ''}
-              onChange={value => handleInputChange('preferredDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Uhrzeit">
-            <FormInput
-              type="text"
-              value={formData.preferredTime || ''}
-              onChange={value => handleInputChange('preferredTime', value)}
-              placeholder="HH:MM"
-            />
-          </FormField>
-
           <FormField label="Dauer geschätzt">
             <FormInput
               type="number"

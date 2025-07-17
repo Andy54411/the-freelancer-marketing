@@ -175,7 +175,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
       formData.budgetRange &&
       formData.serviceType &&
       formData.locationType &&
-      formData.eventDate &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -240,33 +239,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
               onChange={value => handleInputChange('cateringType', value)}
               options={cateringTypeOptions}
               placeholder="Wählen Sie die Catering-Art"
-            />
-          </FormField>
-
-          <FormField label="Veranstaltungsdatum" required>
-            <FormInput
-              type="text"
-              value={formData.eventDate || ''}
-              onChange={value => handleInputChange('eventDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Startzeit">
-            <FormInput
-              type="text"
-              value={formData.startTime || ''}
-              onChange={value => handleInputChange('startTime', value)}
-              placeholder="HH:MM"
-            />
-          </FormField>
-
-          <FormField label="Endzeit">
-            <FormInput
-              type="text"
-              value={formData.endTime || ''}
-              onChange={value => handleInputChange('endTime', value)}
-              placeholder="HH:MM"
             />
           </FormField>
 

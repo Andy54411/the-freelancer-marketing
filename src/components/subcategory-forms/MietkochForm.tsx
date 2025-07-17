@@ -102,7 +102,6 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
       formData.eventType &&
       formData.level &&
       formData.numberOfGuests &&
-      formData.eventDate &&
       formData.location
     );
     onValidationChange(isValid);
@@ -171,38 +170,6 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
               value={formData.location || ''}
               onChange={value => handleInputChange('location', value)}
               placeholder="Adresse des Veranstaltungsorts"
-            />
-          </FormField>
-
-          <FormField label="Event-Datum" required>
-            <FormInput
-              type="text"
-              value={formData.eventDate || ''}
-              onChange={value => handleInputChange('eventDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Startzeit">
-            <FormInput
-              type="text"
-              value={formData.startTime || ''}
-              onChange={value => handleInputChange('startTime', value)}
-              placeholder="HH:MM"
-            />
-          </FormField>
-
-          <FormField label="Dauer (Stunden)">
-            <FormInput
-              type="number"
-              value={formData.duration?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'duration',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Dauer in Stunden"
             />
           </FormField>
 

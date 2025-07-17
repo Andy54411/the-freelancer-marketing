@@ -307,15 +307,6 @@ const GärtnerForm: React.FC<GärtnerFormProps> = ({ data, onDataChange, onValid
             />
           </FormField>
 
-          <FormField label="Gewünschter Termin und Uhrzeit">
-            <FormInput
-              type="text"
-              value={formData.preferredDateTime || ''}
-              onChange={value => handleInputChange('preferredDateTime', value)}
-              placeholder="TT.MM.JJJJ HH:MM"
-            />
-          </FormField>
-
           <FormField label="Kontaktperson">
             <FormInput
               type="text"

@@ -538,9 +538,6 @@ export interface MietkochData extends BaseSubcategoryData {
   level: string;
   numberOfGuests?: number;
   location: string;
-  eventDate: string;
-  startTime?: string;
-  duration?: number;
   budgetPerPerson?: number;
   kitchenSize?: string;
   kitchenEquipment?: string;
@@ -549,6 +546,10 @@ export interface MietkochData extends BaseSubcategoryData {
   menuWishes?: string;
   specialRequirements?: string;
   // Legacy fields for backward compatibility
+  endTime?: string;
+  eventDate?: string;
+  startTime?: string;
+  duration?: number;
   guestCount?: number;
   mealType?: string;
   ingredients?: string;
@@ -958,7 +959,6 @@ export interface CateringData extends BaseSubcategoryData {
     | 'trauerfeier'
     | 'sonstiges';
   guestCount: number;
-  eventDate: string;
   eventLocation?: string;
   cuisineType?:
     | 'deutsch'
@@ -1105,9 +1105,7 @@ export interface DJServiceData extends BaseSubcategoryData {
     | 'karaoke'
     | 'mobile_disco';
   musicGenres: string[];
-  eventDuration: '2' | '3' | '4' | '5' | '6' | '8' | '10';
   guestCount: 'bis_50' | '50_100' | '100_200' | '200_500' | 'über_500';
-  eventDate: string;
   eventLocation?: string;
   budgetRange?: 'bis_300' | '300_600' | '600_1000' | '1000_2000' | 'über_2000';
   additionalServices?: string[];
@@ -1289,8 +1287,18 @@ export interface MusikunterrichtData extends BaseSubcategoryData {
 export interface EventplanungData extends BaseSubcategoryData {
   eventType: string;
   eventSize: string;
-  budget: string;
+  budgetRange: string;
+  serviceType: string;
+  locationType: string;
+  guestCount?: number;
+  cateringType?: string;
+  projectDescription: string;
+  // Legacy fields for backward compatibility
+  endTime?: string;
+  budget?: string;
   date?: string;
+  eventDate?: string;
+  startTime?: string;
   location?: string;
   services?: string[];
   duration?: string;

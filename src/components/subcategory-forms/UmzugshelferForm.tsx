@@ -487,24 +487,6 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Auszugsadresse" required>
-            <FormInput
-              type="text"
-              value={formData.fromAddress || ''}
-              onChange={value => handleInputChange('fromAddress', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
-          <FormField label="Einzugsadresse" required>
-            <FormInput
-              type="text"
-              value={formData.toAddress || ''}
-              onChange={value => handleInputChange('toAddress', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
           <FormField label="Parkplatz (Auszug)">
             <FormRadioGroup
               name="fromParking"

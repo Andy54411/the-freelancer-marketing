@@ -100,13 +100,7 @@ const DJServiceForm: React.FC<DJServiceFormProps> = ({
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.musicGenres &&
-      formData.eventDuration &&
-      formData.guestCount &&
-      formData.eventDate
-    );
+    const isValid = !!(formData.serviceType && formData.musicGenres && formData.guestCount);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
@@ -124,33 +118,6 @@ const DJServiceForm: React.FC<DJServiceFormProps> = ({
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
               placeholder="Wählen Sie die Art des Events"
-            />
-          </FormField>
-
-          <FormField label="Event-Dauer" required>
-            <FormSelect
-              value={formData.eventDuration || ''}
-              onChange={value => handleInputChange('eventDuration', value)}
-              options={eventDurationOptions}
-              placeholder="Wählen Sie die Dauer"
-            />
-          </FormField>
-
-          <FormField label="Anzahl Gäste" required>
-            <FormSelect
-              value={formData.guestCount || ''}
-              onChange={value => handleInputChange('guestCount', value)}
-              options={guestCountOptions}
-              placeholder="Wählen Sie die Anzahl der Gäste"
-            />
-          </FormField>
-
-          <FormField label="Event-Datum" required>
-            <FormInput
-              type="text"
-              value={formData.eventDate || ''}
-              onChange={value => handleInputChange('eventDate', value)}
-              placeholder="TT.MM.JJJJ"
             />
           </FormField>
 

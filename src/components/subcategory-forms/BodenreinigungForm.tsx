@@ -319,24 +319,6 @@ const BodenreinigungForm: React.FC<BodenreinigungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Gewünschter Termin">
-            <FormInput
-              type="text"
-              value={formData.preferredDate || ''}
-              onChange={value => handleInputChange('preferredDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Uhrzeit">
-            <FormInput
-              type="text"
-              value={formData.preferredTime || ''}
-              onChange={value => handleInputChange('preferredTime', value)}
-              placeholder="HH:MM"
-            />
-          </FormField>
-
           <FormField label="Hersteller/Marke">
             <FormInput
               type="text"
