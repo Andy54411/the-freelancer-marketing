@@ -241,8 +241,21 @@ export default function GetStartedPage() {
             Object.keys(subcategoryData).length > 0 && (
               <div className="mt-10">
                 <button
-                  className="bg-[#14ad9f] text-white font-medium py-3 px-6 rounded-lg shadow hover:bg-teal-700 transition"
+                  className={`text-white font-medium py-3 px-6 rounded-lg shadow transition ${
+                    customerType &&
+                    selectedCategory &&
+                    selectedSubcategory &&
+                    isSubcategoryFormValid
+                      ? 'bg-[#14ad9f] hover:bg-teal-700'
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
                   onClick={handleNextClick}
+                  disabled={
+                    !customerType ||
+                    !selectedCategory ||
+                    !selectedSubcategory ||
+                    !isSubcategoryFormValid
+                  }
                 >
                   Weiter zur Adresseingabe
                 </button>
