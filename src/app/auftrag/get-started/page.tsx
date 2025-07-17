@@ -56,7 +56,7 @@ export default function GetStartedPage() {
       !!customerType,
       !!selectedCategory,
       !!selectedSubcategory,
-      isSubcategoryFormValid,
+      !!(isSubcategoryFormValid && subcategoryData && Object.keys(subcategoryData).length > 0),
     ];
 
     console.log('DEBUG Steps:', {
@@ -64,6 +64,8 @@ export default function GetStartedPage() {
       selectedCategory: !!selectedCategory,
       selectedSubcategory: !!selectedSubcategory,
       isSubcategoryFormValid,
+      subcategoryDataValid: !!(subcategoryData && Object.keys(subcategoryData).length > 0),
+      subcategoryDataKeys: subcategoryData ? Object.keys(subcategoryData) : [],
       completedCount: stepsCompleted.filter(Boolean).length,
       totalSteps: TOTAL_STEPS,
     });
@@ -82,20 +84,59 @@ export default function GetStartedPage() {
 
   const handleCustomerTypeChange = (type: 'private' | 'business') => {
     setCustomerType(type);
+    // Beim Wechsel des Kundentyps alle nachfolgenden Selektionen zurücksetzen
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    setSubcategoryData(null);
+    setIsSubcategoryFormValid(false);
   };
 
   const handleCategoryChange = (categoryValue: string) => {
     setSelectedCategory(categoryValue);
     setSelectedSubcategory(null); // Reset subcategory
+    setSubcategoryData(null); // Zurücksetzen der Formulardaten
+    setIsSubcategoryFormValid(false); // Zurücksetzen der Validierungsstatus
   };
 
   const handleSubcategoryChange = (subcategoryValue: string) => {
     setSelectedSubcategory(subcategoryValue);
+    setSubcategoryData(null); // Zurücksetzen der Formulardaten bei Unterkategorieänderung
+    setIsSubcategoryFormValid(false); // Zurücksetzen der Validierungsstatus
   };
 
   const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
     setSubcategoryData(data);
   }, []);
+
+  // Hilfsfunktion, die prüft, ob alle erforderlichen Daten vorhanden sind
+  const isFormValid = useCallback(() => {
+    const hasValidSubcategoryData = subcategoryData && Object.keys(subcategoryData).length > 0;
+    const result = !!(
+      customerType &&
+      selectedCategory &&
+      selectedSubcategory &&
+      isSubcategoryFormValid &&
+      hasValidSubcategoryData
+    );
+
+    // Debug-Ausgabe für bessere Fehlerdiagnose
+    console.log('Form validation check:', {
+      customerType: !!customerType,
+      selectedCategory: !!selectedCategory,
+      selectedSubcategory: !!selectedSubcategory,
+      isSubcategoryFormValid,
+      hasValidSubcategoryData,
+      isValid: result,
+    });
+
+    return result;
+  }, [
+    customerType,
+    selectedCategory,
+    selectedSubcategory,
+    isSubcategoryFormValid,
+    subcategoryData,
+  ]);
 
   const handleSubcategoryFormValidation = useCallback((isValid: boolean) => {
     setIsSubcategoryFormValid(isValid);
@@ -107,19 +148,13 @@ export default function GetStartedPage() {
   // Zeige Projektdetails-Form wenn Unterkategorie ausgewählt ist
   const showSubcategoryForm = customerType && selectedCategory && selectedSubcategory;
 
-  const handleNextClick = () => {
+  const handleNextClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Verhindert unbeabsichtigte Formularübermittlungen
     setError(null);
 
-    // Use context state for validation - check all required fields
-    if (
-      !customerType ||
-      !selectedCategory ||
-      !selectedSubcategory ||
-      !isSubcategoryFormValid ||
-      !subcategoryData ||
-      Object.keys(subcategoryData).length === 0
-    ) {
-      setError('Bitte füllen Sie alle Felder aus.');
+    // Verwende die isFormValid-Funktion für eine konsistente Validierung
+    if (!isFormValid()) {
+      setError('Bitte füllen Sie alle erforderlichen Felder aus.');
       return;
     }
 
@@ -242,20 +277,12 @@ export default function GetStartedPage() {
               <div className="mt-10">
                 <button
                   className={`text-white font-medium py-3 px-6 rounded-lg shadow transition ${
-                    customerType &&
-                    selectedCategory &&
-                    selectedSubcategory &&
-                    isSubcategoryFormValid
+                    isFormValid()
                       ? 'bg-[#14ad9f] hover:bg-teal-700'
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
                   onClick={handleNextClick}
-                  disabled={
-                    !customerType ||
-                    !selectedCategory ||
-                    !selectedSubcategory ||
-                    !isSubcategoryFormValid
-                  }
+                  disabled={!isFormValid()}
                 >
                   Weiter zur Adresseingabe
                 </button>
