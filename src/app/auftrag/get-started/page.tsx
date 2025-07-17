@@ -107,114 +107,94 @@ export default function GetStartedPage() {
 
   const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
     setSubcategoryData(data);
-    // Automatische Validierung nach jeder Datenänderung, um das Problem mit der fehlenden Validierungsaktualisierung zu umgehen
-    if (data && Object.keys(data).length > 0) {
-      // Einfache Validierung basierend auf den Daten
-      setIsSubcategoryFormValid(true);
-    }
+    // Entferne die automatische Validierung hier - wir prüfen das in isFormValid
   }, []);
 
   // Hilfsfunktion, die prüft, ob alle erforderlichen Daten vorhanden sind
   const isFormValid = useCallback(() => {
     // Prüfe ob Grunddaten existieren
     if (!customerType || !selectedCategory || !selectedSubcategory || !subcategoryData) {
-      console.log('Grunddaten fehlen:', {
-        customerType,
-        selectedCategory,
-        selectedSubcategory,
-        subcategoryData,
-      });
-      return false;
-    }
-
-    // Prüfe ob das Formular als gültig markiert wurde
-    if (!isSubcategoryFormValid) {
-      console.log('Formular wurde nicht als gültig markiert');
       return false;
     }
 
     // Prüfe ob Formulardaten vorhanden sind
     const hasSubcategoryData = Object.keys(subcategoryData).length > 0;
     if (!hasSubcategoryData) {
-      console.log('Keine Formulardaten vorhanden');
       return false;
     }
 
-    // Prüfe JEDEN Schlüssel in den Formulardaten
+    // Prüfe ALLE Felder in den Formulardaten auf Vollständigkeit
     const missingFields: string[] = [];
 
-    // Allgemeine Regel: Alle Felder, die mit * enden, sind Pflichtfelder
-    const requiredFields = Object.entries(subcategoryData).filter(
-      ([key]) => key.endsWith('*') || key.includes('required') || key.includes('Required')
-    );
+    // Prüfe alle Felder außer den explizit optionalen
+    Object.entries(subcategoryData).forEach(([key, value]) => {
+      // Definiere explizit optionale Felder (die immer optional sind)
+      const optionalFields = [
+        'additionalInfo',
+        'specialRequirements',
+        'additionalNotes',
+        'zusätzlicheInfos',
+        'besondereAnforderungen',
+        'subcategory',
+        'additionalServices',
+        'budget',
+        'budgetRange',
+        'timeframe',
+        'specialNotes',
+        'description',
+        'notes',
+        'comment',
+        'remarks',
+        'extras',
+        'additional',
+        'allergien',
+        'allergies',
+        'menüwünsche',
+        'menuWishes',
+        'specialRequests',
+        'kitchenSize',
+        'kitchenEquipment',
+        'küchengröße',
+        'küchenaustattung',
+      ];
 
-    if (requiredFields.length === 0) {
-      console.log('Keine Pflichtfelder erkannt, prüfe alle Felder...');
-      // Wenn keine Pflichtfelder markiert sind, prüfe alle Standard-Formularfelder
-      Object.entries(subcategoryData).forEach(([key, value]) => {
-        // Überspringen von gewissen Schlüsseln, die optional sind
-        if (
-          key === 'additionalInfo' ||
-          key === 'specialRequirements' ||
-          key === 'additionalNotes' ||
-          key === 'zusätzlicheInfos' ||
-          key === 'besondereAnforderungen' ||
-          key === 'subcategory' ||
-          key === 'additionalServices' ||
-          key.includes('optional') ||
-          key.includes('Optional')
-        ) {
-          return;
-        }
+      // Überspringen von optionalen Feldern
+      if (
+        optionalFields.includes(key) ||
+        key.includes('optional') ||
+        key.includes('Optional') ||
+        key.includes('zusätzlich') ||
+        key.includes('additional') ||
+        key.includes('extra') ||
+        key.includes('Extra')
+      ) {
+        return;
+      }
 
-        if (
-          value === null ||
-          value === undefined ||
-          value === '' ||
-          (Array.isArray(value) && value.length === 0)
-        ) {
-          missingFields.push(key);
-        }
-      });
-    } else {
-      // Prüfe nur die als Pflichtfelder markierten Felder
-      requiredFields.forEach(([key, value]) => {
-        if (
-          value === null ||
-          value === undefined ||
-          value === '' ||
-          (Array.isArray(value) && value.length === 0)
-        ) {
-          missingFields.push(key);
-        }
-      });
-    }
+      // Prüfe ob das Feld leer ist
+      if (
+        value === null ||
+        value === undefined ||
+        value === '' ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        missingFields.push(key);
+      }
+    });
 
     const allRequiredFieldsFilled = missingFields.length === 0;
 
-    // Debug-Ausgabe für bessere Fehlerdiagnose
-    console.log('Detaillierte Form validation check:', {
-      customerType: !!customerType,
-      selectedCategory: !!selectedCategory,
-      selectedSubcategory: !!selectedSubcategory,
-      isSubcategoryFormValid,
-      hasSubcategoryData,
-      allRequiredFieldsFilled,
+    // Debug-Ausgabe
+    console.log('Form validation check:', {
+      subcategory: selectedSubcategory,
+      totalFields: Object.keys(subcategoryData).length,
       missingFields,
-      subcategoryDataKeys: Object.keys(subcategoryData),
-      requiredFields: requiredFields.map(([key]) => key),
+      allRequiredFieldsFilled,
       subcategoryData,
-      isValid: allRequiredFieldsFilled,
     });
 
     return allRequiredFieldsFilled;
-  }, [
-    customerType,
-    selectedCategory,
-    selectedSubcategory,
-    isSubcategoryFormValid,
-    subcategoryData,
-  ]);
+  }, [customerType, selectedCategory, selectedSubcategory, subcategoryData]);
 
   const handleSubcategoryFormValidation = useCallback((isValid: boolean) => {
     setIsSubcategoryFormValid(isValid);
@@ -230,15 +210,9 @@ export default function GetStartedPage() {
     e.preventDefault(); // Verhindert unbeabsichtigte Formularübermittlungen
     setError(null);
 
-    // Grundlegende Validierung - für den Fall, dass etwas fehlt
-    if (!customerType || !selectedCategory || !selectedSubcategory || !subcategoryData) {
-      setError('Bitte wählen Sie Kundentyp, Kategorie und Unterkategorie aus.');
-      return;
-    }
-
-    // Prüfe, ob die Formulardaten vorhanden sind
-    if (!subcategoryData || Object.keys(subcategoryData).length === 0) {
-      setError('Bitte füllen Sie das Formular aus.');
+    // Verwende die isFormValid-Funktion für konsistente Validierung
+    if (!isFormValid()) {
+      setError('Bitte füllen Sie alle Pflichtfelder aus.');
       return;
     }
 
@@ -356,7 +330,7 @@ export default function GetStartedPage() {
           {/* Zeige immer einen Button an, aber mit unterschiedlichem Aussehen je nach Validierungsstatus */}
           {isClientMounted && showSubcategoryForm && (
             <>
-              {!subcategoryData || Object.keys(subcategoryData).length === 0 ? (
+              {!isFormValid() && (
                 <div className="mt-6 text-center">
                   <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
                     <svg
@@ -374,26 +348,23 @@ export default function GetStartedPage() {
                       />
                     </svg>
                     <span className="text-gray-700 font-medium">
-                      Bitte füllen Sie das Formular aus, um fortzufahren.
+                      Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
                     </span>
                   </div>
                 </div>
-              ) : null}
+              )}
 
-              {/* Button wird IMMER angezeigt, aber entsprechend dem Validierungsstatus gestylt */}
-              <div className="mt-10 text-center">
-                <button
-                  className={`font-medium py-3 px-6 rounded-lg shadow transition ${
-                    subcategoryData && Object.keys(subcategoryData).length > 0
-                      ? 'bg-[#14ad9f] hover:bg-teal-700 text-white'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  }`}
-                  onClick={handleNextClick}
-                  disabled={!subcategoryData || Object.keys(subcategoryData).length === 0}
-                >
-                  Weiter zur Adresseingabe
-                </button>
-              </div>
+              {/* Button wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
+              {isFormValid() && (
+                <div className="mt-10 text-center">
+                  <button
+                    className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition"
+                    onClick={handleNextClick}
+                  >
+                    Weiter zur Adresseingabe
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
