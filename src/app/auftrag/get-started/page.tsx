@@ -26,8 +26,6 @@ export default function GetStartedPage() {
     setSelectedCategory,
     selectedSubcategory,
     setSelectedSubcategory,
-    description,
-    setDescription,
     subcategoryData,
     setSubcategoryData,
   } = useRegistration();
@@ -95,10 +93,6 @@ export default function GetStartedPage() {
     setSelectedSubcategory(subcategoryValue);
   };
 
-  const handleDescriptionChange = useCallback((descValue: string) => {
-    setDescription(descValue);
-  }, []);
-
   const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
     setSubcategoryData(data);
   }, []);
@@ -112,9 +106,6 @@ export default function GetStartedPage() {
 
   // Zeige Projektdetails-Form wenn Unterkategorie ausgewählt ist
   const showSubcategoryForm = customerType && selectedCategory && selectedSubcategory;
-
-  // Zeige Beschreibungsfeld nur wenn Projektdetails gültig sind
-  const showDescriptionField = showSubcategoryForm && isSubcategoryFormValid;
 
   const handleNextClick = () => {
     setError(null);
@@ -131,15 +122,11 @@ export default function GetStartedPage() {
       selectedCategory: selectedCategory,
       selectedSubcategory: selectedSubcategory,
       subcategoryData: subcategoryData,
-      description: description,
     });
 
     const encodedSubcategory = encodeURIComponent(selectedSubcategory!);
-    const encodedDescription = encodeURIComponent(description); // Beschreibung kodieren
 
-    router.push(
-      `/auftrag/get-started/${encodedSubcategory}/adresse?description=${encodedDescription}`
-    );
+    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
   };
 
   return (
@@ -230,28 +217,6 @@ export default function GetStartedPage() {
                 subcategory={selectedSubcategory!}
                 onDataChange={handleSubcategoryDataChange}
                 onValidationChange={handleSubcategoryFormValidation}
-              />
-            </div>
-          )}
-
-          {/* Beschreibungsfeld */}
-          {isClientMounted && showSubcategoryForm && isSubcategoryFormValid && (
-            <div className="mt-8 w-full">
-              <Label
-                htmlFor="auftragBeschreibung"
-                className="text-base font-medium text-gray-800 dark:text-white"
-              >
-                Zusätzliche Beschreibung
-              </Label>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Gibt es noch weitere wichtige Details zu Ihrem Auftrag?
-              </p>
-              <Textarea
-                id="auftragBeschreibung"
-                placeholder="z.B. besondere Wünsche, Termine, Zugangsinformationen..."
-                value={description}
-                onChange={e => handleDescriptionChange(e.target.value)}
-                rows={4}
               />
             </div>
           )}
