@@ -272,14 +272,9 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
 
           <FormField label="Anzahl Gäste">
             <FormInput
-              type="number"
+              type="text"
               value={formData.guestCount?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'guestCount',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
+              onChange={value => handleInputChange('guestCount', value)}
               placeholder="Anzahl der Gäste"
             />
           </FormField>

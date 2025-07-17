@@ -117,11 +117,9 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
 
           <FormField label="Anzahl Gäste" required>
             <FormInput
-              type="number"
+              type="text"
               value={formData.guestCount?.toString() || ''}
-              onChange={value =>
-                handleInputChange('guestCount', typeof value === 'string' ? parseInt(value) : value)
-              }
+              onChange={value => handleInputChange('guestCount', value)}
               placeholder="Anzahl der Gäste"
             />
           </FormField>

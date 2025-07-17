@@ -73,7 +73,15 @@ export const FormInput: React.FC<{
   <input
     type={type}
     value={value}
-    onChange={e => onChange(type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+    onChange={e => {
+      // Wenn der Typ 'number' ist, aber der Wert einen Bindestrich enthält (z.B. '20-50'),
+      // behandeln wir den Wert als String, um Fehler zu vermeiden
+      if (type === 'number' && !e.target.value.includes('-')) {
+        onChange(e.target.value ? parseFloat(e.target.value) || 0 : e.target.value);
+      } else {
+        onChange(e.target.value);
+      }
+    }}
     placeholder={placeholder}
     min={min}
     max={max}
