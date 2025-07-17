@@ -78,7 +78,7 @@ export const categories: Category[] = [
   },
   {
     title: 'Hotel & Gastronomie',
-    subcategories: ['Mietkoch', 'Mietkellner', 'Catering', 'Restaurantfachperson'],
+    subcategories: ['Mietkoch', 'Mietkellner', 'Catering'],
   },
   {
     title: 'IT & Technik',
