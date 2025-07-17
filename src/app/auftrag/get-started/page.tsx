@@ -1,6 +1,6 @@
 // /Users/andystaudinger/taskilo/src/app/auftrag/get-started/page.tsx
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { HeroHeader } from '@/components/hero8-header';
 import { Combobox } from '@/components/combobox';
@@ -32,9 +32,9 @@ export default function GetStartedPage() {
     setSubcategoryData,
   } = useRegistration();
 
-  const steps = ['Kundentyp', 'Kategorie', 'Unterkategorie', 'Projektdetails', 'Beschreibung'];
+  const steps = ['Kundentyp', 'Kategorie', 'Unterkategorie', 'Projektdetails'];
 
-  const TOTAL_STEPS = steps.length;
+  const TOTAL_STEPS = steps.length; // 4 steps without description
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,17 +51,35 @@ export default function GetStartedPage() {
   }, []);
 
   const logicalCurrentStep = useMemo(() => {
+    // Always return 0 until client is mounted to prevent hydration mismatch
+    if (!isClientMounted) return 0;
+
     const stepsCompleted = [
       !!customerType,
       !!selectedCategory,
       !!selectedSubcategory,
       isSubcategoryFormValid,
-      description.trim().length > 0,
     ];
-    return stepsCompleted.filter(Boolean).length;
-  }, [customerType, selectedCategory, selectedSubcategory, isSubcategoryFormValid, description]);
 
-  // Determine the step to display, ensuring server and initial client render match
+    console.log('DEBUG Steps:', {
+      customerType: !!customerType,
+      selectedCategory: !!selectedCategory,
+      selectedSubcategory: !!selectedSubcategory,
+      isSubcategoryFormValid,
+      completedCount: stepsCompleted.filter(Boolean).length,
+      totalSteps: TOTAL_STEPS,
+    });
+
+    return stepsCompleted.filter(Boolean).length;
+  }, [
+    customerType,
+    selectedCategory,
+    selectedSubcategory,
+    isSubcategoryFormValid,
+    isClientMounted,
+  ]);
+
+  // Always use 0 for server-side rendering and initial client render
   const stepForDisplay = isClientMounted ? logicalCurrentStep : 0;
 
   const handleCustomerTypeChange = (type: 'private' | 'business') => {
@@ -101,14 +119,8 @@ export default function GetStartedPage() {
   const handleNextClick = () => {
     setError(null);
 
-    // Use context state for validation
-    if (
-      !customerType ||
-      !selectedCategory ||
-      !selectedSubcategory ||
-      !isSubcategoryFormValid ||
-      description.trim().length === 0
-    ) {
+    // Use context state for validation - description is optional now
+    if (!customerType || !selectedCategory || !selectedSubcategory || !isSubcategoryFormValid) {
       setError('Bitte füllen Sie alle Felder aus.');
       return;
     }
@@ -223,7 +235,7 @@ export default function GetStartedPage() {
           )}
 
           {/* Beschreibungsfeld */}
-          {isClientMounted && showDescriptionField && (
+          {isClientMounted && showSubcategoryForm && isSubcategoryFormValid && (
             <div className="mt-8 w-full">
               <Label
                 htmlFor="auftragBeschreibung"
@@ -250,6 +262,7 @@ export default function GetStartedPage() {
             </div>
           )}
 
+          {/* Button wird nur angezeigt wenn alle 4 Schritte vollständig sind */}
           {isClientMounted && logicalCurrentStep === TOTAL_STEPS && (
             <div className="mt-10">
               <button
