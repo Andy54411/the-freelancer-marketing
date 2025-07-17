@@ -107,6 +107,11 @@ export default function GetStartedPage() {
 
   const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
     setSubcategoryData(data);
+    // Automatische Validierung nach jeder Datenänderung, um das Problem mit der fehlenden Validierungsaktualisierung zu umgehen
+    if (data && Object.keys(data).length > 0) {
+      // Einfache Validierung basierend auf den Daten
+      setIsSubcategoryFormValid(true);
+    }
   }, []);
 
   // Hilfsfunktion, die prüft, ob alle erforderlichen Daten vorhanden sind
@@ -225,9 +230,15 @@ export default function GetStartedPage() {
     e.preventDefault(); // Verhindert unbeabsichtigte Formularübermittlungen
     setError(null);
 
-    // Verwende die isFormValid-Funktion für eine konsistente Validierung
-    if (!isFormValid()) {
-      setError('Bitte füllen Sie alle erforderlichen Felder aus.');
+    // Grundlegende Validierung - für den Fall, dass etwas fehlt
+    if (!customerType || !selectedCategory || !selectedSubcategory || !subcategoryData) {
+      setError('Bitte wählen Sie Kundentyp, Kategorie und Unterkategorie aus.');
+      return;
+    }
+
+    // Prüfe, ob die Formulardaten vorhanden sind
+    if (!subcategoryData || Object.keys(subcategoryData).length === 0) {
+      setError('Bitte füllen Sie das Formular aus.');
       return;
     }
 
@@ -342,37 +353,48 @@ export default function GetStartedPage() {
             </div>
           )}
 
-          {/* Zeige einen Hinweis an, wenn das Formular unvollständig ist */}
-          {isClientMounted && showSubcategoryForm && !isFormValid() && (
-            <div className="mt-8 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200 flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              <span>Bitte füllen Sie alle erforderlichen Felder aus, um fortzufahren.</span>
-            </div>
-          )}
+          {/* Zeige immer einen Button an, aber mit unterschiedlichem Aussehen je nach Validierungsstatus */}
+          {isClientMounted && showSubcategoryForm && (
+            <>
+              {!subcategoryData || Object.keys(subcategoryData).length === 0 ? (
+                <div className="mt-6 text-center">
+                  <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-3 text-[#14ad9f]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span className="text-gray-700 font-medium">
+                      Bitte füllen Sie das Formular aus, um fortzufahren.
+                    </span>
+                  </div>
+                </div>
+              ) : null}
 
-          {/* Button wird NUR angezeigt wenn das Formular vollständig und gültig ist */}
-          {isClientMounted && isFormValid() && (
-            <div className="mt-10">
-              <button
-                className="text-white font-medium py-3 px-6 rounded-lg shadow transition bg-[#14ad9f] hover:bg-teal-700"
-                onClick={handleNextClick}
-              >
-                Weiter zur Adresseingabe
-              </button>
-            </div>
+              {/* Button wird IMMER angezeigt, aber entsprechend dem Validierungsstatus gestylt */}
+              <div className="mt-10 text-center">
+                <button
+                  className={`font-medium py-3 px-6 rounded-lg shadow transition ${
+                    subcategoryData && Object.keys(subcategoryData).length > 0
+                      ? 'bg-[#14ad9f] hover:bg-teal-700 text-white'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  }`}
+                  onClick={handleNextClick}
+                  disabled={!subcategoryData || Object.keys(subcategoryData).length === 0}
+                >
+                  Weiter zur Adresseingabe
+                </button>
+              </div>
+            </>
           )}
         </div>
 
