@@ -334,30 +334,11 @@ const GärtnerForm: React.FC<GärtnerFormProps> = ({ data, onDataChange, onValid
             />
           </FormField>
 
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
+          <FormField label="Besondere Anforderungen">
+            <FormTextarea
+              value={formData.specialRequirements || ''}
+              onChange={value => handleInputChange('specialRequirements', value)}
+              placeholder="Besondere Anforderungen oder Wünsche"
             />
           </FormField>
 

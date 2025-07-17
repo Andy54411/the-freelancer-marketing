@@ -207,6 +207,21 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             timeframe: 'flexibel',
             support: 'einmalig',
           };
+        case 'Umzug':
+          return {
+            subcategory: 'Umzug',
+            serviceType: 'komplettservice',
+            fromFloor: 1,
+            toFloor: 1,
+            hasElevator: 'keine',
+            distance: 10,
+            roomCount: 3,
+            furnitureType: ['schwere_möbel'],
+            packingMaterial: 'benötigt',
+            vehicleSize: 'mittel',
+            additionalServices: [],
+            dateFlexible: false,
+          };
         case 'Umzugshelfer':
           return {
             subcategory: 'Umzugshelfer',
@@ -241,9 +256,9 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             dataBackup: 'vorhanden',
             businessHours: true,
           };
-        case 'Heizungsbau & Sanitär':
+        case 'HeizungSanitär':
           return {
-            subcategory: 'Heizungsbau & Sanitär',
+            subcategory: 'HeizungSanitär',
             serviceType: 'reparatur',
             systemType: 'heizung',
             urgency: 'normal',
@@ -1138,6 +1153,16 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             methodology: 'fragebogen',
             specialRequirements: '',
           } as any;
+        case 'MöbelTransportieren':
+          return {
+            subcategory: 'MöbelTransportieren',
+            serviceType: 'transport',
+            itemType: 'möbel',
+            quantity: 'mittel',
+            distance: 'lokal',
+            assembly: 'nein',
+            specialRequirements: '',
+          } as any;
         case 'Möbel transportieren':
           return {
             subcategory: 'Möbel transportieren',
@@ -1186,6 +1211,16 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             duration: 'kurz',
             sources: 'primär',
             deliverable: 'bericht',
+            specialRequirements: '',
+          } as any;
+        case 'Reparatur':
+          return {
+            subcategory: 'Reparatur',
+            repairType: 'allgemein',
+            urgency: 'normal',
+            materials: 'mitbringen',
+            expertise: 'handwerker',
+            timeframe: 'flexibel',
             specialRequirements: '',
           } as any;
         case 'Reparaturen im Haus':
@@ -1530,6 +1565,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             onValidationChange={() => {}}
           />
         );
+      case 'Umzug':
+        return (
+          <UmzugForm
+            data={formData as any}
+            onDataChange={handleDataChange as any}
+            onValidationChange={() => {}}
+          />
+        );
       case 'Umzugshelfer':
         return (
           <UmzugForm
@@ -1554,7 +1597,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             onValidationChange={() => {}}
           />
         );
-      case 'Heizungsbau & Sanitär':
+      case 'HeizungSanitär':
         return (
           <HeizungSanitärForm
             data={formData as any}
@@ -2290,6 +2333,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             onValidationChange={() => {}}
           />
         );
+      case 'MöbelTransportieren':
+        return (
+          <MöbelTransportierenForm
+            data={formData as any}
+            onDataChange={handleDataChange as any}
+            onValidationChange={() => {}}
+          />
+        );
       case 'Möbel transportieren':
         return (
           <MöbelTransportierenForm
@@ -2325,6 +2376,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       case 'Recherche':
         return (
           <RechercheForm
+            data={formData as any}
+            onDataChange={handleDataChange as any}
+            onValidationChange={() => {}}
+          />
+        );
+      case 'Reparatur':
+        return (
+          <ReparaturenImHausForm
             data={formData as any}
             onDataChange={handleDataChange as any}
             onValidationChange={() => {}}

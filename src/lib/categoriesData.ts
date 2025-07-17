@@ -37,7 +37,6 @@ export const categories: Category[] = [
     title: 'Haushalt & Reinigung',
     subcategories: [
       'Reinigungskraft',
-      'GartenLandschaftspflege',
       'Haushaltshilfe',
       'Fensterputzer',
       'Umzugshelfer',
@@ -60,7 +59,6 @@ export const categories: Category[] = [
   {
     title: 'Transport & Logistik',
     subcategories: [
-      'Möbelmontage',
       'Umzug',
       'Fahrer',
       'Kurierdienst',

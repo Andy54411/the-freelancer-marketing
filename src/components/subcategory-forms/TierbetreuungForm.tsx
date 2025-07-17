@@ -252,33 +252,6 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Ihr Name">
-            <FormInput
-              type="text"
-              value={formData.ownerName || ''}
-              onChange={value => handleInputChange('ownerName', value)}
-              placeholder="Ihr Name"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Ihre Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Ihre Adresse"
-            />
-          </FormField>
-
           <FormField label="Tierarzt">
             <FormInput
               type="text"

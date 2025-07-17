@@ -238,42 +238,6 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Ihr Name">
-            <FormInput
-              type="text"
-              value={formData.ownerName || ''}
-              onChange={value => handleInputChange('ownerName', value)}
-              placeholder="Ihr Name"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Ihre Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="Ihre E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
           <FormField label="Gewünschter Starttermin">
             <FormInput
               type="text"

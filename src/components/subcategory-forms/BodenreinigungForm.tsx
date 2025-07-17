@@ -319,33 +319,6 @@ const BodenreinigungForm: React.FC<BodenreinigungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
           <FormField label="Gewünschter Termin">
             <FormInput
               type="text"

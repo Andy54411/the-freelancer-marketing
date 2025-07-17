@@ -204,42 +204,6 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Ihre Adresse">
-            <FormInput
-              type="text"
-              value={formData.address || ''}
-              onChange={value => handleInputChange('address', value)}
-              placeholder="Straße, PLZ, Ort"
-            />
-          </FormField>
-
-          <FormField label="Ihr Name">
-            <FormInput
-              type="text"
-              value={formData.customerName || ''}
-              onChange={value => handleInputChange('customerName', value)}
-              placeholder="Ihr Name"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Ihre Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="Ihre E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Bodenbeschaffenheit">
             <FormInput
               type="text"
