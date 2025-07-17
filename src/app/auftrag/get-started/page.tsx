@@ -76,6 +76,7 @@ export default function GetStartedPage() {
     selectedCategory,
     selectedSubcategory,
     isSubcategoryFormValid,
+    subcategoryData, // Wichtig: subcategoryData als Dependency hinzufügen!
     isClientMounted,
   ]);
 
@@ -110,26 +111,98 @@ export default function GetStartedPage() {
 
   // Hilfsfunktion, die prüft, ob alle erforderlichen Daten vorhanden sind
   const isFormValid = useCallback(() => {
-    const hasValidSubcategoryData = subcategoryData && Object.keys(subcategoryData).length > 0;
-    const result = !!(
-      customerType &&
-      selectedCategory &&
-      selectedSubcategory &&
-      isSubcategoryFormValid &&
-      hasValidSubcategoryData
+    // Prüfe ob Grunddaten existieren
+    if (!customerType || !selectedCategory || !selectedSubcategory || !subcategoryData) {
+      console.log('Grunddaten fehlen:', {
+        customerType,
+        selectedCategory,
+        selectedSubcategory,
+        subcategoryData,
+      });
+      return false;
+    }
+
+    // Prüfe ob das Formular als gültig markiert wurde
+    if (!isSubcategoryFormValid) {
+      console.log('Formular wurde nicht als gültig markiert');
+      return false;
+    }
+
+    // Prüfe ob Formulardaten vorhanden sind
+    const hasSubcategoryData = Object.keys(subcategoryData).length > 0;
+    if (!hasSubcategoryData) {
+      console.log('Keine Formulardaten vorhanden');
+      return false;
+    }
+
+    // Prüfe JEDEN Schlüssel in den Formulardaten
+    const missingFields: string[] = [];
+
+    // Allgemeine Regel: Alle Felder, die mit * enden, sind Pflichtfelder
+    const requiredFields = Object.entries(subcategoryData).filter(
+      ([key]) => key.endsWith('*') || key.includes('required') || key.includes('Required')
     );
 
+    if (requiredFields.length === 0) {
+      console.log('Keine Pflichtfelder erkannt, prüfe alle Felder...');
+      // Wenn keine Pflichtfelder markiert sind, prüfe alle Standard-Formularfelder
+      Object.entries(subcategoryData).forEach(([key, value]) => {
+        // Überspringen von gewissen Schlüsseln, die optional sind
+        if (
+          key === 'additionalInfo' ||
+          key === 'specialRequirements' ||
+          key === 'additionalNotes' ||
+          key === 'zusätzlicheInfos' ||
+          key === 'besondereAnforderungen' ||
+          key === 'subcategory' ||
+          key === 'additionalServices' ||
+          key.includes('optional') ||
+          key.includes('Optional')
+        ) {
+          return;
+        }
+
+        if (
+          value === null ||
+          value === undefined ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
+          missingFields.push(key);
+        }
+      });
+    } else {
+      // Prüfe nur die als Pflichtfelder markierten Felder
+      requiredFields.forEach(([key, value]) => {
+        if (
+          value === null ||
+          value === undefined ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
+          missingFields.push(key);
+        }
+      });
+    }
+
+    const allRequiredFieldsFilled = missingFields.length === 0;
+
     // Debug-Ausgabe für bessere Fehlerdiagnose
-    console.log('Form validation check:', {
+    console.log('Detaillierte Form validation check:', {
       customerType: !!customerType,
       selectedCategory: !!selectedCategory,
       selectedSubcategory: !!selectedSubcategory,
       isSubcategoryFormValid,
-      hasValidSubcategoryData,
-      isValid: result,
+      hasSubcategoryData,
+      allRequiredFieldsFilled,
+      missingFields,
+      subcategoryDataKeys: Object.keys(subcategoryData),
+      requiredFields: requiredFields.map(([key]) => key),
+      subcategoryData,
+      isValid: allRequiredFieldsFilled,
     });
 
-    return result;
+    return allRequiredFieldsFilled;
   }, [
     customerType,
     selectedCategory,
@@ -269,25 +342,38 @@ export default function GetStartedPage() {
             </div>
           )}
 
-          {/* Button wird nur angezeigt wenn alle 4 Schritte vollständig sind und Formulardaten vorhanden sind */}
-          {isClientMounted &&
-            logicalCurrentStep === TOTAL_STEPS &&
-            subcategoryData &&
-            Object.keys(subcategoryData).length > 0 && (
-              <div className="mt-10">
-                <button
-                  className={`text-white font-medium py-3 px-6 rounded-lg shadow transition ${
-                    isFormValid()
-                      ? 'bg-[#14ad9f] hover:bg-teal-700'
-                      : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                  onClick={handleNextClick}
-                  disabled={!isFormValid()}
-                >
-                  Weiter zur Adresseingabe
-                </button>
-              </div>
-            )}
+          {/* Zeige einen Hinweis an, wenn das Formular unvollständig ist */}
+          {isClientMounted && showSubcategoryForm && !isFormValid() && (
+            <div className="mt-8 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200 flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span>Bitte füllen Sie alle erforderlichen Felder aus, um fortzufahren.</span>
+            </div>
+          )}
+
+          {/* Button wird NUR angezeigt wenn das Formular vollständig und gültig ist */}
+          {isClientMounted && isFormValid() && (
+            <div className="mt-10">
+              <button
+                className="text-white font-medium py-3 px-6 rounded-lg shadow transition bg-[#14ad9f] hover:bg-teal-700"
+                onClick={handleNextClick}
+              >
+                Weiter zur Adresseingabe
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 w-full max-w-6xl">
