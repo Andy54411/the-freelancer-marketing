@@ -25,6 +25,10 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
     { value: 'regelmäßig', label: 'Regelmäßige Betreuung' },
     { value: 'catering', label: 'Catering-Service' },
     { value: 'kochkurs', label: 'Kochkurs' },
+    { value: 'hotel_service', label: 'Hotel-Service' },
+    { value: 'restaurant_service', label: 'Restaurant-Service' },
+    { value: 'aushilfe', label: 'Koch-Aushilfe' },
+    { value: 'vertretung', label: 'Küchenchef-Vertretung' },
   ];
 
   const cuisineTypeOptions = [
@@ -53,6 +57,10 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
     { value: 'brunch', label: 'Brunch' },
     { value: 'buffet', label: 'Buffet' },
     { value: 'menü', label: 'Menü' },
+    { value: 'hotel_restaurant', label: 'Hotel & Restaurant' },
+    { value: 'catering_event', label: 'Catering Event' },
+    { value: 'popup_restaurant', label: 'Pop-up Restaurant' },
+    { value: 'kochshow', label: 'Kochshow' },
   ];
 
   const levelOptions = [
@@ -73,6 +81,12 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
     { value: 'weinberatung', label: 'Weinberatung' },
     { value: 'allergieberatung', label: 'Allergieberatung' },
     { value: 'menüplanung', label: 'Menüplanung' },
+    { value: 'speisekarte', label: 'Speisekarten-Entwicklung' },
+    { value: 'personalschulung', label: 'Personal-Schulung' },
+    { value: 'kostenkontrolle', label: 'Kostenkontrolle' },
+    { value: 'qualitätskontrolle', label: 'Qualitätskontrolle' },
+    { value: 'hygieneschulung', label: 'Hygieneschulung' },
+    { value: 'buffetbetreuung', label: 'Buffet-Betreuung' },
   ];
 
   const handleInputChange = (field: keyof MietkochData, value: any) => {

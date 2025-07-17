@@ -532,16 +532,29 @@ export interface LagerlogistikData extends BaseSubcategoryData {
 // Mietkoch-spezifische Daten
 export interface MietkochData extends BaseSubcategoryData {
   subcategory: 'Mietkoch';
-  serviceType: 'einmalig' | 'regelmäßig' | 'event';
-  cuisineType: string[]; // ['deutsch', 'italienisch', 'französisch', 'asiatisch', 'vegetarisch', 'vegan']
-  guestCount?: number;
-  mealType: 'frühstück' | 'mittagessen' | 'abendessen' | 'menü' | 'buffet' | 'verschiedenes';
-  location: 'zuhause' | 'location' | 'nach_absprache';
-  ingredients: 'bereitstellen' | 'einkaufen' | 'mitbringen';
-  equipment: 'vorhanden' | 'mitbringen' | 'bereitstellen';
-  dietaryRequirements: string[]; // ['vegetarisch', 'vegan', 'glutenfrei', 'laktosefrei', 'allergien']
-  budget?: number;
+  serviceType: string;
+  cuisineType: string[];
+  eventType: string;
+  level: string;
+  numberOfGuests?: number;
+  location: string;
+  eventDate: string;
+  startTime?: string;
+  duration?: number;
+  budgetPerPerson?: number;
+  kitchenSize?: string;
+  kitchenEquipment?: string;
+  additionalServices?: string[];
+  allergies?: string;
+  menuWishes?: string;
   specialRequirements?: string;
+  // Legacy fields for backward compatibility
+  guestCount?: number;
+  mealType?: string;
+  ingredients?: string;
+  equipment?: string;
+  dietaryRequirements?: string[];
+  budget?: number;
 }
 
 // Mietkellner-spezifische Daten
