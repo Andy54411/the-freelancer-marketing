@@ -95,17 +95,17 @@ export default function GetStartedPage() {
     setSelectedSubcategory(subcategoryValue);
   };
 
-  const handleDescriptionChange = (descValue: string) => {
+  const handleDescriptionChange = useCallback((descValue: string) => {
     setDescription(descValue);
-  };
+  }, []);
 
-  const handleSubcategoryDataChange = (data: SubcategoryData) => {
+  const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
     setSubcategoryData(data);
-  };
+  }, []);
 
-  const handleSubcategoryFormValidation = (isValid: boolean) => {
+  const handleSubcategoryFormValidation = useCallback((isValid: boolean) => {
     setIsSubcategoryFormValid(isValid);
-  };
+  }, []);
 
   const availableSubcategories =
     categories.find(cat => cat.title === selectedCategory)?.subcategories || [];
