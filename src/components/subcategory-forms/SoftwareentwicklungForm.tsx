@@ -124,7 +124,7 @@ const SoftwareentwicklungForm: React.FC<SoftwareentwicklungFormProps> = ({
           Softwareentwicklung-Projektdetails
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <FormField label="Projektart" required>
             <FormSelect
               value={formData.projectType || ''}
@@ -142,73 +142,50 @@ const SoftwareentwicklungForm: React.FC<SoftwareentwicklungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Budget-Rahmen" required>
+              <FormSelect
+                value={formData.budgetRange || ''}
+                onChange={value => handleInputChange('budgetRange', value)}
+                options={budgetRangeOptions}
+                placeholder="Wählen Sie den Budget-Rahmen"
+              />
+            </FormField>
 
-          <FormField label="Zeitrahmen" required>
-            <FormSelect
-              value={formData.timeline || ''}
-              onChange={value => handleInputChange('timeline', value)}
-              options={timelineOptions}
-              placeholder="Wählen Sie den Zeitrahmen"
-            />
-          </FormField>
+            <FormField label="Zeitrahmen" required>
+              <FormSelect
+                value={formData.timeline || ''}
+                onChange={value => handleInputChange('timeline', value)}
+                options={timelineOptions}
+                placeholder="Wählen Sie den Zeitrahmen"
+              />
+            </FormField>
+          </div>
 
-          <FormField label="Projektname">
-            <FormInput
-              type="text"
-              value={formData.projectName || ''}
-              onChange={value => handleInputChange('projectName', value)}
-              placeholder="Name des Projekts"
-            />
-          </FormField>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Erwartete Nutzer">
+              <FormInput
+                type="number"
+                value={formData.expectedUsers?.toString() || ''}
+                onChange={value =>
+                  handleInputChange(
+                    'expectedUsers',
+                    typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
+                  )
+                }
+                placeholder="Erwartete Anzahl der Nutzer"
+              />
+            </FormField>
 
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Ihr Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Erwartete Nutzer">
-            <FormInput
-              type="number"
-              value={formData.expectedUsers?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'expectedUsers',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Erwartete Anzahl der Nutzer"
-            />
-          </FormField>
-
-          <FormField label="Startdatum">
-            <FormInput
-              type="text"
-              value={formData.startDate || ''}
-              onChange={value => handleInputChange('startDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Gewünschtes Fertigstellungsdatum">
-            <FormInput
-              type="text"
-              value={formData.completionDate || ''}
-              onChange={value => handleInputChange('completionDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
+            <FormField label="Gewünschtes Fertigstellungsdatum">
+              <FormInput
+                type="text"
+                value={formData.completionDate || ''}
+                onChange={value => handleInputChange('completionDate', value)}
+                placeholder="TT.MM.JJJJ"
+              />
+            </FormField>
+          </div>
         </div>
 
         <div className="mt-4">
