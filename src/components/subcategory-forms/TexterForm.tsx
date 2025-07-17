@@ -58,23 +58,6 @@ const TexterForm: React.FC<TexterFormProps> = ({ data, onDataChange, onValidatio
     { value: 'persönlich', label: 'Persönlich' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_100', label: 'Unter 100€' },
-    { value: '100_500', label: '100€ - 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2500', label: '1000€ - 2500€' },
-    { value: '2500_5000', label: '2500€ - 5000€' },
-    { value: 'über_5000', label: 'Über 5000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const wordCountOptions = [
     { value: 'unter_500', label: 'Unter 500 Wörter' },
     { value: '500_1000', label: '500 - 1000 Wörter' },
@@ -245,8 +228,6 @@ const TexterForm: React.FC<TexterFormProps> = ({ data, onDataChange, onValidatio
     const isValid = !!(
       formData.serviceType &&
       formData.contentType &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.wordCount &&
       formData.tone &&
       formData.targetAudience &&
@@ -278,24 +259,6 @@ const TexterForm: React.FC<TexterFormProps> = ({ data, onDataChange, onValidatio
               onChange={value => handleInputChange('contentType', value)}
               options={contentTypeOptions}
               placeholder="Wählen Sie den Content-Typ"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -361,43 +324,6 @@ const TexterForm: React.FC<TexterFormProps> = ({ data, onDataChange, onValidatio
               placeholder="TT.MM.JJJJ"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Website">
             <FormInput
               type="text"

@@ -37,7 +37,6 @@ export function getBookingCharacteristics(subcategory: string | null): BookingCh
         case 'IT-Support':
         case 'Möbelmontage':
         case 'Elektrikarbeiten':
-        case 'Reparaturen im Haus':
         case 'Umzug':
             return {
                 isDurationPerDay: false,

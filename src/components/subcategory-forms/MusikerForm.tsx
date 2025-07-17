@@ -118,16 +118,6 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
     { value: 'ganzer_tag', label: 'Ganzer Tag' },
     { value: 'flexibel', label: 'Flexibel' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_200', label: 'Unter 200€' },
-    { value: '200_500', label: '200€ - 500€' },
-    { value: '500_1000', label: '500€ - 1.000€' },
-    { value: '1000_2000', label: '1.000€ - 2.000€' },
-    { value: '2000_5000', label: '2.000€ - 5.000€' },
-    { value: 'über_5000', label: 'Über 5.000€' },
-  ];
-
   const experienceLevelOptions = [
     { value: 'amateur', label: 'Amateur' },
     { value: 'semi_profi', label: 'Semi-Profi' },
@@ -181,7 +171,6 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
       formData.venueType &&
       formData.audienceSize &&
       formData.duration &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -247,16 +236,6 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
               placeholder="Wählen Sie die Dauer"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Gewünschte Erfahrung">
             <FormSelect
               value={formData.experienceLevel || ''}
@@ -290,33 +269,6 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
               value={formData.eventTime || ''}
               onChange={value => handleInputChange('eventTime', value)}
               placeholder="HH:MM"
-            />
-          </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
             />
           </FormField>
 
@@ -496,21 +448,7 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
           </FormField>
         </div>
 
-        <div className="mt-4">
-          <FormField label="Dringlichkeit">
-            <FormRadioGroup
-              name="urgency"
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={[
-                { value: 'nicht_eilig', label: 'Nicht eilig' },
-                { value: 'normal', label: 'Normal' },
-                { value: 'eilig', label: 'Eilig' },
-                { value: 'sehr_eilig', label: 'Sehr eilig' },
-              ]}
-            />
-          </FormField>
-        </div>
+        <div className="mt-4"></div>
 
         <div className="mt-4">
           <FormField label="Wiederholung">

@@ -88,7 +88,6 @@ import QualitätskontrolleForm from './QualitätskontrolleForm';
 import RechercheForm from './RechercheForm';
 import RechtsberatungForm from './RechtsberatungForm';
 import ReinigungskraftForm from './ReinigungskraftForm';
-import ReparaturenImHausForm from './ReparaturenImHausForm';
 import SchlosserForm from './SchlosserForm';
 import SchreibdiensteForm from './SchreibdiensteForm';
 import SchreinerForm from './SchreinerForm';
@@ -116,7 +115,6 @@ import UnternehmensberatungForm from './UnternehmensberatungForm';
 import VersicherungsberatungForm from './VersicherungsberatungForm';
 import VerwaltungForm from './VerwaltungForm';
 import VideografForm from './VideografForm';
-import WartungInstandhaltungForm from './WartungInstandhaltungForm';
 import WebdesignerForm from './WebdesignerForm';
 import WebentwicklungForm from './WebentwicklungForm';
 import WeiterbildungForm from './WeiterbildungForm';
@@ -159,7 +157,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'Elektriker',
             serviceType: 'installation',
             workType: 'steckdosen',
-            urgency: 'normal',
             buildingType: 'einfamilienhaus',
             existingInstallation: 'vorhanden',
             certificationNeeded: false,
@@ -180,7 +177,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'Klempner',
             serviceType: 'reparatur',
             problemType: 'undichtigkeit',
-            urgency: 'normal',
             roomType: 'bad',
             buildingType: 'wohnung',
             accessibilityIssues: false,
@@ -224,7 +220,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
           return {
             subcategory: 'ITSupport',
             serviceType: 'hardware_support',
-            urgency: 'normal',
             problemType: 'computer_laptop',
             supportLocation: 'vor_ort',
             operatingSystem: 'windows',
@@ -275,7 +270,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
           return {
             subcategory: 'IT-Support',
             serviceType: 'reparatur',
-            urgency: 'normal',
             location: 'vor_ort',
             dataBackup: 'vorhanden',
             businessHours: true,
@@ -285,7 +279,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'HeizungSanitär',
             serviceType: 'reparatur',
             systemType: 'heizung',
-            urgency: 'normal',
             buildingType: 'einfamilienhaus',
             heatingType: 'gas',
             certification: false,
@@ -309,7 +302,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             roofType: 'steildach',
             material: 'ziegel',
             roofSize: 'mittel',
-            urgency: 'normal',
             scaffolding: 'benötigt',
             insulation: 'nicht_nötig',
             gutters: 'nicht_nötig',
@@ -378,7 +370,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             serviceType: 'reparatur',
             glassType: 'fenster',
             glassMaterial: 'einfachglas',
-            urgency: 'normal',
             measurement: 'benötigt',
             installation: 'inklusive',
             disposal: 'nicht_nötig',
@@ -390,7 +381,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             workType: 'schloss',
             lockType: 'zylinder',
             securityLevel: 'standard',
-            urgency: 'normal',
             keyService: 'inklusive',
             installation: 'inklusive',
           };
@@ -435,7 +425,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             floorType: 'parkett',
             area: 50,
             frequency: 'einmalig',
-            urgency: 'normal',
             equipment: 'vorhanden',
             chemicals: 'standard',
           } as any;
@@ -454,7 +443,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'Heizung',
             serviceType: 'wartung',
             heatingType: 'gas',
-            urgency: 'normal',
             buildingType: 'einfamilienhaus',
             yearBuilt: '2000-2010',
             lastService: 'über_1_jahr',
@@ -486,7 +474,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             treeType: 'laubbaum',
             treeCount: '1-3',
             treeHeight: '5-10m',
-            urgency: 'normal',
             disposal: 'inklusive',
           } as any;
         case 'Softwareentwicklung':
@@ -506,7 +493,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             buildingType: 'mehrfamilienhaus',
             tasks: ['reinigung', 'technik', 'außenanlagen'],
             frequency: 'wöchentlich',
-            urgency: 'normal',
           } as any;
         case 'Systemintegration':
           return {
@@ -545,7 +531,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             serviceType: 'eilsendung',
             packageSize: 'klein',
             distance: '10-20',
-            urgency: 'heute',
             trackingNeeded: true,
             insurance: 'standard',
           } as any;
@@ -578,15 +563,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             duration: '1-3_monate',
             accessNeeded: 'selten',
             specialRequirements: '',
-          } as any;
-        case 'WartungInstandhaltung':
-          return {
-            subcategory: 'WartungInstandhaltung',
-            serviceType: 'wartung',
-            assetType: 'maschinen',
-            frequency: 'regelmäßig',
-            urgency: 'normal',
-            documentation: true,
           } as any;
         case 'UXUI-Design':
           return {
@@ -703,7 +679,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             serviceType: 'audit',
             systemType: 'computer',
             companySize: 'klein',
-            urgency: 'normal',
             ongoing: false,
           } as any;
         case 'Hausreinigung':
@@ -749,7 +724,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             complexity: 'mittel',
             duration: '60',
             documentation: true,
-            urgency: 'normal',
           } as any;
         case 'CloudComputing':
           return {
@@ -802,7 +776,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'Autoreparatur',
             serviceType: 'inspektion',
             vehicleType: 'pkw',
-            urgency: 'normal',
             partsNeeded: 'standard',
             location: 'werkstatt',
           } as any;
@@ -894,7 +867,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             duration: 'fortlaufend',
             goals: ['bekanntheit', 'verkäufe'],
             reporting: true,
-            budget: 'mittel',
           } as any;
         case 'Hundetrainer':
           return {
@@ -1063,7 +1035,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             languageTo: 'deutsch',
             documentType: 'geschäftlich',
             wordCount: '500-1000',
-            urgency: 'normal',
             certification: false,
           } as any;
         case 'Ernährungsberatung':
@@ -1092,7 +1063,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             serviceType: 'einmalig',
             quantity: 'gering',
             timeframe: 'flexibel',
-            urgency: 'normal',
             storageType: 'digital',
             specialRequirements: '',
           } as any;
@@ -1111,7 +1081,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'Datenerfassung',
             dataType: 'text',
             volume: 'gering',
-            urgency: 'normal',
             format: 'digital',
             specialRequirements: '',
           } as any;
@@ -1121,7 +1090,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             decorationType: 'wohnung',
             eventType: 'keine',
             style: 'modern',
-            budget: 'mittel',
             timeframe: 'flexibel',
             specialRequirements: '',
           } as any;
@@ -1133,7 +1101,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             services: ['planung'],
             location: 'indoor',
             catering: 'nicht_benötigt',
-            budget: 'mittel',
             timeframe: 'innerhalb_monat',
           } as any;
         case 'Fahrunterricht':
@@ -1162,7 +1129,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             serviceType: 'vollständig',
             itemType: 'möbel',
             quantity: 'mittel',
-            urgency: 'normal',
             documentation: 'digital',
             specialRequirements: '',
           } as any;
@@ -1172,7 +1138,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             serviceType: 'lagerung',
             itemType: 'pakete',
             quantity: 'mittel',
-            urgency: 'normal',
             duration: 'kurz',
             specialRequirements: '',
           } as any;
@@ -1246,33 +1211,12 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             deliverable: 'bericht',
             specialRequirements: '',
           } as any;
-        case 'Reparatur':
-          return {
-            subcategory: 'Reparatur',
-            repairType: 'allgemein',
-            urgency: 'normal',
-            materials: 'mitbringen',
-            expertise: 'handwerker',
-            timeframe: 'flexibel',
-            specialRequirements: '',
-          } as any;
-        case 'Reparaturen im Haus':
-          return {
-            subcategory: 'Reparaturen im Haus',
-            repairType: 'allgemein',
-            urgency: 'normal',
-            materials: 'mitbringen',
-            expertise: 'handwerker',
-            timeframe: 'flexibel',
-            specialRequirements: '',
-          } as any;
         case 'Schreibdienste':
           return {
             subcategory: 'Schreibdienste',
             serviceType: 'abschreibung',
             documentType: 'geschäftlich',
             volume: 'mittel',
-            urgency: 'normal',
             format: 'digital',
             specialRequirements: '',
           } as any;
@@ -1281,7 +1225,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             subcategory: 'Technik-Service',
             serviceType: 'reparatur',
             deviceType: 'computer',
-            urgency: 'normal',
             location: 'vor_ort',
             warranty: 'standard',
             specialRequirements: '',
@@ -1413,8 +1356,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       'besondereAnforderungen',
       'subcategory',
       'additionalServices',
-      'budget',
-      'budgetRange',
       'timeframe',
       'specialNotes',
       'description',
@@ -1436,9 +1377,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       'startzeit',
       'duration',
       'dauer',
-      'budgetPerPerson',
-      'budgetProPerson',
-      'pricePerPerson',
       'preisProPerson',
       // Spezifische Mietkoch-Felder
       'menuWishes',
@@ -1458,8 +1396,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         key.includes('additional') ||
         key.includes('extra') ||
         key.includes('Extra') ||
-        key.includes('budget') ||
-        key.includes('Budget') ||
         key.includes('time') ||
         key.includes('Time') ||
         key.includes('zeit') ||
@@ -1481,7 +1417,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         // Überspringe Platzhalter-Werte
         value === 'HH:MM' ||
         value === 'Dauer in Stunden' ||
-        value === 'Budget pro Person in €' ||
         value === 'Klein, Mittel, Groß oder Professionell' ||
         value === 'vorhanden' ||
         (typeof value === 'string' && value.includes('Platzhalter')) ||
@@ -1516,8 +1451,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
           key.includes('additional') ||
           key.includes('extra') ||
           key.includes('Extra') ||
-          key.includes('budget') ||
-          key.includes('Budget') ||
           key.includes('time') ||
           key.includes('Time') ||
           key.includes('zeit') ||
@@ -1865,14 +1798,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       case 'Lagerlogistik':
         return (
           <LagerlogistikForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
-        );
-      case 'WartungInstandhaltung':
-        return (
-          <WartungInstandhaltungForm
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
@@ -2433,22 +2358,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       case 'Recherche':
         return (
           <RechercheForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
-        );
-      case 'Reparatur':
-        return (
-          <ReparaturenImHausForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
-        );
-      case 'Reparaturen im Haus':
-        return (
-          <ReparaturenImHausForm
             data={formData as any}
             onDataChange={handleDataChange as any}
             onValidationChange={() => {}}

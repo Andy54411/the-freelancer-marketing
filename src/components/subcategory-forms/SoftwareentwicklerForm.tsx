@@ -67,24 +67,6 @@ const SoftwareentwicklerForm: React.FC<SoftwareentwicklerFormProps> = ({
     { value: 'utility', label: 'Utility Tool' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_1000', label: 'Unter 1000€' },
-    { value: '1000_5000', label: '1000€ - 5000€' },
-    { value: '5000_10000', label: '5000€ - 10000€' },
-    { value: '10000_25000', label: '10000€ - 25000€' },
-    { value: '25000_50000', label: '25000€ - 50000€' },
-    { value: '50000_100000', label: '50000€ - 100000€' },
-    { value: 'über_100000', label: 'Über 100000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const complexityOptions = [
     { value: 'einfach', label: 'Einfach' },
     { value: 'mittel', label: 'Mittel' },
@@ -270,8 +252,6 @@ const SoftwareentwicklerForm: React.FC<SoftwareentwicklerFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.applicationType &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.complexity &&
       formData.projectSize &&
       formData.description
@@ -302,24 +282,6 @@ const SoftwareentwicklerForm: React.FC<SoftwareentwicklerFormProps> = ({
               onChange={value => handleInputChange('applicationType', value)}
               options={applicationTypeOptions}
               placeholder="Wählen Sie den Anwendungstyp"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -392,51 +354,6 @@ const SoftwareentwicklerForm: React.FC<SoftwareentwicklerFormProps> = ({
               value={formData.preferredDeliveryDate || ''}
               onChange={value => handleInputChange('preferredDeliveryDate', value)}
               placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
-          <FormField label="Branche">
-            <FormInput
-              type="text"
-              value={formData.industry || ''}
-              onChange={value => handleInputChange('industry', value)}
-              placeholder="Branche"
             />
           </FormField>
 

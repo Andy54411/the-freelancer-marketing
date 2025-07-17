@@ -57,15 +57,6 @@ const MarketingberaterForm: React.FC<MarketingberaterFormProps> = ({
     { value: 'finanzdienstleistungen', label: 'Finanzdienstleistungen' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_1000', label: 'Unter 1.000€' },
-    { value: '1000_5000', label: '1.000€ - 5.000€' },
-    { value: '5000_10000', label: '5.000€ - 10.000€' },
-    { value: '10000_25000', label: '10.000€ - 25.000€' },
-    { value: 'über_25000', label: 'Über 25.000€' },
-  ];
-
   const zeitrahmenOptions = [
     { value: 'sofort', label: 'Sofort' },
     { value: '1_monat', label: 'Innerhalb 1 Monat' },
@@ -130,7 +121,6 @@ const MarketingberaterForm: React.FC<MarketingberaterFormProps> = ({
       formData.serviceType &&
       formData.businessType &&
       formData.industry &&
-      formData.budgetRange &&
       formData.zeitrahmen &&
       formData.description
     );
@@ -171,16 +161,6 @@ const MarketingberaterForm: React.FC<MarketingberaterFormProps> = ({
               placeholder="Wählen Sie Ihre Branche"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.zeitrahmen || ''}

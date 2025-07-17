@@ -174,21 +174,6 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
               placeholder="Adresse des Veranstaltungsorts"
             />
           </FormField>
-
-          <FormField label="Budget pro Person (€)">
-            <FormInput
-              type="number"
-              value={formData.budgetPerPerson?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'budgetPerPerson',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Budget pro Person in €"
-            />
-          </FormField>
-
           <FormField label="Küchengröße">
             <FormInput
               type="text"

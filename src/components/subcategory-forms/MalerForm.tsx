@@ -193,19 +193,6 @@ const MalerForm: React.FC<MalerFormProps> = ({ data, onDataChange, onValidationC
               placeholder="Wann soll gearbeitet werden?"
             />
           </FormField>
-
-          <FormField label="Budget (€)">
-            <FormInput
-              type="number"
-              value={formData.budget?.toString() || ''}
-              onChange={value =>
-                updateData({
-                  budget: typeof value === 'string' ? (value ? parseInt(value) : undefined) : value,
-                })
-              }
-              placeholder="Ihr Budget in Euro"
-            />
-          </FormField>
         </div>
 
         <div className="mt-4">

@@ -32,13 +32,6 @@ const ITSupportForm: React.FC<ITSupportFormProps> = ({
     { value: 'schulung', label: 'Schulung & Training' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (innerhalb 24h)' },
-    { value: 'normal', label: 'Normal (innerhalb 1 Woche)' },
-    { value: 'kann_warten', label: 'Kann warten (flexibel)' },
-  ];
-
   const problemTypeOptions = [
     { value: 'computer_laptop', label: 'Computer/Laptop Probleme' },
     { value: 'drucker_scanner', label: 'Drucker/Scanner Probleme' },
@@ -81,7 +74,6 @@ const ITSupportForm: React.FC<ITSupportFormProps> = ({
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.urgency &&
       formData.problemType &&
       formData.supportLocation &&
       formData.operatingSystem &&
@@ -105,15 +97,6 @@ const ITSupportForm: React.FC<ITSupportFormProps> = ({
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
               placeholder="Wählen Sie die Art der Dienstleistung"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -164,20 +147,6 @@ const ITSupportForm: React.FC<ITSupportFormProps> = ({
                 )
               }
               placeholder="Anzahl der betroffenen Geräte"
-            />
-          </FormField>
-
-          <FormField label="Budget">
-            <FormInput
-              type="number"
-              value={formData.budget?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'budget',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Budget in €"
             />
           </FormField>
         </div>

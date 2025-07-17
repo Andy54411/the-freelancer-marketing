@@ -71,15 +71,6 @@ const DJServiceForm: React.FC<DJServiceFormProps> = ({
     { value: '200_500', label: '200 - 500 Gäste' },
     { value: 'über_500', label: 'Über 500 Gäste' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_300', label: 'Bis 300 €' },
-    { value: '300_600', label: '300 - 600 €' },
-    { value: '600_1000', label: '600 - 1.000 €' },
-    { value: '1000_2000', label: '1.000 - 2.000 €' },
-    { value: 'über_2000', label: 'Über 2.000 €' },
-  ];
-
   const additionalServicesOptions = [
     { value: 'lichtshow', label: 'Lichtshow' },
     { value: 'nebelmaschine', label: 'Nebelmaschine' },
@@ -127,15 +118,6 @@ const DJServiceForm: React.FC<DJServiceFormProps> = ({
               value={formData.eventLocation || ''}
               onChange={value => handleInputChange('eventLocation', value)}
               placeholder="Adresse der Veranstaltung"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
             />
           </FormField>
         </div>

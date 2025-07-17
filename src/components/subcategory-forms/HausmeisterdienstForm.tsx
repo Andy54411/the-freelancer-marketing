@@ -56,14 +56,6 @@ const HausmeisterdienstForm: React.FC<HausmeisterdienstFormProps> = ({
     { value: 'post', label: 'Postverteilung' },
   ];
 
-  const urgencyOptions = [
-    { value: 'sofort', label: 'Sofort' },
-    { value: 'heute', label: 'Heute' },
-    { value: 'diese_woche', label: 'Diese Woche' },
-    { value: 'nächste_woche', label: 'Nächste Woche' },
-    { value: 'flexibel', label: 'Flexibel' },
-  ];
-
   const availabilityOptions = [
     { value: 'werktags', label: 'Werktags' },
     { value: 'wochenende', label: 'Wochenende' },
@@ -82,7 +74,6 @@ const HausmeisterdienstForm: React.FC<HausmeisterdienstFormProps> = ({
       formData.serviceType &&
       formData.frequency &&
       formData.propertyType &&
-      formData.urgency &&
       formData.availability &&
       typeof formData.emergencyService === 'boolean'
     );
@@ -121,15 +112,6 @@ const HausmeisterdienstForm: React.FC<HausmeisterdienstFormProps> = ({
               onChange={value => handleInputChange('propertyType', value)}
               options={propertyTypeOptions}
               placeholder="Wählen Sie den Objekttyp"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

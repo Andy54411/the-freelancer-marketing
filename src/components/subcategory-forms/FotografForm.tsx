@@ -47,24 +47,6 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
     { value: 'reise', label: 'Reise' },
     { value: 'gemischt', label: 'Gemischt' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_100', label: 'Unter 100€' },
-    { value: '100_300', label: '100€ - 300€' },
-    { value: '300_500', label: '300€ - 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2000', label: '1000€ - 2000€' },
-    { value: '2000_5000', label: '2000€ - 5000€' },
-    { value: 'über_5000', label: 'Über 5000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const durationOptions = [
     { value: 'unter_1h', label: 'Unter 1 Stunde' },
     { value: '1_2h', label: '1-2 Stunden' },
@@ -157,8 +139,6 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
     const isValid = !!(
       formData.serviceType &&
       formData.shootingType &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.duration &&
       formData.numberOfPeople &&
       formData.description
@@ -189,24 +169,6 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
               onChange={value => handleInputChange('shootingType', value)}
               options={shootingTypeOptions}
               placeholder="Wählen Sie den Shooting-Typ"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -272,34 +234,6 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
               placeholder="Gewünschte Location"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Anzahl Bilder">
             <FormInput
               type="number"

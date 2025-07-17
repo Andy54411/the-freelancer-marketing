@@ -66,14 +66,6 @@ const DatenbankentwicklungForm: React.FC<DatenbankentwicklungFormProps> = ({
     { value: 'mixed', label: 'Gemischt' },
     { value: 'analytical', label: 'Analytisch' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_5000', label: 'Unter 5.000€' },
-    { value: '5000_15000', label: '5.000€ - 15.000€' },
-    { value: '15000_50000', label: '15.000€ - 50.000€' },
-    { value: 'über_50000', label: 'Über 50.000€' },
-  ];
-
   const featuresOptions = [
     { value: 'replication', label: 'Replikation' },
     { value: 'clustering', label: 'Clustering' },
@@ -110,7 +102,6 @@ const DatenbankentwicklungForm: React.FC<DatenbankentwicklungFormProps> = ({
       formData.dataSize &&
       formData.performanceRequirements &&
       formData.accessType &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -168,16 +159,6 @@ const DatenbankentwicklungForm: React.FC<DatenbankentwicklungFormProps> = ({
               placeholder="Wählen Sie das Zugriffsmuster"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Anzahl Benutzer">
             <FormInput
               type="number"

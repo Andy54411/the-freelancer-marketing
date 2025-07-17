@@ -169,15 +169,6 @@ const ProjektmanagementForm: React.FC<ProjektmanagementFormProps> = ({
           options={industryOptions}
         />
       </FormField>
-
-      <FormField label="Projektgröße/Budget" required>
-        <FormSelect
-          value={formData.projectSize}
-          onChange={value => handleChange('projectSize', value)}
-          options={projectSizeOptions}
-        />
-      </FormField>
-
       <FormField label="Projektdauer" required>
         <FormSelect
           value={formData.duration}

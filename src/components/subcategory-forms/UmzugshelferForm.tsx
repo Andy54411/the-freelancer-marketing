@@ -82,22 +82,6 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
     { value: 'über_500km', label: 'Über 500 km' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2000', label: '1000€ - 2000€' },
-    { value: '2000_5000', label: '2000€ - 5000€' },
-    { value: '5000_10000', label: '5000€ - 10000€' },
-    { value: 'über_10000', label: 'Über 10000€' },
-  ];
-
   const vehicleTypeOptions = [
     { value: 'transporter', label: 'Transporter' },
     { value: 'lkw_35t', label: 'LKW 3,5t' },
@@ -263,8 +247,6 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
       formData.fromAddress &&
       formData.toAddress &&
       formData.distance &&
-      formData.urgency &&
-      formData.budgetRange &&
       formData.description
     );
     onValidationChange(isValid);
@@ -350,24 +332,6 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Fahrzeugtyp">
             <FormSelect
               value={formData.vehicleType || ''}
@@ -417,34 +381,6 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
               placeholder="Stunden"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Kubikmeter">
             <FormInput
               type="number"

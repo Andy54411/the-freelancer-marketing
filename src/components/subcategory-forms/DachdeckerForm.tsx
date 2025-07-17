@@ -55,13 +55,6 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
     { value: 'landwirtschaft', label: 'Landwirtschaftsgebäude' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (innerhalb 1 Woche)' },
-    { value: 'normal', label: 'Normal (innerhalb 1 Monat)' },
-    { value: 'flexibel', label: 'Flexibel (nach Absprache)' },
-  ];
-
   const accessibilityOptions = [
     { value: 'einfach', label: 'Einfach zugänglich' },
     { value: 'erschwert', label: 'Erschwert zugänglich' },
@@ -81,7 +74,6 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
       formData.roofType &&
       formData.material &&
       formData.buildingType &&
-      formData.urgency &&
       formData.accessibility &&
       typeof formData.scaffoldingNeeded === 'boolean'
     );
@@ -143,15 +135,6 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
               onChange={value => handleInputChange('buildingType', value)}
               options={buildingTypeOptions}
               placeholder="Wählen Sie den Gebäudetyp"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

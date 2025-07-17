@@ -81,15 +81,6 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
     { value: 'outdoor', label: 'Outdoor (Spaziergänge)' },
     { value: 'flexibel', label: 'Flexibel' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_10', label: 'Unter 10€/Stunde' },
-    { value: '10_20', label: '10€ - 20€/Stunde' },
-    { value: '20_30', label: '20€ - 30€/Stunde' },
-    { value: '30_50', label: '30€ - 50€/Stunde' },
-    { value: 'über_50', label: 'Über 50€/Stunde' },
-  ];
-
   const specialCareOptions = [
     { value: 'medication', label: 'Medikamentengabe' },
     { value: 'special_diet', label: 'Spezielle Ernährung' },
@@ -129,7 +120,6 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
       formData.frequency &&
       formData.duration &&
       formData.location &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -187,16 +177,6 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
               placeholder="Wählen Sie den Ort"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Hundegröße">
             <FormSelect
               value={formData.dogSize || ''}

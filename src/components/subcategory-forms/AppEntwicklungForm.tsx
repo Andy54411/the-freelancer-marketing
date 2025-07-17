@@ -70,15 +70,6 @@ const AppEntwicklungForm: React.FC<AppEntwicklungFormProps> = ({
     { value: 'video_audio', label: 'Video/Audio' },
     { value: 'ar_vr', label: 'AR/VR' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_10000', label: 'Unter 10.000€' },
-    { value: '10000_25000', label: '10.000€ - 25.000€' },
-    { value: '25000_50000', label: '25.000€ - 50.000€' },
-    { value: '50000_100000', label: '50.000€ - 100.000€' },
-    { value: 'über_100000', label: 'Über 100.000€' },
-  ];
-
   const timelineOptions = [
     { value: 'unter_3_monate', label: 'Unter 3 Monate' },
     { value: '3_6_monate', label: '3-6 Monate' },
@@ -109,7 +100,6 @@ const AppEntwicklungForm: React.FC<AppEntwicklungFormProps> = ({
       formData.category &&
       formData.technology &&
       formData.features &&
-      formData.budgetRange &&
       formData.timeline &&
       formData.appDescription
     );
@@ -150,16 +140,6 @@ const AppEntwicklungForm: React.FC<AppEntwicklungFormProps> = ({
               placeholder="Wählen Sie die Technologie"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}

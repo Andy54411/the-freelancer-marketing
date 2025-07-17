@@ -15,7 +15,6 @@ interface DekorationData {
   location: string;
   area: string;
   style: string;
-  budget: string;
   materials: string[];
   timeframe: string;
   description?: string;
@@ -91,14 +90,6 @@ const DekorationForm: React.FC<DekorationFormProps> = ({
     { value: 'thematisch', label: 'Thematisch' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetOptions = [
-    { value: 'niedrig', label: 'Niedrig (< 500€)' },
-    { value: 'mittel', label: 'Mittel (500-1500€)' },
-    { value: 'hoch', label: 'Hoch (1500-5000€)' },
-    { value: 'sehr_hoch', label: 'Sehr hoch (> 5000€)' },
-  ];
-
   const materialsOptions = [
     { value: 'blumen', label: 'Blumen & Pflanzen' },
     { value: 'stoffe', label: 'Stoffe & Textilien' },
@@ -183,15 +174,6 @@ const DekorationForm: React.FC<DekorationFormProps> = ({
           options={styleOptions}
         />
       </FormField>
-
-      <FormField label="Budget">
-        <FormSelect
-          value={formData.budget || ''}
-          onChange={value => handleChange('budget', value)}
-          options={budgetOptions}
-        />
-      </FormField>
-
       <FormField label="Bevorzugte Materialien">
         <FormCheckboxGroup
           value={formData.materials || []}

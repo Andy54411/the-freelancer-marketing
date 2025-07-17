@@ -61,14 +61,6 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
     { value: 'andere', label: 'Andere' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-    { value: 'notfall', label: 'Notfall' },
-  ];
-
   const problemAreaOptions = [
     { value: 'motor', label: 'Motor' },
     { value: 'getriebe', label: 'Getriebe' },
@@ -90,17 +82,6 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
     { value: 'schlösser', label: 'Schlösser' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_100', label: 'Unter 100€' },
-    { value: '100_250', label: '100€ - 250€' },
-    { value: '250_500', label: '250€ - 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2000', label: '1000€ - 2000€' },
-    { value: '2000_5000', label: '2000€ - 5000€' },
-    { value: 'über_5000', label: 'Über 5000€' },
-  ];
-
   const warrantyOptions = [
     { value: 'ja', label: 'Ja, Garantie erwünscht' },
     { value: 'nein', label: 'Nein, keine Garantie' },
@@ -165,13 +146,7 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.vehicleType &&
-      formData.urgency &&
-      formData.budgetRange &&
-      formData.problemDescription
-    );
+    const isValid = !!(formData.serviceType && formData.vehicleType && formData.problemDescription);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
@@ -201,24 +176,6 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Marke">
             <FormInput
               type="text"
@@ -228,154 +185,17 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Modell">
-            <FormInput
-              type="text"
-              value={formData.model || ''}
-              onChange={value => handleInputChange('model', value)}
-              placeholder="Fahrzeugmodell"
-            />
-          </FormField>
-
           <FormField label="Baujahr">
             <FormInput
               type="number"
-              value={formData.year?.toString() || ''}
+              value={formData.buildYear?.toString() || ''}
               onChange={value =>
                 handleInputChange(
-                  'year',
+                  'buildYear',
                   typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
                 )
               }
               placeholder="Baujahr"
-            />
-          </FormField>
-
-          <FormField label="Kilometerstand">
-            <FormInput
-              type="number"
-              value={formData.mileage?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'mileage',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Kilometerstand"
-            />
-          </FormField>
-
-          <FormField label="Kennzeichen">
-            <FormInput
-              type="text"
-              value={formData.licensePlate || ''}
-              onChange={value => handleInputChange('licensePlate', value)}
-              placeholder="Kennzeichen"
-            />
-          </FormField>
-
-          <FormField label="Fahrgestellnummer">
-            <FormInput
-              type="text"
-              value={formData.vinNumber || ''}
-              onChange={value => handleInputChange('vinNumber', value)}
-              placeholder="Fahrgestellnummer (VIN)"
-            />
-          </FormField>
-
-          <FormField label="Motorcode">
-            <FormInput
-              type="text"
-              value={formData.engineCode || ''}
-              onChange={value => handleInputChange('engineCode', value)}
-              placeholder="Motorcode"
-            />
-          </FormField>
-
-          <FormField label="Getriebeart">
-            <FormSelect
-              value={formData.transmissionType || ''}
-              onChange={value => handleInputChange('transmissionType', value)}
-              options={[
-                { value: 'manuell', label: 'Manuell' },
-                { value: 'automatik', label: 'Automatik' },
-                { value: 'cvt', label: 'CVT' },
-                { value: 'dsg', label: 'DSG' },
-                { value: 'andere', label: 'Andere' },
-              ]}
-              placeholder="Wählen Sie die Getriebeart"
-            />
-          </FormField>
-
-          <FormField label="Kraftstoffart">
-            <FormSelect
-              value={formData.fuelType || ''}
-              onChange={value => handleInputChange('fuelType', value)}
-              options={[
-                { value: 'benzin', label: 'Benzin' },
-                { value: 'diesel', label: 'Diesel' },
-                { value: 'hybrid', label: 'Hybrid' },
-                { value: 'elektro', label: 'Elektro' },
-                { value: 'gas', label: 'Gas' },
-                { value: 'andere', label: 'Andere' },
-              ]}
-              placeholder="Wählen Sie die Kraftstoffart"
-            />
-          </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Geschätzte Reparaturdauer">
-            <FormInput
-              type="text"
-              value={formData.estimatedDuration || ''}
-              onChange={value => handleInputChange('estimatedDuration', value)}
-              placeholder="Stunden/Tage"
-            />
-          </FormField>
-
-          <FormField label="Versicherungsnummer">
-            <FormInput
-              type="text"
-              value={formData.insuranceNumber || ''}
-              onChange={value => handleInputChange('insuranceNumber', value)}
-              placeholder="Versicherungsnummer"
-            />
-          </FormField>
-
-          <FormField label="Schadennummer">
-            <FormInput
-              type="text"
-              value={formData.damageNumber || ''}
-              onChange={value => handleInputChange('damageNumber', value)}
-              placeholder="Schadennummer"
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Problembereiche">
-            <FormCheckboxGroup
-              value={formData.problemAreas || []}
-              onChange={value => handleInputChange('problemAreas', value)}
-              options={problemAreaOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zusätzliche Services">
-            <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
             />
           </FormField>
         </div>
@@ -387,141 +207,6 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
               onChange={value => handleInputChange('problemDescription', value)}
               placeholder="Beschreiben Sie das Problem oder die benötigte Reparatur detailliert"
               rows={4}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Symptome">
-            <FormTextarea
-              value={formData.symptoms || ''}
-              onChange={value => handleInputChange('symptoms', value)}
-              placeholder="Welche Symptome sind aufgetreten?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Vorherige Reparaturen">
-            <FormTextarea
-              value={formData.previousRepairs || ''}
-              onChange={value => handleInputChange('previousRepairs', value)}
-              placeholder="Wurden bereits Reparaturen durchgeführt?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Besondere Anforderungen oder Wünsche"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Garantie gewünscht">
-            <FormRadioGroup
-              name="warranty"
-              value={formData.warranty || ''}
-              onChange={value => handleInputChange('warranty', value)}
-              options={warrantyOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Service-Standort">
-            <FormRadioGroup
-              name="serviceLocation"
-              value={formData.serviceLocation || ''}
-              onChange={value => handleInputChange('serviceLocation', value)}
-              options={serviceLocationOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zahlungsart">
-            <FormRadioGroup
-              name="paymentMethod"
-              value={formData.paymentMethod || ''}
-              onChange={value => handleInputChange('paymentMethod', value)}
-              options={paymentMethodOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Originalteile gewünscht">
-            <FormRadioGroup
-              name="originalParts"
-              value={formData.originalParts || ''}
-              onChange={value => handleInputChange('originalParts', value)}
-              options={[
-                { value: 'ja', label: 'Ja, nur Originalteile' },
-                { value: 'nein', label: 'Nein, Ersatzteile ok' },
-                { value: 'egal', label: 'Egal' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Kostenvoranschlag gewünscht">
-            <FormRadioGroup
-              name="estimate"
-              value={formData.estimate || ''}
-              onChange={value => handleInputChange('estimate', value)}
-              options={[
-                { value: 'ja', label: 'Ja, Kostenvoranschlag erst' },
-                { value: 'nein', label: 'Nein, direkt reparieren' },
-                { value: 'abhängig', label: 'Abhängig von Kosten' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Fahrzeug fahrtüchtig">
-            <FormRadioGroup
-              name="roadworthy"
-              value={formData.roadworthy || ''}
-              onChange={value => handleInputChange('roadworthy', value)}
-              options={[
-                { value: 'ja', label: 'Ja, fahrtüchtig' },
-                { value: 'nein', label: 'Nein, nicht fahrtüchtig' },
-                { value: 'eingeschränkt', label: 'Eingeschränkt fahrtüchtig' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Versicherungsfall">
-            <FormRadioGroup
-              name="insuranceCase"
-              value={formData.insuranceCase || ''}
-              onChange={value => handleInputChange('insuranceCase', value)}
-              options={[
-                { value: 'ja', label: 'Ja, Versicherungsfall' },
-                { value: 'nein', label: 'Nein, privat' },
-                { value: 'unbekannt', label: 'Unbekannt' },
-              ]}
             />
           </FormField>
         </div>

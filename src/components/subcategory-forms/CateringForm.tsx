@@ -50,15 +50,6 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
     { value: 'bio', label: 'Bio-Küche' },
     { value: 'regional', label: 'Regionale Küche' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_20', label: 'Bis 20 € pro Person' },
-    { value: '20_40', label: '20 - 40 € pro Person' },
-    { value: '40_60', label: '40 - 60 € pro Person' },
-    { value: '60_100', label: '60 - 100 € pro Person' },
-    { value: 'über_100', label: 'Über 100 € pro Person' },
-  ];
-
   const additionalServicesOptions = [
     { value: 'geschirr', label: 'Geschirr & Besteck' },
     { value: 'tischdecken', label: 'Tischdecken' },
@@ -125,15 +116,6 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
               onChange={value => handleInputChange('cuisineType', value)}
               options={cuisineTypeOptions}
               placeholder="Wählen Sie die Küchenart"
-            />
-          </FormField>
-
-          <FormField label="Budget pro Person">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie das Budget pro Person"
             />
           </FormField>
         </div>

@@ -44,14 +44,6 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
     { value: 'schwer', label: 'Schwer (über 20kg)' },
   ];
 
-  const urgencyOptions = [
-    { value: 'sofort', label: 'Sofort' },
-    { value: 'innerhalb_2h', label: 'Innerhalb 2 Stunden' },
-    { value: 'heute', label: 'Heute' },
-    { value: 'morgen', label: 'Morgen' },
-    { value: 'diese_woche', label: 'Diese Woche' },
-  ];
-
   const distanceOptions = [
     { value: 'lokal', label: 'Lokal (bis 25 km)' },
     { value: 'regional', label: 'Regional (25-100 km)' },
@@ -79,7 +71,6 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
       formData.serviceType &&
       formData.packageSize &&
       formData.weight &&
-      formData.urgency &&
       formData.distance &&
       formData.pickupAddress &&
       formData.deliveryAddress
@@ -119,15 +110,6 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
               onChange={value => handleInputChange('weight', value)}
               options={weightOptions}
               placeholder="Wählen Sie das Gewicht"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

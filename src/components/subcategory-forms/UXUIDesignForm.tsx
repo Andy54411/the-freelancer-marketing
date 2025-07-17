@@ -64,15 +64,6 @@ const UXUIDesignForm: React.FC<UXUIDesignFormProps> = ({
     { value: 'bold', label: 'Markant' },
     { value: 'classic', label: 'Klassisch' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_2000', label: 'Unter 2.000€' },
-    { value: '2000_5000', label: '2.000€ - 5.000€' },
-    { value: '5000_10000', label: '5.000€ - 10.000€' },
-    { value: '10000_25000', label: '10.000€ - 25.000€' },
-    { value: 'über_25000', label: 'Über 25.000€' },
-  ];
-
   const timelineOptions = [
     { value: 'unter_2_wochen', label: 'Unter 2 Wochen' },
     { value: '2_4_wochen', label: '2-4 Wochen' },
@@ -115,7 +106,6 @@ const UXUIDesignForm: React.FC<UXUIDesignFormProps> = ({
       formData.serviceType &&
       formData.platform &&
       formData.designStyle &&
-      formData.budgetRange &&
       formData.timeline &&
       formData.projectDescription
     );
@@ -165,16 +155,6 @@ const UXUIDesignForm: React.FC<UXUIDesignFormProps> = ({
               placeholder="Wählen Sie den Design-Stil"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}

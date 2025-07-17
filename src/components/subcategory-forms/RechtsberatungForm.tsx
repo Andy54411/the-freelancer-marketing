@@ -61,29 +61,12 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
     { value: 'stiftung', label: 'Stiftung' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-    { value: 'notfall', label: 'Notfall' },
-  ];
-
   const complexityOptions = [
     { value: 'einfach', label: 'Einfach' },
     { value: 'mittel', label: 'Mittel' },
     { value: 'komplex', label: 'Komplex' },
     { value: 'sehr_komplex', label: 'Sehr komplex' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_1000', label: 'Unter 1.000€' },
-    { value: '1000_3000', label: '1.000€ - 3.000€' },
-    { value: '3000_8000', label: '3.000€ - 8.000€' },
-    { value: '8000_20000', label: '8.000€ - 20.000€' },
-    { value: 'über_20000', label: 'Über 20.000€' },
-  ];
-
   const caseStageOptions = [
     { value: 'praevention', label: 'Prävention' },
     { value: 'beratung', label: 'Beratung' },
@@ -124,9 +107,7 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
       formData.serviceType &&
       formData.legalArea &&
       formData.clientType &&
-      formData.urgency &&
       formData.complexity &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -166,15 +147,6 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
           <FormField label="Komplexität" required>
             <FormSelect
               value={formData.complexity || ''}
@@ -183,16 +155,6 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
               placeholder="Wählen Sie die Komplexität"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Fallstadium">
             <FormSelect
               value={formData.caseStage || ''}
@@ -276,15 +238,6 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
               value={formData.insurance || ''}
               onChange={value => handleInputChange('insurance', value)}
               placeholder="Rechtsschutzversicherung"
-            />
-          </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Ansprechpartner"
             />
           </FormField>
         </div>

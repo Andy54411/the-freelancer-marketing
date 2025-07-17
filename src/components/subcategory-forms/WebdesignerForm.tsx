@@ -63,23 +63,6 @@ const WebdesignerForm: React.FC<WebdesignerFormProps> = ({
     { value: 'art', label: 'Kunst' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2500', label: '1000€ - 2500€' },
-    { value: '2500_5000', label: '2500€ - 5000€' },
-    { value: '5000_10000', label: '5000€ - 10000€' },
-    { value: 'über_10000', label: 'Über 10000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const numberOfPagesOptions = [
     { value: '1', label: '1 Seite' },
     { value: '2_5', label: '2-5 Seiten' },
@@ -248,8 +231,6 @@ const WebdesignerForm: React.FC<WebdesignerFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.websiteType &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.numberOfPages &&
       formData.description
     );
@@ -279,24 +260,6 @@ const WebdesignerForm: React.FC<WebdesignerFormProps> = ({
               onChange={value => handleInputChange('websiteType', value)}
               options={websiteTypeOptions}
               placeholder="Wählen Sie den Website-Typ"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -353,43 +316,6 @@ const WebdesignerForm: React.FC<WebdesignerFormProps> = ({
               placeholder="TT.MM.JJJJ"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Aktuelle Website">
             <FormInput
               type="text"

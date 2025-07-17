@@ -937,44 +937,6 @@ export interface HundetrainerData extends BaseSubcategoryData {
   specialRequirements?: string;
 }
 
-// Wartung & Instandhaltung-spezifische Daten
-export interface WartungInstandhaltungData extends BaseSubcategoryData {
-  subcategory: 'Wartung & Instandhaltung';
-  serviceType: 'reparatur' | 'wartung' | 'instandhaltung' | 'inspektion' | 'notfall';
-  workType:
-    | 'elektrisch'
-    | 'sanitär'
-    | 'heizung'
-    | 'klima'
-    | 'türen_fenster'
-    | 'dächer'
-    | 'fassaden'
-    | 'böden'
-    | 'wände'
-    | 'keller'
-    | 'dachboden'
-    | 'außenanlagen';
-  buildingType:
-    | 'einfamilienhaus'
-    | 'mehrfamilienhaus'
-    | 'wohnung'
-    | 'büro'
-    | 'gewerbe'
-    | 'industrie'
-    | 'öffentlich';
-  urgency: 'sofort' | 'heute' | 'morgen' | 'diese_woche' | 'nächste_woche' | 'flexibel';
-  budgetRange?: 'bis_100' | '100_300' | '300_500' | '500_1000' | '1000_2000' | 'über_2000';
-  frequency?:
-    | 'einmalig'
-    | 'monatlich'
-    | 'vierteljährlich'
-    | 'halbjährlich'
-    | 'jährlich'
-    | 'nach_bedarf';
-  problemDescription?: string;
-  additionalInfo?: string;
-}
-
 // Catering-spezifische Daten
 export interface CateringData extends BaseSubcategoryData {
   subcategory: 'Catering';
@@ -1566,7 +1528,6 @@ export type SubcategoryData =
   | GartenpflegeData
   | LandschaftsgärtnerData
   | HundetrainerData
-  | WartungInstandhaltungData
   | CateringData
   | SeniorenbetreuungData
   | KinderbetreuungData

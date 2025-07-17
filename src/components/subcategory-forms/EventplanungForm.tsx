@@ -51,16 +51,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
     { value: 'sehr_gross', label: 'Sehr groß (100-200 Personen)' },
     { value: 'mega', label: 'Mega (über 200 Personen)' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_1000', label: 'Unter 1.000€' },
-    { value: '1000_5000', label: '1.000€ - 5.000€' },
-    { value: '5000_10000', label: '5.000€ - 10.000€' },
-    { value: '10000_25000', label: '10.000€ - 25.000€' },
-    { value: '25000_50000', label: '25.000€ - 50.000€' },
-    { value: 'über_50000', label: 'Über 50.000€' },
-  ];
-
   const serviceTypeOptions = [
     { value: 'vollplanung', label: 'Vollständige Planung' },
     { value: 'teilplanung', label: 'Teilplanung' },
@@ -155,13 +145,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
     { value: 'andere', label: 'Andere' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const handleInputChange = (field: keyof EventplanungData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
@@ -172,7 +155,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
     const isValid = !!(
       formData.eventType &&
       formData.eventSize &&
-      formData.budgetRange &&
       formData.serviceType &&
       formData.locationType &&
       formData.projectDescription
@@ -205,16 +187,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
               placeholder="Wählen Sie die Größe"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Art der Dienstleistung" required>
             <FormSelect
               value={formData.serviceType || ''}
@@ -250,34 +222,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
               placeholder="Anzahl der Gäste"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Bevorzugter Ort">
             <FormInput
               type="text"
@@ -458,19 +402,7 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
           </FormField>
         </div>
 
-        <div className="mt-4">
-          <FormField label="Dringlichkeit">
-            <FormRadioGroup
-              name="urgency"
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
+        <div className="mt-4"></div>
 
         <div className="mt-4">
           <FormField label="Outdoor/Indoor">

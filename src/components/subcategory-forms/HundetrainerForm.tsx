@@ -72,15 +72,6 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
     { value: 'kurs', label: 'Kurs (mehrere Termine)' },
     { value: 'intensiv', label: 'Intensivtraining' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_50', label: 'Unter 50€/Stunde' },
-    { value: '50_80', label: '50€ - 80€/Stunde' },
-    { value: '80_120', label: '80€ - 120€/Stunde' },
-    { value: '120_200', label: '120€ - 200€/Stunde' },
-    { value: 'über_200', label: 'Über 200€/Stunde' },
-  ];
-
   const problemBehaviorOptions = [
     { value: 'aggression', label: 'Aggression' },
     { value: 'bellen', label: 'Übermäßiges Bellen' },
@@ -133,7 +124,6 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
       formData.dogSize &&
       formData.trainingLocation &&
       formData.frequency &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -191,16 +181,6 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
               placeholder="Wählen Sie die Häufigkeit"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Name des Hundes">
             <FormInput
               type="text"
@@ -418,21 +398,7 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
           </FormField>
         </div>
 
-        <div className="mt-4">
-          <FormField label="Dringlichkeit">
-            <FormRadioGroup
-              name="urgency"
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={[
-                { value: 'nicht_eilig', label: 'Nicht eilig' },
-                { value: 'normal', label: 'Normal' },
-                { value: 'eilig', label: 'Eilig' },
-                { value: 'sehr_eilig', label: 'Sehr eilig' },
-              ]}
-            />
-          </FormField>
-        </div>
+        <div className="mt-4"></div>
 
         <div className="mt-4">
           <FormField label="Impfstatus">

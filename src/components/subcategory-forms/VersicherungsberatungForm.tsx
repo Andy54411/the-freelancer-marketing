@@ -65,21 +65,6 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({
     { value: 'betriebsunterbrechung', label: 'Betriebsunterbrechungsversicherung' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_50', label: 'Unter 50€/Monat' },
-    { value: '50_100', label: '50€ - 100€/Monat' },
-    { value: '100_200', label: '100€ - 200€/Monat' },
-    { value: '200_500', label: '200€ - 500€/Monat' },
-    { value: 'über_500', label: 'Über 500€/Monat' },
-  ];
-
   const currentProviderOptions = [
     { value: 'allianz', label: 'Allianz' },
     { value: 'axa', label: 'AXA' },
@@ -123,13 +108,7 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency &&
-      formData.budgetRange &&
-      formData.projectDescription
-    );
+    const isValid = !!(formData.serviceType && formData.clientType && formData.projectDescription);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
@@ -156,24 +135,6 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({
               onChange={value => handleInputChange('clientType', value)}
               options={clientTypeOptions}
               placeholder="Wählen Sie den Kundentyp"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
             />
           </FormField>
 

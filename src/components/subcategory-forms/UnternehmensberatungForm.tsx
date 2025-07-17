@@ -189,15 +189,6 @@ const UnternehmensberatungForm: React.FC<UnternehmensberatungFormProps> = ({
           options={consultingFrequencyOptions}
         />
       </FormField>
-
-      <FormField label="Budget (optional)">
-        <FormInput
-          value={formData.budget || ''}
-          onChange={value => handleChange('budget', value.toString())}
-          placeholder="z.B. '5.000 € - 10.000 €', 'nach Aufwand', etc."
-        />
-      </FormField>
-
       <FormField label="Detaillierte Beschreibung Ihrer Anforderungen">
         <FormTextarea
           value={formData.description || ''}

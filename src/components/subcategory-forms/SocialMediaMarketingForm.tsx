@@ -68,15 +68,6 @@ const SocialMediaMarketingForm: React.FC<SocialMediaMarketingFormProps> = ({
     { value: 'user_generated', label: 'User-Generated Content' },
     { value: 'blog_posts', label: 'Blog-Posts' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€/Monat' },
-    { value: '500_1500', label: '500€ - 1.500€/Monat' },
-    { value: '1500_5000', label: '1.500€ - 5.000€/Monat' },
-    { value: '5000_15000', label: '5.000€ - 15.000€/Monat' },
-    { value: 'über_15000', label: 'Über 15.000€/Monat' },
-  ];
-
   const frequencyOptions = [
     { value: 'daily', label: 'Täglich' },
     { value: 'multiple_daily', label: 'Mehrmals täglich' },
@@ -131,7 +122,6 @@ const SocialMediaMarketingForm: React.FC<SocialMediaMarketingFormProps> = ({
       formData.businessType &&
       formData.platforms &&
       formData.contentTypes &&
-      formData.budgetRange &&
       formData.postingFrequency &&
       formData.goals &&
       formData.projectDescription
@@ -164,16 +154,6 @@ const SocialMediaMarketingForm: React.FC<SocialMediaMarketingFormProps> = ({
               placeholder="Wählen Sie den Geschäftstyp"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Posting-Frequenz" required>
             <FormSelect
               value={formData.postingFrequency || ''}

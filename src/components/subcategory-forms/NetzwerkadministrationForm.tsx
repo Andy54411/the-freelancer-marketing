@@ -50,13 +50,6 @@ const NetzwerkadministrationForm: React.FC<NetzwerkadministrationFormProps> = ({
     { value: 'enterprise', label: 'Enterprise (200+ Mitarbeiter)' },
   ];
 
-  const urgencyOptions = [
-    { value: 'low', label: 'Niedrig' },
-    { value: 'medium', label: 'Mittel' },
-    { value: 'high', label: 'Hoch' },
-    { value: 'critical', label: 'Kritisch' },
-  ];
-
   const equipmentOptions = [
     { value: 'router', label: 'Router' },
     { value: 'switch', label: 'Switch' },
@@ -90,7 +83,6 @@ const NetzwerkadministrationForm: React.FC<NetzwerkadministrationFormProps> = ({
       formData.serviceType &&
       formData.networkType &&
       formData.companySize &&
-      formData.urgency &&
       formData.problemDescription
     );
     onValidationChange(isValid);
@@ -128,15 +120,6 @@ const NetzwerkadministrationForm: React.FC<NetzwerkadministrationFormProps> = ({
               onChange={value => handleInputChange('companySize', value)}
               options={companySizeOptions}
               placeholder="Wählen Sie die Unternehmensgröße"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

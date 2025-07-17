@@ -113,23 +113,6 @@ const PhysiotherapieForm: React.FC<PhysiotherapieFormProps> = ({
     { value: 'krankenhaus', label: 'Krankenhaus' },
     { value: 'reha', label: 'Reha-Zentrum' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'kassenleistung', label: 'Kassenleistung' },
-    { value: 'privat_50', label: 'Privat bis 50€' },
-    { value: 'privat_100', label: 'Privat bis 100€' },
-    { value: 'privat_150', label: 'Privat bis 150€' },
-    { value: 'privat_über_150', label: 'Privat über 150€' },
-    { value: 'beihilfe', label: 'Beihilfe' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const experienceOptions = [
     { value: 'student', label: 'Student' },
     { value: 'berufsanfänger', label: 'Berufsanfänger' },
@@ -169,7 +152,6 @@ const PhysiotherapieForm: React.FC<PhysiotherapieFormProps> = ({
       formData.frequency &&
       formData.sessionDuration &&
       formData.location &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -245,16 +227,6 @@ const PhysiotherapieForm: React.FC<PhysiotherapieFormProps> = ({
               placeholder="Wählen Sie den Ort"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Gewünschte Erfahrung">
             <FormSelect
               value={formData.experienceLevel || ''}
@@ -293,33 +265,6 @@ const PhysiotherapieForm: React.FC<PhysiotherapieFormProps> = ({
                 )
               }
               placeholder="Alter des Patienten"
-            />
-          </FormField>
-
-          <FormField label="Ansprechpartner">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name des Ansprechpartners"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
             />
           </FormField>
 
@@ -485,19 +430,7 @@ const PhysiotherapieForm: React.FC<PhysiotherapieFormProps> = ({
           </FormField>
         </div>
 
-        <div className="mt-4">
-          <FormField label="Dringlichkeit">
-            <FormRadioGroup
-              name="urgency"
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
+        <div className="mt-4"></div>
 
         <div className="mt-4">
           <FormField label="Geschlecht des Patienten">

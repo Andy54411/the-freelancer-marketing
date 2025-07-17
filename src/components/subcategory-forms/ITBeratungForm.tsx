@@ -55,21 +55,6 @@ const ITBeratungForm: React.FC<ITBeratungFormProps> = ({
     { value: 'other', label: 'Andere' },
   ];
 
-  const urgencyOptions = [
-    { value: 'low', label: 'Niedrig' },
-    { value: 'medium', label: 'Mittel' },
-    { value: 'high', label: 'Hoch' },
-    { value: 'critical', label: 'Kritisch' },
-  ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_10000', label: 'Unter 10.000€' },
-    { value: '10000_25000', label: '10.000€ - 25.000€' },
-    { value: '25000_50000', label: '25.000€ - 50.000€' },
-    { value: '50000_100000', label: '50.000€ - 100.000€' },
-    { value: 'über_100000', label: 'Über 100.000€' },
-  ];
-
   const timelineOptions = [
     { value: 'sofort', label: 'Sofort' },
     { value: 'unter_1_monat', label: 'Unter 1 Monat' },
@@ -113,8 +98,6 @@ const ITBeratungForm: React.FC<ITBeratungFormProps> = ({
       formData.consultingType &&
       formData.companySize &&
       formData.industry &&
-      formData.urgency &&
-      formData.budgetRange &&
       formData.timeline &&
       formData.projectDescription
     );
@@ -156,24 +139,6 @@ const ITBeratungForm: React.FC<ITBeratungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}
@@ -189,15 +154,6 @@ const ITBeratungForm: React.FC<ITBeratungFormProps> = ({
               value={formData.company || ''}
               onChange={value => handleInputChange('company', value)}
               placeholder="Name Ihres Unternehmens"
-            />
-          </FormField>
-
-          <FormField label="Ansprechpartner">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name des Ansprechpartners"
             />
           </FormField>
 

@@ -59,28 +59,12 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
     { value: 'kirchensteuer', label: 'Kirchensteuer' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const complexityOptions = [
     { value: 'einfach', label: 'Einfach' },
     { value: 'mittel', label: 'Mittel' },
     { value: 'komplex', label: 'Komplex' },
     { value: 'sehr_komplex', label: 'Sehr komplex' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€' },
-    { value: '500_1500', label: '500€ - 1.500€' },
-    { value: '1500_3000', label: '1.500€ - 3.000€' },
-    { value: '3000_8000', label: '3.000€ - 8.000€' },
-    { value: 'über_8000', label: 'Über 8.000€' },
-  ];
-
   const frequencyOptions = [
     { value: 'einmalig', label: 'Einmalig' },
     { value: 'jährlich', label: 'Jährlich' },
@@ -112,9 +96,7 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.clientType &&
-      formData.urgency &&
       formData.complexity &&
-      formData.budgetRange &&
       formData.frequency &&
       formData.projectDescription
     );
@@ -147,15 +129,6 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
           <FormField label="Komplexität" required>
             <FormSelect
               value={formData.complexity || ''}
@@ -164,16 +137,6 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
               placeholder="Wählen Sie die Komplexität"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Häufigkeit" required>
             <FormSelect
               value={formData.frequency || ''}

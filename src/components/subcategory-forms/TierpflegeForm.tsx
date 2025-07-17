@@ -65,15 +65,6 @@ const TierpflegeForm: React.FC<TierpflegeFormProps> = ({
     { value: 'halbjährlich', label: 'Halbjährlich' },
     { value: 'nach_bedarf', label: 'Nach Bedarf' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_30', label: 'Bis 30 €' },
-    { value: '30_50', label: '30 - 50 €' },
-    { value: '50_80', label: '50 - 80 €' },
-    { value: '80_120', label: '80 - 120 €' },
-    { value: 'über_120', label: 'Über 120 €' },
-  ];
-
   const handleInputChange = (field: keyof TierpflegeData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
@@ -160,15 +151,6 @@ const TierpflegeForm: React.FC<TierpflegeFormProps> = ({
               value={formData.breed || ''}
               onChange={value => handleInputChange('breed', value)}
               placeholder="Rasse des Tieres"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
             />
           </FormField>
         </div>

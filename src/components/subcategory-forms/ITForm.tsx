@@ -43,13 +43,6 @@ const ITForm: React.FC<ITFormProps> = ({ data, onDataChange, onValidationChange 
     { value: 'ios', label: 'iOS' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (heute)' },
-    { value: 'normal', label: 'Normal (diese Woche)' },
-    { value: 'kann_warten', label: 'Kann warten' },
-  ];
-
   const locationOptions = [
     { value: 'vor_ort', label: 'Vor Ort' },
     { value: 'remote', label: 'Remote/Fernwartung' },
@@ -72,7 +65,6 @@ const ITForm: React.FC<ITFormProps> = ({ data, onDataChange, onValidationChange 
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.urgency &&
       formData.location &&
       formData.dataBackup &&
       typeof formData.businessHours === 'boolean'
@@ -94,15 +86,6 @@ const ITForm: React.FC<ITFormProps> = ({ data, onDataChange, onValidationChange 
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
               placeholder="Wählen Sie die Art der Dienstleistung"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wie dringend ist der Auftrag?"
             />
           </FormField>
 

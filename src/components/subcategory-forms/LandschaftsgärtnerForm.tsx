@@ -41,15 +41,6 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
     { value: 'gross', label: 'Groß (500-1000 qm)' },
     { value: 'sehr_gross', label: 'Sehr groß (über 1000 qm)' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_5000', label: 'Unter 5.000€' },
-    { value: '5000_15000', label: '5.000€ - 15.000€' },
-    { value: '15000_30000', label: '15.000€ - 30.000€' },
-    { value: '30000_50000', label: '30.000€ - 50.000€' },
-    { value: 'über_50000', label: 'Über 50.000€' },
-  ];
-
   const styleOptions = [
     { value: 'modern', label: 'Modern' },
     { value: 'klassisch', label: 'Klassisch' },
@@ -121,7 +112,6 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.projectSize &&
-      formData.budgetRange &&
       formData.style &&
       formData.projectDescription
     );
@@ -153,16 +143,6 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
               placeholder="Wählen Sie die Projektgröße"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Stil" required>
             <FormSelect
               value={formData.style || ''}

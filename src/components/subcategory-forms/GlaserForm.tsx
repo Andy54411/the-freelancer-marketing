@@ -53,13 +53,6 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
     { value: 'nach_absprache', label: 'Nach Absprache' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (innerhalb 24h)' },
-    { value: 'normal', label: 'Normal (innerhalb 1 Woche)' },
-    { value: 'flexibel', label: 'Flexibel (nach Absprache)' },
-  ];
-
   const frameTypeOptions = [
     { value: 'holz', label: 'Holzrahmen' },
     { value: 'alu', label: 'Aluminiumrahmen' },
@@ -81,7 +74,6 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
       formData.glassType &&
       formData.application &&
       formData.thickness &&
-      formData.urgency &&
       formData.frameType &&
       typeof formData.measurement === 'string'
     );
@@ -129,15 +121,6 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
               onChange={value => handleInputChange('thickness', value)}
               options={thicknessOptions}
               placeholder="Wählen Sie die Glasstärke"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

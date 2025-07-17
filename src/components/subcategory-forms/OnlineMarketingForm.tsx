@@ -60,15 +60,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
     { value: 'fitness', label: 'Fitness & Wellness' },
     { value: 'other', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_1000', label: 'Unter 1.000€/Monat' },
-    { value: '1000_3000', label: '1.000€ - 3.000€/Monat' },
-    { value: '3000_10000', label: '3.000€ - 10.000€/Monat' },
-    { value: '10000_25000', label: '10.000€ - 25.000€/Monat' },
-    { value: 'über_25000', label: 'Über 25.000€/Monat' },
-  ];
-
   const timelineOptions = [
     { value: 'sofort', label: 'Sofort' },
     { value: 'kurzfristig', label: 'Kurzfristig (1-3 Monate)' },
@@ -133,7 +124,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
       formData.serviceType &&
       formData.businessType &&
       formData.industry &&
-      formData.budgetRange &&
       formData.timeline &&
       formData.goals &&
       formData.projectDescription
@@ -175,16 +165,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
               placeholder="Wählen Sie Ihre Branche"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}

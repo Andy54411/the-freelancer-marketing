@@ -50,23 +50,6 @@ const VideografForm: React.FC<VideografFormProps> = ({
     { value: 'einzelvideo', label: 'Einzelvideo' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2000', label: '1000€ - 2000€' },
-    { value: '2000_5000', label: '2000€ - 5000€' },
-    { value: '5000_10000', label: '5000€ - 10000€' },
-    { value: 'über_10000', label: 'Über 10000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const durationOptions = [
     { value: 'unter_30s', label: 'Unter 30 Sekunden' },
     { value: '30s_1min', label: '30 Sekunden - 1 Minute' },
@@ -196,8 +179,6 @@ const VideografForm: React.FC<VideografFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.videoType &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.duration &&
       formData.quality &&
       formData.description
@@ -228,24 +209,6 @@ const VideografForm: React.FC<VideografFormProps> = ({
               onChange={value => handleInputChange('videoType', value)}
               options={videoTypeOptions}
               placeholder="Wählen Sie den Video-Typ"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -309,33 +272,6 @@ const VideografForm: React.FC<VideografFormProps> = ({
               value={formData.location || ''}
               onChange={value => handleInputChange('location', value)}
               placeholder="Gewünschte Location"
-            />
-          </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
             />
           </FormField>
 

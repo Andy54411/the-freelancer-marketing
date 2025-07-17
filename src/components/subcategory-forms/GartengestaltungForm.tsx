@@ -80,22 +80,6 @@ const GartengestaltungForm: React.FC<GartengestaltungFormProps> = ({
               ]}
             />
           </FormField>
-
-          <FormField label="Budget" required description="Welches Budget steht zur Verfügung?">
-            <FormSelect
-              value={data.budget || ''}
-              onChange={value => handleFieldChange('budget', value)}
-              options={[
-                { value: 'bis_1000', label: 'Bis 1.000 €' },
-                { value: '1000_3000', label: '1.000-3.000 €' },
-                { value: '3000_5000', label: '3.000-5.000 €' },
-                { value: '5000_10000', label: '5.000-10.000 €' },
-                { value: '10000_20000', label: '10.000-20.000 €' },
-                { value: 'über_20000', label: 'Über 20.000 €' },
-              ]}
-            />
-          </FormField>
-
           <FormField
             label="Gewünschte Elemente"
             description="Welche Elemente sollen in den Garten integriert werden?"

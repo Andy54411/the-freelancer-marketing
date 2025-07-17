@@ -96,18 +96,6 @@ const BaumpflegeForm: React.FC<BaumpflegeFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Dringlichkeit" description="Wie dringend ist die Baumpflege?">
-            <FormSelect
-              value={data.urgency || ''}
-              onChange={value => handleFieldChange('urgency', value)}
-              options={[
-                { value: 'normal', label: 'Normal' },
-                { value: 'urgent', label: 'Dringend' },
-                { value: 'emergency', label: 'Notfall' },
-              ]}
-            />
-          </FormField>
-
           <FormField label="Benötigte Ausrüstung" description="Welche Ausrüstung wird benötigt?">
             <FormCheckboxGroup
               value={data.equipment || []}

@@ -53,25 +53,6 @@ const SicherheitsdienstForm: React.FC<SicherheitsdienstFormProps> = ({
     { value: 'hoch', label: 'Hoch' },
     { value: 'sehr_hoch', label: 'Sehr hoch' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2500', label: '1000€ - 2500€' },
-    { value: '2500_5000', label: '2500€ - 5000€' },
-    { value: '5000_10000', label: '5000€ - 10000€' },
-    { value: 'über_10000', label: 'Über 10000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'sofort', label: 'Sofort' },
-    { value: 'heute', label: 'Heute' },
-    { value: 'morgen', label: 'Morgen' },
-    { value: 'diese_woche', label: 'Diese Woche' },
-    { value: 'nächste_woche', label: 'Nächste Woche' },
-    { value: 'flexibel', label: 'Flexibel' },
-  ];
-
   const locationTypeOptions = [
     { value: 'bürogebäude', label: 'Bürogebäude' },
     { value: 'wohnanlage', label: 'Wohnanlage' },
@@ -256,8 +237,6 @@ const SicherheitsdienstForm: React.FC<SicherheitsdienstFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.securityLevel &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.locationType &&
       formData.shiftType &&
       formData.duration &&
@@ -290,24 +269,6 @@ const SicherheitsdienstForm: React.FC<SicherheitsdienstFormProps> = ({
               onChange={value => handleInputChange('securityLevel', value)}
               options={securityLevelOptions}
               placeholder="Wählen Sie das Sicherheitslevel"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -364,43 +325,6 @@ const SicherheitsdienstForm: React.FC<SicherheitsdienstFormProps> = ({
               placeholder="TT.MM.JJJJ"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Adresse">
             <FormInput
               type="text"

@@ -62,15 +62,6 @@ const SystemintegrationForm: React.FC<SystemintegrationFormProps> = ({
     { value: 'high', label: 'Hoch (100GB-1TB)' },
     { value: 'enterprise', label: 'Enterprise (> 1TB)' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_5000', label: 'Unter 5.000€' },
-    { value: '5000_15000', label: '5.000€ - 15.000€' },
-    { value: '15000_50000', label: '15.000€ - 50.000€' },
-    { value: '50000_100000', label: '50.000€ - 100.000€' },
-    { value: 'über_100000', label: 'Über 100.000€' },
-  ];
-
   const timelineOptions = [
     { value: 'unter_1_monat', label: 'Unter 1 Monat' },
     { value: '1_3_monate', label: '1-3 Monate' },
@@ -114,7 +105,6 @@ const SystemintegrationForm: React.FC<SystemintegrationFormProps> = ({
       formData.sourceSystem &&
       formData.targetSystem &&
       formData.dataVolume &&
-      formData.budgetRange &&
       formData.timeline &&
       formData.projectDescription
     );
@@ -173,16 +163,6 @@ const SystemintegrationForm: React.FC<SystemintegrationFormProps> = ({
               placeholder="Wählen Sie das Datenvolumen"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}

@@ -46,16 +46,6 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
     { value: 'lockig', label: 'Lockig' },
     { value: 'kraus', label: 'Kraus' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_30', label: 'Bis 30 €' },
-    { value: '30_50', label: '30 - 50 €' },
-    { value: '50_80', label: '50 - 80 €' },
-    { value: '80_120', label: '80 - 120 €' },
-    { value: '120_200', label: '120 - 200 €' },
-    { value: 'über_200', label: 'Über 200 €' },
-  ];
-
   const occasionOptions = [
     { value: 'alltag', label: 'Alltag' },
     { value: 'hochzeit', label: 'Hochzeit' },
@@ -127,15 +117,6 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
               value={formData.preferredDate || ''}
               onChange={value => handleInputChange('preferredDate', value)}
               placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
             />
           </FormField>
         </div>

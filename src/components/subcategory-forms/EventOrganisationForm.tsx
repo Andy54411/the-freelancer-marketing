@@ -14,7 +14,6 @@ interface EventOrganisationData {
   guestCount: string;
   location: string;
   duration: string;
-  budget: string;
   services: string[];
   catering: string;
   date: string;
@@ -81,14 +80,6 @@ const EventOrganisationForm: React.FC<EventOrganisationFormProps> = ({
     { value: 'woche', label: 'Woche' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetOptions = [
-    { value: 'niedrig', label: 'Niedrig (< 1.000€)' },
-    { value: 'mittel', label: 'Mittel (1.000-5.000€)' },
-    { value: 'hoch', label: 'Hoch (5.000-20.000€)' },
-    { value: 'sehr_hoch', label: 'Sehr hoch (> 20.000€)' },
-  ];
-
   const servicesOptions = [
     { value: 'komplettplanung', label: 'Komplettplanung des Events' },
     { value: 'locationsuche', label: 'Locationsuche' },
@@ -172,15 +163,6 @@ const EventOrganisationForm: React.FC<EventOrganisationFormProps> = ({
           options={durationOptions}
         />
       </FormField>
-
-      <FormField label="Budget">
-        <FormSelect
-          value={formData.budget || ''}
-          onChange={value => handleChange('budget', value)}
-          options={budgetOptions}
-        />
-      </FormField>
-
       <FormField label="Gewünschte Services">
         <FormCheckboxGroup
           value={formData.services || []}

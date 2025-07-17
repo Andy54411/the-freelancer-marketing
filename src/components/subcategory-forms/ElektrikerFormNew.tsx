@@ -35,7 +35,6 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.workType &&
-      formData.urgency &&
       formData.buildingType &&
       formData.existingInstallation &&
       formData.materialProvided &&
@@ -59,13 +58,6 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
     { value: 'verkabelung', label: 'Verkabelung' },
     { value: 'smart_home', label: 'Smart Home' },
     { value: 'sonstiges', label: 'Sonstiges' },
-  ];
-
-  const urgencyOptions: SelectOption[] = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (heute)' },
-    { value: 'normal', label: 'Normal (diese Woche)' },
-    { value: 'kann_warten', label: 'Kann warten' },
   ];
 
   const buildingTypeOptions: SelectOption[] = [
@@ -112,15 +104,6 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
               onChange={value => updateData({ workType: value as ElektrikerData['workType'] })}
               options={workTypeOptions}
               placeholder="Wählen Sie den Arbeitstyp"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => updateData({ urgency: value as ElektrikerData['urgency'] })}
-              options={urgencyOptions}
-              placeholder="Wie dringend ist der Auftrag?"
             />
           </FormField>
 

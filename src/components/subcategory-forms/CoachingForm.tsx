@@ -55,15 +55,6 @@ const CoachingForm: React.FC<CoachingFormProps> = ({ data, onDataChange, onValid
     { value: 'intensiv', label: 'Intensiv (mehrmals pro Woche)' },
     { value: 'nach_bedarf', label: 'Nach Bedarf' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_80', label: 'Bis 80 €/Stunde' },
-    { value: '80_120', label: '80 - 120 €/Stunde' },
-    { value: '120_180', label: '120 - 180 €/Stunde' },
-    { value: '180_250', label: '180 - 250 €/Stunde' },
-    { value: 'über_250', label: 'Über 250 €/Stunde' },
-  ];
-
   const goalsOptions = [
     { value: 'persönlichkeitsentwicklung', label: 'Persönlichkeitsentwicklung' },
     { value: 'karriereplanung', label: 'Karriereplanung' },
@@ -150,15 +141,6 @@ const CoachingForm: React.FC<CoachingFormProps> = ({ data, onDataChange, onValid
                 )
               }
               placeholder="Gewünschte Anzahl Sessions"
-            />
-          </FormField>
-
-          <FormField label="Budget pro Session">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie das Budget"
             />
           </FormField>
         </div>

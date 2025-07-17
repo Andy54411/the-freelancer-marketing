@@ -118,17 +118,6 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
     { value: 'stark_verschmutzt', label: 'Stark verschmutzt' },
     { value: 'sehr_stark_verschmutzt', label: 'Sehr stark verschmutzt' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_20', label: 'Unter 20€' },
-    { value: '20_40', label: '20€ - 40€' },
-    { value: '40_60', label: '40€ - 60€' },
-    { value: '60_100', label: '60€ - 100€' },
-    { value: '100_150', label: '100€ - 150€' },
-    { value: '150_250', label: '150€ - 250€' },
-    { value: 'über_250', label: 'Über 250€' },
-  ];
-
   const additionalServicesOptions = [
     { value: 'staubsaugen', label: 'Staubsaugen' },
     { value: 'wischen', label: 'Wischen' },
@@ -157,13 +146,6 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
     { value: 'versiegelung', label: 'Versiegelung' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const handleInputChange = (field: keyof AutowäscheData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
@@ -178,7 +160,6 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
       formData.frequency &&
       formData.location &&
       formData.condition &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -245,16 +226,6 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
               placeholder="Wählen Sie den Zustand"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Fahrzeugfarbe">
             <FormSelect
               value={formData.color || ''}
@@ -327,25 +298,6 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
               placeholder="Kennzeichen"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
           <FormField label="Dauer geschätzt">
             <FormInput
               type="number"
@@ -437,19 +389,7 @@ const AutowäscheForm: React.FC<AutowäscheFormProps> = ({
           </FormField>
         </div>
 
-        <div className="mt-4">
-          <FormField label="Dringlichkeit">
-            <FormRadioGroup
-              name="urgency"
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
+        <div className="mt-4"></div>
 
         <div className="mt-4">
           <FormField label="Umweltfreundliche Reinigung">

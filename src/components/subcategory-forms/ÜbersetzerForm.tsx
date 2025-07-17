@@ -110,23 +110,6 @@ const UbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
     { value: 'hindi', label: 'Hindi' },
     { value: 'andere', label: 'Andere' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_100', label: 'Unter 100€' },
-    { value: '100_500', label: '100€ - 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2500', label: '1000€ - 2500€' },
-    { value: '2500_5000', label: '2500€ - 5000€' },
-    { value: 'über_5000', label: 'Über 5000€' },
-  ];
-
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
   const qualityLevelOptions = [
     { value: 'standard', label: 'Standard' },
     { value: 'hoch', label: 'Hoch' },
@@ -260,8 +243,6 @@ const UbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
       formData.serviceType &&
       formData.sourceLanguage &&
       formData.targetLanguage &&
-      formData.budgetRange &&
-      formData.urgency &&
       formData.qualityLevel &&
       formData.description
     );
@@ -300,24 +281,6 @@ const UbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
               onChange={value => handleInputChange('targetLanguage', value)}
               options={targetLanguageOptions}
               placeholder="Wählen Sie die Zielsprache"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 
@@ -365,43 +328,6 @@ const UbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
               placeholder="TT.MM.JJJJ"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
-            />
-          </FormField>
-
           <FormField label="Branche">
             <FormInput
               type="text"

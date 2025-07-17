@@ -124,15 +124,6 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
     { value: 'nachhilfeinstitut', label: 'Nachhilfeinstitut' },
     { value: 'schule', label: 'In der Schule' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_15', label: 'Unter 15€/Stunde' },
-    { value: '15_25', label: '15€ - 25€/Stunde' },
-    { value: '25_35', label: '25€ - 35€/Stunde' },
-    { value: '35_50', label: '35€ - 50€/Stunde' },
-    { value: 'über_50', label: 'Über 50€/Stunde' },
-  ];
-
   const learningDifficultiesOptions = [
     { value: 'legasthenie', label: 'Legasthenie' },
     { value: 'dyskalkulie', label: 'Dyskalkulie' },
@@ -167,13 +158,6 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
     { value: 'selbstvertrauen', label: 'Selbstvertrauen stärken' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig (Prüfung bald)' },
-  ];
-
   const availabilityOptions = [
     { value: 'werktags_vormittag', label: 'Werktags vormittag' },
     { value: 'werktags_nachmittag', label: 'Werktags nachmittag' },
@@ -199,7 +183,6 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
       formData.frequency &&
       formData.duration &&
       formData.location &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -275,16 +258,6 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
               placeholder="Wählen Sie den Ort"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Gewünschter Nachhilfelehrer">
             <FormSelect
               value={formData.tutorType || ''}
@@ -323,33 +296,6 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
                 )
               }
               placeholder="Alter des Schülers"
-            />
-          </FormField>
-
-          <FormField label="Ansprechpartner">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name des Ansprechpartners"
-            />
-          </FormField>
-
-          <FormField label="Telefonnummer">
-            <FormInput
-              type="text"
-              value={formData.phoneNumber || ''}
-              onChange={value => handleInputChange('phoneNumber', value)}
-              placeholder="Telefonnummer"
-            />
-          </FormField>
-
-          <FormField label="E-Mail">
-            <FormInput
-              type="email"
-              value={formData.email || ''}
-              onChange={value => handleInputChange('email', value)}
-              placeholder="E-Mail-Adresse"
             />
           </FormField>
 
@@ -506,19 +452,7 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
           </FormField>
         </div>
 
-        <div className="mt-4">
-          <FormField label="Dringlichkeit">
-            <FormRadioGroup
-              name="urgency"
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions.map(option => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </FormField>
-        </div>
+        <div className="mt-4"></div>
 
         <div className="mt-4">
           <FormField label="Geschlecht des Schülers">

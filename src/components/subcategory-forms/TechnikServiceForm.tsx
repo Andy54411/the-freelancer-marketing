@@ -13,7 +13,6 @@ interface TechnikServiceData {
   serviceType: string;
   deviceType: string[];
   operatingSystem: string;
-  urgency: string;
   location: string;
   remotePossible: boolean;
   problem: string;
@@ -69,13 +68,6 @@ const TechnikServiceForm: React.FC<TechnikServiceFormProps> = ({
     { value: 'nicht_relevant', label: 'Nicht relevant' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (innerhalb 24h)' },
-    { value: 'bald', label: 'Bald (innerhalb der Woche)' },
-    { value: 'flexibel', label: 'Flexibel (nach Vereinbarung)' },
-  ];
-
   const locationOptions = [
     { value: 'vor_ort', label: 'Vor Ort bei mir' },
     { value: 'beim_dienstleister', label: 'Beim Dienstleister' },
@@ -99,8 +91,7 @@ const TechnikServiceForm: React.FC<TechnikServiceFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.deviceType &&
-      formData.deviceType.length > 0 &&
-      formData.urgency
+      formData.deviceType.length > 0
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
@@ -128,14 +119,6 @@ const TechnikServiceForm: React.FC<TechnikServiceFormProps> = ({
           value={formData.operatingSystem || ''}
           onChange={value => handleChange('operatingSystem', value)}
           options={operatingSystemOptions}
-        />
-      </FormField>
-
-      <FormField label="Dringlichkeit" required>
-        <FormSelect
-          value={formData.urgency}
-          onChange={value => handleChange('urgency', value)}
-          options={urgencyOptions}
         />
       </FormField>
 

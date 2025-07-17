@@ -37,13 +37,6 @@ const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({
     { value: 'komplettsystem', label: 'Komplettsystem' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (heute)' },
-    { value: 'normal', label: 'Normal (diese Woche)' },
-    { value: 'kann_warten', label: 'Kann warten' },
-  ];
-
   const buildingTypeOptions = [
     { value: 'einfamilienhaus', label: 'Einfamilienhaus' },
     { value: 'wohnung', label: 'Wohnung' },
@@ -77,7 +70,6 @@ const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.systemType &&
-      formData.urgency &&
       formData.buildingType &&
       formData.materialProvided &&
       typeof formData.certificationNeeded === 'boolean'
@@ -108,15 +100,6 @@ const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({
               onChange={value => handleInputChange('systemType', value)}
               options={systemTypeOptions}
               placeholder="Wählen Sie den Systemtyp"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wie dringend ist der Auftrag?"
             />
           </FormField>
 

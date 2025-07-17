@@ -14,7 +14,6 @@ interface ArchivierungData {
   materialType: string[];
   volume: string;
   timeframe: string;
-  urgency: string;
   digitalCopy: boolean;
   organizationSystem: string;
   accessRequirements: string;
@@ -75,13 +74,6 @@ const ArchivierungForm: React.FC<ArchivierungFormProps> = ({
     { value: 'dauerhaft', label: 'Dauerhaft (fortlaufender Service)' },
   ];
 
-  const urgencyOptions = [
-    { value: 'niedrig', label: 'Niedrig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'hoch', label: 'Hoch' },
-    { value: 'dringend', label: 'Dringend' },
-  ];
-
   const digitalCopyOptions = [
     { value: 'true', label: 'Ja, digitale Kopien erwünscht' },
     { value: 'false', label: 'Nein, nur physische Archivierung' },
@@ -113,8 +105,7 @@ const ArchivierungForm: React.FC<ArchivierungFormProps> = ({
       formData.materialType &&
       formData.materialType.length > 0 &&
       formData.volume &&
-      formData.timeframe &&
-      formData.urgency
+      formData.timeframe
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
@@ -150,14 +141,6 @@ const ArchivierungForm: React.FC<ArchivierungFormProps> = ({
           value={formData.timeframe}
           onChange={value => handleChange('timeframe', value)}
           options={timeframeOptions}
-        />
-      </FormField>
-
-      <FormField label="Dringlichkeit" required>
-        <FormSelect
-          value={formData.urgency}
-          onChange={value => handleChange('urgency', value)}
-          options={urgencyOptions}
         />
       </FormField>
 

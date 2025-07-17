@@ -58,15 +58,6 @@ const TransportdienstleistungenForm: React.FC<TransportdienstleistungenFormProps
     { value: 'international', label: 'International' },
   ];
 
-  const urgencyOptions = [
-    { value: 'sofort', label: 'Sofort' },
-    { value: 'heute', label: 'Heute' },
-    { value: 'morgen', label: 'Morgen' },
-    { value: 'diese_woche', label: 'Diese Woche' },
-    { value: 'nächste_woche', label: 'Nächste Woche' },
-    { value: 'flexibel', label: 'Flexibel' },
-  ];
-
   const additionalServicesOptions = [
     { value: 'loading', label: 'Be- und Entladung' },
     { value: 'packaging', label: 'Verpackung' },
@@ -89,7 +80,6 @@ const TransportdienstleistungenForm: React.FC<TransportdienstleistungenFormProps
       formData.vehicleType &&
       formData.loadType &&
       formData.distance &&
-      formData.urgency &&
       formData.pickupAddress &&
       formData.deliveryAddress
     );
@@ -137,15 +127,6 @@ const TransportdienstleistungenForm: React.FC<TransportdienstleistungenFormProps
               onChange={value => handleInputChange('distance', value)}
               options={distanceOptions}
               placeholder="Wählen Sie die Entfernung"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

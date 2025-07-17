@@ -102,15 +102,6 @@ const BuchhaltungForm: React.FC<BuchhaltungFormProps> = ({
     { value: 'annually', label: 'Jährlich' },
     { value: 'project_based', label: 'Projektbezogen' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_500', label: 'Unter 500€/Monat' },
-    { value: '500_1500', label: '500€ - 1.500€/Monat' },
-    { value: '1500_3000', label: '1.500€ - 3.000€/Monat' },
-    { value: '3000_8000', label: '3.000€ - 8.000€/Monat' },
-    { value: 'über_8000', label: 'Über 8.000€/Monat' },
-  ];
-
   const additionalServicesOptions = [
     { value: 'digital_bookkeeping', label: 'Digitale Buchhaltung' },
     { value: 'document_management', label: 'Belegverwaltung' },
@@ -137,7 +128,6 @@ const BuchhaltungForm: React.FC<BuchhaltungFormProps> = ({
       formData.industry &&
       formData.companySize &&
       formData.frequency &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -195,16 +185,6 @@ const BuchhaltungForm: React.FC<BuchhaltungFormProps> = ({
               placeholder="Wählen Sie die Häufigkeit"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Unternehmen">
             <FormInput
               type="text"

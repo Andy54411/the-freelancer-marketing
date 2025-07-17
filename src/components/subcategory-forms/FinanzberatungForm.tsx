@@ -89,15 +89,6 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
     { value: 'langfristig', label: 'Langfristig (5-10 Jahre)' },
     { value: 'sehr_langfristig', label: 'Sehr langfristig (> 10 Jahre)' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_1000', label: 'Unter 1.000€' },
-    { value: '1000_3000', label: '1.000€ - 3.000€' },
-    { value: '3000_8000', label: '3.000€ - 8.000€' },
-    { value: '8000_20000', label: '8.000€ - 20.000€' },
-    { value: 'über_20000', label: 'Über 20.000€' },
-  ];
-
   const investmentExperienceOptions = [
     { value: 'keine', label: 'Keine Erfahrung' },
     { value: 'wenig', label: 'Wenig Erfahrung' },
@@ -148,7 +139,6 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
       formData.assetRange &&
       formData.riskTolerance &&
       formData.timeHorizon &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -215,16 +205,6 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
               placeholder="Wählen Sie den Anlagehorizont"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Anlageerfahrung">
             <FormSelect
               value={formData.investmentExperience || ''}

@@ -149,20 +149,6 @@ const WebentwicklungForm: React.FC<WebentwicklungFormProps> = ({
               placeholder="Wählen Sie den Support-Typ"
             />
           </FormField>
-
-          <FormField label="Budget (€)">
-            <FormInput
-              type="number"
-              value={formData.budget?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'budget',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Ihr Budget in Euro"
-            />
-          </FormField>
         </div>
 
         <div className="mt-4">

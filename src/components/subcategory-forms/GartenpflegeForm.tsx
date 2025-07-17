@@ -70,15 +70,6 @@ const GartenpflegeForm: React.FC<GartenpflegeFormProps> = ({
     { value: 'hochdruckreiniger', label: 'Hochdruckreiniger' },
     { value: 'spaten_schaufeln', label: 'Spaten & Schaufeln' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_50', label: 'Unter 50€' },
-    { value: '50_100', label: '50€ - 100€' },
-    { value: '100_200', label: '100€ - 200€' },
-    { value: '200_500', label: '200€ - 500€' },
-    { value: 'über_500', label: 'Über 500€' },
-  ];
-
   const seasonOptions = [
     { value: 'frühling', label: 'Frühling' },
     { value: 'sommer', label: 'Sommer' },
@@ -123,7 +114,6 @@ const GartenpflegeForm: React.FC<GartenpflegeFormProps> = ({
       formData.gardenSize &&
       formData.frequency &&
       formData.gardenType &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -172,16 +162,6 @@ const GartenpflegeForm: React.FC<GartenpflegeFormProps> = ({
               placeholder="Wählen Sie den Gartentyp"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Saison">
             <FormCheckboxGroup
               value={formData.season || []}

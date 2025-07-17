@@ -58,15 +58,6 @@ const MassageForm: React.FC<MassageFormProps> = ({ data, onDataChange, onValidat
     { value: 'monatlich', label: 'Monatlich' },
     { value: 'nach_bedarf', label: 'Nach Bedarf' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_50', label: 'Bis 50 €' },
-    { value: '50_80', label: '50 - 80 €' },
-    { value: '80_120', label: '80 - 120 €' },
-    { value: '120_150', label: '120 - 150 €' },
-    { value: 'über_150', label: 'Über 150 €' },
-  ];
-
   const handleInputChange = (field: keyof MassageData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
@@ -124,15 +115,6 @@ const MassageForm: React.FC<MassageFormProps> = ({ data, onDataChange, onValidat
               onChange={value => handleInputChange('frequency', value)}
               options={frequencyOptions}
               placeholder="Wählen Sie die Häufigkeit"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
             />
           </FormField>
         </div>

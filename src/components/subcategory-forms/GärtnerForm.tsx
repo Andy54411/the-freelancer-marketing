@@ -73,23 +73,6 @@ const GärtnerForm: React.FC<GärtnerFormProps> = ({ data, onDataChange, onValid
     { value: 'ganzjährig', label: 'Ganzjährig' },
   ];
 
-  const urgencyOptions = [
-    { value: 'nicht_eilig', label: 'Nicht eilig' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'eilig', label: 'Eilig' },
-    { value: 'sehr_eilig', label: 'Sehr eilig' },
-  ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_50', label: 'Unter 50€' },
-    { value: '50_100', label: '50€ - 100€' },
-    { value: '100_200', label: '100€ - 200€' },
-    { value: '200_500', label: '200€ - 500€' },
-    { value: '500_1000', label: '500€ - 1000€' },
-    { value: '1000_2000', label: '1000€ - 2000€' },
-    { value: 'über_2000', label: 'Über 2000€' },
-  ];
-
   const plantTypeOptions = [
     { value: 'bäume', label: 'Bäume' },
     { value: 'sträucher', label: 'Sträucher' },
@@ -160,8 +143,6 @@ const GärtnerForm: React.FC<GärtnerFormProps> = ({ data, onDataChange, onValid
       formData.gardenSize &&
       formData.frequency &&
       formData.season &&
-      formData.urgency &&
-      formData.budgetRange &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -216,24 +197,6 @@ const GärtnerForm: React.FC<GärtnerFormProps> = ({ data, onDataChange, onValid
               onChange={value => handleInputChange('season', value)}
               options={seasonOptions}
               placeholder="Wählen Sie die Saison"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
-            />
-          </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
             />
           </FormField>
 
@@ -306,16 +269,6 @@ const GärtnerForm: React.FC<GärtnerFormProps> = ({ data, onDataChange, onValid
               placeholder="Heckenlänge in m"
             />
           </FormField>
-
-          <FormField label="Kontaktperson">
-            <FormInput
-              type="text"
-              value={formData.contactPerson || ''}
-              onChange={value => handleInputChange('contactPerson', value)}
-              placeholder="Name der Kontaktperson"
-            />
-          </FormField>
-
           <FormField label="Besondere Anforderungen">
             <FormTextarea
               value={formData.specialRequirements || ''}

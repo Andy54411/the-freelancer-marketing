@@ -74,15 +74,6 @@ const NachhilfeForm: React.FC<NachhilfeFormProps> = ({
     { value: '90', label: '90 Minuten' },
     { value: '120', label: '120 Minuten' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'bis_15', label: 'Bis 15 €/Stunde' },
-    { value: '15_25', label: '15 - 25 €/Stunde' },
-    { value: '25_35', label: '25 - 35 €/Stunde' },
-    { value: '35_50', label: '35 - 50 €/Stunde' },
-    { value: 'über_50', label: 'Über 50 €/Stunde' },
-  ];
-
   const handleInputChange = (field: keyof NachhilfeData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
@@ -151,16 +142,6 @@ const NachhilfeForm: React.FC<NachhilfeFormProps> = ({
               placeholder="Wählen Sie die Dauer"
             />
           </FormField>
-
-          <FormField label="Budget pro Stunde">
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie das Budget"
-            />
-          </FormField>
-
           <FormField label="Anzahl Schüler">
             <FormInput
               type="number"

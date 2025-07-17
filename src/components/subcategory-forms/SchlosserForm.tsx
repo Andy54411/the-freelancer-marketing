@@ -54,13 +54,6 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
     { value: 'sehr_hoch', label: 'Sehr hoch' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (innerhalb 24h)' },
-    { value: 'normal', label: 'Normal (innerhalb 1 Woche)' },
-    { value: 'flexibel', label: 'Flexibel (nach Absprache)' },
-  ];
-
   const materialOptions = [
     { value: 'stahl', label: 'Stahl' },
     { value: 'edelstahl', label: 'Edelstahl' },
@@ -82,7 +75,6 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
       formData.workType &&
       formData.lockType &&
       formData.securityLevel &&
-      formData.urgency &&
       formData.material &&
       formData.keyService &&
       formData.installation
@@ -131,15 +123,6 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
               onChange={value => handleInputChange('securityLevel', value)}
               options={securityLevelOptions}
               placeholder="Wählen Sie die Sicherheitsstufe"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wählen Sie die Dringlichkeit"
             />
           </FormField>
 

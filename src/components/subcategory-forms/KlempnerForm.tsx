@@ -35,13 +35,6 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
     { value: 'sonstiges', label: 'Sonstiges' },
   ];
 
-  const urgencyOptions = [
-    { value: 'notfall', label: 'Notfall (sofort)' },
-    { value: 'dringend', label: 'Dringend (heute)' },
-    { value: 'normal', label: 'Normal (diese Woche)' },
-    { value: 'kann_warten', label: 'Kann warten' },
-  ];
-
   const roomTypeOptions = [
     { value: 'bad', label: 'Bad' },
     { value: 'kueche', label: 'Küche' },
@@ -74,7 +67,6 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
     const isValid = !!(
       formData.serviceType &&
       formData.problemType &&
-      formData.urgency &&
       formData.roomType &&
       formData.buildingType &&
       formData.materialProvided &&
@@ -106,15 +98,6 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
               onChange={value => handleInputChange('problemType', value)}
               options={problemTypeOptions}
               placeholder="Wählen Sie die Art des Problems"
-            />
-          </FormField>
-
-          <FormField label="Dringlichkeit" required>
-            <FormSelect
-              value={formData.urgency || ''}
-              onChange={value => handleInputChange('urgency', value)}
-              options={urgencyOptions}
-              placeholder="Wie dringend ist der Auftrag?"
             />
           </FormField>
 

@@ -60,15 +60,6 @@ const CloudComputingForm: React.FC<CloudComputingFormProps> = ({
     { value: 'large', label: 'Groß (201-1000 Mitarbeiter)' },
     { value: 'enterprise', label: 'Enterprise (1000+ Mitarbeiter)' },
   ];
-
-  const budgetRangeOptions = [
-    { value: 'unter_5000', label: 'Unter 5.000€' },
-    { value: '5000_15000', label: '5.000€ - 15.000€' },
-    { value: '15000_50000', label: '15.000€ - 50.000€' },
-    { value: '50000_100000', label: '50.000€ - 100.000€' },
-    { value: 'über_100000', label: 'Über 100.000€' },
-  ];
-
   const timelineOptions = [
     { value: 'sofort', label: 'Sofort' },
     { value: 'unter_1_monat', label: 'Unter 1 Monat' },
@@ -123,7 +114,6 @@ const CloudComputingForm: React.FC<CloudComputingFormProps> = ({
       formData.cloudProvider &&
       formData.deploymentType &&
       formData.companySize &&
-      formData.budgetRange &&
       formData.timeline &&
       formData.projectDescription
     );
@@ -172,16 +162,6 @@ const CloudComputingForm: React.FC<CloudComputingFormProps> = ({
               placeholder="Wählen Sie die Unternehmensgröße"
             />
           </FormField>
-
-          <FormField label="Budget-Rahmen" required>
-            <FormSelect
-              value={formData.budgetRange || ''}
-              onChange={value => handleInputChange('budgetRange', value)}
-              options={budgetRangeOptions}
-              placeholder="Wählen Sie den Budget-Rahmen"
-            />
-          </FormField>
-
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}
@@ -222,21 +202,6 @@ const CloudComputingForm: React.FC<CloudComputingFormProps> = ({
               placeholder="Anzahl der Benutzer"
             />
           </FormField>
-
-          <FormField label="Monatliches Cloud-Budget">
-            <FormInput
-              type="number"
-              value={formData.monthlyCloudBudget?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'monthlyCloudBudget',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Monatliches Budget in €"
-            />
-          </FormField>
-
           <FormField label="Aktueller Provider">
             <FormInput
               type="text"

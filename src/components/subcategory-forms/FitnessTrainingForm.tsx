@@ -150,21 +150,6 @@ const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
               ]}
             />
           </FormField>
-
-          <FormField label="Budget pro Einheit">
-            <FormSelect
-              value={data.budgetRange || ''}
-              onChange={value => handleFieldChange('budgetRange', value)}
-              options={[
-                { value: 'bis_30', label: 'Bis 30 €' },
-                { value: '30_50', label: '30-50 €' },
-                { value: '50_80', label: '50-80 €' },
-                { value: '80_120', label: '80-120 €' },
-                { value: 'über_120', label: 'Über 120 €' },
-              ]}
-            />
-          </FormField>
-
           <FormField label="Gesundheitliche Einschränkungen">
             <FormTextarea
               value={data.healthRestrictions || ''}
