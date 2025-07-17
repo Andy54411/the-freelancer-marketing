@@ -114,7 +114,7 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
           Mietkoch-Projektdetails
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <FormField label="Art der Dienstleistung" required>
             <FormSelect
               value={formData.serviceType || ''}
@@ -132,23 +132,25 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
             />
           </FormField>
 
-          <FormField label="Art des Events" required>
-            <FormSelect
-              value={formData.eventType || ''}
-              onChange={value => handleInputChange('eventType', value)}
-              options={eventTypeOptions}
-              placeholder="Wählen Sie die Art des Events"
-            />
-          </FormField>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Art des Events" required>
+              <FormSelect
+                value={formData.eventType || ''}
+                onChange={value => handleInputChange('eventType', value)}
+                options={eventTypeOptions}
+                placeholder="Wählen Sie die Art des Events"
+              />
+            </FormField>
 
-          <FormField label="Küchenniveau" required>
-            <FormSelect
-              value={formData.level || ''}
-              onChange={value => handleInputChange('level', value)}
-              options={levelOptions}
-              placeholder="Wählen Sie das Küchenniveau"
-            />
-          </FormField>
+            <FormField label="Küchenniveau" required>
+              <FormSelect
+                value={formData.level || ''}
+                onChange={value => handleInputChange('level', value)}
+                options={levelOptions}
+                placeholder="Wählen Sie das Küchenniveau"
+              />
+            </FormField>
+          </div>
 
           <FormField label="Anzahl Gäste" required>
             <FormInput
