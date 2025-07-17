@@ -167,86 +167,23 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
   // Hilfsfunktion für den initialen State aus localStorage oder Standardwerten
   const getInitialState = (): RegistrationData => {
     if (typeof window !== 'undefined') {
-      const storedData = localStorage.getItem('registrationData');
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData) as Partial<RegistrationData>;
-          // Fallback-Werte für alle Felder sicherstellen
-          return {
-            step: parsedData.step || 1,
-            customerType: parsedData.customerType || null,
-            selectedCategory: parsedData.selectedCategory || null,
-            selectedSubcategory: parsedData.selectedSubcategory || null,
-            description: parsedData.description || '',
-            subcategoryData: null,
-            jobStreet: parsedData.jobStreet || '',
-            jobPostalCode: parsedData.jobPostalCode || '',
-            jobCity: parsedData.jobCity || '',
-            jobCountry: parsedData.jobCountry ?? 'Deutschland',
-            jobDateFrom: parsedData.jobDateFrom ?? null,
-            jobDateTo: parsedData.jobDateTo ?? null,
-            jobTimePreference: parsedData.jobTimePreference ?? null,
-            tempJobDraftId: parsedData.tempJobDraftId ?? null,
-            selectedAnbieterId: parsedData.selectedAnbieterId ?? null,
-            jobDurationString: parsedData.jobDurationString || '',
-            jobTotalCalculatedHours: parsedData.jobTotalCalculatedHours ?? null,
-            jobCalculatedPriceInCents: parsedData.jobCalculatedPriceInCents ?? null,
-            email: parsedData.email || '',
-            password: parsedData.password ?? '',
-            firstName: parsedData.firstName || '',
-            lastName: parsedData.lastName || '',
-            phoneNumber: parsedData.phoneNumber ?? '',
-            companyPhoneNumber: parsedData.companyPhoneNumber ?? '',
-            dateOfBirth: parsedData.dateOfBirth ?? undefined,
-            personalStreet: parsedData.personalStreet ?? undefined,
-            personalHouseNumber: parsedData.personalHouseNumber ?? undefined,
-            personalPostalCode: parsedData.personalPostalCode ?? undefined,
-            personalCity: parsedData.personalCity ?? undefined,
-            personalCountry: parsedData.personalCountry ?? 'DE', // Standard auf 'DE'
-            isManagingDirectorOwner:
-              typeof parsedData.isManagingDirectorOwner === 'boolean'
-                ? parsedData.isManagingDirectorOwner
-                : true,
-            ownershipPercentage: parsedData.ownershipPercentage ?? undefined,
-            isActualDirector: parsedData.isActualDirector ?? undefined,
-            isActualOwner: parsedData.isActualOwner ?? undefined,
-            actualOwnershipPercentage: parsedData.actualOwnershipPercentage ?? undefined,
-            isActualExecutive: parsedData.isActualExecutive ?? undefined,
-            actualRepresentativeTitle: parsedData.actualRepresentativeTitle ?? undefined,
-            companyName: parsedData.companyName ?? '',
-            legalForm: parsedData.legalForm ?? null,
-            companyStreet: parsedData.companyStreet ?? '',
-            companyHouseNumber: parsedData.companyHouseNumber ?? '',
-            companyPostalCode: parsedData.companyPostalCode ?? '',
-            companyCity: parsedData.companyCity ?? '',
-            companyCountry: parsedData.companyCountry ?? 'DE', // Standard auf 'DE'
-            companyWebsite: parsedData.companyWebsite ?? '',
-            iban: parsedData.iban ?? '',
-            accountHolder: parsedData.accountHolder ?? '',
-            selectedSkills: parsedData.selectedSkills ?? {}, // Diese Zeile ist jetzt korrekt
-            selectedHandwerkSkills: parsedData.selectedHandwerkSkills ?? null,
-            selectedHaushaltServices: parsedData.selectedHaushaltServices ?? null,
-            profilePictureFile: null,
-            businessLicenseFile: null,
-            masterCraftsmanCertificateFile: null,
-            identityFrontFile: null,
-            identityBackFile: null,
-            companyRegister: parsedData.companyRegister ?? undefined,
-            hourlyRate: parsedData.hourlyRate ?? '',
-            taxNumber: parsedData.taxNumber ?? '',
-            vatId: parsedData.vatId ?? '',
-            lat: parsedData.lat ?? null,
-            lng: parsedData.lng ?? null,
-            latLngPolygon: parsedData.latLngPolygon ?? null,
-            radiusKm: parsedData.radiusKm ?? 30,
-          };
-        } catch (e) {
-          console.error('Fehler beim Parsen von registrationData aus localStorage:', e);
-          localStorage.removeItem('registrationData');
-        }
-      }
+      // DEAKTIVIERT: Registrierungsdaten nicht mehr aus localStorage laden
+      // const storedData = localStorage.getItem('registrationData');
+      // if (storedData) {
+      //   try {
+      //     const parsed = JSON.parse(storedData);
+      //     return {
+      //       ...defaultState,
+      //       ...parsed,
+      //     };
+      //   } catch (e) {
+      //     console.error('Fehler beim Parsen von registrationData aus localStorage:', e);
+      //     localStorage.removeItem('registrationData');
+      //   }
+      // }
     }
-    // Standard-Initialwerte
+
+    // Standard-Werte zurückgeben
     return {
       step: 1,
       customerType: null,
@@ -257,26 +194,26 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       jobStreet: '',
       jobPostalCode: '',
       jobCity: '',
-      jobCountry: 'Deutschland',
+      jobCountry: 'DE',
       jobDateFrom: null,
       jobDateTo: null,
       jobTimePreference: null,
       tempJobDraftId: null,
       selectedAnbieterId: null,
-      jobDurationString: '',
+      jobDurationString: undefined,
       jobTotalCalculatedHours: null,
       jobCalculatedPriceInCents: null,
       email: '',
-      password: '',
+      password: undefined,
       firstName: '',
       lastName: '',
       phoneNumber: '',
       companyPhoneNumber: '',
-      dateOfBirth: undefined,
-      personalStreet: undefined,
-      personalHouseNumber: undefined,
-      personalPostalCode: undefined,
-      personalCity: undefined,
+      dateOfBirth: '',
+      personalStreet: '',
+      personalHouseNumber: '',
+      personalPostalCode: '',
+      personalCity: '',
       personalCountry: 'DE',
       isManagingDirectorOwner: true, // Standard auf 'DE'
       ownershipPercentage: undefined,
@@ -313,21 +250,21 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       radiusKm: 30,
     };
   };
-
   const [registrationState, setRegistrationState] = useState<RegistrationData>(getInitialState);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const {
-        profilePictureFile,
-        businessLicenseFile,
-        masterCraftsmanCertificateFile,
-        identityFrontFile,
-        identityBackFile,
-        ...stateToStore
-      } = registrationState;
-      localStorage.setItem('registrationData', JSON.stringify(stateToStore));
-    }
+    // DEAKTIVIERT: Registrierungsdaten nicht mehr automatisch speichern
+    // if (typeof window !== 'undefined') {
+    //   const {
+    //     profilePictureFile,
+    //     businessLicenseFile,
+    //     masterCraftsmanCertificateFile,
+    //     identityFrontFile,
+    //     identityBackFile,
+    //     ...stateToStore
+    //   } = registrationState;
+    //   localStorage.setItem('registrationData', JSON.stringify(stateToStore));
+    // }
   }, [registrationState]);
 
   const setStepState = (value: SetStateAction<number>) =>

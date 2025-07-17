@@ -21,7 +21,6 @@ import {
   FiBell,
 } from 'react-icons/fi';
 import Link from 'next/link';
-import CachedTranslateWidget from '@/components/CachedTranslateWidget';
 
 const getFeatures = () => [
   {
@@ -204,9 +203,7 @@ export default function ComingSoonPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h1 className="text-6xl md:text-8xl font-bold text-white mb-6">
-                Bald verfügbar
-              </h1>
+              <h1 className="text-6xl md:text-8xl font-bold text-white mb-6">Bald verfügbar</h1>
               <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto">
                 Erleben Sie die Zukunft der Dienstleistungen
               </p>
@@ -219,9 +216,7 @@ export default function ComingSoonPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="bg-white/10 backdrop-blur-md rounded-2xl p-8 mb-12 max-w-2xl mx-auto"
             >
-              <h3 className="text-2xl font-semibold text-white mb-6">
-                Countdown bis zum Launch
-              </h3>
+              <h3 className="text-2xl font-semibold text-white mb-6">Countdown bis zum Launch</h3>
               <div className="grid grid-cols-4 gap-4">
                 {[
                   { label: 'Tage', value: countdown.days },
@@ -233,7 +228,9 @@ export default function ComingSoonPage() {
                     <div className="text-4xl md:text-5xl font-bold text-white">
                       {item.value.toString().padStart(2, '0')}
                     </div>
-                    <div className="text-white/70 text-sm uppercase tracking-wide">{item.label}</div>
+                    <div className="text-white/70 text-sm uppercase tracking-wide">
+                      {item.label}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -393,7 +390,10 @@ export default function ComingSoonPage() {
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Bereit für die Zukunft?
               </h2>
-              <p className="text-xl text-white/80 mb-8">Werden Sie Teil der Taskilo Community und gestalten Sie die Zukunft der Dienstleistungen mit.</p>
+              <p className="text-xl text-white/80 mb-8">
+                Werden Sie Teil der Taskilo Community und gestalten Sie die Zukunft der
+                Dienstleistungen mit.
+              </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/auftrag/get-started">
                   <Button size="lg" className="bg-white text-[#14ad9f] hover:bg-white/90">

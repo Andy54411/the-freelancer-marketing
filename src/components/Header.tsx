@@ -36,7 +36,6 @@ import {
 } from 'firebase/firestore'; // Firestore Funktionen
 import { categories, Category } from '@/lib/categoriesData'; // Importiere Kategorien und Typen
 import { useRouter } from 'next/navigation';
-import CachedTranslateWidget from '@/components/CachedTranslateWidget'; // Übersetzung für Header
 
 const auth = getAuth(app);
 
@@ -641,8 +640,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                   </div>
                 )}
               </div>
-              {/* Übersetzung Widget */}
-              <CachedTranslateWidget />
               <button
                 onClick={handleHelpClick}
                 className="text-gray-600 hover:text-[#14ad9f]"

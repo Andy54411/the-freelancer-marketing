@@ -11,7 +11,6 @@ import LoginPopup from '@/components/LoginPopup';
 import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { app, storage, db } from '@/firebase/clients';
-import CachedTranslateWidget from '@/components/CachedTranslateWidget';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -211,7 +210,6 @@ export const HeroHeader = () => {
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <div className="flex items-center gap-2">
-                      <CachedTranslateWidget />
                       <ModeToggle />
                     </div>
                   </div>
@@ -233,7 +231,6 @@ export const HeroHeader = () => {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CachedTranslateWidget />
                       <ModeToggle />
                     </div>
                   </div>
@@ -301,7 +298,6 @@ export const HeroHeader = () => {
                       </>
                     ))}
                   <div className="flex items-center gap-2 pt-3 border-t">
-                    <CachedTranslateWidget />
                     <ModeToggle />
                   </div>
                 </div>

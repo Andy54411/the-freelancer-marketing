@@ -6,7 +6,6 @@ import { FiX, FiInfo, FiCheck } from 'react-icons/fi';
 import { useState } from 'react';
 import { useRegistration } from '@/contexts/Registration-Context'; // Korrigierter Pfad zum Context
 import { useAnalytics } from '@/hooks/useAnalytics';
-import CachedTranslateWidget from '@/components/CachedTranslateWidget';
 
 const steps = [
   'Über Sie',
@@ -86,11 +85,6 @@ export default function Step1() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br p-4 sm:p-6 font-sans">
-      {/* Translation Widget */}
-      <div className="fixed top-4 right-4 z-50">
-        <CachedTranslateWidget />
-      </div>
-      
       {/* Top-Bereich: Abbrechen-Button, Fortschrittsbalken, Schritt-Header */}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
         {' '}
