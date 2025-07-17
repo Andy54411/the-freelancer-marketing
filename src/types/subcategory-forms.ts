@@ -604,7 +604,7 @@ export interface SoftwareentwicklungData extends BaseSubcategoryData {
 
 // App-Entwicklung-spezifische Daten
 export interface AppEntwicklungData extends BaseSubcategoryData {
-  subcategory: 'App-Entwicklung';
+  subcategory: 'AppEntwicklung';
   serviceType: 'neubau' | 'erweiterung' | 'wartung' | 'beratung';
   platform: string[]; // ['android', 'ios', 'hybrid', 'web']
   appType: 'business' | 'spiel' | 'utility' | 'social' | 'ecommerce';
@@ -644,6 +644,37 @@ export interface DatenbankentwicklungData extends BaseSubcategoryData {
   timeframe: 'sofort' | 'innerhalb_monat' | 'flexibel';
   support: 'einmalig' | 'laufend' | 'nicht_nötig';
   specialRequirements?: string;
+}
+
+// IT-Support-spezifische Daten
+export interface ITSupportData extends BaseSubcategoryData {
+  subcategory: 'ITSupport';
+  serviceType:
+    | 'hardware_support'
+    | 'software_support'
+    | 'netzwerk_support'
+    | 'system_installation'
+    | 'wartung'
+    | 'beratung'
+    | 'schulung';
+  urgency: 'notfall' | 'dringend' | 'normal' | 'kann_warten';
+  problemType:
+    | 'computer_laptop'
+    | 'drucker_scanner'
+    | 'netzwerk'
+    | 'software'
+    | 'email'
+    | 'backup'
+    | 'virus'
+    | 'performance';
+  supportLocation: 'vor_ort' | 'remote' | 'beides';
+  operatingSystem: 'windows' | 'macos' | 'linux' | 'android' | 'ios' | 'andere';
+  businessSize: 'privatperson' | 'klein' | 'mittel' | 'gross';
+  deviceCount?: number;
+  budget?: number;
+  problemDescription: string;
+  desiredSolution?: string;
+  additionalInfo?: string;
 }
 
 // IT-Beratung-spezifische Daten
@@ -1514,6 +1545,7 @@ export type SubcategoryData =
   | WebentwicklungData
   | SoftwareentwicklungData
   | AppEntwicklungData
+  | ITSupportData
   | NetzwerkadministrationData
   | DatenbankentwicklungData
   | ITBeratungData

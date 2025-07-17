@@ -194,38 +194,6 @@ const NetzwerkadministrationForm: React.FC<NetzwerkadministrationFormProps> = ({
               placeholder="z.B. 100 Mbit/s, 1 Gbit/s"
             />
           </FormField>
-
-          <FormField label="Budget (€)">
-            <FormInput
-              type="number"
-              value={formData.budget?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'budget',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Verfügbares Budget"
-            />
-          </FormField>
-
-          <FormField label="Gewünschtes Startdatum">
-            <FormInput
-              type="text"
-              value={formData.startDate || ''}
-              onChange={value => handleInputChange('startDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Gewünschtes Fertigstellungsdatum">
-            <FormInput
-              type="text"
-              value={formData.completionDate || ''}
-              onChange={value => handleInputChange('completionDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
         </div>
 
         <div className="mt-4">

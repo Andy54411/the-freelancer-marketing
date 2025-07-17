@@ -75,27 +75,6 @@ export const categories: Category[] = [
     subcategories: ['Mietkoch', 'Mietkellner', 'Catering'],
   },
   {
-    title: 'IT & Technik',
-    subcategories: [
-      'Webentwicklung',
-      'Softwareentwicklung',
-      'AppEntwicklung',
-      'ITSupport',
-      'Netzwerkadministration',
-      'Datenbankentwicklung',
-      'ITBeratung',
-      'Webdesigner',
-      'UXUIDesign',
-      'Systemintegration',
-      'CloudComputing',
-      'Cybersecurity',
-      'Softwareentwickler',
-      'Computerkurse',
-      'Datenerfassung',
-      'TechnikService',
-    ],
-  },
-  {
     title: 'Marketing & Vertrieb',
     subcategories: [
       'OnlineMarketing',

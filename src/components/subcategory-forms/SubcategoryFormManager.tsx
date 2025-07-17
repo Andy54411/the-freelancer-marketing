@@ -18,6 +18,7 @@ import BuchhaltungForm from './BuchhaltungForm';
 import CateringForm from './CateringForm';
 import CloudComputingForm from './CloudComputingForm';
 import CoachingForm from './CoachingForm';
+import ITSupportForm from './ITSupportForm';
 import ComputerkurseForm from './ComputerkurseForm';
 import ContentMarketingForm from './ContentMarketingForm';
 import CybersecurityForm from './CybersecurityForm';
@@ -206,6 +207,29 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             features: ['responsive', 'seo'],
             timeframe: 'flexibel',
             support: 'einmalig',
+          };
+        case 'AppEntwicklung':
+          return {
+            subcategory: 'AppEntwicklung',
+            serviceType: 'neubau',
+            platform: ['android', 'ios'],
+            appType: 'business',
+            complexity: 'mittel',
+            features: ['push_notifications', 'offline'],
+            design: 'benötigt',
+            timeframe: 'flexibel',
+            support: 'laufend',
+          };
+        case 'ITSupport':
+          return {
+            subcategory: 'ITSupport',
+            serviceType: 'hardware_support',
+            urgency: 'normal',
+            problemType: 'computer_laptop',
+            supportLocation: 'vor_ort',
+            operatingSystem: 'windows',
+            businessSize: 'privatperson',
+            problemDescription: '',
           };
         case 'Umzug':
           return {
@@ -1569,6 +1593,22 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       case 'Webentwicklung':
         return (
           <WebentwicklungForm
+            data={formData as any}
+            onDataChange={handleDataChange}
+            onValidationChange={() => {}}
+          />
+        );
+      case 'AppEntwicklung':
+        return (
+          <AppEntwicklungForm
+            data={formData as any}
+            onDataChange={handleDataChange}
+            onValidationChange={() => {}}
+          />
+        );
+      case 'ITSupport':
+        return (
+          <ITSupportForm
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
