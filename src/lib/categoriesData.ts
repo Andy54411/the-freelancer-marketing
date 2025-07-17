@@ -28,6 +28,7 @@ export const categories: Category[] = [
       'Heizung',
       'Autoreparatur',
       'Montageservice',
+      'Umzugshelfer',
     ],
   },
   {
@@ -50,9 +51,6 @@ export const categories: Category[] = [
       'Lagerlogistik',
       'Logistik',
       'MöbelTransportieren',
-      'Fahrunterricht',
-      'Autowäsche',
-      'Umzugshelfer',
     ],
   },
   {
@@ -90,10 +88,6 @@ export const categories: Category[] = [
       'Nachhilfelehrer',
       'Sprachunterricht',
       'Musikunterricht',
-      'Coaching',
-      'Weiterbildung',
-      'Prüfungsvorbereitung',
-      'Computerkurse',
       'Übersetzer',
       'Projektmanagement',
       'Qualitätskontrolle',

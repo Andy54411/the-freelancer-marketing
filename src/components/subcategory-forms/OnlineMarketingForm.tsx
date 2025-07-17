@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OnlineMarketingData } from '@/types/subcategory-forms';
-import {
-  FormField,
-  FormSelect,
-  FormInput,
-  FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
-} from './FormComponents';
+import { FormField, FormSelect, FormTextarea } from './FormComponents';
 
 interface OnlineMarketingFormProps {
   data: OnlineMarketingData;
@@ -29,10 +22,8 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
     { value: 'content_marketing', label: 'Content Marketing' },
     { value: 'email_marketing', label: 'E-Mail Marketing' },
     { value: 'display_advertising', label: 'Display Advertising' },
-    { value: 'affiliate_marketing', label: 'Affiliate Marketing' },
     { value: 'conversion_optimization', label: 'Conversion-Optimierung' },
     { value: 'marketing_automation', label: 'Marketing Automation' },
-    { value: 'influencer_marketing', label: 'Influencer Marketing' },
   ];
 
   const businessTypeOptions = [
@@ -41,8 +32,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
     { value: 'ecommerce', label: 'E-Commerce' },
     { value: 'local_business', label: 'Lokales Geschäft' },
     { value: 'startup', label: 'Startup' },
-    { value: 'nonprofit', label: 'Non-Profit' },
-    { value: 'saas', label: 'SaaS' },
     { value: 'service', label: 'Dienstleistung' },
   ];
 
@@ -53,64 +42,16 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
     { value: 'retail', label: 'Einzelhandel' },
     { value: 'education', label: 'Bildung' },
     { value: 'real_estate', label: 'Immobilien' },
-    { value: 'automotive', label: 'Automobil' },
     { value: 'food_beverage', label: 'Lebensmittel & Getränke' },
-    { value: 'fashion', label: 'Mode' },
-    { value: 'travel', label: 'Reisen' },
-    { value: 'fitness', label: 'Fitness & Wellness' },
     { value: 'other', label: 'Andere' },
   ];
+
   const timelineOptions = [
     { value: 'sofort', label: 'Sofort' },
     { value: 'kurzfristig', label: 'Kurzfristig (1-3 Monate)' },
     { value: 'mittelfristig', label: 'Mittelfristig (3-6 Monate)' },
     { value: 'langfristig', label: 'Langfristig (6-12 Monate)' },
     { value: 'permanent', label: 'Permanent' },
-  ];
-
-  const goalOptions = [
-    { value: 'brand_awareness', label: 'Markenbekanntheit' },
-    { value: 'lead_generation', label: 'Lead-Generierung' },
-    { value: 'sales_increase', label: 'Umsatzsteigerung' },
-    { value: 'website_traffic', label: 'Website-Traffic' },
-    { value: 'conversion_rate', label: 'Conversion-Rate' },
-    { value: 'customer_retention', label: 'Kundenbindung' },
-    { value: 'market_penetration', label: 'Marktdurchdringung' },
-    { value: 'competitive_advantage', label: 'Wettbewerbsvorteil' },
-  ];
-
-  const platformOptions = [
-    { value: 'google_ads', label: 'Google Ads' },
-    { value: 'facebook_ads', label: 'Facebook Ads' },
-    { value: 'instagram_ads', label: 'Instagram Ads' },
-    { value: 'linkedin_ads', label: 'LinkedIn Ads' },
-    { value: 'twitter_ads', label: 'Twitter Ads' },
-    { value: 'youtube_ads', label: 'YouTube Ads' },
-    { value: 'tiktok_ads', label: 'TikTok Ads' },
-    { value: 'pinterest_ads', label: 'Pinterest Ads' },
-    { value: 'xing_ads', label: 'XING Ads' },
-  ];
-
-  const analyticsOptions = [
-    { value: 'google_analytics', label: 'Google Analytics' },
-    { value: 'google_tag_manager', label: 'Google Tag Manager' },
-    { value: 'facebook_pixel', label: 'Facebook Pixel' },
-    { value: 'hotjar', label: 'Hotjar' },
-    { value: 'mixpanel', label: 'Mixpanel' },
-    { value: 'adobe_analytics', label: 'Adobe Analytics' },
-    { value: 'custom_tracking', label: 'Custom Tracking' },
-  ];
-
-  const additionalServicesOptions = [
-    { value: 'strategy_development', label: 'Strategie-Entwicklung' },
-    { value: 'competitor_analysis', label: 'Konkurrenzanalyse' },
-    { value: 'target_audience_research', label: 'Zielgruppenanalyse' },
-    { value: 'creative_design', label: 'Creative Design' },
-    { value: 'copywriting', label: 'Copywriting' },
-    { value: 'video_production', label: 'Video-Produktion' },
-    { value: 'landing_page_design', label: 'Landing Page Design' },
-    { value: 'reporting_analytics', label: 'Reporting & Analytics' },
-    { value: 'training_consulting', label: 'Schulung & Beratung' },
   ];
 
   const handleInputChange = (field: keyof OnlineMarketingData, value: any) => {
@@ -125,7 +66,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
       formData.businessType &&
       formData.industry &&
       formData.timeline &&
-      formData.goals &&
       formData.projectDescription
     );
     onValidationChange(isValid);
@@ -165,135 +105,13 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
               placeholder="Wählen Sie Ihre Branche"
             />
           </FormField>
+
           <FormField label="Zeitrahmen" required>
             <FormSelect
               value={formData.timeline || ''}
               onChange={value => handleInputChange('timeline', value)}
               options={timelineOptions}
               placeholder="Wählen Sie den Zeitrahmen"
-            />
-          </FormField>
-
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Ihr Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Website">
-            <FormInput
-              type="text"
-              value={formData.website || ''}
-              onChange={value => handleInputChange('website', value)}
-              placeholder="Ihre Website-URL"
-            />
-          </FormField>
-
-          <FormField label="Aktueller monatlicher Traffic">
-            <FormInput
-              type="number"
-              value={formData.currentTraffic?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'currentTraffic',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Besucher pro Monat"
-            />
-          </FormField>
-
-          <FormField label="Ziel-Traffic">
-            <FormInput
-              type="number"
-              value={formData.targetTraffic?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'targetTraffic',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Gewünschte Besucher pro Monat"
-            />
-          </FormField>
-
-          <FormField label="Aktuelle Conversion-Rate">
-            <FormInput
-              type="number"
-              value={formData.currentConversionRate?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'currentConversionRate',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Conversion-Rate in %"
-            />
-          </FormField>
-
-          <FormField label="Ziel-Conversion-Rate">
-            <FormInput
-              type="number"
-              value={formData.targetConversionRate?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'targetConversionRate',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Gewünschte Conversion-Rate in %"
-            />
-          </FormField>
-
-          <FormField label="Startdatum">
-            <FormInput
-              type="text"
-              value={formData.startDate || ''}
-              onChange={value => handleInputChange('startDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Marketing-Ziele" required>
-            <FormCheckboxGroup
-              value={formData.goals || []}
-              onChange={value => handleInputChange('goals', value)}
-              options={goalOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Gewünschte Plattformen">
-            <FormCheckboxGroup
-              value={formData.platforms || []}
-              onChange={value => handleInputChange('platforms', value)}
-              options={platformOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Analytics & Tracking">
-            <FormCheckboxGroup
-              value={formData.analyticsTools || []}
-              onChange={value => handleInputChange('analyticsTools', value)}
-              options={analyticsOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zusätzliche Services">
-            <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
             />
           </FormField>
         </div>
@@ -305,50 +123,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
               onChange={value => handleInputChange('projectDescription', value)}
               placeholder="Beschreiben Sie Ihr Online Marketing-Projekt detailliert"
               rows={4}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zielgruppe">
-            <FormTextarea
-              value={formData.targetAudience || ''}
-              onChange={value => handleInputChange('targetAudience', value)}
-              placeholder="Beschreiben Sie Ihre Zielgruppe (Alter, Geschlecht, Interessen, etc.)"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Aktuelle Marketing-Aktivitäten">
-            <FormTextarea
-              value={formData.currentMarketingActivities || ''}
-              onChange={value => handleInputChange('currentMarketingActivities', value)}
-              placeholder="Welche Marketing-Aktivitäten führen Sie bereits durch?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Wettbewerber">
-            <FormTextarea
-              value={formData.competitors || ''}
-              onChange={value => handleInputChange('competitors', value)}
-              placeholder="Nennen Sie Ihre wichtigsten Konkurrenten"
-              rows={2}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Spezielle Anforderungen oder Einschränkungen"
-              rows={3}
             />
           </FormField>
         </div>

@@ -199,16 +199,6 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
         </div>
 
         <div className="mt-4">
-          <FormField label="Zusätzliche Dienstleistungen">
-            <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
           <FormField label="Event-Beschreibung">
             <FormTextarea
               value={formData.eventDescription || ''}
