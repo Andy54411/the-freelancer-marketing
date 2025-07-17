@@ -25,6 +25,7 @@ import BodenlegerForm from './BodenlegerForm';
 import GlaserForm from './GlaserForm';
 import SchlosserForm from './SchlosserForm';
 import MetallbauerForm from './MetallbauerForm';
+import MietkochForm from './MietkochForm';
 // Import weiterer Formulare hier...
 
 interface SubcategoryFormManagerProps {
@@ -268,6 +269,18 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             permits: 'nicht_nötig',
             materialProvided: 'handwerker',
           };
+        case 'Mietkoch':
+          return {
+            subcategory: 'Mietkoch',
+            serviceType: 'event',
+            eventType: 'dinner',
+            guestCount: '4-6',
+            cuisine: 'deutsch',
+            dietaryRestrictions: [],
+            kitchenEquipment: 'vorhanden',
+            duration: 'halbtag',
+            timeframe: 'flexibel',
+          };
         // Weitere Unterkategorien...
         default:
           return {
@@ -463,6 +476,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       case 'Metallbauer':
         return (
           <MetallbauerForm
+            data={formData as any}
+            onDataChange={handleDataChange}
+            onValidationChange={() => {}}
+          />
+        );
+      case 'Mietkoch':
+        return (
+          <MietkochForm
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
