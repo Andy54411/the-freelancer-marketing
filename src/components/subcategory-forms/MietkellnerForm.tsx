@@ -93,8 +93,7 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
       formData.serviceStyle &&
       formData.eventType &&
       formData.dressCode &&
-      formData.numberOfGuests &&
-      formData.location
+      formData.numberOfGuests
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
@@ -154,43 +153,6 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
                 )
               }
               placeholder="Anzahl der Gäste"
-            />
-          </FormField>
-
-          <FormField label="Anzahl benötigter Kellner">
-            <FormInput
-              type="number"
-              value={formData.numberOfWaiters?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'numberOfWaiters',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl benötigter Kellner"
-            />
-          </FormField>
-
-          <FormField label="Veranstaltungsort" required>
-            <FormInput
-              type="text"
-              value={formData.location || ''}
-              onChange={value => handleInputChange('location', value)}
-              placeholder="Adresse des Veranstaltungsorts"
-            />
-          </FormField>
-
-          <FormField label="Stundenlohn (€)">
-            <FormInput
-              type="number"
-              value={formData.hourlyRate?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'hourlyRate',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Stundenlohn in €"
             />
           </FormField>
 

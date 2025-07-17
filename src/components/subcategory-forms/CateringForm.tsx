@@ -80,12 +80,7 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.eventType &&
-      formData.guestCount &&
-      formData.eventDate
-    );
+    const isValid = !!(formData.serviceType && formData.eventType && formData.guestCount);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
@@ -121,24 +116,6 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
               value={formData.guestCount?.toString() || ''}
               onChange={value => handleInputChange('guestCount', value)}
               placeholder="Anzahl der Gäste"
-            />
-          </FormField>
-
-          <FormField label="Veranstaltungsdatum" required>
-            <FormInput
-              type="text"
-              value={formData.eventDate || ''}
-              onChange={value => handleInputChange('eventDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Veranstaltungsort">
-            <FormInput
-              type="text"
-              value={formData.eventLocation || ''}
-              onChange={value => handleInputChange('eventLocation', value)}
-              placeholder="Adresse der Veranstaltung"
             />
           </FormField>
 
