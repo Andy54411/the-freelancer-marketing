@@ -1,29 +1,53 @@
 'use client';
 
 import { useState } from 'react';
-import { useCookieConsent } from '@/hooks/useCookieConsent';
-import { X, Cookie, Shield, BarChart3, Settings, Users } from 'lucide-react';
+import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
+import { X, Cookie, Shield, BarChart3, Settings, Users, Eye, Zap } from 'lucide-react';
+import { trackCookieConsent } from '@/lib/gtm-dataLayer';
 
 export default function CookieBanner() {
-  const { consent, bannerVisible, updateConsent, acceptAll, rejectAll, setBannerVisible } = useCookieConsent();
+  const { consent, bannerVisible, updateConsentState, acceptAll, rejectAll, setBannerVisible } =
+    useCookieConsentContext();
+
   const [showDetails, setShowDetails] = useState(false);
 
   if (!bannerVisible) return null;
 
   const handleCustomConsent = () => {
-    updateConsent(consent);
+    updateConsentState(consent);
+    // GTM Event für Custom Consent
+    const consentCategories = Object.entries(consent)
+      .filter(([_, value]) => value)
+      .map(([key, _]) => key);
+    trackCookieConsent(consentCategories);
+  };
+
+  const handleAcceptAll = () => {
+    acceptAll();
+    // GTM Event für Accept All
+    trackCookieConsent(['analytics', 'functional', 'marketing', 'personalization']);
+  };
+
+  const handleRejectAll = () => {
+    rejectAll();
+    // GTM Event für Reject All
+    trackCookieConsent(['necessary']);
   };
 
   const toggleAnalytics = () => {
-    updateConsent({ analytics: !consent.analytics });
+    updateConsentState({ analytics: !consent.analytics });
   };
 
   const toggleFunctional = () => {
-    updateConsent({ functional: !consent.functional });
+    updateConsentState({ functional: !consent.functional });
   };
 
   const toggleMarketing = () => {
-    updateConsent({ marketing: !consent.marketing });
+    updateConsentState({ marketing: !consent.marketing });
+  };
+
+  const togglePersonalization = () => {
+    updateConsentState({ personalization: !consent.personalization });
   };
 
   return (
@@ -47,9 +71,9 @@ export default function CookieBanner() {
           {/* Content */}
           <div className="space-y-4">
             <p className="text-gray-600">
-              Wir verwenden Cookies, um Ihnen die bestmögliche Erfahrung auf unserer Website zu bieten.
-              Einige Cookies sind für die Grundfunktionen erforderlich, während andere uns helfen,
-              die Website zu verbessern und Ihnen relevante Inhalte anzuzeigen.
+              Wir verwenden Cookies, um Ihnen die bestmögliche Erfahrung auf unserer Website zu
+              bieten. Einige Cookies sind für die Grundfunktionen erforderlich, während andere uns
+              helfen, die Website zu verbessern und Ihnen relevante Inhalte anzuzeigen.
             </p>
 
             {/* Cookie Categories */}
@@ -118,9 +142,7 @@ export default function CookieBanner() {
                   <Users className="text-orange-600 w-5 h-5" />
                   <div>
                     <h3 className="font-medium text-gray-900">Marketing Cookies</h3>
-                    <p className="text-sm text-gray-600">
-                      Personalisierte Werbung und Inhalte
-                    </p>
+                    <p className="text-sm text-gray-600">Personalisierte Werbung und Inhalte</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -133,44 +155,128 @@ export default function CookieBanner() {
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
                 </label>
               </div>
+
+              {/* Personalization Cookies */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Eye className="text-indigo-600 w-5 h-5" />
+                  <div>
+                    <h3 className="font-medium text-gray-900">Personalisierung</h3>
+                    <p className="text-sm text-gray-600">Anpassung an Ihre Präferenzen</p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={consent.personalization}
+                    onChange={togglePersonalization}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
+                </label>
+              </div>
             </div>
 
-            {/* Details Link */}
-            <div className="text-center">
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="text-[#14ad9f] hover:text-[#0f8b7f] text-sm font-medium"
-              >
-                {showDetails ? 'Weniger Details' : 'Mehr Details'}
-              </button>
-            </div>
-
-            {/* Detailed Information */}
+            {/* Details Section */}
             {showDetails && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg text-sm text-gray-600 space-y-2">
-                <h4 className="font-medium text-gray-900">Verwendete Cookies im Detail:</h4>
-                <ul className="space-y-1">
-                  <li><strong>_ga:</strong> Google Analytics - Eindeutige Benutzer-ID (2 Jahre)</li>
-                  <li><strong>_ga_*:</strong> Google Analytics 4 - Sitzungsstatus (2 Jahre)</li>
-                  <li><strong>_gid:</strong> Google Analytics - Kurzzeitige Benutzer-ID (24 Stunden)</li>
-                  <li><strong>__session:</strong> Firebase Authentication Session Cookie</li>
-                  <li><strong>googtrans:</strong> Google Translate Cookie für Sprachauswahl</li>
-                </ul>
-                <p className="mt-2">
-                  Weitere Informationen finden Sie in unserer{' '}
-                  <a href="/cookies" className="text-[#14ad9f] hover:underline">Cookie-Richtlinie</a>
-                  {' '}und{' '}
-                  <a href="/datenschutz" className="text-[#14ad9f] hover:underline">Datenschutzerklärung</a>.
-                </p>
+              <div className="border-t pt-4 mt-4">
+                <h3 className="font-medium text-gray-900 mb-3">
+                  Detaillierte Cookie-Informationen
+                </h3>
+                <div className="space-y-4 text-sm text-gray-600">
+                  <div>
+                    <h4 className="font-medium text-gray-800">Notwendige Cookies:</h4>
+                    <p>
+                      Diese Cookies sind für die Grundfunktionen der Website erforderlich und können
+                      nicht deaktiviert werden.
+                    </p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Session-ID für Benutzeranmeldung</li>
+                      <li>CSRF-Schutz Token</li>
+                      <li>Cookie-Einstellungen speichern</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-gray-800">Analytics Cookies:</h4>
+                    <p>
+                      Diese Cookies helfen uns zu verstehen, wie Besucher mit der Website
+                      interagieren.
+                    </p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Google Analytics 4 (GA4)</li>
+                      <li>Seitenzugriffe und Verweildauer</li>
+                      <li>Anonymisierte Nutzungsstatistiken</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-gray-800">Funktionale Cookies:</h4>
+                    <p>Diese Cookies ermöglichen erweiterte Funktionen und Personalisierung.</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Spracheinstellungen</li>
+                      <li>Benutzereinstellungen</li>
+                      <li>Formular-Fortschritt speichern</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-gray-800">Marketing Cookies:</h4>
+                    <p>Diese Cookies werden verwendet, um Ihnen relevante Werbung zu zeigen.</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Zielgruppensegmentierung</li>
+                      <li>Conversion-Tracking</li>
+                      <li>Remarketing-Pixel</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-gray-800">Personalisierung:</h4>
+                    <p>Diese Cookies ermöglichen es uns, Ihre Erfahrung zu personalisieren.</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Bevorzugte Inhalte</li>
+                      <li>Personalisierte Empfehlungen</li>
+                      <li>Benutzerverhalten-Analyse</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 className="font-medium text-gray-800">Firebase & Authentication:</h5>
+                    <p>Für Benutzeranmeldung und Datenspeicherung verwenden wir Firebase:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>__session (Session-Cookie)</li>
+                      <li>__Secure-* (Sicherheits-Cookies)</li>
+                      <li>firebase-auth-* (Authentifizierung)</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 className="font-medium text-gray-800">Google Services:</h5>
+                    <p>Für Analytics und Tag Management nutzen wir Google Services:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>_ga, _ga_* (Google Analytics)</li>
+                      <li>_gid (Google Analytics)</li>
+                      <li>_gtm_* (Google Tag Manager)</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
+
+            {/* Toggle Details Button */}
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="text-[#14ad9f] hover:text-[#0f8b7f] text-sm font-medium transition-colors"
+            >
+              {showDetails ? 'Weniger Details' : 'Mehr Details'}
+            </button>
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t">
             <button
-              onClick={rejectAll}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleRejectAll}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               Alle ablehnen
             </button>
@@ -181,7 +287,7 @@ export default function CookieBanner() {
               Auswahl speichern
             </button>
             <button
-              onClick={acceptAll}
+              onClick={handleAcceptAll}
               className="flex-1 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#0f8b7f] transition-colors"
             >
               Alle akzeptieren
