@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
 import { X, Cookie, Shield, BarChart3, Settings, Users, Eye } from 'lucide-react';
 import { sendConsentToGTM } from '@/lib/gtm-dsgvo';
@@ -11,12 +11,20 @@ export default function CookieBanner() {
 
   const [showDetails, setShowDetails] = useState(false);
 
+  // Lokaler State für temporäre Änderungen
+  const [tempConsent, setTempConsent] = useState(consent);
+
+  // Sync tempConsent mit consent wenn sich consent ändert
+  useEffect(() => {
+    setTempConsent(consent);
+  }, [consent]);
+
   if (!bannerVisible) return null;
 
   const handleCustomConsent = () => {
-    updateConsentState(consent);
+    updateConsentState(tempConsent);
     // DSGVO-konforme GTM-Integration
-    sendConsentToGTM(consent);
+    sendConsentToGTM(tempConsent);
   };
 
   const handleAcceptAll = () => {
@@ -44,19 +52,19 @@ export default function CookieBanner() {
   };
 
   const toggleAnalytics = () => {
-    updateConsentState({ analytics: !consent.analytics });
+    setTempConsent(prev => ({ ...prev, analytics: !prev.analytics }));
   };
 
   const toggleFunctional = () => {
-    updateConsentState({ functional: !consent.functional });
+    setTempConsent(prev => ({ ...prev, functional: !prev.functional }));
   };
 
   const toggleMarketing = () => {
-    updateConsentState({ marketing: !consent.marketing });
+    setTempConsent(prev => ({ ...prev, marketing: !prev.marketing }));
   };
 
   const togglePersonalization = () => {
-    updateConsentState({ personalization: !consent.personalization });
+    setTempConsent(prev => ({ ...prev, personalization: !prev.personalization }));
   };
 
   return (
@@ -116,7 +124,7 @@ export default function CookieBanner() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={consent.analytics}
+                    checked={tempConsent.analytics}
                     onChange={toggleAnalytics}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
@@ -138,7 +146,7 @@ export default function CookieBanner() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={consent.functional}
+                    checked={tempConsent.functional}
                     onChange={toggleFunctional}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
@@ -158,7 +166,7 @@ export default function CookieBanner() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={consent.marketing}
+                    checked={tempConsent.marketing}
                     onChange={toggleMarketing}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
@@ -178,7 +186,7 @@ export default function CookieBanner() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={consent.personalization}
+                    checked={tempConsent.personalization}
                     onChange={togglePersonalization}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>

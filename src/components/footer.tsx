@@ -6,10 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
+import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import CookieSettings from '@/components/CookieSettings';
+import { FiMapPin, FiPhone, FiMail, FiClock, FiMessageCircle, FiShield } from 'react-icons/fi';
+import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
+import { HiPhone, HiMail } from 'react-icons/hi';
+import { motion } from 'framer-motion';
+import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
 
 export default function FooterSection() {
+  const { resetConsent } = useCookieConsentContext();
+
+  const handleCookieSettings = () => {
+    resetConsent();
+  };
+
   const links = [
     {
       group: 'Produkt',
@@ -292,7 +304,13 @@ export default function FooterSection() {
             © {new Date().getFullYear()} Taskilo. Alle Rechte vorbehalten.
           </small>
           <div className="flex items-center gap-4">
-            <CookieSettings />
+            <button
+              onClick={handleCookieSettings}
+              className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm"
+            >
+              <FiShield className="w-4 h-4" />
+              Cookie-Einstellungen
+            </button>
           </div>
         </div>
       </div>
