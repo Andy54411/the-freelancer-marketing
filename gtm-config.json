@@ -1,0 +1,396 @@
+{
+  "containerVersion": {
+    "accountId": "1022290879475",
+    "containerId": "GTM-TG3H7QHX",
+    "containerVersionId": "1",
+    "name": "TASKILO GTM Configuration",
+    "description": "Google Tag Manager Konfiguration für TASKILO",
+    "container": {
+      "accountId": "1022290879475",
+      "containerId": "GTM-TG3H7QHX",
+      "name": "TASKILO",
+      "publicId": "GTM-TG3H7QHX",
+      "usageContext": ["WEB"],
+      "fingerprint": "1234567890",
+      "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/1022290879475/containers/GTM-TG3H7QHX",
+      "features": {
+        "supportUserDefinedTemplates": true,
+        "supportEnvironments": true,
+        "supportWorkspaces": true,
+        "supportGtagConfigs": true,
+        "supportBuiltInVariables": true,
+        "supportClients": true,
+        "supportFolders": true,
+        "supportTags": true,
+        "supportTemplates": true,
+        "supportTriggers": true,
+        "supportVariables": true,
+        "supportVersions": true,
+        "supportZones": true
+      }
+    },
+    "tag": [
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "tagId": "1",
+        "name": "GA4 Configuration",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendPageView",
+            "value": "true"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementId",
+            "value": "G-WWXT65CVC8"
+          }
+        ],
+        "fingerprint": "1234567890",
+        "firingTriggerId": ["2147479553"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        }
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "tagId": "2",
+        "name": "GA4 Event - Page View",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "page_view"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementId",
+            "value": "G-WWXT65CVC8"
+          }
+        ],
+        "fingerprint": "1234567890",
+        "firingTriggerId": ["2147479553"],
+        "tagFiringOption": "ONCE_PER_EVENT"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "tagId": "3",
+        "name": "GA4 Event - Form Submit",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "form_submit"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementId",
+            "value": "G-WWXT65CVC8"
+          },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "name",
+                    "value": "form_name"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "value",
+                    "value": "{{Form Name}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1234567890",
+        "firingTriggerId": ["4"],
+        "tagFiringOption": "ONCE_PER_EVENT"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "tagId": "4",
+        "name": "GA4 Event - Button Click",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "button_click"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementId",
+            "value": "G-WWXT65CVC8"
+          },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "name",
+                    "value": "button_text"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "value",
+                    "value": "{{Click Text}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1234567890",
+        "firingTriggerId": ["5"],
+        "tagFiringOption": "ONCE_PER_EVENT"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "tagId": "5",
+        "name": "GA4 Event - Cookie Consent",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "cookie_consent"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementId",
+            "value": "G-WWXT65CVC8"
+          },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "name",
+                    "value": "consent_type"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "value",
+                    "value": "{{Cookie Consent Type}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1234567890",
+        "firingTriggerId": ["6"],
+        "tagFiringOption": "ONCE_PER_EVENT"
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "triggerId": "2147479553",
+        "name": "Initialization - All Pages",
+        "type": "PAGEVIEW",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "triggerId": "4",
+        "name": "Form Submission",
+        "type": "FORM_SUBMIT",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "triggerId": "5",
+        "name": "Button Click - All Buttons",
+        "type": "CLICK",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "waitForTags",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "checkValidation",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1234567890",
+        "filter": [
+          {
+            "type": "MATCH_CSS_SELECTOR",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{Click Element}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "button"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "triggerId": "6",
+        "name": "Cookie Consent Event",
+        "type": "CUSTOM_EVENT",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "cookie_consent"
+          }
+        ],
+        "fingerprint": "1234567890"
+      }
+    ],
+    "variable": [
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "variableId": "1",
+        "name": "Page URL",
+        "type": "u",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "variableId": "2",
+        "name": "Page Path",
+        "type": "f",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "variableId": "3",
+        "name": "Click Element",
+        "type": "c",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "variableId": "4",
+        "name": "Click Text",
+        "type": "v",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "variableId": "5",
+        "name": "Form Name",
+        "type": "smm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "dataLayerVariable",
+            "value": "form_name"
+          }
+        ],
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "variableId": "6",
+        "name": "Cookie Consent Type",
+        "type": "smm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "dataLayerVariable",
+            "value": "consent_type"
+          }
+        ],
+        "fingerprint": "1234567890"
+      }
+    ],
+    "folder": [
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "folderId": "1",
+        "name": "Analytics Tags",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "folderId": "2", 
+        "name": "Event Tracking",
+        "fingerprint": "1234567890"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "folderId": "3",
+        "name": "Conversion Tracking",
+        "fingerprint": "1234567890"
+      }
+    ],
+    "builtInVariable": [
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "type": "PAGE_URL",
+        "name": "Page URL"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "type": "PAGE_PATH",
+        "name": "Page Path"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "type": "CLICK_ELEMENT",
+        "name": "Click Element"
+      },
+      {
+        "accountId": "1022290879475",
+        "containerId": "GTM-TG3H7QHX",
+        "type": "CLICK_TEXT",
+        "name": "Click Text"
+      }
+    ],
+    "fingerprint": "1234567890",
+    "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/1022290879475/containers/GTM-TG3H7QHX/workspaces/1/overview"
+  }
+}

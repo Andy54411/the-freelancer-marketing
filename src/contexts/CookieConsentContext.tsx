@@ -50,7 +50,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
 
   useEffect(() => {
     // Prüfe, ob bereits eine Einwilligung gespeichert ist
-    const savedConsent = localStorage.getItem('cookieConsent');
+    const savedConsent = localStorage.getItem('taskilo-cookie-consent');
     if (!savedConsent) {
       setBannerVisible(true);
     } else {
@@ -67,7 +67,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
   const updateConsentState = (newConsent: Partial<ConsentState>) => {
     const updatedConsent = { ...consent, ...newConsent };
     setConsent(updatedConsent);
-    localStorage.setItem('cookieConsent', JSON.stringify(updatedConsent));
+    localStorage.setItem('taskilo-cookie-consent', JSON.stringify(updatedConsent));
     setBannerVisible(false);
 
     // 🚀 WICHTIG: Neue Einwilligung sofort an GTM senden
@@ -97,7 +97,8 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
   };
 
   const resetConsent = () => {
-    localStorage.removeItem('cookieConsent');
+    localStorage.removeItem('taskilo-cookie-consent');
+    localStorage.removeItem('cookieConsent'); // Remove old key as well
     setConsent({
       necessary: true,
       analytics: false,

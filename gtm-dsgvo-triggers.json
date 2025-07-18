@@ -1,0 +1,308 @@
+{
+  "variables": [
+    {
+      "name": "DSGVO - Analytics Consent Status",
+      "type": "jsm",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "javascript",
+          "value": "function() {\n  var consent = localStorage.getItem('taskilo-cookie-consent');\n  if (consent) {\n    var consentData = JSON.parse(consent);\n    return consentData.analytics ? 'granted' : 'denied';\n  }\n  return 'denied';\n}"
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Marketing Consent Status",
+      "type": "jsm",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "javascript",
+          "value": "function() {\n  var consent = localStorage.getItem('taskilo-cookie-consent');\n  if (consent) {\n    var consentData = JSON.parse(consent);\n    return consentData.marketing ? 'granted' : 'denied';\n  }\n  return 'denied';\n}"
+        }
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "name": "DSGVO - Analytics Consent Gegeben",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Event}}"
+            },
+            {
+              "type": "TEMPLATE", 
+              "key": "arg1",
+              "value": "analytics_consent_granted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Marketing Consent Gegeben",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1", 
+              "value": "marketing_consent_granted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Analytics Consent Status Check",
+      "type": "PAGE_VIEW",
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{DSGVO - Analytics Consent Status}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "granted"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+        }
+      ],
+      "description": "Trigger feuert wenn Analytics-Cookies erlaubt werden"
+    },
+    "dsgvo_consent_marketing": {
+      "name": "DSGVO - Marketing Consent Gegeben",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1", 
+              "value": "marketing_consent_granted"
+            }
+          ]
+        }
+      ],
+      "description": "Trigger feuert wenn Marketing-Cookies erlaubt werden"
+    },
+    "dsgvo_consent_functional": {
+      "name": "DSGVO - Functional Consent Gegeben",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "functional_consent_granted"
+            }
+          ]
+        }
+      ],
+      "description": "Trigger feuert wenn Functional-Cookies erlaubt werden"
+    },
+    "dsgvo_pageview_with_consent": {
+      "name": "DSGVO - Page View mit Analytics Consent",
+      "type": "PAGEVIEW",
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Analytics Consent Status}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "granted"
+            }
+          ]
+        }
+      ],
+      "description": "Page View Trigger nur wenn Analytics-Consent gegeben"
+    },
+    "dsgvo_button_click_with_consent": {
+      "name": "DSGVO - Button Click mit Analytics Consent",
+      "type": "CLICK",
+      "clickElement": "button",
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Analytics Consent Status}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "granted"
+            }
+          ]
+        }
+      ],
+      "description": "Button Click Trigger nur wenn Analytics-Consent gegeben"
+    },
+    "dsgvo_form_submit_with_consent": {
+      "name": "DSGVO - Form Submit mit Analytics Consent",
+      "type": "FORM_SUBMIT",
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Analytics Consent Status}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "granted"
+            }
+          ]
+        }
+      ],
+      "description": "Form Submit Trigger nur wenn Analytics-Consent gegeben"
+    }
+  },
+  "variables": {
+    "analytics_consent_status": {
+      "name": "Analytics Consent Status",
+      "type": "JAVASCRIPT",
+      "code": "function() {\n  // Prüfe lokalen Storage auf Cookie-Consent\n  try {\n    var consent = localStorage.getItem('cookieConsent');\n    if (consent) {\n      var consentObj = JSON.parse(consent);\n      return consentObj.analytics ? 'granted' : 'denied';\n    }\n  } catch (e) {\n    console.error('Fehler beim Lesen des Cookie-Consents:', e);\n  }\n  return 'denied';\n}",
+      "description": "Prüft ob Analytics-Consent gegeben wurde"
+    },
+    "marketing_consent_status": {
+      "name": "Marketing Consent Status", 
+      "type": "JAVASCRIPT",
+      "code": "function() {\n  try {\n    var consent = localStorage.getItem('cookieConsent');\n    if (consent) {\n      var consentObj = JSON.parse(consent);\n      return consentObj.marketing ? 'granted' : 'denied';\n    }\n  } catch (e) {\n    console.error('Fehler beim Lesen des Cookie-Consents:', e);\n  }\n  return 'denied';\n}",
+      "description": "Prüft ob Marketing-Consent gegeben wurde"
+    },
+    "functional_consent_status": {
+      "name": "Functional Consent Status",
+      "type": "JAVASCRIPT", 
+      "code": "function() {\n  try {\n    var consent = localStorage.getItem('cookieConsent');\n    if (consent) {\n      var consentObj = JSON.parse(consent);\n      return consentObj.functional ? 'granted' : 'denied';\n    }\n  } catch (e) {\n    console.error('Fehler beim Lesen des Cookie-Consents:', e);\n  }\n  return 'denied';\n}",
+      "description": "Prüft ob Functional-Consent gegeben wurde"
+    },
+    "consent_timestamp": {
+      "name": "Consent Timestamp",
+      "type": "JAVASCRIPT",
+      "code": "function() {\n  try {\n    var consent = localStorage.getItem('cookieConsent');\n    if (consent) {\n      var consentObj = JSON.parse(consent);\n      return consentObj.timestamp || new Date().toISOString();\n    }\n  } catch (e) {\n    console.error('Fehler beim Lesen des Cookie-Consents:', e);\n  }\n  return new Date().toISOString();\n}",
+      "description": "Timestamp der Cookie-Einwilligung"
+    }
+  },
+  "tags": {
+    "ga4_config_with_consent": {
+      "name": "GA4 Konfiguration (nur mit Consent)",
+      "type": "GOOGLE_ANALYTICS_4",
+      "measurementId": "G-WWXT65CVC8", 
+      "consentSettings": {
+        "analytics_storage": "{{Analytics Consent Status}}",
+        "ad_storage": "{{Marketing Consent Status}}",
+        "functionality_storage": "{{Functional Consent Status}}",
+        "personalization_storage": "{{Functional Consent Status}}",
+        "security_storage": "granted"
+      },
+      "firingTriggerId": ["dsgvo_consent_analytics"],
+      "description": "GA4 wird nur geladen wenn Analytics-Consent gegeben"
+    },
+    "ga4_pageview_with_consent": {
+      "name": "GA4 Page View (nur mit Consent)",
+      "type": "GOOGLE_ANALYTICS_4",
+      "measurementId": "G-WWXT65CVC8",
+      "eventName": "page_view",
+      "parameters": {
+        "page_title": "{{Page Title}}",
+        "page_location": "{{Page URL}}",
+        "page_path": "{{Page Path}}",
+        "consent_given": "{{Analytics Consent Status}}",
+        "consent_timestamp": "{{Consent Timestamp}}"
+      },
+      "firingTriggerId": ["dsgvo_pageview_with_consent"],
+      "description": "Page View Event nur mit Analytics-Consent"
+    },
+    "ga4_button_click_with_consent": {
+      "name": "GA4 Button Click (nur mit Consent)",
+      "type": "GOOGLE_ANALYTICS_4",
+      "measurementId": "G-WWXT65CVC8",
+      "eventName": "button_click",
+      "parameters": {
+        "button_text": "{{Click Text}}",
+        "button_id": "{{Click ID}}",
+        "page_location": "{{Page URL}}",
+        "consent_given": "{{Analytics Consent Status}}"
+      },
+      "firingTriggerId": ["dsgvo_button_click_with_consent"],
+      "description": "Button Click Event nur mit Analytics-Consent"
+    },
+    "ga4_form_submit_with_consent": {
+      "name": "GA4 Form Submit (nur mit Consent)",
+      "type": "GOOGLE_ANALYTICS_4",
+      "measurementId": "G-WWXT65CVC8",
+      "eventName": "form_submit",
+      "parameters": {
+        "form_id": "{{Form ID}}",
+        "form_name": "{{Form Name}}",
+        "page_location": "{{Page URL}}",
+        "consent_given": "{{Analytics Consent Status}}"
+      },
+      "firingTriggerId": ["dsgvo_form_submit_with_consent"],
+      "description": "Form Submit Event nur mit Analytics-Consent"
+    },
+    "consent_tracking_tag": {
+      "name": "Cookie Consent Tracking",
+      "type": "GOOGLE_ANALYTICS_4",
+      "measurementId": "G-WWXT65CVC8",
+      "eventName": "cookie_consent",
+      "parameters": {
+        "consent_analytics": "{{Analytics Consent Status}}",
+        "consent_marketing": "{{Marketing Consent Status}}",
+        "consent_functional": "{{Functional Consent Status}}",
+        "consent_timestamp": "{{Consent Timestamp}}",
+        "page_location": "{{Page URL}}"
+      },
+      "firingTriggerId": ["dsgvo_consent_analytics", "dsgvo_consent_marketing", "dsgvo_consent_functional"],
+      "description": "Trackt alle Cookie-Einwilligungen"
+    }
+  }
+}

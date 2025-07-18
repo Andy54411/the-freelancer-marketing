@@ -50,7 +50,49 @@ export default function DebugCookiesPage() {
     // Clear localStorage
     window.localStorage.clear();
 
+    // Reload page to see changes
     window.location.reload();
+  };
+
+  const triggerConsentUpdate = () => {
+    // Manually trigger consent update for debugging
+    const testConsent = {
+      necessary: true,
+      analytics: true,
+      marketing: true,
+      functional: true,
+      personalization: true,
+    };
+
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'consent_update',
+        consent: {
+          analytics_storage: 'granted',
+          ad_storage: 'granted',
+          ad_user_data: 'granted',
+          ad_personalization: 'granted',
+          functionality_storage: 'granted',
+          personalization_storage: 'granted',
+          security_storage: 'granted',
+        },
+      });
+    }
+
+    // Also try direct gtag call
+    if (typeof (window as any).gtag !== 'undefined') {
+      (window as any).gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        functionality_storage: 'granted',
+        personalization_storage: 'granted',
+        security_storage: 'granted',
+      });
+    }
+
+    console.log('🚀 Consent update triggered!');
   };
 
   return (

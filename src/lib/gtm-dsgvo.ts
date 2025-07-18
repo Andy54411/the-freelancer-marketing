@@ -26,34 +26,36 @@ export const sendConsentToGTM = (consent: {
     timestamp: new Date().toISOString(),
   };
 
-  localStorage.setItem('cookieConsent', JSON.stringify(consentWithTimestamp));
+  localStorage.setItem('taskilo-cookie-consent', JSON.stringify(consentWithTimestamp));
 
   // 🚀 WICHTIG: Google Consent Mode v2 Update senden
+  const consentUpdate = {
+    analytics_storage: consent.analytics ? 'granted' : 'denied',
+    ad_storage: consent.marketing ? 'granted' : 'denied',
+    ad_user_data: consent.marketing ? 'granted' : 'denied',
+    ad_personalization: consent.marketing ? 'granted' : 'denied',
+    functionality_storage: consent.functional ? 'granted' : 'denied',
+    personalization_storage: consent.personalization ? 'granted' : 'denied',
+    security_storage: 'granted', // Immer erlaubt
+  };
+
+  // Method 1: GTM DataLayer Event
   window.dataLayer.push({
     event: 'consent_update',
-    consent: {
-      analytics_storage: consent.analytics ? 'granted' : 'denied',
-      ad_storage: consent.marketing ? 'granted' : 'denied',
-      ad_user_data: consent.marketing ? 'granted' : 'denied',
-      ad_personalization: consent.marketing ? 'granted' : 'denied',
-      functionality_storage: consent.functional ? 'granted' : 'denied',
-      personalization_storage: consent.personalization ? 'granted' : 'denied',
-      security_storage: 'granted', // Immer erlaubt
-    },
+    consent: consentUpdate,
   });
 
-  // Alternative Method: Direct gtag consent update
+  // Method 2: Direct gtag consent update (primary method)
   if (typeof (window as any).gtag !== 'undefined') {
-    (window as any).gtag('consent', 'update', {
-      analytics_storage: consent.analytics ? 'granted' : 'denied',
-      ad_storage: consent.marketing ? 'granted' : 'denied',
-      ad_user_data: consent.marketing ? 'granted' : 'denied',
-      ad_personalization: consent.marketing ? 'granted' : 'denied',
-      functionality_storage: consent.functional ? 'granted' : 'denied',
-      personalization_storage: consent.personalization ? 'granted' : 'denied',
-      security_storage: 'granted',
-    });
+    (window as any).gtag('consent', 'update', consentUpdate);
   }
+
+  // Method 3: Alternative DataLayer push format
+  window.dataLayer.push(['consent', 'update', consentUpdate]);
+
+  // Debug logging
+  console.log('🍪 Cookie Consent Update:', consent);
+  console.log('🏷️ GTM Consent Update:', consentUpdate);
 
   // Sende einzelne Consent-Events für jeden Typ
   if (consent.analytics) {
