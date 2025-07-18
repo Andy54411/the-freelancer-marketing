@@ -46,17 +46,43 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               
-              // Set default consent state
-              gtag('consent', 'default', {
-                'analytics_storage': 'denied',
-                'ad_storage': 'denied',
-                'ad_user_data': 'denied',
-                'ad_personalization': 'denied',
-                'functionality_storage': 'denied',
-                'personalization_storage': 'denied',
-                'security_storage': 'granted',
-                'wait_for_update': 2000
-              });
+              // Check for saved consent first
+              let savedConsent = null;
+              try {
+                const stored = localStorage.getItem('taskilo-cookie-consent');
+                if (stored) {
+                  savedConsent = JSON.parse(stored);
+                }
+              } catch (e) {
+                console.log('No saved consent found');
+              }
+              
+              // Set consent state based on saved preferences or defaults
+              if (savedConsent) {
+                gtag('consent', 'default', {
+                  'analytics_storage': savedConsent.analytics ? 'granted' : 'denied',
+                  'ad_storage': savedConsent.marketing ? 'granted' : 'denied',
+                  'ad_user_data': savedConsent.marketing ? 'granted' : 'denied',
+                  'ad_personalization': savedConsent.marketing ? 'granted' : 'denied',
+                  'functionality_storage': savedConsent.functional ? 'granted' : 'denied',
+                  'personalization_storage': savedConsent.personalization ? 'granted' : 'denied',
+                  'security_storage': 'granted',
+                  'wait_for_update': 500
+                });
+                console.log('🚀 GTM initialized with saved consent:', savedConsent);
+              } else {
+                gtag('consent', 'default', {
+                  'analytics_storage': 'denied',
+                  'ad_storage': 'denied',
+                  'ad_user_data': 'denied',
+                  'ad_personalization': 'denied',
+                  'functionality_storage': 'denied',
+                  'personalization_storage': 'denied',
+                  'security_storage': 'granted',
+                  'wait_for_update': 2000
+                });
+                console.log('🚀 GTM initialized with default denied consent');
+              }
             `,
           }}
         />
