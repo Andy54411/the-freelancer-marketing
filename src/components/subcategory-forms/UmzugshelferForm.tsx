@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface UmzugshelferFormProps {
@@ -251,6 +252,17 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.moveType &&
+      formData.householdSize &&
+      formData.fromAddress &&
+      formData.toAddress &&
+      formData.distance &&
+      formData.description
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -1073,6 +1085,8 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Umzugshelfer" />
     </div>
   );
 };

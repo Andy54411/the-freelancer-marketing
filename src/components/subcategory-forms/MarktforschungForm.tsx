@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface MarktforschungData {
@@ -139,6 +140,15 @@ const MarktforschungForm: React.FC<MarktforschungFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.researchType &&
+      formData.researchMethod &&
+      formData.researchMethod.length > 0 &&
+      formData.targetGroup &&
+      formData.sampleSize
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -213,6 +223,8 @@ const MarktforschungForm: React.FC<MarktforschungFormProps> = ({
           placeholder="Beschreiben Sie weitere Details oder besondere Anforderungen für Ihre Marktforschung"
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Marktforschung" />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface HeizungFormProps {
@@ -135,6 +136,14 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.heatingType &&
+      formData.buildingType &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -202,6 +211,8 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Heizung" />
     </div>
   );
 };

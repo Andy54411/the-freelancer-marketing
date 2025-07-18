@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface RechercheData {
@@ -118,6 +119,9 @@ const RechercheForm: React.FC<RechercheFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(formData.researchType && formData.topic && formData.depth && formData.timeframe);
+  };
 
   return (
     <div className="space-y-6">
@@ -192,6 +196,8 @@ const RechercheForm: React.FC<RechercheFormProps> = ({
           placeholder="Beschreiben Sie weitere Details oder besondere Anforderungen für Ihre Recherche"
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Recherche" />
     </div>
   );
 };

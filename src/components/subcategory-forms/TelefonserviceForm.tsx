@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface TelefonserviceData {
@@ -119,6 +120,15 @@ const TelefonserviceForm: React.FC<TelefonserviceFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.callVolume &&
+      formData.callType &&
+      formData.callType.length > 0 &&
+      formData.schedule
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -206,6 +216,8 @@ const TelefonserviceForm: React.FC<TelefonserviceFormProps> = ({
           placeholder="Beschreiben Sie Ihre genauen Anforderungen an den Telefonservice, spezifische Anweisungen, Besonderheiten oder sonstige relevante Informationen."
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Telefonservice" />
     </div>
   );
 };

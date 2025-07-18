@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OnlineMarketingData } from '@/types/subcategory-forms';
-import { FormField, FormSelect, FormTextarea } from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface OnlineMarketingFormProps {
   data: OnlineMarketingData;
@@ -70,6 +70,15 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.businessType &&
+      formData.industry &&
+      formData.timeline &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -127,6 +136,8 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="OnlineMarketing" />
     </div>
   );
 };

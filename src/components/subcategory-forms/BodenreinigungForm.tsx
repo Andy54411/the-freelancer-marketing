@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BodenreinigungData } from '@/types/subcategory-forms';
-import { FormField, FormSelect, FormTextarea } from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface BodenreinigungFormProps {
   data: BodenreinigungData;
@@ -53,6 +53,15 @@ const BodenreinigungForm: React.FC<BodenreinigungFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.floorType &&
+      formData.treatmentType &&
+      formData.projectDescription &&
+      formData.projectDescription.trim().length > 0
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -93,6 +102,8 @@ const BodenreinigungForm: React.FC<BodenreinigungFormProps> = ({
           rows={3}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Bodenreinigung" />
     </div>
   );
 };

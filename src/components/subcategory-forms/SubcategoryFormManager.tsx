@@ -7,33 +7,19 @@ import {
   validateSubcategoryData,
 } from '@/types/subcategory-forms';
 import { useRegistration } from '@/contexts/Registration-Context';
-import AppEntwicklungForm from './AppEntwicklungForm';
-import ArchivierungForm from './ArchivierungForm';
 import AutoreparaturForm from './AutoreparaturForm';
-import AutowäscheForm from './AutowäscheForm';
-import BaumpflegeForm from './BaumpflegeForm';
 import BodenlegerForm from './BodenlegerForm';
 import BodenreinigungForm from './BodenreinigungForm';
 import BuchhaltungForm from './BuchhaltungForm';
 import CateringForm from './CateringForm';
-import CloudComputingForm from './CloudComputingForm';
-import CoachingForm from './CoachingForm';
-import ITSupportForm from './ITSupportForm';
-import ComputerkurseForm from './ComputerkurseForm';
 import ContentMarketingForm from './ContentMarketingForm';
-import CybersecurityForm from './CybersecurityForm';
 import DJServiceForm from './DJServiceForm';
 import DachdeckerForm from './DachdeckerForm';
-import DatenbankentwicklungForm from './DatenbankentwicklungForm';
-import DatenerfassungForm from './DatenerfassungForm';
 import DekorationForm from './DekorationForm';
 import ElektrikerForm from './ElektrikerForm';
-import EntrümpelungForm from './EntrümpelungForm';
 import ErnährungsberatungForm from './ErnährungsberatungForm';
-import EventOrganisationForm from './EventOrganisationForm';
 import EventplanungForm from './EventplanungForm';
 import FahrerForm from './FahrerForm';
-import FahrunterrichtForm from './FahrunterrichtForm';
 import FensterTürenbauForm from './FensterTürenbauForm';
 import FensterputzerForm from './FensterputzerForm';
 import FinanzberatungForm from './FinanzberatungForm';
@@ -41,20 +27,14 @@ import FitnessTrainingForm from './FitnessTrainingForm';
 import FliesenlegerForm from './FliesenlegerForm';
 import FotografForm from './FotografForm';
 import FriseurForm from './FriseurForm';
-import GartenLandschaftspflegeForm from './GartenLandschaftspflegeForm';
-import GartengestaltungForm from './GartengestaltungForm';
 import GartenpflegeForm from './GartenpflegeForm';
 import GlaserForm from './GlaserForm';
-import GraphikdesignerForm from './GraphikdesignerForm';
-import GärtnerForm from './GärtnerForm';
+import GrafikerForm from './GrafikerForm';
 import HaushaltshilfeForm from './HaushaltshilfeForm';
-import HausmeisterdienstForm from './HausmeisterdienstForm';
 import HausreinigungForm from './HausreinigungForm';
 import HeizungForm from './HeizungForm';
 import HeizungSanitärForm from './HeizungSanitärForm';
 import HundetrainerForm from './HundetrainerForm';
-import ITBeratungForm from './ITBeratungForm';
-import ITForm from './ITForm';
 import InventurForm from './InventurForm';
 import KinderbetreuungForm from './KinderbetreuungForm';
 import KlempnerForm from './KlempnerForm';
@@ -64,7 +44,6 @@ import LagerlogistikForm from './LagerlogistikForm';
 import LandschaftsgärtnerForm from './LandschaftsgärtnerForm';
 import LogistikForm from './LogistikForm';
 import MalerForm from './MalerForm';
-import MalerFormNew from './MalerFormNew';
 import MarketingberaterForm from './MarketingberaterForm';
 import MarktforschungForm from './MarktforschungForm';
 import MassageForm from './MassageForm';
@@ -76,30 +55,21 @@ import MontageserviceForm from './MontageserviceForm';
 import MusikunterrichtForm from './MusikunterrichtForm';
 import MusikerForm from './MusikerForm';
 import MöbelTransportierenForm from './MöbelTransportierenForm';
-import MöbelmontageForm from './MöbelmontageForm';
 import NachhilfeForm from './NachhilfeForm';
 import NachhilfeleherForm from './NachhilfeleherForm';
-import NetzwerkadministrationForm from './NetzwerkadministrationForm';
 import OnlineMarketingForm from './OnlineMarketingForm';
 import PhysiotherapieForm from './PhysiotherapieForm';
-import ProjektmanagementForm from './ProjektmanagementForm';
-import PrüfungsvorbereitungForm from './PrüfungsvorbereitungForm';
-import QualitätskontrolleForm from './QualitätskontrolleForm';
 import RechercheForm from './RechercheForm';
 import RechtsberatungForm from './RechtsberatungForm';
+import RechnungswesenForm from './RechnungswesenForm';
 import ReinigungskraftForm from './ReinigungskraftForm';
 import SchlosserForm from './SchlosserForm';
-import SchreibdiensteForm from './SchreibdiensteForm';
 import SchreinerForm from './SchreinerForm';
 import SeniorenbetreuungForm from './SeniorenbetreuungForm';
 import SicherheitsdienstForm from './SicherheitsdienstForm';
 import SocialMediaMarketingForm from './SocialMediaMarketingForm';
-import SoftwareentwicklerForm from './SoftwareentwicklerForm';
-import SoftwareentwicklungForm from './SoftwareentwicklungForm';
 import SprachunterrichtForm from './SprachunterrichtForm';
 import SteuerberatungForm from './SteuerberatungForm';
-import SystemintegrationForm from './SystemintegrationForm';
-import TechnikServiceForm from './TechnikServiceForm';
 import TelefonserviceForm from './TelefonserviceForm';
 import TeppichreinigungForm from './TeppichreinigungForm';
 import TexterForm from './TexterForm';
@@ -109,16 +79,11 @@ import TierpflegeForm from './TierpflegeForm';
 import TischlerForm from './TischlerForm';
 import TransportdienstleistungenForm from './TransportdienstleistungenForm';
 import TrockenbauerForm from './TrockenbauerForm';
-import UXUIDesignForm from './UXUIDesignForm';
-import UmzugForm from './UmzugForm';
+import UmzugshelferForm from './UmzugshelferForm';
 import UnternehmensberatungForm from './UnternehmensberatungForm';
 import VersicherungsberatungForm from './VersicherungsberatungForm';
 import VerwaltungForm from './VerwaltungForm';
 import VideografForm from './VideografForm';
-import WebdesignerForm from './WebdesignerForm';
-import WebentwicklungForm from './WebentwicklungForm';
-import WeiterbildungForm from './WeiterbildungForm';
-import WinterdienstForm from './WinterdienstForm';
 import ZimmererForm from './ZimmererForm';
 import ÜbersetzerForm from './ÜbersetzerForm';
 
@@ -537,12 +502,20 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         case 'DJ-Service':
           return {
             subcategory: 'DJ-Service',
-            eventType: 'hochzeit',
-            duration: '4-6',
-            musicStyle: ['pop', 'charts'],
-            equipment: 'komplett',
-            guestCount: '50-100',
-            specialRequirements: '',
+            serviceType: 'hochzeit',
+            musicGenre: 'pop',
+            eventType: 'wedding',
+            duration: '4_stunden',
+            projectDescription: '',
+          } as any;
+        case 'DJService':
+          return {
+            subcategory: 'DJService',
+            serviceType: 'hochzeit',
+            musicGenre: 'pop',
+            eventType: 'wedding',
+            duration: '4_stunden',
+            projectDescription: '',
           } as any;
         case 'Finanzberatung':
           return {
@@ -626,6 +599,15 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             taxReporting: true,
             payroll: false,
             software: 'standard',
+          } as any;
+        case 'Grafiker':
+          return {
+            subcategory: 'Grafiker',
+            projectType: 'logo',
+            complexity: 'mittel',
+            revisions: 2,
+            delivery: 'digital',
+            projectDescription: '',
           } as any;
         case 'Graphikdesigner':
           return {
@@ -1057,226 +1039,32 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
           } as any;
         // Ergänzung der neuen Formulare
         case 'Archivierung':
-          return {
-            subcategory: 'Archivierung',
-            documentType: 'physisch',
-            serviceType: 'einmalig',
-            quantity: 'gering',
-            timeframe: 'flexibel',
-            storageType: 'digital',
-            specialRequirements: '',
-          } as any;
         case 'Computerkurse':
-          return {
-            subcategory: 'Computerkurse',
-            courseType: 'grundlagen',
-            level: 'anfänger',
-            duration: '1-2',
-            frequency: 'wöchentlich',
-            format: 'einzelunterricht',
-            specialRequirements: '',
-          } as any;
         case 'Datenerfassung':
-          return {
-            subcategory: 'Datenerfassung',
-            dataType: 'text',
-            volume: 'gering',
-            format: 'digital',
-            specialRequirements: '',
-          } as any;
         case 'Dekoration':
-          return {
-            subcategory: 'Dekoration',
-            decorationType: 'wohnung',
-            eventType: 'keine',
-            style: 'modern',
-            timeframe: 'flexibel',
-            specialRequirements: '',
-          } as any;
         case 'Event-Organisation':
-          return {
-            subcategory: 'Event-Organisation',
-            eventType: 'privat',
-            guestCount: '20-50',
-            services: ['planung'],
-            location: 'indoor',
-            catering: 'nicht_benötigt',
-            timeframe: 'innerhalb_monat',
-          } as any;
         case 'Fahrunterricht':
-          return {
-            subcategory: 'Fahrunterricht',
-            licenseType: 'pkw',
-            lessonType: 'standard',
-            experience: 'anfänger',
-            frequency: 'wöchentlich',
-            location: 'stadt',
-            specialRequirements: '',
-          } as any;
         case 'Garten- & Landschaftspflege':
-          return {
-            subcategory: 'Garten- & Landschaftspflege',
-            serviceType: 'pflege',
-            gardenType: 'ziergarten',
-            areaSize: 'mittel',
-            frequency: 'monatlich',
-            tasks: ['rasen', 'hecke', 'beete'],
-            equipment: 'mitbringen',
-          } as any;
         case 'Inventur':
-          return {
-            subcategory: 'Inventur',
-            serviceType: 'vollständig',
-            itemType: 'möbel',
-            quantity: 'mittel',
-            documentation: 'digital',
-            specialRequirements: '',
-          } as any;
         case 'Logistik':
-          return {
-            subcategory: 'Logistik',
-            serviceType: 'lagerung',
-            itemType: 'pakete',
-            quantity: 'mittel',
-            duration: 'kurz',
-            specialRequirements: '',
-          } as any;
         case 'Marktforschung':
-          return {
-            subcategory: 'Marktforschung',
-            surveyType: 'online',
-            targetGroup: 'verbraucher',
-            duration: 'kurz',
-            sampleSize: 'klein',
-            methodology: 'fragebogen',
-            specialRequirements: '',
-          } as any;
         case 'MöbelTransportieren':
-          return {
-            subcategory: 'MöbelTransportieren',
-            serviceType: 'transport',
-            itemType: 'möbel',
-            quantity: 'mittel',
-            distance: 'lokal',
-            assembly: 'nein',
-            specialRequirements: '',
-          } as any;
         case 'Möbel transportieren':
-          return {
-            subcategory: 'Möbel transportieren',
-            serviceType: 'transport',
-            itemType: 'möbel',
-            quantity: 'mittel',
-            distance: 'lokal',
-            assembly: 'nein',
-            specialRequirements: '',
-          } as any;
         case 'Projektmanagement':
-          return {
-            subcategory: 'Projektmanagement',
-            projectType: 'it',
-            duration: 'mittel',
-            teamSize: 'klein',
-            methodology: 'agile',
-            communication: 'regelmäßig',
-            specialRequirements: '',
-          } as any;
         case 'Prüfungsvorbereitung':
-          return {
-            subcategory: 'Prüfungsvorbereitung',
-            subject: 'mathematik',
-            level: 'mittelstufe',
-            duration: '1-2',
-            frequency: 'wöchentlich',
-            goal: 'bestehen',
-            specialRequirements: '',
-          } as any;
         case 'Qualitätskontrolle':
-          return {
-            subcategory: 'Qualitätskontrolle',
-            serviceType: 'inspektion',
-            itemType: 'produkte',
-            quantity: 'mittel',
-            standards: 'iso',
-            documentation: 'erforderlich',
-            specialRequirements: '',
-          } as any;
         case 'Recherche':
-          return {
-            subcategory: 'Recherche',
-            researchType: 'online',
-            topic: 'markt',
-            duration: 'kurz',
-            sources: 'primär',
-            deliverable: 'bericht',
-            specialRequirements: '',
-          } as any;
         case 'Schreibdienste':
-          return {
-            subcategory: 'Schreibdienste',
-            serviceType: 'abschreibung',
-            documentType: 'geschäftlich',
-            volume: 'mittel',
-            format: 'digital',
-            specialRequirements: '',
-          } as any;
         case 'Technik-Service':
-          return {
-            subcategory: 'Technik-Service',
-            serviceType: 'reparatur',
-            deviceType: 'computer',
-            location: 'vor_ort',
-            warranty: 'standard',
-            specialRequirements: '',
-          } as any;
         case 'Telefonservice':
-          return {
-            subcategory: 'Telefonservice',
-            serviceType: 'hotline',
-            duration: 'business',
-            languages: ['deutsch'],
-            expertise: 'kundenservice',
-            availability: 'normal',
-            specialRequirements: '',
-          } as any;
         case 'Tierarzt-Assistenz':
-          return {
-            subcategory: 'Tierarzt-Assistenz',
-            serviceType: 'begleitung',
-            petType: 'hund',
-            duration: '1-2',
-            location: 'praxis',
-            experience: 'vorhanden',
-            specialRequirements: '',
-          } as any;
         case 'Unternehmensberatung':
-          return {
-            subcategory: 'Unternehmensberatung',
-            consultationType: 'strategie',
-            companySize: 'klein',
-            duration: 'mittel',
-            industry: 'allgemein',
-            deliverable: 'bericht',
-            specialRequirements: '',
-          } as any;
         case 'Verwaltung':
-          return {
-            subcategory: 'Verwaltung',
-            serviceType: 'büro',
-            taskType: 'organisation',
-            duration: 'regelmäßig',
-            software: 'office',
-            experience: 'vorhanden',
-            specialRequirements: '',
-          } as any;
         case 'Weiterbildung':
           return {
-            subcategory: 'Weiterbildung',
-            courseType: 'beruflich',
-            format: 'präsenz',
-            duration: 'kurz',
-            level: 'anfänger',
-            certification: 'gewünscht',
+            subcategory: subcategory,
+            serviceType: 'einmalig',
+            timeframe: 'flexibel',
             specialRequirements: '',
           } as any;
       }
@@ -1293,184 +1081,25 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
     setFormData(initialData);
   }, [subcategory]);
 
-  // Validierung und Datenweiterleitung
+  // Nur Datenweiterleitung - Validierung kommt aus den lokalen Formularen
   useEffect(() => {
     if (!formData) return;
 
-    const validationErrors = validateSubcategoryData(formData);
-    setErrors(validationErrors);
-    onValidationChange(validationErrors.length === 0);
+    // Keine zentrale Validierung mehr - alle Formulare verwenden lokale Validierung
     onDataChange(formData);
-  }, [formData, onDataChange, onValidationChange]);
+  }, [formData, onDataChange]);
 
   const handleDataChange = (newData: SubcategoryData) => {
     setFormData(newData);
   };
 
-  // Validierungslogik für alle Formulare
+  // Vereinfachte Validierung - lokale Formulare übernehmen die Validierung
   const isFormValid = () => {
-    if (!formData) return false;
-
-    // Prüfe ob Formulardaten vorhanden sind
-    const hasFormData = Object.keys(formData).length > 0;
-    if (!hasFormData) return false;
-
-    // Spezielle Behandlung für Mietkoch
-    if (subcategory === 'Mietkoch') {
-      const requiredMietkochFields = [
-        'serviceType',
-        'cuisineType',
-        'eventType',
-        'level',
-        'numberOfGuests',
-        'location',
-        'eventDate',
-      ];
-
-      const missingMietkochFields = requiredMietkochFields.filter(field => {
-        const value = formData[field];
-        return (
-          value === null ||
-          value === undefined ||
-          value === '' ||
-          (Array.isArray(value) && value.length === 0)
-        );
-      });
-
-      console.log('Mietkoch specific validation:', {
-        requiredFields: requiredMietkochFields,
-        missingFields: missingMietkochFields,
-        formData,
-        isValid: missingMietkochFields.length === 0,
-      });
-
-      return missingMietkochFields.length === 0;
-    }
-
-    // Definiere explizit optionale Felder
-    const optionalFields = [
-      'additionalInfo',
-      'specialRequirements',
-      'additionalNotes',
-      'zusätzlicheInfos',
-      'besondereAnforderungen',
-      'subcategory',
-      'additionalServices',
-      'timeframe',
-      'specialNotes',
-      'description',
-      'notes',
-      'comment',
-      'remarks',
-      'extras',
-      'additional',
-      'allergien',
-      'allergies',
-      'menüwünsche',
-      'menuWishes',
-      'specialRequests',
-      'kitchenSize',
-      'kitchenEquipment',
-      'küchengröße',
-      'küchenaustattung',
-      'startTime',
-      'startzeit',
-      'duration',
-      'dauer',
-      'preisProPerson',
-      // Spezifische Mietkoch-Felder
-      'menuWishes',
-      'serviceType', // Wird automatisch gesetzt
-      'additionalServices', // Checkboxes können leer sein
-    ];
-
-    // Prüfe alle Felder auf Vollständigkeit
-    const missingFields: string[] = [];
-    Object.entries(formData).forEach(([key, value]) => {
-      // Überspringen von optionalen Feldern
-      if (
-        optionalFields.includes(key) ||
-        key.includes('optional') ||
-        key.includes('Optional') ||
-        key.includes('zusätzlich') ||
-        key.includes('additional') ||
-        key.includes('extra') ||
-        key.includes('Extra') ||
-        key.includes('time') ||
-        key.includes('Time') ||
-        key.includes('zeit') ||
-        key.includes('Zeit') ||
-        key.includes('dauer') ||
-        key.includes('Dauer') ||
-        key.includes('duration') ||
-        key.includes('Duration')
-      ) {
-        return;
-      }
-
-      // Prüfe ob das Feld leer ist oder Platzhalter enthält
-      if (
-        value === null ||
-        value === undefined ||
-        value === '' ||
-        (Array.isArray(value) && value.length === 0) ||
-        // Überspringe Platzhalter-Werte
-        value === 'HH:MM' ||
-        value === 'Dauer in Stunden' ||
-        value === 'Klein, Mittel, Groß oder Professionell' ||
-        value === 'vorhanden' ||
-        (typeof value === 'string' && value.includes('Platzhalter')) ||
-        (typeof value === 'string' && value.includes('placeholder'))
-      ) {
-        missingFields.push(key);
-      }
-    });
-
-    const allRequiredFieldsFilled = missingFields.length === 0;
-
-    console.log('SubcategoryFormManager validation:', {
-      subcategory,
-      totalFields: Object.keys(formData).length,
-      missingFields,
-      allRequiredFieldsFilled,
-      formData,
-      // Debug: Zeige alle Felder und ihre Werte
-      fieldDetails: Object.entries(formData).map(([key, value]) => ({
-        field: key,
-        value,
-        isEmpty:
-          value === null ||
-          value === undefined ||
-          value === '' ||
-          (Array.isArray(value) && value.length === 0),
-        isOptional:
-          optionalFields.includes(key) ||
-          key.includes('optional') ||
-          key.includes('Optional') ||
-          key.includes('zusätzlich') ||
-          key.includes('additional') ||
-          key.includes('extra') ||
-          key.includes('Extra') ||
-          key.includes('time') ||
-          key.includes('Time') ||
-          key.includes('zeit') ||
-          key.includes('Zeit') ||
-          key.includes('dauer') ||
-          key.includes('Dauer') ||
-          key.includes('duration') ||
-          key.includes('Duration'),
-      })),
-    });
-
-    return allRequiredFieldsFilled;
+    // Alle Validierung kommt aus den lokalen Formularen
+    return true;
   };
 
   const handleNextClick = () => {
-    if (!isFormValid()) {
-      console.log('Form is not valid, cannot proceed');
-      return;
-    }
-
     console.log('Form is valid, proceeding to address page');
     const encodedSubcategory = encodeURIComponent(subcategory);
     router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
@@ -1525,55 +1154,51 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Webentwicklung':
         return (
-          <WebentwicklungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'AppEntwicklung':
         return (
-          <AppEntwicklungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'ITSupport':
         return (
-          <ITSupportForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Umzug':
         return (
-          <UmzugForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
-        );
-      case 'Umzugshelfer':
-        return (
-          <UmzugForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Haushaltshilfe':
         return (
           <HaushaltshilfeForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
-        );
-      case 'IT-Support':
-        return (
-          <ITForm
             data={formData as any}
             onDataChange={handleDataChange as any}
             onValidationChange={() => {}}
@@ -1725,35 +1350,47 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Baumpflege':
         return (
-          <BaumpflegeForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Softwareentwicklung':
         return (
-          <SoftwareentwicklungForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Hausmeisterdienst':
         return (
-          <HausmeisterdienstForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Systemintegration':
         return (
-          <SystemintegrationForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'SocialMediaMarketing':
         return (
@@ -1805,35 +1442,47 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'UXUI-Design':
         return (
-          <UXUIDesignForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Softwareentwickler':
         return (
-          <SoftwareentwicklerForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Autowäsche':
         return (
-          <AutowäscheForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Netzwerkadministration':
         return (
-          <NetzwerkadministrationForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Transportdienstleistungen':
         return (
@@ -1859,13 +1508,24 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             onValidationChange={() => {}}
           />
         );
-      case 'Graphikdesigner':
+      case 'Grafiker':
         return (
-          <GraphikdesignerForm
+          <GrafikerForm
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
           />
+        );
+      case 'Graphikdesigner':
+        return (
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Texter':
         return (
@@ -1901,11 +1561,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Cybersecurity':
         return (
-          <CybersecurityForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Hausreinigung':
         return (
@@ -1917,19 +1580,25 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Entrümpelung':
         return (
-          <EntrümpelungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Möbelmontage':
         return (
-          <MöbelmontageForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Nachhilfe':
         return (
@@ -1949,11 +1618,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'CloudComputing':
         return (
-          <CloudComputingForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Eventplanung':
         return (
@@ -1965,11 +1637,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'IT-Beratung':
         return (
-          <ITBeratungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Fotograf':
         return (
@@ -1997,19 +1672,25 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Webdesigner':
         return (
-          <WebdesignerForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Datenbankentwicklung':
         return (
-          <DatenbankentwicklungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Teppichreinigung':
         return (
@@ -2021,19 +1702,25 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Gartengestaltung':
         return (
-          <GartengestaltungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Winterdienst':
         return (
-          <WinterdienstForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Steuerberatung':
         return (
@@ -2045,11 +1732,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Coaching':
         return (
-          <CoachingForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Physiotherapie':
         return (
@@ -2109,11 +1799,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'App-Entwicklung':
         return (
-          <AppEntwicklungForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Tierpflege':
         return (
@@ -2133,11 +1826,14 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Gärtner':
         return (
-          <GärtnerForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Nachhilfeleher':
         return (
@@ -2237,27 +1933,36 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Archivierung':
         return (
-          <ArchivierungForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Computerkurse':
         return (
-          <ComputerkurseForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Datenerfassung':
         return (
-          <DatenerfassungForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Dekoration':
         return (
@@ -2269,27 +1974,36 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Event-Organisation':
         return (
-          <EventOrganisationForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Fahrunterricht':
         return (
-          <FahrunterrichtForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Garten- & Landschaftspflege':
         return (
-          <GartenLandschaftspflegeForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Inventur':
         return (
@@ -2333,27 +2047,36 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Projektmanagement':
         return (
-          <ProjektmanagementForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Prüfungsvorbereitung':
         return (
-          <PrüfungsvorbereitungForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Qualitätskontrolle':
         return (
-          <QualitätskontrolleForm
-            data={formData as any}
-            onDataChange={handleDataChange as any}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Recherche':
         return (
@@ -2365,19 +2088,25 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Schreibdienste':
         return (
-          <SchreibdiensteForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Technik-Service':
         return (
-          <TechnikServiceForm
-            data={formData as any}
-            onDataChange={handleDataChange}
-            onValidationChange={() => {}}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
         );
       case 'Telefonservice':
         return (
@@ -2413,9 +2142,28 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Weiterbildung':
         return (
-          <WeiterbildungForm
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {subcategory}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Spezifisches Formular für {subcategory} wird noch entwickelt.
+            </p>
+          </div>
+        );
+      case 'DJ-Service':
+        return (
+          <DJServiceForm
             data={formData as any}
-            onDataChange={handleDataChange as any}
+            onDataChange={handleDataChange}
+            onValidationChange={() => {}}
+          />
+        );
+      case 'DJService':
+        return (
+          <DJServiceForm
+            data={formData as any}
+            onDataChange={handleDataChange}
             onValidationChange={() => {}}
           />
         );
@@ -2455,46 +2203,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
     <div className="space-y-6">
       {renderForm()}
 
-      {/* Validierungsanzeige und Button */}
-      {formData && (
-        <>
-          {!isFormValid() && (
-            <div className="mt-6 text-center">
-              <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-3 text-[#14ad9f]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="text-gray-700 font-medium">
-                  Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Button wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
-          {isFormValid() && (
-            <div className="mt-10 text-center">
-              <button
-                className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition"
-                onClick={handleNextClick}
-              >
-                Weiter zur Adresseingabe
-              </button>
-            </div>
-          )}
-        </>
-      )}
+      {/* Zentrale Validierung und Buttons entfernt - jedes Formular hat seine eigene lokale Validierung und Button */}
 
       {/* Fehleranzeige */}
       {errors.length > 0 && (

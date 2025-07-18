@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { FahrerData } from '@/types/subcategory-forms';
 import {
@@ -8,6 +9,7 @@ import {
   FormCheckboxGroup,
   FormRadioGroup,
 } from './FormComponents';
+import { useRouter } from 'next/navigation';
 
 interface FahrerFormProps {
   data: FahrerData;
@@ -17,6 +19,63 @@ interface FahrerFormProps {
 
 const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<FahrerData>(data);
+  const router = useRouter();
+
+  // Lokale FormSubmitButton Komponente
+  const FormSubmitButton = ({
+    isValid,
+    subcategory,
+  }: {
+    isValid: boolean;
+    subcategory: string;
+  }) => {
+    const handleNextClick = () => {
+      if (!isValid) {
+        return;
+      }
+
+      const encodedSubcategory = encodeURIComponent(subcategory);
+      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
+    };
+
+    return (
+      <div className="space-y-6 mt-8">
+        {!isValid && (
+          <div className="text-center">
+            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-3 text-[#14ad9f]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-gray-700 font-medium">
+                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
+              </span>
+            </div>
+          </div>
+        )}
+        {isValid && (
+          <div className="text-center">
+            <button
+              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
+              onClick={handleNextClick}
+            >
+              Weiter zur Adresseingabe
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const serviceTypeOptions = [
     { value: 'einmalig', label: 'Einmalige Fahrt' },
@@ -87,6 +146,17 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.vehicleType &&
+      formData.purpose &&
+      formData.distance &&
+      formData.duration &&
+      formData.license &&
+      typeof formData.ownVehicle === 'boolean'
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -230,6 +300,8 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Fahrer" />
     </div>
   );
 };

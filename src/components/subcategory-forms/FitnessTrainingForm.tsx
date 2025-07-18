@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { FitnessTrainingData } from '@/types/subcategory-forms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,9 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
+import { useRouter } from 'next/navigation';
 
 interface FitnessTrainingFormProps {
   data: FitnessTrainingData;
@@ -33,6 +36,10 @@ const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
     const isValid = !!(data.trainingType && data.durationPerSession && data.pricePerSession);
     onValidationChange(isValid);
   }, [data, onValidationChange]);
+
+  const isFormValid = () => {
+    return !!(data.serviceType && data.fitnessLevel && data.location);
+  };
 
   return (
     <div className="space-y-6">
@@ -167,6 +174,8 @@ const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
           </FormField>
         </CardContent>
       </Card>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="FitnessTraining" />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface ErnährungsberatungData {
@@ -75,8 +76,22 @@ const ErnährungsberatungForm: React.FC<ErnährungsberatungFormProps> = ({
     onDataChange(formData);
   }, [formData, onDataChange]);
 
+  useEffect(() => {
+    const isValid = !!(
+      formData.serviceType &&
+      formData.duration &&
+      formData.goal &&
+      formData.frequency
+    );
+    onValidationChange(isValid);
+  }, [formData, onValidationChange]);
+
   const handleChange = (field: keyof ErnährungsberatungData, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const isFormValid = () => {
+    return !!(formData.serviceType && formData.duration && formData.goal && formData.frequency);
   };
 
   return (
@@ -120,6 +135,8 @@ const ErnährungsberatungForm: React.FC<ErnährungsberatungFormProps> = ({
           options={frequencyOptions}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Ernährungsberatung" />
     </div>
   );
 };

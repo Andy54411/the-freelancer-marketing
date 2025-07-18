@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MietkochData } from '@/types/subcategory-forms';
-import { FormField, FormSelect, FormTextarea } from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface MietkochFormProps {
   data: MietkochData;
@@ -65,6 +65,16 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.cuisineType &&
+      formData.eventType &&
+      formData.accommodation &&
+      formData.projectDescription?.trim()
+    );
+  };
+
   return (
     <div className="space-y-6">
       <FormField label="Art der Dienstleistung" required>
@@ -115,6 +125,8 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
           rows={4}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Mietkoch" />
     </div>
   );
 };

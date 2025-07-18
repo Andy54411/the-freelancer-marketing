@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface TierbetreuungFormProps {
@@ -124,6 +125,16 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.animalType &&
+      formData.frequency &&
+      formData.duration &&
+      formData.location &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -450,6 +461,8 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Tierbetreuung" />
     </div>
   );
 };

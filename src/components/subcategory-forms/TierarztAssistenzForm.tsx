@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface TierarztAssistenzData {
@@ -131,6 +132,15 @@ const TierarztAssistenzForm: React.FC<TierarztAssistenzFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.assistanceType &&
+      formData.animalTypes &&
+      formData.animalTypes.length > 0 &&
+      formData.scheduleType &&
+      formData.duration
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -205,6 +215,8 @@ const TierarztAssistenzForm: React.FC<TierarztAssistenzFormProps> = ({
           placeholder="Beschreiben Sie genauer, welche Aufgaben zu erledigen sind, besondere Anforderungen oder sonstige wichtige Informationen."
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="TierarztAssistenz" />
     </div>
   );
 };

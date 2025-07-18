@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MontageserviceData } from '@/types/subcategory-forms';
-import { FormField, FormSelect, FormTextarea } from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface MontageserviceFormProps {
   data: MontageserviceData;
@@ -52,6 +52,14 @@ const MontageserviceForm: React.FC<MontageserviceFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.complexity &&
+      formData.roomType &&
+      formData.productDescription
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -92,6 +100,8 @@ const MontageserviceForm: React.FC<MontageserviceFormProps> = ({
           rows={3}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Montageservice" />
     </div>
   );
 };

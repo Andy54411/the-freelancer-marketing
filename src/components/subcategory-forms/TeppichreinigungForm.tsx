@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TeppichreinigungData } from '@/types/subcategory-forms';
-import { FormField, FormSelect, FormTextarea } from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface TeppichreinigungFormProps {
   data: TeppichreinigungData;
@@ -53,6 +53,15 @@ const TeppichreinigungForm: React.FC<TeppichreinigungFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.carpetType &&
+      formData.size &&
+      formData.projectDescription &&
+      formData.projectDescription.trim().length > 0
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -93,6 +102,8 @@ const TeppichreinigungForm: React.FC<TeppichreinigungFormProps> = ({
           rows={3}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Teppichreinigung" />
     </div>
   );
 };

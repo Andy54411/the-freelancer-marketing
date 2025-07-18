@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FriseurData } from '@/types/subcategory-forms';
-import {
-  FormField,
-  FormSelect,
-  FormInput,
-  FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
-} from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface FriseurFormProps {
   data: FriseurData;
@@ -21,16 +14,10 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
   const serviceTypeOptions = [
     { value: 'haarschnitt', label: 'Haarschnitt' },
     { value: 'färben', label: 'Färben' },
-    { value: 'tönen', label: 'Tönen' },
-    { value: 'strähnchen', label: 'Strähnchen' },
-    { value: 'dauerwelle', label: 'Dauerwelle' },
-    { value: 'glätten', label: 'Glätten' },
     { value: 'styling', label: 'Styling' },
     { value: 'hochsteckfrisur', label: 'Hochsteckfrisur' },
-    { value: 'bartpflege', label: 'Bartpflege' },
-    { value: 'augenbrauen', label: 'Augenbrauen' },
-    { value: 'haarverlängerung', label: 'Haarverlängerung' },
-    { value: 'haarpflege', label: 'Haarpflege' },
+    { value: 'dauerwelle', label: 'Dauerwelle' },
+    { value: 'andere', label: 'Andere' },
   ];
 
   const hairLengthOptions = [
@@ -46,14 +33,14 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
     { value: 'lockig', label: 'Lockig' },
     { value: 'kraus', label: 'Kraus' },
   ];
+
   const occasionOptions = [
     { value: 'alltag', label: 'Alltag' },
     { value: 'hochzeit', label: 'Hochzeit' },
-    { value: 'party', label: 'Party' },
+    { value: 'party', label: 'Party/Event' },
     { value: 'business', label: 'Business' },
     { value: 'date', label: 'Date' },
-    { value: 'fotoshooting', label: 'Fotoshooting' },
-    { value: 'special_event', label: 'Besonderer Anlass' },
+    { value: 'andere', label: 'Andere' },
   ];
 
   const handleInputChange = (field: keyof FriseurData, value: any) => {
@@ -63,9 +50,24 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
   };
 
   useEffect(() => {
-    const isValid = !!(formData.serviceType && formData.hairLength && formData.hairType);
+    const isValid = !!(
+      formData.serviceType &&
+      formData.hairLength &&
+      formData.hairType &&
+      formData.occasion &&
+      formData.projectDescription
+    );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.hairLength &&
+      formData.hairType &&
+      formData.occasion &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -102,7 +104,7 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
             />
           </FormField>
 
-          <FormField label="Anlass">
+          <FormField label="Anlass" required>
             <FormSelect
               value={formData.occasion || ''}
               onChange={value => handleInputChange('occasion', value)}
@@ -110,97 +112,21 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
               placeholder="Wählen Sie den Anlass"
             />
           </FormField>
-
-          <FormField label="Wunschtermin">
-            <FormInput
-              type="text"
-              value={formData.preferredDate || ''}
-              onChange={value => handleInputChange('preferredDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Ort der Behandlung">
-            <FormRadioGroup
-              name="location"
-              value={formData.location || ''}
-              onChange={value => handleInputChange('location', value)}
-              options={[
-                { value: 'salon', label: 'Im Salon' },
-                { value: 'zuhause', label: 'Bei mir zu Hause' },
-                { value: 'flexibel', label: 'Flexibel' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Geschlecht des Friseurs">
-            <FormRadioGroup
-              name="gender"
-              value={formData.gender || ''}
-              onChange={value => handleInputChange('gender', value)}
-              options={[
-                { value: 'weiblich', label: 'Weiblich' },
-                { value: 'männlich', label: 'Männlich' },
-                { value: 'egal', label: 'Egal' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Bevorzugte Uhrzeit">
-            <FormRadioGroup
-              name="timePreference"
-              value={formData.timePreference || ''}
-              onChange={value => handleInputChange('timePreference', value)}
-              options={[
-                { value: 'vormittags', label: 'Vormittags' },
-                { value: 'nachmittags', label: 'Nachmittags' },
-                { value: 'abends', label: 'Abends' },
-                { value: 'wochenende', label: 'Wochenende' },
-                { value: 'flexibel', label: 'Flexibel' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Wünsche/Vorstellungen">
+          <FormField label="Projektbeschreibung" required>
             <FormTextarea
-              value={formData.wishes || ''}
-              onChange={value => handleInputChange('wishes', value)}
-              placeholder="Beschreiben Sie Ihre Wünsche und Vorstellungen"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Allergien/Unverträglichkeiten">
-            <FormTextarea
-              value={formData.allergies || ''}
-              onChange={value => handleInputChange('allergies', value)}
-              placeholder="Bekannte Allergien oder Unverträglichkeiten"
-              rows={2}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Weitere Informationen">
-            <FormTextarea
-              value={formData.additionalInfo || ''}
-              onChange={value => handleInputChange('additionalInfo', value)}
-              placeholder="Weitere wichtige Informationen"
-              rows={3}
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihre Friseur-Wünsche detailliert (gewünschter Look, Wunschtermin, Allergien, etc.)"
+              rows={4}
             />
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Friseur" />
     </div>
   );
 };

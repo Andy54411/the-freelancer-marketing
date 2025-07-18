@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  FormField,
-  FormSelect,
-  FormInput,
-  FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
-} from './FormComponents';
-
-interface DekorationData {
-  subcategory: string;
-  decorationType: string;
-  occasion: string;
-  location: string;
-  area: string;
-  style: string;
-  materials: string[];
-  timeframe: string;
-  description?: string;
-}
+import { DekorationData } from '@/types/subcategory-forms';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface DekorationFormProps {
   data: DekorationData;
@@ -35,168 +17,122 @@ const DekorationForm: React.FC<DekorationFormProps> = ({
 
   const decorationTypeOptions = [
     { value: 'event', label: 'Event-Dekoration' },
+    { value: 'hochzeit', label: 'Hochzeitsdekoration' },
     { value: 'interior', label: 'Innenraumgestaltung' },
-    { value: 'schaufenster', label: 'Schaufensterdekoration' },
-    { value: 'bühne', label: 'Bühnendekoration' },
-    { value: 'messe', label: 'Messedekoration' },
     { value: 'blumen', label: 'Blumendekoration' },
-    { value: 'tabelle', label: 'Tischdekoration' },
-    { value: 'saison', label: 'Saisonale Dekoration' },
+    { value: 'tisch', label: 'Tischdekoration' },
     { value: 'andere', label: 'Andere' },
   ];
 
   const occasionOptions = [
     { value: 'hochzeit', label: 'Hochzeit' },
-    { value: 'firmenfeier', label: 'Firmenfeier' },
     { value: 'geburtstag', label: 'Geburtstag' },
+    { value: 'firmenfeier', label: 'Firmenfeier' },
     { value: 'weihnachten', label: 'Weihnachten' },
     { value: 'ostern', label: 'Ostern' },
-    { value: 'messe', label: 'Messe/Ausstellung' },
-    { value: 'eröffnung', label: 'Eröffnung' },
-    { value: 'showroom', label: 'Showroom-Design' },
-    { value: 'jubiläum', label: 'Jubiläum' },
-    { value: 'andere', label: 'Andere' },
-  ];
-
-  const locationOptions = [
-    { value: 'privat', label: 'Privatwohnung/Haus' },
-    { value: 'büro', label: 'Büro/Geschäftsräume' },
-    { value: 'hotel', label: 'Hotel/Restaurant' },
-    { value: 'eventlocation', label: 'Event-Location' },
-    { value: 'messehalle', label: 'Messehalle' },
-    { value: 'garten', label: 'Garten/Außenbereich' },
-    { value: 'schaufenster', label: 'Schaufenster/Ladenlokal' },
     { value: 'andere', label: 'Andere' },
   ];
 
   const areaOptions = [
     { value: 'klein', label: 'Klein (< 50m²)' },
     { value: 'mittel', label: 'Mittel (50-100m²)' },
-    { value: 'gross', label: 'Groß (100-200m²)' },
-    { value: 'sehr_gross', label: 'Sehr groß (> 200m²)' },
+    { value: 'groß', label: 'Groß (100-200m²)' },
+    { value: 'sehr_groß', label: 'Sehr groß (> 200m²)' },
   ];
 
   const styleOptions = [
     { value: 'modern', label: 'Modern' },
     { value: 'klassisch', label: 'Klassisch' },
+    { value: 'romantisch', label: 'Romantisch' },
     { value: 'rustikal', label: 'Rustikal' },
-    { value: 'vintage', label: 'Vintage' },
     { value: 'minimalistisch', label: 'Minimalistisch' },
-    { value: 'elegant', label: 'Elegant' },
-    { value: 'bohemian', label: 'Bohemian' },
-    { value: 'skandinavisch', label: 'Skandinavisch' },
-    { value: 'industrial', label: 'Industrial' },
-    { value: 'retro', label: 'Retro' },
-    { value: 'thematisch', label: 'Thematisch' },
-    { value: 'andere', label: 'Andere' },
-  ];
-  const materialsOptions = [
-    { value: 'blumen', label: 'Blumen & Pflanzen' },
-    { value: 'stoffe', label: 'Stoffe & Textilien' },
-    { value: 'lichter', label: 'Lichter & Beleuchtung' },
-    { value: 'möbel', label: 'Möbel & Requisiten' },
-    { value: 'papier', label: 'Papier & Kartonagen' },
-    { value: 'holz', label: 'Holz' },
-    { value: 'metall', label: 'Metall' },
-    { value: 'glas', label: 'Glas' },
-    { value: 'keramik', label: 'Keramik' },
-    { value: 'kunststoff', label: 'Kunststoff' },
-    { value: 'ballons', label: 'Ballons' },
     { value: 'andere', label: 'Andere' },
   ];
 
-  const timeframeOptions = [
-    { value: 'sofort', label: 'Sofort/Dringend' },
-    { value: 'kurzfristig', label: 'Kurzfristig (< 1 Woche)' },
-    { value: 'mittelfristig', label: 'Mittelfristig (1-4 Wochen)' },
-    { value: 'langfristig', label: 'Langfristig (> 1 Monat)' },
-    { value: 'datum', label: 'Zu einem bestimmten Datum' },
-    { value: 'dauerhaft', label: 'Dauerhaft (bleibende Installation)' },
-  ];
-
-  useEffect(() => {
-    onDataChange(formData);
-  }, [formData, onDataChange]);
-
-  const handleChange = (field: keyof DekorationData, value: string | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof DekorationData, value: any) => {
+    const updatedData = { ...formData, [field]: value };
+    setFormData(updatedData);
+    onDataChange(updatedData);
   };
 
   useEffect(() => {
     const isValid = !!(
       formData.decorationType &&
       formData.occasion &&
-      formData.location &&
       formData.area &&
-      formData.timeframe
+      formData.style &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.decorationType &&
+      formData.occasion &&
+      formData.area &&
+      formData.style &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
-      <FormField label="Art der Dekoration" required>
-        <FormSelect
-          value={formData.decorationType}
-          onChange={value => handleChange('decorationType', value)}
-          options={decorationTypeOptions}
-        />
-      </FormField>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Dekoration-Projektdetails
+        </h3>
 
-      <FormField label="Anlass" required>
-        <FormSelect
-          value={formData.occasion}
-          onChange={value => handleChange('occasion', value)}
-          options={occasionOptions}
-        />
-      </FormField>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Art der Dekoration" required>
+            <FormSelect
+              value={formData.decorationType || ''}
+              onChange={value => handleInputChange('decorationType', value)}
+              options={decorationTypeOptions}
+              placeholder="Wählen Sie die Art der Dekoration"
+            />
+          </FormField>
 
-      <FormField label="Ort/Räumlichkeit" required>
-        <FormSelect
-          value={formData.location}
-          onChange={value => handleChange('location', value)}
-          options={locationOptions}
-        />
-      </FormField>
+          <FormField label="Anlass" required>
+            <FormSelect
+              value={formData.occasion || ''}
+              onChange={value => handleInputChange('occasion', value)}
+              options={occasionOptions}
+              placeholder="Wählen Sie den Anlass"
+            />
+          </FormField>
 
-      <FormField label="Größe des zu dekorierenden Bereichs" required>
-        <FormSelect
-          value={formData.area}
-          onChange={value => handleChange('area', value)}
-          options={areaOptions}
-        />
-      </FormField>
+          <FormField label="Größe des zu dekorierenden Bereichs" required>
+            <FormSelect
+              value={formData.area || ''}
+              onChange={value => handleInputChange('area', value)}
+              options={areaOptions}
+              placeholder="Wählen Sie die Größe des Bereichs"
+            />
+          </FormField>
 
-      <FormField label="Gewünschter Stil/Design">
-        <FormSelect
-          value={formData.style || ''}
-          onChange={value => handleChange('style', value)}
-          options={styleOptions}
-        />
-      </FormField>
-      <FormField label="Bevorzugte Materialien">
-        <FormCheckboxGroup
-          value={formData.materials || []}
-          onChange={value => handleChange('materials', value)}
-          options={materialsOptions}
-        />
-      </FormField>
+          <FormField label="Gewünschter Stil/Design" required>
+            <FormSelect
+              value={formData.style || ''}
+              onChange={value => handleInputChange('style', value)}
+              options={styleOptions}
+              placeholder="Wählen Sie den gewünschten Stil"
+            />
+          </FormField>
+        </div>
 
-      <FormField label="Zeitrahmen" required>
-        <FormSelect
-          value={formData.timeframe}
-          onChange={value => handleChange('timeframe', value)}
-          options={timeframeOptions}
-        />
-      </FormField>
+        <div className="mt-4">
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Dekoration-Projekt detailliert (Materialien, besondere Wünsche, etc.)"
+              rows={4}
+            />
+          </FormField>
+        </div>
+      </div>
 
-      <FormField label="Zusätzliche Informationen oder Wünsche">
-        <FormTextarea
-          value={formData.description || ''}
-          onChange={value => handleChange('description', value)}
-          placeholder="Beschreiben Sie weitere Details, Ideen oder spezielle Anforderungen für Ihre Dekoration"
-        />
-      </FormField>
+      <FormSubmitButton isValid={isFormValid()} subcategory="Dekoration" />
     </div>
   );
 };

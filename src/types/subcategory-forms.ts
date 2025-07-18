@@ -1320,6 +1320,24 @@ export interface GraphikdesignerData extends BaseSubcategoryData {
   specialNotes?: string;
 }
 
+export interface GrafikerData extends BaseSubcategoryData {
+  subcategory: 'Grafiker';
+  projectType: string;
+  complexity: string;
+  revisions: number;
+  delivery: string;
+  projectDescription: string;
+}
+
+export interface DekorationData extends BaseSubcategoryData {
+  subcategory: 'Dekoration';
+  decorationType: string;
+  occasion: string;
+  area: string;
+  style: string;
+  projectDescription: string;
+}
+
 export interface GärtnerData extends BaseSubcategoryData {
   serviceType: string;
   gardenSize: string;
@@ -1468,6 +1486,26 @@ export interface ÜbersetzerData extends BaseSubcategoryData {
   specialNotes?: string;
 }
 
+// Rechnungswesen-spezifische Daten
+export interface RechnungswesenData extends BaseSubcategoryData {
+  subcategory: 'Rechnungswesen';
+  serviceType: string;
+  companyType: string;
+  volume: string;
+  urgency: string;
+  projectDescription: string;
+}
+
+// Nachhilfeleher-spezifische Daten
+export interface NachhilfeleherData extends BaseSubcategoryData {
+  subcategory: 'Nachhilfelehrer';
+  subject: string;
+  level: string;
+  format: string;
+  frequency: string;
+  projectDescription: string;
+}
+
 // Union Type für alle Unterkategorien
 export type SubcategoryData =
   | MalerData
@@ -1540,13 +1578,17 @@ export type SubcategoryData =
   | FitnessTrainingData
   | BaumpflegeData
   | WinterdienstData
+  | RechnungswesenData
+  | NachhilfeleherData
   | SprachunterrichtData
   | MusikunterrichtData
   | GartengestaltungData
   | AutoreparaturData
   | AutowäscheData
+  | DekorationData
   | EventplanungData
   | FotografData
+  | GrafikerData
   | GraphikdesignerData
   | GärtnerData
   | HeizungData
@@ -1624,29 +1666,10 @@ export function getSubcategoryType(subcategory: string): string {
   return mapping[subcategory] || 'default';
 }
 
-// Kategorie-spezifische Validierung
+// Kategorie-spezifische Validierung - DEAKTIVIERT (Lokale Validierung in Formularen)
 export function validateSubcategoryData(data: SubcategoryData): string[] {
-  const errors: string[] = [];
-
-  switch (data.subcategory) {
-    case 'Maler & Lackierer':
-      const malerData = data as MalerData;
-      if (!malerData.roomType) errors.push('Raumtyp ist erforderlich');
-      if (!malerData.paintType) errors.push('Farbart ist erforderlich');
-      if (!malerData.materialProvided) errors.push('Materialbereitstellung ist erforderlich');
-      break;
-
-    case 'Elektriker':
-      const elektrikerData = data as ElektrikerData;
-      if (!elektrikerData.serviceType) errors.push('Serviceart ist erforderlich');
-      if (!elektrikerData.workType) errors.push('Arbeitstyp ist erforderlich');
-      if (!elektrikerData.urgency) errors.push('Dringlichkeit ist erforderlich');
-      break;
-
-    // Weitere Validierungen...
-  }
-
-  return errors;
+  // Keine zentrale Validierung mehr - alle Formulare verwenden lokale Validierung
+  return [];
 }
 
 // Friseur-spezifische Daten

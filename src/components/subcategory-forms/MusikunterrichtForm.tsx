@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { MusikunterrichtData } from '@/types/subcategory-forms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,9 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
+import { useRouter } from 'next/navigation';
 
 interface MusikunterrichtFormProps {
   data: MusikunterrichtData;
@@ -33,6 +36,10 @@ const MusikunterrichtForm: React.FC<MusikunterrichtFormProps> = ({
     const isValid = !!(data.instrument && data.level && data.pricePerHour);
     onValidationChange(isValid);
   }, [data, onValidationChange]);
+
+  const isFormValid = () => {
+    return !!(data.instrument && data.level && data.pricePerHour);
+  };
 
   return (
     <div className="space-y-6">
@@ -266,6 +273,8 @@ const MusikunterrichtForm: React.FC<MusikunterrichtFormProps> = ({
           </FormField>
         </CardContent>
       </Card>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Musikunterricht" />
     </div>
   );
 };

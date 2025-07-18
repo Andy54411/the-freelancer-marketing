@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface MietkellnerFormProps {
@@ -97,6 +98,15 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.serviceStyle &&
+      formData.eventType &&
+      formData.dressCode &&
+      formData.numberOfGuests
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -220,6 +230,8 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Mietkellner" />
     </div>
   );
 };

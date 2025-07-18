@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface InventurData {
@@ -131,6 +132,14 @@ const InventurForm: React.FC<InventurFormProps> = ({ data, onDataChange, onValid
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.inventoryType &&
+      formData.businessType &&
+      formData.inventorySize &&
+      formData.timeframe
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -205,6 +214,8 @@ const InventurForm: React.FC<InventurFormProps> = ({ data, onDataChange, onValid
           placeholder="Beschreiben Sie weitere Details oder besondere Anforderungen für Ihre Inventur"
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Inventur" />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface GartenpflegeFormProps {
@@ -118,6 +119,15 @@ const GartenpflegeForm: React.FC<GartenpflegeFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.gardenSize &&
+      formData.frequency &&
+      formData.gardenType &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -380,6 +390,8 @@ const GartenpflegeForm: React.FC<GartenpflegeFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Gartenpflege" />
     </div>
   );
 };

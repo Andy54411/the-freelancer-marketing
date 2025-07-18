@@ -1,6 +1,7 @@
 // Basis-Komponente für alle Unterkategorie-Formulare
 import React from 'react';
 import { BaseSubcategoryData } from '@/types/subcategory-forms';
+import { useRouter } from 'next/navigation';
 
 export interface SubcategoryFormProps<T extends BaseSubcategoryData> {
   data: T;
@@ -111,12 +112,18 @@ export const FormCheckboxGroup: React.FC<{
   options: SelectOption[];
   maxSelections?: number;
 }> = ({ value, onChange, options, maxSelections }) => {
+  // Sicherheitsüberprüfung: stelle sicher, dass value ein Array ist
+  if (!Array.isArray(value)) {
+    console.warn('FormCheckboxGroup: value is not an array, got:', typeof value, value);
+  }
+  const safeValue = Array.isArray(value) ? value : [];
+
   const handleChange = (optionValue: string, checked: boolean) => {
     if (checked) {
-      if (maxSelections && value.length >= maxSelections) return;
-      onChange([...value, optionValue]);
+      if (maxSelections && safeValue.length >= maxSelections) return;
+      onChange([...safeValue, optionValue]);
     } else {
-      onChange(value.filter(v => v !== optionValue));
+      onChange(safeValue.filter(v => v !== optionValue));
     }
   };
 
@@ -126,7 +133,7 @@ export const FormCheckboxGroup: React.FC<{
         <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={value.includes(option.value)}
+            checked={safeValue.includes(option.value)}
             onChange={e => handleChange(option.value, e.target.checked)}
             className="w-4 h-4 text-[#14ad9f] bg-gray-100 border-gray-300 rounded focus:ring-[#14ad9f] focus:ring-2"
           />
@@ -164,3 +171,71 @@ export const FormRadioGroup: React.FC<{
     ))}
   </div>
 );
+
+export interface FormSubmitButtonProps {
+  isValid: boolean;
+  subcategory: string;
+  loadingText?: string;
+  buttonText?: string;
+}
+
+export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
+  isValid,
+  subcategory,
+  loadingText = 'Wird verarbeitet...',
+  buttonText = 'Weiter zur Adresseingabe',
+}) => {
+  const router = useRouter();
+
+  const handleNextClick = () => {
+    if (!isValid) {
+      console.log('Form is not valid, cannot proceed');
+      return;
+    }
+
+    console.log('Form is valid, proceeding to address page');
+    const encodedSubcategory = encodeURIComponent(subcategory);
+    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
+  };
+
+  return (
+    <div className="space-y-6 mt-8">
+      {/* Validierungsanzeige */}
+      {!isValid && (
+        <div className="text-center">
+          <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-3 text-[#14ad9f]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="text-gray-700 font-medium">
+              Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Button - wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
+      {isValid && (
+        <div className="text-center">
+          <button
+            className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
+            onClick={handleNextClick}
+          >
+            {buttonText}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};

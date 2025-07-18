@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HausreinigungData } from '@/types/subcategory-forms';
-import { FormField, FormSelect, FormTextarea } from './FormComponents';
+import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
 
 interface HausreinigungFormProps {
   data: HausreinigungData;
@@ -51,6 +51,15 @@ const HausreinigungForm: React.FC<HausreinigungFormProps> = ({
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.propertyType &&
+      formData.equipment &&
+      formData.projectDescription?.trim()
+    );
+  };
+
   const handleInputChange = (field: keyof HausreinigungData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
@@ -94,6 +103,8 @@ const HausreinigungForm: React.FC<HausreinigungFormProps> = ({
           rows={4}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Hausreinigung" />
     </div>
   );
 };

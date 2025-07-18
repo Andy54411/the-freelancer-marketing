@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface AutoreparaturFormProps {
@@ -149,6 +150,9 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
     const isValid = !!(formData.serviceType && formData.vehicleType && formData.problemDescription);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(formData.serviceType && formData.vehicleType && formData.problemDescription);
+  };
 
   return (
     <div className="space-y-6">
@@ -211,6 +215,8 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Autoreparatur" />
     </div>
   );
 };

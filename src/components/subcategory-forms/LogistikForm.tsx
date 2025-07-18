@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface LogistikData {
@@ -139,6 +140,15 @@ const LogistikForm: React.FC<LogistikFormProps> = ({ data, onDataChange, onValid
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.goodsType &&
+      formData.goodsType.length > 0 &&
+      formData.volume &&
+      formData.timeframe
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -213,6 +223,8 @@ const LogistikForm: React.FC<LogistikFormProps> = ({ data, onDataChange, onValid
           placeholder="Beschreiben Sie weitere Details oder besondere Anforderungen für Ihre Logistikdienstleistung"
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Logistik" />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface HundetrainerFormProps {
@@ -128,6 +129,16 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.dogBreed &&
+      formData.dogSize &&
+      formData.trainingLocation &&
+      formData.frequency &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -416,6 +427,8 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Hundetrainer" />
     </div>
   );
 };

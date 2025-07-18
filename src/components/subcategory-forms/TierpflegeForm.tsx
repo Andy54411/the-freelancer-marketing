@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface TierpflegeFormProps {
@@ -76,10 +77,20 @@ const TierpflegeForm: React.FC<TierpflegeFormProps> = ({
       formData.serviceType &&
       formData.animalType &&
       formData.size &&
-      formData.frequency
+      formData.frequency &&
+      formData.specialRequirements
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.animalType &&
+      formData.size &&
+      formData.frequency &&
+      formData.specialRequirements
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -124,103 +135,21 @@ const TierpflegeForm: React.FC<TierpflegeFormProps> = ({
               placeholder="Wählen Sie die Häufigkeit"
             />
           </FormField>
-
-          <FormField label="Name des Tieres">
-            <FormInput
-              type="text"
-              value={formData.animalName || ''}
-              onChange={value => handleInputChange('animalName', value)}
-              placeholder="Name des Tieres"
-            />
-          </FormField>
-
-          <FormField label="Alter des Tieres">
-            <FormInput
-              type="number"
-              value={formData.animalAge?.toString() || ''}
-              onChange={value =>
-                handleInputChange('animalAge', typeof value === 'string' ? parseInt(value) : value)
-              }
-              placeholder="Alter in Jahren"
-            />
-          </FormField>
-
-          <FormField label="Rasse">
-            <FormInput
-              type="text"
-              value={formData.breed || ''}
-              onChange={value => handleInputChange('breed', value)}
-              placeholder="Rasse des Tieres"
-            />
-          </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Ort der Pflege">
-            <FormRadioGroup
-              name="location"
-              value={formData.location || ''}
-              onChange={value => handleInputChange('location', value)}
-              options={[
-                { value: 'bei_mir', label: 'Bei mir zu Hause' },
-                { value: 'beim_pfleger', label: 'Beim Tierpfleger' },
-                { value: 'mobil', label: 'Mobiler Service' },
-                { value: 'flexibel', label: 'Flexibel' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Temperament des Tieres">
-            <FormRadioGroup
-              name="temperament"
-              value={formData.temperament || ''}
-              onChange={value => handleInputChange('temperament', value)}
-              options={[
-                { value: 'ruhig', label: 'Ruhig und entspannt' },
-                { value: 'lebhaft', label: 'Lebhaft aber gutmütig' },
-                { value: 'ängstlich', label: 'Ängstlich/scheu' },
-                { value: 'aggressiv', label: 'Kann aggressiv werden' },
-                { value: 'unbekannt', label: 'Unbekannt' },
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Gesundheitszustand">
-            <FormTextarea
-              value={formData.healthStatus || ''}
-              onChange={value => handleInputChange('healthStatus', value)}
-              placeholder="Gesundheitszustand, Krankheiten, Allergien, etc."
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
+          <FormField label="Besondere Anforderungen" required>
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Besondere Anforderungen oder Wünsche"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Weitere Informationen">
-            <FormTextarea
-              value={formData.additionalInfo || ''}
-              onChange={value => handleInputChange('additionalInfo', value)}
-              placeholder="Weitere wichtige Informationen"
-              rows={3}
+              placeholder="Beschreiben Sie Ihre Tierpflege-Anforderungen (Name, Alter, Rasse, Temperament, Gesundheitszustand, besondere Wünsche, etc.)"
+              rows={4}
             />
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Tierpflege" />
     </div>
   );
 };

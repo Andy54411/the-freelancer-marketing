@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface MöbelTransportierenData {
@@ -112,6 +113,14 @@ const MöbelTransportierenForm: React.FC<MöbelTransportierenFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.itemType &&
+      formData.itemType.length > 0 &&
+      formData.volume &&
+      formData.distance
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -197,6 +206,8 @@ const MöbelTransportierenForm: React.FC<MöbelTransportierenFormProps> = ({
           placeholder="Beschreiben Sie weitere Details, spezielle Möbelstücke oder besondere Anforderungen für den Möbeltransport"
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="MöbelTransportieren" />
     </div>
   );
 };

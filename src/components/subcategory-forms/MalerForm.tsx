@@ -1,3 +1,4 @@
+'use client';
 // Maler-spezifisches Formular
 import React, { useState, useEffect } from 'react';
 import { MalerData } from '@/types/subcategory-forms';
@@ -9,6 +10,7 @@ import {
   FormRadioGroup,
   FormTextarea,
   SelectOption,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface MalerFormProps {
@@ -38,6 +40,16 @@ const MalerForm: React.FC<MalerFormProps> = ({ data, onDataChange, onValidationC
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.roomType &&
+      formData.paintType &&
+      formData.materialProvided &&
+      formData.surfaceCondition &&
+      formData.additionalServices &&
+      formData.timeframe
+    );
+  };
 
   const roomTypeOptions: SelectOption[] = [
     { value: 'zimmer', label: 'Zimmer' },
@@ -216,6 +228,8 @@ const MalerForm: React.FC<MalerFormProps> = ({ data, onDataChange, onValidationC
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Maler" />
     </div>
   );
 };

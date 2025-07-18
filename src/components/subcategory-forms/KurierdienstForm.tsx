@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface KurierdienstFormProps {
@@ -77,6 +78,16 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.packageSize &&
+      formData.weight &&
+      formData.distance &&
+      formData.pickupAddress &&
+      formData.deliveryAddress
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -178,6 +189,8 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Kurierdienst" />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   FormInput,
   FormRadioGroup,
   FormCheckboxGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface MarketingberaterFormProps {
@@ -126,6 +127,15 @@ const MarketingberaterForm: React.FC<MarketingberaterFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.businessType &&
+      formData.industry &&
+      formData.zeitrahmen &&
+      formData.description
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -321,6 +331,8 @@ const MarketingberaterForm: React.FC<MarketingberaterFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Marketingberater" />
     </div>
   );
 };

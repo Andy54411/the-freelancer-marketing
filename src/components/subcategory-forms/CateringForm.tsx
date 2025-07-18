@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface CateringFormProps {
@@ -74,6 +75,9 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
     const isValid = !!(formData.serviceType && formData.eventType && formData.guestCount);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(formData.serviceType && formData.eventType && formData.guestCount);
+  };
 
   return (
     <div className="space-y-6">
@@ -152,6 +156,8 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Catering" />
     </div>
   );
 };

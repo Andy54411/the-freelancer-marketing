@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface KosmetikData {
@@ -73,8 +74,17 @@ const KosmetikForm: React.FC<KosmetikFormProps> = ({ data, onDataChange, onValid
     onDataChange(formData);
   }, [formData, onDataChange]);
 
+  useEffect(() => {
+    const isValid = !!(formData.serviceType && formData.duration && formData.skinType);
+    onValidationChange(isValid);
+  }, [formData, onValidationChange]);
+
   const handleChange = (field: keyof KosmetikData, value: string | string[] | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const isFormValid = () => {
+    return !!(formData.serviceType && formData.duration && formData.skinType);
   };
 
   return (
@@ -119,6 +129,8 @@ const KosmetikForm: React.FC<KosmetikFormProps> = ({ data, onDataChange, onValid
           options={addOnsOptions}
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Kosmetik" />
     </div>
   );
 };

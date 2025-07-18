@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface VerwaltungData {
@@ -147,6 +148,15 @@ const VerwaltungForm: React.FC<VerwaltungFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.administrationType &&
+      formData.scope &&
+      formData.scope.length > 0 &&
+      formData.duration &&
+      formData.frequency
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -230,6 +240,8 @@ const VerwaltungForm: React.FC<VerwaltungFormProps> = ({
           placeholder="Beschreiben Sie genauer, welche Verwaltungsaufgaben zu erledigen sind, besondere Anforderungen oder sonstige wichtige Informationen."
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Verwaltung" />
     </div>
   );
 };

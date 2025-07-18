@@ -7,6 +7,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface LandschaftsgärtnerFormProps {
@@ -117,6 +118,14 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.serviceType &&
+      formData.projectSize &&
+      formData.style &&
+      formData.projectDescription
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -387,6 +396,8 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
           </FormField>
         </div>
       </div>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Landschaftsgärtner" />
     </div>
   );
 };

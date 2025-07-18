@@ -6,6 +6,7 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
 
 interface UnternehmensberatungData {
@@ -131,6 +132,16 @@ const UnternehmensberatungForm: React.FC<UnternehmensberatungFormProps> = ({
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+  const isFormValid = () => {
+    return !!(
+      formData.consultingType &&
+      formData.companySize &&
+      formData.industryType &&
+      formData.consultingGoals &&
+      formData.consultingGoals.length > 0 &&
+      formData.consultingDuration
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -196,6 +207,8 @@ const UnternehmensberatungForm: React.FC<UnternehmensberatungFormProps> = ({
           placeholder="Beschreiben Sie detailliert Ihre Situation, Herausforderungen und was Sie mit der Beratung erreichen möchten. Je mehr Details, desto besser kann ein passender Berater gefunden werden."
         />
       </FormField>
+
+      <FormSubmitButton isValid={isFormValid()} subcategory="Unternehmensberatung" />
     </div>
   );
 };
