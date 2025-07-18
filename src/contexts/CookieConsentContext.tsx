@@ -58,9 +58,18 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
       setConsent(parsedConsent);
 
       // 🚀 WICHTIG: Gespeicherte Einwilligung an GTM senden
-      setTimeout(() => {
-        sendConsentToGTM(parsedConsent);
-      }, 100); // Kleine Verzögerung, damit GTM vollständig geladen ist
+      // Warten bis GTM vollständig geladen ist
+      const sendSavedConsent = () => {
+        if (typeof window !== 'undefined' && (window as any).dataLayer && (window as any).gtag) {
+          console.log('🍪 Sending saved consent to GTM:', parsedConsent);
+          sendConsentToGTM(parsedConsent);
+        } else {
+          // Falls GTM noch nicht geladen ist, nochmal versuchen
+          setTimeout(sendSavedConsent, 200);
+        }
+      };
+
+      setTimeout(sendSavedConsent, 100);
     }
   }, []);
 

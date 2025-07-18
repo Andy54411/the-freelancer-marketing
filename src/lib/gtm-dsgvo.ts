@@ -39,6 +39,11 @@ export const sendConsentToGTM = (consent: {
     security_storage: 'granted', // Immer erlaubt
   };
 
+  // Debug logging
+  console.log('🍪 Cookie Consent Update:', consent);
+  console.log('🏷️ GTM Consent Update:', consentUpdate);
+  console.log('🌐 DataLayer before update:', window.dataLayer);
+
   // Method 1: GTM DataLayer Event
   window.dataLayer.push({
     event: 'consent_update',
@@ -48,14 +53,15 @@ export const sendConsentToGTM = (consent: {
   // Method 2: Direct gtag consent update (primary method)
   if (typeof (window as any).gtag !== 'undefined') {
     (window as any).gtag('consent', 'update', consentUpdate);
+    console.log('✅ gtag consent update sent');
+  } else {
+    console.log('❌ gtag not available');
   }
 
   // Method 3: Alternative DataLayer push format
   window.dataLayer.push(['consent', 'update', consentUpdate]);
 
-  // Debug logging
-  console.log('🍪 Cookie Consent Update:', consent);
-  console.log('🏷️ GTM Consent Update:', consentUpdate);
+  console.log('� DataLayer after update:', window.dataLayer);
 
   // Sende einzelne Consent-Events für jeden Typ
   if (consent.analytics) {

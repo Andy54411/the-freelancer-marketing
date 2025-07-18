@@ -135,6 +135,12 @@ export default function DebugCookiesPage() {
                 Test Cookie Creation
               </button>
               <button
+                onClick={triggerConsentUpdate}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
+              >
+                🚀 Force Consent Update
+              </button>
+              <button
                 onClick={clearAllCookies}
                 className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
               >
