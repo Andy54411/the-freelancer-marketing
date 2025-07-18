@@ -8,7 +8,7 @@ import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import Chatbot from '@/components/Chatbot';
 // import { FooterSection } from '@/components/FooterSection';
-import GoogleAnalytics from '@/components/GoogleAnalytics';
+// import GoogleAnalytics from '@/components/GoogleAnalytics'; // Removed to avoid conflicts with GTM
 import CookieBanner from '@/components/CookieBanner';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -121,7 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Footer />
                 <Chatbot />
                 <CookieBanner />
-                <GoogleAnalytics />
+                {/* GoogleAnalytics removed - GTM handles all analytics */}
                 <Analytics />
                 <SpeedInsights />
               </Providers>
