@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import Chatbot from '@/components/Chatbot';
-import FooterSection from '@/components/footer';
+// import { FooterSection } from '@/components/FooterSection';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import CookieBanner from '@/components/CookieBanner';
 import { Analytics } from '@vercel/analytics/next';

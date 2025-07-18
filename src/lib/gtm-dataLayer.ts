@@ -18,8 +18,8 @@ export interface ConsentState {
 export const initializeGTM = () => {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
-    window.gtag = function gtag() {
-      window.dataLayer.push(arguments);
+    window.gtag = function gtag(...args: any[]) {
+      window.dataLayer.push(args);
     };
   }
 };
