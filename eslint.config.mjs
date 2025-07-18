@@ -38,6 +38,7 @@ const eslintConfig = [
     ignores: [
       "dataconnect-generated/**/*",
       "firebase_functions/lib/**/*",
+      "google/**/*",
       "node_modules/**/*",
       ".next/**/*",
       "out/**/*",

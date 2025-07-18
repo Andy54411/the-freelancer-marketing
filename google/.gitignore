@@ -1,0 +1,13 @@
+# Google Integration - Sensitive Files
+.env.gtm
+*.log
+node_modules/
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
+
+# Temp files
+*.tmp
+*.temp

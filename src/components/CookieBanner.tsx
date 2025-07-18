@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
-import { X, Cookie, Shield, BarChart3, Settings, Users, Eye, Zap } from 'lucide-react';
-import { trackCookieConsent } from '@/lib/gtm-dataLayer';
+import { X, Cookie, Shield, BarChart3, Settings, Users, Eye } from 'lucide-react';
+import { sendConsentToGTM } from '@/lib/gtm-dsgvo';
 
 export default function CookieBanner() {
   const { consent, bannerVisible, updateConsentState, acceptAll, rejectAll, setBannerVisible } =
@@ -15,23 +15,32 @@ export default function CookieBanner() {
 
   const handleCustomConsent = () => {
     updateConsentState(consent);
-    // GTM Event für Custom Consent
-    const consentCategories = Object.entries(consent)
-      .filter(([_, value]) => value)
-      .map(([key, _]) => key);
-    trackCookieConsent(consentCategories);
+    // DSGVO-konforme GTM-Integration
+    sendConsentToGTM(consent);
   };
 
   const handleAcceptAll = () => {
     acceptAll();
-    // GTM Event für Accept All
-    trackCookieConsent(['analytics', 'functional', 'marketing', 'personalization']);
+    // DSGVO-konforme GTM-Integration
+    sendConsentToGTM({
+      necessary: true,
+      analytics: true,
+      marketing: true,
+      functional: true,
+      personalization: true,
+    });
   };
 
   const handleRejectAll = () => {
     rejectAll();
-    // GTM Event für Reject All
-    trackCookieConsent(['necessary']);
+    // DSGVO-konforme GTM-Integration
+    sendConsentToGTM({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      functional: false,
+      personalization: false,
+    });
   };
 
   const toggleAnalytics = () => {

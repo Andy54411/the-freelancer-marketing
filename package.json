@@ -21,7 +21,16 @@
     "format:check": "prettier --check .",
     "emulators": "cd firebase_functions && npm run serve",
     "type-check": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gtm:upload": "cd google/gtm && node scripts/gtm-upload-fixed.js",
+    "gtm:upload-dsgvo": "cd google/gtm && node scripts/gtm-upload-fixed.js configs/gtm-dsgvo-triggers-fixed.json",
+    "gtm:upload-tracking": "cd google/gtm && node scripts/gtm-upload-fixed.js configs/gtm-erweiterte-tracking-konfiguration-fixed.json",
+    "gtm:upload-subcategories": "cd google/gtm && node scripts/gtm-upload-fixed.js configs/gtm-all-subcategories-generated.json",
+    "gtm:generate-subcategories": "cd google/gtm && node scripts/gtm-subcategory-generator.js",
+    "gtm:clean-upload": "cd google/gtm && node scripts/gtm-clean-upload.js configs/gtm-complete-config.json",
+    "gtm:debug": "cd google/gtm && node scripts/gtm-debug.js",
+    "gtm:check-permissions": "cd google/gtm && node scripts/gtm-check-permissions.js",
+    "gtm:validate": "node -e \"const config = require('./google/gtm/configs/gtm-dsgvo-triggers-fixed.json'); console.log('✅ GTM Configuration is valid');\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -111,7 +111,128 @@ export default function DatenschutzPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                  4. KI-Chatbot (Google Gemini)
+                  4. Google Tag Manager und Analytics
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <h3 className="font-semibold">Google Tag Manager</h3>
+                  <p>
+                    Diese Website verwendet Google Tag Manager für die Verwaltung von Tracking-Codes
+                    und Analytics-Tags. Google Tag Manager selbst speichert keine personenbezogenen
+                    Daten, ermöglicht es aber anderen Tags, dies zu tun.
+                  </p>
+                  <p>
+                    <strong>Verarbeitete Daten:</strong> IP-Adresse, Geräteinformationen, Browser-Typ,
+                    Besuchszeiten, Seitenaufrufe, Klicks, Conversions, Benutzerinteraktionen
+                  </p>
+                  
+                  <h3 className="font-semibold">Google Analytics 4</h3>
+                  <p>
+                    Wir verwenden Google Analytics 4 zur Analyse des Nutzerverhaltens auf unserer
+                    Website. Diese Daten helfen uns dabei, die Website zu verbessern und den
+                    Benutzern eine bessere Erfahrung zu bieten.
+                  </p>
+                  <p>
+                    <strong>Verarbeitete Daten:</strong> Anonymisierte IP-Adressen, Seitenaufrufe,
+                    Verweildauer, Conversions, demografische Informationen (falls verfügbar),
+                    Benutzerregistrierungen nach Kategorien (Kunde/Dienstleister), 
+                    Auftragserstellungen nach Dienstleistungsarten und Subkategorien,
+                    Benutzerinteraktionen und Event-Tracking für über 110 Dienstleistungskategorien
+                  </p>
+                  
+                  <h3 className="font-semibold">Cookie-Consent und DSGVO-Konformität</h3>
+                  <p>
+                    Wir verwenden ein Cookie-Consent-System, das die Zustimmung der Benutzer für
+                    verschiedene Kategorien von Cookies einholt. Analytics-Cookies werden nur
+                    nach ausdrücklicher Zustimmung gesetzt.
+                  </p>
+                  <p>
+                    <strong>Consent-Modi:</strong> Analytics-Zustimmung, Marketing-Zustimmung,
+                    Funktionale Cookies (für Website-Funktionalität). Wir verfolgen detaillierte
+                    Nutzeraktionen wie Registrierungen nach Benutzertyp, Auftragserstellungen
+                    nach Hauptkategorien (Handwerk, Reinigung, IT, Transport, Beratung, Garten,
+                    Gesundheit, Sonstiges) und spezifischen Subkategorien für detaillierte
+                    Marktanalysen und Serviceoptimierung.
+                  </p>
+                  
+                  <p>
+                    <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)
+                    für Analytics-Cookies, Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse)
+                    für notwendige Cookies
+                  </p>
+                  <p>
+                    <strong>Datenschutzerklärung:</strong> https://policies.google.com/privacy
+                  </p>
+                  <p>
+                    <strong>Widerspruchsmöglichkeit:</strong> Sie können die Datenerfassung durch
+                    Google Analytics verhindern, indem Sie das Browser-Add-on zur Deaktivierung
+                    von Google Analytics herunterladen und installieren:
+                    https://tools.google.com/dlpage/gaoptout
+                  </p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  5. Zahlungsdienstleister (Stripe)
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <h3 className="font-semibold">Stripe Payment Processing</h3>
+                  <p>
+                    Für die Abwicklung von Zahlungen auf unserer Website verwenden wir Stripe,
+                    einen sicheren und PCI-DSS-konformen Zahlungsdienstleister. Stripe verarbeitet
+                    Zahlungsdaten direkt und sicher.
+                  </p>
+                  
+                  <h3 className="font-semibold">Verarbeitete Daten</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Kreditkarten- und Zahlungsdaten (verschlüsselt)</li>
+                    <li>Rechnungsadresse und Kontaktdaten</li>
+                    <li>Transaktionsdaten und Bestellinformationen</li>
+                    <li>IP-Adresse für Betrugsschutz</li>
+                    <li>Geräteinformationen für Sicherheitsprüfungen</li>
+                  </ul>
+                  
+                  <h3 className="font-semibold">Sicherheit und Compliance</h3>
+                  <p>
+                    Stripe ist PCI-DSS Level 1 zertifiziert und erfüllt die höchsten
+                    Sicherheitsstandards für Zahlungsverarbeitung. Alle Zahlungsdaten werden
+                    verschlüsselt übertragen und gespeichert.
+                  </p>
+                  
+                  <h3 className="font-semibold">Fraud Detection</h3>
+                  <p>
+                    Stripe verwendet maschinelles Lernen zur Betrugserkennung und analysiert
+                    Transaktionsmuster, um verdächtige Aktivitäten zu identifizieren und zu
+                    blockieren.
+                  </p>
+                  
+                  <h3 className="font-semibold">Datenaufbewahrung</h3>
+                  <p>
+                    Stripe speichert Zahlungsdaten für die Dauer, die für die Transaktionsabwicklung,
+                    Rückerstattungen und zur Einhaltung regulatorischer Anforderungen erforderlich ist.
+                  </p>
+                  
+                  <p>
+                    <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)
+                    und Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an sicherer Zahlungsabwicklung)
+                  </p>
+                  <p>
+                    <strong>Datenschutzerklärung:</strong> https://stripe.com/privacy
+                  </p>
+                  <p>
+                    <strong>Datenverarbeitung:</strong> Stripe, Inc., 354 Oyster Point Blvd,
+                    South San Francisco, CA 94080, USA
+                  </p>
+                  <p>
+                    <strong>Angemessenheitsbeschluss:</strong> Die Datenübertragung in die USA
+                    erfolgt auf Grundlage der EU-US Data Privacy Framework Adequacy Decision.
+                  </p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  6. KI-Chatbot (Google Gemini)
                 </h2>
                 <div className="text-white/90 drop-shadow-lg space-y-4">
                   <p>
@@ -148,7 +269,7 @@ export default function DatenschutzPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                  5. Allgemeine Hinweise und Pflichtinformationen
+                  7. Allgemeine Hinweise und Pflichtinformationen
                 </h2>
                 <div className="text-white/90 drop-shadow-lg space-y-4">
                   <h3 className="font-semibold">Datenschutz</h3>
@@ -176,7 +297,7 @@ export default function DatenschutzPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                  4. Datenerfassung auf dieser Website
+                  8. Datenerfassung auf dieser Website
                 </h2>
                 <div className="text-white/90 drop-shadow-lg space-y-4">
                   <h3 className="font-semibold">Cookies</h3>
@@ -206,7 +327,7 @@ export default function DatenschutzPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                  5. Ihre Rechte
+                  9. Ihre Rechte
                 </h2>
                 <div className="text-white/90 drop-shadow-lg space-y-4">
                   <p>

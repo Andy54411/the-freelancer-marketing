@@ -95,33 +95,33 @@ export default function CookieSettings() {
                     <span className="text-gray-900">Notwendige Cookies: Aktiv</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {isAnalyticsAllowed ? (
+                    {isAnalyticsAllowed() ? (
                       <CheckCircle className="w-4 h-4 text-green-600" />
                     ) : (
                       <XCircle className="w-4 h-4 text-red-600" />
                     )}
                     <span className="text-gray-900">
-                      Analytics: {isAnalyticsAllowed ? 'Aktiv' : 'Inaktiv'}
+                      Analytics: {isAnalyticsAllowed() ? 'Aktiv' : 'Inaktiv'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {isFunctionalAllowed ? (
+                    {isFunctionalAllowed() ? (
                       <CheckCircle className="w-4 h-4 text-green-600" />
                     ) : (
                       <XCircle className="w-4 h-4 text-red-600" />
                     )}
                     <span className="text-gray-900">
-                      Funktional: {isFunctionalAllowed ? 'Aktiv' : 'Inaktiv'}
+                      Funktional: {isFunctionalAllowed() ? 'Aktiv' : 'Inaktiv'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {isMarketingAllowed ? (
+                    {isMarketingAllowed() ? (
                       <CheckCircle className="w-4 h-4 text-green-600" />
                     ) : (
                       <XCircle className="w-4 h-4 text-red-600" />
                     )}
                     <span className="text-gray-900">
-                      Marketing: {isMarketingAllowed ? 'Aktiv' : 'Inaktiv'}
+                      Marketing: {isMarketingAllowed() ? 'Aktiv' : 'Inaktiv'}
                     </span>
                   </div>
                 </div>

@@ -70,10 +70,11 @@ export default function CookiesPage() {
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white drop-shadow-lg mb-2">2. Analytische Cookies</h3>
+                <h3 className="text-lg font-semibold text-white drop-shadow-lg mb-2">2. Google Tag Manager und Analytics Cookies</h3>
                 <p className="text-white/90 drop-shadow-lg mb-3">
-                  Diese Cookies helfen uns zu verstehen, wie Besucher mit unserer Website
-                  interagieren, indem sie Informationen anonym sammeln und melden.
+                  Diese Cookies werden von Google Tag Manager und Google Analytics verwendet,
+                  um das Nutzerverhalten zu analysieren und die Website zu verbessern.
+                  Sie werden nur mit Ihrer Zustimmung gesetzt.
                 </p>
                 <div className="bg-white/10 backdrop-blur-sm rounded p-4 text-sm space-y-3">
                   <div>
@@ -91,6 +92,68 @@ export default function CookiesPage() {
                     <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Kurzzeitige Benutzer-ID für Webseitenanalyse</p>
                     <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 24 Stunden</p>
                   </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>_gtm_*</strong>: Google Tag Manager Cookie</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Verwaltung von Tracking-Tags und Analytics</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> Session</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>analytics_consent</strong>: DSGVO Analytics Consent</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Speicherung der Analytics-Zustimmung</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 1 Jahr</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>marketing_consent</strong>: DSGVO Marketing Consent</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Speicherung der Marketing-Zustimmung</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 1 Jahr</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>taskilo-cookie-consent</strong>: Cookie Consent Status</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Speicherung aller Cookie-Zustimmungen</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 1 Jahr</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white drop-shadow-lg mb-2">3. Zahlungsdienstleister Cookies (Stripe)</h3>
+                <p className="text-white/90 drop-shadow-lg mb-3">
+                  Diese Cookies werden von Stripe für sichere Zahlungsabwicklung und
+                  Betrugsschutz verwendet.
+                </p>
+                <div className="bg-white/10 backdrop-blur-sm rounded p-4 text-sm space-y-3">
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>__stripe_mid</strong>: Stripe Merchant ID Cookie</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Identifizierung von Händlern für Zahlungsabwicklung</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 1 Jahr</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>__stripe_sid</strong>: Stripe Session ID Cookie</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Sitzungsverfolgung für Zahlungsprozesse</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 30 Minuten</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>stripe_js</strong>: Stripe JavaScript Cookie</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Sicherheitsprüfungen und Fraud Detection</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> Session</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>machine_identifier</strong>: Stripe Device Fingerprint</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Geräteerkennung für Betrugsschutz</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> 2 Jahre</p>
+                  </div>
+                  <div>
+                    <p className="text-white/90 drop-shadow-lg"><strong>stripe_orig_props</strong>: Stripe Original Properties</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Verfolgung von Zahlungsversuchen und -eigenschaften</p>
+                    <p className="text-white/90 drop-shadow-lg"><strong>Laufzeit:</strong> Session</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white drop-shadow-lg mb-2">4. Performance und Hosting Cookies</h3>
+                <p className="text-white/90 drop-shadow-lg mb-3">
+                  Diese Cookies werden für Website-Performance und Hosting-Optimierung verwendet.
+                </p>
+                <div className="bg-white/10 backdrop-blur-sm rounded p-4 text-sm space-y-3">
                   <div>
                     <p className="text-white/90 drop-shadow-lg"><strong>__vercel_analytics_id</strong>: Vercel Analytics Cookie</p>
                     <p className="text-white/90 drop-shadow-lg"><strong>Zweck:</strong> Anonyme Webseitenanalyse und Performance-Monitoring</p>

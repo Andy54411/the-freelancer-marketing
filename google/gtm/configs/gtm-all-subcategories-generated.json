@@ -1,0 +1,2754 @@
+{
+  "name": "Komplette GTM Konfiguration - Alle Subkategorien",
+  "description": "Automatisch generierte GTM Konfiguration für alle Subkategorien",
+  "variables": [
+    {
+      "name": "DSGVO - Analytics Consent Status",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "analytics_consent"
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Marketing Consent Status",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "marketing_consent"
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Functional Consent Status",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "functional_consent"
+        }
+      ]
+    },
+    {
+      "name": "User Registration - Category",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "user_registration_category"
+        }
+      ]
+    },
+    {
+      "name": "Order Creation - Category",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "order_category"
+        }
+      ]
+    },
+    {
+      "name": "Order Creation - Subcategory",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "order_subcategory"
+        }
+      ]
+    },
+    {
+      "name": "Order Creation - Value",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "order_value"
+        }
+      ]
+    },
+    {
+      "name": "Order Creation - User ID",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "order_user_id"
+        }
+      ]
+    },
+    {
+      "name": "Order Creation - Location",
+      "type": "v",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "order_location"
+        }
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "name": "DSGVO - Analytics Consent Gegeben",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "analytics_consent_granted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Marketing Consent Gegeben",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "marketing_consent_granted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Cookie Consent Banner Angezeigt",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "cookie_banner_shown"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Cookie Consent Akzeptiert",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "cookie_consent_accepted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSGVO - Cookie Consent Abgelehnt",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "cookie_consent_declined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Registration - Alle Kategorien",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "user_registration"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Registration - Kunde",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "user_registration"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{User Registration - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "kunde"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Registration - Dienstleister",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "user_registration"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{User Registration - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "dienstleister"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Alle Kategorien",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Handwerk",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "handwerk"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Handwerk - Maler Lackierer",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "handwerk"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "maler_lackierer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Handwerk - Elektriker",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "handwerk"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "elektriker"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Handwerk - Klempner",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "handwerk"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "klempner"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Handwerk - Heizungsbau Sanitaer",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "handwerk"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "heizungsbau_sanitaer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Handwerk - Fliesenleger",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "handwerk"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "fliesenleger"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Reinigung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Reinigung - Reinigungskraft",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigung"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigungskraft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Reinigung - Haushaltshilfe",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigung"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "haushaltshilfe"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Reinigung - Fensterputzer",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigung"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "fensterputzer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Reinigung - Entruempelung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigung"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "entruempelung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Reinigung - Hausmeisterdienste",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "reinigung"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "hausmeisterdienste"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Transport & Umzug",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transport_umzug"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Transport & Umzug - Umzugshelfer",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transport_umzug"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "umzugshelfer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Transport & Umzug - Fahrer",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transport_umzug"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "fahrer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Transport & Umzug - Kurierdienste",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transport_umzug"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "kurierdienste"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Transport & Umzug - Transportdienstleistungen",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transport_umzug"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transportdienstleistungen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Transport & Umzug - Lagerlogistik",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "transport_umzug"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "lagerlogistik"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - It & Technik",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_technik"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - It & Technik - Webentwicklung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_technik"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "webentwicklung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - It & Technik - Softwareentwicklung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_technik"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "softwareentwicklung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - It & Technik - App Entwicklung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_technik"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "app_entwicklung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - It & Technik - Datenbankentwicklung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_technik"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "datenbankentwicklung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - It & Technik - It Support",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_technik"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "it_support"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Beratung & Coaching",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "beratung_coaching"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Beratung & Coaching - Buchhaltung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "beratung_coaching"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "buchhaltung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Beratung & Coaching - Steuerberatung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "beratung_coaching"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "steuerberatung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Beratung & Coaching - Rechtsberatung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "beratung_coaching"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "rechtsberatung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Beratung & Coaching - Finanzberatung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "beratung_coaching"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "finanzberatung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Beratung & Coaching - Versicherungsberatung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "beratung_coaching"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "versicherungsberatung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Garten & Landschaft",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Garten & Landschaft - Garten Landschaftspflege",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaft"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaftspflege"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Garten & Landschaft - Gartenpflege",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaft"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gartenpflege"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Garten & Landschaft - Landschaftsgaertner",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaft"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "landschaftsgaertner"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Garten & Landschaft - Baumpflege",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaft"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "baumpflege"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Garten & Landschaft - Winterdienst",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "garten_landschaft"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "winterdienst"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Gesundheit & Wellness",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gesundheit_wellness"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Gesundheit & Wellness - Massage",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gesundheit_wellness"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "massage"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Gesundheit & Wellness - Physiotherapie",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gesundheit_wellness"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "physiotherapie"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Gesundheit & Wellness - Fitness Training",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gesundheit_wellness"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "fitness_training"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Gesundheit & Wellness - Ernaehrungsberatung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gesundheit_wellness"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "ernaehrungsberatung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Gesundheit & Wellness - Kosmetik",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "gesundheit_wellness"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "kosmetik"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Sonstiges",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "sonstiges"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Sonstiges - Uebersetzungen",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "sonstiges"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "uebersetzungen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Sonstiges - Schreibdienste",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "sonstiges"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "schreibdienste"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Sonstiges - Recherche",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "sonstiges"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "recherche"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Sonstiges - Datenerfassung",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "sonstiges"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "datenerfassung"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order Created - Sonstiges - Telefonservice",
+      "type": "CUSTOM_EVENT",
+      "customEventFilter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{_event}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "order_created"
+            }
+          ]
+        }
+      ],
+      "filter": [
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Category}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "sonstiges"
+            }
+          ]
+        },
+        {
+          "type": "EQUALS",
+          "parameter": [
+            {
+              "type": "TEMPLATE",
+              "key": "arg0",
+              "value": "{{Order Creation - Subcategory}}"
+            },
+            {
+              "type": "TEMPLATE",
+              "key": "arg1",
+              "value": "telefonservice"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

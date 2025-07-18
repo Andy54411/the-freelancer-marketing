@@ -10,15 +10,18 @@ export const useAnalytics = () => {
 
   const trackEvent = useCallback(
     (action: string, category: string, label?: string, value?: number) => {
-      gtag.event({ action, category, label, value });
+      gtag.event(action, { 
+        event_category: category, 
+        event_label: label, 
+        value: value 
+      });
     },
     []
   );
 
-  // Taskilo-specific events
   const trackUserRegistration = useCallback(
     (userType: 'user' | 'company' | 'employee') => {
-      gtag.signUpEvent(userType);
+      gtag.signUpEvent(userType, 'email');
       trackEvent('registration_completed', 'user_engagement', userType);
     },
     [trackEvent]
@@ -26,7 +29,7 @@ export const useAnalytics = () => {
 
   const trackLogin = useCallback(
     (method: string) => {
-      gtag.loginEvent(method);
+      gtag.loginEvent('user_id', method);
       trackEvent('login', 'user_engagement', method);
     },
     [trackEvent]
@@ -34,7 +37,7 @@ export const useAnalytics = () => {
 
   const trackOrderCreation = useCallback(
     (category: string, subcategory: string, value: number) => {
-      gtag.taskOrderEvent({ category, subcategory, value });
+      gtag.taskOrderEvent(`order_${Date.now()}`, value, `${category}_${subcategory}`);
       trackEvent('order_created', 'ecommerce', `${category}_${subcategory}`, value);
     },
     [trackEvent]
@@ -42,7 +45,7 @@ export const useAnalytics = () => {
 
   const trackProviderRegistration = useCallback(
     (userType: 'company' | 'employee') => {
-      gtag.providerRegistrationEvent(userType);
+      gtag.providerRegistrationEvent(`provider_${Date.now()}`, userType);
       trackEvent('provider_registration', 'business', userType);
     },
     [trackEvent]
@@ -52,7 +55,7 @@ export const useAnalytics = () => {
     (
       transactionId: string,
       value: number,
-      items: Array<{
+      _items: Array<{
         item_id: string;
         item_name: string;
         category: string;
@@ -60,7 +63,7 @@ export const useAnalytics = () => {
         price: number;
       }>
     ) => {
-      gtag.purchaseEvent({ transactionId, value, items });
+      gtag.purchaseEvent(transactionId, value, 'EUR');
       trackEvent('purchase', 'ecommerce', transactionId, value);
     },
     [trackEvent]

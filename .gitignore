@@ -50,3 +50,7 @@ yarn-error.log*
 firebase_functions/.env.tilvo-f142f
 .env.local
 .env.example
+
+# GTM API Konfiguration
+.env.gtm
+client_secret.json

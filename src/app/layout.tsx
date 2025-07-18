@@ -37,6 +37,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="de" suppressHydrationWarning>
       <head>
         {/* Google Tag Manager */}
+        {/* Google Consent Mode V2 - Initialize before any tracking */}
+        <Script
+          id="google-consent-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              
+              // Set default consent state
+              gtag('consent', 'default', {
+                'analytics_storage': 'denied',
+                'ad_storage': 'denied',
+                'ad_user_data': 'denied',
+                'ad_personalization': 'denied',
+                'functionality_storage': 'denied',
+                'personalization_storage': 'denied',
+                'security_storage': 'granted',
+                'wait_for_update': 2000
+              });
+            `,
+          }}
+        />
+
+        {/* Google Tag Manager Script */}
         <Script
           id="gtm-script"
           strategy="afterInteractive"
@@ -51,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
-        {/* Google Tag Manager NoScript Fallback - must be in head */}
+        {/* Google Tag Manager NoScript Fallback */}
         <noscript>
           <iframe
             src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}

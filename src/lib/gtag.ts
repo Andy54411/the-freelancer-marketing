@@ -1,6 +1,6 @@
 // Google Analytics and GTM configuration
 export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID;
-export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || 'GTM-TG3H7QHX';
+export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
 // Erweitere Window-Interface für gtag und GTM
 declare global {
@@ -32,8 +32,8 @@ export const initializeConsent = () => {
       ad_personalization: 'denied',
       functionality_storage: 'denied',
       personalization_storage: 'denied',
-      security_storage: 'granted', // Immer granted für Sicherheit
-      wait_for_update: 2000, // Warte 2 Sekunden auf User-Consent
+      security_storage: 'granted',
+      wait_for_update: 2000,
     });
 
     // Setze current date
@@ -41,20 +41,14 @@ export const initializeConsent = () => {
   }
 };
 
-// GTM-spezifische Initialisierung
-export const initializeGTM = () => {
-  if (typeof window !== 'undefined' && GTM_ID) {
-    window.dataLayer = window.dataLayer || [];
-
-    // Push GTM initialization event
-    window.dataLayer.push({
-      'gtm.start': new Date().getTime(),
-      event: 'gtm.js',
-    });
+// Update consent based on user preferences
+export const updateConsent = (consentSettings: Record<string, 'granted' | 'denied'>) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('consent', 'update', consentSettings);
   }
 };
 
-// https://developers.google.com/analytics/devguides/collection/gtagjs/pages
+// Track page views
 export const pageview = (url: string) => {
   if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('config', GA_TRACKING_ID, {
@@ -63,152 +57,100 @@ export const pageview = (url: string) => {
   }
 };
 
-// https://developers.google.com/analytics/devguides/collection/gtagjs/events
-export const event = ({
-  action,
-  category,
-  label,
-  value,
-}: {
-  action: string;
-  category: string;
-  label?: string;
-  value?: number;
-}) => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
-    window.gtag('event', action, {
-      event_category: category,
-      event_label: label,
-      value: value,
+// Track custom events
+export const event = (action: string, parameters?: Record<string, any>) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', action, parameters);
+  }
+};
+
+// Track conversion events
+export const trackConversion = (conversionId: string, conversionLabel?: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'conversion', {
+      send_to: conversionId,
+      ...(conversionLabel && { conversion_label: conversionLabel }),
     });
   }
 };
 
-// Cookie Consent Management - DSGVO V2 compliant
-export const updateConsent = (consent: {
-  analytics_storage?: 'granted' | 'denied';
-  ad_storage?: 'granted' | 'denied';
-  ad_user_data?: 'granted' | 'denied';
-  ad_personalization?: 'granted' | 'denied';
-  functionality_storage?: 'granted' | 'denied';
-  personalization_storage?: 'granted' | 'denied';
-  security_storage?: 'granted' | 'denied';
-}) => {
+// Track purchases
+export const trackPurchase = (transactionId: string, value: number, currency: string = 'EUR') => {
   if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('consent', 'update', consent);
-  }
-};
-
-// Convenience function for common consent patterns
-export const grantAnalyticsConsent = () => {
-  updateConsent({
-    analytics_storage: 'granted',
-    functionality_storage: 'granted',
-  });
-};
-
-export const grantMarketingConsent = () => {
-  updateConsent({
-    ad_storage: 'granted',
-    ad_user_data: 'granted',
-    ad_personalization: 'granted',
-  });
-};
-
-export const grantAllConsent = () => {
-  updateConsent({
-    analytics_storage: 'granted',
-    ad_storage: 'granted',
-    ad_user_data: 'granted',
-    ad_personalization: 'granted',
-    functionality_storage: 'granted',
-    personalization_storage: 'granted',
-    security_storage: 'granted',
-  });
-};
-
-export const denyAllConsent = () => {
-  updateConsent({
-    analytics_storage: 'denied',
-    ad_storage: 'denied',
-    ad_user_data: 'denied',
-    ad_personalization: 'denied',
-    functionality_storage: 'denied',
-    personalization_storage: 'denied',
-    security_storage: 'granted', // Sicherheit bleibt immer granted
-  });
-};
-
-// Enhanced ecommerce events
-export const purchaseEvent = ({
-  transactionId,
-  value,
-  currency = 'EUR',
-  items,
-}: {
-  transactionId: string;
-  value: number;
-  currency?: string;
-  items: Array<{
-    item_id: string;
-    item_name: string;
-    category: string;
-    quantity: number;
-    price: number;
-  }>;
-}) => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
     window.gtag('event', 'purchase', {
       transaction_id: transactionId,
       value: value,
       currency: currency,
-      items: items,
     });
   }
 };
 
-// User engagement events
-export const signUpEvent = (method: string) => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
+// Track form submissions
+export const trackFormSubmit = (formName: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'form_submit', {
+      form_name: formName,
+    });
+  }
+};
+
+// Track user engagement
+export const trackEngagement = (engagementTime: number) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'user_engagement', {
+      engagement_time_msec: engagementTime,
+    });
+  }
+};
+
+// Track sign up events
+export const signUpEvent = (userId: string, method: string = 'email') => {
+  if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', 'sign_up', {
       method: method,
+      user_id: userId,
     });
   }
 };
 
-export const loginEvent = (method: string) => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
+// Track login events
+export const loginEvent = (userId: string, method: string = 'email') => {
+  if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', 'login', {
       method: method,
+      user_id: userId,
     });
   }
 };
 
-// Custom business events for Taskilo
-export const taskOrderEvent = ({
-  category,
-  subcategory,
-  value,
-}: {
-  category: string;
-  subcategory: string;
-  value: number;
-}) => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
-    window.gtag('event', 'task_order_created', {
-      event_category: 'engagement',
-      custom_category: category,
-      custom_subcategory: subcategory,
+// Track task order events
+export const taskOrderEvent = (orderId: string, value: number, category: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'order_created', {
+      order_id: orderId,
       value: value,
+      category: category,
     });
   }
 };
 
-export const providerRegistrationEvent = (userType: 'company' | 'employee') => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
+// Track provider registration events
+export const providerRegistrationEvent = (providerId: string, serviceCategory: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', 'provider_registration', {
-      event_category: 'engagement',
-      user_type: userType,
+      provider_id: providerId,
+      service_category: serviceCategory,
+    });
+  }
+};
+
+// Track purchase events
+export const purchaseEvent = (transactionId: string, value: number, currency: string = 'EUR') => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'purchase', {
+      transaction_id: transactionId,
+      value: value,
+      currency: currency,
     });
   }
 };
