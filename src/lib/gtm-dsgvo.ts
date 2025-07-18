@@ -19,14 +19,41 @@ export const sendConsentToGTM = (consent: {
   if (typeof window === 'undefined') return;
 
   window.dataLayer = window.dataLayer || [];
-  
+
   // Speichere Consent mit Timestamp
   const consentWithTimestamp = {
     ...consent,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   localStorage.setItem('cookieConsent', JSON.stringify(consentWithTimestamp));
+
+  // 🚀 WICHTIG: Google Consent Mode v2 Update senden
+  window.dataLayer.push({
+    event: 'consent_update',
+    consent: {
+      analytics_storage: consent.analytics ? 'granted' : 'denied',
+      ad_storage: consent.marketing ? 'granted' : 'denied',
+      ad_user_data: consent.marketing ? 'granted' : 'denied',
+      ad_personalization: consent.marketing ? 'granted' : 'denied',
+      functionality_storage: consent.functional ? 'granted' : 'denied',
+      personalization_storage: consent.personalization ? 'granted' : 'denied',
+      security_storage: 'granted', // Immer erlaubt
+    },
+  });
+
+  // Alternative Method: Direct gtag consent update
+  if (typeof (window as any).gtag !== 'undefined') {
+    (window as any).gtag('consent', 'update', {
+      analytics_storage: consent.analytics ? 'granted' : 'denied',
+      ad_storage: consent.marketing ? 'granted' : 'denied',
+      ad_user_data: consent.marketing ? 'granted' : 'denied',
+      ad_personalization: consent.marketing ? 'granted' : 'denied',
+      functionality_storage: consent.functional ? 'granted' : 'denied',
+      personalization_storage: consent.personalization ? 'granted' : 'denied',
+      security_storage: 'granted',
+    });
+  }
 
   // Sende einzelne Consent-Events für jeden Typ
   if (consent.analytics) {
@@ -34,16 +61,16 @@ export const sendConsentToGTM = (consent: {
       event: 'analytics_consent_granted',
       consent_type: 'analytics',
       consent_value: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   if (consent.marketing) {
     window.dataLayer.push({
       event: 'marketing_consent_granted',
-      consent_type: 'marketing', 
+      consent_type: 'marketing',
       consent_value: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -52,7 +79,7 @@ export const sendConsentToGTM = (consent: {
       event: 'functional_consent_granted',
       consent_type: 'functional',
       consent_value: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -64,7 +91,7 @@ export const sendConsentToGTM = (consent: {
     consent_functional: consent.functional,
     consent_necessary: consent.necessary,
     consent_personalization: consent.personalization,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   console.log('DSGVO-Consent an GTM gesendet:', consentWithTimestamp);
@@ -138,7 +165,7 @@ export const trackPageViewWithConsent = (pageData?: {
     page_location: pageData?.page_location || window.location.href,
     page_path: pageData?.page_path || window.location.pathname,
     consent_given: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -163,7 +190,7 @@ export const trackButtonClickWithConsent = (buttonData: {
     button_class: buttonData.button_class,
     page_location: window.location.href,
     consent_given: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -188,7 +215,7 @@ export const trackFormSubmitWithConsent = (formData: {
     form_action: formData.form_action,
     page_location: window.location.href,
     consent_given: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -214,7 +241,7 @@ export const trackPurchaseWithConsent = (purchaseData: {
     currency: purchaseData.currency,
     items: purchaseData.items,
     consent_given: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -244,7 +271,7 @@ export const trackServiceBookingWithConsent = (serviceData: {
     provider_id: serviceData.provider_id,
     provider_name: serviceData.provider_name,
     consent_given: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -254,7 +281,7 @@ export const trackServiceBookingWithConsent = (serviceData: {
 export const removeTrackingCookies = () => {
   // Entferne GA4-Cookies
   const ga4Cookies = ['_ga', '_ga_*', '_gid', '_gat_*'];
-  
+
   ga4Cookies.forEach(cookieName => {
     if (cookieName.includes('*')) {
       // Entferne alle Cookies die mit dem Pattern übereinstimmen
@@ -282,10 +309,10 @@ export const removeTrackingCookies = () => {
 export const revokeAllConsents = () => {
   // Entferne lokalen Storage
   localStorage.removeItem('cookieConsent');
-  
+
   // Entferne Tracking-Cookies
   removeTrackingCookies();
-  
+
   // Sende Widerruf-Event
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({
@@ -295,7 +322,7 @@ export const revokeAllConsents = () => {
     consent_functional: false,
     consent_necessary: true,
     consent_personalization: false,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   console.log('Alle Cookie-Consents widerrufen');

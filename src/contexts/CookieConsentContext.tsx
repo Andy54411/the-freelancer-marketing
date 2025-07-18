@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { sendConsentToGTM } from '@/lib/gtm-dsgvo';
 
 interface ConsentState {
   necessary: boolean;
@@ -55,6 +56,11 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
     } else {
       const parsedConsent = JSON.parse(savedConsent);
       setConsent(parsedConsent);
+
+      // 🚀 WICHTIG: Gespeicherte Einwilligung an GTM senden
+      setTimeout(() => {
+        sendConsentToGTM(parsedConsent);
+      }, 100); // Kleine Verzögerung, damit GTM vollständig geladen ist
     }
   }, []);
 
@@ -63,6 +69,9 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
     setConsent(updatedConsent);
     localStorage.setItem('cookieConsent', JSON.stringify(updatedConsent));
     setBannerVisible(false);
+
+    // 🚀 WICHTIG: Neue Einwilligung sofort an GTM senden
+    sendConsentToGTM(updatedConsent);
   };
 
   const acceptAll = () => {
