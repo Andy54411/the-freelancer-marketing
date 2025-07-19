@@ -504,52 +504,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Stats */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiken</h3>
-                <div className="space-y-4">
-                  {profile.averageRating !== undefined && profile.averageRating > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Bewertung</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <FiStar
-                              key={i}
-                              className={`w-4 h-4 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-900">
-                          {profile.averageRating.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Aufträge</span>
-                      <span className="text-gray-900 font-medium">{profile.totalOrders}</span>
-                    </div>
-                  )}
-
-                  {profile.completionRate !== undefined && profile.completionRate > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Erfolgsrate</span>
-                      <span className="text-gray-900 font-medium">{profile.completionRate}%</span>
-                    </div>
-                  )}
-
-                  {profile.responseTime && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Antwortzeit</span>
-                      <span className="text-gray-900 font-medium">~{profile.responseTime}h</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Verification */}
               {profile.stripeVerificationStatus && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">

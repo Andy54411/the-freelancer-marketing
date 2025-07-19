@@ -191,9 +191,9 @@ export const getUserOrdersHTTP = onRequest(
             let ordersQuery: any;
 
             if (userType === 'customer') {
-                ordersQuery = db.collection('orders').where('customerId', '==', userId);
+                ordersQuery = db.collection('auftraege').where('customerFirebaseUid', '==', userId);
             } else if (userType === 'provider') {
-                ordersQuery = db.collection('orders').where('providerId', '==', userId);
+                ordersQuery = db.collection('auftraege').where('selectedAnbieterId', '==', userId);
             } else {
                 response.status(400).json({ error: 'Invalid userType. Must be either "customer" or "provider".' });
                 return;
@@ -216,8 +216,8 @@ export const getUserOrdersHTTP = onRequest(
                 
                 // Get user data
                 let userData = null;
-                if (userType === 'customer' && orderData.providerId) {
-                    const userDoc = await db.collection('users').doc(orderData.providerId).get();
+                if (userType === 'customer' && orderData.selectedAnbieterId) {
+                    const userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
                     if (userDoc.exists) {
                         const data = userDoc.data();
                         userData = {
@@ -230,8 +230,8 @@ export const getUserOrdersHTTP = onRequest(
                             reviewCount: data?.reviewCount || 0,
                         };
                     }
-                } else if (userType === 'provider' && orderData.customerId) {
-                    const userDoc = await db.collection('users').doc(orderData.customerId).get();
+                } else if (userType === 'provider' && orderData.customerFirebaseUid) {
+                    const userDoc = await db.collection('users').doc(orderData.customerFirebaseUid).get();
                     if (userDoc.exists) {
                         const data = userDoc.data();
                         userData = {
@@ -243,18 +243,16 @@ export const getUserOrdersHTTP = onRequest(
                     }
                 }
 
-                // Get category data
+                // Get category data - use selectedCategory and selectedSubcategory from order data
                 let categoryData = null;
-                if (orderData.categoryId) {
-                    const categoryDoc = await db.collection('categories').doc(orderData.categoryId).get();
-                    if (categoryDoc.exists) {
-                        const data = categoryDoc.data();
-                        categoryData = {
-                            id: categoryDoc.id,
-                            name: data?.name || '',
-                            icon: data?.icon || null,
-                        };
-                    }
+                if (orderData.selectedCategory) {
+                    categoryData = {
+                        id: orderData.selectedCategory,
+                        name: orderData.selectedSubcategory || orderData.selectedCategory,
+                        category: orderData.selectedCategory,
+                        subcategory: orderData.selectedSubcategory,
+                        icon: null,
+                    };
                 }
 
                 orders.push({
