@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Data Sync</title>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-functions.js"></script>
+</head>
+<body>
+    <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h1>Company Data Sync</h1>
+        <p>Sync Company Data from companies collection to users collection</p>
+        
+        <div style="margin: 20px 0;">
+            <label for="companyId">Company ID:</label>
+            <input type="text" id="companyId" placeholder="BsUxClYQtkNWRmpSY17YsJyVR0D2" style="width: 300px; padding: 8px; margin-left: 10px;">
+        </div>
+        
+        <button id="syncBtn" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Sync Company Data
+        </button>
+        
+        <div id="result" style="margin-top: 20px; padding: 10px; border-radius: 4px; display: none;"></div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUwmY8lI6C6j6wTZoiG2q1R8tz-TN7hPw",
+            authDomain: "tilvo-f142f.firebaseapp.com",
+            projectId: "tilvo-f142f",
+            storageBucket: "tilvo-f142f.firebasestorage.app",
+            messagingSenderId: "831998549103",
+            appId: "1:831998549103:web:8eaae6af8cc1edd8a93acc"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const functions = firebase.functions();
+        functions.useEmulator = false; // Ensure we use production functions
+
+        // Set the default value
+        document.getElementById('companyId').value = 'BsUxClYQtkNWRmpSY17YsJyVR0D2';
+
+        document.getElementById('syncBtn').addEventListener('click', async () => {
+            const companyId = document.getElementById('companyId').value.trim();
+            const resultDiv = document.getElementById('result');
+            const btn = document.getElementById('syncBtn');
+            
+            if (!companyId) {
+                showResult('Please enter a Company ID', 'error');
+                return;
+            }
+
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            resultDiv.style.display = 'none';
+
+            try {
+                // Call the Firebase function
+                const syncFunction = functions.httpsCallable('syncSpecificCompanyToUser');
+                const result = await syncFunction({ companyId: companyId });
+                
+                console.log('Function result:', result);
+                showResult(`Success: ${result.data.message}`, 'success');
+                
+            } catch (error) {
+                console.error('Error calling function:', error);
+                showResult(`Error: ${error.message}`, 'error');
+            } finally {
+                // Re-enable button
+                btn.disabled = false;
+                btn.textContent = 'Sync Company Data';
+            }
+        });
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                resultDiv.style.backgroundColor = '#d4edda';
+                resultDiv.style.color = '#155724';
+                resultDiv.style.borderColor = '#c3e6cb';
+            } else {
+                resultDiv.style.backgroundColor = '#f8d7da';
+                resultDiv.style.color = '#721c24';
+                resultDiv.style.borderColor = '#f5c6cb';
+            }
+            resultDiv.style.border = '1px solid';
+        }
+    </script>
+</body>
+</html>

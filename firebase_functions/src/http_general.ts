@@ -272,6 +272,169 @@ export const getDataForSubcategory = onRequest({ region: "europe-west1", cors: t
   }
 });
 
+export const syncCompanyToUserData = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
+  // --- Authentication and Authorization ---
+  if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+    loggerV2.warn("[syncCompanyToUserData] Unauthenticated access attempt.");
+    res.status(403).send('Unauthorized');
+    return;
+  }
+  const idToken = req.headers.authorization.split('Bearer ')[1];
+  try {
+    const decodedToken = await getAuthInstance().verifyIdToken(idToken);
+    if (decodedToken.role !== 'master') {
+      loggerV2.error(`[syncCompanyToUserData] Forbidden access attempt by user ${decodedToken.uid} with role ${decodedToken.role}.`);
+      res.status(403).send('Forbidden: Insufficient permissions.');
+      return;
+    }
+    loggerV2.info(`[syncCompanyToUserData] Authorized execution by master user ${decodedToken.uid}.`);
+  } catch (error) {
+    loggerV2.error("[syncCompanyToUserData] Token verification failed.", error);
+    res.status(403).send('Unauthorized');
+    return;
+  }
+  // --- END: Authentication and Authorization ---
+
+  const db = getDb();
+  try {
+    // Get specific companyId from query params if provided
+    const companyId = req.query.companyId as string;
+    
+    let companiesSnapshot;
+    if (companyId) {
+      // Sync specific company
+      const companyDoc = await db.collection("companies").doc(companyId).get();
+      if (!companyDoc.exists) {
+        res.status(404).send(`Company with ID ${companyId} not found.`);
+        return;
+      }
+      companiesSnapshot = { docs: [companyDoc], empty: false };
+    } else {
+      // Sync all companies
+      companiesSnapshot = await db.collection("companies").where("user_type", "==", "firma").get();
+    }
+
+    if (companiesSnapshot.empty) {
+      res.status(200).send("No companies found to sync.");
+      return;
+    }
+
+    let syncedCount = 0;
+    let batch = db.batch();
+    let writeCountInBatch = 0;
+
+    for (const companyDoc of companiesSnapshot.docs) {
+      const companyData = companyDoc.data();
+      const companyUid = companyDoc.id;
+
+      if (!companyData) {
+        loggerV2.warn(`[syncCompanyToUserData] Company document ${companyUid} has no data. Skipping.`);
+        continue;
+      }
+
+      // Check if corresponding user document exists
+      const userDocRef = db.collection("users").doc(companyUid);
+      const userDoc = await userDocRef.get();
+      
+      if (!userDoc.exists) {
+        loggerV2.warn(`[syncCompanyToUserData] User document ${companyUid} does not exist. Skipping.`);
+        continue;
+      }
+
+      // Prepare user data update with company data
+      const userDataUpdate: Record<string, unknown> = {
+        // Basic company info
+        companyName: companyData.companyName || null,
+        description: companyData.description || null,
+        hourlyRate: companyData.hourlyRate || null,
+        selectedCategory: companyData.selectedCategory || null,
+        selectedSubcategory: companyData.selectedSubcategory || null,
+        
+        // Location data
+        lat: companyData.lat || null,
+        lng: companyData.lng || null,
+        radiusKm: companyData.radiusKm || null,
+        companyPostalCodeForBackend: companyData.companyPostalCodeForBackend || companyData.postalCode || null,
+        companyCityForBackend: companyData.companyCityForBackend || companyData.companyCity || null,
+        companyCountryForBackend: companyData.companyCountryForBackend || null,
+        
+        // Contact and business info
+        companyPhoneNumberForBackend: companyData.companyPhoneNumberForBackend || null,
+        companyWebsiteForBackend: companyData.companyWebsiteForBackend || null,
+        
+        // Profile and media
+        profilePictureFirebaseUrl: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
+        profilePictureURL: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
+        
+        // Business details from step2
+        'step2.companyName': companyData.companyName || null,
+        'step2.description': companyData.description || null,
+        'step2.city': companyData.companyCity || companyData.companyCityForBackend || null,
+        'step2.country': companyData.companyCountryForBackend || null,
+        'step2.industryMcc': companyData.industryMcc || null,
+        
+        // Technical details from step3  
+        'step3.hourlyRate': companyData.hourlyRate ? String(companyData.hourlyRate) : null,
+        'step3.profilePictureURL': companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
+        
+        // Stripe and verification data
+        stripeAccountId: companyData.stripeAccountId || null,
+        stripeChargesEnabled: companyData.stripeChargesEnabled || false,
+        stripePayoutsEnabled: companyData.stripePayoutsEnabled || false,
+        stripeDetailsSubmitted: companyData.stripeDetailsSubmitted || false,
+        stripeVerificationStatus: companyData.stripeVerificationStatus || null,
+        
+        // Additional profile data
+        specialties: companyData.specialties || null,
+        portfolio: companyData.portfolio || null,
+        skills: companyData.skills || null,
+        languages: companyData.languages || null,
+        education: companyData.education || null,
+        certifications: companyData.certifications || null,
+        
+        // Metrics and performance
+        responseTime: companyData.responseTime || companyData.responseTimeGuarantee || null,
+        completionRate: companyData.completionRate || null,
+        totalOrders: companyData.totalOrders || null,
+        averageRating: companyData.averageRating || null,
+        totalReviews: companyData.totalReviews || null,
+        
+        // Timestamps
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      // Remove null values to avoid overwriting existing data with nulls
+      const cleanedUpdate: { [x: string]: any } = Object.fromEntries(
+        Object.entries(userDataUpdate).filter(([_, value]) => value !== null)
+      );
+
+      batch.update(userDocRef, cleanedUpdate);
+      syncedCount++;
+      writeCountInBatch++;
+
+      if (writeCountInBatch >= 400) {
+        await batch.commit();
+        loggerV2.info(`Committed a batch of ${writeCountInBatch} company-to-user syncs.`);
+        batch = db.batch();
+        writeCountInBatch = 0;
+      }
+    }
+
+    if (writeCountInBatch > 0) {
+      await batch.commit();
+      loggerV2.info(`Committed the final batch of ${writeCountInBatch} company-to-user syncs.`);
+    }
+
+    const message = companyId 
+      ? `Successfully synced company ${companyId} to user data.`
+      : `Successfully synced ${syncedCount} companies to user data.`;
+    res.status(200).send(message);
+  } catch (e) {
+    loggerV2.error("Company-to-user sync failed:", e);
+    res.status(500).send("Company-to-user sync failed.");
+  }
+});
+
 export const createJobPosting = onRequest({ region: "europe-west1", cors: true }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");

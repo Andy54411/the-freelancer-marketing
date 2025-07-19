@@ -53,9 +53,11 @@ export const createTemporaryJobDraft = callableGeneral.createTemporaryJobDraft;
 export const submitReview = callableGeneral.submitReview;
 export const getReviewsByProvider = callableGeneral.getReviewsByProvider;
 export const deleteCompanyAccount = callableGeneral.deleteCompanyAccount;
+export const syncSpecificCompanyToUser = callableGeneral.syncSpecificCompanyToUser;
 
 // HTTP General Requests
 export const migrateExistingUsersToCompanies = httpGeneral.migrateExistingUsersToCompanies;
+export const syncCompanyToUserData = httpGeneral.syncCompanyToUserData;
 export const searchCompanyProfiles = httpGeneral.searchCompanyProfiles;
 export const getDataForSubcategory = httpGeneral.getDataForSubcategory;
 export const createJobPosting = httpGeneral.createJobPosting;

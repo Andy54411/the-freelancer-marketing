@@ -407,4 +407,121 @@ export const deleteCompanyAccount = onCall(
   }
 );
 
+export const syncSpecificCompanyToUser = onCall(
+  {
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "http://localhost:3000", "https://taskilo.de"],
+    region: "europe-west1",
+    memory: "512MiB",
+  },
+  async (request: CallableRequest<{ companyId: string }>): Promise<{ success: boolean; message: string; }> => {
+    logger.info(`[syncSpecificCompanyToUser] Syncing company ${request.data.companyId} to user data`);
+
+    const { companyId } = request.data;
+    if (!companyId || typeof companyId !== "string") {
+      throw new HttpsError("invalid-argument", "companyId is required and must be a string.");
+    }
+
+    const db = getDb();
+    try {
+      // Get company data
+      const companyDoc = await db.collection("companies").doc(companyId).get();
+      if (!companyDoc.exists) {
+        throw new HttpsError("not-found", `Company with ID ${companyId} not found.`);
+      }
+
+      const companyData = companyDoc.data();
+      if (!companyData) {
+        throw new HttpsError("not-found", `Company ${companyId} has no data.`);
+      }
+
+      // Check if corresponding user document exists
+      const userDocRef = db.collection("users").doc(companyId);
+      const userDoc = await userDocRef.get();
+      
+      if (!userDoc.exists) {
+        throw new HttpsError("not-found", `User document ${companyId} does not exist.`);
+      }
+
+      // Prepare user data update with company data
+      const userDataUpdate: Record<string, any> = {
+        // Basic company info
+        companyName: companyData.companyName || null,
+        description: companyData.description || null,
+        hourlyRate: companyData.hourlyRate || null,
+        selectedCategory: companyData.selectedCategory || null,
+        selectedSubcategory: companyData.selectedSubcategory || null,
+        
+        // Location data
+        lat: companyData.lat || null,
+        lng: companyData.lng || null,
+        radiusKm: companyData.radiusKm || null,
+        companyPostalCodeForBackend: companyData.companyPostalCodeForBackend || companyData.postalCode || null,
+        companyCityForBackend: companyData.companyCityForBackend || companyData.companyCity || null,
+        companyCountryForBackend: companyData.companyCountryForBackend || null,
+        
+        // Contact and business info
+        companyPhoneNumberForBackend: companyData.companyPhoneNumberForBackend || null,
+        companyWebsiteForBackend: companyData.companyWebsiteForBackend || null,
+        
+        // Profile and media
+        profilePictureFirebaseUrl: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
+        profilePictureURL: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
+        
+        // Business details from step2
+        'step2.companyName': companyData.companyName || null,
+        'step2.description': companyData.description || null,
+        'step2.city': companyData.companyCity || companyData.companyCityForBackend || null,
+        'step2.country': companyData.companyCountryForBackend || null,
+        'step2.industryMcc': companyData.industryMcc || null,
+        
+        // Technical details from step3  
+        'step3.hourlyRate': companyData.hourlyRate ? String(companyData.hourlyRate) : null,
+        'step3.profilePictureURL': companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
+        
+        // Stripe and verification data
+        stripeAccountId: companyData.stripeAccountId || null,
+        stripeChargesEnabled: companyData.stripeChargesEnabled || false,
+        stripePayoutsEnabled: companyData.stripePayoutsEnabled || false,
+        stripeDetailsSubmitted: companyData.stripeDetailsSubmitted || false,
+        stripeVerificationStatus: companyData.stripeVerificationStatus || null,
+        
+        // Additional profile data
+        specialties: companyData.specialties || null,
+        portfolio: companyData.portfolio || null,
+        skills: companyData.skills || null,
+        languages: companyData.languages || null,
+        education: companyData.education || null,
+        certifications: companyData.certifications || null,
+        
+        // Metrics and performance
+        responseTime: companyData.responseTime || companyData.responseTimeGuarantee || null,
+        completionRate: companyData.completionRate || null,
+        totalOrders: companyData.totalOrders || null,
+        averageRating: companyData.averageRating || null,
+        totalReviews: companyData.totalReviews || null,
+        
+        // Timestamps
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      // Remove null values to avoid overwriting existing data with nulls
+      const cleanedUpdate: { [x: string]: any } = Object.fromEntries(
+        Object.entries(userDataUpdate).filter(([_, value]) => value !== null)
+      );
+
+      await userDocRef.update(cleanedUpdate);
+
+      logger.info(`[syncSpecificCompanyToUser] Successfully synced company ${companyId} to user data.`);
+      return { success: true, message: `Successfully synced company ${companyId} to user data.` };
+
+    } catch (error: any) {
+      logger.error(`[syncSpecificCompanyToUser] Error syncing company ${companyId}:`, error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", `Error syncing company data: ${error.message}`);
+    }
+  }
+);
+
 // --- Cloud Functions ---
