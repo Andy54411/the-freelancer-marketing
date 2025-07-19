@@ -5,7 +5,7 @@ import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth, UserProfile } from '@/contexts/AuthContext';
-import { db, functions } from '@/firebase/clients';
+import { db, functions, auth } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
 
 // Icons für UI
@@ -152,8 +152,35 @@ export default function OrderDetailPage() {
     setIsUpdating(true);
     setError(null);
     try {
-      const acceptOrderCallable = httpsCallable(functions, 'acceptOrder');
-      await acceptOrderCallable({ orderId });
+      // Debug: Auth Status prüfen
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      const idToken = await firebaseUser.getIdToken();
+
+      // HTTP Request zur acceptOrderHTTP Function
+      const response = await fetch(
+        'https://europe-west1-tilvo-f142f.cloudfunctions.net/acceptOrderHTTP',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ orderId }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'HTTP Error');
+      }
+
+      const result = await response.json();
+      console.log('Accept Order Success:', result);
+
       // Nach erfolgreichem Aufruf die Daten neu laden, um einen konsistenten Zustand zu gewährleisten.
       await fetchOrder();
     } catch (err: any) {
@@ -207,17 +234,17 @@ export default function OrderDetailPage() {
   const isViewerCustomer = currentUser.uid === order.customerId;
   const cardUser = isViewerCustomer
     ? {
-      id: order.providerId,
-      name: order.providerName,
-      avatarUrl: order.providerAvatarUrl,
-      role: 'provider' as const,
-    }
+        id: order.providerId,
+        name: order.providerName,
+        avatarUrl: order.providerAvatarUrl,
+        role: 'provider' as const,
+      }
     : {
-      id: order.customerId,
-      name: order.customerName,
-      avatarUrl: order.customerAvatarUrl,
-      role: 'customer' as const,
-    };
+        id: order.customerId,
+        name: order.customerName,
+        avatarUrl: order.customerAvatarUrl,
+        role: 'customer' as const,
+      };
 
   return (
     <Suspense

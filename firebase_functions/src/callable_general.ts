@@ -2,7 +2,7 @@
 
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { logger } from "firebase-functions/v2";
-import { getDb, getUserDisplayName, deleteCollection, verifyAdmin } from './helpers';
+import { getDb, getUserDisplayName, deleteCollection, verifyAdmin, corsOptions } from './helpers';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from "firebase-admin";
 import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from './constants';
@@ -75,7 +75,10 @@ interface ReviewData {
   erstellungsdatum?: { _seconds: number, _nanoseconds: number } | Date;
 }
 
-export const getClientIp = onCall({ cors: true }, (request) => {
+export const getClientIp = onCall({ 
+  cors: corsOptions,
+  region: "europe-west1"
+}, (request) => {
   // HttpsError wird bei onCall-Funktionen bevorzugt.
   if (!request.rawRequest) {
     throw new HttpsError('internal', 'Raw request is not available.');

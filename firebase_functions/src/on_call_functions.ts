@@ -2,7 +2,7 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb } from "./helpers";
+import { getDb, corsOptions } from "./helpers";
 import { getBookingCharacteristics } from "./shared/booking-characteristics";
 
 // Typen für die Funktion
@@ -98,7 +98,10 @@ async function isProviderAvailable(providerId: string, newBooking: SearchPayload
     return true; // Keine Konflikte gefunden.
 }
 
-export const searchAvailableProviders = onCall(async (request) => {
+export const searchAvailableProviders = onCall({
+    cors: corsOptions,
+    region: "europe-west1"
+}, async (request) => {
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "Die Funktion muss authentifiziert aufgerufen werden.");
     }

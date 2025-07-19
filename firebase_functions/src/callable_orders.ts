@@ -1,7 +1,7 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/callable_orders.ts
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb, getStripeInstance, corsOptions } from "./helpers";
+import { getDb, getStripeInstance } from "./helpers";
 import { defineSecret } from "firebase-functions/params";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -27,10 +27,31 @@ const doRangesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): bo
  * Ändert den Status von 'zahlung_erhalten_clearing' zu 'AKTIV'.
  */
 export const acceptOrder = onCall(
-    { cors: true },
+    { 
+        cors: [
+            "http://localhost:3000", 
+            "http://localhost:3001", 
+            "http://localhost:3002",
+            "https://tilvo-f142f.web.app", 
+            "http://localhost:5002",
+            "https://tasko-rho.vercel.app",
+            "https://tasko-zh8k.vercel.app",
+            "https://tasko-live.vercel.app",
+            "https://taskilo.de",
+            "http://taskilo.de"
+        ],
+        region: "europe-west1"
+    },
     async (request: CallableRequest<OrderActionPayload>) => {
         logger.info(`[acceptOrder] Called for order: ${request.data.orderId}`);
+        logger.info(`[acceptOrder] Auth context:`, {
+            hasAuth: !!request.auth,
+            uid: request.auth?.uid,
+            token: request.auth?.token ? 'present' : 'missing'
+        });
+        
         if (!request.auth) {
+            logger.error('[acceptOrder] Authentication missing');
             throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
 
@@ -124,7 +145,21 @@ export const acceptOrder = onCall(
  * Ändert den Status zu 'abgelehnt_vom_anbieter'.
  */
 export const rejectOrder = onCall(
-    { cors: corsOptions },
+    { 
+        cors: [
+            "http://localhost:3000", 
+            "http://localhost:3001", 
+            "http://localhost:3002",
+            "https://tilvo-f142f.web.app", 
+            "http://localhost:5002",
+            "https://tasko-rho.vercel.app",
+            "https://tasko-zh8k.vercel.app",
+            "https://tasko-live.vercel.app",
+            "https://taskilo.de",
+            "http://taskilo.de"
+        ],
+        region: "europe-west1"
+    },
     async (request: CallableRequest<RejectOrderPayload>) => {
         logger.info(`[rejectOrder] Called for order: ${request.data.orderId}`);
         if (!request.auth) {

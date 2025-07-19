@@ -16,6 +16,8 @@ setGlobalOptions({
     concurrency: 1, // <-- Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
 });
 
+import * as httpOrders from './http_orders';
+
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.
 
 import * as callableStripe from './callable_stripe';
@@ -69,6 +71,7 @@ export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStr
 
 // Order Callables
 export const acceptOrder = callableOrders.acceptOrder;
+export const acceptOrderHTTP = httpOrders.acceptOrderHTTP;
 export const rejectOrder = callableOrders.rejectOrder;
 export const getUserOrders = getUserOrdersModule.getUserOrders;
 export const getProviderOrders = getProviderOrdersModule.getProviderOrders;

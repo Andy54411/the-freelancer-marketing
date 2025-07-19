@@ -5,7 +5,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { db, functions } from '@/firebase/clients';
+import { db, functions, auth } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
 
 // Icons für UI
@@ -207,9 +207,46 @@ export default function CompanyOrderDetailPage() {
     if (!order) return;
     setIsActionLoading(true);
     setActionError(null);
+
     try {
-      const acceptOrderCallable = httpsCallable(functions, 'acceptOrder');
-      await acceptOrderCallable({ orderId: order.id });
+      // Debug: Prüfe Auth Status
+      console.log('Debug: Current User:', currentUser);
+      console.log('Debug: Auth Loading:', authLoading);
+
+      if (!currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // Debug: Hole ID Token für HTTP Request
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error('Firebase currentUser ist null');
+      }
+
+      const idToken = await firebaseUser.getIdToken();
+      console.log('Debug: ID Token (erste 50 Zeichen):', idToken.substring(0, 50) + '...');
+
+      // HTTP Request zur acceptOrderHTTP Function
+      const response = await fetch(
+        'https://europe-west1-tilvo-f142f.cloudfunctions.net/acceptOrderHTTP',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ orderId: order.id }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'HTTP Error');
+      }
+
+      const result = await response.json();
+      console.log('Accept Order Success:', result);
+
       setOrder(prev => (prev ? { ...prev, status: 'AKTIV' } : null));
     } catch (err: any) {
       console.error('Fehler beim Annehmen des Auftrags:', err);
@@ -284,17 +321,17 @@ export default function CompanyOrderDetailPage() {
   const isViewerProvider = currentUser.uid === order.providerId;
   const cardUser = isViewerProvider
     ? {
-      id: order.customerId,
-      name: order.customerName,
-      avatarUrl: order.customerAvatarUrl,
-      role: 'customer' as const,
-    }
+        id: order.customerId,
+        name: order.customerName,
+        avatarUrl: order.customerAvatarUrl,
+        role: 'customer' as const,
+      }
     : {
-      id: order.providerId,
-      name: order.providerName,
-      avatarUrl: order.providerAvatarUrl,
-      role: 'provider' as const,
-    };
+        id: order.providerId,
+        name: order.providerName,
+        avatarUrl: order.providerAvatarUrl,
+        role: 'provider' as const,
+      };
 
   return (
     <Suspense
