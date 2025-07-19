@@ -14,10 +14,9 @@ import {
   FiFolder,
 } from 'react-icons/fi';
 import Link from 'next/link';
-import { httpsCallable } from 'firebase/functions';
 import { Button } from '@/components/ui/button'; // Importiere die Button-Komponente
-import { functions } from '@/firebase/clients'; // Importiere die konfigurierte functions-Instanz
 import { useAuth, AuthContextType } from '@/contexts/AuthContext'; // AuthContextType importiert für bessere Typisierung
+import { getUserOrders } from '@/app/api/getUserOrders'; // Import für die HTTP API
 
 // Dieses Interface sollte exakt dem Rückgabetyp der `getUserOrders`-Funktion entsprechen.
 // Die Backend-Funktion liefert bereits alle benötigten Felder in einem sauberen Format.
@@ -87,19 +86,21 @@ const OrdersOverviewPage = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Annahme: Du hast eine Cloud Function 'getUserOrders'
-        // die { userId: string } als Daten erwartet und { orders: Order[] } zurückgibt.
-        const getUserOrdersCallable = httpsCallable<{ userId: string }, { orders: Order[] }>(
-          functions,
-          'getUserOrders'
-        );
         console.log(`[OrdersOverviewPage] Rufe getUserOrders für User ${uidFromParams} auf...`);
-        const result = await getUserOrdersCallable({ userId: uidFromParams });
 
-        if (result.data && Array.isArray(result.data.orders)) {
+        // Get ID token for authentication
+        const idToken = await authContext.firebaseUser?.getIdToken();
+        if (!idToken) {
+          throw new Error('No authentication token available');
+        }
+
+        // Use HTTP API instead of callable function
+        const orders = await getUserOrders(uidFromParams, idToken, 'customer');
+
+        if (Array.isArray(orders)) {
           // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus,
           // da diese in der Übersicht nicht angezeigt werden sollen.
-          const visibleOrders = (result.data.orders as Order[]).filter(
+          const visibleOrders = (orders as Order[]).filter(
             order => order.status !== 'abgelehnt_vom_anbieter'
           );
           setOrders(visibleOrders);
@@ -109,9 +110,10 @@ const OrdersOverviewPage = () => {
       } catch (err: any) {
         console.error('Fehler beim Laden der Aufträge:', err);
         let detailedMessage = 'Ein unbekannter Fehler ist aufgetreten.';
-        if (err.code === 'functions/internal') {
-          detailedMessage =
-            'Ein interner Serverfehler ist aufgetreten. Dies deutet oft auf ein Problem mit der Cloud Function oder einen fehlenden Datenbank-Index hin. Bitte überprüfen Sie die Firebase Function-Logs für weitere Details.';
+        if (err.message?.includes('Token expired')) {
+          detailedMessage = 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
+        } else if (err.message?.includes('Unauthorized')) {
+          detailedMessage = 'Sie sind nicht berechtigt, diese Aufträge zu sehen.';
         } else if (err.message) {
           detailedMessage = err.message;
         }

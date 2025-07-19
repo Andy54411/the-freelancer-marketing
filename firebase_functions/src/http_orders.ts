@@ -147,3 +147,139 @@ export const acceptOrderHTTP = onRequest(
         }
     }
 );
+
+// HTTP version of getUserOrders to handle CORS properly
+export const getUserOrdersHTTP = onRequest(
+    { cors: true, region: 'europe-west1', timeoutSeconds: 180 },
+    async (request, response) => {
+        // Handle CORS preflight
+        if (request.method === 'OPTIONS') {
+            response.set('Access-Control-Allow-Origin', '*');
+            response.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+            response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            response.set('Access-Control-Max-Age', '3600');
+            response.status(204).send('');
+            return;
+        }
+
+        // Set CORS headers for actual request
+        response.set('Access-Control-Allow-Origin', '*');
+        response.set('Access-Control-Allow-Methods', 'POST');
+        response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+        if (request.method !== 'POST') {
+            response.status(405).json({ error: 'Method not allowed' });
+            return;
+        }
+
+        try {
+            // Verify authentication
+            const authHeader = request.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                response.status(401).json({ error: 'Unauthorized: No valid token provided' });
+                return;
+            }
+
+            const idToken = authHeader.split('Bearer ')[1];
+            const decodedToken = await getAuth().verifyIdToken(idToken);
+            const userId = decodedToken.uid;
+
+            // Get request data
+            const { userType, limit = 20, lastOrderId } = request.body;
+
+            const db = getDb();
+            let ordersQuery: any;
+
+            if (userType === 'customer') {
+                ordersQuery = db.collection('orders').where('customerId', '==', userId);
+            } else if (userType === 'provider') {
+                ordersQuery = db.collection('orders').where('providerId', '==', userId);
+            } else {
+                response.status(400).json({ error: 'Invalid userType. Must be either "customer" or "provider".' });
+                return;
+            }
+
+            ordersQuery = ordersQuery.orderBy('createdAt', 'desc').limit(limit);
+
+            if (lastOrderId) {
+                const lastOrderDoc = await db.collection('orders').doc(lastOrderId).get();
+                if (lastOrderDoc.exists) {
+                    ordersQuery = ordersQuery.startAfter(lastOrderDoc);
+                }
+            }
+
+            const ordersSnapshot = await ordersQuery.get();
+            const orders = [];
+
+            for (const orderDoc of ordersSnapshot.docs) {
+                const orderData = orderDoc.data();
+                
+                // Get user data
+                let userData = null;
+                if (userType === 'customer' && orderData.providerId) {
+                    const userDoc = await db.collection('users').doc(orderData.providerId).get();
+                    if (userDoc.exists) {
+                        const data = userDoc.data();
+                        userData = {
+                            uid: userDoc.id,
+                            firstName: data?.firstName || '',
+                            lastName: data?.lastName || '',
+                            profilePicture: data?.profilePicture || null,
+                            companyName: data?.companyName || null,
+                            rating: data?.rating || null,
+                            reviewCount: data?.reviewCount || 0,
+                        };
+                    }
+                } else if (userType === 'provider' && orderData.customerId) {
+                    const userDoc = await db.collection('users').doc(orderData.customerId).get();
+                    if (userDoc.exists) {
+                        const data = userDoc.data();
+                        userData = {
+                            uid: userDoc.id,
+                            firstName: data?.firstName || '',
+                            lastName: data?.lastName || '',
+                            profilePicture: data?.profilePicture || null,
+                        };
+                    }
+                }
+
+                // Get category data
+                let categoryData = null;
+                if (orderData.categoryId) {
+                    const categoryDoc = await db.collection('categories').doc(orderData.categoryId).get();
+                    if (categoryDoc.exists) {
+                        const data = categoryDoc.data();
+                        categoryData = {
+                            id: categoryDoc.id,
+                            name: data?.name || '',
+                            icon: data?.icon || null,
+                        };
+                    }
+                }
+
+                orders.push({
+                    id: orderDoc.id,
+                    ...orderData,
+                    user: userData,
+                    category: categoryData,
+                });
+            }
+
+            response.status(200).json({
+                success: true,
+                orders: orders,
+                hasMore: ordersSnapshot.size === limit
+            });
+
+        } catch (error: any) {
+            console.error('Error in getUserOrdersHTTP:', error);
+            if (error.code === 'auth/id-token-expired') {
+                response.status(401).json({ error: 'Token expired' });
+            } else if (error.code === 'auth/invalid-id-token') {
+                response.status(401).json({ error: 'Invalid token' });
+            } else {
+                response.status(500).json({ error: 'Internal server error' });
+            }
+        }
+    }
+);

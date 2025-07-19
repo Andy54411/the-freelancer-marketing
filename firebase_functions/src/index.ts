@@ -72,6 +72,7 @@ export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStr
 // Order Callables
 export const acceptOrder = callableOrders.acceptOrder;
 export const acceptOrderHTTP = httpOrders.acceptOrderHTTP;
+export const getUserOrdersHTTP = httpOrders.getUserOrdersHTTP;
 export const rejectOrder = callableOrders.rejectOrder;
 export const getUserOrders = getUserOrdersModule.getUserOrders;
 export const getProviderOrders = getProviderOrdersModule.getProviderOrders;
