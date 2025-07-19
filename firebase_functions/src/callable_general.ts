@@ -413,10 +413,12 @@ export const syncSpecificCompanyToUser = onCall(
     region: "europe-west1",
     memory: "512MiB",
   },
-  async (request: CallableRequest<{ companyId: string }>): Promise<{ success: boolean; message: string; }> => {
-    logger.info(`[syncSpecificCompanyToUser] Syncing company ${request.data.companyId} to user data`);
+  async (request: CallableRequest<{ companyId?: string }>): Promise<{ success: boolean; message: string; }> => {
+    // Use default companyId if not provided
+    const companyId = request.data?.companyId || "BsUxClYQtkNWRmpSY17YsJyVR0D2";
+    
+    logger.info(`[syncSpecificCompanyToUser] Syncing company ${companyId} to user data`);
 
-    const { companyId } = request.data;
     if (!companyId || typeof companyId !== "string") {
       throw new HttpsError("invalid-argument", "companyId is required and must be a string.");
     }
@@ -511,8 +513,8 @@ export const syncSpecificCompanyToUser = onCall(
 
       await userDocRef.update(cleanedUpdate);
 
-      logger.info(`[syncSpecificCompanyToUser] Successfully synced company ${companyId} to user data.`);
-      return { success: true, message: `Successfully synced company ${companyId} to user data.` };
+      logger.info(`[syncSpecificCompanyToUser] Successfully synced company ${companyId} to user data. Updated ${Object.keys(cleanedUpdate).length} fields.`);
+      return { success: true, message: `Successfully synced company ${companyId} to user data. Updated ${Object.keys(cleanedUpdate).length} fields.` };
 
     } catch (error: any) {
       logger.error(`[syncSpecificCompanyToUser] Error syncing company ${companyId}:`, error);

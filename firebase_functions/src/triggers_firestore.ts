@@ -257,6 +257,149 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
   return null;
 });
 
+export const syncCompanyToUserOnUpdate = onDocumentUpdated("companies/{companyId}", async (event) => {
+  const companyId = event.params.companyId;
+  const beforeData = event.data?.before.data();
+  const afterData = event.data?.after.data();
+  
+  if (!afterData) {
+    loggerV2.warn(`[syncCompanyToUserOnUpdate] No data after update for company ${companyId}. Skipping.`);
+    return null;
+  }
+
+  if (!beforeData) {
+    loggerV2.info(`[syncCompanyToUserOnUpdate] No before data for company ${companyId}. Proceeding with full sync.`);
+  } else {
+    // Check if any relevant fields have actually changed
+    const relevantFields = [
+      'companyName', 'description', 'hourlyRate', 'selectedCategory', 'selectedSubcategory',
+      'lat', 'lng', 'radiusKm', 'companyPostalCodeForBackend', 'companyCityForBackend', 'companyCountryForBackend',
+      'companyPhoneNumberForBackend', 'companyWebsiteForBackend',
+      'profilePictureURL', 'profilePictureFirebaseUrl',
+      'stripeAccountId', 'stripeChargesEnabled', 'stripePayoutsEnabled', 'stripeDetailsSubmitted', 'stripeVerificationStatus',
+      'specialties', 'portfolio', 'skills', 'languages', 'education', 'certifications',
+      'responseTime', 'responseTimeGuarantee', 'completionRate', 'totalOrders', 'averageRating', 'totalReviews',
+      'industryMcc', 'postalCode', 'companyCity'
+    ];
+
+    let hasChanges = false;
+    const changedFields: string[] = [];
+
+    for (const field of relevantFields) {
+      const beforeValue = beforeData[field];
+      const afterValue = afterData[field];
+      
+      // Deep comparison for objects/arrays, simple comparison for primitives
+      if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
+        hasChanges = true;
+        changedFields.push(field);
+      }
+    }
+
+    if (!hasChanges) {
+      loggerV2.info(`[syncCompanyToUserOnUpdate] No relevant changes detected for company ${companyId}. Skipping sync.`);
+      return null;
+    }
+
+    loggerV2.info(`[syncCompanyToUserOnUpdate] Company ${companyId} has changes in fields: [${changedFields.join(', ')}]. Proceeding with sync.`);
+  }
+
+  const db = getDb();
+  try {
+    // Check if corresponding user document exists
+    const userDocRef = db.collection("users").doc(companyId);
+    const userDoc = await userDocRef.get();
+    
+    if (!userDoc.exists) {
+      loggerV2.warn(`[syncCompanyToUserOnUpdate] User document ${companyId} does not exist. Skipping sync.`);
+      return null;
+    }
+
+    // Prepare user data update with company data
+    const userDataUpdate: Record<string, unknown> = {
+      // Basic company info
+      companyName: afterData.companyName || null,
+      description: afterData.description || null,
+      hourlyRate: afterData.hourlyRate || null,
+      selectedCategory: afterData.selectedCategory || null,
+      selectedSubcategory: afterData.selectedSubcategory || null,
+      
+      // Location data
+      lat: afterData.lat || null,
+      lng: afterData.lng || null,
+      radiusKm: afterData.radiusKm || null,
+      companyPostalCodeForBackend: afterData.companyPostalCodeForBackend || afterData.postalCode || null,
+      companyCityForBackend: afterData.companyCityForBackend || afterData.companyCity || null,
+      companyCountryForBackend: afterData.companyCountryForBackend || null,
+      
+      // Contact and business info
+      companyPhoneNumberForBackend: afterData.companyPhoneNumberForBackend || null,
+      companyWebsiteForBackend: afterData.companyWebsiteForBackend || null,
+      
+      // Profile and media
+      profilePictureFirebaseUrl: afterData.profilePictureURL || afterData.profilePictureFirebaseUrl || null,
+      profilePictureURL: afterData.profilePictureURL || afterData.profilePictureFirebaseUrl || null,
+      
+      // Business details from step2
+      'step2.companyName': afterData.companyName || null,
+      'step2.description': afterData.description || null,
+      'step2.city': afterData.companyCity || afterData.companyCityForBackend || null,
+      'step2.country': afterData.companyCountryForBackend || null,
+      'step2.industryMcc': afterData.industryMcc || null,
+      
+      // Technical details from step3  
+      'step3.hourlyRate': afterData.hourlyRate ? String(afterData.hourlyRate) : null,
+      'step3.profilePictureURL': afterData.profilePictureURL || afterData.profilePictureFirebaseUrl || null,
+      
+      // Stripe and verification data
+      stripeAccountId: afterData.stripeAccountId || null,
+      stripeChargesEnabled: afterData.stripeChargesEnabled || false,
+      stripePayoutsEnabled: afterData.stripePayoutsEnabled || false,
+      stripeDetailsSubmitted: afterData.stripeDetailsSubmitted || false,
+      stripeVerificationStatus: afterData.stripeVerificationStatus || null,
+      
+      // Additional profile data
+      specialties: afterData.specialties || null,
+      portfolio: afterData.portfolio || null,
+      skills: afterData.skills || null,
+      languages: afterData.languages || null,
+      education: afterData.education || null,
+      certifications: afterData.certifications || null,
+      
+      // Metrics and performance
+      responseTime: afterData.responseTime || afterData.responseTimeGuarantee || null,
+      completionRate: afterData.completionRate || null,
+      totalOrders: afterData.totalOrders || null,
+      averageRating: afterData.averageRating || null,
+      totalReviews: afterData.totalReviews || null,
+      
+      // Timestamps
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    // Remove null values to avoid overwriting existing data with nulls
+    const cleanedUpdate: { [x: string]: any } = Object.fromEntries(
+      Object.entries(userDataUpdate).filter(([_, value]) => value !== null)
+    );
+
+    if (Object.keys(cleanedUpdate).length > 0) {
+      await userDocRef.update(cleanedUpdate);
+      loggerV2.info(`[syncCompanyToUserOnUpdate] Successfully synced company ${companyId} data to user document. Updated ${Object.keys(cleanedUpdate).length} fields.`);
+    } else {
+      loggerV2.info(`[syncCompanyToUserOnUpdate] No non-null data to sync for company ${companyId}.`);
+    }
+    
+    return null;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      loggerV2.error(`[syncCompanyToUserOnUpdate] Error syncing company ${companyId} to user:`, error.message, error);
+    } else {
+      loggerV2.error(`[syncCompanyToUserOnUpdate] Error syncing company ${companyId} to user:`, String(error));
+    }
+    return null;
+  }
+});
+
 export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{userId}", async (event) => {
   const userId = event.params.userId;
   loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
