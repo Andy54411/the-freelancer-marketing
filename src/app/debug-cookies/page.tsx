@@ -7,8 +7,22 @@ export default function DebugCookiesPage() {
   const [localStorage, setLocalStorage] = useState<{ [key: string]: string }>({});
   const [gtmLoaded, setGtmLoaded] = useState(false);
   const [gaLoaded, setGaLoaded] = useState(false);
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
 
   useEffect(() => {
+    // Capture console logs related to GTM
+    const originalLog = console.log;
+    const capturedLogs: string[] = [];
+
+    console.log = (...args) => {
+      const message = args.join(' ');
+      if (message.includes('GTM') || message.includes('🚀')) {
+        capturedLogs.push(message);
+        setConsoleLogs([...capturedLogs]);
+      }
+      originalLog.apply(console, args);
+    };
+
     // Check all cookies
     const allCookies = document.cookie.split(';').map(cookie => cookie.trim());
     setCookies(allCookies);
@@ -32,6 +46,11 @@ export default function DebugCookiesPage() {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       setGaLoaded(true);
     }
+
+    // Cleanup
+    return () => {
+      console.log = originalLog;
+    };
   }, []);
 
   const testCookie = () => {
@@ -202,6 +221,29 @@ export default function DebugCookiesPage() {
             </div>
           </div>
         )}
+
+        {/* Console Logs */}
+        <div className="mt-6 bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">GTM Console Logs</h2>
+          <div className="max-h-64 overflow-y-auto">
+            {consoleLogs.length > 0 ? (
+              <ul className="space-y-1 text-sm">
+                {consoleLogs.map((log, index) => (
+                  <li
+                    key={index}
+                    className="font-mono text-xs bg-green-50 p-2 rounded text-green-700"
+                  >
+                    🚀 {log}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 italic">
+                No GTM logs captured yet. Reload the page to see initialization logs.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
