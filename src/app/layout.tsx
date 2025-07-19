@@ -48,16 +48,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               
               // Check for saved consent first
               let savedConsent = null;
+              let hasAnalyticsCookies = false;
+              
               try {
                 const stored = localStorage.getItem('taskilo-cookie-consent');
                 if (stored) {
                   savedConsent = JSON.parse(stored);
                 }
+                
+                // Check if analytics cookies already exist (indicating previous consent)
+                hasAnalyticsCookies = document.cookie.includes('_ga=') || document.cookie.includes('_ga_');
               } catch (e) {
-                console.log('No saved consent found');
+                console.log('No saved consent found, checking for existing cookies');
+                hasAnalyticsCookies = document.cookie.includes('_ga=') || document.cookie.includes('_ga_');
               }
               
-              // Set consent state based on saved preferences or defaults
+              // Set consent state based on saved preferences, existing cookies, or defaults
               if (savedConsent) {
                 gtag('consent', 'default', {
                   'analytics_storage': savedConsent.analytics ? 'granted' : 'denied',
@@ -70,6 +76,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   'wait_for_update': 500
                 });
                 console.log('🚀 GTM initialized with saved consent:', savedConsent);
+              } else if (hasAnalyticsCookies) {
+                // If analytics cookies exist but no saved consent, assume previous consent
+                gtag('consent', 'default', {
+                  'analytics_storage': 'granted',
+                  'ad_storage': 'granted',
+                  'ad_user_data': 'granted',
+                  'ad_personalization': 'granted',
+                  'functionality_storage': 'granted',
+                  'personalization_storage': 'granted',
+                  'security_storage': 'granted',
+                  'wait_for_update': 500
+                });
+                console.log('🚀 GTM initialized with inferred consent from existing cookies');
               } else {
                 gtag('consent', 'default', {
                   'analytics_storage': 'denied',
