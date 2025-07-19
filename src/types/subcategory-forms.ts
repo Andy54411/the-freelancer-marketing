@@ -24,6 +24,16 @@ export interface MalerData extends BaseSubcategoryData {
   wallHeight?: number;
   paintType: 'innenfarbe' | 'aussenfarbe' | 'spezialfarbe';
   paintColor?: string;
+  selectedFarbeName?:
+    | 'Schneeweiß'
+    | 'Warmgrau'
+    | 'Himmelblau'
+    | 'Waldgrün'
+    | 'Terrakotta'
+    | 'Anthrazit';
+  colorIntensity?: 'hell' | 'mittel' | 'dunkel';
+  paintQuality?: 'standard' | 'premium' | 'profi';
+  glossLevel?: 'matt' | 'seidenmatt' | 'seidenglanz' | 'glaenzend';
   materialProvided: 'kunde' | 'handwerker' | 'gemeinsam';
   surfaceCondition: 'gut' | 'renovierungsbedürftig' | 'stark_beschädigt';
   additionalServices: string[];

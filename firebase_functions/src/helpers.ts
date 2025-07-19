@@ -21,7 +21,9 @@ export const corsOptions: string[] = [
   "https://tilvo-f142f.web.app", "http://localhost:5002",
   "https://tasko-rho.vercel.app",
   "https://tasko-zh8k.vercel.app",
-  "https://tasko-live.vercel.app"
+  "https://tasko-live.vercel.app",
+  "https://taskilo.de",
+  "http://taskilo.de"
 ];
 
 let dbInstance: Firestore;
