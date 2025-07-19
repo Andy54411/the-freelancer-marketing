@@ -2,6 +2,19 @@
 
 import { useState, useEffect } from 'react';
 
+// Global console log capture - starts immediately
+const capturedLogs: string[] = [];
+const originalConsoleLog = console.log;
+
+// Override console.log immediately
+console.log = (...args) => {
+  const message = args.join(' ');
+  if (message.includes('GTM') || message.includes('🚀')) {
+    capturedLogs.push(`${new Date().toLocaleTimeString()}: ${message}`);
+  }
+  originalConsoleLog.apply(console, args);
+};
+
 export default function DebugCookiesPage() {
   const [cookies, setCookies] = useState<string[]>([]);
   const [localStorage, setLocalStorage] = useState<{ [key: string]: string }>({});
@@ -10,18 +23,8 @@ export default function DebugCookiesPage() {
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
 
   useEffect(() => {
-    // Capture console logs related to GTM
-    const originalLog = console.log;
-    const capturedLogs: string[] = [];
-
-    console.log = (...args) => {
-      const message = args.join(' ');
-      if (message.includes('GTM') || message.includes('🚀')) {
-        capturedLogs.push(message);
-        setConsoleLogs([...capturedLogs]);
-      }
-      originalLog.apply(console, args);
-    };
+    // Load any previously captured logs
+    setConsoleLogs([...capturedLogs]);
 
     // Check all cookies
     const allCookies = document.cookie.split(';').map(cookie => cookie.trim());
@@ -49,7 +52,7 @@ export default function DebugCookiesPage() {
 
     // Cleanup
     return () => {
-      console.log = originalLog;
+      console.log = originalConsoleLog;
     };
   }, []);
 
@@ -74,15 +77,6 @@ export default function DebugCookiesPage() {
   };
 
   const triggerConsentUpdate = () => {
-    // Manually trigger consent update for debugging
-    const testConsent = {
-      necessary: true,
-      analytics: true,
-      marketing: true,
-      functional: true,
-      personalization: true,
-    };
-
     if (typeof window !== 'undefined' && (window as any).dataLayer) {
       (window as any).dataLayer.push({
         event: 'consent_update',
@@ -112,6 +106,10 @@ export default function DebugCookiesPage() {
     }
 
     console.log('🚀 Consent update triggered!');
+  };
+
+  const refreshLogs = () => {
+    setConsoleLogs([...capturedLogs]);
   };
 
   return (
@@ -158,6 +156,12 @@ export default function DebugCookiesPage() {
                 className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
               >
                 🚀 Force Consent Update
+              </button>
+              <button
+                onClick={refreshLogs}
+                className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700"
+              >
+                🔄 Refresh GTM Logs
               </button>
               <button
                 onClick={clearAllCookies}
@@ -224,23 +228,31 @@ export default function DebugCookiesPage() {
 
         {/* Console Logs */}
         <div className="mt-6 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">GTM Console Logs</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">
+            GTM Console Logs ({consoleLogs.length})
+          </h2>
           <div className="max-h-64 overflow-y-auto">
             {consoleLogs.length > 0 ? (
               <ul className="space-y-1 text-sm">
                 {consoleLogs.map((log, index) => (
                   <li
                     key={index}
-                    className="font-mono text-xs bg-green-50 p-2 rounded text-green-700"
+                    className="font-mono text-xs bg-green-50 p-2 rounded text-green-700 border-l-4 border-green-400"
                   >
-                    🚀 {log}
+                    {log}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500 italic">
-                No GTM logs captured yet. Reload the page to see initialization logs.
-              </p>
+              <div className="text-gray-500 italic space-y-2">
+                <p>No GTM logs captured yet.</p>
+                <p className="text-sm">
+                  <strong>Tips:</strong>
+                  <br />• Reload the page to capture initialization logs
+                  <br />• Click &quot;🔄 Refresh GTM Logs&quot; to update
+                  <br />• Use &quot;🚀 Force Consent Update&quot; to test
+                </p>
+              </div>
             )}
           </div>
         </div>
