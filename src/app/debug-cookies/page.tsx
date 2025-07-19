@@ -112,6 +112,44 @@ export default function DebugCookiesPage() {
     setConsoleLogs([...capturedLogs]);
   };
 
+  const showCurrentConsentState = () => {
+    try {
+      const stored = window.localStorage.getItem('taskilo-cookie-consent');
+      const hasAnalyticsCookies =
+        document.cookie.includes('_ga=') || document.cookie.includes('_ga_');
+
+      // Simulate the same logic as in layout.tsx
+      let simulatedPath = 'UNKNOWN';
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        simulatedPath = 'SAVED_CONSENT';
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: ✅ SAVED CONSENT FOUND: ${JSON.stringify(parsed)}`
+        );
+      } else if (hasAnalyticsCookies) {
+        simulatedPath = 'INFERRED_FROM_COOKIES';
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: 🍪 COOKIE INFERENCE: Analytics cookies detected`
+        );
+      } else {
+        simulatedPath = 'DEFAULT_DENIED';
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: 🚫 DEFAULT DENIED: No consent or cookies found`
+        );
+      }
+
+      capturedLogs.push(
+        `${new Date().toLocaleTimeString()}: 🎯 GTM SHOULD INITIALIZE WITH: ${simulatedPath}`
+      );
+      setConsoleLogs([...capturedLogs]);
+    } catch (e) {
+      capturedLogs.push(
+        `${new Date().toLocaleTimeString()}: ❌ Error checking consent state: ${e}`
+      );
+      setConsoleLogs([...capturedLogs]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto">
@@ -162,6 +200,12 @@ export default function DebugCookiesPage() {
                 className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700"
               >
                 🔄 Refresh GTM Logs
+              </button>
+              <button
+                onClick={showCurrentConsentState}
+                className="w-full bg-yellow-600 text-white py-2 px-4 rounded hover:bg-yellow-700"
+              >
+                📊 Show Consent State
               </button>
               <button
                 onClick={clearAllCookies}
