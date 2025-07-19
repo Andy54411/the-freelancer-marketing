@@ -21,14 +21,123 @@ export default function DebugCookiesPage() {
   const [gtmLoaded, setGtmLoaded] = useState(false);
   const [gaLoaded, setGaLoaded] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const [cookieHistory, setCookieHistory] = useState<{ timestamp: string; cookies: string[] }[]>(
+    []
+  );
+  const [recentlyAdded, setRecentlyAdded] = useState<Set<string>>(new Set());
+  const [monitoringActive, setMonitoringActive] = useState(false);
 
   useEffect(() => {
     // Load any previously captured logs
     setConsoleLogs([...capturedLogs]);
 
-    // Check all cookies
-    const allCookies = document.cookie.split(';').map(cookie => cookie.trim());
-    setCookies(allCookies);
+    // Initial cookie check
+    const initialCookies = document.cookie
+      .split(';')
+      .map(cookie => cookie.trim())
+      .filter(c => c);
+    setCookies(initialCookies);
+
+    // Add to history
+    setCookieHistory([
+      {
+        timestamp: new Date().toLocaleTimeString(),
+        cookies: initialCookies,
+      },
+    ]);
+
+    // Check if consent has been given
+    const checkConsentAndStartMonitoring = () => {
+      const storedConsent = window.localStorage.getItem('taskilo-cookie-consent');
+      let hasAnalyticsConsent = false;
+
+      if (storedConsent) {
+        try {
+          const parsed = JSON.parse(storedConsent);
+          hasAnalyticsConsent = parsed.analytics === true;
+        } catch (e) {
+          console.log('Error parsing consent:', e);
+        }
+      }
+
+      // Only start cookie monitoring if analytics consent is given
+      if (hasAnalyticsConsent) {
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: ✅ ANALYTICS CONSENT GRANTED - Starting cookie monitoring`
+        );
+        setConsoleLogs([...capturedLogs]);
+        setMonitoringActive(true);
+
+        // Cookie monitoring - check every 2 seconds for new cookies
+        const cookieInterval = setInterval(() => {
+          const currentCookies = document.cookie
+            .split(';')
+            .map(cookie => cookie.trim())
+            .filter(c => c);
+
+          setCookies(prevCookies => {
+            // Check if cookies have changed
+            if (JSON.stringify(currentCookies.sort()) !== JSON.stringify(prevCookies.sort())) {
+              const newCookies = currentCookies.filter(cookie => !prevCookies.includes(cookie));
+              const removedCookies = prevCookies.filter(cookie => !currentCookies.includes(cookie));
+
+              // Log changes
+              if (newCookies.length > 0) {
+                capturedLogs.push(
+                  `${new Date().toLocaleTimeString()}: 🍪 NEW COOKIES DETECTED: ${newCookies.join(', ')}`
+                );
+                setConsoleLogs([...capturedLogs]);
+              }
+              if (removedCookies.length > 0) {
+                capturedLogs.push(
+                  `${new Date().toLocaleTimeString()}: 🗑️ COOKIES REMOVED: ${removedCookies.join(', ')}`
+                );
+                setConsoleLogs([...capturedLogs]);
+              }
+
+              // Update history
+              setCookieHistory(prev =>
+                [
+                  ...prev,
+                  {
+                    timestamp: new Date().toLocaleTimeString(),
+                    cookies: currentCookies,
+                  },
+                ].slice(-10)
+              ); // Keep last 10 entries
+            }
+            return currentCookies;
+          });
+        }, 2000);
+
+        return cookieInterval;
+      } else {
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: ⛔ NO ANALYTICS CONSENT - Cookie monitoring disabled`
+        );
+        setConsoleLogs([...capturedLogs]);
+        setMonitoringActive(false);
+        return null;
+      }
+    };
+
+    // Start monitoring based on consent
+    let cookieInterval: NodeJS.Timeout | null = checkConsentAndStartMonitoring();
+
+    // Listen for storage changes (when consent is updated)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'taskilo-cookie-consent') {
+        // Clear existing interval
+        if (cookieInterval) {
+          clearInterval(cookieInterval);
+          cookieInterval = null;
+        }
+        // Restart monitoring based on new consent
+        cookieInterval = checkConsentAndStartMonitoring();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     // Check localStorage
     const localStorageData: { [key: string]: string } = {};
@@ -53,6 +162,10 @@ export default function DebugCookiesPage() {
     // Cleanup
     return () => {
       console.log = originalConsoleLog;
+      if (cookieInterval) {
+        clearInterval(cookieInterval);
+      }
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -150,6 +263,103 @@ export default function DebugCookiesPage() {
     }
   };
 
+  const testConsentFlow = () => {
+    // Simulate giving analytics consent
+    const testConsent = {
+      necessary: true,
+      analytics: true,
+      marketing: false,
+      functional: true,
+      personalization: false,
+    };
+
+    window.localStorage.setItem('taskilo-cookie-consent', JSON.stringify(testConsent));
+
+    // Trigger storage event manually (for same-tab updates)
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'taskilo-cookie-consent',
+        newValue: JSON.stringify(testConsent),
+        oldValue: null,
+      })
+    );
+
+    capturedLogs.push(
+      `${new Date().toLocaleTimeString()}: 🧪 TEST: Analytics consent granted - Monitoring should activate`
+    );
+    setConsoleLogs([...capturedLogs]);
+  };
+
+  const revokeConsent = () => {
+    // Simulate revoking analytics consent
+    const testConsent = {
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      functional: true,
+      personalization: false,
+    };
+
+    window.localStorage.setItem('taskilo-cookie-consent', JSON.stringify(testConsent));
+
+    // Trigger storage event manually
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'taskilo-cookie-consent',
+        newValue: JSON.stringify(testConsent),
+        oldValue: null,
+      })
+    );
+
+    capturedLogs.push(
+      `${new Date().toLocaleTimeString()}: 🧪 TEST: Analytics consent revoked - Monitoring should deactivate`
+    );
+    setConsoleLogs([...capturedLogs]);
+  };
+
+  const forceCheckCookies = () => {
+    const currentCookies = document.cookie
+      .split(';')
+      .map(cookie => cookie.trim())
+      .filter(c => c);
+    const currentCookieNames = currentCookies.map(cookie => cookie.split('=')[0]);
+    const previousCookieNames = cookies.map(cookie => cookie.split('=')[0]);
+
+    // Find new cookies
+    const newCookies = currentCookieNames.filter(name => !previousCookieNames.includes(name));
+
+    // Mark new cookies as recently added
+    if (newCookies.length > 0) {
+      setRecentlyAdded(prev => new Set([...Array.from(prev), ...newCookies]));
+      // Remove the "recently added" status after 5 seconds
+      setTimeout(() => {
+        setRecentlyAdded(prev => {
+          const updated = new Set(prev);
+          newCookies.forEach(cookie => updated.delete(cookie));
+          return updated;
+        });
+      }, 5000);
+    }
+
+    setCookies(currentCookies);
+
+    // Add to history
+    setCookieHistory(prev =>
+      [
+        ...prev,
+        {
+          timestamp: new Date().toLocaleTimeString(),
+          cookies: currentCookies,
+        },
+      ].slice(-10)
+    );
+
+    capturedLogs.push(
+      `${new Date().toLocaleTimeString()}: 🔍 MANUAL COOKIE CHECK: Found ${currentCookies.length} cookies${newCookies.length > 0 ? `, NEW: ${newCookies.join(', ')}` : ''}`
+    );
+    setConsoleLogs([...capturedLogs]);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto">
@@ -171,6 +381,10 @@ export default function DebugCookiesPage() {
               </p>
               <p>
                 <strong>GA Loaded:</strong> {gaLoaded ? '✅ Yes' : '❌ No'}
+              </p>
+              <p>
+                <strong>Cookie Monitoring:</strong>{' '}
+                {monitoringActive ? '✅ Active' : '⛔ Disabled (No Consent)'}
               </p>
               <p>
                 <strong>User Agent:</strong>{' '}
@@ -208,6 +422,24 @@ export default function DebugCookiesPage() {
                 📊 Show Consent State
               </button>
               <button
+                onClick={forceCheckCookies}
+                className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
+              >
+                🔍 Check Cookies Now
+              </button>
+              <button
+                onClick={testConsentFlow}
+                className="w-full bg-emerald-600 text-white py-2 px-4 rounded hover:bg-emerald-700"
+              >
+                🧪 Test: Grant Analytics Consent
+              </button>
+              <button
+                onClick={revokeConsent}
+                className="w-full bg-orange-600 text-white py-2 px-4 rounded hover:bg-orange-700"
+              >
+                🧪 Test: Revoke Analytics Consent
+              </button>
+              <button
                 onClick={clearAllCookies}
                 className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
               >
@@ -220,17 +452,57 @@ export default function DebugCookiesPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Current Cookies ({cookies.length})
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                {monitoringActive
+                  ? '(Auto-refreshes every 2s)'
+                  : '(Monitoring disabled - No consent)'}
+              </span>
             </h2>
+            {!monitoringActive && (
+              <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+                <p className="text-sm">
+                  ⚠️ <strong>Cookie-Monitoring deaktiviert:</strong> Analytics-Zustimmung
+                  erforderlich
+                </p>
+              </div>
+            )}
             <div className="max-h-64 overflow-y-auto">
               {cookies.length === 0 ? (
                 <p className="text-gray-500 italic">No cookies found</p>
               ) : (
                 <ul className="space-y-1 text-sm">
-                  {cookies.map((cookie, index) => (
-                    <li key={index} className="font-mono text-xs bg-gray-100 p-2 rounded">
-                      {cookie}
-                    </li>
-                  ))}
+                  {cookies.map((cookie, index) => {
+                    const cookieName = cookie.split('=')[0];
+                    const isAnalytics = cookie.includes('_ga');
+                    const isGTM = cookie.includes('GTM') || cookie.includes('TAG_ASSISTANT');
+                    const isTaskilo = cookie.includes('taskilo');
+                    const isNewlyAdded = recentlyAdded.has(cookieName);
+
+                    return (
+                      <li
+                        key={index}
+                        className={`font-mono text-xs p-2 rounded border-l-4 ${
+                          isNewlyAdded
+                            ? 'bg-yellow-100 border-yellow-500 animate-pulse'
+                            : isAnalytics
+                              ? 'bg-blue-50 border-blue-400'
+                              : isGTM
+                                ? 'bg-green-50 border-green-400'
+                                : isTaskilo
+                                  ? 'bg-purple-50 border-purple-400'
+                                  : 'bg-gray-100 border-gray-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isNewlyAdded && <span className="text-yellow-600 font-bold">🆕</span>}
+                          {isAnalytics && <span className="text-blue-600">📊</span>}
+                          {isGTM && <span className="text-green-600">🏷️</span>}
+                          {isTaskilo && <span className="text-purple-600">🍪</span>}
+                          <span>{cookie}</span>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -255,6 +527,41 @@ export default function DebugCookiesPage() {
                 </ul>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Cookie History */}
+        <div className="mt-6 bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">
+            Cookie History ({cookieHistory.length} entries)
+          </h2>
+          <div className="max-h-64 overflow-y-auto">
+            {cookieHistory.length === 0 ? (
+              <p className="text-gray-500 italic">No cookie history yet</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {cookieHistory
+                  .slice()
+                  .reverse()
+                  .map((entry, index) => (
+                    <li key={index} className="border-l-4 border-blue-400 pl-3 py-2">
+                      <div className="font-semibold text-blue-700 text-xs mb-1">
+                        {entry.timestamp} ({entry.cookies.length} cookies)
+                      </div>
+                      <div className="space-y-1">
+                        {entry.cookies.map((cookie, cookieIndex) => (
+                          <div
+                            key={cookieIndex}
+                            className="font-mono text-xs bg-blue-50 p-1 rounded"
+                          >
+                            {cookie}
+                          </div>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            )}
           </div>
         </div>
 
