@@ -317,6 +317,73 @@ export default function DebugCookiesPage() {
     setConsoleLogs([...capturedLogs]);
   };
 
+  const analyzeConsentFlow = () => {
+    try {
+      const stored = window.localStorage.getItem('taskilo-cookie-consent');
+      const hasAnalyticsCookies =
+        document.cookie.includes('_ga=') || document.cookie.includes('_ga_');
+
+      capturedLogs.push(`${new Date().toLocaleTimeString()}: 🔍 CONSENT FLOW ANALYSIS:`);
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: ✅ Saved Consent Found: ${JSON.stringify(parsed)}`
+        );
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: 📊 Analytics Consent: ${parsed.analytics ? 'GRANTED' : 'DENIED'}`
+        );
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: 🍪 Analytics Cookies Present: ${hasAnalyticsCookies ? 'YES' : 'NO'}`
+        );
+
+        if (!parsed.analytics && hasAnalyticsCookies) {
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: ⚠️ CRITICAL: Analytics denied but cookies exist - should be cleared!`
+          );
+        } else if (parsed.analytics && !hasAnalyticsCookies) {
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: ℹ️ Analytics granted but no cookies yet - normal for fresh consent`
+          );
+        } else if (parsed.analytics && hasAnalyticsCookies) {
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: ✅ Analytics granted and cookies present - correct state`
+          );
+        } else {
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: ✅ Analytics denied and no cookies - correct state`
+          );
+        }
+
+        capturedLogs.push(
+          `${new Date().toLocaleTimeString()}: 🎯 GTM should initialize with: analytics_storage=${parsed.analytics ? 'granted' : 'denied'}`
+        );
+      } else {
+        capturedLogs.push(`${new Date().toLocaleTimeString()}: ❌ No saved consent found`);
+        if (hasAnalyticsCookies) {
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: 🍪 Analytics cookies detected - will infer consent`
+          );
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: 🎯 GTM should initialize with: analytics_storage=granted (inferred)`
+          );
+        } else {
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: 🚫 No cookies found - will default to denied`
+          );
+          capturedLogs.push(
+            `${new Date().toLocaleTimeString()}: 🎯 GTM should initialize with: analytics_storage=denied (default)`
+          );
+        }
+      }
+
+      setConsoleLogs([...capturedLogs]);
+    } catch (e) {
+      capturedLogs.push(`${new Date().toLocaleTimeString()}: ❌ Error analyzing consent: ${e}`);
+      setConsoleLogs([...capturedLogs]);
+    }
+  };
+
   const forceCheckCookies = () => {
     const currentCookies = document.cookie
       .split(';')
@@ -420,6 +487,12 @@ export default function DebugCookiesPage() {
                 className="w-full bg-yellow-600 text-white py-2 px-4 rounded hover:bg-yellow-700"
               >
                 📊 Show Consent State
+              </button>
+              <button
+                onClick={analyzeConsentFlow}
+                className="w-full bg-cyan-600 text-white py-2 px-4 rounded hover:bg-cyan-700"
+              >
+                🔍 Analyze Consent Flow
               </button>
               <button
                 onClick={forceCheckCookies}

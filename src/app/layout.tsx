@@ -65,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               
               // Set consent state based on saved preferences, existing cookies, or defaults
               if (savedConsent) {
+                // ALWAYS respect saved consent - never override with cookie inference
                 gtag('consent', 'default', {
                   'analytics_storage': savedConsent.analytics ? 'granted' : 'denied',
                   'ad_storage': savedConsent.marketing ? 'granted' : 'denied',
@@ -76,8 +77,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   'wait_for_update': 500
                 });
                 console.log('🚀 GTM initialized with saved consent:', savedConsent);
+                
+                // If user revoked analytics consent, clear existing analytics cookies
+                if (!savedConsent.analytics && hasAnalyticsCookies) {
+                  console.log('⚠️ CLEARING ANALYTICS COOKIES - User revoked consent');
+                  // Clear Google Analytics cookies
+                  const cookiesToClear = ['_ga', '_ga_' + '${process.env.NEXT_PUBLIC_GA_ID}'.replace('G-', ''), '_gid', '_gat', '_gat_gtag_' + '${process.env.NEXT_PUBLIC_GA_ID}'];
+                  cookiesToClear.forEach(cookieName => {
+                    document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
+                    document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  });
+                }
               } else if (hasAnalyticsCookies) {
-                // If analytics cookies exist but no saved consent, assume previous consent
+                // Only infer consent from cookies if NO explicit consent decision was saved
                 gtag('consent', 'default', {
                   'analytics_storage': 'granted',
                   'ad_storage': 'granted',
