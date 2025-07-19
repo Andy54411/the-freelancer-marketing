@@ -27,20 +27,7 @@ const doRangesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): bo
  * Ändert den Status von 'zahlung_erhalten_clearing' zu 'AKTIV'.
  */
 export const acceptOrder = onCall(
-    { 
-        cors: [
-            "http://localhost:3000", 
-            "http://localhost:3001", 
-            "http://localhost:3002",
-            "https://tilvo-f142f.web.app", 
-            "http://localhost:5002",
-            "https://tasko-rho.vercel.app",
-            "https://tasko-zh8k.vercel.app",
-            "https://tasko-live.vercel.app",
-            "https://taskilo.de",
-            "http://taskilo.de"
-        ]
-    },
+    { cors: true },
     async (request: CallableRequest<OrderActionPayload>) => {
         logger.info(`[acceptOrder] Called for order: ${request.data.orderId}`);
         if (!request.auth) {
