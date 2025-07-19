@@ -63,8 +63,21 @@ interface OrderData {
 // Change back to onCall, which is the correct type for client-side SDK calls.
 // It handles CORS, auth, and data parsing automatically.
 export const getUserOrders = onCall(
-    // Add the region to match the client's request URL and other functions
-    { region: "europe-west1" },
+    { 
+        cors: [
+            "http://localhost:3000", 
+            "http://localhost:3001", 
+            "http://localhost:3002",
+            "https://tilvo-f142f.web.app", 
+            "http://localhost:5002",
+            "https://tasko-rho.vercel.app",
+            "https://tasko-zh8k.vercel.app",
+            "https://tasko-live.vercel.app",
+            "https://taskilo.de",
+            "http://taskilo.de"
+        ],
+        region: "europe-west1"
+    },
     async (request: CallableRequest<{ userId: string }>): Promise<{ orders: OrderData[] }> => {
         logger.info(`[getUserOrders] Called for user: ${request.data.userId}`, { structuredData: true });
 
