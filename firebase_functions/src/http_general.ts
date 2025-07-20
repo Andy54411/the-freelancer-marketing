@@ -496,7 +496,6 @@ export const getReviewsByProviderHTTP = onRequest({
     const reviewsRef = db.collection('reviews');
     const snapshot = await reviewsRef
       .where('anbieterId', '==', anbieterId)
-      .orderBy('erstellungsdatum', 'desc')
       .get();
 
     const reviews: any[] = [];
