@@ -17,6 +17,8 @@ interface Provider {
   bio?: string;
   location?: string;
   skills?: string[];
+  selectedCategory?: string;
+  selectedSubcategory?: string;
   rating?: number;
   reviewCount?: number;
   completedJobs?: number;
@@ -57,11 +59,11 @@ export default function SubcategoryPage() {
 
       // Query für Firmen
       const firmCollectionRef = collection(db, 'firma');
-      let firmQuery = query(firmCollectionRef, where('isActive', '==', true), limit(50));
+      const firmQuery = query(firmCollectionRef, where('isActive', '==', true), limit(50));
 
       // Query für Users/Freelancer
       const userCollectionRef = collection(db, 'users');
-      let userQuery = query(userCollectionRef, where('isFreelancer', '==', true), limit(50));
+      const userQuery = query(userCollectionRef, where('isFreelancer', '==', true), limit(50));
 
       const [firmSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery),
@@ -79,6 +81,8 @@ export default function SubcategoryPage() {
           bio: data.description || data.bio,
           location: data.location,
           skills: data.services || data.skills || [],
+          selectedCategory: data.selectedCategory,
+          selectedSubcategory: data.selectedSubcategory,
           rating: data.averageRating || 0,
           reviewCount: data.reviewCount || 0,
           completedJobs: data.completedJobs || 0,
@@ -99,6 +103,8 @@ export default function SubcategoryPage() {
           bio: data.bio,
           location: data.location,
           skills: data.skills || [],
+          selectedCategory: data.selectedCategory,
+          selectedSubcategory: data.selectedSubcategory,
           rating: data.rating || 0,
           reviewCount: data.reviewCount || 0,
           completedJobs: data.completedJobs || 0,
@@ -110,14 +116,46 @@ export default function SubcategoryPage() {
 
       const allProviders = [...firmProviders, ...userProviders];
 
-      // Filter nach Subcategory
-      let filteredProviders = allProviders.filter(provider =>
-        provider.skills?.some(
+      // Debug logging
+      console.log('Searching for subcategory:', subcategoryName);
+      console.log('URL subcategory:', subcategory);
+      console.log('All providers found:', allProviders.length);
+      console.log(
+        'Providers with selectedSubcategory:',
+        allProviders.filter(p => p.selectedSubcategory).length
+      );
+
+      // Filter nach Subcategory - prüfe sowohl selectedSubcategory als auch skills/services
+      let filteredProviders = allProviders.filter(provider => {
+        // Prüfe selectedSubcategory (exakte Übereinstimmung)
+        if (provider.selectedSubcategory === subcategoryName) {
+          console.log(
+            'Found exact match for:',
+            provider.companyName || provider.userName,
+            'with subcategory:',
+            provider.selectedSubcategory
+          );
+          return true;
+        }
+
+        // Fallback: Prüfe skills/services Array
+        const skillsMatch = provider.skills?.some(
           skill =>
             skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
             skill.toLowerCase().includes(subcategory.toLowerCase())
-        )
-      );
+        );
+
+        if (skillsMatch) {
+          console.log(
+            'Found skills match for:',
+            provider.companyName || provider.userName,
+            'with skills:',
+            provider.skills
+          );
+        }
+
+        return skillsMatch;
+      });
 
       // Suchfilter
       if (searchQuery) {
