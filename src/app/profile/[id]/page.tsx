@@ -109,14 +109,34 @@ export default function ProfilePage() {
             portfolio: userData.portfolio || [],
             skills: userData.skills || [],
             specialties: userData.specialties || [],
-            languages:
-              userData.languages ||
-              (userData['step2.languages']
-                ? userData['step2.languages'].split(',').map((lang: string) => ({
+            languages: (() => {
+              // Check if languages already exist in correct format
+              if (userData.languages && Array.isArray(userData.languages)) {
+                // If it's an array of objects with language/proficiency
+                if (
+                  userData.languages.length > 0 &&
+                  typeof userData.languages[0] === 'object' &&
+                  userData.languages[0].language
+                ) {
+                  return userData.languages;
+                }
+                // If it's an array of strings, convert to object format
+                if (userData.languages.length > 0 && typeof userData.languages[0] === 'string') {
+                  return userData.languages.map((lang: string) => ({
                     language: lang.trim(),
                     proficiency: 'Fließend',
-                  }))
-                : []),
+                  }));
+                }
+              }
+              // Fallback to step2.languages
+              if (userData['step2.languages']) {
+                return userData['step2.languages'].split(',').map((lang: string) => ({
+                  language: lang.trim(),
+                  proficiency: 'Fließend',
+                }));
+              }
+              return [];
+            })(),
             education: userData.education || [],
             certifications: userData.certifications || [],
             responseTime: userData.responseTime || 24,
@@ -171,7 +191,28 @@ export default function ProfilePage() {
               completedJobs: companyData.completedJobs || 0,
               // Add missing fields
               specialties: companyData.specialties || [],
-              languages: companyData.languages || [],
+              languages: (() => {
+                if (companyData.languages && Array.isArray(companyData.languages)) {
+                  // If it's an array of strings, convert to object format
+                  if (
+                    companyData.languages.length > 0 &&
+                    typeof companyData.languages[0] === 'string'
+                  ) {
+                    return companyData.languages.map((lang: string) => ({
+                      language: lang.trim(),
+                      proficiency: 'Fließend',
+                    }));
+                  }
+                  // If it's already in object format
+                  if (
+                    companyData.languages.length > 0 &&
+                    typeof companyData.languages[0] === 'object'
+                  ) {
+                    return companyData.languages;
+                  }
+                }
+                return [];
+              })(),
               skills: companyData.skills || [],
               portfolio: companyData.portfolio || [],
               certifications: companyData.certifications || [],
