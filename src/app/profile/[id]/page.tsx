@@ -110,6 +110,26 @@ export default function ProfilePage() {
             skills: userData.skills || [],
             specialties: userData.specialties || [],
             languages: (() => {
+              // First try step2.languages (most likely source)
+              if (userData.step2?.languages) {
+                if (typeof userData.step2.languages === 'string') {
+                  return userData.step2.languages.split(',').map((lang: string) => ({
+                    language: lang.trim(),
+                    proficiency: 'Fließend',
+                  }));
+                }
+              }
+
+              // Fallback to step2.languages with dot notation
+              if (userData['step2.languages']) {
+                if (typeof userData['step2.languages'] === 'string') {
+                  return userData['step2.languages'].split(',').map((lang: string) => ({
+                    language: lang.trim(),
+                    proficiency: 'Fließend',
+                  }));
+                }
+              }
+
               // Check if languages already exist in correct format
               if (userData.languages && Array.isArray(userData.languages)) {
                 // If it's an array of objects with language/proficiency
@@ -128,13 +148,7 @@ export default function ProfilePage() {
                   }));
                 }
               }
-              // Fallback to step2.languages
-              if (userData['step2.languages']) {
-                return userData['step2.languages'].split(',').map((lang: string) => ({
-                  language: lang.trim(),
-                  proficiency: 'Fließend',
-                }));
-              }
+
               return [];
             })(),
             education: userData.education || [],
@@ -366,12 +380,21 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="flex items-center gap-6 text-sm text-gray-600">
+                    <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
                       {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
                         <span>{profile.totalOrders} Aufträge abgeschlossen</span>
                       )}
                       {profile.responseTime && <span>Antwortet in ~{profile.responseTime}h</span>}
                     </div>
+
+                    {/* Description in Hero */}
+                    {profile.description && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <p className="text-gray-700 leading-relaxed text-sm line-clamp-4">
+                          {profile.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -427,6 +450,21 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Languages in Card */}
+                    {profile.languages && profile.languages.length > 0 && (
+                      <div className="pt-2">
+                        <div className="text-sm text-gray-500 mb-2">Sprachen:</div>
+                        <div className="space-y-1">
+                          {profile.languages.map((lang, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span className="text-gray-700 font-medium">{lang.language}</span>
+                              <span className="text-gray-500">{lang.proficiency}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -439,16 +477,6 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-8">
-              {/* About Section */}
-              {profile.description && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Über mich</h2>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {profile.description}
-                  </p>
-                </div>
-              )}
-
               {/* Skills Section */}
               {profile.skills && profile.skills.length > 0 && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -564,21 +592,6 @@ export default function ProfilePage() {
 
             {/* Right Column - Sidebar */}
             <div className="space-y-6">
-              {/* Languages */}
-              {profile.languages && profile.languages.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Sprachen</h3>
-                  <div className="space-y-3">
-                    {profile.languages.map((lang, index) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span className="text-gray-700 font-medium">{lang.language}</span>
-                        <span className="text-sm text-gray-500">{lang.proficiency}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Verification */}
               {profile.stripeVerificationStatus && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">

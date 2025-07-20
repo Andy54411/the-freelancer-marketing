@@ -607,7 +607,17 @@ export const syncSpecificUserToCompany = onCall(
         specialties: userData.specialties || null,
         portfolio: userData.portfolio || null,
         skills: userData.skills || null,
-        languages: userData.languages || (step2Data.languages ? [step2Data.languages.trim()] : null),
+        languages: (() => {
+          // Try step2.languages first
+          if (step2Data.languages && typeof step2Data.languages === 'string') {
+            return step2Data.languages.split(',').map((lang: string) => lang.trim()).filter(Boolean);
+          }
+          // Try userData.languages as fallback
+          if (userData.languages && Array.isArray(userData.languages)) {
+            return userData.languages;
+          }
+          return null;
+        })(),
         education: userData.education || null,
         certifications: userData.certifications || null,
         
