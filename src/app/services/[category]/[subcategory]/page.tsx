@@ -117,28 +117,64 @@ export default function SubcategoryPage() {
       const allProviders = [...firmProviders, ...userProviders];
 
       // Debug logging
-      console.log('Searching for subcategory:', subcategoryName);
-      console.log('URL subcategory:', subcategory);
-      console.log('All providers found:', allProviders.length);
+      console.log('[ServicePage] Searching for subcategory:', subcategoryName);
+      console.log('[ServicePage] URL subcategory:', subcategory);
+      console.log('[ServicePage] All providers found:', allProviders.length);
       console.log(
-        'Providers with selectedSubcategory:',
+        '[ServicePage] Providers with selectedSubcategory:',
         allProviders.filter(p => p.selectedSubcategory).length
       );
 
-      // Filter nach Subcategory - prüfe sowohl selectedSubcategory als auch skills/services
+      // Log all providers with their subcategory data for debugging
+      allProviders.forEach(provider => {
+        if (provider.selectedSubcategory) {
+          console.log('[ServicePage] Provider:', {
+            name: provider.companyName || provider.userName,
+            selectedSubcategory: provider.selectedSubcategory,
+            isCompany: provider.isCompany,
+          });
+        }
+      });
+
+      // Filter nach Subcategory - erweiterte Prüfung
       let filteredProviders = allProviders.filter(provider => {
-        // Prüfe selectedSubcategory (exakte Übereinstimmung)
-        if (provider.selectedSubcategory === subcategoryName) {
-          console.log(
-            'Found exact match for:',
-            provider.companyName || provider.userName,
-            'with subcategory:',
-            provider.selectedSubcategory
-          );
-          return true;
+        // Für Firmen: prüfe selectedSubcategory mit verschiedenen Matching-Strategien
+        if (provider.isCompany && provider.selectedSubcategory) {
+          // Exakte Übereinstimmung
+          if (provider.selectedSubcategory === subcategoryName) {
+            console.log(
+              '[ServicePage] Found exact match for:',
+              provider.companyName,
+              'with subcategory:',
+              provider.selectedSubcategory
+            );
+            return true;
+          }
+
+          // Case-insensitive Übereinstimmung
+          if (provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase()) {
+            console.log(
+              '[ServicePage] Found case-insensitive match for:',
+              provider.companyName,
+              'with subcategory:',
+              provider.selectedSubcategory
+            );
+            return true;
+          }
+
+          // URL-Parameter Übereinstimmung (für "mietkoch" vs "Mietkoch")
+          if (provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()) {
+            console.log(
+              '[ServicePage] Found URL parameter match for:',
+              provider.companyName,
+              'with subcategory:',
+              provider.selectedSubcategory
+            );
+            return true;
+          }
         }
 
-        // Fallback: Prüfe skills/services Array
+        // Fallback für Freelancer oder wenn selectedSubcategory nicht gesetzt: Prüfe skills/services Array
         const skillsMatch = provider.skills?.some(
           skill =>
             skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
@@ -147,7 +183,7 @@ export default function SubcategoryPage() {
 
         if (skillsMatch) {
           console.log(
-            'Found skills match for:',
+            '[ServicePage] Found skills match for:',
             provider.companyName || provider.userName,
             'with skills:',
             provider.skills
