@@ -153,6 +153,7 @@ export default function ProfilePage() {
             setProfile({
               id: companyId,
               companyName: companyData.companyName || 'Unbekannte Firma',
+              description: companyData.description || null,
               selectedSubcategory: companyData.selectedSubcategory,
               selectedCategory: companyData.selectedCategory,
               profilePictureFirebaseUrl: profilePicture,
@@ -168,6 +169,13 @@ export default function ProfilePage() {
               totalReviews: companyData.totalReviews || 0,
               responseTime: companyData.responseTime || 24,
               completedJobs: companyData.completedJobs || 0,
+              // Add missing fields
+              specialties: companyData.specialties || [],
+              languages: companyData.languages || [],
+              skills: companyData.skills || [],
+              portfolio: companyData.portfolio || [],
+              certifications: companyData.certifications || [],
+              education: companyData.education || [],
             });
           } else {
             setError('Firma nicht gefunden');
@@ -411,23 +419,6 @@ export default function ProfilePage() {
                         className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border"
                       >
                         {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Specialties Section */}
-              {profile.specialties && profile.specialties.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Spezialitäten</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.specialties.map((specialty, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-[#14ad9f] text-white rounded-full text-sm"
-                      >
-                        {specialty}
                       </span>
                     ))}
                   </div>
