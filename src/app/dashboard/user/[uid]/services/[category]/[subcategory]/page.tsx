@@ -19,12 +19,15 @@ interface Provider {
   bio?: string;
   location?: string;
   skills?: string[];
+  selectedCategory?: string;
+  selectedSubcategory?: string;
   rating?: number;
   reviewCount?: number;
   completedJobs?: number;
   isCompany?: boolean;
   priceRange?: string;
   responseTime?: string;
+  hourlyRate?: number;
 }
 
 export default function UserServiceSubcategoryPage() {
@@ -125,7 +128,7 @@ export default function UserServiceSubcategoryPage() {
 
       // Query für Firmen mit besserer Fehlerbehandlung
       const firmCollectionRef = collection(db, 'firma');
-      let firmQuery = query(
+      const firmQuery = query(
         firmCollectionRef,
         where('isActive', '==', true),
         limit(20) // Reduziertes Limit für bessere Performance
@@ -133,7 +136,7 @@ export default function UserServiceSubcategoryPage() {
 
       // Query für Users/Freelancer mit besserer Fehlerbehandlung
       const userCollectionRef = collection(db, 'users');
-      let userQuery = query(
+      const userQuery = query(
         userCollectionRef,
         where('isFreelancer', '==', true),
         limit(20) // Reduziertes Limit für bessere Performance
@@ -157,27 +160,41 @@ export default function UserServiceSubcategoryPage() {
         userDocs: userSnapshot.docs?.length || 0,
       });
 
-      const firmProviders: Provider[] = firmSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          companyName: data.companyName,
-          profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-          profilePictureURL: data.profilePictureURL,
-          photoURL: data.photoURL,
-          bio: data.description || data.bio,
-          location: data.location,
-          skills: data.services || data.skills || [],
-          rating: data.averageRating || 0,
-          reviewCount: data.reviewCount || 0,
-          completedJobs: data.completedJobs || 0,
-          isCompany: true,
-          priceRange: data.priceRange,
-          responseTime: data.responseTime,
-        };
-      });
+      const firmProviders: Provider[] = (firmSnapshot.docs || [])
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            companyName: data.companyName,
+            profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
+            profilePictureURL: data.profilePictureURL,
+            photoURL: data.photoURL,
+            bio: data.description || data.bio,
+            location: data.location
+              ? data.location
+              : `${data.companyCity || ''}, ${data.companyCountry || ''}`
+                  .trim()
+                  .replace(/^,\s*/, ''),
+            skills: data.services || data.skills || [],
+            selectedCategory: data.selectedCategory,
+            selectedSubcategory: data.selectedSubcategory,
+            rating: data.averageRating || 0,
+            reviewCount: data.reviewCount || 0,
+            completedJobs: data.completedJobs || 0,
+            isCompany: true,
+            priceRange: data.priceRange,
+            responseTime: data.responseTime,
+            hourlyRate: data.hourlyRate,
+          };
+        })
+        // Filter nur explizit inaktive Firmen aus
+        .filter(provider => {
+          const data = (firmSnapshot.docs || []).find(doc => doc.id === provider.id)?.data();
+          // Zeige Provider wenn isActive nicht explizit false ist
+          return data?.isActive !== false;
+        });
 
-      const userProviders: Provider[] = userSnapshot.docs.map(doc => {
+      const userProviders: Provider[] = (userSnapshot.docs || []).map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -197,104 +214,83 @@ export default function UserServiceSubcategoryPage() {
         };
       });
 
+      console.log('[ServicePage] Providers mapped:', {
+        firmProviders: firmProviders.length,
+        userProviders: userProviders.length,
+      });
+
       const allProviders = [...firmProviders, ...userProviders];
 
-      console.log('[ServicePage] All providers loaded:', {
-        total: allProviders.length,
-        firms: firmProviders.length,
-        freelancers: userProviders.length,
-        subcategoryName,
-        sampleProviderSkills: allProviders
-          .slice(0, 3)
-          .map(p => ({ id: p.id, skills: p.skills, name: getProviderName(p) })),
-      });
+      console.log('[ServicePage] All providers:', allProviders.length);
+      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
 
-      // Filter nach Subcategory - erweiterte Matching-Logik
+      // Log specifically Mietkoch providers
+      const mietkochers = allProviders.filter(
+        p =>
+          p.companyName?.toLowerCase().includes('mietkoch') ||
+          p.selectedSubcategory?.toLowerCase().includes('mietkoch')
+      );
+      console.log(
+        '[ServicePage] Mietkoch providers found:',
+        mietkochers.map(p => ({
+          name: p.companyName || p.userName,
+          selectedSubcategory: p.selectedSubcategory,
+          selectedCategory: p.selectedCategory,
+          isCompany: p.isCompany,
+        }))
+      );
+
+      // Filter nach Subcategory
       let filteredProviders = allProviders.filter(provider => {
-        if (!provider.skills || provider.skills.length === 0) return false;
+        // Für Firmen: prüfe selectedSubcategory
+        if (provider.isCompany && provider.selectedSubcategory) {
+          const matches =
+            provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase() ||
+            provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
 
-        const subcategoryLower = (subcategoryName || '').toLowerCase();
-        const paramSubcategoryLower = subcategory.toLowerCase();
+          if (matches) {
+            console.log('[ServicePage] Company match found:', {
+              name: provider.companyName,
+              selectedSubcategory: provider.selectedSubcategory,
+              subcategoryName,
+              subcategory,
+            });
+          }
 
-        // Verschiedene Matching-Strategien
-        const hasDirectMatch = provider.skills.some(
+          return matches;
+        }
+
+        // Für Freelancer: prüfe skills (fallback)
+        const skillsMatch = provider.skills?.some(
           skill =>
-            skill.toLowerCase().includes(subcategoryLower) ||
-            skill.toLowerCase().includes(paramSubcategoryLower)
+            skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
+            skill.toLowerCase().includes(subcategory.toLowerCase())
         );
 
-        // Erweiterte Matches für häufige Begriffe
-        const hasExtendedMatch = provider.skills.some(skill => {
-          const skillLower = skill.toLowerCase();
-
-          // Spezielle Matches für Gastronomie
-          if (subcategoryLower.includes('mietkoch') || paramSubcategoryLower.includes('mietkoch')) {
-            return (
-              skillLower.includes('koch') ||
-              skillLower.includes('küche') ||
-              skillLower.includes('kochen') ||
-              skillLower.includes('catering') ||
-              skillLower.includes('gastronomie')
-            );
-          }
-
-          if (
-            subcategoryLower.includes('mietkellner') ||
-            paramSubcategoryLower.includes('mietkellner')
-          ) {
-            return (
-              skillLower.includes('kellner') ||
-              skillLower.includes('service') ||
-              skillLower.includes('bedienung') ||
-              skillLower.includes('restaurant') ||
-              skillLower.includes('gastronomie')
-            );
-          }
-
-          return false;
-        });
-
-        return hasDirectMatch || hasExtendedMatch;
-      });
-
-      console.log('[ServicePage] After filtering by subcategory:', {
-        filteredCount: filteredProviders.length,
-        originalCount: allProviders.length,
-        filterCriteria: { subcategoryName, subcategory },
-      });
-
-      // Fallback: Wenn keine spezifischen Anbieter gefunden werden, zeige alle aktiven Anbieter der Kategorie
-      if (filteredProviders.length === 0 && allProviders.length > 0 && categoryInfo) {
-        console.log('[ServicePage] No specific providers found, using category fallback');
-
-        // Suche nach Anbietern mit Category-bezogenen Skills
-        filteredProviders = allProviders.filter(provider => {
-          if (!provider.skills || provider.skills.length === 0) return false;
-
-          const categoryLower = categoryInfo.title.toLowerCase();
-
-          return provider.skills.some(skill => {
-            const skillLower = skill.toLowerCase();
-
-            // Category-basierte Matches
-            if (categoryLower.includes('hotel') || categoryLower.includes('gastronomie')) {
-              return (
-                skillLower.includes('hotel') ||
-                skillLower.includes('gastronomie') ||
-                skillLower.includes('restaurant') ||
-                skillLower.includes('küche') ||
-                skillLower.includes('service') ||
-                skillLower.includes('catering')
-              );
-            }
-
-            // Weitere Category-Matches können hier hinzugefügt werden
-            return skillLower.includes(categoryLower) || categoryLower.includes(skillLower);
+        if (skillsMatch) {
+          console.log('[ServicePage] Skills match found:', {
+            name: provider.userName,
+            skills: provider.skills,
           });
-        });
+        }
 
-        console.log('[ServicePage] Category fallback result:', filteredProviders.length);
-      }
+        return skillsMatch;
+      });
+
+      console.log('[ServicePage] Filtered by subcategory:', {
+        subcategoryName,
+        subcategory,
+        totalProviders: allProviders.length,
+        filteredProviders: filteredProviders.length,
+        providersWithSubcategory: allProviders
+          .filter(p => p.selectedSubcategory)
+          .map(p => ({
+            id: p.id,
+            companyName: p.companyName,
+            selectedSubcategory: p.selectedSubcategory,
+            isCompany: p.isCompany,
+          })),
+      });
 
       // Suchfilter
       if (searchQuery) {
