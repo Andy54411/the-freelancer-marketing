@@ -100,7 +100,7 @@ export default function ProfilePage() {
             id: companyId,
             companyName: userData.companyName || userData.displayName || 'Unbekannte Firma',
             displayName: userData.displayName,
-            description: userData.description,
+            description: userData.description || userData['step2.description'] || null,
             country: userData.country,
             city: userData.city,
             hourlyRate: userData.hourlyRate,
@@ -109,7 +109,14 @@ export default function ProfilePage() {
             portfolio: userData.portfolio || [],
             skills: userData.skills || [],
             specialties: userData.specialties || [],
-            languages: userData.languages || [],
+            languages:
+              userData.languages ||
+              (userData['step2.languages']
+                ? userData['step2.languages'].split(',').map((lang: string) => ({
+                    language: lang.trim(),
+                    proficiency: 'Fließend',
+                  }))
+                : []),
             education: userData.education || [],
             certifications: userData.certifications || [],
             responseTime: userData.responseTime || 24,

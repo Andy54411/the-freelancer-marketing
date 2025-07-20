@@ -598,7 +598,7 @@ export const syncSpecificUserToCompany = onCall(
         specialties: userData.specialties || null,
         portfolio: userData.portfolio || null,
         skills: userData.skills || null,
-        languages: userData.languages || null,
+        languages: userData.languages || (userData['step2.languages'] ? [userData['step2.languages'].trim()] : null),
         education: userData.education || null,
         certifications: userData.certifications || null,
         
