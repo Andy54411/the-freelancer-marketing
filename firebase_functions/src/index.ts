@@ -51,6 +51,7 @@ export const getProviderStripeAccountId = callableStripe.getProviderStripeAccoun
 export const getClientIp = callableGeneral.getClientIp;
 export const createTemporaryJobDraft = callableGeneral.createTemporaryJobDraft;
 export const submitReview = callableGeneral.submitReview;
+export const replyToReview = callableGeneral.replyToReview;
 export const getReviewsByProvider = callableGeneral.getReviewsByProvider;
 export const deleteCompanyAccount = callableGeneral.deleteCompanyAccount;
 export const syncSpecificCompanyToUser = callableGeneral.syncSpecificCompanyToUser;

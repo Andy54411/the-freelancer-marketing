@@ -52,18 +52,19 @@ interface TemporaryJobDraftResult {
 // --- Interfaces for Review Functions ---
 interface SubmitReviewData {
   anbieterId: string;
-  kundeId: string;
-  auftragId: string;
   sterne: number;
   kommentar: string;
+  kundeId: string;
   kundeProfilePictureURL?: string;
-  kategorie: string;
-  unterkategorie: string;
+  auftragId?: string;
+  kategorie?: string;
+  unterkategorie?: string;
 }
 
 interface SubmitReviewResult {
-  message: string;
-  reviewId: string;
+  success: boolean;
+  reviewId?: string;
+  message?: string;
 }
 
 interface ReviewData {
@@ -73,6 +74,25 @@ interface ReviewData {
   kommentar: string;
   kundeProfilePictureURL?: string;
   erstellungsdatum?: { _seconds: number, _nanoseconds: number } | Date;
+  // Unternehmensantwort
+  antwort?: {
+    text: string;
+    antwortDatum: Date | FirebaseFirestore.Timestamp;
+    antwortVon: string; // Company Name or ID
+  };
+}
+
+// Interface für Antworten auf Reviews
+interface ReplyToReviewData {
+  reviewId: string;
+  antwortText: string;
+  companyId: string;
+  companyName: string;
+}
+
+interface ReplyToReviewResult {
+  success: boolean;
+  message: string;
 }
 
 export const getClientIp = onCall({ 
@@ -269,7 +289,7 @@ export const submitReview = onCall(
       };
       const docRef = await db.collection("reviews").add(newReviewData);
       logger.info(`[submitReview] Review ${docRef.id} created successfully.`);
-      return { message: "Review submitted", reviewId: docRef.id };
+      return { success: true, message: "Review submitted", reviewId: docRef.id };
     } catch (error: any) {
       logger.error("[submitReview] Error saving review to Firestore:", error);
       throw new HttpsError('internal', 'Failed to save the review.', error.message);
@@ -305,12 +325,74 @@ export const getReviewsByProvider = onCall(
           kommentar: data.kommentar,
           kundeProfilePictureURL: data.kundeProfilePictureURL,
           erstellungsdatum: data.erstellungsdatum instanceof admin.firestore.Timestamp ? data.erstellungsdatum.toDate() : data.erstellungsdatum,
+          antwort: data.antwort ? {
+            text: data.antwort.text,
+            antwortDatum: data.antwort.antwortDatum instanceof admin.firestore.Timestamp ? data.antwort.antwortDatum.toDate() : data.antwort.antwortDatum,
+            antwortVon: data.antwort.antwortVon
+          } : undefined,
         });
       });
       return reviews;
     } catch (error: any) {
       logger.error("[getReviewsByProvider] Error fetching reviews from Firestore:", error);
       throw new HttpsError('internal', 'Failed to fetch reviews.', error.message);
+    }
+  }
+);
+
+// Neue Funktion: Auf Review antworten
+export const replyToReview = onCall(
+  {
+    region: "europe-west1",
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"],
+  },
+  async (request: CallableRequest<ReplyToReviewData>): Promise<ReplyToReviewResult> => {
+    logger.info("[replyToReview] Called for review:", request.data.reviewId);
+
+    const { reviewId, antwortText, companyId, companyName } = request.data;
+
+    // Validierung
+    if (!reviewId || !antwortText || !companyId || !companyName) {
+      throw new HttpsError('invalid-argument', 'Review ID, Antworttext, Company ID und Company Name sind erforderlich.');
+    }
+
+    if (antwortText.trim().length < 10) {
+      throw new HttpsError('invalid-argument', 'Die Antwort muss mindestens 10 Zeichen lang sein.');
+    }
+
+    const db = getDb();
+    try {
+      // Prüfen, ob das Review existiert
+      const reviewDoc = await db.collection('reviews').doc(reviewId).get();
+      
+      if (!reviewDoc.exists) {
+        throw new HttpsError('not-found', 'Review nicht gefunden.');
+      }
+
+      const reviewData = reviewDoc.data();
+      
+      // Prüfen, ob die Company berechtigt ist (Review gehört zu diesem Anbieter)
+      if (reviewData?.anbieterId !== companyId) {
+        throw new HttpsError('permission-denied', 'Sie sind nicht berechtigt, auf dieses Review zu antworten.');
+      }
+
+      // Antwort hinzufügen
+      const antwortData = {
+        text: antwortText.trim(),
+        antwortDatum: new Date(),
+        antwortVon: companyName
+      };
+
+      await db.collection('reviews').doc(reviewId).update({
+        antwort: antwortData
+      });
+
+      logger.info(`[replyToReview] Reply added to review ${reviewId} by company ${companyName}`);
+      return { success: true, message: "Antwort erfolgreich hinzugefügt" };
+
+    } catch (error: any) {
+      logger.error("[replyToReview] Error adding reply to review:", error);
+      throw new HttpsError('internal', 'Fehler beim Hinzufügen der Antwort.', error.message);
     }
   }
 );

@@ -20,6 +20,12 @@ interface Review {
   kommentar: string;
   kundeProfilePictureURL?: string;
   erstellungsdatum?: { _seconds: number; _nanoseconds: number } | Date; // Behalten Sie das so, wie es vom Backend kommt
+  // Unternehmensantwort
+  antwort?: {
+    text: string;
+    antwortDatum: Date | { _seconds: number; _nanoseconds: number };
+    antwortVon: string; // Company Name or ID
+  };
 }
 
 interface ReviewListProps {
@@ -32,6 +38,28 @@ function renderStars(rating: number) {
   const hasHalfStar = rating - fullStars >= 0.25 && rating - fullStars < 0.75;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
   return '★'.repeat(fullStars) + (hasHalfStar ? '½' : '') + '☆'.repeat(emptyStars);
+}
+
+// --- Hilfsfunktion zum Formatieren von Daten ---
+function formatReviewDate(
+  date: Date | { _seconds: number; _nanoseconds: number } | undefined
+): string {
+  if (!date) return '';
+
+  let actualDate: Date;
+  if (date instanceof Date) {
+    actualDate = date;
+  } else if (typeof date === 'object' && '_seconds' in date) {
+    actualDate = new Date(date._seconds * 1000);
+  } else {
+    return '';
+  }
+
+  return actualDate.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 // --- ReviewList Komponente ---
@@ -198,6 +226,24 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
           <p className="text-sm text-gray-700 whitespace-pre-wrap">
             {review.kommentar || 'Keine Nachricht hinterlassen.'}
           </p>
+
+          {/* Unternehmensantwort anzeigen, falls vorhanden */}
+          {review.antwort && (
+            <div className="mt-4 ml-6 border-l-2 border-blue-100 pl-4 bg-blue-50 rounded-r-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">U</span>
+                </div>
+                <span className="text-sm font-medium text-blue-700">
+                  Antwort von {review.antwort.antwortVon}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {formatReviewDate(review.antwort.antwortDatum)}
+                </span>
+              </div>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{review.antwort.text}</p>
+            </div>
+          )}
         </div>
       ))}
     </div>

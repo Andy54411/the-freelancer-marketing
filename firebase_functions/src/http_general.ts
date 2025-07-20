@@ -510,6 +510,13 @@ export const getReviewsByProviderHTTP = onRequest({
         erstellungsdatum: data.erstellungsdatum && typeof data.erstellungsdatum.toDate === 'function' 
           ? data.erstellungsdatum.toDate() 
           : data.erstellungsdatum,
+        antwort: data.antwort ? {
+          text: data.antwort.text,
+          antwortDatum: data.antwort.antwortDatum && typeof data.antwort.antwortDatum.toDate === 'function'
+            ? data.antwort.antwortDatum.toDate()
+            : data.antwort.antwortDatum,
+          antwortVon: data.antwort.antwortVon
+        } : undefined,
       });
     });
 
