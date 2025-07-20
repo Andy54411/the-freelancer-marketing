@@ -62,6 +62,7 @@ export const syncCompanyToUserData = httpGeneral.syncCompanyToUserData;
 export const searchCompanyProfiles = httpGeneral.searchCompanyProfiles;
 export const getDataForSubcategory = httpGeneral.getDataForSubcategory;
 export const createJobPosting = httpGeneral.createJobPosting;
+export const getReviewsByProviderHTTP = httpGeneral.getReviewsByProviderHTTP;
 
 // HTTP Webhooks & Uploads
 export const stripeWebhookHandler = httpWebhooks.stripeWebhookHandler;

@@ -465,3 +465,58 @@ export const createJobPosting = onRequest({ region: "europe-west1", cors: true }
     res.status(500).send("Fehler.");
   }
 });
+
+// HTTP Version of getReviewsByProvider with explicit CORS handling
+export const getReviewsByProviderHTTP = onRequest({ 
+  region: "europe-west1", 
+  cors: true 
+}, async (req, res) => {
+  // Set explicit CORS headers
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  try {
+    const { anbieterId } = req.body;
+    
+    if (!anbieterId) {
+      res.status(400).json({ error: 'The anbieterId is required.' });
+      return;
+    }
+
+    loggerV2.info("[getReviewsByProviderHTTP] Called for provider:", anbieterId);
+
+    const db = getDb();
+    const reviewsRef = db.collection('reviews');
+    const snapshot = await reviewsRef
+      .where('anbieterId', '==', anbieterId)
+      .orderBy('erstellungsdatum', 'desc')
+      .get();
+
+    const reviews: any[] = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      reviews.push({
+        id: doc.id,
+        kundeId: data.kundeId,
+        sterne: data.sterne,
+        kommentar: data.kommentar,
+        kundeProfilePictureURL: data.kundeProfilePictureURL,
+        erstellungsdatum: data.erstellungsdatum && typeof data.erstellungsdatum.toDate === 'function' 
+          ? data.erstellungsdatum.toDate() 
+          : data.erstellungsdatum,
+      });
+    });
+
+    res.status(200).json(reviews);
+  } catch (error: any) {
+    loggerV2.error("[getReviewsByProviderHTTP] Error fetching reviews:", error);
+    res.status(500).json({ error: 'Failed to fetch reviews.' });
+  }
+});

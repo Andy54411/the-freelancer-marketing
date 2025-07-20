@@ -54,26 +54,62 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       setError(null);
 
       try {
-        // The httpsCallable function works for both production and emulators.
-        // The Firebase client SDK automatically routes the request to the emulator if it's configured.
-        const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(
-          functionsInstance,
-          'getReviewsByProvider'
-        );
-        const result = await getReviewsCallable({ anbieterId });
-        const data = result.data;
+        // Fallback to HTTP endpoint if callable function fails
+        try {
+          // The httpsCallable function works for both production and emulators.
+          // The Firebase client SDK automatically routes the request to the emulator if it's configured.
+          const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(
+            functionsInstance,
+            'getReviewsByProvider'
+          );
+          const result = await getReviewsCallable({ anbieterId });
+          const data = result.data;
 
-        if (!Array.isArray(data)) {
-          throw new Error('Ungültiges Datenformat von der Cloud Function.');
-        }
+          if (!Array.isArray(data)) {
+            throw new Error('Ungültiges Datenformat von der Cloud Function.');
+          }
 
-        setReviews(data);
+          setReviews(data);
 
-        if (data.length > 0) {
-          const total = data.reduce((sum: number, r: Review) => sum + (r.sterne || 0), 0);
-          setAverage(Number((total / data.length).toFixed(1)));
-        } else {
-          setAverage(null);
+          if (data.length > 0) {
+            const total = data.reduce((sum: number, r: Review) => sum + (r.sterne || 0), 0);
+            setAverage(Number((total / data.length).toFixed(1)));
+          } else {
+            setAverage(null);
+          }
+        } catch (callableError) {
+          console.warn('Callable function failed, trying HTTP endpoint:', callableError);
+
+          // Fallback to HTTP endpoint
+          const response = await fetch(
+            `https://europe-west1-tilvo-f142f.cloudfunctions.net/getReviewsByProviderHTTP`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ anbieterId }),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!Array.isArray(data)) {
+            throw new Error('Ungültiges Datenformat vom HTTP Endpoint.');
+          }
+
+          setReviews(data);
+
+          if (data.length > 0) {
+            const total = data.reduce((sum: number, r: Review) => sum + (r.sterne || 0), 0);
+            setAverage(Number((total / data.length).toFixed(1)));
+          } else {
+            setAverage(null);
+          }
         }
       } catch (err: unknown) {
         console.error('Fehler beim Laden der Bewertungen:', err);
