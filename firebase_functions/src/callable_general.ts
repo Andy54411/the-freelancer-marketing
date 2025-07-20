@@ -233,7 +233,10 @@ export const createTemporaryJobDraft = onCall(
 );
 
 export const submitReview = onCall(
-  { region: "europe-west1" },
+  { 
+    region: "europe-west1",
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"]
+  },
   async (request: CallableRequest<SubmitReviewData>): Promise<SubmitReviewResult> => {
     logger.info("[submitReview] Called with data:", request.data);
 
@@ -277,7 +280,7 @@ export const submitReview = onCall(
 export const getReviewsByProvider = onCall(
   {
     region: "europe-west1",
-    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "http://localhost:3000"],
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"],
   },
   async (request: CallableRequest<{ anbieterId: string }>): Promise<ReviewData[]> => {
     logger.info("[getReviewsByProvider] Called for provider:", request.data.anbieterId);
@@ -319,7 +322,7 @@ export const deleteCompanyAccount = onCall(
     region: "europe-west1",
     memory: "512MiB", // Speicher auf 512 MB erhöht
     // Erlaube Anfragen von der Vercel-Produktionsumgebung und vom lokalen Emulator.
-    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "http://localhost:3000"],
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"],
   },
   async (request: CallableRequest<{ companyId: string }>): Promise<{ success: boolean; message: string; }> => {
     logger.info(`[Action] Aufruf zum Löschen der Firma empfangen für: ${request.data.companyId}`);
@@ -409,7 +412,7 @@ export const deleteCompanyAccount = onCall(
 
 export const syncSpecificCompanyToUser = onCall(
   {
-    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "http://localhost:3000", "https://taskilo.de"],
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"],
     region: "europe-west1",
     memory: "512MiB",
   },
@@ -528,7 +531,7 @@ export const syncSpecificCompanyToUser = onCall(
 
 export const syncSpecificUserToCompany = onCall(
   {
-    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "http://localhost:3000", "https://taskilo.de"],
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"],
     region: "europe-west1",
     memory: "512MiB",
   },

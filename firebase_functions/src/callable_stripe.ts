@@ -15,7 +15,8 @@ const allowedOrigins = [
   'https://tasko-zh8k.vercel.app',
   'https://tasko-live.vercel.app',
   'https://tilvo-f142f.web.app',
-  'https://taskilo.de'
+  'https://taskilo.de',
+  'https://www.taskilo.de'
 ];
 
 // Parameter zentral definieren (auf oberster Ebene der Datei)
