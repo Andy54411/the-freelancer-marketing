@@ -73,6 +73,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const companyId = params?.id as string;
 
@@ -390,9 +391,25 @@ export default function ProfilePage() {
                     {/* Description in Hero */}
                     {profile.description && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-gray-700 leading-relaxed text-sm line-clamp-4">
-                          {profile.description}
-                        </p>
+                        <div className="relative">
+                          <p
+                            className={`text-gray-700 leading-relaxed text-sm transition-all duration-300 ${
+                              isDescriptionExpanded ? '' : 'line-clamp-4'
+                            }`}
+                          >
+                            {profile.description}
+                          </p>
+
+                          {/* Show expand/collapse button only if text is longer than 4 lines */}
+                          {profile.description.length > 200 && (
+                            <button
+                              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                              className="mt-2 text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium transition-colors"
+                            >
+                              {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
