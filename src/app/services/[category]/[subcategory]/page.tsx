@@ -57,6 +57,12 @@ export default function SubcategoryPage() {
     try {
       setLoading(true);
 
+      console.log('[ServicePage] Loading providers for:', {
+        category,
+        subcategory,
+        subcategoryName,
+      });
+
       // Query für Firmen - erweitert um verschiedene Aktivitätszustände
       const firmCollectionRef = collection(db, 'firma');
       const firmQuery = query(firmCollectionRef, limit(50));
@@ -69,6 +75,11 @@ export default function SubcategoryPage() {
         getDocs(firmQuery),
         getDocs(userQuery),
       ]);
+
+      console.log('[ServicePage] Query results:', {
+        firmDocs: firmSnapshot.docs.length,
+        userDocs: userSnapshot.docs.length,
+      });
 
       const firmProviders: Provider[] = firmSnapshot.docs
         .map(doc => {
@@ -122,6 +133,25 @@ export default function SubcategoryPage() {
       });
 
       const allProviders = [...firmProviders, ...userProviders];
+
+      console.log('[ServicePage] All providers:', allProviders.length);
+      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
+
+      // Log specifically Mietkoch providers
+      const mietkochers = allProviders.filter(
+        p =>
+          p.companyName?.toLowerCase().includes('mietkoch') ||
+          p.selectedSubcategory?.toLowerCase().includes('mietkoch')
+      );
+      console.log(
+        '[ServicePage] Mietkoch providers found:',
+        mietkochers.map(p => ({
+          name: p.companyName || p.userName,
+          selectedSubcategory: p.selectedSubcategory,
+          selectedCategory: p.selectedCategory,
+          isCompany: p.isCompany,
+        }))
+      );
 
       // Debug logging
       console.log('[ServicePage] Searching for subcategory:', subcategoryName);
