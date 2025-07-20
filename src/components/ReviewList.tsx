@@ -1,16 +1,8 @@
 // /Users/andystaudinger/Taskilo/src/components/ReviewList.tsx
 'use client';
 
-import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import { httpsCallable, getFunctions } from 'firebase/functions';
-import { app } from '@/firebase/clients';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, User as FiUser } from 'lucide-react';
-
-// --- Functions Initialisierung (jetzt wird getReviewsCallable nur bei Bedarf genutzt) ---
-// Wir initialisieren hier NUR die functionsInstance, um sie später zu nutzen.
-// Die Callable-Instanz erstellen wir bedingt im useEffect.
-const functionsInstance = getFunctions(app, 'europe-west1');
 
 // --- Interfaces ---
 interface Review {
@@ -82,62 +74,35 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       setError(null);
 
       try {
-        // Fallback to HTTP endpoint if callable function fails
-        try {
-          // The httpsCallable function works for both production and emulators.
-          // The Firebase client SDK automatically routes the request to the emulator if it's configured.
-          const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(
-            functionsInstance,
-            'getReviewsByProvider'
-          );
-          const result = await getReviewsCallable({ anbieterId });
-          const data = result.data;
-
-          if (!Array.isArray(data)) {
-            throw new Error('Ungültiges Datenformat von der Cloud Function.');
+        // Directly use HTTP endpoint to avoid CORS issues with callable functions
+        const response = await fetch(
+          `https://europe-west1-tilvo-f142f.cloudfunctions.net/getReviewsByProviderHTTP`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ anbieterId }),
           }
+        );
 
-          setReviews(data);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-          if (data.length > 0) {
-            const total = data.reduce((sum: number, r: Review) => sum + (r.sterne || 0), 0);
-            setAverage(Number((total / data.length).toFixed(1)));
-          } else {
-            setAverage(null);
-          }
-        } catch (callableError) {
-          console.warn('Callable function failed, trying HTTP endpoint:', callableError);
+        const data = await response.json();
 
-          // Fallback to HTTP endpoint
-          const response = await fetch(
-            `https://europe-west1-tilvo-f142f.cloudfunctions.net/getReviewsByProviderHTTP`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ anbieterId }),
-            }
-          );
+        if (!Array.isArray(data)) {
+          throw new Error('Ungültiges Datenformat vom HTTP Endpoint.');
+        }
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
+        setReviews(data);
 
-          const data = await response.json();
-
-          if (!Array.isArray(data)) {
-            throw new Error('Ungültiges Datenformat vom HTTP Endpoint.');
-          }
-
-          setReviews(data);
-
-          if (data.length > 0) {
-            const total = data.reduce((sum: number, r: Review) => sum + (r.sterne || 0), 0);
-            setAverage(Number((total / data.length).toFixed(1)));
-          } else {
-            setAverage(null);
-          }
+        if (data.length > 0) {
+          const total = data.reduce((sum: number, r: Review) => sum + (r.sterne || 0), 0);
+          setAverage(Number((total / data.length).toFixed(1)));
+        } else {
+          setAverage(null);
         }
       } catch (err: unknown) {
         console.error('Fehler beim Laden der Bewertungen:', err);

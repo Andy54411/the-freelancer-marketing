@@ -72,47 +72,29 @@ export default function CompanyReviewManagement({
     setError(null);
 
     try {
-      // Fallback mechanism like in ReviewList component
-      try {
-        const getReviewsCallable = httpsCallable<{ anbieterId: string }, Review[]>(
-          functions,
-          'getReviewsByProvider'
-        );
-        const result = await getReviewsCallable({ anbieterId: companyId });
-        const data = result.data;
-
-        if (!Array.isArray(data)) {
-          throw new Error('Ungültiges Datenformat von der Cloud Function.');
+      // Directly use HTTP endpoint to avoid CORS issues with callable functions
+      const response = await fetch(
+        `https://europe-west1-tilvo-f142f.cloudfunctions.net/getReviewsByProviderHTTP`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ anbieterId: companyId }),
         }
+      );
 
-        setReviews(data);
-      } catch (callableError) {
-        console.warn('Callable function failed, trying HTTP endpoint:', callableError);
-
-        // Fallback to HTTP endpoint
-        const response = await fetch(
-          `https://europe-west1-tilvo-f142f.cloudfunctions.net/getReviewsByProviderHTTP`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ anbieterId: companyId }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!Array.isArray(data)) {
-          throw new Error('Ungültiges Datenformat vom HTTP Endpoint.');
-        }
-
-        setReviews(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error('Ungültiges Datenformat vom HTTP Endpoint.');
+      }
+
+      setReviews(data);
     } catch (err: unknown) {
       console.error('Fehler beim Laden der Bewertungen:', err);
       setError('Fehler beim Laden der Bewertungen. Bitte versuchen Sie es später noch einmal.');
