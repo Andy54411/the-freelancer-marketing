@@ -20,6 +20,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import ReviewList from '@/components/ReviewList';
+import CompanyReviewManagement from '@/components/CompanyReviewManagement';
+import { auth } from '@/firebase/clients';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface CompanyProfile {
   id: string;
@@ -75,8 +78,18 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showReviewManagement, setShowReviewManagement] = useState(false);
 
   const companyId = params?.id as string;
+
+  // Auth State überwachen
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchCompanyProfile = async () => {

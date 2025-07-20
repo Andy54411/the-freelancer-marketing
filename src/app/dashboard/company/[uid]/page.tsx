@@ -17,12 +17,14 @@ import {
   Calendar as FiCalendar,
   User as FiUser,
   Settings as FiSettings,
+  MessageSquare as FiMessageSquare,
 } from 'lucide-react';
 import { OrderSummaryDrawer } from '@/components/OrderSummaryDrawer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CompanyCalendar from '@/components/CompanyCalendar';
 import { Button } from '@/components/ui/button';
 import { calculateCompanyMetrics, type CompanyMetrics } from '@/lib/companyMetrics';
+import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -216,7 +218,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
       {view === 'dashboard' ? (
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:w-fit">
+          <TabsList className="grid w-full grid-cols-5 md:w-fit">
             <TabsTrigger value="dashboard">
               <FiGrid className="mr-2 h-4 w-4" />
               Übersicht
@@ -224,6 +226,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             <TabsTrigger value="calendar">
               <FiCalendar className="mr-2 h-4 w-4" />
               Kalender
+            </TabsTrigger>
+            <TabsTrigger value="reviews">
+              <FiMessageSquare className="mr-2 h-4 w-4" />
+              Bewertungen
             </TabsTrigger>
             <TabsTrigger value="profile">
               <FiUser className="mr-2 h-4 w-4" />
@@ -260,6 +266,23 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             {uid && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}
           </TabsContent>
 
+          <TabsContent value="reviews" className="mt-4">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Bewertungen verwalten</h2>
+                <p className="text-gray-600 mt-2">
+                  Antworten Sie auf Kundenbewertungen und verwalten Sie Ihr Feedback
+                </p>
+              </div>
+              {uid && userData?.companyName && (
+                <CompanyReviewManagement
+                  companyId={uid}
+                  companyName={userData.companyName || userData.step2?.companyName || 'Ihre Firma'}
+                />
+              )}
+            </div>
+          </TabsContent>
+
           <TabsContent value="profile" className="mt-4">
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="mb-6">
@@ -269,10 +292,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               {/* Platzhalter für zukünftige Profil-Features */}
               <div className="text-center py-12">
                 <FiUser className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">
-                  Profilverwaltung
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">Kommt bald - Profilverwaltung wird hier verfügbar sein</p>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Profilverwaltung</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Kommt bald - Profilverwaltung wird hier verfügbar sein
+                </p>
               </div>
             </div>
           </TabsContent>
