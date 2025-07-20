@@ -559,12 +559,21 @@ export const syncSpecificUserToCompany = onCall(
       const companyDocRef = db.collection("companies").doc(userId);
       const companyDoc = await companyDocRef.get();
       
+      // Debug logging for description
+      logger.info(`[syncSpecificUserToCompany] Checking description sources for ${userId}:`);
+      logger.info(`userData.description: ${userData.description}`);
+      logger.info(`userData.step2: ${JSON.stringify(userData.step2)}`);
+      logger.info(`userData['step2.description']: ${userData['step2.description']}`);
+      
+      // Extract step2 data if it exists
+      const step2Data = userData.step2 || {};
+      
       // Prepare company data update with user data
       const companyDataUpdate: Record<string, any> = {
         // Basic company info
-        companyName: userData.companyName || userData['step2.companyName'] || null,
-        description: userData.description || userData['step2.description'] || null,
-        hourlyRate: userData.hourlyRate || userData['step3.hourlyRate'] ? parseFloat(userData['step3.hourlyRate']) : null,
+        companyName: userData.companyName || step2Data.companyName || null,
+        description: userData.description || step2Data.description || null,
+        hourlyRate: userData.hourlyRate || (userData['step3.hourlyRate'] ? parseFloat(userData['step3.hourlyRate']) : null),
         selectedCategory: userData.selectedCategory || null,
         selectedSubcategory: userData.selectedSubcategory || null,
         
@@ -613,10 +622,21 @@ export const syncSpecificUserToCompany = onCall(
         updatedAt: FieldValue.serverTimestamp(),
       };
 
-      // Remove null values to avoid overwriting existing data with nulls
-      const cleanedUpdate: { [x: string]: any } = Object.fromEntries(
-        Object.entries(companyDataUpdate).filter(([_, value]) => value !== null)
-      );
+      // Remove null values but keep debug info
+      const cleanedUpdate: { [x: string]: any } = {};
+      const removedFields: string[] = [];
+      
+      for (const [key, value] of Object.entries(companyDataUpdate)) {
+        if (value !== null && value !== undefined) {
+          cleanedUpdate[key] = value;
+        } else {
+          removedFields.push(key);
+        }
+      }
+      
+      logger.info(`[syncSpecificUserToCompany] Fields to update: ${Object.keys(cleanedUpdate).join(', ')}`);
+      logger.info(`[syncSpecificUserToCompany] Removed null fields: ${removedFields.join(', ')}`);
+      logger.info(`[syncSpecificUserToCompany] Description value being set: ${cleanedUpdate.description}`);
 
       if (companyDoc.exists) {
         // Update existing company document
