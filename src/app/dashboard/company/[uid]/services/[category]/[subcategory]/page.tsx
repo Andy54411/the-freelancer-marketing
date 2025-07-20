@@ -195,17 +195,16 @@ export default function CompanyServiceSubcategoryPage() {
       setLoading(true);
       console.log('[ServicePage] Loading providers...');
 
-      // Query für Firmen mit besserer Fehlerbehandlung
+      // Query für Firmen mit besserer Fehlerbehandlung - erweitert um verschiedene Aktivitätszustände
       const firmCollectionRef = collection(db, 'firma');
-      let firmQuery = query(
+      const firmQuery = query(
         firmCollectionRef,
-        where('isActive', '==', true),
         limit(20) // Reduziertes Limit für bessere Performance
       );
 
       // Query für Users/Freelancer mit besserer Fehlerbehandlung
       const userCollectionRef = collection(db, 'users');
-      let userQuery = query(
+      const userQuery = query(
         userCollectionRef,
         where('isFreelancer', '==', true),
         limit(20) // Reduziertes Limit für bessere Performance
@@ -229,30 +228,39 @@ export default function CompanyServiceSubcategoryPage() {
         userDocs: userSnapshot.docs?.length || 0,
       });
 
-      const firmProviders: Provider[] = (firmSnapshot.docs || []).map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          companyName: data.companyName,
-          profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-          profilePictureURL: data.profilePictureURL,
-          photoURL: data.photoURL,
-          bio: data.description || data.bio,
-          location: data.location
-            ? data.location
-            : `${data.companyCity || ''}, ${data.companyCountry || ''}`.trim().replace(/^,\s*/, ''),
-          skills: data.services || data.skills || [],
-          selectedCategory: data.selectedCategory,
-          selectedSubcategory: data.selectedSubcategory,
-          rating: data.averageRating || 0,
-          reviewCount: data.reviewCount || 0,
-          completedJobs: data.completedJobs || 0,
-          isCompany: true,
-          priceRange: data.priceRange,
-          responseTime: data.responseTime,
-          hourlyRate: data.hourlyRate,
-        };
-      });
+      const firmProviders: Provider[] = (firmSnapshot.docs || [])
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            companyName: data.companyName,
+            profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
+            profilePictureURL: data.profilePictureURL,
+            photoURL: data.photoURL,
+            bio: data.description || data.bio,
+            location: data.location
+              ? data.location
+              : `${data.companyCity || ''}, ${data.companyCountry || ''}`
+                  .trim()
+                  .replace(/^,\s*/, ''),
+            skills: data.services || data.skills || [],
+            selectedCategory: data.selectedCategory,
+            selectedSubcategory: data.selectedSubcategory,
+            rating: data.averageRating || 0,
+            reviewCount: data.reviewCount || 0,
+            completedJobs: data.completedJobs || 0,
+            isCompany: true,
+            priceRange: data.priceRange,
+            responseTime: data.responseTime,
+            hourlyRate: data.hourlyRate,
+          };
+        })
+        // Filter nur explizit inaktive Firmen aus
+        .filter(provider => {
+          const data = (firmSnapshot.docs || []).find(doc => doc.id === provider.id)?.data();
+          // Zeige Provider wenn isActive nicht explizit false ist
+          return data?.isActive !== false;
+        });
 
       const userProviders: Provider[] = (userSnapshot.docs || []).map(doc => {
         const data = doc.data();

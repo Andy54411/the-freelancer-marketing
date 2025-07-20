@@ -57,9 +57,9 @@ export default function SubcategoryPage() {
     try {
       setLoading(true);
 
-      // Query für Firmen
+      // Query für Firmen - erweitert um verschiedene Aktivitätszustände
       const firmCollectionRef = collection(db, 'firma');
-      const firmQuery = query(firmCollectionRef, where('isActive', '==', true), limit(50));
+      const firmQuery = query(firmCollectionRef, limit(50));
 
       // Query für Users/Freelancer
       const userCollectionRef = collection(db, 'users');
@@ -70,27 +70,34 @@ export default function SubcategoryPage() {
         getDocs(userQuery),
       ]);
 
-      const firmProviders: Provider[] = firmSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          companyName: data.companyName,
-          profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-          profilePictureURL: data.profilePictureURL,
-          photoURL: data.photoURL,
-          bio: data.description || data.bio,
-          location: data.location,
-          skills: data.services || data.skills || [],
-          selectedCategory: data.selectedCategory,
-          selectedSubcategory: data.selectedSubcategory,
-          rating: data.averageRating || 0,
-          reviewCount: data.reviewCount || 0,
-          completedJobs: data.completedJobs || 0,
-          isCompany: true,
-          priceRange: data.priceRange,
-          responseTime: data.responseTime,
-        };
-      });
+      const firmProviders: Provider[] = firmSnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            companyName: data.companyName,
+            profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
+            profilePictureURL: data.profilePictureURL,
+            photoURL: data.photoURL,
+            bio: data.description || data.bio,
+            location: data.location,
+            skills: data.services || data.skills || [],
+            selectedCategory: data.selectedCategory,
+            selectedSubcategory: data.selectedSubcategory,
+            rating: data.averageRating || 0,
+            reviewCount: data.reviewCount || 0,
+            completedJobs: data.completedJobs || 0,
+            isCompany: true,
+            priceRange: data.priceRange,
+            responseTime: data.responseTime,
+          };
+        })
+        // Filter nur inaktive Firmen aus (aber zeige Firmen ohne isActive Feld)
+        .filter(provider => {
+          const data = firmSnapshot.docs.find(doc => doc.id === provider.id)?.data();
+          // Zeige Provider wenn isActive nicht explizit false ist
+          return data?.isActive !== false;
+        });
 
       const userProviders: Provider[] = userSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -127,10 +134,14 @@ export default function SubcategoryPage() {
 
       // Log all providers with their subcategory data for debugging
       allProviders.forEach(provider => {
-        if (provider.selectedSubcategory) {
+        if (
+          provider.selectedSubcategory ||
+          provider.companyName?.toLowerCase().includes('mietkoch')
+        ) {
           console.log('[ServicePage] Provider:', {
             name: provider.companyName || provider.userName,
             selectedSubcategory: provider.selectedSubcategory,
+            selectedCategory: provider.selectedCategory,
             isCompany: provider.isCompany,
           });
         }
