@@ -193,7 +193,11 @@ export default function CompanyServiceSubcategoryPage() {
   const loadProviders = async () => {
     try {
       setLoading(true);
-      console.log('[ServicePage] Loading providers...');
+      console.log('[ServicePage] Loading providers for:', {
+        category,
+        subcategory,
+        subcategoryName,
+      });
 
       // Query für Firmen mit besserer Fehlerbehandlung - erweitert um verschiedene Aktivitätszustände
       const firmCollectionRef = collection(db, 'firma');
@@ -289,22 +293,60 @@ export default function CompanyServiceSubcategoryPage() {
 
       const allProviders = [...firmProviders, ...userProviders];
 
+      console.log('[ServicePage] All providers:', allProviders.length);
+      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
+
+      // Log specifically Mietkoch providers
+      const mietkochers = allProviders.filter(
+        p =>
+          p.companyName?.toLowerCase().includes('mietkoch') ||
+          p.selectedSubcategory?.toLowerCase().includes('mietkoch')
+      );
+      console.log(
+        '[ServicePage] Mietkoch providers found:',
+        mietkochers.map(p => ({
+          name: p.companyName || p.userName,
+          selectedSubcategory: p.selectedSubcategory,
+          selectedCategory: p.selectedCategory,
+          isCompany: p.isCompany,
+        }))
+      );
+
       // Filter nach Subcategory
       let filteredProviders = allProviders.filter(provider => {
         // Für Firmen: prüfe selectedSubcategory
         if (provider.isCompany && provider.selectedSubcategory) {
-          return (
+          const matches =
             provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase() ||
-            provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()
-          );
+            provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
+
+          if (matches) {
+            console.log('[ServicePage] Company match found:', {
+              name: provider.companyName,
+              selectedSubcategory: provider.selectedSubcategory,
+              subcategoryName,
+              subcategory,
+            });
+          }
+
+          return matches;
         }
 
         // Für Freelancer: prüfe skills (fallback)
-        return provider.skills?.some(
+        const skillsMatch = provider.skills?.some(
           skill =>
             skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
             skill.toLowerCase().includes(subcategory.toLowerCase())
         );
+
+        if (skillsMatch) {
+          console.log('[ServicePage] Skills match found:', {
+            name: provider.userName,
+            skills: provider.skills,
+          });
+        }
+
+        return skillsMatch;
       });
 
       console.log('[ServicePage] Filtered by subcategory:', {
