@@ -361,6 +361,23 @@ export default function ProfilePage() {
                         <span className="text-gray-900">{profile.completionRate}%</span>
                       </div>
                     )}
+
+                    {/* Specialties in Card */}
+                    {profile.specialties && profile.specialties.length > 0 && (
+                      <div className="pt-2">
+                        <div className="text-sm text-gray-500 mb-2">Spezialitäten:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {profile.specialties.map((specialty, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-[#14ad9f] text-white rounded text-xs"
+                            >
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
