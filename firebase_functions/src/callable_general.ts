@@ -526,4 +526,119 @@ export const syncSpecificCompanyToUser = onCall(
   }
 );
 
+export const syncSpecificUserToCompany = onCall(
+  {
+    cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "http://localhost:3000", "https://taskilo.de"],
+    region: "europe-west1",
+    memory: "512MiB",
+  },
+  async (request: CallableRequest<{ userId?: string }>): Promise<{ success: boolean; message: string; }> => {
+    // Use default userId if not provided
+    const userId = request.data?.userId || "BsUxClYQtkNWRmpSY17YsJyVR0D2";
+    
+    logger.info(`[syncSpecificUserToCompany] Syncing user ${userId} to company data`);
+
+    if (!userId || typeof userId !== "string") {
+      throw new HttpsError("invalid-argument", "userId is required and must be a string.");
+    }
+
+    const db = getDb();
+    try {
+      // Get user data
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        throw new HttpsError("not-found", `User with ID ${userId} not found.`);
+      }
+
+      const userData = userDoc.data();
+      if (!userData) {
+        throw new HttpsError("not-found", `User ${userId} has no data.`);
+      }
+
+      // Check if corresponding company document exists
+      const companyDocRef = db.collection("companies").doc(userId);
+      const companyDoc = await companyDocRef.get();
+      
+      // Prepare company data update with user data
+      const companyDataUpdate: Record<string, any> = {
+        // Basic company info
+        companyName: userData.companyName || userData['step2.companyName'] || null,
+        description: userData.description || userData['step2.description'] || null,
+        hourlyRate: userData.hourlyRate || userData['step3.hourlyRate'] ? parseFloat(userData['step3.hourlyRate']) : null,
+        selectedCategory: userData.selectedCategory || null,
+        selectedSubcategory: userData.selectedSubcategory || null,
+        
+        // Location data
+        lat: userData.lat || null,
+        lng: userData.lng || null,
+        radiusKm: userData.radiusKm || null,
+        postalCode: userData.companyPostalCodeForBackend || null,
+        companyCity: userData.companyCityForBackend || userData['step2.city'] || null,
+        companyCountryForBackend: userData.companyCountryForBackend || userData['step2.country'] || null,
+        
+        // Contact and business info
+        companyPhoneNumberForBackend: userData.companyPhoneNumberForBackend || null,
+        companyWebsiteForBackend: userData.companyWebsiteForBackend || null,
+        
+        // Profile and media
+        profilePictureURL: userData.profilePictureURL || userData.profilePictureFirebaseUrl || userData['step3.profilePictureURL'] || null,
+        profilePictureFirebaseUrl: userData.profilePictureFirebaseUrl || userData.profilePictureURL || userData['step3.profilePictureURL'] || null,
+        
+        // Business details
+        industryMcc: userData['step2.industryMcc'] || null,
+        
+        // Stripe and verification data
+        stripeAccountId: userData.stripeAccountId || null,
+        stripeChargesEnabled: userData.stripeChargesEnabled || false,
+        stripePayoutsEnabled: userData.stripePayoutsEnabled || false,
+        stripeDetailsSubmitted: userData.stripeDetailsSubmitted || false,
+        stripeVerificationStatus: userData.stripeVerificationStatus || null,
+        
+        // Additional profile data
+        specialties: userData.specialties || null,
+        portfolio: userData.portfolio || null,
+        skills: userData.skills || null,
+        languages: userData.languages || null,
+        education: userData.education || null,
+        certifications: userData.certifications || null,
+        
+        // Metrics and performance
+        responseTime: userData.responseTime || null,
+        completionRate: userData.completionRate || null,
+        totalOrders: userData.totalOrders || null,
+        averageRating: userData.averageRating || null,
+        totalReviews: userData.totalReviews || null,
+        
+        // Timestamps
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      // Remove null values to avoid overwriting existing data with nulls
+      const cleanedUpdate: { [x: string]: any } = Object.fromEntries(
+        Object.entries(companyDataUpdate).filter(([_, value]) => value !== null)
+      );
+
+      if (companyDoc.exists) {
+        // Update existing company document
+        await companyDocRef.update(cleanedUpdate);
+      } else {
+        // Create new company document
+        cleanedUpdate.id = userId;
+        cleanedUpdate.createdAt = FieldValue.serverTimestamp();
+        await companyDocRef.set(cleanedUpdate);
+      }
+
+      logger.info(`[syncSpecificUserToCompany] Successfully synced user ${userId} to company data. Updated ${Object.keys(cleanedUpdate).length} fields.`);
+      return { success: true, message: `Successfully synced user ${userId} to company data. Updated ${Object.keys(cleanedUpdate).length} fields.` };
+
+    } catch (error: any) {
+      logger.error(`[syncSpecificUserToCompany] Error syncing user ${userId}:`, error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", `Error syncing user data: ${error.message}`);
+    }
+  }
+);
+
 // --- Cloud Functions ---

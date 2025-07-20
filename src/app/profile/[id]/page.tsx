@@ -36,6 +36,7 @@ interface CompanyProfile {
   // Portfolio und Skills
   portfolio?: PortfolioItem[];
   skills?: string[];
+  specialties?: string[];
   languages?: { language: string; proficiency: string }[];
   education?: { school: string; degree: string; year: string }[];
   certifications?: { name: string; from: string; year: string }[];
@@ -107,6 +108,7 @@ export default function ProfilePage() {
             username: userData.username,
             portfolio: userData.portfolio || [],
             skills: userData.skills || [],
+            specialties: userData.specialties || [],
             languages: userData.languages || [],
             education: userData.education || [],
             certifications: userData.certifications || [],
@@ -385,6 +387,23 @@ export default function ProfilePage() {
                         className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border"
                       >
                         {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Specialties Section */}
+              {profile.specialties && profile.specialties.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Spezialitäten</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.specialties.map((specialty, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-[#14ad9f] text-white rounded-full text-sm"
+                      >
+                        {specialty}
                       </span>
                     ))}
                   </div>

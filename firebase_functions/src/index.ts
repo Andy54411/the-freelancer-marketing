@@ -54,6 +54,7 @@ export const submitReview = callableGeneral.submitReview;
 export const getReviewsByProvider = callableGeneral.getReviewsByProvider;
 export const deleteCompanyAccount = callableGeneral.deleteCompanyAccount;
 export const syncSpecificCompanyToUser = callableGeneral.syncSpecificCompanyToUser;
+export const syncSpecificUserToCompany = callableGeneral.syncSpecificUserToCompany;
 
 // HTTP General Requests
 export const migrateExistingUsersToCompanies = httpGeneral.migrateExistingUsersToCompanies;
