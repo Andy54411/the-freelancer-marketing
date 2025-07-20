@@ -36,6 +36,15 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ],
   "redirects": [
@@ -45,7 +54,7 @@
       "permanent": true
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!_next|api|favicon).*)",
       "destination": "https://taskilo.de/$1",
       "permanent": false,
       "has": [
