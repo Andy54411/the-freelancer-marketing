@@ -19,6 +19,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import ReviewList from '@/components/ReviewList';
 
 interface CompanyProfile {
   id: string;
@@ -74,8 +75,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const companyId = params?.id as string;
 
@@ -635,103 +634,7 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* Sample Reviews - In der echten App würden diese aus der Datenbank geladen */}
-                <div className="space-y-6">
-                  {/* Sample Review 1 */}
-                  <div className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                          <FiUser size={24} className="text-gray-500" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-gray-900">Maria S.</h4>
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <FiStar key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                            ))}
-                          </div>
-                          <span className="text-sm text-gray-500">vor 2 Wochen</span>
-                        </div>
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          Fantastisches Essen und ein sehr professioneller Service! Andy hat für
-                          unsere Hochzeit gekocht und alle Gäste waren begeistert. Die spanischen
-                          Gerichte waren authentisch und köstlich. Sehr empfehlenswert!
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sample Review 2 */}
-                  <div className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                          <FiUser size={24} className="text-gray-500" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-gray-900">Thomas K.</h4>
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <FiStar
-                                key={i}
-                                className={`w-4 h-4 ${i < 4 ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm text-gray-500">vor 1 Monat</span>
-                        </div>
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          Sehr zuverlässig und pünktlich. Das Essen war lecker und die Präsentation
-                          perfekt. Andy hat sich um alles gekümmert und wir konnten unseren
-                          Geburtstag richtig genießen.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sample Review 3 */}
-                  <div className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                          <FiUser size={24} className="text-gray-500" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-gray-900">Julia R.</h4>
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <FiStar key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                            ))}
-                          </div>
-                          <span className="text-sm text-gray-500">vor 6 Wochen</span>
-                        </div>
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          Absolut empfehlenswert! Andy hat für unser Firmenevent gekocht und es war
-                          ein voller Erfolg. Die deutsche Küche war traditionell und modern
-                          zugleich. Wir buchen ihn definitiv wieder!
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Placeholder for when there are no reviews */}
-                {(!profile.totalReviews || profile.totalReviews === 0) && (
-                  <div className="text-center py-8">
-                    <FiStar size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500">Noch keine Bewertungen vorhanden.</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Seien Sie der Erste, der eine Bewertung abgibt!
-                    </p>
-                  </div>
-                )}
+                <ReviewList anbieterId={companyId} />
               </div>
             </div>
 
