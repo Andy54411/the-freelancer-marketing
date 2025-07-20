@@ -55,7 +55,7 @@ interface SubmitReviewData {
   sterne: number;
   kommentar: string;
   kundeId: string;
-  kundeProfilePictureURL?: string;
+  kundeProfilePictureURL: string; // Jetzt erforderlich
   auftragId?: string;
   kategorie?: string;
   unterkategorie?: string;
@@ -274,6 +274,11 @@ export const submitReview = onCall(
       throw new HttpsError('invalid-argument', 'Missing or invalid data provided for review submission.');
     }
 
+    // Validierung: Profilbild ist erforderlich
+    if (!kundeProfilePictureURL || kundeProfilePictureURL.trim() === '') {
+      throw new HttpsError('failed-precondition', 'Ein Profilbild ist erforderlich, um eine Bewertung abgeben zu können.');
+    }
+
     const db = getDb();
     try {
       const newReviewData = {
@@ -282,7 +287,7 @@ export const submitReview = onCall(
         auftragId,
         sterne,
         kommentar: kommentar || "",
-        kundeProfilePictureURL: kundeProfilePictureURL || null,
+        kundeProfilePictureURL, // Jetzt immer vorhanden
         kategorie,
         unterkategorie,
         erstellungsdatum: new Date(),
