@@ -206,19 +206,9 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
       {reviews.map(review => (
         <div key={review.id} className="bg-white p-4 rounded-lg shadow border space-y-2">
           <div className="flex items-center gap-4">
-            {review.kundeProfilePictureURL ? (
-              <Image
-                src={review.kundeProfilePictureURL}
-                alt="Kunde"
-                width={40}
-                height={40}
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <FiUser className="text-gray-500" />
-              </div>
-            )}
+            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <FiUser className="text-gray-500" />
+            </div>
             <div className="text-yellow-500 text-base font-medium">
               {renderStars(review.sterne)} <span className="text-gray-700">({review.sterne})</span>
             </div>
