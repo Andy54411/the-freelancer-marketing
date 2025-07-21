@@ -79,9 +79,6 @@ interface CreateOrderModalProps {
   onSuccess: () => void;
   currentUser: User;
   userProfile: UserProfileData;
-  preselectedProvider?: AnbieterDetails;
-  preselectedCategory?: string;
-  preselectedSubcategory?: string;
 }
 
 function parseDurationStringToHours(durationStr?: string): number | null {
@@ -101,25 +98,16 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   onSuccess,
   currentUser,
   userProfile,
-  preselectedProvider,
-  preselectedCategory,
-  preselectedSubcategory,
 }) => {
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState<'details' | 'payment' | 'success'>('details');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    preselectedCategory || null
-  );
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(
-    preselectedSubcategory || null
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [useSavedAddress, setUseSavedAddress] = useState<'new' | string>('new');
   const [newAddressDetails, setNewAddressDetails] = useState<SavedAddress | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<AnbieterDetails | null>(
-    preselectedProvider || null
-  );
+  const [selectedProvider, setSelectedProvider] = useState<AnbieterDetails | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

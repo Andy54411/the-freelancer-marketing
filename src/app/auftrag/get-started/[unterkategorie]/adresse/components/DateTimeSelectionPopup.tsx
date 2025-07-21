@@ -140,7 +140,6 @@ export function DateTimeSelectionPopup({
       return;
     }
     onConfirm(selectedDateValue, selectedTimeInPopup, durationInput);
-    onClose(); // ✅ Popup nach erfolgreicher Bestätigung schließen
   };
 
   if (!isOpen) return null;
