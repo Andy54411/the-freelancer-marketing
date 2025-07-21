@@ -477,14 +477,12 @@ export default function UserServiceSubcategoryPage() {
 
   if (!categoryInfo || !subcategoryName) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+      <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 p-8">
         <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Seite nicht gefunden
-          </h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Seite nicht gefunden</h1>
           <button
             onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto"
+            className="text-white/80 hover:text-white flex items-center gap-2 mx-auto"
           >
             <ArrowLeft className="w-4 h-4" />
             Zurück
@@ -495,7 +493,7 @@ export default function UserServiceSubcategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+    <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Hero Section - Tasko Style */}
