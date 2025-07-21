@@ -79,6 +79,16 @@ interface CreateOrderModalProps {
   onSuccess: () => void;
   currentUser: User;
   userProfile: UserProfileData;
+  preselectedProvider?: {
+    id: string;
+    companyName: string;
+    hourlyRate?: number;
+    selectedCategory?: string;
+    selectedSubcategory?: string;
+    profilePictureFirebaseUrl?: string;
+    description?: string;
+    stripeAccountId?: string;
+  };
 }
 
 function parseDurationStringToHours(durationStr?: string): number | null {
@@ -98,6 +108,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   onSuccess,
   currentUser,
   userProfile,
+  preselectedProvider,
 }) => {
   const router = useRouter();
 
@@ -126,6 +137,32 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       setUseSavedAddress('new');
     }
   }, [userProfile?.savedAddresses]);
+
+  // useEffect für vorausgewählten Provider
+  useEffect(() => {
+    if (preselectedProvider) {
+      // Setze Kategorie und Subkategorie automatisch
+      if (preselectedProvider.selectedCategory) {
+        setSelectedCategory(preselectedProvider.selectedCategory);
+      }
+      if (preselectedProvider.selectedSubcategory) {
+        setSelectedSubcategory(preselectedProvider.selectedSubcategory);
+      }
+
+      // Erstelle AnbieterDetails-Objekt aus preselectedProvider
+      const providerDetails: AnbieterDetails = {
+        id: preselectedProvider.id,
+        companyName: preselectedProvider.companyName,
+        hourlyRate: preselectedProvider.hourlyRate || 0,
+        profilePictureURL: preselectedProvider.profilePictureFirebaseUrl,
+        description: preselectedProvider.description,
+        stripeAccountId: preselectedProvider.stripeAccountId || '',
+        selectedSubcategory: preselectedProvider.selectedSubcategory || '',
+      };
+
+      setSelectedProvider(providerDetails);
+    }
+  }, [preselectedProvider]);
 
   const availableSubcategories = useMemo(() => {
     if (!selectedCategory) return [];

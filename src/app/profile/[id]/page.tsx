@@ -110,7 +110,7 @@ export default function ProfilePage() {
   };
 
   // Funktionen für das Buchungsmodal
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     if (!currentUser) {
       // Benutzer zur Anmeldung weiterleiten
       window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
@@ -118,7 +118,30 @@ export default function ProfilePage() {
     }
 
     console.log('handleBookNow called for profile:', profile);
-    setIsBookingModalOpen(true);
+
+    // User-Profil laden falls noch nicht vorhanden
+    if (!userProfile) {
+      await loadUserProfile();
+    }
+
+    // Direkt CreateOrderModal öffnen
+    setIsCreateOrderModalOpen(true);
+  };
+
+  // Hilfsfunktion zum Laden des User-Profils
+  const loadUserProfile = async () => {
+    if (!currentUser) return;
+
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        setUserProfile(userDoc.data() as UserProfileData);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des User-Profils:', error);
+    }
   };
 
   const handleBookingConfirm = async (
@@ -1050,6 +1073,19 @@ export default function ProfilePage() {
                   onSuccess={handleCreateOrderSuccess}
                   currentUser={currentUser}
                   userProfile={userProfile}
+                  preselectedProvider={
+                    profile
+                      ? {
+                          id: profile.id,
+                          companyName: profile.companyName,
+                          hourlyRate: profile.hourlyRate,
+                          selectedCategory: profile.selectedCategory,
+                          selectedSubcategory: profile.selectedSubcategory,
+                          profilePictureFirebaseUrl: profile.profilePictureFirebaseUrl,
+                          description: profile.description,
+                        }
+                      : undefined
+                  }
                 />
               </div>
             </div>
