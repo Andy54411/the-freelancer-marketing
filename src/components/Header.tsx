@@ -817,8 +817,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             </div>
           </div>
         </div>
+
         {/* Die Kategorien-Navigation wird nur im allgemeinen Modus angezeigt, nicht im Company-Dashboard */}
-        <AppHeaderNavigation />
+        {!company && <AppHeaderNavigation />}
       </header>
 
       <style jsx>

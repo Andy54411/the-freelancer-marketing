@@ -9,7 +9,22 @@
  */
 export function suppressStripeAnalyticsErrors() {
   if (process.env.NODE_ENV === 'development') {
-    // Nur in Development-Modus warnen
+    // Unterdrücke bekannte Stripe Network-Fehler
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      try {
+        return await originalFetch.apply(window, args);
+      } catch (error) {
+        const url = args[0]?.toString() || '';
+        if (url.includes('stripe.com') || url.includes('errors.stripe.com')) {
+          // Stripe Analytics/Sentry-Fehler still unterdrücken
+          return new Response('{}', { status: 200 });
+        }
+        throw error;
+      }
+    };
+
+    // Console Error Handler für verbleibende Fehler
     const originalError = console.error;
     console.error = (...args: any[]) => {
       const message = args[0];
@@ -18,6 +33,8 @@ export function suppressStripeAnalyticsErrors() {
       if (
         typeof message === 'string' &&
         (message.includes('FetchError: Error fetching https://r.stripe.com/b') ||
+          (message.includes('Failed to load resource') && message.includes('errors.stripe.com')) ||
+          (message.includes('429') && message.includes('stripe.com')) ||
           (message.includes('Failed to fetch') && message.includes('stripe.com')))
       ) {
         // Diese Fehler nicht ausgeben, da sie harmlos sind
