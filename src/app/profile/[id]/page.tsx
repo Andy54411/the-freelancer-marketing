@@ -343,278 +343,449 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Hero Section - Fiverr Style */}
-          <div className="border-b border-white/20 py-8">
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
-              {/* Left - Profile Info */}
-              <div className="flex-1">
-                <div className="flex items-start gap-6">
-                  {/* Profile Picture */}
-                  <div className="flex-shrink-0">
-                    {profile.photoURL || profile.profilePictureFirebaseUrl ? (
-                      <Image
-                        src={profile.photoURL || profile.profilePictureFirebaseUrl || ''}
-                        alt={`Profilbild von ${profile.companyName}`}
-                        width={120}
-                        height={120}
-                        className="rounded-full object-cover border-4 border-gray-100 shadow-lg"
-                      />
-                    ) : (
-                      <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-200">
-                        <FiUser size={48} className="text-gray-400" />
-                      </div>
-                    )}
-                  </div>
+      <main className="min-h-screen bg-gray-50">
+        {/* Breadcrumb Navigation */}
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Link href="/" className="hover:text-gray-700">
+                Startseite
+              </Link>
+              <span>/</span>
+              {profile.selectedCategory && (
+                <>
+                  <span className="hover:text-gray-700">{profile.selectedCategory}</span>
+                  <span>/</span>
+                </>
+              )}
+              {profile.selectedSubcategory && (
+                <>
+                  <span className="hover:text-gray-700">{profile.selectedSubcategory}</span>
+                  <span>/</span>
+                </>
+              )}
+              <span className="text-gray-900 font-medium">{profile.companyName}</span>
+            </div>
+          </div>
+        </div>
 
-                  {/* Profile Details */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold text-white">{profile.companyName}</h1>
-                      {profile.isVerified && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                          <FiCheckCircle className="mr-1" size={16} />
-                          Verifiziert
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-xl text-white/80 mb-3">
-                      {profile.selectedSubcategory || 'Profi-Anbieter'}
-                    </p>
-
-                    {/* Rating und Location */}
-                    <div className="flex items-center gap-6 mb-4">
-                      {profile.averageRating !== undefined && profile.averageRating > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <FiStar
-                                key={i}
-                                className={`w-4 h-4 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                              />
-                            ))}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Provider Header Card */}
+              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="p-8">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-6">
+                      {/* Profile Image */}
+                      <div className="flex-shrink-0">
+                        {profile.profilePictureFirebaseUrl ? (
+                          <Image
+                            src={profile.profilePictureFirebaseUrl}
+                            alt={profile.companyName}
+                            width={120}
+                            height={120}
+                            className="w-30 h-30 rounded-full object-cover border-4 border-gray-100"
+                          />
+                        ) : (
+                          <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-100">
+                            <FiUser size={48} className="text-gray-400" />
                           </div>
-                          <span className="text-sm font-medium text-white">
-                            {profile.averageRating.toFixed(1)}
-                          </span>
-                          <span className="text-sm text-white/70">
-                            ({profile.totalReviews} Bewertungen)
-                          </span>
+                        )}
+                      </div>
+
+                      {/* Provider Info */}
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h1 className="text-3xl font-bold text-gray-900">
+                            {profile.companyName}
+                          </h1>
+                          {profile.isVerified && (
+                            <FiCheckCircle className="text-green-500" size={24} />
+                          )}
                         </div>
-                      )}
 
-                      {fullAddress && (
-                        <div className="flex items-center gap-1 text-sm text-white/70">
-                          <FiMapPin size={16} />
-                          <span>{fullAddress}</span>
+                        <p className="text-gray-600 text-lg mb-4">
+                          {profile.selectedSubcategory || 'Professioneller Service'}
+                        </p>
+
+                        {/* Rating and Location */}
+                        <div className="flex items-center gap-6 mb-4">
+                          {profile.averageRating && profile.averageRating > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <FiStar
+                                    key={i}
+                                    className={`w-5 h-5 ${
+                                      i < Math.floor(profile.averageRating || 0)
+                                        ? 'text-yellow-400 fill-current'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="font-semibold text-gray-900">
+                                {profile.averageRating.toFixed(1)}
+                              </span>
+                              <span className="text-gray-500">
+                                ({profile.totalReviews || 0} Bewertungen)
+                              </span>
+                            </div>
+                          )}
+
+                          {fullAddress && (
+                            <div className="flex items-center gap-1 text-gray-600">
+                              <FiMapPin size={16} />
+                              <span>{fullAddress}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Quick Stats */}
-                    <div className="flex items-center gap-6 text-sm text-white/80 mb-4">
-                      {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
-                        <span>{profile.totalOrders} Aufträge abgeschlossen</span>
-                      )}
-                      {profile.responseTime && <span>Antwortet in ~{profile.responseTime}h</span>}
-                    </div>
-
-                    {/* Description in Hero */}
-                    {profile.description && (
-                      <div className="mt-4 pt-4 border-t border-white/20">
-                        <div className="relative">
-                          <p
-                            className={`text-white/90 leading-relaxed text-sm transition-all duration-300 ${
-                              isDescriptionExpanded ? '' : 'line-clamp-4'
-                            }`}
-                          >
-                            {profile.description}
-                          </p>
-
-                          {/* Show expand/collapse button only if text is longer than 4 lines */}
-                          {profile.description.length > 200 && (
-                            <button
-                              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                              className="mt-2 text-white hover:text-white/80 text-sm font-medium transition-colors underline"
-                            >
-                              {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
-                            </button>
+                        {/* Stats */}
+                        <div className="flex items-center gap-8 text-sm text-gray-600">
+                          {profile.completedJobs && profile.completedJobs > 0 && (
+                            <span>{profile.completedJobs} Aufträge abgeschlossen</span>
+                          )}
+                          {profile.responseTime && (
+                            <div className="flex items-center gap-1">
+                              <FiClock size={14} />
+                              <span>Antwortet in ~{profile.responseTime}h</span>
+                            </div>
                           )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right - Contact Card */}
-              <div className="lg:w-80">
-                <div className="sticky top-24 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg p-6 shadow-xl">
-                  <div className="text-center mb-4">
-                    {profile.hourlyRate && (
-                      <div className="text-2xl font-bold text-gray-900 mb-1">
-                        ab {profile.hourlyRate}€
-                        <span className="text-sm font-normal text-gray-500">/Stunde</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors mb-3">
-                    Anfrage senden
-                  </button>
-
-                  <button
-                    onClick={handleStartChat}
-                    className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Nachricht schreiben
-                  </button>
-
-                  {/* Quick Info */}
-                  <div className="mt-4 pt-4 border-t space-y-2">
-                    {profile.radiusKm && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Arbeitsradius:</span>
-                        <span className="text-gray-900">{profile.radiusKm} km</span>
-                      </div>
-                    )}
-                    {profile.completionRate !== undefined && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Erfolgsrate:</span>
-                        <span className="text-gray-900">{profile.completionRate}%</span>
-                      </div>
-                    )}
-
-                    {/* Specialties in Card */}
-                    {profile.specialties && profile.specialties.length > 0 && (
-                      <div className="pt-2">
-                        <div className="text-sm text-gray-500 mb-2">Spezialitäten:</div>
-                        <div className="flex flex-wrap gap-1">
-                          {profile.specialties.map((specialty, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-[#14ad9f] text-white rounded text-xs"
-                            >
-                              {specialty}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Languages in Card */}
-                    {profile.languages && profile.languages.length > 0 && (
-                      <div className="pt-2">
-                        <div className="text-sm text-gray-500 mb-2">Sprachen:</div>
-                        <div className="space-y-1">
-                          {profile.languages.map((lang, index) => (
-                            <div key={index} className="flex justify-between text-sm">
-                              <span className="text-gray-700 font-medium">{lang.language}</span>
-                              <span className="text-gray-500">{lang.proficiency}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Main Content */}
-              <div className="lg:col-span-2 space-y-8">
-                {/* Skills Section */}
-                {profile.skills && profile.skills.length > 0 && (
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Fähigkeiten</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.skills.map((skill, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border"
-                        >
-                          {skill}
-                        </span>
-                      ))}
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
 
-                {/* Portfolio Section */}
-                {profile.portfolio && profile.portfolio.length > 0 && (
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {profile.portfolio.map((item, index) => (
-                        <div key={item.id || index} className="group cursor-pointer">
-                          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                            {item.imageUrl && (
-                              <div className="aspect-video bg-gray-200 overflow-hidden">
-                                <Image
-                                  src={item.imageUrl}
-                                  alt={item.title}
-                                  width={400}
-                                  height={225}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                            )}
-                            <div className="p-4">
-                              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                                {item.title}
-                              </h3>
-                              <p className="text-gray-600 text-sm mb-3 line-clamp-3">
-                                {item.description}
-                              </p>
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-500 uppercase tracking-wide">
-                                  {item.category}
-                                </span>
-                                {item.projectUrl && (
-                                  <a
-                                    href={item.projectUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium"
+              {/* About Section */}
+              {profile.description && (
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Über mich</h2>
+                  <div className="prose prose-lg max-w-none">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {profile.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Skills and Expertise */}
+              {((profile.skills && profile.skills.length > 0) ||
+                (profile.specialties && profile.specialties.length > 0)) && (
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    Fähigkeiten und Expertise
+                  </h2>
+
+                  {/* Programming Languages/Main Skills */}
+                  {profile.skills && profile.skills.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Hauptkompetenzen</h3>
+                      <div className="flex flex-wrap gap-3">
+                        {profile.skills.map((skill, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full"
+                          >
+                            <span className="text-gray-800 font-medium">{skill}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Specialties */}
+                  {profile.specialties && profile.specialties.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Spezialgebiete</h3>
+                      <div className="flex flex-wrap gap-3">
+                        {profile.specialties.map((specialty, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-full"
+                          >
+                            <span className="font-medium">{specialty}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Languages */}
+                  {profile.languages && profile.languages.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Sprachen</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {profile.languages.map((lang, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <span className="font-medium text-gray-800">{lang.language}</span>
+                            <span className="text-gray-500">- {lang.proficiency}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Portfolio Section */}
+              {profile.portfolio && profile.portfolio.length > 0 && (
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {profile.portfolio.map((item, index) => (
+                      <div key={item.id || index} className="group cursor-pointer">
+                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                          {item.imageUrl && (
+                            <div className="aspect-video bg-gray-200 overflow-hidden relative">
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.title}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              {/* Play button overlay for videos */}
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center group-hover:bg-black/70 transition-colors">
+                                  <svg
+                                    className="w-6 h-6 text-white ml-1"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
                                   >
-                                    Ansehen →
-                                  </a>
-                                )}
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                </div>
                               </div>
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                              {item.title}
+                            </h3>
+                            <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+                              {item.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
+                                {item.category}
+                              </span>
+                              {item.projectUrl && (
+                                <a
+                                  href={item.projectUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium"
+                                >
+                                  Ansehen →
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews Section */}
+              <div className="bg-white rounded-lg shadow-lg p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Bewertungen{' '}
+                    {profile.totalReviews &&
+                      profile.totalReviews > 0 &&
+                      `(${profile.totalReviews})`}
+                  </h2>
+                  {profile.averageRating && profile.averageRating > 0 && (
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-gray-900">
+                          {profile.averageRating.toFixed(1)}
+                        </div>
+                        <div className="flex justify-end">
+                          {[...Array(5)].map((_, i) => (
+                            <FiStar
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < Math.floor(profile.averageRating || 0)
+                                  ? 'text-yellow-400 fill-current'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rating Breakdown */}
+                {profile.totalReviews && profile.totalReviews > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    {/* Rating Distribution */}
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-4">Bewertungsverteilung</h3>
+                      <div className="space-y-2">
+                        {[5, 4, 3, 2, 1].map(stars => (
+                          <div key={stars} className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-gray-700 w-8">
+                              {stars} Stern{stars !== 1 ? 'e' : ''}
+                            </span>
+                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-yellow-400 h-2 rounded-full"
+                                style={{
+                                  width: `${Math.random() * 100}%`, // Placeholder - should be calculated from actual data
+                                }}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-500 w-8">
+                              ({Math.floor(Math.random() * 10)})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Rating Categories */}
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-4">Bewertungskategorien</h3>
+                      <div className="space-y-3">
+                        {[
+                          { label: 'Kommunikation', rating: 5.0 },
+                          { label: 'Qualität der Lieferung', rating: 5.0 },
+                          { label: 'Preis-Leistungs-Verhältnis', rating: 5.0 },
+                        ].map((category, index) => (
+                          <div key={index} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700">{category.label}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <FiStar
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < Math.floor(category.rating)
+                                        ? 'text-yellow-400 fill-current'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">
+                                {category.rating.toFixed(1)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Experience Section */}
+                {/* Reviews List */}
+                <ReviewList anbieterId={companyId} />
+              </div>
+            </div>
+
+            {/* Right Column - Contact Card */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-8 space-y-6">
+                {/* Contact Card */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="text-center mb-6">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                      {profile.hourlyRate ? (
+                        <>
+                          Ab {profile.hourlyRate}€
+                          <span className="text-lg font-normal text-gray-500">/Stunde</span>
+                        </>
+                      ) : (
+                        'Preis auf Anfrage'
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleStartChat}
+                      className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors"
+                    >
+                      Kontaktieren
+                    </button>
+
+                    <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                      Angebot anfordern
+                    </button>
+                  </div>
+
+                  {/* Quick Info */}
+                  <div className="mt-6 pt-6 border-t space-y-4">
+                    {profile.radiusKm && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Arbeitsradius:</span>
+                        <span className="text-gray-900 font-medium">{profile.radiusKm} km</span>
+                      </div>
+                    )}
+
+                    {profile.responseTime && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Antwortzeit:</span>
+                        <span className="text-gray-900 font-medium">~{profile.responseTime}h</span>
+                      </div>
+                    )}
+
+                    {profile.completedJobs && profile.completedJobs > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Abgeschlossene Aufträge:</span>
+                        <span className="text-gray-900 font-medium">{profile.completedJobs}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Verification Card */}
+                {profile.stripeVerificationStatus && (
+                  <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Verifizierung</h3>
+                    <div className="flex items-center gap-3">
+                      <FiCheckCircle
+                        className={`${
+                          profile.stripeVerificationStatus === 'verified'
+                            ? 'text-green-500'
+                            : 'text-orange-500'
+                        }`}
+                        size={20}
+                      />
+                      <span className="text-gray-700">
+                        {profile.stripeVerificationStatus === 'verified'
+                          ? 'Identität verifiziert'
+                          : 'Verifizierung in Bearbeitung'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Education & Certifications */}
                 {((profile.education && profile.education.length > 0) ||
                   (profile.certifications && profile.certifications.length > 0)) && (
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Qualifikationen</h2>
+                  <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Qualifikationen</h3>
 
                     {/* Education */}
                     {profile.education && profile.education.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ausbildung</h3>
-                        <div className="space-y-4">
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Ausbildung</h4>
+                        <div className="space-y-3">
                           {profile.education.map((edu, index) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="flex-shrink-0 w-2 h-2 bg-[#14ad9f] rounded-full mt-2"></div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{edu.degree}</h4>
-                                <p className="text-gray-600">{edu.school}</p>
-                                <p className="text-sm text-gray-500">{edu.year}</p>
-                              </div>
+                            <div key={index} className="text-sm">
+                              <div className="font-medium text-gray-900">{edu.degree}</div>
+                              <div className="text-gray-600">{edu.school}</div>
+                              <div className="text-gray-500">{edu.year}</div>
                             </div>
                           ))}
                         </div>
@@ -624,16 +795,13 @@ export default function ProfilePage() {
                     {/* Certifications */}
                     {profile.certifications && profile.certifications.length > 0 && (
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Zertifikate</h3>
-                        <div className="space-y-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Zertifikate</h4>
+                        <div className="space-y-3">
                           {profile.certifications.map((cert, index) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{cert.name}</h4>
-                                <p className="text-gray-600">{cert.from}</p>
-                                <p className="text-sm text-gray-500">{cert.year}</p>
-                              </div>
+                            <div key={index} className="text-sm">
+                              <div className="font-medium text-gray-900">{cert.name}</div>
+                              <div className="text-gray-600">{cert.from}</div>
+                              <div className="text-gray-500">{cert.year}</div>
                             </div>
                           ))}
                         </div>
@@ -641,61 +809,15 @@ export default function ProfilePage() {
                     )}
                   </div>
                 )}
-
-                {/* Reviews Section */}
-                <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      Bewertungen{' '}
-                      {profile.totalReviews &&
-                        profile.totalReviews > 0 &&
-                        `(${profile.totalReviews})`}
-                    </h2>
-                    {profile.averageRating !== undefined && profile.averageRating > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <FiStar
-                              key={i}
-                              className={`w-5 h-5 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-lg font-semibold text-gray-900">
-                          {profile.averageRating.toFixed(1)}
-                        </span>
-                        <span className="text-gray-500">von 5</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <ReviewList anbieterId={companyId} />
-                </div>
-              </div>
-
-              {/* Right Column - Sidebar */}
-              <div className="space-y-6">
-                {/* Verification */}
-                {profile.stripeVerificationStatus && (
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Verifizierung</h3>
-                    <div className="flex items-center gap-3">
-                      <FiCheckCircle
-                        className={`${profile.stripeVerificationStatus === 'verified' ? 'text-green-500' : 'text-orange-500'}`}
-                        size={20}
-                      />
-                      <span className="text-gray-700">
-                        {profile.stripeVerificationStatus === 'verified'
-                          ? 'Verifiziert'
-                          : 'In Bearbeitung'}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Review Management Modal */}
+        {showReviewManagement && (
+          <CompanyReviewManagement companyId={companyId} companyName={profile.companyName} />
+        )}
       </main>
     </>
   );
