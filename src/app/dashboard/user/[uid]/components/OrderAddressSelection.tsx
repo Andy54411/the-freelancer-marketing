@@ -161,7 +161,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
     <>
       <div className="p-4 border rounded-md bg-gray-50">
         <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center">
-          <FiMapPin className="mr-2" /> 2. Ort des Tasks *
+          <FiMapPin className="mr-2" /> 3. Ort des Tasks *
         </h4>
 
         {userProfile.savedAddresses && userProfile.savedAddresses.length > 0 ? (
@@ -232,7 +232,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
 
       {activePostalCode && selectedSubcategory && (
         <div className="p-4 border-t mt-4">
-          <h4 className="text-lg font-semibold text-gray-700 mb-4">3. Wähle einen Tasker aus</h4>
+          <h4 className="text-lg font-semibold text-gray-700 mb-4">4. Wähle einen Tasker aus</h4>
 
           {loadingProfiles && (
             <div className="flex items-center justify-center py-4">

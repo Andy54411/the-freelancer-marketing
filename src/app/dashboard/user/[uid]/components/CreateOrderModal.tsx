@@ -578,7 +578,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
           <div className="space-y-8">
             <div className="flex items-center mb-6">
               <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">
-                2
+                3
               </div>
               <h4 className="text-xl font-semibold text-gray-800">Zahlung abschließen</h4>
             </div>
