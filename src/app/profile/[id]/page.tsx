@@ -23,8 +23,10 @@ import ReviewList from '@/components/ReviewList';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import DirectChatModal from '@/components/DirectChatModal';
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
+import CreateOrderModal from '@/app/dashboard/user/[uid]/components/CreateOrderModal';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { UserProfileData } from '@/types/types';
 
 interface CompanyProfile {
   id: string;
@@ -84,6 +86,14 @@ export default function ProfilePage() {
   const [showReviewManagement, setShowReviewManagement] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isCreateOrderModalOpen, setIsCreateOrderModalOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+  const [bookingData, setBookingData] = useState<{
+    selection: any;
+    time: string;
+    durationString: string;
+    description: string;
+  } | null>(null);
 
   const companyId = params?.id as string;
 
@@ -126,13 +136,13 @@ export default function ProfilePage() {
         description,
       });
 
-      // Hier würden Sie die Buchungslogik implementieren
-      // z.B. Weiterleitung zur Zahlung oder zur Auftragserstellung
+      // Prüfe ob Profile verfügbar ist
+      if (!profile) {
+        throw new Error('Provider-Profil nicht verfügbar');
+      }
 
       setIsBookingModalOpen(false);
-
-      // Optional: Erfolgsbenachrichtigung anzeigen
-      alert('Buchungsanfrage erfolgreich gesendet!');
+      setIsCreateOrderModalOpen(true);
     } catch (error) {
       console.error('Fehler bei der Buchung:', error);
       alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
@@ -141,6 +151,16 @@ export default function ProfilePage() {
 
   const handleCloseBookingModal = () => {
     setIsBookingModalOpen(false);
+  };
+
+  // Handler für das CreateOrderModal
+  const handleCreateOrderSuccess = () => {
+    setIsCreateOrderModalOpen(false);
+    // Optional: Success-Nachricht anzeigen oder zur Auftragsübersicht navigieren
+  };
+
+  const handleCloseCreateOrderModal = () => {
+    setIsCreateOrderModalOpen(false);
   };
 
   // Hilfsfunktion für Kategorie-URLs
@@ -164,6 +184,29 @@ export default function ProfilePage() {
     });
     return () => unsubscribe();
   }, []);
+
+  // User-Profil laden wenn User angemeldet ist
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!currentUser) {
+        setUserProfile(null);
+        return;
+      }
+
+      try {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          setUserProfile(userDoc.data() as UserProfileData);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden des User-Profils:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchCompanyProfile = async () => {
@@ -980,6 +1023,36 @@ export default function ProfilePage() {
               }}
               onConfirm={handleBookingConfirm}
             />
+          )}
+
+          {/* Create Order Modal */}
+          {isCreateOrderModalOpen && currentUser && userProfile && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between p-6 border-b">
+                  <h2 className="text-2xl font-bold text-gray-900">Auftrag erstellen</h2>
+                  <button
+                    onClick={handleCloseCreateOrderModal}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <CreateOrderModal
+                  onClose={handleCloseCreateOrderModal}
+                  onSuccess={handleCreateOrderSuccess}
+                  currentUser={currentUser}
+                  userProfile={userProfile}
+                />
+              </div>
+            </div>
           )}
         </div>
       </main>

@@ -473,9 +473,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
   return (
     <>
-      <header className="bg-white shadow-sm sticky top-0 z-50 md:relative">
-        {' '}
-        {/* added md:relative */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             {company ? (
@@ -485,33 +483,38 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 <Link href="/" className="text-2xl font-bold text-[#14ad9f]">
                   Taskilo
                 </Link>
-                <span className="text-gray-400">|</span>
-                <h1 className="text-xl font-bold text-gray-800">{company.companyName}</h1>
+                <span className="text-gray-400 hidden sm:inline">|</span>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-800 hidden sm:block">
+                  {company.companyName}
+                </h1>
               </div>
             ) : (
               // --- STANDARD-ANSICHT FÜR DIE APP (Logo) ---
-              <Link href="/" className="text-3xl font-bold text-[#14ad9f]">
+              <Link href="/" className="text-2xl sm:text-3xl font-bold text-[#14ad9f]">
                 Taskilo
               </Link>
             )}
 
-            {/* Suchleiste (vereinfacht) - Immer anzeigen */}
-            <div className="relative flex-grow max-w-xl mx-4" ref={searchDropdownContainerRef}>
+            {/* Suchleiste - Responsive */}
+            <div
+              className="relative flex-grow max-w-xl mx-2 sm:mx-4"
+              ref={searchDropdownContainerRef}
+            >
               <input
                 ref={searchInputRef}
                 type="search"
-                placeholder="Dienstleistung auswählen oder suchen..."
-                className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
+                placeholder="Dienstleistung auswählen..."
+                className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm sm:text-base"
                 onFocus={() => setIsSearchDropdownOpen(true)}
                 onChange={e => setSearchTerm(e.target.value)}
                 value={searchTerm}
               />
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
               {isSearchDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-30 ring-1 ring-black ring-opacity-5">
                   {filteredCategories.map((category: Category) => (
                     <div key={category.title} className="p-2">
-                      <h3 className="font-semibold text-gray-700 px-2 text-sm sticky top-0 bg-gray-50 py-1">
+                      <h3 className="font-semibold text-gray-700 px-2 text-xs sm:text-sm sticky top-0 bg-gray-50 py-1">
                         {category.title}
                       </h3>
                       <ul className="mt-1">
@@ -525,7 +528,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                     : `/dashboard/user/${currentUser.uid}/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`
                                   : '/login'
                               }
-                              className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
+                              className="block px-4 py-2 text-xs sm:text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
                               onClick={handleSubcategorySelect}
                             >
                               {subcategory}
@@ -536,7 +539,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                     </div>
                   ))}
                   {filteredCategories.length === 0 && searchTerm.trim() && (
-                    <p className="p-4 text-sm text-gray-500">
+                    <p className="p-4 text-xs sm:text-sm text-gray-500">
                       Keine Übereinstimmungen für &ldquo;{searchTerm}&rdquo; gefunden.
                     </p>
                   )}
@@ -545,12 +548,13 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             </div>
 
             {/* Icons und Benutzerprofil */}
-            <div className="flex items-center space-x-4">
-              <div className="relative">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Benachrichtigungen - nur desktop */}
+              <div className="relative hidden sm:block">
                 {' '}
                 {/* Wrapper für die Glocke */}
-                <button className="text-gray-600 hover:text-[#14ad9f]">
-                  <FiBell size={22} />
+                <button className="text-gray-600 hover:text-[#14ad9f] p-1">
+                  <FiBell size={20} />
                 </button>
                 {unreadMessagesCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
@@ -558,9 +562,10 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                   </span>
                 )}
               </div>
-              {/* NEU: Posteingang-Icon mit Hover-Dropdown */}
+
+              {/* NEU: Posteingang-Icon mit Hover-Dropdown - nur desktop */}
               <div
-                className="relative"
+                className="relative hidden sm:block"
                 onMouseEnter={handleInboxEnter}
                 onMouseLeave={handleInboxLeave}
               >
@@ -572,9 +577,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         : `/dashboard/user/${currentUser.uid}/inbox`
                       : '/login'
                   }
-                  className="text-gray-600 hover:text-[#14ad9f]"
+                  className="text-gray-600 hover:text-[#14ad9f] p-1 block"
                 >
-                  <FiMail size={22} />
+                  <FiMail size={20} />
                 </Link>
                 {isInboxDropdownOpen && currentUser && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
@@ -640,12 +645,14 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                   </div>
                 )}
               </div>
+
+              {/* Hilfe Button - nur desktop */}
               <button
                 onClick={handleHelpClick}
-                className="text-gray-600 hover:text-[#14ad9f]"
+                className="text-gray-600 hover:text-[#14ad9f] p-1 hidden sm:block"
                 aria-label="Hilfe & Support Chatbot öffnen"
               >
-                <FiHelpCircle size={22} />
+                <FiHelpCircle size={20} />
               </button>
 
               {currentUser ? (
@@ -659,7 +666,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                       <img
                         src={profilePictureURLFromStorage || currentUser.photoURL || ''}
                         alt="Avatar"
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
                         onError={e => {
                           console.log(
                             '[Header] Profile image failed to load:',
@@ -680,16 +687,16 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                       <img
                         src={company.logoUrl}
                         alt="Firmenlogo"
-                        className="w-8 h-8 rounded-md object-cover"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-md object-cover"
                       />
                     ) : (
                       // Fallback wenn kein Bild vorhanden oder Ladefehler
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        <FiUser className="text-gray-500" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        <FiUser className="text-gray-500 text-sm" />
                       </div>
                     )}
                     <FiChevronDown
-                      className={`ml-1 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
+                      className={`ml-1 transition-transform text-sm ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
                   {isProfileDropdownOpen && (
@@ -800,7 +807,10 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                   )}
                 </div>
               ) : (
-                <Link href="/login" className="text-sm font-medium text-[#14ad9f] hover:underline">
+                <Link
+                  href="/login"
+                  className="text-xs sm:text-sm font-medium text-[#14ad9f] hover:underline px-2 py-1"
+                >
                   Anmelden
                 </Link>
               )}
