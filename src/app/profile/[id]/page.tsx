@@ -99,14 +99,14 @@ export default function ProfilePage() {
 
   // Hilfsfunktion für Kategorie-URLs
   const getCategoryUrl = (category: string) => {
-    // Normalisiere Kategorie-Namen für URLs (Leerzeichen zu Bindestrichen)
-    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-');
+    // Normalisiere Kategorie-Namen für URLs (Leerzeichen zu Bindestrichen, & URL-encoded)
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26'); // URL-encode das &-Zeichen
     return `/services/${normalizedCategory}`;
   };
 
   const getSubcategoryUrl = (category: string, subcategory: string) => {
     // Normalisiere beide für URLs
-    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-');
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26'); // URL-encode das &-Zeichen
     const normalizedSubcategory = subcategory.toLowerCase().replace(/\s+/g, '-');
     return `/services/${normalizedCategory}/${normalizedSubcategory}`;
   };

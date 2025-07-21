@@ -169,11 +169,19 @@ export default function UserServiceSubcategoryPage() {
           if (data.companyName?.toLowerCase().includes('mietkoch')) {
             console.log('[ServicePage] Mietkoch data found:', {
               companyName: data.companyName,
-              averageRating: data.averageRating,
-              rating: data.rating,
-              reviewCount: data.reviewCount,
-              totalReviews: data.totalReviews,
-              reviews: data.reviews,
+              services: data.services,
+              skills: data.skills,
+              categories: data.categories,
+              selectedCategory: data.selectedCategory,
+              selectedSubcategory: data.selectedSubcategory,
+              allSkillFields: {
+                services: data.services,
+                skills: data.skills,
+                categories: data.categories,
+                serviceCategories: data.serviceCategories,
+                specialties: data.specialties,
+                expertise: data.expertise,
+              },
               allRatingFields: {
                 averageRating: data.averageRating,
                 rating: data.rating,
@@ -201,7 +209,14 @@ export default function UserServiceSubcategoryPage() {
               : `${data.companyCity || ''}, ${data.companyCountry || ''}`
                   .trim()
                   .replace(/^,\s*/, ''),
-            skills: data.services || data.skills || [],
+            skills:
+              data.services ||
+              data.skills ||
+              data.categories ||
+              data.serviceCategories ||
+              data.specialties ||
+              data.expertise ||
+              (data.selectedSubcategory ? [data.selectedSubcategory] : []),
             selectedCategory: data.selectedCategory,
             selectedSubcategory: data.selectedSubcategory,
             // Verbessertes Rating-Mapping - prüfe verschiedene mögliche Felder
@@ -245,6 +260,20 @@ export default function UserServiceSubcategoryPage() {
           console.log('[ServicePage] Freelancer Mietkoch data found:', {
             userName: data.userName,
             displayName: data.displayName,
+            skills: data.skills,
+            services: data.services,
+            categories: data.categories,
+            serviceCategories: data.serviceCategories,
+            specialties: data.specialties,
+            expertise: data.expertise,
+            allSkillFields: {
+              skills: data.skills,
+              services: data.services,
+              categories: data.categories,
+              serviceCategories: data.serviceCategories,
+              specialties: data.specialties,
+              expertise: data.expertise,
+            },
             averageRating: data.averageRating,
             rating: data.rating,
             reviewCount: data.reviewCount,
@@ -260,7 +289,14 @@ export default function UserServiceSubcategoryPage() {
           photoURL: data.photoURL,
           bio: data.bio,
           location: data.location,
-          skills: data.skills || [],
+          skills:
+            data.skills ||
+            data.services ||
+            data.categories ||
+            data.serviceCategories ||
+            data.specialties ||
+            data.expertise ||
+            (data.selectedSubcategory ? [data.selectedSubcategory] : []),
           // Verbessertes Rating-Mapping für Users
           rating: data.averageRating || data.rating || data.ratingAverage || data.starRating || 0,
           // Verbessertes Review-Count-Mapping für Users

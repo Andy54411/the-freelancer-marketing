@@ -33,20 +33,30 @@ export default function SubcategoryPage() {
   const category = params.category as string;
   const subcategory = params.subcategory as string;
 
+  // URL-Parameter dekodieren
+  const decodedCategory = decodeURIComponent(category);
+  const decodedSubcategory = decodeURIComponent(subcategory);
+
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
 
-  // Finde die Kategorie basierend auf dem URL-Slug
-  const categoryInfo = categories.find(
-    cat => cat.title.toLowerCase().replace(/\s+/g, '-') === category
-  );
+  // Normalisierungsfunktion
+  const normalizeToSlug = (str: string) =>
+    str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
 
-  // Finde die Unterkategorie basierend auf dem URL-Slug
-  const subcategoryName = categoryInfo?.subcategories.find(
-    sub => sub.toLowerCase().replace(/\s+/g, '-') === subcategory
-  );
+  // Finde die Kategorie durch Vergleich der normalisierten Namen
+  const categoryInfo = categories.find(cat => {
+    const expectedSlug = normalizeToSlug(cat.title);
+    return expectedSlug === decodedCategory;
+  });
+
+  // Finde die Unterkategorie durch Vergleich der normalisierten Namen
+  const subcategoryName = categoryInfo?.subcategories.find(sub => {
+    const expectedSlug = normalizeToSlug(sub);
+    return expectedSlug === decodedSubcategory;
+  });
 
   useEffect(() => {
     if (!categoryInfo || !subcategoryName) return;
@@ -309,7 +319,7 @@ export default function SubcategoryPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-4 mb-6">
             <button
-              onClick={() => router.push(`/dashboard/services/${category}`)}
+              onClick={() => router.push(`/services/${decodedCategory}`)}
               className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               <ArrowLeft className="w-6 h-6" />
