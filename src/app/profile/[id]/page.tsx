@@ -469,11 +469,11 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6">
-        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 pt-20">
+        <div className="absolute inset-0 bg-black/20 pointer-events-none top-20"></div>
 
         {/* Content with proper top spacing */}
-        <div className="relative z-10 pt-8">
+        <div className="relative z-10">
           {/* Breadcrumb Navigation - Klickbarer Text-Pfad */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="text-sm text-white/80">
