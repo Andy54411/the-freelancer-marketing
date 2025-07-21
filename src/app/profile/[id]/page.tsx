@@ -413,27 +413,25 @@ export default function ProfilePage() {
                           </p>
 
                           {/* Rating and Location */}
-                          <div className="flex items-center gap-6 mb-4">
+                          <div className="flex items-center gap-6 mb-4 flex-wrap">
                             {profile.averageRating && profile.averageRating > 0 && (
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <div className="flex items-center gap-1">
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`w-4 h-4 ${
-                                          i < Math.floor(profile.averageRating || 0)
-                                            ? 'text-yellow-400 fill-current'
-                                            : 'text-gray-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                  <span className="font-semibold text-gray-900 ml-1">
-                                    {profile.averageRating.toFixed(1)}
-                                  </span>
+                              <div className="flex items-center gap-1 whitespace-nowrap">
+                                <div className="flex">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-4 h-4 ${
+                                        i < Math.floor(profile.averageRating || 0)
+                                          ? 'text-yellow-400 fill-current'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  ))}
                                 </div>
-                                <span className="text-gray-500 text-sm">
+                                <span className="font-semibold text-gray-900 ml-1">
+                                  {profile.averageRating.toFixed(1)}
+                                </span>
+                                <span className="text-gray-500 text-sm ml-1">
                                   ({profile.totalReviews || 0} Bewertungen)
                                 </span>
                               </div>
@@ -639,8 +637,9 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                           {[5, 4, 3, 2, 1].map(stars => (
                             <div key={stars} className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-700 w-8">
-                                {stars} Stern{stars !== 1 ? 'e' : ''}
+                              <span className="text-sm font-medium text-gray-700 w-16 whitespace-nowrap">
+                                {stars} Stern{stars !== 1 ? 'e' : ''} (
+                                {Math.floor(Math.random() * 10)})
                               </span>
                               <div className="flex-1 bg-gray-200 rounded-full h-2">
                                 <div
@@ -650,9 +649,6 @@ export default function ProfilePage() {
                                   }}
                                 />
                               </div>
-                              <span className="text-sm text-gray-500 w-8">
-                                ({Math.floor(Math.random() * 10)})
-                              </span>
                             </div>
                           ))}
                         </div>
