@@ -21,6 +21,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import ReviewList from '@/components/ReviewList';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
+import DirectChatModal from '@/components/DirectChatModal';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -80,6 +81,7 @@ export default function ProfilePage() {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showReviewManagement, setShowReviewManagement] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   const companyId = params?.id as string;
 
@@ -91,10 +93,8 @@ export default function ProfilePage() {
       return;
     }
 
-    // Weiterleitung zum User-Posteingang, wo ein neuer Chat erstellt werden kann
-    // Alternativ könnte hier eine Cloud Function aufgerufen werden, um direkt einen Chat zu erstellen
-    const chatUrl = `/dashboard/user/${currentUser.uid}/inbox`;
-    window.location.href = chatUrl;
+    // Chat-Modal öffnen
+    setShowChatModal(true);
   };
 
   // Auth State überwachen
@@ -343,34 +343,36 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-[var(--global-header-height)]">
+      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-        <div className="relative z-10 pt-[var(--global-header-height)]">
-          {/* Breadcrumb Navigation */}
-          <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 relative z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center gap-2 text-sm text-white/70">
-                <Link href="/" className="hover:text-white">
-                  Startseite
-                </Link>
-                <span>/</span>
-                {profile.selectedCategory && (
-                  <>
-                    <span className="hover:text-white">{profile.selectedCategory}</span>
-                    <span>/</span>
-                  </>
-                )}
-                {profile.selectedSubcategory && (
-                  <>
-                    <span className="hover:text-white">{profile.selectedSubcategory}</span>
-                    <span>/</span>
-                  </>
-                )}
-                <span className="text-white font-medium">{profile.companyName}</span>
-              </div>
+
+        {/* Breadcrumb Navigation - Fixed positioned */}
+        <div className="fixed top-[var(--global-header-height)] left-0 right-0 bg-white/10 backdrop-blur-sm border-b border-white/20 z-[100]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-2 text-sm text-white/70">
+              <Link href="/" className="hover:text-white">
+                Startseite
+              </Link>
+              <span>/</span>
+              {profile.selectedCategory && (
+                <>
+                  <span className="hover:text-white">{profile.selectedCategory}</span>
+                  <span>/</span>
+                </>
+              )}
+              {profile.selectedSubcategory && (
+                <>
+                  <span className="hover:text-white">{profile.selectedSubcategory}</span>
+                  <span>/</span>
+                </>
+              )}
+              <span className="text-white font-medium">{profile.companyName}</span>
             </div>
           </div>
+        </div>
 
+        {/* Content with proper top spacing */}
+        <div className="relative z-10 pt-[calc(var(--global-header-height)+4rem)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Main Content */}
@@ -637,9 +639,8 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                           {[5, 4, 3, 2, 1].map(stars => (
                             <div key={stars} className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-700 w-16 whitespace-nowrap">
-                                {stars} Stern{stars !== 1 ? 'e' : ''} (
-                                {Math.floor(Math.random() * 10)})
+                              <span className="text-sm font-medium text-gray-700 w-20 whitespace-nowrap">
+                                {stars} Stern{stars !== 1 ? 'e' : ''}
                               </span>
                               <div className="flex-1 bg-gray-200 rounded-full h-2">
                                 <div
@@ -649,6 +650,9 @@ export default function ProfilePage() {
                                   }}
                                 />
                               </div>
+                              <span className="text-sm text-gray-500 w-8">
+                                ({Math.floor(Math.random() * 10)})
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -699,6 +703,58 @@ export default function ProfilePage() {
                 <div className="sticky top-8 space-y-6">
                   {/* Contact Card */}
                   <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
+                    {/* Provider Summary */}
+                    <div className="text-center mb-6 border-b border-gray-200 pb-6">
+                      <h2 className="text-xl font-bold text-gray-900 mb-1">
+                        {profile.companyName}
+                      </h2>
+                      <p className="text-gray-600 mb-3">
+                        {profile.selectedSubcategory || 'Professioneller Service'}
+                      </p>
+
+                      {/* Rating in Contact Card */}
+                      {profile.averageRating && profile.averageRating > 0 && (
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < Math.floor(profile.averageRating || 0)
+                                    ? 'text-yellow-400 fill-current'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="font-semibold text-gray-900">
+                            {profile.averageRating.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+
+                      {profile.totalReviews && profile.totalReviews > 0 && (
+                        <p className="text-sm text-gray-500 mb-3">
+                          ({profile.totalReviews} Bewertungen)
+                        </p>
+                      )}
+
+                      {/* Location in Contact Card */}
+                      {fullAddress && (
+                        <div className="flex items-center justify-center gap-1 text-gray-600 mb-3">
+                          <FiMapPin size={14} />
+                          <span className="text-sm">{fullAddress}</span>
+                        </div>
+                      )}
+
+                      {/* Completed Jobs */}
+                      {profile.completedJobs && profile.completedJobs > 0 && (
+                        <p className="text-sm text-gray-600">
+                          {profile.completedJobs} Aufträge abgeschlossen
+                        </p>
+                      )}
+                    </div>
+
                     <div className="text-center mb-6">
                       <div className="text-3xl font-bold text-gray-900 mb-2">
                         {profile.hourlyRate ? (
@@ -713,15 +769,19 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-3">
-                      <button
-                        onClick={handleStartChat}
-                        className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors"
-                      >
-                        Kontaktieren
+                      <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors">
+                        Angebot
                       </button>
 
-                      <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                        Angebot anfordern
+                      <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        Buchen
+                      </button>
+
+                      <button
+                        onClick={handleStartChat}
+                        className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Kontakt
                       </button>
                     </div>
 
@@ -876,6 +936,18 @@ export default function ProfilePage() {
           {/* Review Management Modal */}
           {showReviewManagement && (
             <CompanyReviewManagement companyId={companyId} companyName={profile.companyName} />
+          )}
+
+          {/* Chat Modal */}
+          {showChatModal && currentUser && (
+            <DirectChatModal
+              isOpen={showChatModal}
+              onClose={() => setShowChatModal(false)}
+              providerId={companyId}
+              providerName={profile.companyName}
+              companyId={currentUser.uid}
+              companyName={currentUser.displayName || 'Kunde'}
+            />
           )}
         </div>
       </main>
