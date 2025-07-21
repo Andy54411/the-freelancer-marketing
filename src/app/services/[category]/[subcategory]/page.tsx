@@ -395,6 +395,17 @@ export default function SubcategoryPage() {
 
           {/* Filter und Suche */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Test Button - können Sie später entfernen */}
+            <button
+              onClick={() => {
+                console.log('Test Button clicked!');
+                alert('Test Button funktioniert!');
+              }}
+              className="bg-red-500 text-white px-4 py-2 rounded"
+            >
+              TEST BUTTON
+            </button>
+
             {/* Suchfeld */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -558,14 +569,25 @@ export default function SubcategoryPage() {
 
                     <div className="flex items-center gap-3 mt-4">
                       <button
-                        onClick={() => handleBookNow(provider)}
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('JETZT BUCHEN CLICKED for provider:', provider.id);
+                          handleBookNow(provider);
+                        }}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        type="button"
                       >
                         Jetzt buchen
                       </button>
                       <button
-                        onClick={() => router.push(`/profile/${provider.id}`)}
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/profile/${provider.id}`);
+                        }}
                         className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
+                        type="button"
                       >
                         Profil anzeigen
                       </button>
