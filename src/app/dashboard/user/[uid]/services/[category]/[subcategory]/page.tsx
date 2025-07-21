@@ -218,50 +218,48 @@ export default function UserServiceSubcategoryPage() {
         userProviders: userProviders.length,
       });
 
-      console.log('[ServicePage] Providers mapped:', {
-        firmProviders: firmProviders.length,
-        userProviders: userProviders.length,
-      });
-
       const allProviders = [...firmProviders, ...userProviders];
 
       console.log('[ServicePage] All providers:', allProviders.length);
       console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
 
-      // Log specifically Mietkoch providers
-      const mietkochers = allProviders.filter(
-        p =>
-          p.companyName?.toLowerCase().includes('mietkoch') ||
-          p.selectedSubcategory?.toLowerCase().includes('mietkoch')
-      );
+      // Log all providers with their categories for debugging
       console.log(
-        '[ServicePage] Mietkoch providers found:',
-        mietkochers.map(p => ({
+        '[ServicePage] All providers with categories:',
+        allProviders.map(p => ({
           name: p.companyName || p.userName,
           selectedSubcategory: p.selectedSubcategory,
           selectedCategory: p.selectedCategory,
           isCompany: p.isCompany,
+          skills: p.skills,
         }))
       );
 
-      console.log('[ServicePage] All providers:', allProviders.length);
-      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
+      // Log providers that match current search parameters
+      const matchingProviders = allProviders.filter(p => {
+        if (p.isCompany && p.selectedSubcategory) {
+          return (
+            p.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase() ||
+            p.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()
+          );
+        }
+        return p.skills?.some(
+          skill =>
+            skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
+            skill.toLowerCase().includes(subcategory.toLowerCase())
+        );
+      });
 
-      // Log specifically Mietkoch providers
-      const mietkochers = allProviders.filter(
-        p =>
-          p.companyName?.toLowerCase().includes('mietkoch') ||
-          p.selectedSubcategory?.toLowerCase().includes('mietkoch')
-      );
-      console.log(
-        '[ServicePage] Mietkoch providers found:',
-        mietkochers.map(p => ({
+      console.log('[ServicePage] Providers matching current search:', {
+        searchingFor: { subcategoryName, subcategory },
+        matchingCount: matchingProviders.length,
+        matchingProviders: matchingProviders.map(p => ({
           name: p.companyName || p.userName,
           selectedSubcategory: p.selectedSubcategory,
-          selectedCategory: p.selectedCategory,
+          skills: p.skills,
           isCompany: p.isCompany,
-        }))
-      );
+        })),
+      });
 
       // Filter nach Subcategory
       let filteredProviders = allProviders.filter(provider => {
