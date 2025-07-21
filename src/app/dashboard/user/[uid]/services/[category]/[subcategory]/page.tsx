@@ -127,7 +127,7 @@ export default function UserServiceSubcategoryPage() {
       console.log('[ServicePage] Loading providers...');
 
       // Query für Firmen mit besserer Fehlerbehandlung - erweitert um verschiedene Aktivitätszustände
-      const firmCollectionRef = collection(db, 'firma');
+      const firmCollectionRef = collection(db, 'companies');
       const firmQuery = query(
         firmCollectionRef,
         limit(20) // Reduziertes Limit für bessere Performance
@@ -145,7 +145,7 @@ export default function UserServiceSubcategoryPage() {
 
       const [firmSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery).catch(error => {
-          console.error('[ServicePage] Error loading firma collection:', error);
+          console.error('[ServicePage] Error loading companies collection:', error);
           return { docs: [] };
         }),
         getDocs(userQuery).catch(error => {
@@ -155,7 +155,7 @@ export default function UserServiceSubcategoryPage() {
       ]);
 
       console.log('[ServicePage] Query results:', {
-        firmDocs: firmSnapshot.docs?.length || 0,
+        companiesDocs: firmSnapshot.docs?.length || 0,
         userDocs: userSnapshot.docs?.length || 0,
       });
 
