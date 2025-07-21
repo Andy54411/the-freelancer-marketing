@@ -333,7 +333,7 @@ export default function ProfilePage() {
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10">
           {/* Hero Section - Fiverr Style */}
-          <div className="bg-white/90 backdrop-blur-sm border-b border-white/20">
+          <div className="border-b border-white/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="flex flex-col lg:flex-row gap-8 items-start">
                 {/* Left - Profile Info */}
@@ -359,7 +359,7 @@ export default function ProfilePage() {
                     {/* Profile Details */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-bold text-gray-900">{profile.companyName}</h1>
+                        <h1 className="text-3xl font-bold text-white">{profile.companyName}</h1>
                         {profile.isVerified && (
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                             <FiCheckCircle className="mr-1" size={16} />
@@ -368,7 +368,7 @@ export default function ProfilePage() {
                         )}
                       </div>
 
-                      <p className="text-xl text-gray-600 mb-3">
+                      <p className="text-xl text-white/80 mb-3">
                         {profile.selectedSubcategory || 'Profi-Anbieter'}
                       </p>
 
@@ -384,17 +384,17 @@ export default function ProfilePage() {
                                 />
                               ))}
                             </div>
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-sm font-medium text-white">
                               {profile.averageRating.toFixed(1)}
                             </span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-white/70">
                               ({profile.totalReviews} Bewertungen)
                             </span>
                           </div>
                         )}
 
                         {fullAddress && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <div className="flex items-center gap-1 text-sm text-white/70">
                             <FiMapPin size={16} />
                             <span>{fullAddress}</span>
                           </div>
@@ -402,7 +402,7 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Quick Stats */}
-                      <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
+                      <div className="flex items-center gap-6 text-sm text-white/80 mb-4">
                         {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
                           <span>{profile.totalOrders} Aufträge abgeschlossen</span>
                         )}
@@ -411,10 +411,10 @@ export default function ProfilePage() {
 
                       {/* Description in Hero */}
                       {profile.description && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="mt-4 pt-4 border-t border-white/20">
                           <div className="relative">
                             <p
-                              className={`text-gray-700 leading-relaxed text-sm transition-all duration-300 ${
+                              className={`text-white/90 leading-relaxed text-sm transition-all duration-300 ${
                                 isDescriptionExpanded ? '' : 'line-clamp-4'
                               }`}
                             >
@@ -425,7 +425,7 @@ export default function ProfilePage() {
                             {profile.description.length > 200 && (
                               <button
                                 onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                className="mt-2 text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium transition-colors"
+                                className="mt-2 text-white hover:text-white/80 text-sm font-medium transition-colors underline"
                               >
                                 {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
                               </button>
