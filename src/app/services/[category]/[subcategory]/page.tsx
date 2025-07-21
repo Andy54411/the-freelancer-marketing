@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
+import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock, X } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 
@@ -306,8 +306,10 @@ export default function SubcategoryPage() {
   };
 
   const handleBookNow = (provider: Provider) => {
+    console.log('handleBookNow called with provider:', provider);
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
+    console.log('Modal state set - isBookingModalOpen:', true);
   };
 
   const handleBookingConfirm = async (
@@ -577,25 +579,60 @@ export default function SubcategoryPage() {
       </div>
 
       {/* Booking Modal */}
-      {selectedProvider && (
-        <ProviderBookingModal
-          isOpen={isBookingModalOpen}
-          onClose={handleCloseBookingModal}
-          provider={{
-            id: selectedProvider.id,
-            companyName: selectedProvider.companyName,
-            userName: selectedProvider.userName,
-            hourlyRate: 50, // Sie können das aus den Provider-Daten holen oder als Standard setzen
-            profilePictureFirebaseUrl: selectedProvider.profilePictureFirebaseUrl,
-            profilePictureURL: selectedProvider.profilePictureURL,
-            photoURL: selectedProvider.photoURL,
-            selectedCategory: selectedProvider.selectedCategory,
-            selectedSubcategory: selectedProvider.selectedSubcategory,
-            bio: selectedProvider.bio,
-            description: selectedProvider.bio,
+      {isBookingModalOpen && selectedProvider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Buchen: {getProviderName(selectedProvider)}</h2>
+              <button
+                onClick={handleCloseBookingModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p>Möchten Sie {getProviderName(selectedProvider)} buchen?</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    alert('Buchung würde hier verarbeitet werden');
+                    handleCloseBookingModal();
+                  }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Ja, buchen
+                </button>
+                <button
+                  onClick={handleCloseBookingModal}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Debug Info - können Sie später entfernen */}
+      {process.env.NODE_ENV === 'development' && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '10px',
+            right: '10px',
+            background: 'black',
+            color: 'white',
+            padding: '10px',
+            fontSize: '12px',
+            borderRadius: '5px',
+            zIndex: 9999,
           }}
-          onConfirm={handleBookingConfirm}
-        />
+        >
+          <div>Selected Provider: {selectedProvider ? 'Yes' : 'No'}</div>
+          <div>Modal Open: {isBookingModalOpen ? 'Yes' : 'No'}</div>
+        </div>
       )}
     </div>
   );
