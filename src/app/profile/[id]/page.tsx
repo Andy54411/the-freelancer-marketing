@@ -1073,19 +1073,9 @@ export default function ProfilePage() {
                   onSuccess={handleCreateOrderSuccess}
                   currentUser={currentUser}
                   userProfile={userProfile}
-                  preselectedProvider={
-                    profile
-                      ? {
-                          id: profile.id,
-                          companyName: profile.companyName,
-                          hourlyRate: profile.hourlyRate,
-                          selectedCategory: profile.selectedCategory,
-                          selectedSubcategory: profile.selectedSubcategory,
-                          profilePictureFirebaseUrl: profile.profilePictureFirebaseUrl,
-                          description: profile.description,
-                        }
-                      : undefined
-                  }
+                  preselectedProviderId={profile.id}
+                  preselectedCategory={profile.selectedCategory}
+                  preselectedSubcategory={profile.selectedSubcategory}
                 />
               </div>
             </div>

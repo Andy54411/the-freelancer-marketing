@@ -30,6 +30,7 @@ interface OrderAddressSelectionProps {
   selectedSubcategory: string | null;
   onProviderSelect: (provider: AnbieterDetails | null) => void;
   onOpenDatePicker: (provider: AnbieterDetails) => void;
+  preselectedProvider?: AnbieterDetails | null;
 }
 
 const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
@@ -41,6 +42,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
   selectedSubcategory,
   onProviderSelect,
   onOpenDatePicker,
+  preselectedProvider,
 }) => {
   const { isLoaded: isMapsLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
@@ -101,7 +103,14 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
   );
 
   useEffect(() => {
-    if (activePostalCode && selectedSubcategory) {
+    if (preselectedProvider) {
+      // Wenn ein Provider vorausgewählt ist, verwende diesen direkt
+      setCompanyProfiles([preselectedProvider]);
+      setSelectedProvider(preselectedProvider);
+      onProviderSelect(preselectedProvider);
+      setLoadingProfiles(false);
+    } else if (activePostalCode && selectedSubcategory) {
+      // Nur suchen wenn kein Provider vorausgewählt ist
       const timer = setTimeout(
         () => fetchCompanyProfiles(activePostalCode, selectedSubcategory!),
         500
@@ -110,7 +119,13 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
     } else {
       setCompanyProfiles([]);
     }
-  }, [activePostalCode, selectedSubcategory, fetchCompanyProfiles]);
+  }, [
+    activePostalCode,
+    selectedSubcategory,
+    fetchCompanyProfiles,
+    preselectedProvider,
+    onProviderSelect,
+  ]);
 
   const handleToggleDescription = (companyId: string) => {
     setExpandedStates(prev => ({ ...prev, [companyId]: !prev[companyId] }));

@@ -6,7 +6,15 @@ import { useRouter } from 'next/navigation';
 import { format, differenceInCalendarDays, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
 // Firebase Imports für Firestore
-import { getFirestore, collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp,
+  doc,
+  setDoc,
+  getDoc,
+} from 'firebase/firestore';
 import { app } from '@/firebase/clients'; // Stellen Sie sicher, dass Ihre Firebase-App hier importiert wird
 
 import { Button } from '@/components/ui/button';
@@ -79,16 +87,9 @@ interface CreateOrderModalProps {
   onSuccess: () => void;
   currentUser: User;
   userProfile: UserProfileData;
-  preselectedProvider?: {
-    id: string;
-    companyName: string;
-    hourlyRate?: number;
-    selectedCategory?: string;
-    selectedSubcategory?: string;
-    profilePictureFirebaseUrl?: string;
-    description?: string;
-    stripeAccountId?: string;
-  };
+  preselectedProviderId?: string; // Nur die Provider-ID statt ganzes Objekt
+  preselectedCategory?: string;
+  preselectedSubcategory?: string;
 }
 
 function parseDurationStringToHours(durationStr?: string): number | null {
@@ -108,7 +109,9 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   onSuccess,
   currentUser,
   userProfile,
-  preselectedProvider,
+  preselectedProviderId,
+  preselectedCategory,
+  preselectedSubcategory,
 }) => {
   const router = useRouter();
 
@@ -140,29 +143,56 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
   // useEffect für vorausgewählten Provider
   useEffect(() => {
-    if (preselectedProvider) {
-      // Setze Kategorie und Subkategorie automatisch
-      if (preselectedProvider.selectedCategory) {
-        setSelectedCategory(preselectedProvider.selectedCategory);
-      }
-      if (preselectedProvider.selectedSubcategory) {
-        setSelectedSubcategory(preselectedProvider.selectedSubcategory);
-      }
+    const loadPreselectedProvider = async () => {
+      if (!preselectedProviderId) return;
 
-      // Erstelle AnbieterDetails-Objekt aus preselectedProvider
-      const providerDetails: AnbieterDetails = {
-        id: preselectedProvider.id,
-        companyName: preselectedProvider.companyName,
-        hourlyRate: preselectedProvider.hourlyRate || 0,
-        profilePictureURL: preselectedProvider.profilePictureFirebaseUrl,
-        description: preselectedProvider.description,
-        stripeAccountId: preselectedProvider.stripeAccountId || '',
-        selectedSubcategory: preselectedProvider.selectedSubcategory || '',
-      };
+      try {
+        // Zuerst Kategorie und Subkategorie setzen falls übergeben
+        if (preselectedCategory) {
+          setSelectedCategory(preselectedCategory);
+        }
+        if (preselectedSubcategory) {
+          setSelectedSubcategory(preselectedSubcategory);
+        }
 
-      setSelectedProvider(providerDetails);
-    }
-  }, [preselectedProvider]);
+        // Provider-Daten aus Firestore laden
+        const providerDocRef = doc(db, 'companies', preselectedProviderId);
+        const providerDoc = await getDoc(providerDocRef);
+
+        if (providerDoc.exists()) {
+          const providerData = providerDoc.data();
+
+          // Erstelle AnbieterDetails-Objekt aus Firestore-Daten
+          const providerDetails: AnbieterDetails = {
+            id: preselectedProviderId,
+            companyName: providerData.companyName || 'Unbekannter Anbieter',
+            hourlyRate: providerData.hourlyRate || 0,
+            profilePictureURL:
+              providerData.profilePictureFirebaseUrl || providerData.profilePictureURL,
+            description: providerData.description,
+            stripeAccountId: providerData.stripeAccountId || '',
+            selectedSubcategory: providerData.selectedSubcategory || preselectedSubcategory || '',
+          };
+
+          setSelectedProvider(providerDetails);
+
+          // Kategorie/Subkategorie aus Provider-Daten setzen falls nicht übergeben
+          if (!preselectedCategory && providerData.selectedCategory) {
+            setSelectedCategory(providerData.selectedCategory);
+          }
+          if (!preselectedSubcategory && providerData.selectedSubcategory) {
+            setSelectedSubcategory(providerData.selectedSubcategory);
+          }
+        } else {
+          console.error('Provider nicht gefunden:', preselectedProviderId);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden des Providers:', error);
+      }
+    };
+
+    loadPreselectedProvider();
+  }, [preselectedProviderId, preselectedCategory, preselectedSubcategory]);
 
   const availableSubcategories = useMemo(() => {
     if (!selectedCategory) return [];
@@ -557,6 +587,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                   selectedSubcategory={selectedSubcategory}
                   onProviderSelect={setSelectedProvider}
                   onOpenDatePicker={handleOpenDatePicker}
+                  preselectedProvider={selectedProvider}
                 />
               </div>
             )}
