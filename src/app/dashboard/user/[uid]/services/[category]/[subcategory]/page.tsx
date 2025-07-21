@@ -223,20 +223,18 @@ export default function UserServiceSubcategoryPage() {
 
       const allProviders = [...firmProviders, ...userProviders];
 
-      console.log('[ServicePage] All providers:', allProviders.length);
-      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
-
-      // Log all providers with their categories for debugging
-      console.log(
-        '[ServicePage] All providers with categories:',
-        allProviders.map(p => ({
+      console.log('[ServicePage] All providers loaded:', {
+        total: allProviders.length,
+        companies: firmProviders.length,
+        users: userProviders.length,
+        allProviderNames: allProviders.map(p => ({
           name: p.companyName || p.userName,
-          selectedSubcategory: p.selectedSubcategory,
-          selectedCategory: p.selectedCategory,
           isCompany: p.isCompany,
+          selectedSubcategory: p.selectedSubcategory,
           skills: p.skills,
-        }))
-      );
+          bio: p.bio?.substring(0, 50) + '...',
+        })),
+      });
 
       // Log providers that match current search parameters
       const matchingProviders = allProviders.filter(p => {
@@ -264,8 +262,36 @@ export default function UserServiceSubcategoryPage() {
         })),
       });
 
-      // Filter nach Subcategory
+      // Filter nach Subcategory mit erweiterter Logik für Mietkoch
       let filteredProviders = allProviders.filter(provider => {
+        // Spezielle Behandlung für Mietkoch-URLs
+        const isMietkocha =
+          subcategory.toLowerCase().includes('mietkoch') ||
+          subcategoryName?.toLowerCase().includes('mietkoch');
+
+        if (isMietkocha) {
+          // Bei Mietkoch: Suche nach Firmen mit "mietkoch" im Namen oder der Beschreibung
+          const companyNameMatch = provider.companyName?.toLowerCase().includes('mietkoch');
+          const bioMatch = provider.bio?.toLowerCase().includes('mietkoch');
+          const skillsMatch = provider.skills?.some(
+            skill =>
+              skill.toLowerCase().includes('mietkoch') ||
+              skill.toLowerCase().includes('koch') ||
+              skill.toLowerCase().includes('catering')
+          );
+
+          if (companyNameMatch || bioMatch || skillsMatch) {
+            console.log('[ServicePage] Mietkoch match found:', {
+              name: provider.companyName || provider.userName,
+              companyNameMatch,
+              bioMatch,
+              skillsMatch,
+              selectedSubcategory: provider.selectedSubcategory,
+            });
+            return true;
+          }
+        }
+
         // Für Firmen: prüfe selectedSubcategory
         if (provider.isCompany && provider.selectedSubcategory) {
           const matches =
@@ -284,7 +310,7 @@ export default function UserServiceSubcategoryPage() {
           return matches;
         }
 
-        // Für Freelancer: prüfe skills (fallback)
+        // Für Freelancer oder als Fallback: prüfe skills
         const skillsMatch = provider.skills?.some(
           skill =>
             skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
@@ -293,7 +319,7 @@ export default function UserServiceSubcategoryPage() {
 
         if (skillsMatch) {
           console.log('[ServicePage] Skills match found:', {
-            name: provider.userName,
+            name: provider.userName || provider.companyName,
             skills: provider.skills,
           });
         }
@@ -381,274 +407,284 @@ export default function UserServiceSubcategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section - Fiverr Style */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center gap-4 mb-6">
-            <button
-              onClick={() => router.push(`/dashboard/user/${uid}`)}
-              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div>
-              <div className="flex items-center gap-2 text-sm text-white/80 mb-2">
-                <span>{categoryInfo.title}</span>
-                <span>/</span>
-                <span>{subcategoryName}</span>
-              </div>
-              <h1 className="text-4xl font-bold text-white mb-2">{subcategoryName}</h1>
-              <p className="text-white/90 text-lg">
-                {providers.length} {providers.length === 1 ? 'Profi' : 'Profis'} bereit für Ihr
-                Projekt
-              </p>
-            </div>
-          </div>
-
-          {/* Filter und Suche */}
-          <div className="max-w-4xl">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Suchfeld */}
-              <div className="md:col-span-2 relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Nach Services oder Anbietern suchen..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border-0 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-white/20 focus:outline-none shadow-lg"
-                />
-              </div>
-
-              {/* Sortierung */}
-              <select
-                value={sortBy}
-                onChange={e =>
-                  setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')
-                }
-                className="px-4 py-3 border-0 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-white/20 focus:outline-none shadow-lg cursor-pointer"
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Hero Section - Tasko Style */}
+        <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => router.push(`/dashboard/user/${uid}`)}
+                className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
               >
-                <option value="rating">Beste Bewertung</option>
-                <option value="reviews">Meiste Bewertungen</option>
-                <option value="price">Preis aufsteigend</option>
-                <option value="newest">Neueste zuerst</option>
-              </select>
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <div className="flex items-center gap-2 text-sm text-white/80 mb-2">
+                  <span>{categoryInfo.title}</span>
+                  <span>/</span>
+                  <span>{subcategoryName}</span>
+                </div>
+                <h1 className="text-4xl font-bold text-white mb-2">{subcategoryName}</h1>
+                <p className="text-white/90 text-lg">
+                  {providers.length} {providers.length === 1 ? 'Profi' : 'Profis'} bereit für Ihr
+                  Projekt
+                </p>
+              </div>
+            </div>
+
+            {/* Filter und Suche */}
+            <div className="max-w-4xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Suchfeld */}
+                <div className="md:col-span-2 relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Nach Services oder Anbietern suchen..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 border-0 rounded-lg bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#14ad9f] focus:outline-none shadow-lg"
+                  />
+                </div>
+
+                {/* Sortierung */}
+                <select
+                  value={sortBy}
+                  onChange={e =>
+                    setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')
+                  }
+                  className="px-4 py-3 border-0 rounded-lg bg-white/95 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-[#14ad9f] focus:outline-none shadow-lg cursor-pointer"
+                >
+                  <option value="rating">Beste Bewertung</option>
+                  <option value="reviews">Meiste Bewertungen</option>
+                  <option value="price">Preis aufsteigend</option>
+                  <option value="newest">Neueste zuerst</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Services Grid - Fiverr Style */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse"
-              >
-                <div className="aspect-video bg-gray-200"></div>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                  <div className="h-5 bg-gray-200 rounded"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        {/* Services Grid - Tasko Style */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-video bg-gray-200"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                    <div className="h-5 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="flex justify-between items-center pt-2">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : providers.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="max-w-md mx-auto">
-              <Briefcase className="w-20 h-20 text-gray-300 mx-auto mb-6" />
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Keine Services gefunden</h3>
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
-                {searchQuery && (
-                  <span className="block mt-2">Versuchen Sie, Ihre Suchkriterien anzupassen.</span>
-                )}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  Suche zurücksetzen
-                </button>
-                <button
-                  onClick={() => router.push(`/dashboard/user/${uid}`)}
-                  className="border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  Zurück zum Dashboard
-                </button>
+              ))}
+            </div>
+          ) : providers.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="max-w-md mx-auto bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-lg border border-white/20">
+                <Briefcase className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                  Keine Services gefunden
+                </h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
+                  {searchQuery && (
+                    <span className="block mt-2">
+                      Versuchen Sie, Ihre Suchkriterien anzupassen.
+                    </span>
+                  )}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="bg-[#14ad9f] hover:bg-[#0d8a7a] text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Suche zurücksetzen
+                  </button>
+                  <button
+                    onClick={() => router.push(`/dashboard/user/${uid}`)}
+                    className="border border-white/30 text-white hover:bg-white/10 px-6 py-3 rounded-lg font-medium transition-colors backdrop-blur-sm"
+                  >
+                    Zurück zum Dashboard
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {providers.map(provider => (
-              <div
-                key={provider.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
-                onClick={() => router.push(`/profile/${provider.id}`)}
-              >
-                {/* Service Image/Avatar */}
-                <div className="relative aspect-video bg-gradient-to-br from-green-50 to-green-100 p-6 flex items-center justify-center">
-                  <img
-                    src={getProfileImage(provider)}
-                    alt={getProviderName(provider)}
-                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md group-hover:scale-110 transition-transform duration-300"
-                    onError={e => {
-                      (e.target as HTMLImageElement).src = '/images/default-avatar.png';
-                    }}
-                  />
-                  {provider.isCompany && (
-                    <div className="absolute top-3 right-3">
-                      <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                        Pro
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4">
-                  {/* Provider Info */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <img
-                        src={getProfileImage(provider)}
-                        alt=""
-                        className="w-full h-full rounded-full object-cover"
-                        onError={e => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 truncate">
-                      {getProviderName(provider)}
-                    </span>
-                    {provider.isVerified && (
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-2.5 h-2.5 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {providers.map(provider => (
+                <div
+                  key={provider.id}
+                  className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/95 transition-all duration-300 group cursor-pointer"
+                  onClick={() => router.push(`/profile/${provider.id}`)}
+                >
+                  {/* Service Image/Avatar */}
+                  <div className="relative aspect-video bg-gradient-to-br from-[#14ad9f]/10 to-teal-100/20 p-6 flex items-center justify-center">
+                    <img
+                      src={getProfileImage(provider)}
+                      alt={getProviderName(provider)}
+                      className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md group-hover:scale-110 transition-transform duration-300"
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                      }}
+                    />
+                    {provider.isCompany && (
+                      <div className="absolute top-3 right-3">
+                        <span className="bg-[#14ad9f] text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+                          Pro
+                        </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Service Title */}
-                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-green-600 transition-colors">
-                    {provider.bio || `${subcategoryName} Service von ${getProviderName(provider)}`}
-                  </h3>
-
-                  {/* Rating */}
-                  {(provider.rating ?? 0) > 0 && (
-                    <div className="flex items-center gap-1 mb-3">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm font-semibold text-gray-900">
-                        {(provider.rating ?? 0).toFixed(1)}
+                  <div className="p-4">
+                    {/* Provider Info */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <img
+                          src={getProfileImage(provider)}
+                          alt=""
+                          className="w-full h-full rounded-full object-cover"
+                          onError={e => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 truncate">
+                        {getProviderName(provider)}
                       </span>
-                      <span className="text-sm text-gray-500">({provider.reviewCount || 0})</span>
-                    </div>
-                  )}
-
-                  {/* Skills Tags */}
-                  {provider.skills && provider.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {provider.skills.slice(0, 3).map((skill, index) => (
-                        <span
-                          key={index}
-                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                      {provider.skills.length > 3 && (
-                        <span className="text-xs text-gray-400 px-2 py-1">
-                          +{provider.skills.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      {provider.location && (
-                        <>
-                          <MapPin className="w-3 h-3" />
-                          <span className="truncate max-w-[100px]">{provider.location}</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      {provider.hourlyRate ? (
-                        <div className="text-sm font-bold text-gray-900">
-                          Ab {provider.hourlyRate}€
-                          <span className="text-xs font-normal text-gray-500">/h</span>
+                      {provider.isVerified && (
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <svg
+                            className="w-2.5 h-2.5 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
                         </div>
-                      ) : provider.priceRange ? (
-                        <div className="text-sm font-bold text-gray-900">{provider.priceRange}</div>
-                      ) : (
-                        <div className="text-sm text-gray-500">Preis auf Anfrage</div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        openChatWithProvider(provider);
-                      }}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Kontakt
-                    </button>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        router.push(`/profile/${provider.id}`);
-                      }}
-                      className="flex-1 border border-gray-200 text-gray-700 hover:bg-gray-50 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Profil
-                    </button>
+                    {/* Service Title */}
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#14ad9f] transition-colors">
+                      {provider.bio ||
+                        `${subcategoryName} Service von ${getProviderName(provider)}`}
+                    </h3>
+
+                    {/* Rating */}
+                    {(provider.rating ?? 0) > 0 && (
+                      <div className="flex items-center gap-1 mb-3">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-sm font-semibold text-gray-900">
+                          {(provider.rating ?? 0).toFixed(1)}
+                        </span>
+                        <span className="text-sm text-gray-500">({provider.reviewCount || 0})</span>
+                      </div>
+                    )}
+
+                    {/* Skills Tags */}
+                    {provider.skills && provider.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {provider.skills.slice(0, 3).map((skill, index) => (
+                          <span
+                            key={index}
+                            className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {provider.skills.length > 3 && (
+                          <span className="text-xs text-gray-400 px-2 py-1">
+                            +{provider.skills.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        {provider.location && (
+                          <>
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate max-w-[100px]">{provider.location}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {provider.hourlyRate ? (
+                          <div className="text-sm font-bold text-gray-900">
+                            Ab {provider.hourlyRate}€
+                            <span className="text-xs font-normal text-gray-500">/h</span>
+                          </div>
+                        ) : provider.priceRange ? (
+                          <div className="text-sm font-bold text-gray-900">
+                            {provider.priceRange}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">Preis auf Anfrage</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          openChatWithProvider(provider);
+                        }}
+                        className="flex-1 bg-[#14ad9f] hover:bg-[#0d8a7a] text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Kontakt
+                      </button>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          router.push(`/profile/${provider.id}`);
+                        }}
+                        className="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Profil
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Direct Chat Modal */}
+        {selectedProvider && (
+          <DirectChatModal
+            isOpen={chatModalOpen}
+            onClose={() => setChatModalOpen(false)}
+            providerId={selectedProvider.id}
+            providerName={getProviderName(selectedProvider)}
+            companyId={uid}
+            companyName={userName}
+          />
         )}
       </div>
-
-      {/* Direct Chat Modal */}
-      {selectedProvider && (
-        <DirectChatModal
-          isOpen={chatModalOpen}
-          onClose={() => setChatModalOpen(false)}
-          providerId={selectedProvider.id}
-          providerName={getProviderName(selectedProvider)}
-          companyId={uid}
-          companyName={userName}
-        />
-      )}
     </div>
   );
 }
