@@ -97,6 +97,20 @@ export default function ProfilePage() {
     setShowChatModal(true);
   };
 
+  // Hilfsfunktion für Kategorie-URLs
+  const getCategoryUrl = (category: string) => {
+    // Normalisiere Kategorie-Namen für URLs (Leerzeichen zu Bindestrichen)
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-');
+    return `/services/${normalizedCategory}`;
+  };
+
+  const getSubcategoryUrl = (category: string, subcategory: string) => {
+    // Normalisiere beide für URLs
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-');
+    const normalizedSubcategory = subcategory.toLowerCase().replace(/\s+/g, '-');
+    return `/services/${normalizedCategory}/${normalizedSubcategory}`;
+  };
+
   // Auth State überwachen
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -358,7 +372,7 @@ export default function ProfilePage() {
                 <>
                   <span> / </span>
                   <Link
-                    href={`/services/${profile.selectedCategory}`}
+                    href={getCategoryUrl(profile.selectedCategory)}
                     className="hover:text-white transition-colors"
                   >
                     {profile.selectedCategory}
@@ -369,7 +383,7 @@ export default function ProfilePage() {
                 <>
                   <span> / </span>
                   <Link
-                    href={`/services/${profile.selectedCategory}/${profile.selectedSubcategory}`}
+                    href={getSubcategoryUrl(profile.selectedCategory!, profile.selectedSubcategory)}
                     className="hover:text-white transition-colors"
                   >
                     {profile.selectedSubcategory}
