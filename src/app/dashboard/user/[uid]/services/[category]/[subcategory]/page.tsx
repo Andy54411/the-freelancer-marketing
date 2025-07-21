@@ -694,22 +694,35 @@ export default function UserServiceSubcategoryPage() {
 
                     {/* Skills Tags */}
                     {provider.skills && provider.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {provider.skills.slice(0, 3).map((skill, index) => (
-                          <span
-                            key={index}
-                            className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {provider.skills.length > 3 && (
-                          <span className="text-xs text-gray-400 px-2 py-1">
-                            +{provider.skills.length - 3}
-                          </span>
-                        )}
+                      <div className="mb-4">
+                        <h4 className="text-xs font-medium text-gray-700 mb-2">Fähigkeiten:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {provider.skills.slice(0, 4).map((skill, index) => (
+                            <span
+                              key={index}
+                              className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-2 py-1 rounded-full font-medium border border-[#14ad9f]/20"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {provider.skills.length > 4 && (
+                            <span className="text-xs text-gray-500 px-2 py-1 font-medium">
+                              +{provider.skills.length - 4} weitere
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    {/* Kategorie/Spezialisierung als Fallback */}
+                    {(!provider.skills || provider.skills.length === 0) &&
+                      provider.selectedSubcategory && (
+                        <div className="mb-4">
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-medium">
+                            {provider.selectedSubcategory}
+                          </span>
+                        </div>
+                      )}
 
                     {/* Footer */}
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
