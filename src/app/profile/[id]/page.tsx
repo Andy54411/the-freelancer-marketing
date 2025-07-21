@@ -452,7 +452,7 @@ export default function ProfilePage() {
 
               {/* Right - Contact Card */}
               <div className="lg:w-80">
-                <div className="sticky top-4 bg-white/90 backdrop-blur-sm border border-white/20 rounded-lg p-6 shadow-lg">
+                <div className="sticky top-24 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg p-6 shadow-xl">
                   <div className="text-center mb-4">
                     {profile.hourlyRate && (
                       <div className="text-2xl font-bold text-gray-900 mb-1">
