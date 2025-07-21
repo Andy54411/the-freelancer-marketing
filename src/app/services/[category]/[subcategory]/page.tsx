@@ -6,6 +6,7 @@ import { db } from '@/firebase/clients';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
+import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 
 interface Provider {
   id: string;
@@ -41,6 +42,8 @@ export default function SubcategoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   // Normalisierungsfunktion
   const normalizeToSlug = (str: string) =>
@@ -302,6 +305,45 @@ export default function SubcategoryPage() {
     return provider.companyName || provider.userName || 'Unbekannter Anbieter';
   };
 
+  const handleBookNow = (provider: Provider) => {
+    setSelectedProvider(provider);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingConfirm = async (
+    selection: any,
+    time: string,
+    durationString: string,
+    description: string
+  ) => {
+    try {
+      console.log('Buchung bestätigt:', {
+        provider: selectedProvider,
+        selection,
+        time,
+        durationString,
+        description,
+      });
+
+      // Hier würden Sie die Buchungslogik implementieren
+      // z.B. Weiterleitung zur Zahlung oder zur Auftragserstellung
+
+      setIsBookingModalOpen(false);
+      setSelectedProvider(null);
+
+      // Optional: Erfolgsbenachrichtigung anzeigen
+      alert('Buchungsanfrage erfolgreich gesendet!');
+    } catch (error) {
+      console.error('Fehler bei der Buchung:', error);
+      alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
+    }
+  };
+
+  const handleCloseBookingModal = () => {
+    setIsBookingModalOpen(false);
+    setSelectedProvider(null);
+  };
+
   if (!categoryInfo || !subcategoryName) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
@@ -513,10 +555,16 @@ export default function SubcategoryPage() {
                     )}
 
                     <div className="flex items-center gap-3 mt-4">
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                        Kontaktieren
+                      <button
+                        onClick={() => handleBookNow(provider)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                      >
+                        Jetzt buchen
                       </button>
-                      <button className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                      <button
+                        onClick={() => router.push(`/profile/${provider.id}`)}
+                        className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
+                      >
                         Profil anzeigen
                       </button>
                     </div>
@@ -527,6 +575,28 @@ export default function SubcategoryPage() {
           </div>
         )}
       </div>
+
+      {/* Booking Modal */}
+      {selectedProvider && (
+        <ProviderBookingModal
+          isOpen={isBookingModalOpen}
+          onClose={handleCloseBookingModal}
+          provider={{
+            id: selectedProvider.id,
+            companyName: selectedProvider.companyName,
+            userName: selectedProvider.userName,
+            hourlyRate: 50, // Sie können das aus den Provider-Daten holen oder als Standard setzen
+            profilePictureFirebaseUrl: selectedProvider.profilePictureFirebaseUrl,
+            profilePictureURL: selectedProvider.profilePictureURL,
+            photoURL: selectedProvider.photoURL,
+            selectedCategory: selectedProvider.selectedCategory,
+            selectedSubcategory: selectedProvider.selectedSubcategory,
+            bio: selectedProvider.bio,
+            description: selectedProvider.bio,
+          }}
+          onConfirm={handleBookingConfirm}
+        />
+      )}
     </div>
   );
 }
