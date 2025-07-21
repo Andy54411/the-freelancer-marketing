@@ -346,33 +346,40 @@ export default function ProfilePage() {
       <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
 
-        {/* Breadcrumb Navigation - Fixed positioned */}
-        <div className="fixed top-[var(--global-header-height)] left-0 right-0 bg-white/10 backdrop-blur-sm border-b border-white/20 z-[100]">
+        {/* Content with proper top spacing */}
+        <div className="relative z-10 pt-8">
+          {/* Breadcrumb Navigation - Klickbarer Text-Pfad */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-2 text-sm text-white/70">
+            <div className="text-sm text-white/80">
               <Link href="/" className="hover:text-white transition-colors">
                 Startseite
               </Link>
-              <span>/</span>
               {profile.selectedCategory && (
                 <>
-                  <span className="text-white/70">{profile.selectedCategory}</span>
-                  <span>/</span>
+                  <span> / </span>
+                  <Link
+                    href={`/services/${profile.selectedCategory}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {profile.selectedCategory}
+                  </Link>
                 </>
               )}
               {profile.selectedSubcategory && (
                 <>
-                  <span className="text-white/70">{profile.selectedSubcategory}</span>
-                  <span>/</span>
+                  <span> / </span>
+                  <Link
+                    href={`/services/${profile.selectedCategory}/${profile.selectedSubcategory}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {profile.selectedSubcategory}
+                  </Link>
                 </>
               )}
+              <span> / </span>
               <span className="text-white font-medium">{profile.companyName}</span>
             </div>
           </div>
-        </div>
-
-        {/* Content with proper top spacing */}
-        <div className="relative z-10 pt-[calc(var(--global-header-height)+4rem)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Main Content */}
