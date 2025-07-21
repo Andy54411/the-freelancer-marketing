@@ -347,7 +347,7 @@ export default function ProfilePage() {
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10 pt-[var(--global-header-height)]">
           {/* Breadcrumb Navigation */}
-          <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
+          <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 relative z-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center gap-2 text-sm text-white/70">
                 <Link href="/" className="hover:text-white">
@@ -415,23 +415,25 @@ export default function ProfilePage() {
                           {/* Rating and Location */}
                           <div className="flex items-center gap-6 mb-4">
                             {profile.averageRating && profile.averageRating > 0 && (
-                              <div className="flex items-center gap-2">
-                                <div className="flex">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`w-5 h-5 ${
-                                        i < Math.floor(profile.averageRating || 0)
-                                          ? 'text-yellow-400 fill-current'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  ))}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-1">
+                                  <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`w-4 h-4 ${
+                                          i < Math.floor(profile.averageRating || 0)
+                                            ? 'text-yellow-400 fill-current'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="font-semibold text-gray-900 ml-1">
+                                    {profile.averageRating.toFixed(1)}
+                                  </span>
                                 </div>
-                                <span className="font-semibold text-gray-900">
-                                  {profile.averageRating.toFixed(1)}
-                                </span>
-                                <span className="text-gray-500">
+                                <span className="text-gray-500 text-sm">
                                   ({profile.totalReviews || 0} Bewertungen)
                                 </span>
                               </div>
@@ -752,6 +754,61 @@ export default function ProfilePage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Skills Section in Contact Card */}
+                    {((profile.skills && profile.skills.length > 0) ||
+                      (profile.specialties && profile.specialties.length > 0) ||
+                      (profile.languages && profile.languages.length > 0)) && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h4 className="font-semibold text-gray-900 mb-4">
+                          Fähigkeiten und Expertise
+                        </h4>
+
+                        {/* Specialties */}
+                        {profile.specialties && profile.specialties.length > 0 && (
+                          <div className="mb-4">
+                            <h5 className="text-sm font-medium text-gray-700 mb-2">
+                              Spezialgebiete
+                            </h5>
+                            <div className="flex flex-wrap gap-2">
+                              {profile.specialties.slice(0, 3).map((specialty, index) => (
+                                <span
+                                  key={index}
+                                  className="px-2 py-1 bg-[#14ad9f] text-white text-xs rounded-full"
+                                >
+                                  {specialty}
+                                </span>
+                              ))}
+                              {profile.specialties.length > 3 && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                  +{profile.specialties.length - 3} weitere
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Languages */}
+                        {profile.languages && profile.languages.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-700 mb-2">Sprachen</h5>
+                            <div className="space-y-1">
+                              {profile.languages.slice(0, 3).map((lang, index) => (
+                                <div key={index} className="text-sm text-gray-600">
+                                  <span className="font-medium text-gray-800">{lang.language}</span>
+                                  <span className="text-gray-500"> - {lang.proficiency}</span>
+                                </div>
+                              ))}
+                              {profile.languages.length > 3 && (
+                                <div className="text-xs text-gray-500">
+                                  +{profile.languages.length - 3} weitere Sprachen
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Verification Card */}
