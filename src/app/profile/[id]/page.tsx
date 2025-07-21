@@ -333,7 +333,7 @@ export default function ProfilePage() {
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10">
           {/* Hero Section - Fiverr Style */}
-          <div className="bg-white border-b">
+          <div className="bg-white/90 backdrop-blur-sm border-b border-white/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="flex flex-col lg:flex-row gap-8 items-start">
                 {/* Left - Profile Info */}
@@ -439,7 +439,7 @@ export default function ProfilePage() {
 
                 {/* Right - Contact Card */}
                 <div className="lg:w-80">
-                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-lg p-6 shadow-lg">
                     <div className="text-center mb-4">
                       {profile.hourlyRate && (
                         <div className="text-2xl font-bold text-gray-900 mb-1">
@@ -517,7 +517,7 @@ export default function ProfilePage() {
               <div className="lg:col-span-2 space-y-8">
                 {/* Skills Section */}
                 {profile.skills && profile.skills.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">Fähigkeiten</h2>
                     <div className="flex flex-wrap gap-2">
                       {profile.skills.map((skill, index) => (
@@ -534,7 +534,7 @@ export default function ProfilePage() {
 
                 {/* Portfolio Section */}
                 {profile.portfolio && profile.portfolio.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {profile.portfolio.map((item, index) => (
@@ -584,7 +584,7 @@ export default function ProfilePage() {
                 {/* Experience Section */}
                 {((profile.education && profile.education.length > 0) ||
                   (profile.certifications && profile.certifications.length > 0)) && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Qualifikationen</h2>
 
                     {/* Education */}
@@ -628,7 +628,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Reviews Section */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">
                       Bewertungen{' '}
@@ -662,7 +662,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 {/* Verification */}
                 {profile.stripeVerificationStatus && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-lg">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Verifizierung</h3>
                     <div className="flex items-center gap-3">
                       <FiCheckCircle
