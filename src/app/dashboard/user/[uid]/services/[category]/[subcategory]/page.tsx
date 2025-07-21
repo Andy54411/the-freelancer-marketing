@@ -26,6 +26,7 @@ interface Provider {
   completedJobs?: number;
   isCompany?: boolean;
   isVerified?: boolean;
+  isPro?: boolean;
   priceRange?: string;
   responseTime?: string;
   hourlyRate?: number;
@@ -216,6 +217,11 @@ export default function UserServiceSubcategoryPage() {
             completedJobs: data.completedJobs || 0,
             isCompany: true,
             isVerified: data.stripeVerificationStatus === 'verified' || data.isVerified || false,
+            isPro:
+              data.isPro ||
+              data.proStatus === 'active' ||
+              data.subscriptionStatus === 'pro' ||
+              false,
             priceRange: data.priceRange,
             responseTime: data.responseTime,
             hourlyRate: data.hourlyRate,
@@ -268,6 +274,8 @@ export default function UserServiceSubcategoryPage() {
           completedJobs: data.completedJobs || 0,
           isCompany: false,
           isVerified: data.stripeVerificationStatus === 'verified' || data.isVerified || false,
+          isPro:
+            data.isPro || data.proStatus === 'active' || data.subscriptionStatus === 'pro' || false,
           priceRange: data.priceRange,
           responseTime: data.responseTime,
         };
@@ -621,13 +629,19 @@ export default function UserServiceSubcategoryPage() {
                         (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                       }}
                     />
-                    {provider.isCompany && (
-                      <div className="absolute top-3 right-3">
-                        <span className="bg-[#14ad9f] text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+                    {/* Badges */}
+                    <div className="absolute top-3 right-3 flex flex-col gap-1">
+                      {provider.isPro && (
+                        <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
                           Pro
                         </span>
-                      </div>
-                    )}
+                      )}
+                      {provider.isVerified && (
+                        <span className="bg-[#14ad9f] text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+                          Verifiziert
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="p-4">
