@@ -562,7 +562,7 @@ export default function UserServiceSubcategoryPage() {
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 overflow-hidden animate-pulse"
+                  className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden animate-pulse"
                 >
                   <div className="aspect-video bg-gray-200"></div>
                   <div className="p-4 space-y-3">
@@ -582,7 +582,7 @@ export default function UserServiceSubcategoryPage() {
             </div>
           ) : providers.length === 0 ? (
             <div className="text-center py-16">
-              <div className="max-w-md mx-auto bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-lg border border-white/20">
+              <div className="max-w-md mx-auto bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-lg">
                 <Briefcase className="w-20 h-20 text-gray-400 mx-auto mb-6" />
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">
                   Keine Services gefunden
@@ -616,7 +616,7 @@ export default function UserServiceSubcategoryPage() {
               {providers.map(provider => (
                 <div
                   key={provider.id}
-                  className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/95 transition-all duration-300 group cursor-pointer"
+                  className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden hover:shadow-xl hover:bg-white/95 transition-all duration-300 group cursor-pointer"
                   onClick={() => router.push(`/profile/${provider.id}`)}
                 >
                   {/* Service Image/Avatar */}
