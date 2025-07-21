@@ -74,7 +74,7 @@ export default function SubcategoryPage() {
       });
 
       // Query für Firmen - erweitert um verschiedene Aktivitätszustände
-      const firmCollectionRef = collection(db, 'firma');
+      const firmCollectionRef = collection(db, 'companies');
       const firmQuery = query(firmCollectionRef, limit(50));
 
       // Query für Users/Freelancer
@@ -102,11 +102,24 @@ export default function SubcategoryPage() {
             photoURL: data.photoURL,
             bio: data.description || data.bio,
             location: data.location,
-            skills: data.services || data.skills || [],
+            skills:
+              data.services ||
+              data.skills ||
+              data.categories ||
+              data.serviceCategories ||
+              data.specialties ||
+              data.expertise ||
+              (data.selectedSubcategory ? [data.selectedSubcategory] : []),
             selectedCategory: data.selectedCategory,
             selectedSubcategory: data.selectedSubcategory,
-            rating: data.averageRating || 0,
-            reviewCount: data.reviewCount || 0,
+            rating: data.averageRating || data.rating || data.ratingAverage || data.starRating || 0,
+            reviewCount:
+              data.reviewCount ||
+              data.totalReviews ||
+              data.numReviews ||
+              data.reviewsCount ||
+              (Array.isArray(data.reviews) ? data.reviews.length : 0) ||
+              0,
             completedJobs: data.completedJobs || 0,
             isCompany: true,
             priceRange: data.priceRange,
@@ -130,11 +143,23 @@ export default function SubcategoryPage() {
           photoURL: data.photoURL,
           bio: data.bio,
           location: data.location,
-          skills: data.skills || [],
+          skills:
+            data.skills ||
+            data.services ||
+            data.categories ||
+            data.serviceCategories ||
+            data.specialties ||
+            data.expertise ||
+            (data.selectedSubcategory ? [data.selectedSubcategory] : []),
           selectedCategory: data.selectedCategory,
           selectedSubcategory: data.selectedSubcategory,
-          rating: data.rating || 0,
-          reviewCount: data.reviewCount || 0,
+          rating: data.averageRating || data.rating || data.ratingAverage || data.starRating || 0,
+          reviewCount:
+            data.reviewCount ||
+            data.totalReviews ||
+            data.numReviews ||
+            data.reviewsCount ||
+            (Array.isArray(data.reviews) ? data.reviews.length : 0),
           completedJobs: data.completedJobs || 0,
           isCompany: false,
           priceRange: data.priceRange,
@@ -187,61 +212,45 @@ export default function SubcategoryPage() {
         }
       });
 
-      // Filter nach Subcategory - erweiterte Prüfung
+      // Filter nach Subcategory - erweiterte und allgemeine Prüfung
       let filteredProviders = allProviders.filter(provider => {
         // Für Firmen: prüfe selectedSubcategory mit verschiedenen Matching-Strategien
         if (provider.isCompany && provider.selectedSubcategory) {
           // Exakte Übereinstimmung
           if (provider.selectedSubcategory === subcategoryName) {
-            console.log(
-              '[ServicePage] Found exact match for:',
-              provider.companyName,
-              'with subcategory:',
-              provider.selectedSubcategory
-            );
             return true;
           }
 
           // Case-insensitive Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase()) {
-            console.log(
-              '[ServicePage] Found case-insensitive match for:',
-              provider.companyName,
-              'with subcategory:',
-              provider.selectedSubcategory
-            );
             return true;
           }
 
-          // URL-Parameter Übereinstimmung (für "mietkoch" vs "Mietkoch")
+          // URL-Parameter Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()) {
-            console.log(
-              '[ServicePage] Found URL parameter match for:',
-              provider.companyName,
-              'with subcategory:',
-              provider.selectedSubcategory
-            );
             return true;
           }
         }
 
-        // Fallback für Freelancer oder wenn selectedSubcategory nicht gesetzt: Prüfe skills/services Array
+        // Für alle Provider: Prüfe Skills/Services Array
         const skillsMatch = provider.skills?.some(
           skill =>
             skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
             skill.toLowerCase().includes(subcategory.toLowerCase())
         );
 
-        if (skillsMatch) {
-          console.log(
-            '[ServicePage] Found skills match for:',
-            provider.companyName || provider.userName,
-            'with skills:',
-            provider.skills
-          );
-        }
+        // Für Provider ohne explizite Skills/Subcategory: Prüfe Namen und Bio
+        const nameMatch =
+          provider.companyName?.toLowerCase().includes(subcategory.toLowerCase()) ||
+          provider.userName?.toLowerCase().includes(subcategory.toLowerCase()) ||
+          provider.companyName?.toLowerCase().includes(subcategoryName?.toLowerCase() || '') ||
+          provider.userName?.toLowerCase().includes(subcategoryName?.toLowerCase() || '');
 
-        return skillsMatch;
+        const bioMatch =
+          provider.bio?.toLowerCase().includes(subcategory.toLowerCase()) ||
+          provider.bio?.toLowerCase().includes(subcategoryName?.toLowerCase() || '');
+
+        return skillsMatch || nameMatch || bioMatch;
       });
 
       // Suchfilter
