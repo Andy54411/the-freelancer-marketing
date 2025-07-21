@@ -343,9 +343,9 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <main className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           {/* Hero Section - Fiverr Style */}
           <div className="border-b border-white/20 py-8">
             <div className="flex flex-col lg:flex-row gap-8 items-start">
