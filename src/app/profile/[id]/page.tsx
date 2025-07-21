@@ -350,19 +350,19 @@ export default function ProfilePage() {
         <div className="fixed top-[var(--global-header-height)] left-0 right-0 bg-white/10 backdrop-blur-sm border-b border-white/20 z-[100]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center gap-2 text-sm text-white/70">
-              <Link href="/" className="hover:text-white">
+              <Link href="/" className="hover:text-white transition-colors">
                 Startseite
               </Link>
               <span>/</span>
               {profile.selectedCategory && (
                 <>
-                  <span className="hover:text-white">{profile.selectedCategory}</span>
+                  <span className="text-white/70">{profile.selectedCategory}</span>
                   <span>/</span>
                 </>
               )}
               {profile.selectedSubcategory && (
                 <>
-                  <span className="hover:text-white">{profile.selectedSubcategory}</span>
+                  <span className="text-white/70">{profile.selectedSubcategory}</span>
                   <span>/</span>
                 </>
               )}
@@ -703,64 +703,65 @@ export default function ProfilePage() {
                 <div className="sticky top-8 space-y-6">
                   {/* Contact Card */}
                   <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
-                    {/* Provider Summary */}
-                    <div className="text-center mb-6 border-b border-gray-200 pb-6">
-                      <h2 className="text-xl font-bold text-gray-900 mb-1">
+                    {/* Provider Summary - Kompakter */}
+                    <div className="text-center mb-4 border-b border-gray-200 pb-4">
+                      <h2 className="text-lg font-bold text-gray-900 mb-1">
                         {profile.companyName}
                       </h2>
-                      <p className="text-gray-600 mb-3">
+                      <p className="text-gray-600 text-sm mb-2">
                         {profile.selectedSubcategory || 'Professioneller Service'}
                       </p>
 
-                      {/* Rating in Contact Card */}
-                      {profile.averageRating && profile.averageRating > 0 && (
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${
-                                  i < Math.floor(profile.averageRating || 0)
-                                    ? 'text-yellow-400 fill-current'
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
+                      {/* Kompakte Rating-Zeile */}
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        {profile.averageRating && profile.averageRating > 0 && (
+                          <div className="flex items-center gap-1">
+                            <div className="flex">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-3.5 h-3.5 ${
+                                    i < Math.floor(profile.averageRating || 0)
+                                      ? 'text-yellow-400 fill-current'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              {profile.averageRating.toFixed(1)}
+                            </span>
                           </div>
-                          <span className="font-semibold text-gray-900">
-                            {profile.averageRating.toFixed(1)}
+                        )}
+
+                        {profile.totalReviews && profile.totalReviews > 0 && (
+                          <span className="text-xs text-gray-500">
+                            ({profile.totalReviews} Bewertungen)
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
-                      {profile.totalReviews && profile.totalReviews > 0 && (
-                        <p className="text-sm text-gray-500 mb-3">
-                          ({profile.totalReviews} Bewertungen)
-                        </p>
-                      )}
-
-                      {/* Location in Contact Card */}
-                      {fullAddress && (
-                        <div className="flex items-center justify-center gap-1 text-gray-600 mb-3">
-                          <FiMapPin size={14} />
-                          <span className="text-sm">{fullAddress}</span>
-                        </div>
-                      )}
-
-                      {/* Completed Jobs */}
-                      {profile.completedJobs && profile.completedJobs > 0 && (
-                        <p className="text-sm text-gray-600">
-                          {profile.completedJobs} Aufträge abgeschlossen
-                        </p>
-                      )}
+                      {/* Kompakte Location + Jobs */}
+                      <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
+                        {fullAddress && (
+                          <div className="flex items-center gap-1">
+                            <FiMapPin size={12} />
+                            <span>{fullAddress}</span>
+                          </div>
+                        )}
+                        {profile.completedJobs && profile.completedJobs > 0 && (
+                          <span>{profile.completedJobs} Aufträge</span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="text-center mb-6">
-                      <div className="text-3xl font-bold text-gray-900 mb-2">
+                    {/* Preis-Anzeige - kompakter */}
+                    <div className="text-center mb-4">
+                      <div className="text-2xl font-bold text-gray-900">
                         {profile.hourlyRate ? (
                           <>
                             Ab {profile.hourlyRate}€
-                            <span className="text-lg font-normal text-gray-500">/Stunde</span>
+                            <span className="text-base font-normal text-gray-500">/Std</span>
                           </>
                         ) : (
                           'Preis auf Anfrage'
@@ -768,34 +769,28 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors">
-                        Angebot
+                    {/* Buttons mit Tasko-Farben */}
+                    <div className="space-y-2 mb-4">
+                      <button className="w-full bg-[#14ad9f] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors text-sm">
+                        Angebot anfordern
                       </button>
 
-                      <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                        Buchen
+                      <button className="w-full bg-[#14ad9f]/10 text-[#14ad9f] border border-[#14ad9f]/20 py-2.5 px-4 rounded-lg font-medium hover:bg-[#14ad9f]/20 transition-colors text-sm">
+                        Jetzt buchen
                       </button>
 
                       <button
                         onClick={handleStartChat}
-                        className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                        className="w-full border border-gray-300 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
                       >
                         Kontakt
                       </button>
                     </div>
 
-                    {/* Quick Info */}
-                    <div className="mt-6 pt-6 border-t space-y-4">
-                      {profile.radiusKm && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Arbeitsradius:</span>
-                          <span className="text-gray-900 font-medium">{profile.radiusKm} km</span>
-                        </div>
-                      )}
-
+                    {/* Quick Info - kompakter */}
+                    <div className="pt-4 border-t space-y-2">
                       {profile.responseTime && (
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-xs">
                           <span className="text-gray-500">Antwortzeit:</span>
                           <span className="text-gray-900 font-medium">
                             ~{profile.responseTime}h
@@ -803,68 +798,13 @@ export default function ProfilePage() {
                         </div>
                       )}
 
-                      {profile.completedJobs && profile.completedJobs > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Abgeschlossene Aufträge:</span>
-                          <span className="text-gray-900 font-medium">{profile.completedJobs}</span>
+                      {profile.radiusKm && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-500">Arbeitsradius:</span>
+                          <span className="text-gray-900 font-medium">{profile.radiusKm} km</span>
                         </div>
                       )}
                     </div>
-
-                    {/* Skills Section in Contact Card */}
-                    {((profile.skills && profile.skills.length > 0) ||
-                      (profile.specialties && profile.specialties.length > 0) ||
-                      (profile.languages && profile.languages.length > 0)) && (
-                      <div className="mt-6 pt-6 border-t">
-                        <h4 className="font-semibold text-gray-900 mb-4">
-                          Fähigkeiten und Expertise
-                        </h4>
-
-                        {/* Specialties */}
-                        {profile.specialties && profile.specialties.length > 0 && (
-                          <div className="mb-4">
-                            <h5 className="text-sm font-medium text-gray-700 mb-2">
-                              Spezialgebiete
-                            </h5>
-                            <div className="flex flex-wrap gap-2">
-                              {profile.specialties.slice(0, 3).map((specialty, index) => (
-                                <span
-                                  key={index}
-                                  className="px-2 py-1 bg-[#14ad9f] text-white text-xs rounded-full"
-                                >
-                                  {specialty}
-                                </span>
-                              ))}
-                              {profile.specialties.length > 3 && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                  +{profile.specialties.length - 3} weitere
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Languages */}
-                        {profile.languages && profile.languages.length > 0 && (
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-700 mb-2">Sprachen</h5>
-                            <div className="space-y-1">
-                              {profile.languages.slice(0, 3).map((lang, index) => (
-                                <div key={index} className="text-sm text-gray-600">
-                                  <span className="font-medium text-gray-800">{lang.language}</span>
-                                  <span className="text-gray-500"> - {lang.proficiency}</span>
-                                </div>
-                              ))}
-                              {profile.languages.length > 3 && (
-                                <div className="text-xs text-gray-500">
-                                  +{profile.languages.length - 3} weitere Sprachen
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Verification Card */}
