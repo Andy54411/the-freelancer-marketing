@@ -4,9 +4,23 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock, X } from 'lucide-react';
+import {
+  Calendar,
+  MapPin,
+  Star,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+  Search,
+  Briefcase,
+  Clock,
+} from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
-import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
+import CreateOrderModal from '@/app/dashboard/user/[uid]/components/CreateOrderModal';
+import { auth } from '@/firebase/clients';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface Provider {
   id: string;
@@ -44,6 +58,8 @@ export default function SubcategoryPage() {
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   // Normalisierungsfunktion
   const normalizeToSlug = (str: string) =>
@@ -65,6 +81,28 @@ export default function SubcategoryPage() {
     if (!categoryInfo || !subcategoryName) return;
     loadProviders();
   }, [category, subcategory, sortBy]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async user => {
+      if (user) {
+        setCurrentUser(user);
+        // Lade Benutzerprofil
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserProfile(userDoc.data());
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+        }
+      } else {
+        setCurrentUser(null);
+        setUserProfile(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const loadProviders = async () => {
     try {
@@ -306,39 +344,23 @@ export default function SubcategoryPage() {
   };
 
   const handleBookNow = (provider: Provider) => {
+    if (!currentUser) {
+      // Benutzer zur Anmeldung weiterleiten
+      window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      return;
+    }
+
     console.log('handleBookNow called with provider:', provider);
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
     console.log('Modal state set - isBookingModalOpen:', true);
   };
 
-  const handleBookingConfirm = async (
-    selection: any,
-    time: string,
-    durationString: string,
-    description: string
-  ) => {
-    try {
-      console.log('Buchung bestätigt:', {
-        provider: selectedProvider,
-        selection,
-        time,
-        durationString,
-        description,
-      });
-
-      // Hier würden Sie die Buchungslogik implementieren
-      // z.B. Weiterleitung zur Zahlung oder zur Auftragserstellung
-
-      setIsBookingModalOpen(false);
-      setSelectedProvider(null);
-
-      // Optional: Erfolgsbenachrichtigung anzeigen
-      alert('Buchungsanfrage erfolgreich gesendet!');
-    } catch (error) {
-      console.error('Fehler bei der Buchung:', error);
-      alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
-    }
+  const handleBookingSuccess = () => {
+    setIsBookingModalOpen(false);
+    setSelectedProvider(null);
+    // Hier könnten Sie eine Erfolgsbenachrichtigung anzeigen oder zur Bestätigungsseite weiterleiten
+    alert('Auftrag erfolgreich erstellt!');
   };
 
   const handleCloseBookingModal = () => {
@@ -395,17 +417,6 @@ export default function SubcategoryPage() {
 
           {/* Filter und Suche */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Test Button - können Sie später entfernen */}
-            <button
-              onClick={() => {
-                console.log('Test Button clicked!');
-                alert('Test Button funktioniert!');
-              }}
-              className="bg-red-500 text-white px-4 py-2 rounded"
-            >
-              TEST BUTTON
-            </button>
-
             {/* Suchfeld */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -601,40 +612,13 @@ export default function SubcategoryPage() {
       </div>
 
       {/* Booking Modal */}
-      {isBookingModalOpen && selectedProvider && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Buchen: {getProviderName(selectedProvider)}</h2>
-              <button
-                onClick={handleCloseBookingModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <p>Möchten Sie {getProviderName(selectedProvider)} buchen?</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    alert('Buchung würde hier verarbeitet werden');
-                    handleCloseBookingModal();
-                  }}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  Ja, buchen
-                </button>
-                <button
-                  onClick={handleCloseBookingModal}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
-                >
-                  Abbrechen
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {isBookingModalOpen && selectedProvider && currentUser && userProfile && (
+        <CreateOrderModal
+          onClose={handleCloseBookingModal}
+          onSuccess={handleBookingSuccess}
+          currentUser={currentUser}
+          userProfile={userProfile}
+        />
       )}
 
       {/* Debug Info - können Sie später entfernen */}

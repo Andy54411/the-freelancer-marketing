@@ -22,6 +22,7 @@ import Header from '@/components/Header';
 import ReviewList from '@/components/ReviewList';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import DirectChatModal from '@/components/DirectChatModal';
+import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -82,6 +83,7 @@ export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showReviewManagement, setShowReviewManagement] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const companyId = params?.id as string;
 
@@ -95,6 +97,50 @@ export default function ProfilePage() {
 
     // Chat-Modal öffnen
     setShowChatModal(true);
+  };
+
+  // Funktionen für das Buchungsmodal
+  const handleBookNow = () => {
+    if (!currentUser) {
+      // Benutzer zur Anmeldung weiterleiten
+      window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      return;
+    }
+
+    console.log('handleBookNow called for profile:', profile);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingConfirm = async (
+    selection: any,
+    time: string,
+    durationString: string,
+    description: string
+  ) => {
+    try {
+      console.log('Buchung bestätigt:', {
+        provider: profile,
+        selection,
+        time,
+        durationString,
+        description,
+      });
+
+      // Hier würden Sie die Buchungslogik implementieren
+      // z.B. Weiterleitung zur Zahlung oder zur Auftragserstellung
+
+      setIsBookingModalOpen(false);
+
+      // Optional: Erfolgsbenachrichtigung anzeigen
+      alert('Buchungsanfrage erfolgreich gesendet!');
+    } catch (error) {
+      console.error('Fehler bei der Buchung:', error);
+      alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
+    }
+  };
+
+  const handleCloseBookingModal = () => {
+    setIsBookingModalOpen(false);
   };
 
   // Hilfsfunktion für Kategorie-URLs
@@ -796,7 +842,10 @@ export default function ProfilePage() {
                         Angebot anfordern
                       </button>
 
-                      <button className="w-full bg-[#14ad9f]/10 text-[#14ad9f] border border-[#14ad9f]/20 py-2.5 px-4 rounded-lg font-medium hover:bg-[#14ad9f]/20 transition-colors text-sm">
+                      <button
+                        onClick={handleBookNow}
+                        className="w-full bg-[#14ad9f]/10 text-[#14ad9f] border border-[#14ad9f]/20 py-2.5 px-4 rounded-lg font-medium hover:bg-[#14ad9f]/20 transition-colors text-sm"
+                      >
                         Jetzt buchen
                       </button>
 
@@ -908,6 +957,28 @@ export default function ProfilePage() {
               providerName={profile.companyName}
               companyId={currentUser.uid}
               companyName={currentUser.displayName || 'Kunde'}
+            />
+          )}
+
+          {/* Booking Modal */}
+          {profile && (
+            <ProviderBookingModal
+              isOpen={isBookingModalOpen}
+              onClose={handleCloseBookingModal}
+              provider={{
+                id: profile.id,
+                companyName: profile.companyName,
+                userName: profile.displayName,
+                hourlyRate: profile.hourlyRate || 50,
+                profilePictureFirebaseUrl: profile.profilePictureFirebaseUrl,
+                profilePictureURL: profile.profilePictureURL,
+                photoURL: profile.photoURL,
+                selectedCategory: profile.selectedCategory,
+                selectedSubcategory: profile.selectedSubcategory,
+                bio: profile.description,
+                description: profile.description,
+              }}
+              onConfirm={handleBookingConfirm}
             />
           )}
         </div>
