@@ -100,152 +100,157 @@ export default function ProfilePage() {
       }
 
       try {
-        // Hauptquelle: Lade aus dem users-Dokument (Dashboard-Profil)
-        const userDocRef = doc(db, 'users', companyId);
-        const userDoc = await getDoc(userDocRef);
+        // Zuerst versuchen: companies-Dokument zu laden (Firmen-Profile)
+        const companiesDocRef = doc(db, 'companies', companyId);
+        const companiesDoc = await getDoc(companiesDocRef);
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        if (companiesDoc.exists()) {
+          const companyData = companiesDoc.data();
 
-          // Prüfe alle möglichen Profilbild-URLs aus dem Dashboard-Profil
+          // Prüfe alle möglichen Profilbild-URLs
           const profilePicture =
-            userData.photoURL || userData.profilePictureURL || userData.profilePictureFirebaseUrl;
+            companyData.profilePictureFirebaseUrl ||
+            companyData.profilePictureUrl ||
+            companyData.profilePictureURL ||
+            companyData.step3?.profilePictureURL;
 
           setProfile({
             id: companyId,
-            companyName: userData.companyName || userData.displayName || 'Unbekannte Firma',
-            displayName: userData.displayName,
-            description: userData.description || userData['step2.description'] || null,
-            country: userData.country,
-            city: userData.city,
-            hourlyRate: userData.hourlyRate,
-            photoURL: profilePicture,
-            username: userData.username,
-            portfolio: userData.portfolio || [],
-            skills: userData.skills || [],
-            specialties: userData.specialties || [],
+            companyName: companyData.companyName || 'Unbekannte Firma',
+            description: companyData.description || null,
+            selectedSubcategory: companyData.selectedSubcategory,
+            selectedCategory: companyData.selectedCategory,
+            profilePictureFirebaseUrl: profilePicture,
+            city: companyData.companyCity,
+            country:
+              companyData.companyCountryForBackend === 'DE'
+                ? 'Deutschland'
+                : companyData.companyCountryForBackend,
+            companyCityForBackend: companyData.companyCityForBackend,
+            companyPostalCodeForBackend: companyData.companyPostalCodeForBackend,
+            companyCountryForBackend: companyData.companyCountryForBackend,
+            companyAddressLine1ForBackend: companyData.companyAddressLine1ForBackend,
+            isVerified: companyData.stripeVerificationStatus === 'verified',
+            hourlyRate: companyData.hourlyRate,
+            radiusKm: companyData.radiusKm,
+            stripeVerificationStatus: companyData.stripeVerificationStatus,
+            averageRating: companyData.averageRating || 0,
+            totalReviews: companyData.totalReviews || 0,
+            responseTime: companyData.responseTime || 24,
+            completedJobs: companyData.completedJobs || 0,
+            // Add missing fields
+            specialties: companyData.specialties || [],
             languages: (() => {
-              // First try step2.languages (most likely source)
-              if (userData.step2?.languages) {
-                if (typeof userData.step2.languages === 'string') {
-                  return userData.step2.languages.split(',').map((lang: string) => ({
-                    language: lang.trim(),
-                    proficiency: 'Fließend',
-                  }));
-                }
-              }
-
-              // Fallback to step2.languages with dot notation
-              if (userData['step2.languages']) {
-                if (typeof userData['step2.languages'] === 'string') {
-                  return userData['step2.languages'].split(',').map((lang: string) => ({
-                    language: lang.trim(),
-                    proficiency: 'Fließend',
-                  }));
-                }
-              }
-
-              // Check if languages already exist in correct format
-              if (userData.languages && Array.isArray(userData.languages)) {
-                // If it's an array of objects with language/proficiency
-                if (
-                  userData.languages.length > 0 &&
-                  typeof userData.languages[0] === 'object' &&
-                  userData.languages[0].language
-                ) {
-                  return userData.languages;
-                }
+              if (companyData.languages && Array.isArray(companyData.languages)) {
                 // If it's an array of strings, convert to object format
-                if (userData.languages.length > 0 && typeof userData.languages[0] === 'string') {
-                  return userData.languages.map((lang: string) => ({
+                if (
+                  companyData.languages.length > 0 &&
+                  typeof companyData.languages[0] === 'string'
+                ) {
+                  return companyData.languages.map((lang: string) => ({
                     language: lang.trim(),
                     proficiency: 'Fließend',
                   }));
                 }
+                // If it's already in object format
+                if (
+                  companyData.languages.length > 0 &&
+                  typeof companyData.languages[0] === 'object'
+                ) {
+                  return companyData.languages;
+                }
               }
-
               return [];
             })(),
-            education: userData.education || [],
-            certifications: userData.certifications || [],
-            responseTime: userData.responseTime || 24,
-            completionRate: userData.completionRate || 95,
-            totalOrders: userData.totalOrders || 0,
-            averageRating: userData.averageRating || 0,
-            totalReviews: userData.totalReviews || 0,
-            isVerified: userData.stripeVerificationStatus === 'verified',
-            stripeVerificationStatus: userData.stripeVerificationStatus,
-            // Fallback zu Backend-Feldern
-            selectedSubcategory: userData.selectedSubcategory,
-            selectedCategory: userData.selectedCategory,
-            radiusKm: userData.radiusKm,
-            companyCityForBackend: userData.companyCityForBackend,
-            companyPostalCodeForBackend: userData.companyPostalCodeForBackend,
-            companyCountryForBackend: userData.companyCountryForBackend,
-            companyAddressLine1ForBackend: userData.companyAddressLine1ForBackend,
+            skills: companyData.skills || [],
+            portfolio: companyData.portfolio || [],
+            certifications: companyData.certifications || [],
+            education: companyData.education || [],
           });
         } else {
-          // Fallback: Versuche companies-Dokument zu laden
-          const companiesDocRef = doc(db, 'companies', companyId);
-          const companiesDoc = await getDoc(companiesDocRef);
+          // Fallback: Lade aus dem users-Dokument (Dashboard-Profil)
+          const userDocRef = doc(db, 'users', companyId);
+          const userDoc = await getDoc(userDocRef);
 
-          if (companiesDoc.exists()) {
-            const companyData = companiesDoc.data();
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
 
-            // Prüfe alle möglichen Profilbild-URLs
+            // Prüfe alle möglichen Profilbild-URLs aus dem Dashboard-Profil
             const profilePicture =
-              companyData.profilePictureFirebaseUrl ||
-              companyData.profilePictureUrl ||
-              companyData.profilePictureURL ||
-              companyData.step3?.profilePictureURL;
+              userData.photoURL || userData.profilePictureURL || userData.profilePictureFirebaseUrl;
 
             setProfile({
               id: companyId,
-              companyName: companyData.companyName || 'Unbekannte Firma',
-              description: companyData.description || null,
-              selectedSubcategory: companyData.selectedSubcategory,
-              selectedCategory: companyData.selectedCategory,
-              profilePictureFirebaseUrl: profilePicture,
-              companyCityForBackend: companyData.companyCityForBackend,
-              companyPostalCodeForBackend: companyData.companyPostalCodeForBackend,
-              companyCountryForBackend: companyData.companyCountryForBackend,
-              companyAddressLine1ForBackend: companyData.companyAddressLine1ForBackend,
-              isVerified: companyData.stripeVerificationStatus === 'verified',
-              hourlyRate: companyData.hourlyRate,
-              radiusKm: companyData.radiusKm,
-              stripeVerificationStatus: companyData.stripeVerificationStatus,
-              averageRating: companyData.averageRating || 0,
-              totalReviews: companyData.totalReviews || 0,
-              responseTime: companyData.responseTime || 24,
-              completedJobs: companyData.completedJobs || 0,
-              // Add missing fields
-              specialties: companyData.specialties || [],
+              companyName: userData.companyName || userData.displayName || 'Unbekannte Firma',
+              displayName: userData.displayName,
+              description: userData.description || userData['step2.description'] || null,
+              country: userData.country,
+              city: userData.city,
+              hourlyRate: userData.hourlyRate,
+              photoURL: profilePicture,
+              username: userData.username,
+              portfolio: userData.portfolio || [],
+              skills: userData.skills || [],
+              specialties: userData.specialties || [],
               languages: (() => {
-                if (companyData.languages && Array.isArray(companyData.languages)) {
-                  // If it's an array of strings, convert to object format
-                  if (
-                    companyData.languages.length > 0 &&
-                    typeof companyData.languages[0] === 'string'
-                  ) {
-                    return companyData.languages.map((lang: string) => ({
+                // First try step2.languages (most likely source)
+                if (userData.step2?.languages) {
+                  if (typeof userData.step2.languages === 'string') {
+                    return userData.step2.languages.split(',').map((lang: string) => ({
                       language: lang.trim(),
                       proficiency: 'Fließend',
                     }));
                   }
-                  // If it's already in object format
-                  if (
-                    companyData.languages.length > 0 &&
-                    typeof companyData.languages[0] === 'object'
-                  ) {
-                    return companyData.languages;
+                }
+
+                // Fallback to step2.languages with dot notation
+                if (userData['step2.languages']) {
+                  if (typeof userData['step2.languages'] === 'string') {
+                    return userData['step2.languages'].split(',').map((lang: string) => ({
+                      language: lang.trim(),
+                      proficiency: 'Fließend',
+                    }));
                   }
                 }
+
+                // Check if languages already exist in correct format
+                if (userData.languages && Array.isArray(userData.languages)) {
+                  // If it's an array of objects with language/proficiency
+                  if (
+                    userData.languages.length > 0 &&
+                    typeof userData.languages[0] === 'object' &&
+                    userData.languages[0].language
+                  ) {
+                    return userData.languages;
+                  }
+                  // If it's an array of strings, convert to object format
+                  if (userData.languages.length > 0 && typeof userData.languages[0] === 'string') {
+                    return userData.languages.map((lang: string) => ({
+                      language: lang.trim(),
+                      proficiency: 'Fließend',
+                    }));
+                  }
+                }
+
                 return [];
               })(),
-              skills: companyData.skills || [],
-              portfolio: companyData.portfolio || [],
-              certifications: companyData.certifications || [],
-              education: companyData.education || [],
+              education: userData.education || [],
+              certifications: userData.certifications || [],
+              responseTime: userData.responseTime || 24,
+              completionRate: userData.completionRate || 95,
+              totalOrders: userData.totalOrders || 0,
+              averageRating: userData.averageRating || 0,
+              totalReviews: userData.totalReviews || 0,
+              isVerified: userData.stripeVerificationStatus === 'verified',
+              stripeVerificationStatus: userData.stripeVerificationStatus,
+              // Fallback zu Backend-Feldern
+              selectedSubcategory: userData.selectedSubcategory,
+              selectedCategory: userData.selectedCategory,
+              radiusKm: userData.radiusKm,
+              companyCityForBackend: userData.companyCityForBackend,
+              companyPostalCodeForBackend: userData.companyPostalCodeForBackend,
+              companyCountryForBackend: userData.companyCountryForBackend,
+              companyAddressLine1ForBackend: userData.companyAddressLine1ForBackend,
             });
           } else {
             setError('Firma nicht gefunden');
