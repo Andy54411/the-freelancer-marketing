@@ -464,76 +464,89 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
         {currentStep === 'details' && (
           <div className="space-y-8">
+            {/* Auftragsbeschreibung als erstes */}
             <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-sm">
               <div className="flex items-center mb-6">
                 <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">
                   1
                 </div>
-                <h4 className="text-xl font-semibold text-gray-800">Was soll erledigt werden?</h4>
+                <h4 className="text-xl font-semibold text-gray-800">
+                  Beschreiben Sie Ihren Auftrag
+                </h4>
               </div>
-              <div className="space-y-6">
-                <div>
-                  <Label
-                    htmlFor="category"
-                    className="text-sm font-medium text-gray-700 mb-2 block"
-                  >
-                    Hauptkategorie *
-                  </Label>
-                  <SimpleSelect
-                    id="category"
-                    options={categories.map(c => c.title)}
-                    placeholder="Bitte wählen..."
-                    value={selectedCategory || ''}
-                    onChange={e => {
-                      setSelectedCategory(e.target.value);
-                      setSelectedSubcategory(null);
-                      setSelectedProvider(null);
-                    }}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors"
-                  />
+              <div>
+                <Label
+                  htmlFor="description"
+                  className="text-sm font-medium text-gray-700 mb-2 block"
+                >
+                  Auftragsbeschreibung *
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Beschreiben Sie hier detailliert, was genau gemacht werden soll..."
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors min-h-[120px] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Kategorie-Auswahl nur wenn Beschreibung vorhanden */}
+            {description.trim().length > 0 && (
+              <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-sm">
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">
+                    2
+                  </div>
+                  <h4 className="text-xl font-semibold text-gray-800">Was soll erledigt werden?</h4>
                 </div>
-                {selectedCategory && (
+                <div className="space-y-6">
                   <div>
                     <Label
-                      htmlFor="subcategory"
+                      htmlFor="category"
                       className="text-sm font-medium text-gray-700 mb-2 block"
                     >
-                      Unterkategorie *
+                      Hauptkategorie *
                     </Label>
                     <SimpleSelect
-                      id="subcategory"
-                      options={availableSubcategories}
+                      id="category"
+                      options={categories.map(c => c.title)}
                       placeholder="Bitte wählen..."
-                      value={selectedSubcategory || ''}
+                      value={selectedCategory || ''}
                       onChange={e => {
-                        setSelectedSubcategory(e.target.value);
+                        setSelectedCategory(e.target.value);
+                        setSelectedSubcategory(null);
                         setSelectedProvider(null);
                       }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors"
                     />
                   </div>
-                )}
-                {selectedSubcategory && (
-                  <div>
-                    <Label
-                      htmlFor="description"
-                      className="text-sm font-medium text-gray-700 mb-2 block"
-                    >
-                      Auftragsbeschreibung *
-                    </Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Beschreiben Sie hier detailliert, was genau gemacht werden soll..."
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors min-h-[100px] resize-none"
-                    />
-                  </div>
-                )}
+                  {selectedCategory && (
+                    <div>
+                      <Label
+                        htmlFor="subcategory"
+                        className="text-sm font-medium text-gray-700 mb-2 block"
+                      >
+                        Unterkategorie *
+                      </Label>
+                      <SimpleSelect
+                        id="subcategory"
+                        options={availableSubcategories}
+                        placeholder="Bitte wählen..."
+                        value={selectedSubcategory || ''}
+                        onChange={e => {
+                          setSelectedSubcategory(e.target.value);
+                          setSelectedProvider(null);
+                        }}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-colors"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {selectedSubcategory && (
+            {selectedSubcategory && description.trim().length > 0 && (
               <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
                 <OrderAddressSelection
                   userProfile={userProfile}
