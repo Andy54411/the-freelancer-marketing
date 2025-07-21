@@ -329,352 +329,355 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50">
-        {/* Hero Section - Fiverr Style */}
-        <div className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
-              {/* Left - Profile Info */}
-              <div className="flex-1">
-                <div className="flex items-start gap-6">
-                  {/* Profile Picture */}
-                  <div className="flex-shrink-0">
-                    {profile.photoURL || profile.profilePictureFirebaseUrl ? (
-                      <Image
-                        src={profile.photoURL || profile.profilePictureFirebaseUrl || ''}
-                        alt={`Profilbild von ${profile.companyName}`}
-                        width={120}
-                        height={120}
-                        className="rounded-full object-cover border-4 border-gray-100 shadow-lg"
-                      />
-                    ) : (
-                      <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-200">
-                        <FiUser size={48} className="text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Profile Details */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold text-gray-900">{profile.companyName}</h1>
-                      {profile.isVerified && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                          <FiCheckCircle className="mr-1" size={16} />
-                          Verifiziert
-                        </span>
+      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+        <div className="relative z-10">
+          {/* Hero Section - Fiverr Style */}
+          <div className="bg-white border-b">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="flex flex-col lg:flex-row gap-8 items-start">
+                {/* Left - Profile Info */}
+                <div className="flex-1">
+                  <div className="flex items-start gap-6">
+                    {/* Profile Picture */}
+                    <div className="flex-shrink-0">
+                      {profile.photoURL || profile.profilePictureFirebaseUrl ? (
+                        <Image
+                          src={profile.photoURL || profile.profilePictureFirebaseUrl || ''}
+                          alt={`Profilbild von ${profile.companyName}`}
+                          width={120}
+                          height={120}
+                          className="rounded-full object-cover border-4 border-gray-100 shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-200">
+                          <FiUser size={48} className="text-gray-400" />
+                        </div>
                       )}
                     </div>
 
-                    <p className="text-xl text-gray-600 mb-3">
-                      {profile.selectedSubcategory || 'Profi-Anbieter'}
-                    </p>
+                    {/* Profile Details */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h1 className="text-3xl font-bold text-gray-900">{profile.companyName}</h1>
+                        {profile.isVerified && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            <FiCheckCircle className="mr-1" size={16} />
+                            Verifiziert
+                          </span>
+                        )}
+                      </div>
 
-                    {/* Rating und Location */}
-                    <div className="flex items-center gap-6 mb-4">
-                      {profile.averageRating !== undefined && profile.averageRating > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <FiStar
-                                key={i}
-                                className={`w-4 h-4 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                              />
-                            ))}
+                      <p className="text-xl text-gray-600 mb-3">
+                        {profile.selectedSubcategory || 'Profi-Anbieter'}
+                      </p>
+
+                      {/* Rating und Location */}
+                      <div className="flex items-center gap-6 mb-4">
+                        {profile.averageRating !== undefined && profile.averageRating > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex">
+                              {[...Array(5)].map((_, i) => (
+                                <FiStar
+                                  key={i}
+                                  className={`w-4 h-4 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {profile.averageRating.toFixed(1)}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              ({profile.totalReviews} Bewertungen)
+                            </span>
                           </div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {profile.averageRating.toFixed(1)}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            ({profile.totalReviews} Bewertungen)
-                          </span>
-                        </div>
-                      )}
+                        )}
 
-                      {fullAddress && (
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <FiMapPin size={16} />
-                          <span>{fullAddress}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-                      {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
-                        <span>{profile.totalOrders} Aufträge abgeschlossen</span>
-                      )}
-                      {profile.responseTime && <span>Antwortet in ~{profile.responseTime}h</span>}
-                    </div>
-
-                    {/* Description in Hero */}
-                    {profile.description && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="relative">
-                          <p
-                            className={`text-gray-700 leading-relaxed text-sm transition-all duration-300 ${
-                              isDescriptionExpanded ? '' : 'line-clamp-4'
-                            }`}
-                          >
-                            {profile.description}
-                          </p>
-
-                          {/* Show expand/collapse button only if text is longer than 4 lines */}
-                          {profile.description.length > 200 && (
-                            <button
-                              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                              className="mt-2 text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium transition-colors"
-                            >
-                              {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
-                            </button>
-                          )}
-                        </div>
+                        {fullAddress && (
+                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                            <FiMapPin size={16} />
+                            <span>{fullAddress}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
+
+                      {/* Quick Stats */}
+                      <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
+                        {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
+                          <span>{profile.totalOrders} Aufträge abgeschlossen</span>
+                        )}
+                        {profile.responseTime && <span>Antwortet in ~{profile.responseTime}h</span>}
+                      </div>
+
+                      {/* Description in Hero */}
+                      {profile.description && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <div className="relative">
+                            <p
+                              className={`text-gray-700 leading-relaxed text-sm transition-all duration-300 ${
+                                isDescriptionExpanded ? '' : 'line-clamp-4'
+                              }`}
+                            >
+                              {profile.description}
+                            </p>
+
+                            {/* Show expand/collapse button only if text is longer than 4 lines */}
+                            {profile.description.length > 200 && (
+                              <button
+                                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                className="mt-2 text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium transition-colors"
+                              >
+                                {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right - Contact Card */}
-              <div className="lg:w-80">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                  <div className="text-center mb-4">
-                    {profile.hourlyRate && (
-                      <div className="text-2xl font-bold text-gray-900 mb-1">
-                        ab {profile.hourlyRate}€
-                        <span className="text-sm font-normal text-gray-500">/Stunde</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors mb-3">
-                    Anfrage senden
-                  </button>
-
-                  <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                    Nachricht schreiben
-                  </button>
-
-                  {/* Quick Info */}
-                  <div className="mt-4 pt-4 border-t space-y-2">
-                    {profile.radiusKm && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Arbeitsradius:</span>
-                        <span className="text-gray-900">{profile.radiusKm} km</span>
-                      </div>
-                    )}
-                    {profile.completionRate !== undefined && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Erfolgsrate:</span>
-                        <span className="text-gray-900">{profile.completionRate}%</span>
-                      </div>
-                    )}
-
-                    {/* Specialties in Card */}
-                    {profile.specialties && profile.specialties.length > 0 && (
-                      <div className="pt-2">
-                        <div className="text-sm text-gray-500 mb-2">Spezialitäten:</div>
-                        <div className="flex flex-wrap gap-1">
-                          {profile.specialties.map((specialty, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-[#14ad9f] text-white rounded text-xs"
-                            >
-                              {specialty}
-                            </span>
-                          ))}
+                {/* Right - Contact Card */}
+                <div className="lg:w-80">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div className="text-center mb-4">
+                      {profile.hourlyRate && (
+                        <div className="text-2xl font-bold text-gray-900 mb-1">
+                          ab {profile.hourlyRate}€
+                          <span className="text-sm font-normal text-gray-500">/Stunde</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    {/* Languages in Card */}
-                    {profile.languages && profile.languages.length > 0 && (
-                      <div className="pt-2">
-                        <div className="text-sm text-gray-500 mb-2">Sprachen:</div>
-                        <div className="space-y-1">
-                          {profile.languages.map((lang, index) => (
-                            <div key={index} className="flex justify-between text-sm">
-                              <span className="text-gray-700 font-medium">{lang.language}</span>
-                              <span className="text-gray-500">{lang.proficiency}</span>
-                            </div>
-                          ))}
+                    <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors mb-3">
+                      Anfrage senden
+                    </button>
+
+                    <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                      Nachricht schreiben
+                    </button>
+
+                    {/* Quick Info */}
+                    <div className="mt-4 pt-4 border-t space-y-2">
+                      {profile.radiusKm && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Arbeitsradius:</span>
+                          <span className="text-gray-900">{profile.radiusKm} km</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {profile.completionRate !== undefined && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Erfolgsrate:</span>
+                          <span className="text-gray-900">{profile.completionRate}%</span>
+                        </div>
+                      )}
+
+                      {/* Specialties in Card */}
+                      {profile.specialties && profile.specialties.length > 0 && (
+                        <div className="pt-2">
+                          <div className="text-sm text-gray-500 mb-2">Spezialitäten:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {profile.specialties.map((specialty, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-[#14ad9f] text-white rounded text-xs"
+                              >
+                                {specialty}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Languages in Card */}
+                      {profile.languages && profile.languages.length > 0 && (
+                        <div className="pt-2">
+                          <div className="text-sm text-gray-500 mb-2">Sprachen:</div>
+                          <div className="space-y-1">
+                            {profile.languages.map((lang, index) => (
+                              <div key={index} className="flex justify-between text-sm">
+                                <span className="text-gray-700 font-medium">{lang.language}</span>
+                                <span className="text-gray-500">{lang.proficiency}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Main Content */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Skills Section */}
-              {profile.skills && profile.skills.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Fähigkeiten</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.skills.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border"
-                      >
-                        {skill}
-                      </span>
-                    ))}
+          {/* Main Content */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column - Main Content */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Skills Section */}
+                {profile.skills && profile.skills.length > 0 && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Fähigkeiten</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.skills.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Portfolio Section */}
-              {profile.portfolio && profile.portfolio.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {profile.portfolio.map((item, index) => (
-                      <div key={item.id || index} className="group cursor-pointer">
-                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                          {item.imageUrl && (
-                            <div className="aspect-video bg-gray-200 overflow-hidden">
-                              <Image
-                                src={item.imageUrl}
-                                alt={item.title}
-                                width={400}
-                                height={225}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                              {item.title}
-                            </h3>
-                            <p className="text-gray-600 text-sm mb-3 line-clamp-3">
-                              {item.description}
-                            </p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-500 uppercase tracking-wide">
-                                {item.category}
-                              </span>
-                              {item.projectUrl && (
-                                <a
-                                  href={item.projectUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium"
-                                >
-                                  Ansehen →
-                                </a>
-                              )}
+                {/* Portfolio Section */}
+                {profile.portfolio && profile.portfolio.length > 0 && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {profile.portfolio.map((item, index) => (
+                        <div key={item.id || index} className="group cursor-pointer">
+                          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                            {item.imageUrl && (
+                              <div className="aspect-video bg-gray-200 overflow-hidden">
+                                <Image
+                                  src={item.imageUrl}
+                                  alt={item.title}
+                                  width={400}
+                                  height={225}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              </div>
+                            )}
+                            <div className="p-4">
+                              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                                {item.title}
+                              </h3>
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+                                {item.description}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                                  {item.category}
+                                </span>
+                                {item.projectUrl && (
+                                  <a
+                                    href={item.projectUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium"
+                                  >
+                                    Ansehen →
+                                  </a>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Experience Section */}
-              {((profile.education && profile.education.length > 0) ||
-                (profile.certifications && profile.certifications.length > 0)) && (
+                {/* Experience Section */}
+                {((profile.education && profile.education.length > 0) ||
+                  (profile.certifications && profile.certifications.length > 0)) && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Qualifikationen</h2>
+
+                    {/* Education */}
+                    {profile.education && profile.education.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ausbildung</h3>
+                        <div className="space-y-4">
+                          {profile.education.map((edu, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-2 h-2 bg-[#14ad9f] rounded-full mt-2"></div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">{edu.degree}</h4>
+                                <p className="text-gray-600">{edu.school}</p>
+                                <p className="text-sm text-gray-500">{edu.year}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certifications */}
+                    {profile.certifications && profile.certifications.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Zertifikate</h3>
+                        <div className="space-y-4">
+                          {profile.certifications.map((cert, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">{cert.name}</h4>
+                                <p className="text-gray-600">{cert.from}</p>
+                                <p className="text-sm text-gray-500">{cert.year}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Reviews Section */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Qualifikationen</h2>
-
-                  {/* Education */}
-                  {profile.education && profile.education.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Ausbildung</h3>
-                      <div className="space-y-4">
-                        {profile.education.map((edu, index) => (
-                          <div key={index} className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-2 h-2 bg-[#14ad9f] rounded-full mt-2"></div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">{edu.degree}</h4>
-                              <p className="text-gray-600">{edu.school}</p>
-                              <p className="text-sm text-gray-500">{edu.year}</p>
-                            </div>
-                          </div>
-                        ))}
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Bewertungen{' '}
+                      {profile.totalReviews &&
+                        profile.totalReviews > 0 &&
+                        `(${profile.totalReviews})`}
+                    </h2>
+                    {profile.averageRating !== undefined && profile.averageRating > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <FiStar
+                              key={i}
+                              className={`w-5 h-5 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">
+                          {profile.averageRating.toFixed(1)}
+                        </span>
+                        <span className="text-gray-500">von 5</span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {/* Certifications */}
-                  {profile.certifications && profile.certifications.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Zertifikate</h3>
-                      <div className="space-y-4">
-                        {profile.certifications.map((cert, index) => (
-                          <div key={index} className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">{cert.name}</h4>
-                              <p className="text-gray-600">{cert.from}</p>
-                              <p className="text-sm text-gray-500">{cert.year}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <ReviewList anbieterId={companyId} />
                 </div>
-              )}
-
-              {/* Reviews Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Bewertungen{' '}
-                    {profile.totalReviews &&
-                      profile.totalReviews > 0 &&
-                      `(${profile.totalReviews})`}
-                  </h2>
-                  {profile.averageRating !== undefined && profile.averageRating > 0 && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <FiStar
-                            key={i}
-                            className={`w-5 h-5 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-lg font-semibold text-gray-900">
-                        {profile.averageRating.toFixed(1)}
-                      </span>
-                      <span className="text-gray-500">von 5</span>
-                    </div>
-                  )}
-                </div>
-
-                <ReviewList anbieterId={companyId} />
               </div>
-            </div>
 
-            {/* Right Column - Sidebar */}
-            <div className="space-y-6">
-              {/* Verification */}
-              {profile.stripeVerificationStatus && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Verifizierung</h3>
-                  <div className="flex items-center gap-3">
-                    <FiCheckCircle
-                      className={`${profile.stripeVerificationStatus === 'verified' ? 'text-green-500' : 'text-orange-500'}`}
-                      size={20}
-                    />
-                    <span className="text-gray-700">
-                      {profile.stripeVerificationStatus === 'verified'
-                        ? 'Verifiziert'
-                        : 'In Bearbeitung'}
-                    </span>
+              {/* Right Column - Sidebar */}
+              <div className="space-y-6">
+                {/* Verification */}
+                {profile.stripeVerificationStatus && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Verifizierung</h3>
+                    <div className="flex items-center gap-3">
+                      <FiCheckCircle
+                        className={`${profile.stripeVerificationStatus === 'verified' ? 'text-green-500' : 'text-orange-500'}`}
+                        size={20}
+                      />
+                      <span className="text-gray-700">
+                        {profile.stripeVerificationStatus === 'verified'
+                          ? 'Verifiziert'
+                          : 'In Bearbeitung'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
