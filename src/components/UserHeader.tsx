@@ -636,12 +636,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             Dashboard
                           </Link>
                           <Link
-                            href={`/dashboard/user/${currentUser.uid}/projects`}
+                            href={`/dashboard/user/${currentUser.uid}/orders/overview`}
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsProfileDropdownOpen(false)}
                           >
                             <FiBriefcase className="inline mr-2" />
-                            Projekte
+                            Meine Aufträge
                           </Link>
                           <Link
                             href={`/dashboard/user/${currentUser.uid}/orders/overview`}

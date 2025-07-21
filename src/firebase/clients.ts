@@ -6,6 +6,12 @@ import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/fire
 import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator, Functions } from 'firebase/functions';
 
+// Import error handler
+import { setupFirestoreErrorHandler } from '@/lib/firestoreErrorHandler';
+
+// Initialize error suppression
+setupFirestoreErrorHandler();
+
 // Typen durch Rückgabewerte ableiten
 type Auth = ReturnType<typeof getAuth>;
 type User = NonNullable<Auth['currentUser']>;
