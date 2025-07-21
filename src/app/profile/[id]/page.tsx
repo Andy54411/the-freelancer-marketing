@@ -10,12 +10,12 @@ import {
   FiMapPin,
   FiUser,
   FiArrowLeft,
-  FiStar,
   FiClock,
   FiCheckCircle,
   FiHome,
   FiAward,
 } from 'react-icons/fi';
+import { Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
@@ -418,7 +418,7 @@ export default function ProfilePage() {
                               <div className="flex items-center gap-2">
                                 <div className="flex">
                                   {[...Array(5)].map((_, i) => (
-                                    <FiStar
+                                    <Star
                                       key={i}
                                       className={`w-5 h-5 ${
                                         i < Math.floor(profile.averageRating || 0)
@@ -613,7 +613,7 @@ export default function ProfilePage() {
                           </div>
                           <div className="flex justify-end items-center gap-1">
                             {[...Array(5)].map((_, i) => (
-                              <FiStar
+                              <Star
                                 key={i}
                                 className={`w-4 h-4 ${
                                   i < Math.floor(profile.averageRating || 0)
@@ -670,7 +670,7 @@ export default function ProfilePage() {
                               <div className="flex items-center gap-2">
                                 <div className="flex">
                                   {[...Array(5)].map((_, i) => (
-                                    <FiStar
+                                    <Star
                                       key={i}
                                       className={`w-4 h-4 ${
                                         i < Math.floor(category.rating)
