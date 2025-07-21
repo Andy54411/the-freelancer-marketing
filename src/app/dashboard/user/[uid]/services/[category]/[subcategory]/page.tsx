@@ -477,7 +477,7 @@ export default function UserServiceSubcategoryPage() {
 
   if (!categoryInfo || !subcategoryName) {
     return (
-      <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 -m-4 lg:-m-6 -mt-[var(--global-header-height)] pt-[var(--global-header-height)] p-8">
+      <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 -m-4 lg:-m-6 -mt-[var(--global-header-height)] pt-[var(--global-header-height)] p-8 min-h-[calc(100vh-var(--global-header-height))]">
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Seite nicht gefunden</h1>
           <button
@@ -493,7 +493,7 @@ export default function UserServiceSubcategoryPage() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-[var(--global-header-height)]">
+    <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-[var(--global-header-height)] min-h-[calc(100vh-var(--global-header-height))]">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 pt-[var(--global-header-height)]">
         {/* Hero Section - Tasko Style */}
