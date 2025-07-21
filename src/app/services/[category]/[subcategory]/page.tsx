@@ -368,6 +368,21 @@ export default function SubcategoryPage() {
     setSelectedProvider(null);
   };
 
+  // Konvertiere Provider zu AnbieterDetails für das CreateOrderModal
+  const convertProviderToAnbieterDetails = (provider: Provider): any => {
+    return {
+      id: provider.id,
+      companyName: provider.companyName || provider.userName || 'Unbekannter Anbieter',
+      profilePictureURL:
+        provider.profilePictureFirebaseUrl || provider.profilePictureURL || provider.photoURL,
+      description: provider.bio,
+      selectedSubcategory: provider.selectedSubcategory,
+      location: provider.location,
+      hourlyRate: 50, // Default rate - könnte aus Provider-Daten kommen
+      stripeAccountId: 'dummy_stripe_id', // Müsste aus Provider-Daten kommen
+    };
+  };
+
   if (!categoryInfo || !subcategoryName) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
@@ -618,6 +633,9 @@ export default function SubcategoryPage() {
           onSuccess={handleBookingSuccess}
           currentUser={currentUser}
           userProfile={userProfile}
+          preselectedProvider={convertProviderToAnbieterDetails(selectedProvider)}
+          preselectedCategory={categoryInfo?.title}
+          preselectedSubcategory={subcategoryName}
         />
       )}
 
