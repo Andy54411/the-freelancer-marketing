@@ -347,7 +347,7 @@ export default function ProfilePage() {
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10 pt-[var(--global-header-height)]">
           {/* Breadcrumb Navigation */}
-          <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 relative z-20">
+          <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 relative z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center gap-2 text-sm text-white/70">
                 <Link href="/" className="hover:text-white">
