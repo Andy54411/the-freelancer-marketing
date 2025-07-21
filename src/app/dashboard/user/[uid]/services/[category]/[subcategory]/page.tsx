@@ -584,9 +584,7 @@ export default function UserServiceSubcategoryPage() {
                         Kontaktieren
                       </button>
                       <button
-                        onClick={() =>
-                          router.push(`/dashboard/user/${uid}/provider/${provider.id}`)
-                        }
+                        onClick={() => router.push(`/profile/${provider.id}`)}
                         className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
                       >
                         Profil anzeigen
