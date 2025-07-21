@@ -45,30 +45,30 @@ const AppHeaderNavigation: React.FC = () => {
       {/* Desktop Navigation - Ultra kompakt mit Mega-Menü */}
       <div className="hidden lg:block">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center py-1">
+          <div className="flex items-center justify-center py-2">
             {/* Beliebte Kategorien - direkt sichtbar */}
-            <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center gap-2 text-sm">
               <Link
                 href={getServiceUrl('Handwerk')}
-                className="text-gray-700 hover:text-[#14ad9f] px-2 py-1 rounded transition-colors"
+                className="text-gray-700 hover:text-[#14ad9f] px-3 py-1.5 rounded transition-colors font-medium"
               >
                 Handwerk
               </Link>
               <Link
                 href={getServiceUrl('Haushalt & Reinigung')}
-                className="text-gray-700 hover:text-[#14ad9f] px-2 py-1 rounded transition-colors"
+                className="text-gray-700 hover:text-[#14ad9f] px-3 py-1.5 rounded transition-colors font-medium"
               >
                 Haushalt
               </Link>
               <Link
                 href={getServiceUrl('IT & Digital')}
-                className="text-gray-700 hover:text-[#14ad9f] px-2 py-1 rounded transition-colors"
+                className="text-gray-700 hover:text-[#14ad9f] px-3 py-1.5 rounded transition-colors font-medium"
               >
                 IT & Digital
               </Link>
               <Link
                 href={getServiceUrl('Transport & Umzug')}
-                className="text-gray-700 hover:text-[#14ad9f] px-2 py-1 rounded transition-colors"
+                className="text-gray-700 hover:text-[#14ad9f] px-3 py-1.5 rounded transition-colors font-medium"
               >
                 Transport
               </Link>
@@ -79,10 +79,10 @@ const AppHeaderNavigation: React.FC = () => {
                 onMouseEnter={handleMegaMenuEnter}
                 onMouseLeave={handleMegaMenuLeave}
               >
-                <button className="flex items-center text-gray-700 hover:text-[#14ad9f] px-2 py-1 rounded transition-colors font-medium text-xs">
-                  <Grid className="w-3 h-3 mr-1" />
+                <button className="flex items-center text-gray-700 hover:text-[#14ad9f] px-3 py-1.5 rounded transition-colors font-medium text-sm">
+                  <Grid className="w-4 h-4 mr-1.5" />
                   Alle Services
-                  <ChevronDown className="ml-1 h-3 w-3" />
+                  <ChevronDown className="ml-1.5 h-4 w-4" />
                 </button>
 
                 {/* Mega Menu Dropdown */}
