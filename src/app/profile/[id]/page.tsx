@@ -83,6 +83,20 @@ export default function ProfilePage() {
 
   const companyId = params?.id as string;
 
+  // Funktion zum Starten eines neuen Chats
+  const handleStartChat = () => {
+    if (!currentUser) {
+      // Benutzer zur Anmeldung weiterleiten
+      window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      return;
+    }
+
+    // Weiterleitung zum User-Posteingang, wo ein neuer Chat erstellt werden kann
+    // Alternativ könnte hier eine Cloud Function aufgerufen werden, um direkt einen Chat zu erstellen
+    const chatUrl = `/dashboard/user/${currentUser.uid}/inbox`;
+    window.location.href = chatUrl;
+  };
+
   // Auth State überwachen
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -331,179 +345,180 @@ export default function ProfilePage() {
       <Header />
       <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-        <div className="relative z-10">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Hero Section - Fiverr Style */}
-          <div className="border-b border-white/20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <div className="flex flex-col lg:flex-row gap-8 items-start">
-                {/* Left - Profile Info */}
-                <div className="flex-1">
-                  <div className="flex items-start gap-6">
-                    {/* Profile Picture */}
-                    <div className="flex-shrink-0">
-                      {profile.photoURL || profile.profilePictureFirebaseUrl ? (
-                        <Image
-                          src={profile.photoURL || profile.profilePictureFirebaseUrl || ''}
-                          alt={`Profilbild von ${profile.companyName}`}
-                          width={120}
-                          height={120}
-                          className="rounded-full object-cover border-4 border-gray-100 shadow-lg"
-                        />
-                      ) : (
-                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-200">
-                          <FiUser size={48} className="text-gray-400" />
-                        </div>
+          <div className="border-b border-white/20 py-8">
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+              {/* Left - Profile Info */}
+              <div className="flex-1">
+                <div className="flex items-start gap-6">
+                  {/* Profile Picture */}
+                  <div className="flex-shrink-0">
+                    {profile.photoURL || profile.profilePictureFirebaseUrl ? (
+                      <Image
+                        src={profile.photoURL || profile.profilePictureFirebaseUrl || ''}
+                        alt={`Profilbild von ${profile.companyName}`}
+                        width={120}
+                        height={120}
+                        className="rounded-full object-cover border-4 border-gray-100 shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-200">
+                        <FiUser size={48} className="text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Profile Details */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold text-white">{profile.companyName}</h1>
+                      {profile.isVerified && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                          <FiCheckCircle className="mr-1" size={16} />
+                          Verifiziert
+                        </span>
                       )}
                     </div>
 
-                    {/* Profile Details */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-bold text-white">{profile.companyName}</h1>
-                        {profile.isVerified && (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                            <FiCheckCircle className="mr-1" size={16} />
-                            Verifiziert
+                    <p className="text-xl text-white/80 mb-3">
+                      {profile.selectedSubcategory || 'Profi-Anbieter'}
+                    </p>
+
+                    {/* Rating und Location */}
+                    <div className="flex items-center gap-6 mb-4">
+                      {profile.averageRating !== undefined && profile.averageRating > 0 && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <FiStar
+                                key={i}
+                                className={`w-4 h-4 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm font-medium text-white">
+                            {profile.averageRating.toFixed(1)}
                           </span>
-                        )}
-                      </div>
+                          <span className="text-sm text-white/70">
+                            ({profile.totalReviews} Bewertungen)
+                          </span>
+                        </div>
+                      )}
 
-                      <p className="text-xl text-white/80 mb-3">
-                        {profile.selectedSubcategory || 'Profi-Anbieter'}
-                      </p>
-
-                      {/* Rating und Location */}
-                      <div className="flex items-center gap-6 mb-4">
-                        {profile.averageRating !== undefined && profile.averageRating > 0 && (
-                          <div className="flex items-center gap-2">
-                            <div className="flex">
-                              {[...Array(5)].map((_, i) => (
-                                <FiStar
-                                  key={i}
-                                  className={`w-4 h-4 ${i < Math.floor(profile.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-sm font-medium text-white">
-                              {profile.averageRating.toFixed(1)}
-                            </span>
-                            <span className="text-sm text-white/70">
-                              ({profile.totalReviews} Bewertungen)
-                            </span>
-                          </div>
-                        )}
-
-                        {fullAddress && (
-                          <div className="flex items-center gap-1 text-sm text-white/70">
-                            <FiMapPin size={16} />
-                            <span>{fullAddress}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Quick Stats */}
-                      <div className="flex items-center gap-6 text-sm text-white/80 mb-4">
-                        {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
-                          <span>{profile.totalOrders} Aufträge abgeschlossen</span>
-                        )}
-                        {profile.responseTime && <span>Antwortet in ~{profile.responseTime}h</span>}
-                      </div>
-
-                      {/* Description in Hero */}
-                      {profile.description && (
-                        <div className="mt-4 pt-4 border-t border-white/20">
-                          <div className="relative">
-                            <p
-                              className={`text-white/90 leading-relaxed text-sm transition-all duration-300 ${
-                                isDescriptionExpanded ? '' : 'line-clamp-4'
-                              }`}
-                            >
-                              {profile.description}
-                            </p>
-
-                            {/* Show expand/collapse button only if text is longer than 4 lines */}
-                            {profile.description.length > 200 && (
-                              <button
-                                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                className="mt-2 text-white hover:text-white/80 text-sm font-medium transition-colors underline"
-                              >
-                                {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
-                              </button>
-                            )}
-                          </div>
+                      {fullAddress && (
+                        <div className="flex items-center gap-1 text-sm text-white/70">
+                          <FiMapPin size={16} />
+                          <span>{fullAddress}</span>
                         </div>
                       )}
                     </div>
+
+                    {/* Quick Stats */}
+                    <div className="flex items-center gap-6 text-sm text-white/80 mb-4">
+                      {profile.totalOrders !== undefined && profile.totalOrders > 0 && (
+                        <span>{profile.totalOrders} Aufträge abgeschlossen</span>
+                      )}
+                      {profile.responseTime && <span>Antwortet in ~{profile.responseTime}h</span>}
+                    </div>
+
+                    {/* Description in Hero */}
+                    {profile.description && (
+                      <div className="mt-4 pt-4 border-t border-white/20">
+                        <div className="relative">
+                          <p
+                            className={`text-white/90 leading-relaxed text-sm transition-all duration-300 ${
+                              isDescriptionExpanded ? '' : 'line-clamp-4'
+                            }`}
+                          >
+                            {profile.description}
+                          </p>
+
+                          {/* Show expand/collapse button only if text is longer than 4 lines */}
+                          {profile.description.length > 200 && (
+                            <button
+                              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                              className="mt-2 text-white hover:text-white/80 text-sm font-medium transition-colors underline"
+                            >
+                              {isDescriptionExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Right - Contact Card */}
-                <div className="lg:w-80">
-                  <div className="sticky top-4 bg-white/90 backdrop-blur-sm border border-white/20 rounded-lg p-6 shadow-lg">
-                    <div className="text-center mb-4">
-                      {profile.hourlyRate && (
-                        <div className="text-2xl font-bold text-gray-900 mb-1">
-                          ab {profile.hourlyRate}€
-                          <span className="text-sm font-normal text-gray-500">/Stunde</span>
+              {/* Right - Contact Card */}
+              <div className="lg:w-80">
+                <div className="sticky top-4 bg-white/90 backdrop-blur-sm border border-white/20 rounded-lg p-6 shadow-lg">
+                  <div className="text-center mb-4">
+                    {profile.hourlyRate && (
+                      <div className="text-2xl font-bold text-gray-900 mb-1">
+                        ab {profile.hourlyRate}€
+                        <span className="text-sm font-normal text-gray-500">/Stunde</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors mb-3">
+                    Anfrage senden
+                  </button>
+
+                  <button
+                    onClick={handleStartChat}
+                    className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Nachricht schreiben
+                  </button>
+
+                  {/* Quick Info */}
+                  <div className="mt-4 pt-4 border-t space-y-2">
+                    {profile.radiusKm && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Arbeitsradius:</span>
+                        <span className="text-gray-900">{profile.radiusKm} km</span>
+                      </div>
+                    )}
+                    {profile.completionRate !== undefined && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Erfolgsrate:</span>
+                        <span className="text-gray-900">{profile.completionRate}%</span>
+                      </div>
+                    )}
+
+                    {/* Specialties in Card */}
+                    {profile.specialties && profile.specialties.length > 0 && (
+                      <div className="pt-2">
+                        <div className="text-sm text-gray-500 mb-2">Spezialitäten:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {profile.specialties.map((specialty, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-[#14ad9f] text-white rounded text-xs"
+                            >
+                              {specialty}
+                            </span>
+                          ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
-                    <button className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors mb-3">
-                      Anfrage senden
-                    </button>
-
-                    <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                      Nachricht schreiben
-                    </button>
-
-                    {/* Quick Info */}
-                    <div className="mt-4 pt-4 border-t space-y-2">
-                      {profile.radiusKm && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Arbeitsradius:</span>
-                          <span className="text-gray-900">{profile.radiusKm} km</span>
+                    {/* Languages in Card */}
+                    {profile.languages && profile.languages.length > 0 && (
+                      <div className="pt-2">
+                        <div className="text-sm text-gray-500 mb-2">Sprachen:</div>
+                        <div className="space-y-1">
+                          {profile.languages.map((lang, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span className="text-gray-700 font-medium">{lang.language}</span>
+                              <span className="text-gray-500">{lang.proficiency}</span>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      {profile.completionRate !== undefined && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Erfolgsrate:</span>
-                          <span className="text-gray-900">{profile.completionRate}%</span>
-                        </div>
-                      )}
-
-                      {/* Specialties in Card */}
-                      {profile.specialties && profile.specialties.length > 0 && (
-                        <div className="pt-2">
-                          <div className="text-sm text-gray-500 mb-2">Spezialitäten:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {profile.specialties.map((specialty, index) => (
-                              <span
-                                key={index}
-                                className="px-2 py-1 bg-[#14ad9f] text-white rounded text-xs"
-                              >
-                                {specialty}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Languages in Card */}
-                      {profile.languages && profile.languages.length > 0 && (
-                        <div className="pt-2">
-                          <div className="text-sm text-gray-500 mb-2">Sprachen:</div>
-                          <div className="space-y-1">
-                            {profile.languages.map((lang, index) => (
-                              <div key={index} className="flex justify-between text-sm">
-                                <span className="text-gray-700 font-medium">{lang.language}</span>
-                                <span className="text-gray-500">{lang.proficiency}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -511,7 +526,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Main Content */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Main Content */}
               <div className="lg:col-span-2 space-y-8">
