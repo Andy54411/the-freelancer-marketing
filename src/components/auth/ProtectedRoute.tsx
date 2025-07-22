@@ -23,20 +23,30 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Skip protection for admin routes (they have their own auth system)
+    if (pathname.startsWith('/dashboard/admin')) {
+      return;
+    }
+
     // When loading is finished and there's no user, redirect.
     if (!user) {
       router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
     }
-  }, [user, loading, router, redirectTo]);
+  }, [user, loading, router, redirectTo, pathname]);
 
   // While loading, show a full-screen spinner to avoid content flicker.
-  if (loading) {
+  if (loading && !pathname.startsWith('/dashboard/admin')) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
         <span>Authentifizierung wird geprüft...</span>
       </div>
     );
+  }
+
+  // If it's an admin route, let it handle its own auth
+  if (pathname.startsWith('/dashboard/admin')) {
+    return <>{children}</>;
   }
 
   // If loading is done and we have a user, render the protected content.
@@ -50,7 +60,6 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
 }
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-
   return (
     <Suspense
       fallback={
