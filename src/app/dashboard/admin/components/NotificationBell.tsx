@@ -27,7 +27,7 @@ interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'master' | 'employee';
+  role: 'master' | 'employee' | 'support';
 }
 
 // Admin-spezifischer Auth Hook
