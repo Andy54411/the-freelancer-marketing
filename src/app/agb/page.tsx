@@ -238,8 +238,28 @@ export default function AGBPage() {
                     Kunde und Dienstleister über. Taskilo erwirbt hieran keine Rechte.
                   </p>
                   <p>
-                    <strong>6.4 Markenrechte:</strong> Sie dürfen Taskilo-Marken nur mit unserer
-                    ausdrücklichen schriftlichen Genehmigung verwenden.
+                    <strong>6.4 Markenrechte:</strong> Die Bezeichnung &ldquo;Taskilo&rdquo; ist
+                    eine angemeldete Marke (Anmeldung: DE 3020252302804, Anmeldetag: 14.07.2025) und
+                    steht unter dem Schutz des Markengesetzes. Die Marke ist geschützt für
+                    technologische Dienstleistungen und Software-Entwicklung (Klasse 42) sowie
+                    elektronische Geräte und Software-Anwendungen (Klasse 9). Die Nutzung der Marke
+                    &ldquo;Taskilo&rdquo; sowie aller damit verbundenen Logos, Designs und
+                    Kennzeichnungen ist ausschließlich den Betreibern der Plattform vorbehalten.
+                  </p>
+                  <p>
+                    <strong>6.5 Nutzungsrechte für Plattform-Nutzer:</strong> Nutzer erhalten das
+                    Recht zur bestimmungsgemäßen Nutzung der unter der Marke &ldquo;Taskilo&rdquo;
+                    betriebenen Plattform-Dienste. Die kommerzielle Nutzung der Marke
+                    &ldquo;Taskilo&rdquo; außerhalb der Plattform, die Erstellung eigener
+                    Geschäftstätigkeiten unter diesem Namen oder die Verwendung in Werbematerialien
+                    ist ohne ausdrückliche schriftliche Genehmigung untersagt.
+                  </p>
+                  <p>
+                    <strong>6.6 Schutz vor Markenverletzungen:</strong> Jede unerlaubte Verwendung,
+                    Nachahmung oder Verletzung der Markenrechte durch Dritte ist untersagt und kann
+                    rechtliche Schritte zur Folge haben. Bei Verstoß gegen die Markenrechte behalten
+                    sich die Betreiber das Recht vor, den Zugang zur Plattform zu sperren und
+                    rechtliche Schritte einzuleiten.
                   </p>
                 </div>
               </section>
@@ -502,11 +522,13 @@ export default function AGBPage() {
                   <p>IBAN: LT703250024720869498</p>
                   <p>BIC: REVOLT21</p>
                   <p className="mt-4">
-                    <strong>Markenhinweis:</strong> Taskilo ist eine eingetragene Marke der The
-                    Freelancer Marketing Ltd.
+                    <strong>Markenhinweis:</strong> Taskilo ist eine angemeldete Marke
+                    (Aktenzeichen: DE 3020252302804, Anmeldetag: 14.07.2025) der Elisabeth Schröder
+                    und Andy Staudinger. Die Marke ist geschützt für technologische
+                    Dienstleistungen, Software-Entwicklung und elektronische Anwendungen.
                   </p>
                   <p className="mt-4">
-                    <strong>Stand dieser AGB:</strong> Januar 2025
+                    <strong>Stand dieser AGB:</strong> Juli 2025
                   </p>
                   <p className="mt-4 text-xs">
                     Diese AGB wurden unter Berücksichtigung der Rechtsprechung und Best Practices
