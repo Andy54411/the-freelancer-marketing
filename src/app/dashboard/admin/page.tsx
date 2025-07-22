@@ -12,6 +12,8 @@ import {
   FiHelpCircle,
   FiAlertTriangle,
   FiSettings,
+  FiMail,
+  FiUserCheck,
 } from 'react-icons/fi';
 
 export const dynamic = 'force-dynamic';
@@ -121,6 +123,38 @@ export default async function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-gray-600">{t('admin.settings.description')}</div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/dashboard/admin/email-management" className="block">
+                <Card className="hover:shadow-lg transition-shadow h-full border-2 border-blue-500/20 hover:border-blue-500/40">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-blue-600">
+                      E-Mail Management
+                    </CardTitle>
+                    <FiMail className="h-5 w-5 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-600">
+                      Verwaltung aller Taskilo E-Mail-Adressen und Mitarbeiter-Zuweisungen
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/dashboard/admin/staff-management" className="block">
+                <Card className="hover:shadow-lg transition-shadow h-full border-2 border-purple-500/20 hover:border-purple-500/40">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-purple-600">
+                      Mitarbeiter-Verwaltung
+                    </CardTitle>
+                    <FiUserCheck className="h-5 w-5 text-purple-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-600">
+                      Anmeldung und Verwaltung von Mitarbeitern für E-Mail-Support
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
