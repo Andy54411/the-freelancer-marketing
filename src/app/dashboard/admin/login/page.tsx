@@ -123,21 +123,17 @@ export default function AdminLoginPage() {
           </CardContent>
         </Card>
 
-        {/* Demo Credentials */}
+        {/* Info für Live-System */}
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-sm text-blue-800">Demo-Zugangsdaten</CardTitle>
+            <CardTitle className="text-sm text-blue-800">Administrator-Zugang</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-sm">
-              <p className="font-medium text-blue-800">Master Admin:</p>
-              <p className="text-blue-700">E-Mail: andy@taskilo.com</p>
-              <p className="text-blue-700">Passwort: master123</p>
-            </div>
-            <div className="text-sm">
-              <p className="font-medium text-blue-800">Mitarbeiter:</p>
-              <p className="text-blue-700">E-Mail: elisabeth@taskilo.com</p>
-              <p className="text-blue-700">Passwort: emp123</p>
+            <div className="text-sm text-blue-800">
+              <p>Für Zugang wenden Sie sich an den System-Administrator.</p>
+              <p className="mt-2 text-xs text-blue-600">
+                Nur autorisierte Mitarbeiter haben Zugang zum E-Mail-Management-System.
+              </p>
             </div>
           </CardContent>
         </Card>

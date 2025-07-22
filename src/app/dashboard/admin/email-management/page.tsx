@@ -134,7 +134,7 @@ export default function EmailManagementPage() {
     setContacts([
       {
         id: 'contact_1',
-        email: 'support@taskilo.com',
+        email: 'support@taskilo.de',
         name: 'Support Team',
         category: 'support',
         department: 'general',
@@ -145,14 +145,25 @@ export default function EmailManagementPage() {
       },
       {
         id: 'contact_2',
-        email: 'legal@taskilo.com',
-        name: 'Legal Team',
-        category: 'legal',
-        department: 'legal',
-        priority: 'high',
+        email: 'newsletter@taskilo.de',
+        name: 'Newsletter Team',
+        category: 'business',
+        department: 'marketing',
+        priority: 'medium',
         status: 'active',
         lastContact: '2024-01-19',
         assignedStaff: 'emp_001',
+      },
+      {
+        id: 'contact_3',
+        email: 'noreply@taskilo.de',
+        name: 'System Notifications',
+        category: 'technical',
+        department: 'system',
+        priority: 'low',
+        status: 'active',
+        lastContact: '2024-01-22',
+        assignedStaff: 'admin_001',
       },
     ]);
 

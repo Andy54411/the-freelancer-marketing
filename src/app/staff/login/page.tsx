@@ -224,21 +224,7 @@ export default function StaffLoginPage() {
 
           <div className="mt-6 pt-6 border-t">
             <div className="text-sm text-center text-gray-500">
-              <p className="mb-2">Demo-Zugangsdaten:</p>
-              <div className="space-y-1 text-xs">
-                <div>
-                  <strong>Admin:</strong> andy@taskilo.com / admin123
-                </div>
-                <div>
-                  <strong>Support:</strong> sarah@taskilo.com / support123
-                </div>
-                <div>
-                  <strong>Tech:</strong> max@taskilo.com / tech123
-                </div>
-                <div>
-                  <strong>Manager:</strong> elisabeth@taskilo.com / business123
-                </div>
-              </div>
+              <p>Für Zugang wenden Sie sich an den Administrator</p>
             </div>
           </div>
         </CardContent>
