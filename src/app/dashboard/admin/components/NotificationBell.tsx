@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { useAuth } from '@/contexts/AuthContext';
 import { Bell as FiBell, Mail as FiMail } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,19 +23,58 @@ interface Notification {
   read: boolean;
 }
 
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'master' | 'employee';
+}
+
+// Admin-spezifischer Auth Hook
+function useAdminAuth() {
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/auth');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.employee);
+      }
+    } catch (error) {
+      console.error('Admin auth check failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { user, loading };
+}
+
 export default function NotificationBell() {
   const router = useRouter();
-  const { firebaseUser, user } = useAuth();
+  const { user, loading } = useAdminAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!firebaseUser || (user?.role !== 'support' && user?.role !== 'master')) {
+    if (loading || !user || (user.role !== 'support' && user.role !== 'master')) {
       return;
     }
 
+    // Alle kritischen Benachrichtigungen für Admin abrufen
     const notificationsRef = collection(db, 'notifications');
-    const q = query(notificationsRef, where('read', '==', false), orderBy('createdAt', 'desc'));
+    const q = query(
+      notificationsRef,
+      where('read', '==', false),
+      where('targetRole', 'in', ['admin', 'master', user.role]),
+      orderBy('createdAt', 'desc')
+    );
 
     const unsubscribe = onSnapshot(
       q,
@@ -48,12 +86,25 @@ export default function NotificationBell() {
         setUnreadCount(snapshot.size);
       },
       error => {
-        console.error('Fehler beim Abrufen von Benachrichtigungen:', error);
+        console.error('Fehler beim Abrufen von Admin-Benachrichtigungen:', error);
+        // Fallback: Alle ungelesenen Notifications abrufen
+        const fallbackQuery = query(
+          notificationsRef,
+          where('read', '==', false),
+          orderBy('createdAt', 'desc')
+        );
+        onSnapshot(fallbackQuery, snapshot => {
+          const fallbackNotifications = snapshot.docs.map(
+            doc => ({ id: doc.id, ...doc.data() }) as Notification
+          );
+          setNotifications(fallbackNotifications);
+          setUnreadCount(snapshot.size);
+        });
       }
     );
 
     return () => unsubscribe();
-  }, [firebaseUser, user]);
+  }, [user, loading]);
 
   const handleNotificationClick = async (notification: Notification) => {
     const notifDocRef = doc(db, 'notifications', notification.id);
