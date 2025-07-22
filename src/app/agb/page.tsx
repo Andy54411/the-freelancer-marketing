@@ -313,7 +313,8 @@ export default function AGBPage() {
                   <p>
                     <strong>8.2 Beschwerdebearbeitung:</strong> Beschwerden über unsere Plattform
                     oder Services bearbeiten wir innerhalb von 48 Stunden. Bei komplexeren Fällen
-                    erfolgt eine abschließende Antwort binnen 7 Werktagen.
+                    erfolgt eine abschließende Antwort binnen 7 Werktagen. Beschwerden können Sie an
+                    support@taskilo.com richten.
                   </p>
                   <p>
                     <strong>8.3 Eskalationsverfahren:</strong> Können Streitigkeiten nicht durch
@@ -408,7 +409,8 @@ export default function AGBPage() {
                   <p>
                     <strong>10.2 Datenverarbeitung:</strong> Einzelheiten zur Datenverarbeitung,
                     einschließlich Zweck, Rechtsgrundlage, Speicherdauer und Ihren Rechten finden
-                    Sie in unserer separaten Datenschutzerklärung.
+                    Sie in unserer separaten Datenschutzerklärung. Bei Fragen zum Datenschutz
+                    kontaktieren Sie uns unter privacy@taskilo.com.
                   </p>
                   <p>
                     <strong>10.3 Zahlungsdaten:</strong> Zahlungsdaten werden ausschließlich durch
@@ -514,13 +516,51 @@ export default function AGBPage() {
                   <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
                   <p>8015, Paphos Cyprus</p>
                   <p>Telefon: +49 1525 1939026</p>
-                  <p>E-Mail: team@the-freelancer-marketing.de</p>
-                  <p>Website: www.the-freelancer-marketing.com</p>
+                  <p>E-Mail: legal@taskilo.com</p>
+                  <p>Website: www.taskilo.com</p>
                   <p>Registrierungsnummer: HE 458650</p>
                   <p>VAT: CY60058879W</p>
                   <p>Bank: Revolut Bank</p>
                   <p>IBAN: LT703250024720869498</p>
                   <p>BIC: REVOLT21</p>
+
+                  <div className="mt-4 space-y-1">
+                    <p>
+                      <strong>Weitere Kontaktmöglichkeiten:</strong>
+                    </p>
+                    <p>Allgemeiner Support: support@taskilo.com</p>
+                    <p>Technischer Support: tech@taskilo.com</p>
+                    <p>Datenschutzanfragen: privacy@taskilo.com</p>
+                    <p>Geschäftsanfragen: business@taskilo.com</p>
+                    <p>Rechnungsfragen: billing@taskilo.com</p>
+                  </div>
+
+                  <div className="mt-6 space-y-2">
+                    <p>
+                      <strong>Spezielle Kontaktadressen:</strong>
+                    </p>
+                    <ul className="list-disc list-inside ml-4 space-y-1 text-xs">
+                      <li>
+                        <strong>Allgemeine Anfragen:</strong> info@taskilo.com
+                      </li>
+                      <li>
+                        <strong>Technischer Support:</strong> support@taskilo.com
+                      </li>
+                      <li>
+                        <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.com
+                      </li>
+                      <li>
+                        <strong>Datenschutz:</strong> privacy@taskilo.com
+                      </li>
+                      <li>
+                        <strong>Beschwerden & Mediation:</strong> disputes@taskilo.com
+                      </li>
+                      <li>
+                        <strong>Presse & Medien:</strong> press@taskilo.com
+                      </li>
+                    </ul>
+                  </div>
+
                   <p className="mt-4">
                     <strong>Markenhinweis:</strong> Taskilo ist eine angemeldete Marke
                     (Aktenzeichen: DE 3020252302804, Anmeldetag: 14.07.2025) der Elisabeth Schröder
