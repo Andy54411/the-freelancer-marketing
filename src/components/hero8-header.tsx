@@ -167,7 +167,7 @@ export const HeroHeader = () => {
             <div
               className={cn(
                 'w-full lg:w-fit flex-col lg:flex-row items-end lg:items-center justify-end gap-6',
-                'lg:flex hidden'
+                'flex' // Entferne hidden, damit die Buttons immer sichtbar sind
               )}
             >
               {!isLoading &&
