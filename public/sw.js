@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tasko-v1';
+const CACHE_NAME = 'taskilo-v1';
 const urlsToCache = [
   '/',
   '/favicon.ico',

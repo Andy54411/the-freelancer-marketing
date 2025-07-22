@@ -56,12 +56,12 @@ export async function POST(request: Request) {
 
     switch (action) {
       case 'generateProjectIdeas':
-        systemContext = `Du bist ein KI-Projektmanagement-Assistent für die Tasko-Plattform, einer Service-Marketplace-App. 
-        Tasko verbindet Kunden mit Dienstleistern in Bereichen wie Handwerk, IT, Haushalt, Transport, etc.
+        systemContext = `Du bist ein KI-Projektmanagement-Assistent für die Taskilo-Plattform, einer Service-Marketplace-App. 
+        Taskilo verbindet Kunden mit Dienstleistern in Bereichen wie Handwerk, IT, Haushalt, Transport, etc.
         
         Deine Aufgabe ist es, innovative und praktische Projektideen für Benutzer zu generieren, basierend auf den verfügbaren Services auf der Plattform.`;
 
-        prompt = `Generiere 5 innovative Projektideen für einen Benutzer der Tasko-Plattform. 
+        prompt = `Generiere 5 innovative Projektideen für einen Benutzer der Taskilo-Plattform. 
         Die Ideen sollten:
         - Praktisch und umsetzbar sein
         - Verschiedene Service-Kategorien einbeziehen (Handwerk, IT, Haushalt, Transport, etc.)
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         break;
 
       case 'analyzeProject':
-        systemContext = `Du bist ein KI-Projektmanagement-Experte für die Tasko-Plattform. 
+        systemContext = `Du bist ein KI-Projektmanagement-Experte für die Taskilo-Plattform. 
         Analysiere das gegebene Projekt und gib hilfreiche Verbesserungsvorschläge.`;
 
         prompt = `Analysiere folgendes Projekt und gib Verbesserungsvorschläge:
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         break;
 
       case 'generateTasks':
-        systemContext = `Du bist ein KI-Assistent für Projektmanagement auf der Tasko-Plattform.
+        systemContext = `Du bist ein KI-Assistent für Projektmanagement auf der Taskilo-Plattform.
         Erstelle detaillierte Aufgabenlisten für Projekte.`;
 
         prompt = `Erstelle eine detaillierte Aufgabenliste für folgendes Projekt:
@@ -122,12 +122,12 @@ export async function POST(request: Request) {
         - estimatedHours: Geschätzte Stunden
         - priority: 'low', 'medium' oder 'high'
         - dependencies: Array von Abhängigkeiten zu anderen Aufgaben
-        - requiredServices: Benötigte Services von Tasko
+        - requiredServices: Benötigte Services von Taskilo
         - status: 'todo' (initial)`;
         break;
 
       case 'projectConsultation':
-        systemContext = `Du bist ein erfahrener Projektmanagement-Berater für die Tasko-Plattform.
+        systemContext = `Du bist ein erfahrener Projektmanagement-Berater für die Taskilo-Plattform.
         Gib professionelle Beratung zu Projektfragen.`;
 
         prompt = `Beantworte folgende Projektfrage professionell und hilfreich:
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         1. Direkter Antwort auf die Frage
         2. Praktischen Empfehlungen
         3. Möglichen nächsten Schritten
-        4. Relevanten Tasko-Services, die helfen könnten
+        4. Relevanten Taskilo-Services, die helfen könnten
         
         Antworte auf Deutsch und sei konkret und umsetzungsorientiert.`;
         break;

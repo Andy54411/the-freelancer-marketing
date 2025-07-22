@@ -79,16 +79,16 @@ export const createInviteCode = onCall({ region: "europe-west1", cors: corsOptio
                 await db.collection("mail").add({
                     to: [recipientEmail], // Die neue E-Mail-Adresse verwenden
                     message: {
-                        subject: `Ihre Einladung zu TASKO`,
+                        subject: `Ihre Einladung zu TASKILO`,
                         html: `
                         <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6;">
                             <!-- Preheader Text (unsichtbar in der E-Mail, aber sichtbar in der Posteingangs-Vorschau) -->
                             <div style="display: none; max-height: 0; overflow: hidden;">
-                                Ihr persönlicher Einladungscode für TASKO.
+                                Ihr persönlicher Einladungscode für TASKILO.
                             </div>
 
-                            <h1>Willkommen bei TASKO!</h1>
-                            <p>${adminName} hat Sie eingeladen, dem TASKO-Team mit der Rolle <strong>${role}</strong> beizutreten.</p>
+                            <h1>Willkommen bei TASKILO!</h1>
+                            <p>${adminName} hat Sie eingeladen, dem TASKILO-Team mit der Rolle <strong>${role}</strong> beizutreten.</p>
                             <p>Bitte verwenden Sie den folgenden Code, um Ihre Registrierung abzuschließen:</p>
                             <div style="background-color: #f0f0f0; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
                                 <p style="margin: 0; font-size: 24px; font-weight: bold; font-family: monospace; letter-spacing: 2px;">

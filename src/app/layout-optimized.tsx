@@ -10,25 +10,25 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Tasko',
-    default: 'Tasko - Professionelle Dienstleistungen finden',
+    template: '%s | Taskilo',
+    default: 'Taskilo - Professionelle Dienstleistungen finden',
   },
   description:
     'Finden Sie qualifizierte Dienstleister in Ihrer Nähe. Vergleichen Sie Preise, Bewertungen und buchen Sie direkt.',
   keywords: ['Dienstleister', 'Handwerker', 'Reparatur', 'Service', 'Buchung'],
-  authors: [{ name: 'Tasko Team' }],
+  authors: [{ name: 'Taskilo Team' }],
   openGraph: {
     type: 'website',
     locale: 'de_DE',
     url: 'https://taskilo.de',
-    siteName: 'Tasko',
-    title: 'Tasko - Professionelle Dienstleistungen finden',
+    siteName: 'Taskilo',
+    title: 'Taskilo - Professionelle Dienstleistungen finden',
     description:
       'Finden Sie qualifizierte Dienstleister in Ihrer Nähe. Vergleichen Sie Preise, Bewertungen und buchen Sie direkt.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tasko - Professionelle Dienstleistungen finden',
+    title: 'Taskilo - Professionelle Dienstleistungen finden',
     description:
       'Finden Sie qualifizierte Dienstleister in Ihrer Nähe. Vergleichen Sie Preise, Bewertungen und buchen Sie direkt.',
   },

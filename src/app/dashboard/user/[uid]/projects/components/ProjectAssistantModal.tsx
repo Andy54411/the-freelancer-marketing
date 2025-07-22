@@ -188,7 +188,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">KI-generierte Projektideen</h3>
                 <p className="text-gray-600 mb-4">
-                  Lass dir von der KI innovative Projektideen basierend auf den Tasko-Services
+                  Lass dir von der KI innovative Projektideen basierend auf den Taskilo-Services
                   vorschlagen
                 </p>
                 <Button

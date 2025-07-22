@@ -902,7 +902,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    {/* Buttons mit Tasko-Farben */}
+                    {/* Buttons mit Taskilo-Farben */}
                     <div className="space-y-2 mb-4">
                       <button className="w-full bg-[#14ad9f] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors text-sm">
                         Angebot anfordern

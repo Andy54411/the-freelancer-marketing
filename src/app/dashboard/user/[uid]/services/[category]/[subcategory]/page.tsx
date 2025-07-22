@@ -532,7 +532,7 @@ export default function UserServiceSubcategoryPage() {
     <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-[var(--global-header-height)] min-h-[calc(100vh-var(--global-header-height))]">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 pt-[var(--global-header-height)]">
-        {/* Hero Section - Tasko Style */}
+        {/* Hero Section - Taskilo Style */}
         <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex items-center gap-4 mb-6">
@@ -589,7 +589,7 @@ export default function UserServiceSubcategoryPage() {
           </div>
         </div>
 
-        {/* Services Grid - Tasko Style */}
+        {/* Services Grid - Taskilo Style */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

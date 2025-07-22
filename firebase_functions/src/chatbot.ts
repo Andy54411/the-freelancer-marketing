@@ -95,7 +95,7 @@ export const handleSupportMessage = onDocumentCreated("supportChats/{chatId}/mes
                 text: escalationMessage,
                 timestamp: FieldValue.serverTimestamp(),
                 senderType: "bot",
-                senderName: "Tasko KI-Support",
+                senderName: "Taskilo KI-Support",
                 messageType: "escalation_notice",
                 escalationReason: escalationCheck.reason
             });

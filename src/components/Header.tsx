@@ -481,7 +481,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
               <div className="flex items-center gap-3">
                 {/* Taskilo Logo auch im Company Dashboard anzeigen */}
                 <Link href="/" className="text-xl font-bold text-[#14ad9f]">
-                  Tasko
+                  Taskilo
                 </Link>
                 <span className="text-gray-300 hidden sm:inline">|</span>
                 <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 hidden sm:block">
@@ -491,7 +491,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             ) : (
               // --- STANDARD-ANSICHT FÜR DIE APP (Logo) ---
               <Link href="/" className="text-xl sm:text-2xl font-bold text-[#14ad9f]">
-                Tasko
+                Taskilo
               </Link>
             )}
 
