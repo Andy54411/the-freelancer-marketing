@@ -49,23 +49,26 @@ try {
   db = null;
 }
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
+// Stripe initialization moved to runtime to avoid build-time errors
+function getStripeInstance() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
-if (!stripeSecret) {
-  console.error(
-    'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/request-payout.'
-  );
+  if (!stripeSecret) {
+    console.error(
+      'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/request-payout.'
+    );
+    return null;
+  }
+
+  return new Stripe(stripeSecret, {
+    apiVersion: '2024-06-20',
+  });
 }
-
-const stripe = stripeSecret
-  ? new Stripe(stripeSecret, {
-      apiVersion: '2024-06-20',
-    })
-  : null;
 
 export async function POST(request: NextRequest) {
   console.log('[API /request-payout] POST Anfrage empfangen.');
 
+  const stripe = getStripeInstance();
   if (!stripe) {
     console.error(
       '[API /request-payout] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.'
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hole die Stripe Account ID aus der Firestore - suche in users Collection zuerst
-    let userDoc = await db.collection('users').doc(firebaseUserId).get();
+    const userDoc = await db.collection('users').doc(firebaseUserId).get();
     let userData = null;
     let stripeAccountId = null;
 

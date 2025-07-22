@@ -2,26 +2,24 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
 
-// Stripe Secret Key aus Umgebungsvariablen laden
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
+// Stripe initialization moved to runtime to avoid build-time errors
+function getStripeInstance() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
-// Überprüfung, ob der Stripe Secret Key gesetzt ist
-if (!stripeSecret) {
-  console.error(
-    'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/verify-payment-status.'
-  );
-  // Im Fehlerfall sollte hier nicht mit einem null-Stripe-Objekt weitergemacht werden,
-  // daher ist es gut, dass der Stripe-Client unten nur initialisiert wird, wenn stripeSecret vorhanden ist.
+  if (!stripeSecret) {
+    console.error(
+      'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/verify-payment-status.'
+    );
+    return null;
+  }
+
+  return new Stripe(stripeSecret, {
+    apiVersion: '2024-06-20', // Deine spezifische API-Version, die du auch in create-payment-intent verwendest
+  });
 }
 
-// Stripe-Client initialisieren (verwende deine spezifische API-Version)
-const stripe = stripeSecret
-  ? new Stripe(stripeSecret, {
-      apiVersion: '2024-06-20', // Deine spezifische API-Version, die du auch in create-payment-intent verwendest
-    })
-  : null;
-
 export async function GET(request: NextRequest) {
+  const stripe = getStripeInstance();
   // Überprüfe, ob Stripe korrekt initialisiert wurde
   if (!stripe) {
     console.error(

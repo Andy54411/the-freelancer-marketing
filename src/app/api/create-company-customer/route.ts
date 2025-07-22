@@ -28,23 +28,26 @@ if (!getApps().length) {
   db = getFirestore();
 }
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
+// Stripe initialization moved to runtime to avoid build-time errors
+function getStripeInstance() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
-if (!stripeSecret) {
-  console.error(
-    'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-company-customer.'
-  );
+  if (!stripeSecret) {
+    console.error(
+      'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-company-customer.'
+    );
+    return null;
+  }
+
+  return new Stripe(stripeSecret, {
+    apiVersion: '2024-06-20',
+  });
 }
-
-const stripe = stripeSecret
-  ? new Stripe(stripeSecret, {
-      apiVersion: '2024-06-20',
-    })
-  : null;
 
 export async function POST(request: NextRequest) {
   console.log('[API /create-company-customer] POST Anfrage empfangen.');
 
+  const stripe = getStripeInstance();
   if (!stripe) {
     console.error(
       '[API /create-company-customer] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.'

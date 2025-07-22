@@ -2,24 +2,27 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
+// Stripe initialization moved to runtime to avoid build-time errors
+function getStripeInstance() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
-if (!stripeSecret) {
-  console.error(
-    'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-payment-intent.'
-  );
+  if (!stripeSecret) {
+    console.error(
+      'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-payment-intent.'
+    );
+    return null;
+  }
+
+  return new Stripe(stripeSecret, {
+    apiVersion: '2024-06-20', // Stelle sicher, dass dies die aktuelle Stripe API Version ist
+  });
 }
-
-const stripe = stripeSecret
-  ? new Stripe(stripeSecret, {
-      apiVersion: '2024-06-20', // Stelle sicher, dass dies die aktuelle Stripe API Version ist
-    })
-  : null;
 
 export async function POST(request: NextRequest) {
   // DEBUGGING: Logge den Beginn der Anfrage
   console.log('[API /create-payment-intent] POST Anfrage empfangen.');
 
+  const stripe = getStripeInstance();
   if (!stripe) {
     console.error(
       '[API /create-payment-intent] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.'
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
       billingDetails, // Rechnungsdetails, falls für zukünftige Nutzung gespeichert werden
     } = body;
 
-    console.log('[API /create-payment-intent] Stripe-Key beginnt mit:', stripeSecret?.slice(0, 10));
+    console.log('[API /create-payment-intent] Stripe instance initialized successfully');
     console.log(
       '[API /create-payment-intent] ConnectedAccountId aus Request Body:',
       connectedAccountId
