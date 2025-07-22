@@ -54,3 +54,4 @@ firebase_functions/.env.tilvo-f142f
 # GTM API Konfiguration
 .env.gtm
 client_secret.json
+taskilo-newsletter-service-key.json

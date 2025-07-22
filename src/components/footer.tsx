@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FiMapPin, FiPhone, FiMail, FiClock, FiMessageCircle, FiShield } from 'react-icons/fi';
@@ -17,9 +17,57 @@ import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
 
 export default function FooterSection() {
   const { resetConsent } = useCookieConsentContext();
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleCookieSettings = () => {
     resetConsent();
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email) {
+      setMessage('Bitte geben Sie eine E-Mail-Adresse ein.');
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/newsletter/subscribers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          name: '', // Optional: Könnte später erweitert werden
+          source: 'Footer',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage('✅ Erfolgreich angemeldet! Vielen Dank für Ihr Interesse.');
+        setEmail('');
+      } else {
+        setMessage('❌ Fehler bei der Anmeldung. Bitte versuchen Sie es später erneut.');
+      }
+    } catch (error) {
+      console.error('Newsletter-Anmeldung Fehler:', error);
+      setMessage('❌ Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.');
+    } finally {
+      setIsLoading(false);
+
+      // Nachricht nach 5 Sekunden ausblenden
+      setTimeout(() => {
+        setMessage('');
+      }, 5000);
+    }
   };
 
   const links = [
@@ -276,7 +324,10 @@ export default function FooterSection() {
               </div>
             ))}
           </div>
-          <form className="row-start-1 border-b border-white/20 pb-8 text-sm md:col-span-2 md:border-none lg:col-span-1">
+          <form
+            onSubmit={handleNewsletterSubmit}
+            className="row-start-1 border-b border-white/20 pb-8 text-sm md:col-span-2 md:border-none lg:col-span-1"
+          >
             <div className="space-y-4">
               <Label htmlFor="mail" className="block font-medium text-white">
                 Newsletter
@@ -286,13 +337,32 @@ export default function FooterSection() {
                   type="email"
                   id="mail"
                   name="mail"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="E-Mail-Adresse"
                   className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                  required
+                  disabled={isLoading}
                 />
-                <Button size="sm" className="bg-white text-[#14ad9f] hover:bg-white/90">
-                  Abonnieren
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-white text-[#14ad9f] hover:bg-white/90 disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Lädt...' : 'Abonnieren'}
                 </Button>
               </div>
+              {message && (
+                <span
+                  className={cn(
+                    'block text-sm',
+                    message.startsWith('✅') ? 'text-green-400' : 'text-red-400'
+                  )}
+                >
+                  {message}
+                </span>
+              )}
               <span className="text-white/70 block text-sm">
                 Bleiben Sie über Updates und neue Features informiert.
               </span>
