@@ -33,11 +33,11 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/staff');
+      const response = await fetch('/api/admin/auth');
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated) {
-          setUser(data.user);
+          setUser(data.employee);
         }
       }
     } catch (error) {
@@ -49,7 +49,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/staff', {
+      const response = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setUser(data.user);
+        setUser(data.employee);
         return true;
       }
 
@@ -77,7 +77,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/staff', {
+      await fetch('/api/admin/auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
