@@ -1,14 +1,23 @@
 import createMiddleware from 'next-intl/middleware';
+import { NextRequest } from 'next/server';
 
-export default createMiddleware({
-  // A list of all locales that are supported
-  locales: ['de', 'en', 'fr', 'es'],
+export default function middleware(request: NextRequest) {
+  // Skip internationalization for admin routes and API routes
+  if (
+    request.nextUrl.pathname.startsWith('/dashboard/admin') ||
+    request.nextUrl.pathname.startsWith('/api/')
+  ) {
+    return;
+  }
 
-  // Used when no locale matches
-  defaultLocale: 'de',
-});
+  // Apply internationalization middleware for other routes
+  return createMiddleware({
+    locales: ['de', 'en', 'fr', 'es'],
+    defaultLocale: 'de',
+  })(request);
+}
 
 export const config = {
-  // Match only internationalized pathnames
-  matcher: ['/', '/(de|en|fr|es)/:path*'],
+  // Apply to all routes except static files
+  matcher: ['/((?!_next|favicon.ico|images|icon).*)'],
 };
