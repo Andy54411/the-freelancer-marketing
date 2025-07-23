@@ -123,6 +123,26 @@ export default function AdminLoginPage() {
           </CardContent>
         </Card>
 
+        {/* Login-Hilfe für Development */}
+        <Card className="bg-green-50 border-green-200">
+          <CardHeader>
+            <CardTitle className="text-sm text-green-800">Development Login</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-sm text-green-800">
+              <p className="font-medium">Master Admin:</p>
+              <p className="font-mono text-xs bg-green-100 p-2 rounded mt-1">
+                E-Mail: andy.staudinger@taskilo.de
+                <br />
+                Passwort: master123
+              </p>
+              <p className="mt-2 text-xs text-green-600">
+                Vollzugriff auf alle E-Mail-Management Funktionen
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Info für Live-System */}
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
