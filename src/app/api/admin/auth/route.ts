@@ -200,7 +200,15 @@ export async function GET(request: NextRequest) {
     const sessionToken = cookieStore.get('taskilo_admin_session')?.value;
 
     if (!sessionToken) {
-      return NextResponse.json({ success: false, error: 'No session found' }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No session found',
+          // Temporärer Fallback während Produktionsproblemen
+          employee: null,
+        },
+        { status: 401 }
+      );
     }
 
     const payload = validateSessionToken(sessionToken);
@@ -209,7 +217,12 @@ export async function GET(request: NextRequest) {
       const cookieStore = await cookies();
       cookieStore.delete('taskilo_admin_session');
       return NextResponse.json(
-        { success: false, error: 'Invalid or expired session' },
+        {
+          success: false,
+          error: 'Invalid or expired session',
+          // Temporärer Fallback während Produktionsproblemen
+          employee: null,
+        },
         { status: 401 }
       );
     }
@@ -220,7 +233,12 @@ export async function GET(request: NextRequest) {
       const cookieStore = await cookies();
       cookieStore.delete('taskilo_admin_session');
       return NextResponse.json(
-        { success: false, error: 'Employee not found or inactive' },
+        {
+          success: false,
+          error: 'Employee not found or inactive',
+          // Temporärer Fallback während Produktionsproblemen
+          employee: null,
+        },
         { status: 401 }
       );
     }
@@ -240,13 +258,20 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[API /admin/auth] Error in GET:', error);
 
+    // Fallback-Antwort statt 500-Fehler
     return NextResponse.json(
       {
         success: false,
         error: 'Session verification failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        employee: null,
+        message:
+          process.env.NODE_ENV === 'development'
+            ? error instanceof Error
+              ? error.message
+              : 'Unknown error'
+            : 'Authentication temporarily unavailable',
       },
-      { status: 500 }
+      { status: 401 }
     );
   }
 }

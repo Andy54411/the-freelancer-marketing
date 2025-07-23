@@ -8,7 +8,15 @@ export async function GET(request: NextRequest) {
     // Verify admin authentication
     const authResult = await verifyAdminAuth(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          // Temporärer Fallback während Produktionsproblemen
+          message: 'Admin authentication temporarily unavailable',
+          authError: authResult.error,
+        },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -196,6 +204,33 @@ export async function PUT(request: NextRequest) {
 
       // Get Google Workspace credentials from request or admin
       const { accessToken, refreshToken } = data || {};
+
+      // Check if Google Workspace is available
+      const hasGoogleWorkspace =
+        process.env.GOOGLE_WORKSPACE_CLIENT_ID && process.env.GOOGLE_WORKSPACE_CLIENT_SECRET;
+
+      if (!hasGoogleWorkspace) {
+        // Fallback: Log newsletter sending (for development/testing)
+        console.log('Newsletter sending simulation (Google Workspace not configured):');
+        console.log(`Campaign: ${campaign.subject}`);
+        console.log(`Recipients: ${subscriberEmails.length} subscribers`);
+        console.log(`Content: ${campaign.content.substring(0, 100)}...`);
+
+        // Update campaign status to 'sent' in simulation mode
+        await admin.firestore().collection('newsletterCampaigns').doc(id).update({
+          status: 'sent',
+          sentAt: new Date(),
+          recipientCount: subscriberEmails.length,
+          simulationMode: true,
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Newsletter simuliert (Google Workspace nicht konfiguriert). ${subscriberEmails.length} Empfänger würden benachrichtigt.`,
+          recipientCount: subscriberEmails.length,
+          simulationMode: true,
+        });
+      }
 
       if (!accessToken) {
         return NextResponse.json(

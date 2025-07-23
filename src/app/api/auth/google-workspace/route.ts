@@ -5,6 +5,28 @@ import { getAuthUrl, getAccessToken } from '@/lib/google-workspace';
 // OAuth Authorization URL abrufen
 export async function GET(request: NextRequest) {
   try {
+    // Prüfe, ob Google Workspace konfiguriert ist
+    const CLIENT_ID = process.env.GOOGLE_WORKSPACE_CLIENT_ID;
+    const CLIENT_SECRET = process.env.GOOGLE_WORKSPACE_CLIENT_SECRET;
+
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+      return NextResponse.json(
+        {
+          error: 'Google Workspace OAuth ist nicht konfiguriert',
+          message:
+            'GOOGLE_WORKSPACE_CLIENT_ID und GOOGLE_WORKSPACE_CLIENT_SECRET müssen in Vercel Environment Variables gesetzt werden.',
+          setup_required: true,
+          // Temporärer Status während Produktionsproblemen
+          status: 'temporarily_unavailable',
+          missing_vars: [
+            !CLIENT_ID ? 'GOOGLE_WORKSPACE_CLIENT_ID' : null,
+            !CLIENT_SECRET ? 'GOOGLE_WORKSPACE_CLIENT_SECRET' : null,
+          ].filter(Boolean),
+        },
+        { status: 503 } // Service Unavailable statt 400 Bad Request
+      );
+    }
+
     const authUrl = getAuthUrl();
     return NextResponse.json({ success: true, authUrl });
   } catch (error) {
@@ -17,8 +39,10 @@ export async function GET(request: NextRequest) {
           error: 'Google Workspace ist nicht konfiguriert',
           message: error.message,
           setup_required: true,
+          // Temporärer Status während Produktionsproblemen
+          status: 'temporarily_unavailable',
         },
-        { status: 400 }
+        { status: 503 } // Service Unavailable statt 400 Bad Request
       );
     }
 

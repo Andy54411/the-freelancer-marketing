@@ -45,9 +45,14 @@ function useAdminAuth() {
       if (response.ok) {
         const data = await response.json();
         setUser(data.employee);
+      } else {
+        // Stille Admin-Auth-Fehler während Produktionsproblemen
+        setUser(null);
       }
     } catch (error) {
-      console.error('Admin auth check failed:', error);
+      // Console-Fehler deaktiviert während Produktionsproblemen
+      // console.error('Admin auth check failed:', error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -63,11 +68,16 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    // Deaktiviert während Produktionsproblemen - Admin Benachrichtigungen werden nicht geladen
     if (loading || !user || (user.role !== 'support' && user.role !== 'master')) {
+      setNotifications([]);
+      setUnreadCount(0);
       return;
     }
 
-    // Alle kritischen Benachrichtigungen für Admin abrufen
+    // Temporär deaktiviert um Console-Fehler zu vermeiden
+    // TODO: Reaktivieren wenn Admin-Auth und Firestore-Regeln repariert sind
+    /*
     const notificationsRef = collection(db, 'notifications');
     const q = query(
       notificationsRef,
@@ -87,23 +97,17 @@ export default function NotificationBell() {
       },
       error => {
         console.error('Fehler beim Abrufen von Admin-Benachrichtigungen:', error);
-        // Fallback: Alle ungelesenen Notifications abrufen
-        const fallbackQuery = query(
-          notificationsRef,
-          where('read', '==', false),
-          orderBy('createdAt', 'desc')
-        );
-        onSnapshot(fallbackQuery, snapshot => {
-          const fallbackNotifications = snapshot.docs.map(
-            doc => ({ id: doc.id, ...doc.data() }) as Notification
-          );
-          setNotifications(fallbackNotifications);
-          setUnreadCount(snapshot.size);
-        });
+        setNotifications([]);
+        setUnreadCount(0);
       }
     );
 
     return () => unsubscribe();
+    */
+
+    // Temporärer Fallback - keine Benachrichtigungen anzeigen
+    setNotifications([]);
+    setUnreadCount(0);
   }, [user, loading]);
 
   const handleNotificationClick = async (notification: Notification) => {

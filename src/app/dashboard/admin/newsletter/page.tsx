@@ -161,7 +161,14 @@ export default function NewsletterPage() {
       if (data.success && data.authUrl) {
         window.location.href = data.authUrl;
       } else if (data.setup_required) {
-        toast.error(`Google Workspace Setup erforderlich: ${data.message}`, { duration: 8000 });
+        const errorDetails = data.missing_vars
+          ? `Fehlende Vercel Environment Variables: ${data.missing_vars.join(', ')}`
+          : data.message;
+
+        toast.error(`🔧 Vercel Setup erforderlich: ${errorDetails}`, {
+          duration: 10000,
+          description: 'Gehen Sie zu Vercel Dashboard → Settings → Environment Variables',
+        });
       } else {
         toast.error(data.error || 'Fehler beim Verbinden mit Google Workspace');
       }
@@ -572,13 +579,14 @@ export default function NewsletterPage() {
                               size="sm"
                               onClick={() => sendCampaign(campaign.id)}
                               className="flex items-center gap-1"
-                              disabled={!isGoogleConnected}
                               title={
-                                !isGoogleConnected ? 'Google Workspace Verbindung erforderlich' : ''
+                                !isGoogleConnected
+                                  ? 'Newsletter als Simulation senden (Google Workspace nicht konfiguriert)'
+                                  : 'Newsletter per Gmail API senden'
                               }
                             >
                               <FiSend className="h-3 w-3" />
-                              Senden
+                              {isGoogleConnected ? 'Senden' : 'Simulieren'}
                             </Button>
                           )}
                         </div>
