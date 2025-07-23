@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleSheetsNewsletterManager } from '@/lib/google-workspace';
 import { admin } from '@/firebase/server';
+import { sendConfirmationEmail } from '@/lib/gmail-smtp-newsletter';
 import crypto from 'crypto';
 
 // DSGVO-konforme Newsletter-Anmeldung mit Double-Opt-In
@@ -102,11 +103,34 @@ export async function POST(request: NextRequest) {
         token: confirmationToken.substring(0, 8) + '...',
       });
 
-      return NextResponse.json({
-        success: true,
-        message: 'Newsletter-Anmeldung erfolgreich! Bestätigungs-E-Mail wird gesendet.',
-        requiresConfirmation: true,
-      });
+      // Bestätigungs-E-Mail senden
+      console.log('📧 Newsletter API - Sende Bestätigungs-E-Mail...');
+      try {
+        const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/newsletter/confirm?token=${confirmationToken}`;
+
+        await sendConfirmationEmail(email, name || 'Newsletter-Abonnent', confirmationUrl);
+
+        console.log('✅ Newsletter API - Bestätigungs-E-Mail erfolgreich gesendet:', { email });
+
+        return NextResponse.json({
+          success: true,
+          message: 'Newsletter-Anmeldung erfolgreich! Bestätigungs-E-Mail wurde gesendet.',
+          requiresConfirmation: true,
+        });
+      } catch (emailError) {
+        console.error('📧 Newsletter API - E-Mail-Versand fehlgeschlagen:', {
+          error: emailError,
+          message: emailError instanceof Error ? emailError.message : 'Unbekannter E-Mail-Fehler',
+        });
+
+        // Auch bei E-Mail-Fehler erfolgreiche Antwort, da Daten gespeichert wurden
+        return NextResponse.json({
+          success: true,
+          message: 'Newsletter-Anmeldung erfolgreich! E-Mail-Versand wird nachgeholt.',
+          requiresConfirmation: true,
+          emailSent: false,
+        });
+      }
     } catch (firestoreError) {
       console.error('💥 Newsletter API - Firestore Fehler:', {
         error: firestoreError,
