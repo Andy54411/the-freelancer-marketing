@@ -1,6 +1,7 @@
 // src/app/api/admin/auth/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
+import { SignJWT, jwtVerify } from 'jose';
 
 interface LoginCredentials {
   email: string;
@@ -73,31 +74,39 @@ const EMPLOYEES: Employee[] = [
   },
 ];
 
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'taskilo_admin_secret_key_2024'
+);
+
 // Simple JWT-like token creation (in production, use proper JWT with secret)
-function createSessionToken(employee: Employee) {
-  const payload = {
+async function createSessionToken(employee: Employee) {
+  const jwt = await new SignJWT({
     id: employee.id,
     email: employee.email,
     role: employee.role,
     permissions: employee.permissions,
-    exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-  };
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('24h')
+    .sign(JWT_SECRET);
 
-  // In production, use proper JWT signing
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
+  return jwt;
 }
 
-function validateSessionToken(token: string) {
+async function validateSessionToken(token: string) {
   try {
-    const payload = JSON.parse(Buffer.from(token, 'base64').toString());
-
-    if (payload.exp < Date.now()) {
-      return null; // Token expired
-    }
-
-    return payload;
-  } catch {
-    return null; // Invalid token
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return payload as {
+      id: string;
+      email: string;
+      role: string;
+      permissions: string[];
+      iat?: number;
+      exp?: number;
+    };
+  } catch (error) {
+    return null; // Invalid or expired token
   }
 }
 
@@ -132,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create session token
-      const sessionToken = createSessionToken(employee);
+      const sessionToken = await createSessionToken(employee);
 
       // Set cookie
       const cookieStore = await cookies();
@@ -211,7 +220,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const payload = validateSessionToken(sessionToken);
+    const payload = await validateSessionToken(sessionToken);
     if (!payload) {
       // Clear invalid cookie
       const cookieStore = await cookies();
