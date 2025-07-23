@@ -1,33 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  FiMail,
-  FiUsers,
-  FiSend,
-  FiPlus,
-  FiTrash2,
-  FiEdit3,
-  FiDownload,
-  FiUpload,
-  FiEye,
-  FiCalendar,
-} from 'react-icons/fi';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  onSnapshot,
-} from 'firebase/firestore';
+import { FiMail, FiUsers, FiSend, FiPlus, FiTrash2, FiEdit3, FiCalendar } from 'react-icons/fi';
+import { collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
 
@@ -50,7 +32,67 @@ interface NewsletterCampaign {
   recipientCount: number;
 }
 
+interface StaffMember {
+  id: string;
+  email: string;
+  name: string;
+  role: 'master' | 'support';
+  permissions: string[];
+}
+
+// Authentication Hook für Admin-Zugriff
+function useStaffAuth() {
+  const [user, setUser] = useState<StaffMember | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    checkAuthStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/auth');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.employee);
+      } else {
+        router.push('/dashboard/admin/login');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.push('/dashboard/admin/login');
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+      router.push('/dashboard/admin/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  }, [router]);
+
+  const hasPermission = useCallback(
+    (permission: string) => {
+      return user?.permissions.includes(permission) || user?.role === 'master';
+    },
+    [user]
+  );
+
+  return { user, loading, logout, hasPermission };
+}
+
 export default function NewsletterPage() {
+  const { user, logout, hasPermission, loading: authLoading } = useStaffAuth();
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [campaigns, setCampaigns] = useState<NewsletterCampaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,38 +104,56 @@ export default function NewsletterPage() {
   const [campaignSubject, setCampaignSubject] = useState('');
   const [campaignContent, setCampaignContent] = useState('');
 
-  // Firebase Real-time Daten laden
+  // Firebase Real-time Daten laden mit Auth-Check
   useEffect(() => {
+    if (!user) return; // Nur laden wenn Benutzer authentifiziert ist
+
     const subscribersCollection = collection(db, 'newsletterSubscribers');
     const campaignsCollection = collection(db, 'newsletterCampaigns');
 
-    // Real-time Abonnenten
-    const unsubscribeSubscribers = onSnapshot(subscribersCollection, snapshot => {
-      const subscriberData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        subscribedAt: doc.data().subscribedAt?.toDate() || new Date(),
-      })) as NewsletterSubscriber[];
-      setSubscribers(subscriberData);
-    });
+    // Real-time Abonnenten mit Fehlerbehandlung
+    const unsubscribeSubscribers = onSnapshot(
+      subscribersCollection,
+      snapshot => {
+        const subscriberData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          subscribedAt: doc.data().subscribedAt?.toDate() || new Date(),
+        })) as NewsletterSubscriber[];
+        setSubscribers(subscriberData);
+      },
+      error => {
+        console.error('Fehler beim Abrufen von Newsletter-Abonnenten:', error);
+        toast.error('Fehler beim Laden der Abonnenten: ' + error.message);
+        setLoading(false);
+      }
+    );
 
-    // Real-time Kampagnen
-    const unsubscribeCampaigns = onSnapshot(campaignsCollection, snapshot => {
-      const campaignData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        sentAt: doc.data().sentAt?.toDate(),
-      })) as NewsletterCampaign[];
-      setCampaigns(campaignData);
-      setLoading(false);
-    });
+    // Real-time Kampagnen mit Fehlerbehandlung
+    const unsubscribeCampaigns = onSnapshot(
+      campaignsCollection,
+      snapshot => {
+        const campaignData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          sentAt: doc.data().sentAt?.toDate(),
+        })) as NewsletterCampaign[];
+        setCampaigns(campaignData);
+        setLoading(false);
+      },
+      error => {
+        console.error('Fehler beim Abrufen von Newsletter-Kampagnen:', error);
+        toast.error('Fehler beim Laden der Kampagnen: ' + error.message);
+        setLoading(false);
+      }
+    );
 
     return () => {
       unsubscribeSubscribers();
       unsubscribeCampaigns();
     };
-  }, []);
+  }, [user]);
 
   // Abonnent hinzufügen
   const addSubscriber = async () => {
@@ -178,6 +238,23 @@ export default function NewsletterPage() {
       toast.error('Fehler beim Senden des Newsletters');
     }
   };
+
+  // Auth-Check: Benutzer muss angemeldet und autorisiert sein
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Authentifizierung wird überprüft...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-600">Nicht autorisiert. Bitte melden Sie sich an.</div>
+      </div>
+    );
+  }
 
   const activeSubscribers = subscribers.filter(sub => sub.subscribed);
 

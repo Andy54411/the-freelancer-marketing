@@ -400,5 +400,16 @@ service cloud.firestore {
           request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants;
       }
     }
+
+    // --- Newsletter Collections (Admin-only) ---
+    match /newsletterSubscribers/{subscriberId} {
+      // Nur Support-Staff (master/support) können Newsletter-Abonnenten verwalten
+      allow read, write, create, delete: if isSupportStaff();
+    }
+
+    match /newsletterCampaigns/{campaignId} {
+      // Nur Support-Staff (master/support) können Newsletter-Kampagnen verwalten
+      allow read, write, create, delete: if isSupportStaff();
+    }
   }
 }
