@@ -9,6 +9,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, authUrl });
   } catch (error) {
     console.error('Google Auth URL Fehler:', error);
+
+    // Spezifische Fehlermeldung für fehlende Konfiguration
+    if (error instanceof Error && error.message.includes('OAuth-Credentials')) {
+      return NextResponse.json(
+        {
+          error: 'Google Workspace ist nicht konfiguriert',
+          message: error.message,
+          setup_required: true,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

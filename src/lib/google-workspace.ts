@@ -29,6 +29,13 @@ export function getGoogleAuth() {
 
 // Authentifizierungs-URL generieren
 export function getAuthUrl() {
+  // Validiere Konfiguration
+  if (!GOOGLE_WORKSPACE_CONFIG.CLIENT_ID || !GOOGLE_WORKSPACE_CONFIG.CLIENT_SECRET) {
+    throw new Error(
+      'Google Workspace OAuth-Credentials sind nicht konfiguriert. Bitte setzen Sie GOOGLE_WORKSPACE_CLIENT_ID und GOOGLE_WORKSPACE_CLIENT_SECRET in der .env.local Datei.'
+    );
+  }
+
   const oauth2Client = getGoogleAuth();
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',

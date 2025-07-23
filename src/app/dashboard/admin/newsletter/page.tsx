@@ -118,9 +118,57 @@ export default function NewsletterPage() {
     setIsGoogleConnected(!!accessToken);
   }, []);
 
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleAuth = urlParams.get('google_auth');
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    const expiryDate = urlParams.get('expiry_date');
+    const error = urlParams.get('error');
+
+    if (error) {
+      toast.error(`Google Authentifizierung Fehler: ${decodeURIComponent(error)}`);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (googleAuth === 'success' && accessToken) {
+      // Store tokens in localStorage
+      localStorage.setItem('google_access_token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('google_refresh_token', refreshToken);
+      }
+      if (expiryDate) {
+        localStorage.setItem('google_token_expiry', expiryDate);
+      }
+
+      setIsGoogleConnected(true);
+      toast.success('Google Workspace erfolgreich verbunden!');
+
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Google Workspace Authentication
-  const connectGoogleWorkspace = () => {
-    window.location.href = '/api/auth/google-workspace';
+  const connectGoogleWorkspace = async () => {
+    try {
+      const response = await fetch('/api/auth/google-workspace');
+      const data = await response.json();
+
+      if (data.success && data.authUrl) {
+        window.location.href = data.authUrl;
+      } else if (data.setup_required) {
+        toast.error(`Google Workspace Setup erforderlich: ${data.message}`, { duration: 8000 });
+      } else {
+        toast.error(data.error || 'Fehler beim Verbinden mit Google Workspace');
+      }
+    } catch (error) {
+      console.error('Google Workspace Verbindung Fehler:', error);
+      toast.error('Fehler beim Verbinden mit Google Workspace');
+    }
   };
 
   const disconnectGoogleWorkspace = () => {
