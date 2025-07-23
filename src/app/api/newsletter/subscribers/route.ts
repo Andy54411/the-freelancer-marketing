@@ -1,13 +1,14 @@
-// API Route für Google Workspace Newsletter-Management
+// API Route für Newsletter-Management
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleSheetsNewsletterManager } from '@/lib/google-workspace';
+import { admin } from '@/firebase/server';
 
 // Vereinfachter Endpunkt für öffentliche Newsletter-Anmeldungen
 export async function POST(request: NextRequest) {
   try {
     const { email, name, preferences, source } = await request.json();
 
-    // Für öffentliche Anmeldungen (Footer) verwenden wir Service Account Credentials
+    // Für öffentliche Anmeldungen (Footer) speichern wir in Firestore
     if (!email) {
       return NextResponse.json({ error: 'E-Mail-Adresse erforderlich' }, { status: 400 });
     }
@@ -18,20 +19,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültige E-Mail-Adresse' }, { status: 400 });
     }
 
-    // Service Account für öffentliche Anmeldungen
-    const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+    // Check if subscriber already exists in Firestore
+    const existingSubscriber = await admin
+      .firestore()
+      .collection('newsletterSubscribers')
+      .where('email', '==', email)
+      .get();
 
-    if (!serviceAccountEmail || !serviceAccountKey) {
-      console.error('Google Service Account nicht konfiguriert');
-      return NextResponse.json({ error: 'Newsletter-Service nicht verfügbar' }, { status: 503 });
+    if (!existingSubscriber.empty) {
+      return NextResponse.json({ error: 'E-Mail-Adresse bereits registriert' }, { status: 409 });
     }
 
-    // Für jetzt speichern wir in einer einfachen Liste (kann später erweitert werden)
-    // TODO: Implementierung mit Service Account oder anderer Speichermethode
+    // Save to Firestore
+    const newSubscriber = {
+      email,
+      name: name || null,
+      subscribed: true,
+      subscribedAt: admin.firestore.Timestamp.now(),
+      source: source || 'website',
+      preferences: preferences || null,
+    };
 
-    // Temporäre Lösung: Log für Admin-Review
-    console.log('Newsletter-Anmeldung:', {
+    await admin.firestore().collection('newsletterSubscribers').add(newSubscriber);
+
+    console.log('Newsletter-Anmeldung gespeichert:', {
       email,
       name: name || 'Unbekannt',
       source: source || 'Website',

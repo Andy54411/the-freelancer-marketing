@@ -9,8 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FiMail, FiUsers, FiSend, FiPlus, FiTrash2, FiEdit3, FiCalendar } from 'react-icons/fi';
-import { collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
 
 interface NewsletterSubscriber {
@@ -104,56 +102,52 @@ export default function NewsletterPage() {
   const [campaignSubject, setCampaignSubject] = useState('');
   const [campaignContent, setCampaignContent] = useState('');
 
-  // Firebase Real-time Daten laden mit Auth-Check
+  // Newsletter-Daten laden über API
   useEffect(() => {
     if (!user) return; // Nur laden wenn Benutzer authentifiziert ist
 
-    const subscribersCollection = collection(db, 'newsletterSubscribers');
-    const campaignsCollection = collection(db, 'newsletterCampaigns');
-
-    // Real-time Abonnenten mit Fehlerbehandlung
-    const unsubscribeSubscribers = onSnapshot(
-      subscribersCollection,
-      snapshot => {
-        const subscriberData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          subscribedAt: doc.data().subscribedAt?.toDate() || new Date(),
-        })) as NewsletterSubscriber[];
-        setSubscribers(subscriberData);
-      },
-      error => {
-        console.error('Fehler beim Abrufen von Newsletter-Abonnenten:', error);
-        toast.error('Fehler beim Laden der Abonnenten: ' + error.message);
-        setLoading(false);
-      }
-    );
-
-    // Real-time Kampagnen mit Fehlerbehandlung
-    const unsubscribeCampaigns = onSnapshot(
-      campaignsCollection,
-      snapshot => {
-        const campaignData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          sentAt: doc.data().sentAt?.toDate(),
-        })) as NewsletterCampaign[];
-        setCampaigns(campaignData);
-        setLoading(false);
-      },
-      error => {
-        console.error('Fehler beim Abrufen von Newsletter-Kampagnen:', error);
-        toast.error('Fehler beim Laden der Kampagnen: ' + error.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      unsubscribeSubscribers();
-      unsubscribeCampaigns();
-    };
+    loadNewsletterData();
   }, [user]);
+
+  const loadNewsletterData = async () => {
+    try {
+      setLoading(true);
+
+      // Load subscribers
+      const subscribersResponse = await fetch('/api/admin/newsletter?type=subscribers');
+      if (subscribersResponse.ok) {
+        const subscribersData = await subscribersResponse.json();
+        const processedSubscribers = subscribersData.subscribers.map((sub: any) => ({
+          ...sub,
+          subscribedAt: new Date(sub.subscribedAt),
+        }));
+        setSubscribers(processedSubscribers);
+      } else {
+        console.error('Failed to load subscribers');
+        toast.error('Fehler beim Laden der Abonnenten');
+      }
+
+      // Load campaigns
+      const campaignsResponse = await fetch('/api/admin/newsletter?type=campaigns');
+      if (campaignsResponse.ok) {
+        const campaignsData = await campaignsResponse.json();
+        const processedCampaigns = campaignsData.campaigns.map((camp: any) => ({
+          ...camp,
+          createdAt: new Date(camp.createdAt),
+          sentAt: camp.sentAt ? new Date(camp.sentAt) : undefined,
+        }));
+        setCampaigns(processedCampaigns);
+      } else {
+        console.error('Failed to load campaigns');
+        toast.error('Fehler beim Laden der Kampagnen');
+      }
+    } catch (error) {
+      console.error('Error loading newsletter data:', error);
+      toast.error('Fehler beim Laden der Newsletter-Daten');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Abonnent hinzufügen
   const addSubscriber = async () => {
@@ -162,25 +156,25 @@ export default function NewsletterPage() {
       return;
     }
 
-    // Check if email already exists
-    const existingSubscriber = subscribers.find(sub => sub.email === newEmail);
-    if (existingSubscriber) {
-      toast.error('Diese E-Mail-Adresse ist bereits registriert');
-      return;
-    }
-
     try {
-      await addDoc(collection(db, 'newsletterSubscribers'), {
-        email: newEmail,
-        name: newName || undefined,
-        subscribed: true,
-        subscribedAt: new Date(),
-        source: 'manual',
+      const response = await fetch('/api/admin/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'subscriber',
+          data: { email: newEmail, name: newName || undefined },
+        }),
       });
 
-      setNewEmail('');
-      setNewName('');
-      toast.success('Abonnent erfolgreich hinzugefügt');
+      if (response.ok) {
+        setNewEmail('');
+        setNewName('');
+        toast.success('Abonnent erfolgreich hinzugefügt');
+        loadNewsletterData(); // Reload data
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Fehler beim Hinzufügen des Abonnenten');
+      }
     } catch (error) {
       console.error('Error adding subscriber:', error);
       toast.error('Fehler beim Hinzufügen des Abonnenten');
@@ -190,8 +184,16 @@ export default function NewsletterPage() {
   // Abonnent löschen
   const deleteSubscriber = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'newsletterSubscribers', id));
-      toast.success('Abonnent erfolgreich entfernt');
+      const response = await fetch(`/api/admin/newsletter?type=subscriber&id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Abonnent erfolgreich entfernt');
+        loadNewsletterData(); // Reload data
+      } else {
+        toast.error('Fehler beim Entfernen des Abonnenten');
+      }
     } catch (error) {
       console.error('Error deleting subscriber:', error);
       toast.error('Fehler beim Entfernen des Abonnenten');
@@ -206,33 +208,47 @@ export default function NewsletterPage() {
     }
 
     try {
-      await addDoc(collection(db, 'newsletterCampaigns'), {
-        subject: campaignSubject,
-        content: campaignContent,
-        status: 'draft',
-        createdAt: new Date(),
-        recipientCount: subscribers.filter(sub => sub.subscribed).length,
+      const response = await fetch('/api/admin/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'campaign',
+          data: { subject: campaignSubject, content: campaignContent },
+        }),
       });
 
-      setCampaignSubject('');
-      setCampaignContent('');
-      toast.success('Newsletter-Kampagne erfolgreich erstellt');
+      if (response.ok) {
+        setCampaignSubject('');
+        setCampaignContent('');
+        toast.success('Newsletter-Kampagne erfolgreich erstellt');
+        loadNewsletterData(); // Reload data
+      } else {
+        toast.error('Fehler beim Erstellen der Kampagne');
+      }
     } catch (error) {
       console.error('Error creating campaign:', error);
       toast.error('Fehler beim Erstellen der Kampagne');
     }
   };
 
-  // Newsletter senden (Simulation)
+  // Newsletter senden
   const sendCampaign = async (campaignId: string) => {
     try {
-      await updateDoc(doc(db, 'newsletterCampaigns', campaignId), {
-        status: 'sent',
-        sentAt: new Date(),
+      const response = await fetch('/api/admin/newsletter', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'campaign-send',
+          id: campaignId,
+        }),
       });
 
-      // Hier würde normalerweise die E-Mail-Integration erfolgen
-      toast.success('Newsletter erfolgreich gesendet!');
+      if (response.ok) {
+        toast.success('Newsletter erfolgreich gesendet!');
+        loadNewsletterData(); // Reload data
+      } else {
+        toast.error('Fehler beim Senden des Newsletters');
+      }
     } catch (error) {
       console.error('Error sending campaign:', error);
       toast.error('Fehler beim Senden des Newsletters');
