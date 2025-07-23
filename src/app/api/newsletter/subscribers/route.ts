@@ -6,22 +6,38 @@ import crypto from 'crypto';
 
 // DSGVO-konforme Newsletter-Anmeldung mit Double-Opt-In
 export async function POST(request: NextRequest) {
+  console.log('🚀 Newsletter API - Start:', {
+    timestamp: new Date().toISOString(),
+    url: request.url,
+    method: request.method,
+    headers: Object.fromEntries(request.headers.entries()),
+  });
+
   try {
-    const { email, name, preferences, source, consentGiven } = await request.json();
+    console.log('📝 Newsletter API - Request Body auslesen...');
+    const requestBody = await request.json();
+    console.log('📊 Newsletter API - Request Data:', requestBody);
+
+    const { email, name, preferences, source, consentGiven } = requestBody;
 
     // Für öffentliche Anmeldungen (Footer) speichern wir DSGVO-konform in Firestore
     if (!email) {
+      console.log('❌ Newsletter API - Fehler: Keine E-Mail-Adresse');
       return NextResponse.json({ error: 'E-Mail-Adresse erforderlich' }, { status: 400 });
     }
 
     // Validierung der E-Mail-Adresse
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log('❌ Newsletter API - Fehler: Ungültige E-Mail:', email);
       return NextResponse.json({ error: 'Ungültige E-Mail-Adresse' }, { status: 400 });
     }
 
+    console.log('✅ Newsletter API - E-Mail-Validierung erfolgreich:', email);
+
     // DSGVO: Einverständnis muss explizit gegeben werden
     if (consentGiven !== true) {
+      console.log('❌ Newsletter API - Fehler: Keine DSGVO-Einwilligung:', { consentGiven });
       return NextResponse.json(
         {
           error: 'Einverständnis zur Datenverarbeitung erforderlich (DSGVO)',
@@ -30,19 +46,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('✅ Newsletter API - DSGVO-Einwilligung überprüft');
+
     // IP-Adresse und User-Agent für DSGVO-Dokumentation
     const ipAddress =
       request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
+    console.log('📋 Newsletter API - DSGVO-Daten:', { ipAddress, userAgent });
+
     // Erstelle Newsletter-Anmeldung direkt in Firestore (vereinfacht)
-    console.log('Newsletter API - Starte Anmeldung:', { email, name, source, consentGiven });
+    console.log('🔄 Newsletter API - Starte Firestore-Speicherung:', {
+      email,
+      name,
+      source,
+      consentGiven,
+    });
 
     try {
       // Einfache Implementierung ohne externe Dependencies
+      console.log('🔐 Newsletter API - Generiere Confirmation Token...');
       const confirmationToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
+
+      console.log('📦 Newsletter API - Token generiert:', {
+        tokenPreview: confirmationToken.substring(0, 8) + '...',
+        expiresAt: expiresAt.toISOString(),
+      });
 
       // Direkt in Firestore speichern
       const pendingData = {
@@ -59,9 +90,14 @@ export async function POST(request: NextRequest) {
         consentGiven: true,
       };
 
+      console.log('💾 Newsletter API - Speichere in Firestore:', {
+        collection: 'newsletterPendingConfirmations',
+        data: { ...pendingData, confirmationToken: '[HIDDEN]' },
+      });
+
       await admin.firestore().collection('newsletterPendingConfirmations').add(pendingData);
 
-      console.log('Newsletter API - Erfolgreich in Firestore gespeichert:', {
+      console.log('✅ Newsletter API - Erfolgreich in Firestore gespeichert:', {
         email,
         token: confirmationToken.substring(0, 8) + '...',
       });
@@ -72,9 +108,15 @@ export async function POST(request: NextRequest) {
         requiresConfirmation: true,
       });
     } catch (firestoreError) {
-      console.error('Newsletter API - Firestore Fehler:', firestoreError);
+      console.error('💥 Newsletter API - Firestore Fehler:', {
+        error: firestoreError,
+        message:
+          firestoreError instanceof Error ? firestoreError.message : 'Unbekannter Firestore-Fehler',
+        stack: firestoreError instanceof Error ? firestoreError.stack : 'Kein Stack verfügbar',
+      });
 
       // Fallback: Einfache Success-Response für Testing
+      console.log('🔄 Newsletter API - Verwende Fallback-Modus');
       return NextResponse.json({
         success: true,
         message: 'Newsletter-Anmeldung verarbeitet (Fallback-Modus)',
@@ -82,19 +124,19 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Newsletter API Fehler - Vollständiger Error:', error);
-    console.error(
-      'Newsletter API Fehler - Error Message:',
-      error instanceof Error ? error.message : 'Unbekannter Fehler'
-    );
-    console.error(
-      'Newsletter API Fehler - Error Stack:',
-      error instanceof Error ? error.stack : 'Kein Stack verfügbar'
-    );
+    console.error('💥 Newsletter API - Hauptfehler:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unbekannter Hauptfehler',
+      stack: error instanceof Error ? error.stack : 'Kein Stack verfügbar',
+      type: typeof error,
+      constructor: error?.constructor?.name,
+    });
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',
         details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
