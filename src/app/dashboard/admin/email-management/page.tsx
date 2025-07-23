@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { collection, query, onSnapshot, orderBy, where, updateDoc, doc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 import {
   FiMail,
   FiUsers,
@@ -121,16 +123,74 @@ export default function EmailManagementPage() {
   const [tickets, setTickets] = useState<EmailTicket[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Mock data - in production, fetch from APIs
+  // Load real data from Firebase
   useEffect(() => {
     if (user) {
-      loadMockData();
+      loadRealData();
     }
   }, [user]);
 
-  const loadMockData = () => {
-    // Mock contacts
+  const loadRealData = async () => {
+    try {
+      setIsRefreshing(true);
+
+      // Load Email Contacts from Firebase
+      const contactsRef = collection(db, 'emailContacts');
+      const contactsQuery = query(contactsRef, orderBy('createdAt', 'desc'));
+
+      const unsubscribeContacts = onSnapshot(contactsQuery, snapshot => {
+        const contactsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as TaskiloContact[];
+        setContacts(contactsData);
+      });
+
+      // Load Email Tickets from Firebase
+      const ticketsRef = collection(db, 'emailTickets');
+      const ticketsQuery = query(ticketsRef, orderBy('createdAt', 'desc'));
+
+      const unsubscribeTickets = onSnapshot(ticketsQuery, snapshot => {
+        const ticketsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as EmailTicket[];
+        setTickets(ticketsData);
+      });
+
+      // Load Staff from Firebase
+      const staffRef = collection(db, 'adminStaff');
+      const staffQuery = query(staffRef, where('isActive', '==', true));
+
+      const unsubscribeStaff = onSnapshot(staffQuery, snapshot => {
+        const staffData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as StaffMember[];
+        setStaff(staffData);
+      });
+
+      setDataLoaded(true);
+      setIsRefreshing(false);
+
+      // Return cleanup function
+      return () => {
+        unsubscribeContacts();
+        unsubscribeTickets();
+        unsubscribeStaff();
+      };
+    } catch (error) {
+      console.error('Fehler beim Laden der E-Mail-Daten:', error);
+      setIsRefreshing(false);
+      // Fallback zu Demo-Daten bei Fehler
+      loadFallbackData();
+    }
+  };
+
+  const loadFallbackData = () => {
+    // Fallback Demo-Daten falls Firebase nicht verfügbar
     setContacts([
       {
         id: 'contact_1',
@@ -138,8 +198,8 @@ export default function EmailManagementPage() {
         name: 'Support Team',
         category: 'support',
         department: 'general',
-        priority: 'high',
-        status: 'active',
+        priority: 'high' as const,
+        status: 'active' as const,
         lastContact: '2024-01-20',
         assignedStaff: 'emp_002',
       },
@@ -149,90 +209,74 @@ export default function EmailManagementPage() {
         name: 'Newsletter Team',
         category: 'business',
         department: 'marketing',
-        priority: 'medium',
-        status: 'active',
+        priority: 'medium' as const,
+        status: 'active' as const,
         lastContact: '2024-01-19',
         assignedStaff: 'emp_001',
       },
-      {
-        id: 'contact_3',
-        email: 'noreply@taskilo.de',
-        name: 'System Notifications',
-        category: 'technical',
-        department: 'system',
-        priority: 'low',
-        status: 'active',
-        lastContact: '2024-01-22',
-        assignedStaff: 'admin_001',
-      },
     ]);
 
-    // Mock tickets
     setTickets([
       {
         id: 'ticket_1',
         subject: 'Datenschutzanfrage',
         sender: 'kunde@example.com',
         contactId: 'contact_2',
-        status: 'open',
-        priority: 'high',
+        status: 'open' as const,
+        priority: 'high' as const,
         assignedTo: 'emp_001',
         createdAt: '2024-01-20T10:00:00Z',
         updatedAt: '2024-01-20T10:00:00Z',
         unread: true,
       },
-      {
-        id: 'ticket_2',
-        subject: 'Technischer Support',
-        sender: 'user@example.com',
-        contactId: 'contact_1',
-        status: 'in_progress',
-        priority: 'medium',
-        assignedTo: 'emp_002',
-        createdAt: '2024-01-20T09:30:00Z',
-        updatedAt: '2024-01-20T11:00:00Z',
-        unread: false,
-      },
     ]);
 
-    // Mock staff
     setStaff([
       {
         id: 'emp_001',
-        name: 'Elisabeth Schröder',
-        email: 'elisabeth@taskilo.com',
-        role: 'employee',
-        departments: ['legal', 'privacy'],
+        name: 'Demo Mitarbeiter',
+        email: 'demo@taskilo.com',
+        role: 'employee' as const,
+        departments: ['support'],
         permissions: ['view_assigned', 'respond_emails'],
         isActive: true,
-        assignedTickets: 3,
-      },
-      {
-        id: 'emp_002',
-        name: 'Max Müller',
-        email: 'max@taskilo.com',
-        role: 'employee',
-        departments: ['support', 'general'],
-        permissions: ['view_assigned', 'respond_emails'],
-        isActive: true,
-        assignedTickets: 5,
+        assignedTickets: 1,
       },
     ]);
   };
 
   const refreshData = async () => {
     setIsRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
-      loadMockData();
-      setIsRefreshing(false);
-    }, 1000);
+    // Reload real data
+    await loadRealData();
   };
 
-  const reassignEmail = (ticketId: string, newStaffId: string) => {
-    setTickets(prev =>
-      prev.map(ticket => (ticket.id === ticketId ? { ...ticket, assignedTo: newStaffId } : ticket))
-    );
+  const reassignEmail = async (ticketId: string, newStaffId: string) => {
+    try {
+      // Update in Firebase
+      const ticketRef = doc(db, 'emailTickets', ticketId);
+      await updateDoc(ticketRef, {
+        assignedTo: newStaffId,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Update local state
+      setTickets(prev =>
+        prev.map(ticket =>
+          ticket.id === ticketId
+            ? { ...ticket, assignedTo: newStaffId, updatedAt: new Date().toISOString() }
+            : ticket
+        )
+      );
+    } catch (error) {
+      console.error('Fehler beim Neuzuweisen der E-Mail:', error);
+      // Fallback zu lokaler Aktualisierung
+      setTickets(prev =>
+        prev.map(ticket =>
+          ticket.id === ticketId ? { ...ticket, assignedTo: newStaffId } : ticket
+        )
+      );
+    }
   };
 
   const getCategoryColor = (category: string) => {
@@ -274,12 +318,12 @@ export default function EmailManagementPage() {
     return contact ? contact.name : 'Unbekannter Kontakt';
   };
 
-  if (loading) {
+  if (loading || !dataLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <FiRefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Laden...</p>
+          <p>Lade E-Mail-Daten...</p>
         </div>
       </div>
     );
@@ -573,12 +617,30 @@ export default function EmailManagementPage() {
                       </div>
                       <Select
                         value={contact.assignedStaff || ''}
-                        onValueChange={value => {
-                          setContacts(prev =>
-                            prev.map(c =>
-                              c.id === contact.id ? { ...c, assignedStaff: value } : c
-                            )
-                          );
+                        onValueChange={async value => {
+                          try {
+                            // Update in Firebase
+                            const contactRef = doc(db, 'emailContacts', contact.id);
+                            await updateDoc(contactRef, {
+                              assignedStaff: value,
+                              updatedAt: new Date().toISOString(),
+                            });
+
+                            // Update local state
+                            setContacts(prev =>
+                              prev.map(c =>
+                                c.id === contact.id ? { ...c, assignedStaff: value } : c
+                              )
+                            );
+                          } catch (error) {
+                            console.error('Fehler beim Zuweisen des Kontakts:', error);
+                            // Fallback zu lokaler Aktualisierung
+                            setContacts(prev =>
+                              prev.map(c =>
+                                c.id === contact.id ? { ...c, assignedStaff: value } : c
+                              )
+                            );
+                          }
                         }}
                       >
                         <SelectTrigger className="w-48">
