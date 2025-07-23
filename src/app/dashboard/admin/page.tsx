@@ -1,7 +1,6 @@
-import { getAllCompanies } from '@/lib/company-data';
-import { getAllOrders } from '@/lib/order-data';
-import { getAllChats } from '@/lib/chat-data';
-import { getSupportTickets } from '@/lib/support-data';
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClientTranslations } from './components/ClientTranslations';
@@ -14,54 +13,122 @@ import {
   FiSettings,
   FiMail,
   FiUserCheck,
+  FiLoader,
 } from 'react-icons/fi';
 
-export const dynamic = 'force-dynamic';
-
-// Helper-Komponente für Dashboard-Karten, um Code-Wiederholung zu vermeiden
+// Helper-Komponente für Dashboard-Karten
 const StatCard = ({
   href,
   title,
   value,
   icon: Icon,
   error,
+  loading = false,
 }: {
   href: string;
   title: string;
-  value: number | string;
-  icon: React.ElementType;
+  value: number;
+  icon: React.ComponentType<any>;
   error?: string;
+  loading?: boolean;
 }) => (
-  <Link href={href} className="block">
-    <Card className="hover:shadow-lg transition-shadow h-full">
+  <Link href={href}>
+    <Card className="hover:shadow-lg transition-shadow cursor-pointer">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-gray-500" />
       </CardHeader>
       <CardContent>
-        {error ? (
-          <div className="text-sm font-medium text-destructive flex items-center gap-2">
-            <FiAlertTriangle />
-            <span>Daten konnten nicht geladen werden</span>
+        {loading ? (
+          <div className="flex items-center space-x-2">
+            <FiLoader className="h-4 w-4 animate-spin text-blue-500" />
+            <span className="text-sm text-gray-500">Laden...</span>
           </div>
+        ) : error ? (
+          <div className="text-red-500 text-sm">Fehler: {error}</div>
         ) : (
-          <div className="text-2xl font-bold">{value}</div>
+          <div className="text-2xl font-bold text-blue-600">{value}</div>
         )}
       </CardContent>
     </Card>
   </Link>
 );
 
-export default async function DashboardPage() {
-  // Daten parallel abrufen und Fehler elegant abfangen mit Promise.allSettled
-  const results = await Promise.allSettled([
-    getAllCompanies(),
-    getAllOrders(),
-    getAllChats(),
-    getSupportTickets(),
-  ]);
+export default function DashboardPage() {
+  const [stats, setStats] = useState({
+    companies: 0,
+    orders: 0,
+    chats: 0,
+    supportTickets: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [companiesResult, ordersResult, chatsResult, supportTicketsResult] = results;
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        setLoading(true);
+
+        // Parallel laden der Statistiken über API-Endpoints
+        const [companiesRes, ordersRes, chatsRes, supportRes] = await Promise.allSettled([
+          fetch('/api/admin/companies'),
+          fetch('/api/admin/orders'),
+          fetch('/api/admin/chats'),
+          fetch('/api/admin/support'),
+        ]);
+
+        const newStats = { ...stats };
+        const newErrors: Record<string, string> = {};
+
+        // Unternehmen
+        if (companiesRes.status === 'fulfilled' && companiesRes.value.ok) {
+          const companies = await companiesRes.value.json();
+          newStats.companies = Array.isArray(companies) ? companies.length : 0;
+        } else {
+          newErrors.companies = 'Fehler beim Laden';
+        }
+
+        // Aufträge
+        if (ordersRes.status === 'fulfilled' && ordersRes.value.ok) {
+          const orders = await ordersRes.value.json();
+          newStats.orders = Array.isArray(orders) ? orders.length : 0;
+        } else {
+          newErrors.orders = 'Fehler beim Laden';
+        }
+
+        // Chats
+        if (chatsRes.status === 'fulfilled' && chatsRes.value.ok) {
+          const chats = await chatsRes.value.json();
+          newStats.chats = Array.isArray(chats) ? chats.length : 0;
+        } else {
+          newErrors.chats = 'Fehler beim Laden';
+        }
+
+        // Support-Tickets
+        if (supportRes.status === 'fulfilled' && supportRes.value.ok) {
+          const tickets = await supportRes.value.json();
+          newStats.supportTickets = Array.isArray(tickets) ? tickets.length : 0;
+        } else {
+          newErrors.supportTickets = 'Fehler beim Laden';
+        }
+
+        setStats(newStats);
+        setErrors(newErrors);
+      } catch (error) {
+        console.error('Fehler beim Laden der Statistiken:', error);
+        setErrors({
+          companies: 'Ladefehler',
+          orders: 'Ladefehler',
+          chats: 'Ladefehler',
+          supportTickets: 'Ladefehler',
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStats();
+  }, []);
 
   return (
     <ClientTranslations>
@@ -75,90 +142,34 @@ export default async function DashboardPage() {
               href="/dashboard/admin/companies"
               title={t('admin.companies')}
               icon={FiUsers}
-              value={companiesResult.status === 'fulfilled' ? companiesResult.value.length : 0}
-              error={
-                companiesResult.status === 'rejected' ? companiesResult.reason.message : undefined
-              }
+              value={stats.companies}
+              loading={loading}
+              error={errors.companies}
             />
             <StatCard
               href="/dashboard/admin/orders"
               title={t('admin.orders')}
               icon={FiBriefcase}
-              value={ordersResult.status === 'fulfilled' ? ordersResult.value.length : 0}
-              error={ordersResult.status === 'rejected' ? ordersResult.reason.message : undefined}
+              value={stats.orders}
+              loading={loading}
+              error={errors.orders}
             />
             <StatCard
               href="/dashboard/admin/chats"
               title={t('admin.messages')}
               icon={FiMessageSquare}
-              value={chatsResult.status === 'fulfilled' ? chatsResult.value.length : 0}
-              error={chatsResult.status === 'rejected' ? chatsResult.reason.message : undefined}
+              value={stats.chats}
+              loading={loading}
+              error={errors.chats}
             />
             <StatCard
               href="/dashboard/admin/support"
               title={t('admin.support')}
               icon={FiHelpCircle}
-              value={
-                supportTicketsResult.status === 'fulfilled' ? supportTicketsResult.value.length : 0
-              }
-              error={
-                supportTicketsResult.status === 'rejected'
-                  ? supportTicketsResult.reason.message
-                  : undefined
-              }
+              value={stats.supportTickets}
+              loading={loading}
+              error={errors.supportTickets}
             />
-          </div>
-
-          {/* Plattform-Verwaltung */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-gray-800">{t('admin.platform.title')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Link href="/dashboard/admin/platform-settings" className="block">
-                <Card className="hover:shadow-lg transition-shadow h-full border-2 border-[#14ad9f]/20 hover:border-[#14ad9f]/40">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-[#14ad9f]">
-                      Plattform-Einstellungen
-                    </CardTitle>
-                    <FiSettings className="h-5 w-5 text-[#14ad9f]" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-gray-600">{t('admin.settings.description')}</div>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              <Link href="/dashboard/admin/email-management" className="block">
-                <Card className="hover:shadow-lg transition-shadow h-full border-2 border-blue-500/20 hover:border-blue-500/40">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-blue-600">
-                      E-Mail Management
-                    </CardTitle>
-                    <FiMail className="h-5 w-5 text-blue-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-gray-600">
-                      Verwaltung aller Taskilo E-Mail-Adressen und Mitarbeiter-Zuweisungen
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              <Link href="/dashboard/admin/staff-management" className="block">
-                <Card className="hover:shadow-lg transition-shadow h-full border-2 border-purple-500/20 hover:border-purple-500/40">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-purple-600">
-                      Mitarbeiter-Verwaltung
-                    </CardTitle>
-                    <FiUserCheck className="h-5 w-5 text-purple-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-gray-600">
-                      Anmeldung und Verwaltung von Mitarbeitern für E-Mail-Support
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
           </div>
         </div>
       )}
