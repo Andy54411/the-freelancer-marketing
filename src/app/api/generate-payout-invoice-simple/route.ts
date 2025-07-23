@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         console.log('[Invoice API] Loading user data for Firebase UID:', firebaseUserId);
 
         // Versuche zuerst users Collection
-        let userDoc = await db.collection('users').doc(firebaseUserId).get();
+        const userDoc = await db.collection('users').doc(firebaseUserId).get();
         let data = null;
         let foundIn = null;
 

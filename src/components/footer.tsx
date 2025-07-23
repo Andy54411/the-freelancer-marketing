@@ -5,14 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { ChevronsUpDown } from 'lucide-react';
 import React, { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { FiMapPin, FiPhone, FiMail, FiClock, FiMessageCircle, FiShield } from 'react-icons/fi';
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
-import { HiPhone, HiMail } from 'react-icons/hi';
-import { motion } from 'framer-motion';
+import { FiShield } from 'react-icons/fi';
 import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
 
 export default function FooterSection() {
@@ -54,7 +49,7 @@ export default function FooterSection() {
           name: name || undefined,
           source: 'footer',
           consentGiven: true,
-          preferences: ['general']
+          preferences: ['general'],
         }),
       });
 
@@ -62,7 +57,9 @@ export default function FooterSection() {
 
       if (result.success) {
         if (result.requiresConfirmation) {
-          setMessage('📧 Bestätigungs-E-Mail gesendet! Bitte prüfen Sie Ihr Postfach und bestätigen Sie Ihre Anmeldung.');
+          setMessage(
+            '📧 Bestätigungs-E-Mail gesendet! Bitte prüfen Sie Ihr Postfach und bestätigen Sie Ihre Anmeldung.'
+          );
         } else {
           setMessage('✅ Erfolgreich angemeldet! Vielen Dank für Ihr Interesse.');
         }
@@ -70,7 +67,9 @@ export default function FooterSection() {
         setName('');
         setConsentGiven(false);
       } else {
-        setMessage(`❌ ${result.error || 'Fehler bei der Anmeldung. Bitte versuchen Sie es später erneut.'}`);
+        setMessage(
+          `❌ ${result.error || 'Fehler bei der Anmeldung. Bitte versuchen Sie es später erneut.'}`
+        );
       }
     } catch (error) {
       console.error('Newsletter-Anmeldung Fehler:', error);
@@ -347,7 +346,7 @@ export default function FooterSection() {
               <Label htmlFor="mail" className="block font-medium text-white">
                 Newsletter
               </Label>
-              
+
               {/* Name (optional) */}
               <Input
                 type="text"
@@ -357,7 +356,7 @@ export default function FooterSection() {
                 className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 disabled={isLoading}
               />
-              
+
               <div className="flex gap-2">
                 <Input
                   type="email"
@@ -379,7 +378,7 @@ export default function FooterSection() {
                   {isLoading ? 'Lädt...' : 'Abonnieren'}
                 </Button>
               </div>
-              
+
               {/* DSGVO Einverständnis */}
               <div className="flex items-start gap-2">
                 <input
@@ -390,19 +389,19 @@ export default function FooterSection() {
                   className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f]"
                   disabled={isLoading}
                 />
-                <label 
-                  htmlFor="newsletter-consent" 
+                <label
+                  htmlFor="newsletter-consent"
                   className="text-xs text-white/80 leading-tight cursor-pointer"
                 >
-                  Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. 
-                  Weitere Informationen finden Sie in unserer{' '}
+                  Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. Weitere
+                  Informationen finden Sie in unserer{' '}
                   <a href="/datenschutz" className="text-white underline hover:text-white/80">
                     Datenschutzerklärung
-                  </a>. 
-                  Jederzeit abbestellbar.
+                  </a>
+                  . Jederzeit abbestellbar.
                 </label>
               </div>
-              
+
               {message && (
                 <span
                   className={cn(

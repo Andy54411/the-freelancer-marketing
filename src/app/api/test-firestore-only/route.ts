@@ -13,7 +13,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 }
 
 // Initialize Firebase Admin
-let db: any = null;
+const db: any = null;
 
 function initializeFirebaseAdmin() {
   if (getApps().length > 0) {
@@ -22,7 +22,7 @@ function initializeFirebaseAdmin() {
 
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
 
     if (!serviceAccountKey || !projectId) {
       throw new Error('Missing Firebase credentials');

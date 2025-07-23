@@ -64,7 +64,7 @@ export function useCompanyDashboard() {
         }
 
         // Beginne mit den Basis-Benutzerdaten und mische die Firmendaten hinzu.
-        let data = {
+        const data = {
           ...userSnap.data(),
           ...(companySnap.exists() ? companySnap.data() : {}),
         } as RawFirestoreUserData;

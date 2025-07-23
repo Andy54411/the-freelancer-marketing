@@ -1,7 +1,6 @@
 // API Route für Newsletter-Management mit Double-Opt-In
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleSheetsNewsletterManager } from '@/lib/google-workspace';
-import { admin } from '@/firebase/server';
 import { createPendingSubscription } from '@/lib/newsletter-double-opt-in';
 
 // DSGVO-konforme Newsletter-Anmeldung mit Double-Opt-In
@@ -22,15 +21,17 @@ export async function POST(request: NextRequest) {
 
     // DSGVO: Einverständnis muss explizit gegeben werden
     if (consentGiven !== true) {
-      return NextResponse.json({ 
-        error: 'Einverständnis zur Datenverarbeitung erforderlich (DSGVO)' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Einverständnis zur Datenverarbeitung erforderlich (DSGVO)',
+        },
+        { status: 400 }
+      );
     }
 
     // IP-Adresse und User-Agent für DSGVO-Dokumentation
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const ipAddress =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     // Double-Opt-In: Erstelle pending subscription
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       source: source || 'website',
       preferences,
       ipAddress,
-      userAgent
+      userAgent,
     });
 
     if (result.success) {
@@ -50,20 +51,23 @@ export async function POST(request: NextRequest) {
         token: result.token?.substring(0, 8) + '...',
         timestamp: new Date().toISOString(),
         ipAddress,
-        consentGiven: true
+        consentGiven: true,
       });
 
       return NextResponse.json({
         success: true,
-        message: 'Bestätigungs-E-Mail wurde versendet! Bitte prüfen Sie Ihr E-Mail-Postfach und bestätigen Sie Ihre Anmeldung.',
-        requiresConfirmation: true
+        message:
+          'Bestätigungs-E-Mail wurde versendet! Bitte prüfen Sie Ihr E-Mail-Postfach und bestätigen Sie Ihre Anmeldung.',
+        requiresConfirmation: true,
       });
     } else {
-      return NextResponse.json({ 
-        error: result.error || 'Fehler bei der Anmeldung' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: result.error || 'Fehler bei der Anmeldung',
+        },
+        { status: 400 }
+      );
     }
-
   } catch (error) {
     console.error('Newsletter API Fehler:', error);
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });

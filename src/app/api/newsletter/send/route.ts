@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Newsletter-Templates abrufen
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     return NextResponse.json({
       success: true,

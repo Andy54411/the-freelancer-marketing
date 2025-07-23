@@ -14,7 +14,7 @@ export async function callHttpsFunction(
   const baseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';
 
   let url = `${baseUrl}/${functionName}`;
-  let options: RequestInit = {
+  const options: RequestInit = {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
