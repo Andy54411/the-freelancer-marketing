@@ -7,7 +7,8 @@ const GOOGLE_WORKSPACE_CONFIG = {
   CLIENT_ID: process.env.GOOGLE_WORKSPACE_CLIENT_ID,
   CLIENT_SECRET: process.env.GOOGLE_WORKSPACE_CLIENT_SECRET,
   REDIRECT_URI:
-    process.env.GOOGLE_WORKSPACE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback',
+    process.env.GOOGLE_WORKSPACE_REDIRECT_URI ||
+    'http://localhost:3000/api/auth/google-workspace/callback',
   SCOPES: [
     'https://www.googleapis.com/auth/gmail.send',
     'https://www.googleapis.com/auth/spreadsheets',
