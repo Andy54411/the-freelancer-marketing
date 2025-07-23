@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { admin } from '@/firebase/server';
 
 export interface AdminAuthResult {
   success: boolean;
@@ -14,40 +13,56 @@ export interface AdminAuthResult {
 }
 
 /**
- * Verifies admin authentication from request headers
+ * Verifies admin authentication from request cookies (similar to /api/admin/auth)
  */
 export async function verifyAdminAuth(request: NextRequest): Promise<AdminAuthResult> {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return { success: false, error: 'No authorization header' };
+    // Get admin session from cookies (same as /api/admin/auth uses)
+    const adminToken = request.cookies.get('admin-token')?.value;
+
+    if (!adminToken) {
+      return { success: false, error: 'No admin session' };
     }
 
-    const idToken = authHeader.replace('Bearer ', '');
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // Mock employee data (should match /api/admin/auth data)
+    const EMPLOYEES = [
+      {
+        id: 'master_001',
+        name: 'Andy Staudinger',
+        email: 'andy.staudinger@taskilo.de',
+        role: 'master' as const,
+        permissions: [
+          'view_all',
+          'reassign',
+          'create_employee',
+          'delete_employee',
+          'manage_permissions',
+        ],
+      },
+      {
+        id: 'admin_001',
+        name: 'Andy Staudinger',
+        email: 'noreply@taskilo.de',
+        role: 'support' as const,
+        permissions: ['view_assigned', 'respond_emails', 'system_notifications'],
+      },
+    ];
 
-    // Check if user has admin role
-    if (!decodedToken.role || (decodedToken.role !== 'master' && decodedToken.role !== 'support')) {
-      return { success: false, error: 'Insufficient permissions' };
+    // Simple token verification (in production, use proper JWT verification)
+    const employee = EMPLOYEES.find(emp => `token_${emp.id}` === adminToken);
+
+    if (!employee) {
+      return { success: false, error: 'Invalid admin session' };
     }
-
-    // Get employee data from Firestore
-    const employeeDoc = await admin.firestore().collection('employees').doc(decodedToken.uid).get();
-
-    if (!employeeDoc.exists) {
-      return { success: false, error: 'Employee record not found' };
-    }
-
-    const employeeData = employeeDoc.data();
 
     return {
       success: true,
       employee: {
-        id: decodedToken.uid,
-        email: decodedToken.email || '',
-        name: employeeData?.name || 'Admin',
-        role: decodedToken.role as 'master' | 'support',
-        permissions: employeeData?.permissions || [],
+        id: employee.id,
+        email: employee.email,
+        name: employee.name,
+        role: employee.role,
+        permissions: employee.permissions,
       },
     };
   } catch (error) {
