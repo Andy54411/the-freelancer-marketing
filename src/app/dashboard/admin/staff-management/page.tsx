@@ -60,92 +60,88 @@ interface AccessLog {
   success: boolean;
 }
 
-const MOCK_STAFF: StaffMember[] = [
+const LIVE_STAFF: StaffMember[] = [
   {
-    id: 'staff-1',
+    id: 'andy-team',
     name: 'Andy Staudinger',
-    email: 'andy@taskilo.com',
+    email: 'team@taskilo.de',
     role: 'admin',
     department: 'Management',
-    assignedContacts: ['legal', 'tech', 'business'],
-    isOnline: true,
-    lastActive: '2025-07-22T10:30:00Z',
+    assignedContacts: ['team'],
+    isOnline: false,
+    lastActive: 'Noch nicht angemeldet',
     permissions: ['email_read', 'email_write', 'email_assign', 'staff_manage', 'system_admin'],
-    loginCount: 245,
-    createdAt: '2025-01-15T09:00:00Z',
+    loginCount: 0,
+    createdAt: '2025-07-22T00:00:00Z',
     status: 'active',
   },
   {
-    id: 'staff-2',
-    name: 'Sarah Mueller',
-    email: 'sarah@taskilo.com',
+    id: 'andy-noreply',
+    name: 'Andy Staudinger',
+    email: 'noreply@taskilo.de',
+    role: 'admin',
+    department: 'Management',
+    assignedContacts: ['noreply'],
+    isOnline: false,
+    lastActive: 'Noch nicht angemeldet',
+    permissions: ['email_read', 'email_write', 'email_assign'],
+    loginCount: 0,
+    createdAt: '2025-07-22T00:00:00Z',
+    status: 'active',
+  },
+  {
+    id: 'andy-support',
+    name: 'Andy Staudinger',
+    email: 'support@taskilo.de',
     role: 'support',
     department: 'Customer Support',
-    assignedContacts: ['support', 'disputes'],
-    isOnline: true,
-    lastActive: '2025-07-22T10:25:00Z',
-    permissions: ['email_read', 'email_write'],
-    loginCount: 89,
-    createdAt: '2025-03-10T08:30:00Z',
-    status: 'active',
-  },
-  {
-    id: 'staff-3',
-    name: 'Max Schmidt',
-    email: 'max@taskilo.com',
-    role: 'support',
-    department: 'Technical Support',
-    assignedContacts: ['tech', 'support'],
+    assignedContacts: ['support'],
     isOnline: false,
-    lastActive: '2025-07-22T09:15:00Z',
+    lastActive: 'Noch nicht angemeldet',
     permissions: ['email_read', 'email_write'],
-    loginCount: 156,
-    createdAt: '2025-02-20T10:00:00Z',
+    loginCount: 0,
+    createdAt: '2025-07-16T00:00:00Z',
     status: 'active',
   },
   {
-    id: 'staff-4',
-    name: 'Elisabeth Schröder',
-    email: 'elisabeth@taskilo.com',
-    role: 'manager',
-    department: 'Business Development',
-    assignedContacts: ['business', 'press'],
+    id: 'andy-main',
+    name: 'Andy Staudinger',
+    email: 'andy.staudinger@taskilo.de',
+    role: 'admin',
+    department: 'Management',
+    assignedContacts: ['andy'],
     isOnline: true,
-    lastActive: '2025-07-22T10:45:00Z',
-    permissions: ['email_read', 'email_write', 'email_assign', 'staff_view'],
-    loginCount: 67,
-    createdAt: '2025-04-05T14:20:00Z',
+    lastActive: '2025-07-16T00:00:00Z',
+    permissions: ['email_read', 'email_write', 'email_assign', 'staff_manage', 'system_admin'],
+    loginCount: 1,
+    createdAt: '2025-07-16T00:00:00Z',
+    status: 'active',
+  },
+  {
+    id: 'elisabeth-newsletter',
+    name: 'Elisabeth Schröder',
+    email: 'newsletter@taskilo.de',
+    role: 'manager',
+    department: 'Newsletter Management',
+    assignedContacts: ['newsletter'],
+    isOnline: false,
+    lastActive: 'Noch nicht angemeldet',
+    permissions: ['email_read', 'email_write', 'manage_newsletter'],
+    loginCount: 0,
+    createdAt: '2025-07-22T00:00:00Z',
     status: 'active',
   },
 ];
 
-const MOCK_ACCESS_LOGS: AccessLog[] = [
+const LIVE_ACCESS_LOGS: AccessLog[] = [
   {
     id: 'log-1',
-    staffId: 'staff-1',
+    staffId: 'andy-main',
     action: 'login',
-    timestamp: '2025-07-22T10:30:00Z',
+    timestamp: '2025-07-16T00:00:00Z',
     ipAddress: '192.168.1.100',
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
     success: true,
-  },
-  {
-    id: 'log-2',
-    staffId: 'staff-2',
-    action: 'email_access',
-    timestamp: '2025-07-22T10:25:00Z',
-    ipAddress: '192.168.1.101',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    success: true,
-  },
-  {
-    id: 'log-3',
-    staffId: 'staff-3',
-    action: 'login_failed',
-    timestamp: '2025-07-22T09:10:00Z',
-    ipAddress: '192.168.1.102',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    success: false,
   },
 ];
 
@@ -179,8 +175,8 @@ const AVAILABLE_PERMISSIONS = [
 ];
 
 export default function StaffManagementPage() {
-  const [staff, setStaff] = useState<StaffMember[]>(MOCK_STAFF);
-  const [accessLogs, setAccessLogs] = useState<AccessLog[]>(MOCK_ACCESS_LOGS);
+  const [staff, setStaff] = useState<StaffMember[]>(LIVE_STAFF);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>(LIVE_ACCESS_LOGS);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
