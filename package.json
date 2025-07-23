@@ -87,6 +87,7 @@
     "geofire-common": "^6.0.0",
     "google-auth-library": "^10.1.0",
     "googleapis": "^153.0.0",
+    "jose": "^6.0.12",
     "jspdf": "^3.0.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.511.0",
