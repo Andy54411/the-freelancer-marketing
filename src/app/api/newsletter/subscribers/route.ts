@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Double-Opt-In: Erstelle pending subscription
+    // Erstelle Newsletter-Anmeldung mit Double-Opt-In
+    console.log('Newsletter API - Starte Anmeldung:', { email, name, source, consentGiven });
+
     const result = await createPendingSubscription(email, {
       name,
       source: source || 'website',
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
       userAgent,
     });
 
+    console.log('Newsletter API - Ergebnis:', result);
     if (result.success) {
       console.log('Double-Opt-In Newsletter-Anmeldung erstellt:', {
         email,
@@ -69,8 +72,22 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Newsletter API Fehler:', error);
-    return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
+    console.error('Newsletter API Fehler - Vollständiger Error:', error);
+    console.error(
+      'Newsletter API Fehler - Error Message:',
+      error instanceof Error ? error.message : 'Unbekannter Fehler'
+    );
+    console.error(
+      'Newsletter API Fehler - Error Stack:',
+      error instanceof Error ? error.stack : 'Kein Stack verfügbar'
+    );
+    return NextResponse.json(
+      {
+        error: 'Interner Server-Fehler',
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
+      { status: 500 }
+    );
   }
 }
 
