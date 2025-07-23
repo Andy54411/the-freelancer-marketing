@@ -52,12 +52,6 @@ service cloud.firestore {
              );
     }
 
-    function isSupportChatParticipant(chatId) {
-      // Diese Regel ist sicher, da die Chat-ID direkt von der UID des authentifizierten
-      // Benutzers abgeleitet wird. Sie benötigt keinen Lesezugriff auf das Dokument selbst.
-      return request.auth != null && chatId == "support_chat_" + request.auth.uid;
-    }
-
     // --- users Collection ---
     match /users/{userId} {
       // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.
@@ -341,8 +335,20 @@ service cloud.firestore {
         (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
       );
 
-      // list: Vereinfachte Regel für Emulator-Entwicklung
-      allow list: if request.auth != null;
+      // list: Erweiterte Regel für Admin-Dashboard und Benutzer-Benachrichtigungen
+      allow list: if request.auth != null && (
+        isSupportStaff() ||
+        (
+          'where' in request.query &&
+          request.query.where != null &&
+          request.query.where.size() > 0 &&
+          request.query.where[0].path == 'userId' &&
+          request.query.where[0].op == '==' &&
+          request.query.where[0].value == request.auth.uid
+        ) ||
+        // Fallback für ungefilterte Abfragen (begrenzt auf 100 für Admins)
+        (isSupportStaff() && request.query.limit <= 100)
+      );
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
       // Ein Admin darf ebenfalls jede Benachrichtigung aktualisieren.
@@ -350,11 +356,13 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid || isSupportStaff()
       );
 
-      // create: Wird vom Backend (Cloud Function) mit Admin-Rechten erledigt.
-      allow create: if false;
+      // create: Wird vom Backend (Cloud Function) mit Admin-Rechten erledigt oder für Admins
+      allow create: if isSupportStaff();
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu löschen.
-      allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource != null && (
+        resource.data.userId == request.auth.uid || isSupportStaff()
+      );
     }
 
     // --- reviews Collection ---
