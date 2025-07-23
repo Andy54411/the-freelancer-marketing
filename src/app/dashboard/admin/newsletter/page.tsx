@@ -8,7 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FiMail, FiUsers, FiSend, FiPlus, FiTrash2, FiEdit3, FiCalendar } from 'react-icons/fi';
+import {
+  FiMail,
+  FiUsers,
+  FiSend,
+  FiPlus,
+  FiTrash2,
+  FiEdit3,
+  FiCalendar,
+  FiSettings,
+} from 'react-icons/fi';
 import { toast } from 'sonner';
 
 interface NewsletterSubscriber {
@@ -95,12 +104,31 @@ export default function NewsletterPage() {
   const [campaigns, setCampaigns] = useState<NewsletterCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('subscribers');
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
   // Newsletter-Formular State
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
   const [campaignSubject, setCampaignSubject] = useState('');
   const [campaignContent, setCampaignContent] = useState('');
+
+  // Check Google Workspace connection
+  useEffect(() => {
+    const accessToken = localStorage.getItem('google_access_token');
+    setIsGoogleConnected(!!accessToken);
+  }, []);
+
+  // Google Workspace Authentication
+  const connectGoogleWorkspace = () => {
+    window.location.href = '/api/auth/google-workspace';
+  };
+
+  const disconnectGoogleWorkspace = () => {
+    localStorage.removeItem('google_access_token');
+    localStorage.removeItem('google_refresh_token');
+    setIsGoogleConnected(false);
+    toast.success('Google Workspace Verbindung getrennt');
+  };
 
   // Newsletter-Daten laden über API
   useEffect(() => {
@@ -231,23 +259,40 @@ export default function NewsletterPage() {
     }
   };
 
-  // Newsletter senden
+  // Newsletter senden mit Google Workspace
   const sendCampaign = async (campaignId: string) => {
     try {
+      // Check if Google Workspace is configured
+      const accessToken = localStorage.getItem('google_access_token');
+      const refreshToken = localStorage.getItem('google_refresh_token');
+
+      if (!accessToken) {
+        toast.error(
+          'Google Workspace Authentifizierung erforderlich. Bitte melden Sie sich zuerst an.'
+        );
+        return;
+      }
+
       const response = await fetch('/api/admin/newsletter', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'campaign-send',
           id: campaignId,
+          data: {
+            accessToken,
+            refreshToken,
+          },
         }),
       });
 
       if (response.ok) {
-        toast.success('Newsletter erfolgreich gesendet!');
+        const result = await response.json();
+        toast.success(result.message || 'Newsletter erfolgreich gesendet!');
         loadNewsletterData(); // Reload data
       } else {
-        toast.error('Fehler beim Senden des Newsletters');
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Fehler beim Senden des Newsletters');
       }
     } catch (error) {
       console.error('Error sending campaign:', error);
@@ -286,7 +331,7 @@ export default function NewsletterPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800">Newsletter-Verwaltung</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Badge variant="secondary" className="flex items-center gap-1">
             <FiUsers className="h-3 w-3" />
             {activeSubscribers.length} Abonnenten
@@ -295,8 +340,52 @@ export default function NewsletterPage() {
             <FiMail className="h-3 w-3" />
             {campaigns.length} Kampagnen
           </Badge>
+          {isGoogleConnected ? (
+            <Badge variant="default" className="flex items-center gap-1">
+              <FiSettings className="h-3 w-3" />
+              Google Connected
+            </Badge>
+          ) : (
+            <Badge variant="destructive" className="flex items-center gap-1">
+              <FiSettings className="h-3 w-3" />
+              Google Disconnected
+            </Badge>
+          )}
         </div>
       </div>
+
+      {/* Google Workspace Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FiSettings className="h-5 w-5" />
+            Google Workspace Konfiguration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">
+                {isGoogleConnected
+                  ? 'Google Workspace ist verbunden. Newsletter können per Gmail API versendet werden.'
+                  : 'Google Workspace ist nicht verbunden. Bitte authentifizieren Sie sich für das Newsletter-Versenden.'}
+              </p>
+            </div>
+            <div>
+              {isGoogleConnected ? (
+                <Button variant="outline" onClick={disconnectGoogleWorkspace}>
+                  Verbindung trennen
+                </Button>
+              ) : (
+                <Button onClick={connectGoogleWorkspace} className="flex items-center gap-2">
+                  <FiSettings className="h-4 w-4" />
+                  Google Workspace verbinden
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
@@ -435,6 +524,10 @@ export default function NewsletterPage() {
                               size="sm"
                               onClick={() => sendCampaign(campaign.id)}
                               className="flex items-center gap-1"
+                              disabled={!isGoogleConnected}
+                              title={
+                                !isGoogleConnected ? 'Google Workspace Verbindung erforderlich' : ''
+                              }
                             >
                               <FiSend className="h-3 w-3" />
                               Senden

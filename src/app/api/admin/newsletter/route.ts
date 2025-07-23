@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/admin-auth';
 import { admin } from '@/firebase/server';
+import { GmailNewsletterSender } from '@/lib/google-workspace';
 
 export async function GET(request: NextRequest) {
   try {
@@ -165,13 +166,118 @@ export async function PUT(request: NextRequest) {
     const { type, id, data } = body;
 
     if (type === 'campaign-send') {
-      // Send campaign
-      await admin.firestore().collection('newsletterCampaigns').doc(id).update({
-        status: 'sent',
-        sentAt: admin.firestore.Timestamp.now(),
-      });
+      // Get campaign details
+      const campaignDoc = await admin.firestore().collection('newsletterCampaigns').doc(id).get();
 
-      return NextResponse.json({ success: true });
+      if (!campaignDoc.exists) {
+        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      }
+
+      const campaign = campaignDoc.data();
+      if (campaign?.status !== 'draft') {
+        return NextResponse.json(
+          { error: 'Campaign already sent or not in draft status' },
+          { status: 400 }
+        );
+      }
+
+      // Get active subscribers
+      const subscribersSnapshot = await admin
+        .firestore()
+        .collection('newsletterSubscribers')
+        .where('subscribed', '==', true)
+        .get();
+
+      const subscriberEmails = subscribersSnapshot.docs.map(doc => doc.data().email);
+
+      if (subscriberEmails.length === 0) {
+        return NextResponse.json({ error: 'No active subscribers found' }, { status: 400 });
+      }
+
+      // Get Google Workspace credentials from request or admin
+      const { accessToken, refreshToken } = data || {};
+
+      if (!accessToken) {
+        return NextResponse.json(
+          {
+            error: 'Google Workspace access token required for sending emails',
+          },
+          { status: 400 }
+        );
+      }
+
+      try {
+        // Initialize Gmail sender
+        const gmailSender = new GmailNewsletterSender(accessToken, refreshToken);
+
+        // Create HTML content (you can enhance this with templates)
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${campaign.subject}</title>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+              .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+              .content { padding: 20px; }
+              .footer { background-color: #f8f9fa; padding: 10px; text-align: center; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Taskilo Newsletter</h1>
+            </div>
+            <div class="content">
+              ${campaign.content.replace(/\n/g, '<br>')}
+            </div>
+            <div class="footer">
+              <p>Sie erhalten diese E-Mail, weil Sie sich für den Taskilo Newsletter angemeldet haben.</p>
+              <p>Um sich abzumelden, antworten Sie auf diese E-Mail mit "Abmelden".</p>
+            </div>
+          </body>
+          </html>
+        `;
+
+        // Send newsletter
+        const sendResult = await gmailSender.sendNewsletter(
+          subscriberEmails,
+          campaign.subject,
+          htmlContent,
+          campaign.content // Text version
+        );
+
+        if (sendResult.success) {
+          // Update campaign status
+          await admin.firestore().collection('newsletterCampaigns').doc(id).update({
+            status: 'sent',
+            sentAt: admin.firestore.Timestamp.now(),
+            recipientCount: subscriberEmails.length,
+            sendResults: sendResult.results,
+          });
+
+          return NextResponse.json({
+            success: true,
+            message: `Newsletter successfully sent to ${subscriberEmails.length} subscribers`,
+            results: sendResult.results,
+          });
+        } else {
+          return NextResponse.json(
+            {
+              error: `Failed to send newsletter: ${sendResult.error}`,
+            },
+            { status: 500 }
+          );
+        }
+      } catch (error) {
+        console.error('Error sending newsletter via Gmail:', error);
+        return NextResponse.json(
+          {
+            error: 'Failed to send newsletter via Gmail API',
+          },
+          { status: 500 }
+        );
+      }
     } else {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
