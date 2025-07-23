@@ -18,6 +18,8 @@ import { useCookieConsentContext } from '@/contexts/CookieConsentContext';
 export default function FooterSection() {
   const { resetConsent } = useCookieConsentContext();
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [consentGiven, setConsentGiven] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -33,6 +35,11 @@ export default function FooterSection() {
       return;
     }
 
+    if (!consentGiven) {
+      setMessage('Bitte stimmen Sie der Datenverarbeitung zu (DSGVO erforderlich).');
+      return;
+    }
+
     setIsLoading(true);
     setMessage('');
 
@@ -44,18 +51,26 @@ export default function FooterSection() {
         },
         body: JSON.stringify({
           email,
-          name: '', // Optional: Könnte später erweitert werden
-          source: 'Footer',
+          name: name || undefined,
+          source: 'footer',
+          consentGiven: true,
+          preferences: ['general']
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setMessage('✅ Erfolgreich angemeldet! Vielen Dank für Ihr Interesse.');
+        if (result.requiresConfirmation) {
+          setMessage('📧 Bestätigungs-E-Mail gesendet! Bitte prüfen Sie Ihr Postfach und bestätigen Sie Ihre Anmeldung.');
+        } else {
+          setMessage('✅ Erfolgreich angemeldet! Vielen Dank für Ihr Interesse.');
+        }
         setEmail('');
+        setName('');
+        setConsentGiven(false);
       } else {
-        setMessage('❌ Fehler bei der Anmeldung. Bitte versuchen Sie es später erneut.');
+        setMessage(`❌ ${result.error || 'Fehler bei der Anmeldung. Bitte versuchen Sie es später erneut.'}`);
       }
     } catch (error) {
       console.error('Newsletter-Anmeldung Fehler:', error);
@@ -332,6 +347,17 @@ export default function FooterSection() {
               <Label htmlFor="mail" className="block font-medium text-white">
                 Newsletter
               </Label>
+              
+              {/* Name (optional) */}
+              <Input
+                type="text"
+                placeholder="Name (optional)"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                disabled={isLoading}
+              />
+              
               <div className="flex gap-2">
                 <Input
                   type="email"
@@ -348,11 +374,35 @@ export default function FooterSection() {
                   type="submit"
                   size="sm"
                   className="bg-white text-[#14ad9f] hover:bg-white/90 disabled:opacity-50"
-                  disabled={isLoading}
+                  disabled={isLoading || !consentGiven}
                 >
                   {isLoading ? 'Lädt...' : 'Abonnieren'}
                 </Button>
               </div>
+              
+              {/* DSGVO Einverständnis */}
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="newsletter-consent"
+                  checked={consentGiven}
+                  onChange={e => setConsentGiven(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f]"
+                  disabled={isLoading}
+                />
+                <label 
+                  htmlFor="newsletter-consent" 
+                  className="text-xs text-white/80 leading-tight cursor-pointer"
+                >
+                  Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. 
+                  Weitere Informationen finden Sie in unserer{' '}
+                  <a href="/datenschutz" className="text-white underline hover:text-white/80">
+                    Datenschutzerklärung
+                  </a>. 
+                  Jederzeit abbestellbar.
+                </label>
+              </div>
+              
               {message && (
                 <span
                   className={cn(

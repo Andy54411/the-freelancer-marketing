@@ -1,8 +1,10 @@
 // Gmail SMTP Newsletter System für Google Workspace - OHNE OAuth
 import nodemailer from 'nodemailer';
+import { addUnsubscribeLinkToHtml } from './newsletter-gdpr';
+import { admin } from '@/firebase/server';
 
 // Google Workspace SMTP Konfiguration
-const gmailTransporter = nodemailer.createTransporter({
+const gmailTransporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false, // true für 465, false für andere Ports
@@ -15,7 +17,41 @@ const gmailTransporter = nodemailer.createTransporter({
   },
 });
 
-// Newsletter versenden
+// Einzelne E-Mail senden (für Double-Opt-In Bestätigungen)
+export async function sendSingleEmailViaGmail(
+  to: string,
+  subject: string,
+  htmlContent: string,
+  options?: {
+    from?: string;
+    replyTo?: string;
+  }
+) {
+  try {
+    const mailOptions = {
+      from: options?.from || `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
+      to,
+      subject,
+      html: htmlContent,
+      text: htmlContent.replace(/<[^>]*>/g, ''), // HTML zu Text
+      replyTo: options?.replyTo || process.env.GMAIL_USERNAME
+    };
+
+    const result = await gmailTransporter.sendMail(mailOptions);
+    console.log(`E-Mail erfolgreich gesendet an ${to}:`, result.messageId);
+
+    return {
+      success: true,
+      messageId: result.messageId
+    };
+
+  } catch (error) {
+    console.error(`Fehler beim Senden der E-Mail an ${to}:`, error);
+    throw error;
+  }
+}
+
+// Newsletter mit DSGVO-konformen Abmelde-Links versenden
 export async function sendNewsletterViaGmail(
   recipients: string[],
   subject: string,
@@ -24,27 +60,85 @@ export async function sendNewsletterViaGmail(
   try {
     console.log('📧 Sende Newsletter über Gmail SMTP...');
 
-    const mailOptions = {
-      from: `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
-      to: recipients.join(', '),
-      subject: subject,
-      html: htmlContent,
-      text: htmlContent.replace(/<[^>]*>/g, ''), // HTML zu Text
-    };
+    const results = [];
 
-    const result = await gmailTransporter.sendMail(mailOptions);
+    for (const email of recipients) {
+      // Für jeden Empfänger individuellen Abmelde-Link hinzufügen
+      const subscriberData = await getSubscriberByEmail(email);
+      const htmlWithUnsubscribe = subscriberData?.unsubscribeToken 
+        ? addUnsubscribeLinkToHtml(htmlContent, email, subscriberData.unsubscribeToken)
+        : htmlContent;
 
-    console.log('✅ Newsletter erfolgreich versendet!');
-    console.log('Message ID:', result.messageId);
+      // Headers für E-Mail-Clients (DSGVO-konform)
+      const headers: Record<string, string> = {
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+      };
+
+      // Nur hinzufügen wenn Token verfügbar
+      if (subscriberData?.unsubscribeToken) {
+        headers['List-Unsubscribe'] = `<https://taskilo.de/newsletter/unsubscribe?email=${encodeURIComponent(email)}&token=${subscriberData.unsubscribeToken}>`;
+      }
+
+      const mailOptions = {
+        from: `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
+        to: email,
+        subject: subject,
+        html: htmlWithUnsubscribe,
+        text: htmlWithUnsubscribe.replace(/<[^>]*>/g, ''), // HTML zu Text
+        headers
+      };
+
+      try {
+        const result = await gmailTransporter.sendMail(mailOptions);
+        results.push({
+          email,
+          success: true,
+          messageId: result.messageId
+        });
+      } catch (emailError) {
+        console.error(`❌ Fehler beim Senden an ${email}:`, emailError);
+        results.push({
+          email,
+          success: false,
+          error: emailError instanceof Error ? emailError.message : 'Unbekannter Fehler'
+        });
+      }
+    }
+
+    console.log('✅ Newsletter-Batch versendet!');
+    console.log(`Erfolgreich: ${results.filter(r => r.success).length}/${results.length}`);
 
     return {
       success: true,
-      messageId: result.messageId,
-      recipients: recipients.length,
+      results,
+      totalSent: results.filter(r => r.success).length,
+      totalFailed: results.filter(r => !r.success).length
     };
+
   } catch (error) {
     console.error('❌ Gmail SMTP Fehler:', error);
     throw error;
+  }
+}
+
+// Hilfsfunktion: Subscriber-Daten aus Firestore abrufen
+async function getSubscriberByEmail(email: string) {
+  try {
+    const query = await admin
+      .firestore()
+      .collection('newsletterSubscribers')
+      .where('email', '==', email)
+      .where('subscribed', '==', true)
+      .limit(1)
+      .get();
+
+    if (!query.empty) {
+      return query.docs[0].data();
+    }
+    return null;
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Subscriber-Daten:', error);
+    return null;
   }
 }
 
@@ -68,7 +162,11 @@ export async function sendBulkNewsletterViaGmail(
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
       console.error(`❌ Batch ${i / batchSize + 1} fehlgeschlagen:`, error);
-      results.push({ success: false, error: error.message, batch: i / batchSize + 1 });
+      results.push({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler', 
+        batch: i / batchSize + 1 
+      });
     }
   }
 

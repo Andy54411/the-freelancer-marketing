@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Statistiken berechnen
     const successful = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success).length;
-    const totalRecipients = results.reduce((sum, r) => sum + (r.recipients || 0), 0);
+    const totalRecipients = recipients.length;
 
     return NextResponse.json({
       success: true,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Newsletter-Versand fehlgeschlagen',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       },
       { status: 500 }
     );

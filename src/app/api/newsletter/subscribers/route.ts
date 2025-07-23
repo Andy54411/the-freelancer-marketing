@@ -1,14 +1,15 @@
-// API Route für Newsletter-Management
+// API Route für Newsletter-Management mit Double-Opt-In
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleSheetsNewsletterManager } from '@/lib/google-workspace';
 import { admin } from '@/firebase/server';
+import { createPendingSubscription } from '@/lib/newsletter-double-opt-in';
 
-// Vereinfachter Endpunkt für öffentliche Newsletter-Anmeldungen
+// DSGVO-konforme Newsletter-Anmeldung mit Double-Opt-In
 export async function POST(request: NextRequest) {
   try {
-    const { email, name, preferences, source } = await request.json();
+    const { email, name, preferences, source, consentGiven } = await request.json();
 
-    // Für öffentliche Anmeldungen (Footer) speichern wir in Firestore
+    // Für öffentliche Anmeldungen (Footer) speichern wir DSGVO-konform in Firestore
     if (!email) {
       return NextResponse.json({ error: 'E-Mail-Adresse erforderlich' }, { status: 400 });
     }
@@ -19,40 +20,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültige E-Mail-Adresse' }, { status: 400 });
     }
 
-    // Check if subscriber already exists in Firestore
-    const existingSubscriber = await admin
-      .firestore()
-      .collection('newsletterSubscribers')
-      .where('email', '==', email)
-      .get();
-
-    if (!existingSubscriber.empty) {
-      return NextResponse.json({ error: 'E-Mail-Adresse bereits registriert' }, { status: 409 });
+    // DSGVO: Einverständnis muss explizit gegeben werden
+    if (consentGiven !== true) {
+      return NextResponse.json({ 
+        error: 'Einverständnis zur Datenverarbeitung erforderlich (DSGVO)' 
+      }, { status: 400 });
     }
 
-    // Save to Firestore
-    const newSubscriber = {
-      email,
-      name: name || null,
-      subscribed: true,
-      subscribedAt: admin.firestore.Timestamp.now(),
+    // IP-Adresse und User-Agent für DSGVO-Dokumentation
+    const ipAddress = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+
+    // Double-Opt-In: Erstelle pending subscription
+    const result = await createPendingSubscription(email, {
+      name,
       source: source || 'website',
-      preferences: preferences || null,
-    };
-
-    await admin.firestore().collection('newsletterSubscribers').add(newSubscriber);
-
-    console.log('Newsletter-Anmeldung gespeichert:', {
-      email,
-      name: name || 'Unbekannt',
-      source: source || 'Website',
-      timestamp: new Date().toISOString(),
+      preferences,
+      ipAddress,
+      userAgent
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Newsletter-Anmeldung erfolgreich!',
-    });
+    if (result.success) {
+      console.log('Double-Opt-In Newsletter-Anmeldung erstellt:', {
+        email,
+        name: name || 'Unbekannt',
+        source: source || 'Website',
+        token: result.token?.substring(0, 8) + '...',
+        timestamp: new Date().toISOString(),
+        ipAddress,
+        consentGiven: true
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Bestätigungs-E-Mail wurde versendet! Bitte prüfen Sie Ihr E-Mail-Postfach und bestätigen Sie Ihre Anmeldung.',
+        requiresConfirmation: true
+      });
+    } else {
+      return NextResponse.json({ 
+        error: result.error || 'Fehler bei der Anmeldung' 
+      }, { status: 400 });
+    }
+
   } catch (error) {
     console.error('Newsletter API Fehler:', error);
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });

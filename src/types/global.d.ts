@@ -23,18 +23,18 @@ declare global {
     url: string;
     description: string;
   }
+}
 
-  // Benutzerdefinierte Module: Hier wird ein Beispiel für ein benutzerdefiniertes Modul gezeigt.
-  // Beispiel: Ein benutzerdefiniertes Modul für API-Aufrufe
-  declare module 'my-custom-api' {
-    export function fetchData(endpoint: string): Promise<unknown>; // Use unknown instead of any
-  }
+// Benutzerdefinierte Module: Hier wird ein Beispiel für ein benutzerdefiniertes Modul gezeigt.
+// Beispiel: Ein benutzerdefiniertes Modul für API-Aufrufe
+declare module 'my-custom-api' {
+  export function fetchData(endpoint: string): Promise<unknown>;
+}
 
-  // Typisierung für Umgebungsvariablen
-  namespace NodeJS {
-    interface ProcessEnv {
-      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: string; // API_KEY als Umgebungsvariable
-    }
+// Typisierung für Umgebungsvariablen
+declare namespace NodeJS {
+  interface ProcessEnv {
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: string; // API_KEY als Umgebungsvariable
   }
 }
 

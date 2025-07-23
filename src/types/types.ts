@@ -1,7 +1,7 @@
 // /Users/andystaudinger/Taskilo/src/types/types.ts
 
 import { DateRange } from 'react-day-picker';
-import React from 'react';
+import * as React from 'react';
 
 // --- BENUTZER & AUTH ---
 /**

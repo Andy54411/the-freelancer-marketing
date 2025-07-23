@@ -409,15 +409,63 @@ service cloud.firestore {
       }
     }
 
-    // --- Newsletter Collections (Admin-only) ---
+    // --- Newsletter Collections (DSGVO-konform) ---
     match /newsletterSubscribers/{subscriberId} {
-      // Nur Support-Staff (master/support) können Newsletter-Abonnenten verwalten
-      allow read, write, create, delete: if isSupportStaff();
+      // Lesen: Nur Support-Staff oder der Benutzer selbst (via E-Mail-Vergleich)
+      allow read: if isSupportStaff() || 
+        (request.auth != null && 
+         request.auth.token.email != null && 
+         resource.data.email == request.auth.token.email);
+      
+      // Erstellen: Support-Staff oder anonyme/öffentliche Newsletter-Anmeldung (Footer)
+      allow create: if isSupportStaff() || 
+        (request.resource.data.keys().hasAll(['email', 'subscribed', 'subscribedAt', 'source', 'consentGiven']) &&
+         request.resource.data.consentGiven == true &&
+         request.resource.data.subscribed == true);
+      
+      // Aktualisieren: Nur Support-Staff oder Abmeldung durch Benutzer
+      allow update: if isSupportStaff() || 
+        (request.auth != null && 
+         request.auth.token.email != null && 
+         resource.data.email == request.auth.token.email &&
+         // Nur Abmeldung erlaubt (subscribed: false)
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subscribed', 'unsubscribedAt', 'unsubscribeReason']) &&
+         request.resource.data.subscribed == false);
+      
+      // Löschen: Nur Support-Staff (DSGVO-Löschung)
+      allow delete: if isSupportStaff();
+    }
+
+    // --- Newsletter Pending Confirmations (Double-Opt-In) ---
+    match /newsletterPendingConfirmations/{confirmationId} {
+      // Lesen: Nur Support-Staff
+      allow read: if isSupportStaff();
+      
+      // Erstellen: System/API kann pending confirmations erstellen
+      allow create: if request.resource.data.keys().hasAll(['email', 'confirmationToken', 'createdAt', 'expiresAt', 'confirmed']) &&
+        request.resource.data.confirmed == false;
+      
+      // Aktualisieren: System/API kann confirmed-Status ändern
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed']) &&
+        request.resource.data.confirmed == true;
+      
+      // Löschen: System/API für Cleanup und Support-Staff
+      allow delete: if isSupportStaff() || true; // true für automatisches Cleanup
     }
 
     match /newsletterCampaigns/{campaignId} {
       // Nur Support-Staff (master/support) können Newsletter-Kampagnen verwalten
       allow read, write, create, delete: if isSupportStaff();
+    }
+
+    // --- Newsletter Unsubscribe Logs (für DSGVO-Compliance) ---
+    match /newsletterUnsubscribeLogs/{logId} {
+      // Nur Support-Staff kann Abmelde-Logs lesen
+      allow read: if isSupportStaff();
+      // System kann Logs erstellen (beim Abmelden)
+      allow create: if true; // Wird von Backend/API erstellt
+      // Keine Updates/Deletes - nur für Audit-Trail
+      allow update, delete: if false;
     }
   }
 }
