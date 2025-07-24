@@ -1,7 +1,21 @@
 // Test API für Gmail SMTP Newsletter-System
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { testGmailConnection, sendNewsletterConfirmationEmail } from '@/lib/gmail-oauth-newsletter';
+
+// Import mit try-catch für bessere Fehlerbehandlung
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let testGmailConnection: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sendNewsletterConfirmationEmail: any = null;
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const gmailModule = require('@/lib/gmail-oauth-newsletter');
+  testGmailConnection = gmailModule.testGmailConnection;
+  sendNewsletterConfirmationEmail = gmailModule.sendNewsletterConfirmationEmail;
+} catch {
+  console.log('🔧 Gmail OAuth Module nicht verfügbar, verwende SMTP Fallback');
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +42,10 @@ export async function POST(request: NextRequest) {
     if (method === 'oauth' || config.GOOGLE_SERVICE_ACCOUNT_KEY === 'VORHANDEN') {
       try {
         console.log('📧 Teste Gmail OAuth2 API...');
+
+        if (!testGmailConnection || !sendNewsletterConfirmationEmail) {
+          throw new Error('Gmail OAuth Module nicht verfügbar');
+        }
 
         // OAuth Test mit Domain-wide Delegation
         const connectionTest = await testGmailConnection();
