@@ -172,12 +172,13 @@ function UserRegisterFormContent() {
           );
         } catch (urlError) {
           console.error(PAGE_ERROR, `URL-Test fehlgeschlagen:`, urlError);
+          console.log(PAGE_LOG, `Fallback: Verwende redirectTo-Parameter als String`);
         }
       }
 
       console.log(
         PAGE_LOG,
-        `Weiterleitung nach erfolgreicher Registrierung in 1.5 Sekunden zu: ${finalRedirectUrl}`
+        `Weiterleitung nach erfolgreicher Registrierung in 2 Sekunden zu: ${finalRedirectUrl}`
       );
 
       // KORREKTUR: Speichere die Ziel-URL im sessionStorage für den AuthContext
@@ -186,11 +187,27 @@ function UserRegisterFormContent() {
         console.log(PAGE_LOG, `Ziel-URL für AuthContext gespeichert: ${redirectToFromParams}`);
       }
 
-      // KORREKTUR: Verkürze die Wartezeit für bessere UX
+      // KORREKTUR: Längere Wartezeit für bessere Debugging-Sichtbarkeit
       const timer = setTimeout(() => {
-        console.log(PAGE_LOG, `Führe Weiterleitung aus zu: ${finalRedirectUrl}`);
-        window.location.assign(finalRedirectUrl);
-      }, 1500); // 1.5 Sekunden Verzögerung, um die Erfolgsmeldung anzuzeigen.
+        console.log(PAGE_LOG, `AUSFÜHRUNG: Führe Weiterleitung aus zu: ${finalRedirectUrl}`);
+
+        // Zusätzliches Logging für Debugging
+        console.log(PAGE_LOG, `window.location.href VOR Weiterleitung: ${window.location.href}`);
+
+        try {
+          window.location.assign(finalRedirectUrl);
+          console.log(PAGE_LOG, `window.location.assign() aufgerufen`);
+        } catch (redirectError) {
+          console.error(PAGE_ERROR, `Fehler bei window.location.assign():`, redirectError);
+          // Fallback mit router.push
+          try {
+            router.push(finalRedirectUrl);
+            console.log(PAGE_LOG, `Fallback: router.push() verwendet`);
+          } catch (routerError) {
+            console.error(PAGE_ERROR, `Fehler bei router.push():`, routerError);
+          }
+        }
+      }, 2000); // 2 Sekunden Verzögerung für bessere Debug-Sichtbarkeit
 
       return () => clearTimeout(timer); // Cleanup-Funktion für den Timer
     }
@@ -342,9 +359,23 @@ function UserRegisterFormContent() {
           </CardHeader>
           {registrationSuccess && (
             <CardContent className="text-center p-6">
-              <div className="text-green-600 font-semibold">Registrierung erfolgreich!</div>
-              <p className="text-sm text-gray-600 mt-2">Du wirst in Kürze weitergeleitet...</p>
-              {/* Optional einen Lade-Spinner hinzufügen */}
+              <div className="text-green-600 font-semibold text-lg">
+                ✅ Registrierung erfolgreich!
+              </div>
+              <p className="text-sm text-gray-600 mt-2">Ihr Konto wurde erstellt.</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Sie werden in 2 Sekunden zur Bestellung weitergeleitet...
+              </p>
+              {/* Debug-Information für den Benutzer */}
+              {redirectToFromParams && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Weiterleitung zu: {redirectToFromParams.substring(0, 50)}...
+                </p>
+              )}
+              {/* Lade-Spinner */}
+              <div className="mt-4">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
+              </div>
             </CardContent>
           )}
           {!registrationSuccess && (
