@@ -11,12 +11,50 @@ import { functions } from '@/firebase/clients';
 interface ActionButtonsProps {
   companyId: string;
   companyName: string;
+  status?: string;
 }
 
-export default function ActionButtons({ companyId, companyName }: ActionButtonsProps) {
+export default function ActionButtons({ companyId, companyName, status }: ActionButtonsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
+
+  const handleStatusToggle = async () => {
+    if (!user) {
+      toast.error('Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.');
+      return;
+    }
+
+    const newStatus = status === 'locked' ? 'active' : 'locked';
+    const actionText = newStatus === 'active' ? 'freischalten' : 'sperren';
+
+    if (!confirm(`Möchten Sie die Firma "${companyName}" wirklich ${actionText}?`)) {
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    try {
+      const updateCompanyStatus = httpsCallable(functions, 'updateCompanyStatus');
+
+      await updateCompanyStatus({
+        companyId: companyId,
+        status: newStatus,
+      });
+
+      toast.success(
+        `Die Firma "${companyName}" wurde erfolgreich ${newStatus === 'active' ? 'freigeschaltet' : 'gesperrt'}.`
+      );
+      router.refresh();
+    } catch (error: any) {
+      console.error('[ActionButtons] Fehler beim Aktualisieren des Status:', error);
+      toast.error('Fehler beim Aktualisieren', {
+        description: error.message || 'Ein unbekannter Fehler ist aufgetreten.',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!user) {
@@ -68,6 +106,17 @@ export default function ActionButtons({ companyId, companyName }: ActionButtonsP
 
   return (
     <div className="flex justify-end space-x-4">
+      <Button
+        variant={status === 'locked' ? 'default' : 'outline'}
+        onClick={handleStatusToggle}
+        disabled={isUpdatingStatus}
+      >
+        {isUpdatingStatus
+          ? 'Wird aktualisiert...'
+          : status === 'locked'
+            ? 'Firma freischalten'
+            : 'Firma sperren'}
+      </Button>
       <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
         {isDeleting ? 'Wird gelöscht...' : 'Firma löschen'}
       </Button>

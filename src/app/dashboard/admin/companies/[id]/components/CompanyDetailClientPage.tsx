@@ -73,6 +73,7 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
         <ActionButtons
           companyId={companyId}
           companyName={combinedData.companyName ?? 'Unbenannte Firma'}
+          status={status}
         />
       </div>
 
@@ -100,14 +101,18 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
               </div>
               <div>
                 <span className="font-medium text-gray-500">Webseite:</span>{' '}
-                <a
-                  href={combinedData.companyWebsite ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-teal-600 hover:underline"
-                >
-                  {combinedData.companyWebsite ?? 'N/A'}
-                </a>
+                {combinedData.companyWebsite || combinedData.companyWebsiteForBackend ? (
+                  <a
+                    href={combinedData.companyWebsite || combinedData.companyWebsiteForBackend}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 hover:underline"
+                  >
+                    {combinedData.companyWebsite || combinedData.companyWebsiteForBackend}
+                  </a>
+                ) : (
+                  'N/A'
+                )}
               </div>
               <div>
                 <span className="font-medium text-gray-500">Telefon:</span>{' '}
@@ -184,7 +189,8 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
               <FiShield /> Verifizierungsdokumente
             </h3>
             <div className="space-y-3">
-              {documents.length > 0 ? (
+              {/* Dokumente aus Firebase Storage */}
+              {documents.length > 0 &&
                 documents.map((doc: { name: string; url: string }) => (
                   <DocumentViewer
                     key={doc.name}
@@ -192,12 +198,64 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
                     fileUrl={doc.url}
                     stripeFileId={null}
                   />
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Keine Dokumente hochgeladen.
-                </p>
+                ))}
+
+              {/* Dokumente aus Firestore-Daten */}
+              {combinedData.profilePictureFirebaseUrl && (
+                <DocumentViewer
+                  key="profilePicture"
+                  label="Profilbild"
+                  fileUrl={combinedData.profilePictureFirebaseUrl}
+                  stripeFileId={combinedData.profilePictureStripeFileId}
+                />
               )}
+
+              {combinedData.businessLicenseFirebaseUrl && (
+                <DocumentViewer
+                  key="businessLicense"
+                  label="Gewerbeschein"
+                  fileUrl={combinedData.businessLicenseFirebaseUrl}
+                  stripeFileId={combinedData.businessLicenseStripeId}
+                />
+              )}
+
+              {combinedData.identityFrontFirebaseUrl && (
+                <DocumentViewer
+                  key="identityFront"
+                  label="Ausweis Vorderseite"
+                  fileUrl={combinedData.identityFrontFirebaseUrl}
+                  stripeFileId={combinedData.identityFrontUrlStripeId}
+                />
+              )}
+
+              {combinedData.identityBackFirebaseUrl && (
+                <DocumentViewer
+                  key="identityBack"
+                  label="Ausweis Rückseite"
+                  fileUrl={combinedData.identityBackFirebaseUrl}
+                  stripeFileId={combinedData.identityBackUrlStripeId}
+                />
+              )}
+
+              {combinedData.masterCraftsmanCertificateFirebaseUrl && (
+                <DocumentViewer
+                  key="masterCraftsmanCertificate"
+                  label="Meisterbrief"
+                  fileUrl={combinedData.masterCraftsmanCertificateFirebaseUrl}
+                  stripeFileId={combinedData.masterCraftsmanCertificateStripeId}
+                />
+              )}
+
+              {/* Fallback wenn keine Dokumente gefunden werden */}
+              {documents.length === 0 &&
+                !combinedData.profilePictureFirebaseUrl &&
+                !combinedData.businessLicenseFirebaseUrl &&
+                !combinedData.identityFrontFirebaseUrl &&
+                !combinedData.identityBackFirebaseUrl && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Keine Dokumente hochgeladen.
+                  </p>
+                )}
             </div>
           </div>
         </div>

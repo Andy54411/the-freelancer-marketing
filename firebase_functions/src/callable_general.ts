@@ -761,4 +761,64 @@ export const syncSpecificUserToCompany = onCall(
   }
 );
 
+// Update Company Status Function
+export const updateCompanyStatus = onCall(
+  {
+    cors: corsOptions,
+    timeoutSeconds: 60,
+    memory: "256MiB",
+  },
+  async (request: CallableRequest<{ companyId: string; status: string }>) => {
+    try {
+      await verifyAdmin(request.auth?.uid || '');
+      
+      const { companyId, status } = request.data;
+      
+      if (!companyId || !status) {
+        throw new HttpsError("invalid-argument", "CompanyId and status are required");
+      }
+      
+      if (!['active', 'locked'].includes(status)) {
+        throw new HttpsError("invalid-argument", "Status must be either 'active' or 'locked'");
+      }
+      
+      const db = getDb();
+      
+      // Update both users and companies collections
+      const batch = db.batch();
+      
+      const userRef = db.collection('users').doc(companyId);
+      const companyRef = db.collection('companies').doc(companyId);
+      
+      batch.update(userRef, { 
+        status: status,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+      
+      batch.update(companyRef, { 
+        status: status,
+        isActive: status === 'active',
+        updatedAt: FieldValue.serverTimestamp()
+      });
+      
+      await batch.commit();
+      
+      logger.info(`[updateCompanyStatus] Successfully updated company ${companyId} status to ${status}`);
+      return { 
+        success: true, 
+        message: `Company status updated to ${status}`,
+        companyId,
+        status
+      };
+      
+    } catch (error: any) {
+      logger.error(`[updateCompanyStatus] Error updating company status:`, error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", `Error updating company status: ${error.message}`);
+    }
+  }
+);
+
 // --- Cloud Functions ---

@@ -802,6 +802,11 @@ export default function Step5CompanyPage() {
         identityBackUrlStripeId: idBackResult.stripeFileId,
         businessLicenseStripeId: businessLicResult.stripeFileId,
         masterCraftsmanCertificateStripeId: masterCertStripeFileId || deleteField(),
+        // Firebase Storage URLs für Admin-Dashboard
+        identityFrontFirebaseUrl: idFrontResult.firebaseStorageUrl || null,
+        identityBackFirebaseUrl: idBackResult.firebaseStorageUrl || null,
+        businessLicenseFirebaseUrl: businessLicResult.firebaseStorageUrl || null,
+        masterCraftsmanCertificateFirebaseUrl: masterCertResult?.firebaseStorageUrl || null,
         companyName: companyName || '',
         legalForm: legalForm || null, // Firmendaten
         companyAddressLine1ForBackend: fullCompanyAddressForFirestore,
@@ -861,6 +866,15 @@ export default function Step5CompanyPage() {
         lng: lng ?? null,
         radiusKm: radiusKm ?? 30,
         profileLastUpdatedAt: serverTimestamp(),
+        // Firmendetails für das öffentliche Profil
+        companyWebsite: companyWebsite || null,
+        companyPhoneNumber: normalizedCompanyPhoneNumber || null,
+        legalForm: legalForm || null,
+        companyStreet: companyStreet || null,
+        companyHouseNumber: companyHouseNumber || null,
+        companyPostalCode: companyPostalCode || null,
+        companyCity: companyCity || null,
+        companyCountry: companyCountry || null,
       };
 
       if (
