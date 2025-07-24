@@ -6,6 +6,8 @@ export async function GET() {
     hasFirebaseServiceAccountKey: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
     hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
     hasStripeSecret: !!process.env.STRIPE_SECRET_KEY,
+    hasResendApiKey: !!process.env.RESEND_API_KEY,
+    resendApiKeyPreview: process.env.RESEND_API_KEY?.substring(0, 12) + '...',
     serviceAccountKeyLength: process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.length || 0,
     projectIdValue: process.env.FIREBASE_PROJECT_ID,
     // Zeige nur die ersten 50 Zeichen des Service Account Keys für Debugging
