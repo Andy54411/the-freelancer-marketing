@@ -31,6 +31,9 @@ export interface CompanyDetailData {
   companyWebsite?: string;
   description?: string;
 
+  // Profil-URLs
+  taskiloProfileUrl?: string;
+
   // Stripe-Integration
   stripeAccountId?: string | null;
   stripeChargesEnabled?: boolean;

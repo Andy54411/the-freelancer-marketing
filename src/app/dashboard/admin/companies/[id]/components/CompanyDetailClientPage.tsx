@@ -100,20 +100,33 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
                 {`${combinedData.companyStreet ?? ''} ${combinedData.companyHouseNumber ?? ''}, ${combinedData.companyPostalCode ?? ''} ${combinedData.companyCity ?? ''}`}
               </div>
               <div>
-                <span className="font-medium text-gray-500">Webseite:</span>{' '}
-                {combinedData.companyWebsite || combinedData.companyWebsiteForBackend ? (
+                <span className="font-medium text-gray-500">Profil-URL:</span>{' '}
+                {combinedData.taskiloProfileUrl ? (
                   <a
-                    href={combinedData.companyWebsite || combinedData.companyWebsiteForBackend}
+                    href={combinedData.taskiloProfileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-teal-600 hover:underline"
                   >
-                    {combinedData.companyWebsite || combinedData.companyWebsiteForBackend}
+                    {combinedData.taskiloProfileUrl}
                   </a>
                 ) : (
                   'N/A'
                 )}
               </div>
+              {combinedData.companyWebsite && (
+                <div>
+                  <span className="font-medium text-gray-500">Firmen-Website:</span>{' '}
+                  <a
+                    href={combinedData.companyWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 hover:underline"
+                  >
+                    {combinedData.companyWebsite}
+                  </a>
+                </div>
+              )}
               <div>
                 <span className="font-medium text-gray-500">Telefon:</span>{' '}
                 {combinedData.companyPhoneNumber ?? 'N/A'}
