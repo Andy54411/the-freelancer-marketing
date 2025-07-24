@@ -56,8 +56,8 @@ interface OrderData {
 export default function CompanyOrderDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const orderId = typeof params.orderId === 'string' ? params.orderId : '';
-  const companyUid = typeof params.uid === 'string' ? params.uid : '';
+  const orderId = typeof params?.orderId === 'string' ? params.orderId : '';
+  const companyUid = typeof params?.uid === 'string' ? params.uid : '';
 
   const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: 'user' aus dem AuthContext verwenden
 

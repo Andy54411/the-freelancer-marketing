@@ -154,7 +154,12 @@ export class TaskiloAIFeatures {
 
   // Risiko-Bewertung für Projekte
   static assessProjectRisks(projectData: any): ProjectRiskAssessment {
-    const risks = [];
+    const risks: Array<{
+      type: 'timeline' | 'budget' | 'technical' | 'weather';
+      level: 'low' | 'medium' | 'high';
+      description: string;
+      mitigation: string;
+    }> = [];
     let overallRisk: 'low' | 'medium' | 'high' = 'low';
 
     // Timeline-Risiken
@@ -267,7 +272,7 @@ export class TaskiloAIFeatures {
     const complexity = this.analyzeComplexity(description);
 
     let optimizationFactor = 1.0;
-    const recommendations = [];
+    const recommendations: string[] = [];
 
     // Optimierungslogik
     if (currentBudget.max > marketData.averageMax * 1.2) {
@@ -369,7 +374,11 @@ export class TaskiloAIFeatures {
   }
 
   private static generateMilestones(projectData: any, startDate: Date, duration: number) {
-    const milestones = [];
+    const milestones: Array<{
+      date: string;
+      description: string;
+      critical: boolean;
+    }> = [];
     const category = projectData.category;
 
     if (duration > 3) {
@@ -403,7 +412,11 @@ export class TaskiloAIFeatures {
   }
 
   private static generateAlternativeSchedules(projectData: any, requestedStart: Date) {
-    const alternatives = [];
+    const alternatives: Array<{
+      startDate: string;
+      benefits: string[];
+      tradeoffs: string[];
+    }> = [];
 
     // Eine Woche später
     const laterStart = new Date(requestedStart);
@@ -427,7 +440,7 @@ export class TaskiloAIFeatures {
   }
 
   private static generateRiskRecommendations(risks: any[]): string[] {
-    const recommendations = [];
+    const recommendations: string[] = [];
 
     if (risks.some(r => r.type === 'budget')) {
       recommendations.push('Detaillierte Kostenaufstellung anfordern');

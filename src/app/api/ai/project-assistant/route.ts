@@ -359,7 +359,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
 
   private static analyzeDescription(description: string) {
     // Einfache KI-Analyse der Beschreibung
-    const requirements = [];
+    const requirements: string[] = [];
     let estimatedDuration = '';
 
     if (description.includes('komplett') || description.includes('renovierung')) {

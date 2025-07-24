@@ -10,8 +10,8 @@ import { FiMail, FiCheck, FiTrash2 } from 'react-icons/fi';
 
 function UnsubscribeContent() {
   const searchParams = useSearchParams();
-  const emailParam = searchParams.get('email') || '';
-  const tokenParam = searchParams.get('token') || '';
+  const emailParam = searchParams?.get('email') || '';
+  const tokenParam = searchParams?.get('token') || '';
 
   const [email, setEmail] = useState(emailParam);
   const [isLoading, setIsLoading] = useState(false);

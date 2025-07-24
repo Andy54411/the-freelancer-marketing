@@ -205,7 +205,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   }, [uid]);
   // Effekt, um die Ansicht basierend auf dem URL-Parameter zu synchronisieren
   useEffect(() => {
-    const viewFromUrl = searchParams.get('view');
+    const viewFromUrl = searchParams?.get('view');
     if (viewFromUrl === 'settings' && view !== 'settings') {
       setView('settings');
     } else if (!viewFromUrl && view !== 'dashboard') {

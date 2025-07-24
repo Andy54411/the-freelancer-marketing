@@ -11,7 +11,7 @@ import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
 export default function CompanyProfilePage() {
   const params = useParams();
-  const uid = typeof params.uid === 'string' ? params.uid : '';
+  const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);

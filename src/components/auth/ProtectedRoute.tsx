@@ -13,7 +13,7 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
 
   // Memoize the redirect URL to avoid re-calculating it on every render.
   const redirectTo = useMemo(() => {
-    const params = searchParams.toString();
+    const params = searchParams?.toString();
     return `${pathname}${params ? `?${params}` : ''}`;
   }, [pathname, searchParams]);
 
@@ -24,7 +24,7 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
     }
 
     // Skip protection for admin routes (they have their own auth system)
-    if (pathname.startsWith('/dashboard/admin')) {
+    if (pathname?.startsWith('/dashboard/admin')) {
       return;
     }
 
@@ -35,7 +35,7 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
   }, [user, loading, router, redirectTo, pathname]);
 
   // While loading, show a full-screen spinner to avoid content flicker.
-  if (loading && !pathname.startsWith('/dashboard/admin')) {
+  if (loading && !pathname?.startsWith('/dashboard/admin')) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
@@ -45,7 +45,7 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
   }
 
   // If it's an admin route, let it handle its own auth
-  if (pathname.startsWith('/dashboard/admin')) {
+  if (pathname?.startsWith('/dashboard/admin')) {
     return <>{children}</>;
   }
 

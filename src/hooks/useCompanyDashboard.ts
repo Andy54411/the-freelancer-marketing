@@ -14,7 +14,10 @@ const isNonEmptyString = (val: unknown): val is string =>
 export function useCompanyDashboard() {
   const { user, loading: authLoading } = useAuth(); // Verwende den zentralen Auth-Kontext
   const params = useParams();
-  const uid = useMemo(() => (Array.isArray(params.uid) ? params.uid[0] : params.uid), [params.uid]);
+  const uid = useMemo(
+    () => (Array.isArray(params?.uid) ? params.uid[0] : params?.uid),
+    [params?.uid]
+  );
 
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -72,7 +75,7 @@ export function useCompanyDashboard() {
         setUserData(data);
 
         // Die Logik zur Überprüfung fehlender Felder bleibt gleich.
-        const missing = [];
+        const missing: string[] = [];
         const companyName = data?.companyName || data?.step2?.companyName;
         if (!isNonEmptyString(companyName)) missing.push('Allgemeine Firmendaten');
 

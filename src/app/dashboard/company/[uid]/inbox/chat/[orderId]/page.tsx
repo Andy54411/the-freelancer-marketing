@@ -51,8 +51,8 @@ interface ParticipantDetails {
 export default function CompanyChatPage() {
   const router = useRouter();
   const params = useParams();
-  const orderId = typeof params.orderId === 'string' ? params.orderId : '';
-  const companyUid = typeof params.uid === 'string' ? params.uid : '';
+  const orderId = typeof params?.orderId === 'string' ? params.orderId : '';
+  const companyUid = typeof params?.uid === 'string' ? params.uid : '';
 
   const { user: currentUser, loading: authLoading } = useAuth();
 

@@ -473,7 +473,7 @@ export default function BestaetigungsPage() {
       console.log(PAGE_LOG, 'BestaetigungsPage: Prüfe Pflichtfelder:', requiredFields);
 
       // GELOCKERTE VALIDIERUNG: Nur kritische Felder prüfen, die für die Zahlung absolut notwendig sind
-      const criticalMissing = [];
+      const criticalMissing: string[] = [];
       if (!requiredFields.selectedAnbieterId) criticalMissing.push('Anbieter');
       if (!requiredFields.jobPostalCode) criticalMissing.push('PLZ');
       if (!requiredFields.selectedSubcategory) criticalMissing.push('Unterkategorie');
@@ -500,7 +500,7 @@ export default function BestaetigungsPage() {
           'BestaetigungsPage: Alle kritischen Felder vorhanden, zeige Seite an'
         );
         // Zusätzliche Logging für optionale Felder
-        const optionalMissing = [];
+        const optionalMissing: string[] = [];
         if (!requiredFields.customerType) optionalMissing.push('Kundentyp');
         if (!requiredFields.selectedCategory) optionalMissing.push('Kategorie');
         if (!requiredFields.jobDateFrom) optionalMissing.push('Datum');

@@ -56,7 +56,7 @@ interface OrderData {
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const orderId = typeof params.orderId === 'string' ? params.orderId : '';
+  const orderId = typeof params?.orderId === 'string' ? params.orderId : '';
   const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: useAuth Hook korrekt verwenden
 
   const [order, setOrder] = useState<OrderData | null>(null);

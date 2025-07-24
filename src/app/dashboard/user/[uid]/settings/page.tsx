@@ -15,7 +15,7 @@ import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react'
 export default function UserSettingsDashboardPage() {
   const router = useRouter();
   const params = useParams();
-  const pageUid = typeof params.uid === 'string' ? params.uid : '';
+  const pageUid = typeof params?.uid === 'string' ? params.uid : '';
 
   const { user: globalCurrentUser, loading: authLoading } = useAuth();
 

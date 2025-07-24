@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default function CategoryPage() {
   const params = useParams();
   const router = useRouter();
-  const category = params.category as string;
+  const category = (params?.category as string) || '';
 
   // URL-Parameter dekodieren
   const decodedCategory = decodeURIComponent(category);

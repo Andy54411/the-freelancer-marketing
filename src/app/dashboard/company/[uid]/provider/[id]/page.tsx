@@ -71,8 +71,8 @@ export default function CompanyProviderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, firebaseUser } = useAuth();
-  const companyUid = params.uid as string;
-  const providerId = params.id as string;
+  const companyUid = (params?.uid as string) || '';
+  const providerId = (params?.id as string) || '';
 
   const [provider, setProvider] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);

@@ -49,7 +49,7 @@ const CompanyOrdersOverviewPage = () => {
   const params = useParams();
   const router = useRouter();
   const authContext = useAuth();
-  const uidFromParams = params.uid as string; // UID des Anbieters (dieses Unternehmens)
+  const uidFromParams = (params?.uid as string) || ''; // UID des Anbieters (dieses Unternehmens)
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);

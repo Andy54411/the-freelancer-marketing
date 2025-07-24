@@ -105,11 +105,11 @@ export async function POST(request: NextRequest) {
 
     // Hole die Stripe Account ID aus der Firestore - suche in users Collection zuerst
     const userDoc = await db.collection('users').doc(firebaseUserId).get();
-    let userData = null;
-    let stripeAccountId = null;
+    let userData: any = null;
+    let stripeAccountId: string | null = null;
 
     if (userDoc.exists) {
-      userData = userDoc.data();
+      userData = userDoc.data() as any;
       stripeAccountId = userData?.stripeAccountId;
       console.log(
         '[API /request-payout] Found user in users collection with stripeAccountId:',

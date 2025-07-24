@@ -47,7 +47,7 @@ const OrdersOverviewPage = () => {
   const params = useParams();
   const router = useRouter();
   const authContext = useAuth(); // Hole den gesamten AuthContext
-  const uidFromParams = params.uid as string; // Geändert von userId zu uid
+  const uidFromParams = (params?.uid as string) || ''; // Geändert von userId zu uid
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);

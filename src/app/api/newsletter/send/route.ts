@@ -61,12 +61,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Template oder Inhalt erforderlich' }, { status: 400 });
     }
 
-    console.log(`📧 Newsletter-Versand an ${recipients.length} Empfänger über Resend`);
+    console.log(`📧 Newsletter-Versand an ${recipients.length} Empfänger...`);
 
     const resend = await getResendClient();
+    const results: Array<{
+      recipient: string;
+      success: boolean;
+      error?: string;
+      messageId?: string;
+    }> = [];
 
-    // Newsletter über Resend versenden
-    const results = [];
+    // Sende an jeden Empfänger einzeln (für bessere Kontrolle)
     for (const recipient of recipients) {
       try {
         const { data, error } = await resend.emails.send({

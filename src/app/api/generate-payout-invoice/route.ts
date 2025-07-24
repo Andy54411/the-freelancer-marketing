@@ -64,14 +64,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Stripe Account ID and company info
-    let stripeAccountId = null;
-    let companyData = null;
+    let stripeAccountId: string | null = null;
+    let companyData: {
+      name: string;
+      address: string;
+      taxId: string;
+    } | null = null;
 
     if (db) {
       try {
         const userDoc = await db.collection('users').doc(firebaseUserId).get();
         if (userDoc.exists) {
-          const userData = userDoc.data();
+          const userData = userDoc.data() as any;
           stripeAccountId = userData?.stripeAccountId;
           companyData = {
             name: userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen',
@@ -83,7 +87,7 @@ export async function POST(request: NextRequest) {
         if (!stripeAccountId) {
           const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
           if (companyDoc.exists) {
-            const companyDocData = companyDoc.data();
+            const companyDocData = companyDoc.data() as any;
             stripeAccountId = companyDocData?.stripeAccountId;
             companyData = {
               name: companyDocData?.companyName || 'Unbekanntes Unternehmen',
@@ -112,8 +116,10 @@ export async function POST(request: NextRequest) {
     // Get payout details from Stripe
     let payout;
     try {
-      if (stripeAccountId !== 'demo_account') {
-        payout = await stripe.payouts.retrieve(payoutId, { stripeAccount: stripeAccountId });
+      if (stripeAccountId && stripeAccountId !== 'demo_account') {
+        payout = await stripe.payouts.retrieve(payoutId, {
+          stripeAccount: stripeAccountId,
+        } as any);
       } else {
         throw new Error('Demo mode');
       }
@@ -150,22 +156,30 @@ export async function POST(request: NextRequest) {
     doc.fontSize(14).text('Empfaenger:', 50, 120);
     doc
       .fontSize(12)
-      .text(companyData?.name || 'Unbekanntes Unternehmen', 50, 140)
-      .text(companyData?.address || 'Keine Adresse', 50, 155)
-      .text(`Steuernummer: ${companyData?.taxId || 'Nicht verfuegbar'}`, 50, 170);
+      .text((companyData as any)?.name || 'Unbekanntes Unternehmen', 50, 140)
+      .text((companyData as any)?.address || 'Keine Adresse', 50, 155)
+      .text(`Steuernummer: ${(companyData as any)?.taxId || 'Nicht verfuegbar'}`, 50, 170);
 
     // Payout Details
     doc.fontSize(14).text('Auszahlungsdetails:', 50, 210);
     doc
       .fontSize(12)
-      .text(`Auszahlungs-ID: ${payout.id}`, 50, 230)
-      .text(`Betrag: ${(payout.amount / 100).toFixed(2)} ${payout.currency.toUpperCase()}`, 50, 245)
-      .text(`Status: ${payout.status}`, 50, 260)
-      .text(`Datum: ${new Date(payout.created * 1000).toLocaleDateString('de-DE')}`, 50, 275);
+      .text(`Auszahlungs-ID: ${(payout as any).id}`, 50, 230)
+      .text(
+        `Betrag: ${((payout as any).amount / 100).toFixed(2)} ${(payout as any).currency.toUpperCase()}`,
+        50,
+        245
+      )
+      .text(`Status: ${(payout as any).status}`, 50, 260)
+      .text(
+        `Datum: ${new Date((payout as any).created * 1000).toLocaleDateString('de-DE')}`,
+        50,
+        275
+      );
 
-    if (payout.arrival_date) {
+    if ((payout as any).arrival_date) {
       doc.text(
-        `Ankunftsdatum: ${new Date(payout.arrival_date * 1000).toLocaleDateString('de-DE')}`,
+        `Ankunftsdatum: ${new Date((payout as any).arrival_date * 1000).toLocaleDateString('de-DE')}`,
         50,
         290
       );

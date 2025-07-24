@@ -29,7 +29,7 @@ function RegistrationForm() {
 
   useEffect(() => {
     // Liest den Einladungscode aus der URL, wenn die Komponente geladen wird.
-    const codeFromUrl = searchParams.get('inviteCode');
+    const codeFromUrl = searchParams?.get('inviteCode');
     if (codeFromUrl) {
       setInviteCode(codeFromUrl);
     }

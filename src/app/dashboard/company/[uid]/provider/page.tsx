@@ -75,7 +75,7 @@ interface Review {
 const ProviderProfilePage = () => {
   const router = useRouter();
   const params = useParams();
-  const providerId = typeof params.id === 'string' ? params.id : '';
+  const providerId = typeof params?.id === 'string' ? params.id : '';
 
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);

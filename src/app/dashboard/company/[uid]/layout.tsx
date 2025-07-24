@@ -14,7 +14,7 @@ const isNonEmptyString = (val: unknown): val is string =>
 export default function CompanyDashboardLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const router = useRouter();
-  const uid = typeof params.uid === 'string' ? params.uid : '';
+  const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
   const {

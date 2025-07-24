@@ -113,9 +113,25 @@ export async function sendBulkNewsletterViaResend(
   recipients: string[],
   subject: string,
   htmlContent: string
-): Promise<{ success: boolean; results: any[]; error?: string }> {
+): Promise<{
+  success: boolean;
+  results: Array<{
+    batch: number;
+    recipients: string[];
+    success: boolean;
+    error?: string;
+    messageId?: string;
+  }>;
+  error?: string;
+}> {
   try {
-    const results = [];
+    const results: Array<{
+      batch: number;
+      recipients: string[];
+      success: boolean;
+      error?: string;
+      messageId?: string;
+    }> = [];
 
     // Resend unterstützt Batch-Versand (bis zu 50 Empfänger pro API-Call)
     const batchSize = 50;

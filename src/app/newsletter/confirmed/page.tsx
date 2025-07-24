@@ -7,7 +7,7 @@ import { FiCheckCircle } from 'react-icons/fi';
 
 function NewsletterConfirmedContent() {
   const searchParams = useSearchParams();
-  const email = searchParams.get('email');
+  const email = searchParams?.get('email');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

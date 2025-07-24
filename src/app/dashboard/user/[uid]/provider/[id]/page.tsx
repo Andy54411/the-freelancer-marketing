@@ -72,8 +72,8 @@ export default function UserProviderProfilePage() {
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
-  const providerId = params.id as string;
-  const userUid = params.uid as string;
+  const providerId = (params?.id as string) || '';
+  const userUid = (params?.uid as string) || '';
 
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);

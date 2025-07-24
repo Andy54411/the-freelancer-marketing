@@ -25,14 +25,14 @@ function PaymentContent() {
   useEffect(() => {
     // Extrahiere Buchungsdetails aus URL-Parametern
     const details: BookingDetails = {
-      providerId: searchParams.get('providerId') || '',
-      providerName: searchParams.get('providerName') || '',
-      service: searchParams.get('service') || '',
-      date: searchParams.get('date') || '',
-      time: searchParams.get('time') || '',
-      duration: searchParams.get('duration') || '',
-      description: searchParams.get('description') || '',
-      hourlyRate: searchParams.get('hourlyRate') || '0',
+      providerId: searchParams?.get('providerId') || '',
+      providerName: searchParams?.get('providerName') || '',
+      service: searchParams?.get('service') || '',
+      date: searchParams?.get('date') || '',
+      time: searchParams?.get('time') || '',
+      duration: searchParams?.get('duration') || '',
+      description: searchParams?.get('description') || '',
+      hourlyRate: searchParams?.get('hourlyRate') || '0',
     };
 
     setBookingDetails(details);

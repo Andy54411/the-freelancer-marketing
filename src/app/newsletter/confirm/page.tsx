@@ -12,8 +12,8 @@ function NewsletterConfirmContent() {
 
   useEffect(() => {
     const confirmNewsletter = async () => {
-      const token = searchParams.get('token');
-      const email = searchParams.get('email');
+      const token = searchParams?.get('token');
+      const email = searchParams?.get('email');
 
       if (!token || !email) {
         setStatus('invalid');

@@ -30,7 +30,7 @@ const AdminSupportChat = () => {
   // NEU: Die Komponente wird jetzt über die URL gesteuert.
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedChatId = searchParams.get('chatId');
+  const selectedChatId = searchParams?.get('chatId') || null;
 
   useEffect(() => {
     const q = query(

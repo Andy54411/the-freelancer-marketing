@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
       const resend = await getResendClient();
 
       // Newsletter über Resend versenden
-      const results = [];
+      const results: { recipient: string; success: boolean; error?: string; messageId?: string }[] =
+        [];
       for (const recipient of recipients) {
         try {
           const { data, error } = await resend.emails.send({

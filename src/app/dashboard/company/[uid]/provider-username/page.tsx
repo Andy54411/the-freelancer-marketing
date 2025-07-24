@@ -87,7 +87,7 @@ interface ServiceItem {
 const UserProfilePage = () => {
   const router = useRouter();
   const params = useParams();
-  const username = typeof params.username === 'string' ? params.username : '';
+  const username = typeof params?.username === 'string' ? params.username : '';
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);

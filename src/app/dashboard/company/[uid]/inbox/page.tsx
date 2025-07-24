@@ -41,7 +41,7 @@ interface ChatPreview {
 
 export default function CompanyInboxPage() {
   const params = useParams();
-  const uidFromParams = typeof params.uid === 'string' ? params.uid : '';
+  const uidFromParams = typeof params?.uid === 'string' ? params.uid : '';
   const { user: currentUser, loading: authLoading } = useAuth();
 
   const [chats, setChats] = useState<ChatPreview[]>([]);

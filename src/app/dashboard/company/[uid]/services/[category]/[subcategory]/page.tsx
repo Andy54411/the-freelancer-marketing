@@ -107,9 +107,9 @@ export default function CompanyServiceSubcategoryPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const uid = params.uid as string;
-  const category = params.category as string;
-  const subcategory = params.subcategory as string;
+  const uid = (params?.uid as string) || '';
+  const category = (params?.category as string) || '';
+  const subcategory = (params?.subcategory as string) || '';
 
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -232,7 +232,7 @@ export default function CompanyServiceSubcategoryPage() {
         userDocs: userSnapshot.docs?.length || 0,
       });
 
-      const firmProviders: Provider[] = (firmSnapshot.docs || [])
+      const firmProviders: Provider[] = ((firmSnapshot.docs || []) as any[])
         .map(doc => {
           const data = doc.data();
           return {
@@ -260,8 +260,10 @@ export default function CompanyServiceSubcategoryPage() {
           };
         })
         // Filter nur explizit inaktive Firmen aus
-        .filter(provider => {
-          const data = (firmSnapshot.docs || []).find(doc => doc.id === provider.id)?.data();
+        .filter((provider: Provider) => {
+          const data = ((firmSnapshot.docs || []) as any[])
+            .find(doc => doc.id === provider.id)
+            ?.data();
           // Zeige Provider wenn isActive nicht explizit false ist
           return data?.isActive !== false;
         });

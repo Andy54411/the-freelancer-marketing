@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         // Versuche zuerst users Collection
         const userDoc = await db.collection('users').doc(firebaseUserId).get();
         let data = null;
-        let foundIn = null;
+        let foundIn: string | null = null;
 
         if (userDoc.exists) {
           data = userDoc.data();
@@ -131,34 +131,39 @@ export async function POST(request: NextRequest) {
           // Verwende die echte Datenbank-Struktur je nach Collection
           let companyName, companyAddress, taxId;
 
+          // Cast data to any to avoid TypeScript strict checking
+          const userData = data as any;
+
           if (foundIn === 'users') {
             // users Collection Struktur
             companyName =
-              data.companyName ||
-              (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) ||
-              data.userName ||
-              data.displayName ||
+              userData.companyName ||
+              (userData.firstName && userData.lastName
+                ? `${userData.firstName} ${userData.lastName}`
+                : null) ||
+              userData.userName ||
+              userData.displayName ||
               'Unbekanntes Unternehmen';
             companyAddress =
-              data.companyAddressLine1ForBackend && data.companyCityForBackend
-                ? `${data.companyAddressLine1ForBackend}, ${data.companyPostalCodeForBackend || ''} ${data.companyCityForBackend}`
-                : data.step1?.personalStreet
-                  ? `${data.step1.personalStreet}, ${data.step1.personalPostalCode || ''} ${data.step1.personalCity}`
+              userData.companyAddressLine1ForBackend && userData.companyCityForBackend
+                ? `${userData.companyAddressLine1ForBackend}, ${userData.companyPostalCodeForBackend || ''} ${userData.companyCityForBackend}`
+                : userData.step1?.personalStreet
+                  ? `${userData.step1.personalStreet}, ${userData.step1.personalPostalCode || ''} ${userData.step1.personalCity}`
                   : 'Keine Adresse hinterlegt';
             taxId =
-              data.vatIdForBackend ||
-              data.step3?.vatId ||
-              data.step3?.taxNumber ||
+              userData.vatIdForBackend ||
+              userData.step3?.vatId ||
+              userData.step3?.taxNumber ||
               'Keine Steuernummer hinterlegt';
           } else {
             // firma Collection Struktur
-            companyName = data.companyName || data.name || 'Unbekanntes Unternehmen';
-            companyAddress = data.address
-              ? typeof data.address === 'string'
-                ? data.address
-                : `${data.address.street || 'Unbekannte Straße'}, ${data.address.postalCode || '00000'} ${data.address.city || 'Unbekannte Stadt'}`
+            companyName = userData.companyName || userData.name || 'Unbekanntes Unternehmen';
+            companyAddress = userData.address
+              ? typeof userData.address === 'string'
+                ? userData.address
+                : `${userData.address.street || 'Unbekannte Straße'}, ${userData.address.postalCode || '00000'} ${userData.address.city || 'Unbekannte Stadt'}`
               : 'Keine Adresse hinterlegt';
-            taxId = data.taxId || data.vatNumber || 'Keine Steuernummer hinterlegt';
+            taxId = userData.taxId || userData.vatNumber || 'Keine Steuernummer hinterlegt';
           }
 
           companyData = {

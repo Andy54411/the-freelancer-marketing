@@ -63,19 +63,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Stripe Account ID from Firestore
-    let stripeAccountId = null;
+    let stripeAccountId: string | null = null;
 
     // Try users collection first
     const userDoc = await db.collection('users').doc(firebaseUserId).get();
     if (userDoc.exists) {
-      stripeAccountId = userDoc.data()?.stripeAccountId;
+      stripeAccountId = (userDoc.data() as any)?.stripeAccountId;
     }
 
     // Fallback to companies collection
     if (!stripeAccountId) {
       const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
       if (companyDoc.exists) {
-        stripeAccountId = companyDoc.data()?.stripeAccountId;
+        stripeAccountId = (companyDoc.data() as any)?.stripeAccountId;
       }
     }
 

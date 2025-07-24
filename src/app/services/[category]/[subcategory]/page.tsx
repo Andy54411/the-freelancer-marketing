@@ -31,8 +31,8 @@ interface Provider {
 export default function SubcategoryPage() {
   const params = useParams();
   const router = useRouter();
-  const category = params.category as string;
-  const subcategory = params.subcategory as string;
+  const category = (params?.category as string) || '';
+  const subcategory = (params?.subcategory as string) || '';
 
   // URL-Parameter dekodieren
   const decodedCategory = decodeURIComponent(category);

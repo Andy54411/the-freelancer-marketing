@@ -16,7 +16,7 @@ function GoogleAnalyticsInner() {
   useEffect(() => {
     if (!GA_TRACKING_ID || typeof window === 'undefined' || !consent.analytics) return;
 
-    const url = pathname + searchParams.toString();
+    const url = (pathname || '') + (searchParams?.toString() || '');
     pageview(url);
   }, [pathname, searchParams, consent.analytics]);
 
@@ -58,7 +58,7 @@ export default function GoogleAnalytics() {
           id="google-analytics"
         />
       )}
-      
+
       {/* Google Analytics Configuration */}
       {GA_TRACKING_ID && (
         <Script

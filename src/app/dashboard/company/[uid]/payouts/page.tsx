@@ -48,7 +48,7 @@ export default function PayoutOverviewPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const uid = params.uid as string;
+  const uid = (params?.uid as string) || '';
 
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [summary, setSummary] = useState<PayoutSummary | null>(null);

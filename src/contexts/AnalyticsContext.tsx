@@ -24,8 +24,8 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Track page views automatically only on client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      analytics.trackPageView(pathname);
-      analytics.trackEvent('page_load', 'navigation', pathname);
+      analytics.trackPageView(pathname || '');
+      analytics.trackEvent('page_load', 'navigation', pathname || '');
     }
   }, [pathname, analytics]);
 
