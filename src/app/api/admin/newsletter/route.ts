@@ -1,9 +1,9 @@
 // Saubere Admin Newsletter API nur mit Resend
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
 
-// Resend-Client lazy initialisieren
-function getResendClient() {
+// Resend-Client lazy initialisieren - NUR zur Runtime mit dynamic import
+async function getResendClient() {
+  const { Resend } = await import('resend');
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     throw new Error('RESEND_API_KEY ist nicht gesetzt');
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
       console.log(`📧 Admin Newsletter-Versand an ${recipients.length} Empfänger`);
 
-      const resend = getResendClient();
+      const resend = await getResendClient();
 
       // Newsletter über Resend versenden
       const results = [];

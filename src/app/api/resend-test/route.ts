@@ -1,9 +1,9 @@
 // Resend Test API - Neuer E-Mail-Service testen
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
 
 // Lazy Resend initialization to avoid build-time API key requirement
-function getResendClient() {
+async function getResendClient() {
+  const { Resend } = await import('resend');
   return new Resend(process.env.RESEND_API_KEY);
 }
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const resend = getResendClient();
+    const resend = await getResendClient();
 
     const { data, error } = await resend.emails.send({
       from: 'Taskilo <noreply@taskilo.de>',

@@ -1,10 +1,10 @@
 // Saubere Newsletter Subscribers API nur mit Resend
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import crypto from 'crypto';
 
-// Resend-Client lazy initialisieren
-function getResendClient() {
+// Resend-Client lazy initialisieren - NUR zur Runtime mit dynamic import
+async function getResendClient() {
+  const { Resend } = await import('resend');
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     throw new Error('RESEND_API_KEY ist nicht gesetzt');
@@ -21,7 +21,7 @@ async function sendNewsletterConfirmation(
   try {
     const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/newsletter/confirm?token=${confirmationToken}&email=${encodeURIComponent(email)}`;
 
-    const resend = getResendClient();
+    const resend = await getResendClient();
     const { data, error } = await resend.emails.send({
       from: 'Taskilo Newsletter <newsletter@taskilo.de>',
       to: [email],
