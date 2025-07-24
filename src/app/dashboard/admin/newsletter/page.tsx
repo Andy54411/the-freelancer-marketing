@@ -126,7 +126,9 @@ export default function NewsletterPage() {
       const subscribersResponse = await fetch('/api/admin/newsletter?type=subscribers');
       if (subscribersResponse.ok) {
         const subscribersData = await subscribersResponse.json();
-        const processedSubscribers = subscribersData.subscribers.map((sub: any) => ({
+        // Null-Check hinzufügen und sicherstellen, dass ein Array vorhanden ist
+        const subscribersArray = subscribersData.subscribers || [];
+        const processedSubscribers = subscribersArray.map((sub: any) => ({
           ...sub,
           subscribedAt: new Date(sub.subscribedAt),
         }));
@@ -134,13 +136,16 @@ export default function NewsletterPage() {
       } else {
         console.error('Failed to load subscribers');
         toast.error('Fehler beim Laden der Abonnenten');
+        setSubscribers([]); // Fallback auf leeres Array
       }
 
       // Load campaigns
       const campaignsResponse = await fetch('/api/admin/newsletter?type=campaigns');
       if (campaignsResponse.ok) {
         const campaignsData = await campaignsResponse.json();
-        const processedCampaigns = campaignsData.campaigns.map((camp: any) => ({
+        // Null-Check hinzufügen und sicherstellen, dass ein Array vorhanden ist
+        const campaignsArray = campaignsData.campaigns || [];
+        const processedCampaigns = campaignsArray.map((camp: any) => ({
           ...camp,
           createdAt: new Date(camp.createdAt),
           sentAt: camp.sentAt ? new Date(camp.sentAt) : undefined,
@@ -149,10 +154,14 @@ export default function NewsletterPage() {
       } else {
         console.error('Failed to load campaigns');
         toast.error('Fehler beim Laden der Kampagnen');
+        setCampaigns([]); // Fallback auf leeres Array
       }
     } catch (error) {
       console.error('Error loading newsletter data:', error);
       toast.error('Fehler beim Laden der Newsletter-Daten');
+      // Fallback-Werte setzen
+      setSubscribers([]);
+      setCampaigns([]);
     } finally {
       setLoading(false);
     }
