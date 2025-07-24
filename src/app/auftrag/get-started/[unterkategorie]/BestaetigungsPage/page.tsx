@@ -1030,17 +1030,36 @@ export default function BestaetigungsPage() {
         // Hier den jobCalculatedPriceInCents als Basispreis prüfen
         if (draftData.jobCalculatedPriceInCents == null || draftData.jobCalculatedPriceInCents <= 0)
           missingFields.push('Berechneter Preis (Cents)'); // `== null` prüft auf null und undefined
-        // Rechnungsadresse ist jetzt auch Pflicht für den PaymentIntent
-        if (
-          !billingAddressDetails ||
-          !billingAddressDetails.address?.line1 ||
-          !billingAddressDetails.address?.postal_code ||
-          !billingAddressDetails.address?.city ||
-          !billingAddressDetails.address?.country
-        ) {
-          missingFields.push('Vollständige Rechnungsadresse');
+        // Prüfe Rechnungsadresse separat - fehlende Adresse führt zur Registrierung
+        const hasBillingAddress =
+          billingAddressDetails &&
+          billingAddressDetails.address?.line1 &&
+          billingAddressDetails.address?.postal_code &&
+          billingAddressDetails.address?.city &&
+          billingAddressDetails.address?.country;
+
+        if (!hasBillingAddress) {
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Keine vollständige Rechnungsadresse gefunden. Weiterleitung zur Registrierung.'
+          );
+
+          // Erstelle die aktuelle URL für die Weiterleitung nach der Registrierung
+          const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+          const registrationRedirectUrl = `/register/user?redirectTo=${encodeURIComponent(currentUrl)}`;
+
+          console.log(
+            PAGE_LOG,
+            `BestaetigungsPage: Weiterleitung zur Registrierung: ${registrationRedirectUrl}`
+          );
+
+          setIsLoadingPageData(false);
+          isInitializing.current = false;
+          router.push(registrationRedirectUrl);
+          return;
         }
 
+        // Prüfe andere Pflichtfelder (ohne Rechnungsadresse)
         if (missingFields.length > 0) {
           // Detaillierteres Logging der fehlenden Felder
           console.log(

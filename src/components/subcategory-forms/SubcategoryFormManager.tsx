@@ -1108,6 +1108,8 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       // Versuche verschiedene Felder, die als Beschreibung dienen könnten
       if ('specialRequirements' in formData && formData.specialRequirements) {
         description = formData.specialRequirements;
+      } else if ('projectDescription' in formData && formData.projectDescription) {
+        description = formData.projectDescription;
       } else if ('description' in formData && formData.description) {
         description = formData.description;
       } else if ('additionalInfo' in formData && formData.additionalInfo) {
