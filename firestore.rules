@@ -189,6 +189,10 @@ service cloud.firestore {
       // Benutzer haben nur Zugriff auf ihren eigenen Support-Chat (support_chat_{uid})
       allow read, write: if isSupportStaff() || 
                            (request.auth != null && chatId == "support_chat_" + request.auth.uid);
+      
+      // KORREKTUR: Support-Mitarbeiter müssen Support-Chats auflisten können für Admin-Dashboard
+      // TEMPORÄR: Auch für authentifizierte Benutzer aktiviert bis Custom Claims funktionieren
+      allow list: if isSupportStaff() || request.auth != null;
 
       match /messages/{messageId} {
         // Support-Chat-Nachrichten: Gleiche Logik wie für den Chat selbst
