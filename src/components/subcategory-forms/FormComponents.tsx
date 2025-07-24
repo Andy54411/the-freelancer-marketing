@@ -2,6 +2,7 @@
 import React from 'react';
 import { BaseSubcategoryData } from '@/types/subcategory-forms';
 import { useRouter } from 'next/navigation';
+import { useRegistration } from '@/contexts/Registration-Context';
 
 export interface SubcategoryFormProps<T extends BaseSubcategoryData> {
   data: T;
@@ -177,6 +178,7 @@ export interface FormSubmitButtonProps {
   subcategory: string;
   loadingText?: string;
   buttonText?: string;
+  formData?: any; // Optional: Formulardaten für Beschreibungsextraktion
 }
 
 export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
@@ -184,8 +186,10 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
   subcategory,
   loadingText = 'Wird verarbeitet...',
   buttonText = 'Weiter zur Adresseingabe',
+  formData,
 }) => {
   const router = useRouter();
+  const { setDescription } = useRegistration();
 
   const handleNextClick = () => {
     if (!isValid) {
@@ -194,6 +198,33 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
     }
 
     console.log('Form is valid, proceeding to address page');
+
+    // Extrahiere die Beschreibung aus den Formulardaten
+    if (formData && setDescription) {
+      let description = '';
+
+      // Versuche verschiedene Felder, die als Beschreibung dienen könnten
+      if (formData.specialRequirements) {
+        description = formData.specialRequirements;
+      } else if (formData.projectDescription) {
+        description = formData.projectDescription;
+      } else if (formData.description) {
+        description = formData.description;
+      } else if (formData.additionalInfo) {
+        description = formData.additionalInfo;
+      } else if (formData.notes) {
+        description = formData.notes;
+      } else if (formData.additionalRequirements) {
+        description = formData.additionalRequirements;
+      }
+
+      // Setze die Beschreibung im Registration-Context
+      if (description && description.trim()) {
+        setDescription(description.trim());
+        console.log('Setting description from form data:', description.trim());
+      }
+    }
+
     const encodedSubcategory = encodeURIComponent(subcategory);
     router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
   };

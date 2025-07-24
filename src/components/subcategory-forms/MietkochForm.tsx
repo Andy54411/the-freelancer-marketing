@@ -126,7 +126,7 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Mietkoch" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Mietkoch" formData={formData} />
     </div>
   );
 };

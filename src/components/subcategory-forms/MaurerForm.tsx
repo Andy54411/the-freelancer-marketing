@@ -10,6 +10,7 @@ import {
   FormRadioGroup,
 } from './FormComponents';
 import { useRouter } from 'next/navigation';
+import { useRegistration } from '@/contexts/Registration-Context';
 
 interface MaurerFormProps {
   data: MaurerData;
@@ -29,9 +30,35 @@ const MaurerForm: React.FC<MaurerFormProps> = ({ data, onDataChange, onValidatio
     isValid: boolean;
     subcategory: string;
   }) => {
+    const { setDescription } = useRegistration();
+
     const handleNextClick = () => {
       if (!isValid) {
         return;
+      }
+
+      // Extrahiere die Beschreibung aus den Formulardaten
+      if (formData && setDescription) {
+        let description = '';
+
+        // Versuche verschiedene Felder, die als Beschreibung dienen könnten
+        if (formData.specialRequirements) {
+          description = formData.specialRequirements;
+        } else if (formData.projectDescription) {
+          description = formData.projectDescription;
+        } else if (formData.description) {
+          description = formData.description;
+        } else if (formData.additionalInfo) {
+          description = formData.additionalInfo;
+        } else if (formData.notes) {
+          description = formData.notes;
+        }
+
+        // Setze die Beschreibung im Registration-Context
+        if (description && description.trim()) {
+          setDescription(description.trim());
+          console.log('Setting description from Maurer form data:', description.trim());
+        }
       }
 
       const encodedSubcategory = encodeURIComponent(subcategory);
