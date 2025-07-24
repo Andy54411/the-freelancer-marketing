@@ -1,6 +1,6 @@
 // Saubere Newsletter Subscribers API nur mit Resend
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { createPendingSubscription } from '@/lib/newsletter-double-opt-in';
 
 // Resend-Client lazy initialisieren - NUR zur Runtime mit dynamic import
 async function getResendClient() {
@@ -97,7 +97,7 @@ async function sendNewsletterConfirmation(
 // DSGVO-konforme Newsletter-Anmeldung mit Double-Opt-In
 export async function POST(request: NextRequest) {
   try {
-    const { email, name, _source, _preferences } = await request.json();
+    const { email, name, source = 'website', preferences = [] } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'E-Mail ist erforderlich' }, { status: 400 });
@@ -105,40 +105,32 @@ export async function POST(request: NextRequest) {
 
     console.log('📧 Newsletter-Anmeldung für:', email);
 
-    // Confirmation Token generieren
-    const confirmationToken = crypto.randomBytes(32).toString('hex');
+    // Verwende das Double-Opt-In System
+    const result = await createPendingSubscription(email, {
+      name,
+      source: source as 'manual' | 'website' | 'import' | 'footer',
+      preferences,
+      ipAddress:
+        request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
+    });
 
-    // Bestätigungs-E-Mail über Resend senden
-    try {
-      const result = await sendNewsletterConfirmation(email, name, confirmationToken);
+    if (result.success) {
+      console.log('✅ Newsletter-Anmeldung erstellt, Bestätigungs-E-Mail versendet');
 
-      if (result.success) {
-        console.log('✅ Newsletter-Bestätigung versendet:', result.messageId);
-
-        return NextResponse.json({
-          success: true,
-          message: 'Newsletter-Anmeldung erfolgreich! Bestätigungs-E-Mail wurde gesendet.',
-          requiresConfirmation: true,
-          service: 'Resend',
-        });
-      } else {
-        console.error('❌ Newsletter-Bestätigung fehlgeschlagen:', result.error);
-
-        return NextResponse.json(
-          {
-            success: false,
-            error: result.error || 'E-Mail-Versand fehlgeschlagen',
-          },
-          { status: 500 }
-        );
-      }
-    } catch (emailError) {
-      console.error('🚨 Newsletter E-Mail Fehler:', emailError);
+      return NextResponse.json({
+        success: true,
+        message: 'Newsletter-Anmeldung erfolgreich! Bestätigungs-E-Mail wurde gesendet.',
+        requiresConfirmation: true,
+        service: 'Resend',
+      });
+    } else {
+      console.error('❌ Newsletter-Anmeldung fehlgeschlagen:', result.error);
 
       return NextResponse.json(
         {
           success: false,
-          error: emailError instanceof Error ? emailError.message : 'E-Mail-Versand fehlgeschlagen',
+          error: result.error || 'Newsletter-Anmeldung fehlgeschlagen',
         },
         { status: 500 }
       );
