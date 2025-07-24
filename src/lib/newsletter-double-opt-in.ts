@@ -1,8 +1,18 @@
 // Double-Opt-In System für Newsletter
-import { admin } from '@/firebase/server';
+import { admin } from '../firebase/server';
 import { sendSingleEmailViaGmail } from './gmail-smtp-newsletter';
 import { generateUnsubscribeToken } from './newsletter-gdpr';
 import crypto from 'crypto';
+
+// OAuth2 Gmail Import mit Fallback
+let sendNewsletterConfirmationEmail: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const gmailOAuthModule = require('./gmail-oauth-newsletter');
+  sendNewsletterConfirmationEmail = gmailOAuthModule.sendNewsletterConfirmationEmail;
+} catch (error) {
+  console.log('OAuth2 Gmail Module nicht verfügbar, verwende SMTP Fallback');
+}
 
 // Bestätigungs-Token generieren
 export function generateConfirmationToken(): string {
@@ -72,13 +82,35 @@ export async function sendConfirmationEmail(
       </html>
     `;
 
-    const result = await sendSingleEmailViaGmail(
-      email,
-      'Newsletter-Anmeldung bestätigen - Taskilo',
-      htmlContent
-    );
+    // OAuth2 Gmail versuchen, fallback zu SMTP
+    let emailResult: { success: boolean; error?: string } = { success: false };
 
-    return { success: result.success };
+    if (sendNewsletterConfirmationEmail) {
+      try {
+        console.log('📧 Verwende OAuth2 Gmail für Newsletter-Bestätigung');
+        const oauthResult = await sendNewsletterConfirmationEmail(email, confirmationToken);
+        emailResult = { success: oauthResult.success, error: oauthResult.error };
+      } catch (error) {
+        console.error('OAuth2 Gmail fehlgeschlagen, verwende SMTP Fallback:', error);
+        // Fallback zu SMTP
+        const smtpResult = await sendSingleEmailViaGmail(
+          email,
+          'Newsletter-Anmeldung bestätigen - Taskilo',
+          htmlContent
+        );
+        emailResult = { success: smtpResult.success };
+      }
+    } else {
+      console.log('📧 Verwende SMTP für Newsletter-Bestätigung (OAuth2 nicht verfügbar)');
+      const smtpResult = await sendSingleEmailViaGmail(
+        email,
+        'Newsletter-Anmeldung bestätigen - Taskilo',
+        htmlContent
+      );
+      emailResult = { success: smtpResult.success };
+    }
+
+    return { success: emailResult.success };
   } catch (error) {
     console.error('Fehler beim Senden der Bestätigungs-E-Mail:', error);
     return {
