@@ -46,9 +46,41 @@ export async function GET(request: NextRequest) {
 
     // Sort manually by lastUpdated (newest first)
     supportChats.sort((a, b) => {
-      const aTime = a.lastUpdated?.toDate?.() || a.lastUpdated || new Date(0);
-      const bTime = b.lastUpdated?.toDate?.() || b.lastUpdated || new Date(0);
-      return new Date(bTime).getTime() - new Date(aTime).getTime();
+      let aTime, bTime;
+
+      try {
+        if (a.lastUpdated?.toDate) {
+          aTime = a.lastUpdated.toDate();
+        } else if (a.lastUpdated instanceof Date) {
+          aTime = a.lastUpdated;
+        } else if (a.lastUpdated) {
+          aTime = new Date(a.lastUpdated);
+        } else {
+          aTime = new Date(0);
+        }
+
+        if (isNaN(aTime.getTime())) aTime = new Date(0);
+      } catch {
+        aTime = new Date(0);
+      }
+
+      try {
+        if (b.lastUpdated?.toDate) {
+          bTime = b.lastUpdated.toDate();
+        } else if (b.lastUpdated instanceof Date) {
+          bTime = b.lastUpdated;
+        } else if (b.lastUpdated) {
+          bTime = new Date(b.lastUpdated);
+        } else {
+          bTime = new Date(0);
+        }
+
+        if (isNaN(bTime.getTime())) bTime = new Date(0);
+      } catch {
+        bTime = new Date(0);
+      }
+
+      return bTime.getTime() - aTime.getTime();
     });
 
     // Filter for human escalations and active sessions after retrieval
