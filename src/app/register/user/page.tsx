@@ -147,75 +147,28 @@ function UserRegisterFormContent() {
   ]); // States als Abhängigkeiten hinzugefügt
 
   // NEU: Effekt, der die Weiterleitung nach erfolgreicher Registrierung durchführt.
-  // Dies entkoppelt die Weiterleitung von der Registrierungslogik und macht den Prozess robuster.
+  // useEffect für direkte Weiterleitung nach erfolgreicher Registrierung
   useEffect(() => {
     if (registrationSuccess) {
-      const finalRedirectUrl = redirectToFromParams || `/auftrag/get-started`;
+      console.log(PAGE_LOG, '✅ Registrierung erfolgreich! Weiterleitung zur Bestätigungsseite...');
 
-      // DEBUG: Detaillierte Logging für URL-Parameter-Debugging
-      console.log(PAGE_LOG, `=== URL-Parameter-Debugging beim Registrierung-Redirect ===`);
-      console.log(PAGE_LOG, `redirectToFromParams RAW:`, redirectToFromParams);
-      console.log(PAGE_LOG, `finalRedirectUrl:`, finalRedirectUrl);
-
-      if (redirectToFromParams) {
-        try {
-          // Teste, ob die URL bereits alle Parameter enthält
-          const testUrl = new URL(redirectToFromParams, window.location.origin);
-          console.log(
-            PAGE_LOG,
-            `URL-Test erfolgreich. Pfad: ${testUrl.pathname}, Query: ${testUrl.search}`
-          );
-          console.log(
-            PAGE_LOG,
-            `Alle URL-Parameter:`,
-            Object.fromEntries(testUrl.searchParams.entries())
-          );
-        } catch (urlError) {
-          console.error(PAGE_ERROR, `URL-Test fehlgeschlagen:`, urlError);
-          console.log(PAGE_LOG, `Fallback: Verwende redirectTo-Parameter als String`);
-        }
-      }
-
-      console.log(
-        PAGE_LOG,
-        `Weiterleitung nach erfolgreicher Registrierung in 2 Sekunden zu: ${finalRedirectUrl}`
-      );
-
-      // KORREKTUR: Speichere die Ziel-URL im sessionStorage für den AuthContext
-      if (redirectToFromParams) {
-        sessionStorage.setItem('registrationRedirectTo', redirectToFromParams);
-        console.log(PAGE_LOG, `Ziel-URL für AuthContext gespeichert: ${redirectToFromParams}`);
-      }
-
-      // KORREKTUR: Längere Wartezeit für bessere Debugging-Sichtbarkeit
-      const timer = setTimeout(() => {
-        console.log(PAGE_LOG, `AUSFÜHRUNG: Führe Weiterleitung aus zu: ${finalRedirectUrl}`);
-
-        // Zusätzliches Logging für Debugging
-        console.log(PAGE_LOG, `window.location.href VOR Weiterleitung: ${window.location.href}`);
-
-        try {
-          window.location.assign(finalRedirectUrl);
-          console.log(PAGE_LOG, `window.location.assign() aufgerufen`);
-        } catch (redirectError) {
-          console.error(PAGE_ERROR, `Fehler bei window.location.assign():`, redirectError);
-          // Fallback mit router.push
-          try {
-            router.push(finalRedirectUrl);
-            console.log(PAGE_LOG, `Fallback: router.push() verwendet`);
-          } catch (routerError) {
-            console.error(PAGE_ERROR, `Fehler bei router.push():`, routerError);
-          }
-        }
-      }, 2000); // 2 Sekunden Verzögerung für bessere Debug-Sichtbarkeit
-
-      return () => clearTimeout(timer); // Cleanup-Funktion für den Timer
+      // Direkter, sofortiger Redirect ohne Wartezeit
+      const confirmationUrl = `/bestatigung?${searchParams?.toString() || ''}`;
+      console.log(PAGE_LOG, '🔄 Sofortige Weiterleitung zu:', confirmationUrl);
+      window.location.replace(confirmationUrl);
     }
-  }, [registrationSuccess, redirectToFromParams]);
+  }, [registrationSuccess, searchParams]);
 
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Verhindere mehrfache Registrierung
+    if (loading || registrationSuccess) {
+      console.log(PAGE_LOG, 'Registrierung bereits in Bearbeitung oder abgeschlossen');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Das Passwort muss mindestens 6 Zeichen lang sein.');
       return;
