@@ -10,48 +10,76 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get support chat statistics
-    const supportChatsSnapshot = await db
-      .collection('supportChats')
-      .where('status', '==', 'human')
-      .orderBy('lastUpdated', 'desc')
-      .limit(100)
-      .get();
+    // Get support chat statistics - simplified query to avoid index issues
+    console.log('🔍 Support API: Lade Support-Chats...');
+    const supportChatsSnapshot = await db.collection('supportChats').limit(100).get();
 
     const supportChats = supportChatsSnapshot.docs.map(doc => {
       const data = doc.data();
+      console.log(`📋 Chat ${doc.id}:`, {
+        status: data.status,
+        userId: data.userId,
+        userName: data.userName,
+        lastUpdated: data.lastUpdated,
+      });
+
       return {
         id: doc.id,
         status: data.status || 'unknown',
         supportAgentId: data.supportAgentId || null,
         lastUpdated: data.lastUpdated,
         userId: data.userId,
+        userName: data.userName || 'Unbekannter User',
+        lastMessage: data.lastMessage || null,
+        isLocked: data.isLocked || false,
+        users: data.users || [],
+        userAvatarUrl: data.userAvatarUrl || null,
+        messages: data.messages || [],
         ...data,
       };
     });
 
-    // Get escalations and active sessions
-    const escalations = supportChats.filter(
-      chat => chat.status === 'human' && !chat.supportAgentId
-    );
+    // Sort manually by lastUpdated (newest first)
+    supportChats.sort((a, b) => {
+      const aTime = a.lastUpdated?.toDate?.() || a.lastUpdated || new Date(0);
+      const bTime = b.lastUpdated?.toDate?.() || b.lastUpdated || new Date(0);
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
 
-    const activeSessions = supportChats.filter(
-      chat => chat.status === 'human' && chat.supportAgentId
+    // Filter for human escalations and active sessions after retrieval
+    const humanChats = supportChats.filter(chat => chat.status === 'human');
+    const botChats = supportChats.filter(chat => chat.status === 'bot');
+    const escalations = humanChats.filter(chat => !chat.supportAgentId);
+    const activeSessions = humanChats.filter(chat => chat.supportAgentId);
+
+    console.log(
+      `✅ Support API: ${supportChats.length} Chats geladen (${humanChats.length} Human, ${botChats.length} Bot, ${escalations.length} Escalations)`
     );
 
     return NextResponse.json({
       success: true,
-      supportChats,
+      supportChats: supportChats, // Return all chats, let frontend filter
+      humanChats,
+      botChats,
       escalations,
       activeSessions,
       summary: {
-        totalSupportChats: supportChats.length,
+        totalChats: supportChats.length,
+        totalHumanChats: humanChats.length,
+        totalBotChats: botChats.length,
         totalEscalations: escalations.length,
         totalActiveSessions: activeSessions.length,
       },
     });
   } catch (error) {
-    console.error('Error fetching support data:', error);
-    return NextResponse.json({ error: 'Failed to fetch support data' }, { status: 500 });
+    console.error('❌ Support API Fehler:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch support data',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }
