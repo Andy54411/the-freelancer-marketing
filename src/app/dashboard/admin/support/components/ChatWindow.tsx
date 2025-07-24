@@ -19,9 +19,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Funktion zum Laden der Nachrichten über API
-  const loadMessages = async () => {
+  const loadMessages = async (showLoader = true) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const response = await fetch(`/api/admin/support/${chatId}/messages`);
 
       if (!response.ok) {
@@ -37,7 +37,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     } catch (error) {
       console.error(`Error fetching messages for chat ${chatId}:`, error);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -59,8 +59,13 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
     markChatAsRead();
 
-    // Lade Nachrichten alle 5 Sekunden neu für Live-Updates
-    const interval = setInterval(loadMessages, 5000);
+    // Lade Nachrichten alle 30 Sekunden neu für Live-Updates (weniger aggressiv)
+    const interval = setInterval(() => {
+      // Nur laden wenn das Tab aktiv ist und ohne Loader
+      if (!document.hidden) {
+        loadMessages(false);
+      }
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [chatId]);
@@ -92,8 +97,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       const data = await response.json();
       if (data.success) {
         setNewMessage('');
-        // Lade Nachrichten neu, um die neue Nachricht anzuzeigen
-        await loadMessages();
+        // Lade Nachrichten neu, um die neue Nachricht anzuzeigen (ohne Loader)
+        await loadMessages(false);
       } else {
         console.error('Fehler beim Senden der Nachricht:', data.error);
       }
