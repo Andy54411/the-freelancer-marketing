@@ -75,6 +75,72 @@ export async function POST(request: Request) {
     const response = result.response;
     const text = response.text();
 
+    // Prüfe auf Eskalations-Trigger
+    if (text.includes('[escalate]')) {
+      // Hole userId aus dem Request oder verwende eine Session
+      const userId = request.headers.get('x-user-id') || 'anonymous';
+
+      try {
+        // Erstelle Support-Chat für Eskalation
+        const supportChatId = `support_chat_${userId}`;
+
+        // Erstelle oder aktualisiere Support-Chat
+        await db
+          .collection('supportChats')
+          .doc(supportChatId)
+          .set(
+            {
+              userId: userId,
+              status: 'human', // Direkt auf human setzen für Eskalation
+              createdAt: new Date(),
+              lastUpdated: new Date(),
+              escalatedFrom: 'gemini-bot',
+              lastMessage: {
+                text: message, // Die ursprüngliche Benutzer-Nachricht
+                timestamp: new Date(),
+                senderId: userId,
+                isReadBySupport: false,
+              },
+              // Chat-Historie für Kontext mitgeben
+              chatHistory: history.map((msg: any) => ({
+                text: msg.parts[0].text,
+                role: msg.role,
+                timestamp: new Date(),
+              })),
+            },
+            { merge: true }
+          );
+
+        // Füge die Eskalations-Nachricht als erste Support-Message hinzu
+        await db
+          .collection('supportChats')
+          .doc(supportChatId)
+          .collection('messages')
+          .add({
+            text: `Chat wurde vom Gemini-Bot eskaliert. Benutzer fragte: "${message}"`,
+            senderId: 'system',
+            timestamp: new Date(),
+            isReadBySupport: false,
+            escalationContext: true,
+          });
+
+        // Bereinige die Antwort von [escalate] Tags
+        const cleanedText = text.replace(/\[escalate\]/g, '').trim();
+
+        return NextResponse.json({
+          text: cleanedText,
+          escalated: true,
+          supportChatId: supportChatId,
+          message: 'Ihre Anfrage wurde an unser Support-Team weitergeleitet.',
+        });
+      } catch (escalationError) {
+        console.error('Fehler bei der Eskalation:', escalationError);
+        // Fallback: Normale Antwort ohne Eskalation
+        const cleanedText = text.replace(/\[escalate\]/g, '').trim();
+        return NextResponse.json({ text: cleanedText });
+      }
+    }
+
     return NextResponse.json({ text });
   } catch (error) {
     const errorMessage =

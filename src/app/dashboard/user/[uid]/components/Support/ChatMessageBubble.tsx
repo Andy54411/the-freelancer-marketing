@@ -12,8 +12,25 @@ interface ChatMessageBubbleProps {
 }
 
 const formatMessageTimestamp = (timestamp: any): string => {
-  if (!timestamp || typeof timestamp.toDate !== 'function') return '';
-  const date = timestamp.toDate();
+  if (!timestamp) return '';
+
+  // Behandle sowohl Firestore Timestamps als auch JavaScript Dates
+  let date: Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else if (timestamp && typeof timestamp.toDate === 'function') {
+    date = timestamp.toDate();
+  } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+    date = new Date(timestamp);
+  } else {
+    return '';
+  }
+
+  // Validiere das Date-Objekt
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 

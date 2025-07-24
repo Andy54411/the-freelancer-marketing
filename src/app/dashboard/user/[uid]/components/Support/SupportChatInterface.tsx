@@ -46,6 +46,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
   const { user: userProfile, firebaseUser: currentUser } = useAuth();
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chat, setChat] = useState<any>(null); // Chat-Document State
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isChatReady, setIsChatReady] = useState(false); // NEU: State, um sicherzustellen, dass der Chat initialisiert ist.
@@ -66,17 +67,32 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
     const messagesCollectionRef = collection(chatDocRef, 'messages');
     const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
+    // Listener für Chat-Dokument
+    const chatUnsubscribe = onSnapshot(
+      chatDocRef,
+      doc => {
+        if (doc.exists()) {
+          setChat(doc.data());
+        }
+      },
+      error => {
+        console.error('Fehler beim Chat-Listener:', error);
+      }
+    );
+
     // Richte den Listener für Nachrichten ein.
-    const unsubscribe = onSnapshot(
+    const messagesUnsubscribe = onSnapshot(
       q,
       querySnapshot => {
-        const loadedMessages = querySnapshot.docs.map(
-          doc =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            }) as ChatMessage
-        );
+        const loadedMessages = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            // Konvertiere Firestore Timestamp zu JavaScript Date
+            timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
+          } as ChatMessage;
+        });
         setChatMessages(loadedMessages);
         setLoading(false); // Set loading to false after first successful fetch
       },
@@ -104,12 +120,22 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
             lastMessage: {
               text: 'Support-Chat gestartet.',
               timestamp: serverTimestamp(),
-              senderId: currentUser.uid,
+              senderId: 'system',
               isReadBySupport: true, // Initial message is read by default
             },
             lastUpdated: serverTimestamp(),
             users: [currentUser.uid], // NEU: Das 'users'-Array von Anfang an hinzufügen, damit der Bot es lesen kann.
             status: 'bot', // NEU: Chat standardmäßig im Bot-Modus starten, damit der Chatbot antwortet.
+          });
+
+          // Füge eine Begrüßungsnachricht hinzu
+          await addDoc(messagesCollectionRef, {
+            text: 'Willkommen im Taskilo Support! Ich bin Ihr KI-Assistent und helfe Ihnen gerne bei Fragen zu unserer Plattform. Bei komplexeren Anliegen leite ich Sie automatisch an unser Support-Team weiter.',
+            senderId: 'gemini-bot',
+            senderName: 'Taskilo Support Bot',
+            senderType: 'bot' as const,
+            timestamp: serverTimestamp(),
+            chatUsers: [currentUser.uid, 'support_user_placeholder'],
           });
         } else {
           // NEU: Prüfen, ob das existierende Dokument den 'status' hat.
@@ -134,13 +160,19 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
 
     ensureChatDocumentExists();
 
-    // Die Cleanup-Funktion wird korrekt zurückgegeben und beendet den Listener.
-    return () => unsubscribe();
+    // Die Cleanup-Funktion wird korrekt zurückgegeben und beendet beide Listener.
+    return () => {
+      chatUnsubscribe();
+      messagesUnsubscribe();
+    };
   }, [chatId, currentUser, userProfile]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+    // Nur scrollen wenn der Chat bereits geladen ist und nicht beim ersten Laden
+    if (!loading && chatMessages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, loading]);
 
   const handleSendMessage = useCallback(
     async (e: FormEvent) => {
@@ -195,6 +227,91 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         });
 
         setMessage('');
+
+        // NEU: Prüfe Chat-Status - wenn "bot", sende an Gemini API
+        const chatDoc = await getDoc(chatDocRef);
+        const chatData = chatDoc.data();
+
+        if (chatData?.status === 'bot') {
+          // Hole Chat-Historie für Gemini-Kontext
+          const chatHistory = chatMessages.map(msg => ({
+            role: msg.senderId === currentUser.uid ? 'user' : 'model',
+            parts: [{ text: msg.text }],
+          }));
+
+          // Sende an Gemini API
+          try {
+            const geminiResponse = await fetch('/api/chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-user-id': currentUser.uid, // Für Eskalations-Tracking
+              },
+              body: JSON.stringify({
+                message: messageToSend,
+                history: chatHistory,
+              }),
+            });
+
+            const geminiData = await geminiResponse.json();
+
+            if (geminiData.text) {
+              // Füge Bot-Antwort hinzu
+              await addDoc(messagesCollectionRef, {
+                text: geminiData.text,
+                senderId: 'gemini-bot',
+                senderName: 'Taskilo Support Bot',
+                senderType: 'bot' as const,
+                timestamp: serverTimestamp(),
+                chatUsers: [currentUser.uid, 'support_user_placeholder'],
+              });
+
+              // Update lastMessage
+              await updateDoc(chatDocRef, {
+                lastMessage: {
+                  text: geminiData.text,
+                  timestamp: serverTimestamp(),
+                  senderId: 'gemini-bot',
+                  isReadBySupport: true,
+                },
+                lastUpdated: serverTimestamp(),
+              });
+
+              // Prüfe auf Eskalation
+              if (geminiData.escalated) {
+                // Chat-Status auf "human" ändern
+                await updateDoc(chatDocRef, {
+                  status: 'human',
+                  escalatedAt: serverTimestamp(),
+                  escalationReason: 'Bot escalation requested',
+                });
+
+                // Zeige Eskalations-Nachricht
+                setTimeout(async () => {
+                  await addDoc(messagesCollectionRef, {
+                    text: 'Ein Taskilo-Mitarbeiter wird sich in Kürze um Ihre Anfrage kümmern. Bitte haben Sie einen Moment Geduld.',
+                    senderId: 'system',
+                    senderName: 'System',
+                    senderType: 'system' as const,
+                    timestamp: serverTimestamp(),
+                    chatUsers: [currentUser.uid, 'support_user_placeholder'],
+                    systemPayload: {
+                      agentName: 'Support-Team',
+                    },
+                  });
+                }, 1000);
+              }
+            }
+          } catch (geminiError) {
+            console.error('Fehler bei Gemini API:', geminiError);
+            // Fallback: Setze Status auf "human" für manuelle Bearbeitung
+            await updateDoc(chatDocRef, {
+              status: 'human',
+              escalatedAt: serverTimestamp(),
+              escalationReason: 'Bot API error',
+            });
+          }
+        }
       } catch (error) {
         console.error('Fehler beim Senden der Nachricht: ', error);
         setChatError('Nachricht konnte nicht gesendet werden.');
@@ -207,8 +324,25 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
 
   return (
     <div className="flex flex-col h-[70vh] max-h-[500px] bg-white w-full -m-6">
-      {' '}
-      {/* Negative margin to fill modal */}
+      {/* Chat Header mit Status-Indikator */}
+      <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+        <h3 className="text-lg font-semibold text-gray-800">Support-Chat</h3>
+        <div className="flex items-center gap-2">
+          {chat?.status === 'bot' && (
+            <div className="flex items-center gap-1 text-sm text-blue-600">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              KI-Assistent
+            </div>
+          )}
+          {chat?.status === 'human' && (
+            <div className="flex items-center gap-1 text-sm text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Support-Mitarbeiter
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
           <div className="flex justify-center items-center h-full">
