@@ -50,11 +50,17 @@ export async function GET(request: NextRequest) {
     if (type === 'subscribers') {
       try {
         console.log('📧 Newsletter API: Lade Abonnenten...');
+        console.log('📧 Newsletter API: Firebase Config Check:', {
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        });
 
         // Echte Daten aus Firestore laden
         const subscribersRef = collection(db, 'newsletterSubscribers');
-        const subscribersSnapshot = await getDocs(subscribersRef);
+        console.log('📧 Newsletter API: Collection Reference erstellt');
 
+        const subscribersSnapshot = await getDocs(subscribersRef);
         console.log(`📧 Newsletter API: ${subscribersSnapshot.docs.length} Dokumente gefunden`);
 
         const subscribers = subscribersSnapshot.docs.map(doc => ({
@@ -76,10 +82,20 @@ export async function GET(request: NextRequest) {
         });
       } catch (error) {
         console.error('❌ Newsletter API: Fehler beim Laden der Abonnenten:', error);
+        console.error('❌ Newsletter API: Error Details:', {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : 'No stack',
+        });
         return NextResponse.json({
           success: false,
           subscribers: [],
-          error: 'Fehler beim Laden der Abonnenten',
+          error: `Fehler beim Laden der Abonnenten: ${error instanceof Error ? error.message : String(error)}`,
+          debug: {
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
+            errorCode: (error as any)?.code || 'no-code',
+          },
         });
       }
     }
