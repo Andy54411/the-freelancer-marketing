@@ -1,7 +1,7 @@
 // Saubere Admin Newsletter API mit Resend und Firestore
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/clients';
-import { collection, getDocs, doc, deleteDoc, addDoc, query, where } from 'firebase/firestore';
+import { db } from '@/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 
 // Resend-Client lazy initialisieren - NUR zur Runtime mit dynamic import
 async function getResendClient() {
@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
           hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
         });
 
-        // Echte Daten aus Firestore laden
-        const subscribersRef = collection(db, 'newsletterSubscribers');
+        // Echte Daten aus Firestore laden (Admin SDK)
+        const subscribersRef = db.collection('newsletterSubscribers');
         console.log('📧 Newsletter API: Collection Reference erstellt');
 
-        const subscribersSnapshot = await getDocs(subscribersRef);
+        const subscribersSnapshot = await subscribersRef.get();
         console.log(`📧 Newsletter API: ${subscribersSnapshot.docs.length} Dokumente gefunden`);
 
         const subscribers = subscribersSnapshot.docs.map(doc => ({
@@ -154,9 +154,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Prüfen ob E-Mail bereits existiert
-        const subscribersRef = collection(db, 'newsletterSubscribers');
-        const existingQuery = query(subscribersRef, where('email', '==', email));
-        const existingSnapshot = await getDocs(existingQuery);
+        const subscribersRef = db.collection('newsletterSubscribers');
+        const existingQuery = subscribersRef.where('email', '==', email);
+        const existingSnapshot = await existingQuery.get();
 
         if (!existingSnapshot.empty) {
           return NextResponse.json(
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
             Math.random().toString(36).substring(2, 15),
         };
 
-        const docRef = await addDoc(subscribersRef, newSubscriber);
+        const docRef = await subscribersRef.add(newSubscriber);
 
         return NextResponse.json({
           success: true,
@@ -277,9 +277,9 @@ export async function DELETE(request: NextRequest) {
 
     if (type === 'subscriber' && id) {
       try {
-        // Abonnenten aus Firestore löschen
-        const subscriberRef = doc(db, 'newsletterSubscribers', id);
-        await deleteDoc(subscriberRef);
+        // Abonnenten aus Firestore löschen (Admin SDK)
+        const subscriberRef = db.collection('newsletterSubscribers').doc(id);
+        await subscriberRef.delete();
 
         return NextResponse.json({
           success: true,
