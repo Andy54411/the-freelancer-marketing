@@ -1,12 +1,13 @@
 // Test API für Gmail SMTP Newsletter-System
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { testGmailConnection, sendNewsletterConfirmationEmail } from '@/lib/gmail-oauth-newsletter';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('🧪 Gmail Test API - Start...');
 
-    const { email, token } = await request.json();
+    const { email, token, method } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'E-Mail-Adresse erforderlich' }, { status: 400 });
@@ -16,11 +17,48 @@ export async function POST(request: NextRequest) {
     const config = {
       GMAIL_USERNAME: process.env.GMAIL_USERNAME,
       GMAIL_APP_PASSWORD: !!process.env.GMAIL_APP_PASSWORD ? 'VORHANDEN' : 'FEHLT',
+      GOOGLE_SERVICE_ACCOUNT_KEY: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? 'VORHANDEN' : 'FEHLT',
+      GMAIL_IMPERSONATE_EMAIL: process.env.GMAIL_IMPERSONATE_EMAIL || 'newsletter@taskilo.de',
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     };
 
     console.log('🔧 Gmail Konfiguration:', config);
 
+    // Methode 1: OAuth2 mit Service Account (Empfohlen)
+    if (method === 'oauth' || config.GOOGLE_SERVICE_ACCOUNT_KEY === 'VORHANDEN') {
+      try {
+        console.log('📧 Teste Gmail OAuth2 API...');
+
+        // OAuth Test mit Domain-wide Delegation
+        const connectionTest = await testGmailConnection();
+        if (connectionTest.success) {
+          const emailResult = await sendNewsletterConfirmationEmail(email, token || 'test-token');
+
+          return NextResponse.json({
+            success: emailResult.success,
+            message: emailResult.success
+              ? 'Gmail OAuth2 Test und E-Mail-Versand erfolgreich!'
+              : 'Gmail OAuth2 Test erfolgreich, aber E-Mail-Versand fehlgeschlagen',
+            method: 'oauth2',
+            connectionTest,
+            emailResult,
+            config: {
+              ...config,
+              GOOGLE_SERVICE_ACCOUNT_KEY: config.GOOGLE_SERVICE_ACCOUNT_KEY,
+              GMAIL_IMPERSONATE_EMAIL: config.GMAIL_IMPERSONATE_EMAIL,
+            },
+          });
+        } else {
+          console.error('🚨 Gmail API Verbindungstest fehlgeschlagen:', connectionTest.error);
+          // Fallback zu SMTP
+        }
+      } catch (error) {
+        console.error('🚨 OAuth2 Test fehlgeschlagen:', error);
+        // Fallback zu SMTP
+      }
+    }
+
+    // Methode 2: SMTP mit App-Passwort (Fallback)
     if (!process.env.GMAIL_USERNAME || !process.env.GMAIL_APP_PASSWORD) {
       return NextResponse.json(
         {
@@ -30,6 +68,8 @@ export async function POST(request: NextRequest) {
             !process.env.GMAIL_USERNAME && 'GMAIL_USERNAME',
             !process.env.GMAIL_APP_PASSWORD && 'GMAIL_APP_PASSWORD',
           ].filter(Boolean),
+          suggestion:
+            'Verwende OAuth2 mit Service Account oder setze GMAIL_USERNAME und GMAIL_APP_PASSWORD',
         },
         { status: 500 }
       );
@@ -90,6 +130,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Test-E-Mail erfolgreich gesendet!',
+      method: 'smtp',
       result,
       config: {
         ...config,
@@ -115,18 +156,40 @@ export async function GET() {
   const config = {
     GMAIL_USERNAME: process.env.GMAIL_USERNAME || 'FEHLT',
     GMAIL_APP_PASSWORD: !!process.env.GMAIL_APP_PASSWORD ? 'VORHANDEN' : 'FEHLT',
+    GOOGLE_SERVICE_ACCOUNT_KEY: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? 'VORHANDEN' : 'FEHLT',
+    GMAIL_IMPERSONATE_EMAIL: process.env.GMAIL_IMPERSONATE_EMAIL || 'newsletter@taskilo.de',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'FEHLT',
     NODE_ENV: process.env.NODE_ENV,
   };
 
+  const methods = [];
+
+  if (config.GOOGLE_SERVICE_ACCOUNT_KEY === 'VORHANDEN') {
+    methods.push('oauth2');
+  }
+
+  if (config.GMAIL_USERNAME !== 'FEHLT' && config.GMAIL_APP_PASSWORD === 'VORHANDEN') {
+    methods.push('smtp');
+  }
+
   return NextResponse.json({
-    message: 'Gmail SMTP Konfiguration',
+    message: 'Gmail Newsletter System Konfiguration',
     config,
-    ready: !!(process.env.GMAIL_USERNAME && process.env.GMAIL_APP_PASSWORD),
+    availableMethods: methods,
+    recommended: methods.includes('oauth2') ? 'oauth2' : 'smtp',
+    ready: methods.length > 0,
     instructions: {
-      step1: 'Gmail App-Passwort erstellen in Google Workspace',
-      step2: 'GMAIL_USERNAME und GMAIL_APP_PASSWORD in .env.local setzen',
-      step3: 'Newsletter API testen mit POST /api/test-gmail',
+      oauth2: {
+        step1: 'Google Cloud Console: Gmail API aktivieren',
+        step2: 'Service Account mit Domain-wide Delegation erstellen',
+        step3: 'GOOGLE_SERVICE_ACCOUNT_KEY und GMAIL_IMPERSONATE_EMAIL setzen',
+        step4: 'Google Workspace Admin: Domain-wide Delegation konfigurieren',
+      },
+      smtp: {
+        step1: 'Gmail App-Passwort erstellen in Google Account',
+        step2: 'GMAIL_USERNAME und GMAIL_APP_PASSWORD in Umgebungsvariablen setzen',
+        step3: 'Newsletter API testen mit POST /api/test-gmail',
+      },
     },
   });
 }
