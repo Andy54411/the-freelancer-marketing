@@ -851,11 +851,14 @@ export default function Step5CompanyPage() {
         }
       });
 
+      // Erstelle individuelle Profil-URL - muss identisch mit Stripe-URL sein
+      const individualProfileUrl = `${frontendAppUrl}/profile/${currentAuthUserUID}`;
+
       const companyPublicProfileData: Record<string, unknown> = {
         uid: currentAuthUserUID,
         companyName: companyName || '',
         postalCode: companyPostalCode || null,
-        tilvoProfileUrl: `${frontendAppUrl}/profil/${currentAuthUserUID}`,
+        taskiloProfileUrl: individualProfileUrl,
         description: '',
         hourlyRate: Number(hourlyRate) || 0,
         profilePictureURL: profilePicResult.firebaseStorageUrl || null,

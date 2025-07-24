@@ -56,6 +56,8 @@ interface CompanyProfile {
   totalReviews?: number;
   completedJobs?: number;
   stripeVerificationStatus?: string;
+  // Profil URL von Taskilo
+  taskiloProfileUrl?: string;
   // Legacy Backend-Felder als Fallback
   companyCityForBackend?: string;
   companyPostalCodeForBackend?: string;
@@ -274,6 +276,7 @@ export default function ProfilePage() {
             hourlyRate: companyData.hourlyRate,
             radiusKm: companyData.radiusKm,
             stripeVerificationStatus: companyData.stripeVerificationStatus,
+            taskiloProfileUrl: companyData.taskiloProfileUrl,
             averageRating: companyData.averageRating || 0,
             totalReviews: companyData.totalReviews || 0,
             responseTime: companyData.responseTime || 24,
@@ -925,6 +928,20 @@ export default function ProfilePage() {
 
                     {/* Quick Info - kompakter */}
                     <div className="pt-4 border-t space-y-2">
+                      {profile.taskiloProfileUrl && (
+                        <div className="flex flex-col text-xs">
+                          <span className="text-gray-500 mb-1">Profil-URL:</span>
+                          <a
+                            href={profile.taskiloProfileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#14ad9f] hover:text-[#0d8a7a] break-all font-medium"
+                          >
+                            {profile.taskiloProfileUrl}
+                          </a>
+                        </div>
+                      )}
+
                       {profile.responseTime && (
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-500">Antwortzeit:</span>

@@ -225,29 +225,33 @@ const mapLegalFormToStripeBusinessInfo = (
 };
 
 // Helper-Funktion für Umgebungs-URLs
-const getEnvironmentUrls = (configuredFrontendUrl: string) => {
+const getEnvironmentUrls = (configuredFrontendUrl: string, userId?: string) => {
   const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
 
   loggerV2.info(`[getEnvironmentUrls] Umgebung erkannt: ${isEmulator ? 'Emulator' : 'Produktion'}`);
   loggerV2.info(`[getEnvironmentUrls] Konfigurierte Frontend-URL: ${configuredFrontendUrl}`);
 
   if (isEmulator) {
-    // Im Emulator: Verwende für Stripe eine der erlaubten URLs anstatt example.com
+    // Im Emulator: Verwende für Stripe die Taskilo-URL mit Profil-ID
+    const profileUrl = userId ? `https://taskilo.de/profile/${userId}` : 'https://taskilo.de';
     return {
-      stripeBusinessProfileUrl: 'https://tilvo-f142f.web.app', // Gültige Produktions-URL für Stripe
+      stripeBusinessProfileUrl: profileUrl,
     };
   } else {
     // In Produktion: Verwende die konfigurierte URL oder Fallback
-    let finalUrl = configuredFrontendUrl;
+    let baseUrl = configuredFrontendUrl;
 
     // Wenn localhost URL übergeben wird, verwende Produktions-Fallback
     if (!configuredFrontendUrl || !configuredFrontendUrl.startsWith('http') || configuredFrontendUrl.includes('localhost')) {
       loggerV2.warn(`[getEnvironmentUrls] Ungültige URL '${configuredFrontendUrl}' erkannt, verwende Produktions-Fallback`);
-      finalUrl = 'https://taskilo.de'; // Sichere Produktions-URL als Fallback
+      baseUrl = 'https://taskilo.de'; // Sichere Produktions-URL als Fallback
     }
 
+    // Erstelle individuelle Profil-URL für Stripe
+    const profileUrl = userId ? `${baseUrl}/profile/${userId}` : baseUrl;
+
     return {
-      stripeBusinessProfileUrl: finalUrl,
+      stripeBusinessProfileUrl: profileUrl,
     };
   }
 };
@@ -383,7 +387,7 @@ export const createStripeAccountIfComplete = onCall(
     // The platformProfileUrl for Stripe's business_profile MUST be a public, non-localhost URL.
     // We will always use the production frontend URL for this, which is correctly
     // sourced from the FRONTEND_URL parameter.
-    const { stripeBusinessProfileUrl } = getEnvironmentUrls(frontendUrlValue);
+    const { stripeBusinessProfileUrl } = getEnvironmentUrls(frontendUrlValue, userId);
 
     const accountParams: Stripe.AccountCreateParams = {
       type: "custom",
@@ -801,9 +805,10 @@ export const updateStripeCompanyDetails = onCall(
       }
 
       const businessProfileUpdates: Partial<Stripe.AccountUpdateParams["business_profile"]> = {};
-      if (updatePayloadFromClient.companyWebsite !== undefined) {
-        businessProfileUpdates.url = updatePayloadFromClient.companyWebsite || "";
-      }
+      // Verwende immer die individuelle Profil-URL für Stripe, nicht die Firmen-Website
+      const { stripeBusinessProfileUrl } = getEnvironmentUrls(frontendUrlValue, userId);
+      businessProfileUpdates.url = stripeBusinessProfileUrl;
+      
       if (updatePayloadFromClient.mcc !== undefined) businessProfileUpdates.mcc = updatePayloadFromClient.mcc || undefined;
       if (Object.keys(businessProfileUpdates).length > 0) accountUpdateParams.business_profile = businessProfileUpdates;
 
