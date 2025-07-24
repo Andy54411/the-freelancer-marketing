@@ -101,7 +101,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   const [formData, setFormData] = useState<SubcategoryData | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const router = useRouter();
-  const { customerType, selectedCategory, selectedSubcategory } = useRegistration();
+  const { customerType, selectedCategory, selectedSubcategory, setDescription } = useRegistration();
 
   // Initialisiere Formulardaten basierend auf Unterkategorie
   useEffect(() => {
@@ -1101,6 +1101,28 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
 
   const handleNextClick = () => {
     console.log('Form is valid, proceeding to address page');
+
+    // Extrahiere die Beschreibung aus den Formulardaten
+    let description = '';
+    if (formData) {
+      // Versuche verschiedene Felder, die als Beschreibung dienen könnten
+      if ('specialRequirements' in formData && formData.specialRequirements) {
+        description = formData.specialRequirements;
+      } else if ('description' in formData && formData.description) {
+        description = formData.description;
+      } else if ('additionalInfo' in formData && formData.additionalInfo) {
+        description = formData.additionalInfo;
+      } else if ('notes' in formData && formData.notes) {
+        description = formData.notes;
+      }
+
+      // Setze die Beschreibung im Registration-Context
+      if (description && setDescription) {
+        setDescription(description);
+        console.log('Setting description from form data:', description);
+      }
+    }
+
     const encodedSubcategory = encodeURIComponent(subcategory);
     router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
   };
