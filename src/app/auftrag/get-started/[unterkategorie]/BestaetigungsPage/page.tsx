@@ -1044,6 +1044,10 @@ export default function BestaetigungsPage() {
         // Hier den jobCalculatedPriceInCents als Basispreis prüfen
         if (draftData.jobCalculatedPriceInCents == null || draftData.jobCalculatedPriceInCents <= 0)
           missingFields.push('Berechneter Preis (Cents)'); // `== null` prüft auf null und undefined
+        // NEU: Prüfe ob der Benutzer gerade registriert wurde
+        const justRegistered =
+          typeof window !== 'undefined' && sessionStorage.getItem('justRegistered') === 'true';
+
         // Prüfe Rechnungsadresse separat - fehlende Adresse führt zur Registrierung
         const hasBillingAddress =
           billingAddressDetails &&
@@ -1052,7 +1056,7 @@ export default function BestaetigungsPage() {
           billingAddressDetails.address?.city &&
           billingAddressDetails.address?.country;
 
-        if (!hasBillingAddress) {
+        if (!hasBillingAddress && !justRegistered) {
           console.log(
             PAGE_LOG,
             'BestaetigungsPage: Keine vollständige Rechnungsadresse gefunden. Weiterleitung zur Registrierung.'
@@ -1071,6 +1075,36 @@ export default function BestaetigungsPage() {
           isInitializing.current = false;
           router.push(registrationRedirectUrl);
           return;
+        }
+
+        // NEU: Wenn Benutzer gerade registriert wurde aber Adresse noch nicht verfügbar ist,
+        // gib ihm etwas Zeit für die Firebase-Synchronisation
+        if (!hasBillingAddress && justRegistered) {
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Benutzer gerade registriert, warte auf Firebase-Synchronisation...'
+          );
+
+          // Lösche das Flag nach kurzer Zeit, um endlose Schleifen zu vermeiden
+          setTimeout(() => {
+            sessionStorage.removeItem('justRegistered');
+          }, 10000); // 10 Sekunden Timeout
+
+          // Kurze Verzögerung für Firebase-Synchronisation
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+
+          return;
+        }
+
+        // Lösche das justRegistered Flag nachdem die Adresse erfolgreich geladen wurde
+        if (hasBillingAddress && justRegistered) {
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Rechnungsadresse erfolgreich geladen, lösche justRegistered Flag'
+          );
+          sessionStorage.removeItem('justRegistered');
         }
 
         // Prüfe andere Pflichtfelder (ohne Rechnungsadresse)
