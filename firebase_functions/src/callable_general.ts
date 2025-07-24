@@ -95,7 +95,7 @@ interface ReplyToReviewResult {
   message: string;
 }
 
-export const getClientIp = onCall({ 
+export const getClientIp = onCall({
   cors: corsOptions,
   region: "europe-west1"
 }, (request) => {
@@ -253,7 +253,7 @@ export const createTemporaryJobDraft = onCall(
 );
 
 export const submitReview = onCall(
-  { 
+  {
     region: "europe-west1",
     cors: ["https://tasko-rho.vercel.app", "https://tasko-zh8k.vercel.app", "https://tasko-live.vercel.app", "https://taskilo.de", "https://www.taskilo.de", "http://localhost:3000"]
   },
@@ -369,13 +369,13 @@ export const replyToReview = onCall(
     try {
       // Prüfen, ob das Review existiert
       const reviewDoc = await db.collection('reviews').doc(reviewId).get();
-      
+
       if (!reviewDoc.exists) {
         throw new HttpsError('not-found', 'Review nicht gefunden.');
       }
 
       const reviewData = reviewDoc.data();
-      
+
       // Prüfen, ob die Company berechtigt ist (Review gehört zu diesem Anbieter)
       if (reviewData?.anbieterId !== companyId) {
         throw new HttpsError('permission-denied', 'Sie sind nicht berechtigt, auf dieses Review zu antworten.');
@@ -506,7 +506,7 @@ export const syncSpecificCompanyToUser = onCall(
   async (request: CallableRequest<{ companyId?: string }>): Promise<{ success: boolean; message: string; }> => {
     // Use default companyId if not provided
     const companyId = request.data?.companyId || "BsUxClYQtkNWRmpSY17YsJyVR0D2";
-    
+
     logger.info(`[syncSpecificCompanyToUser] Syncing company ${companyId} to user data`);
 
     if (!companyId || typeof companyId !== "string") {
@@ -529,7 +529,7 @@ export const syncSpecificCompanyToUser = onCall(
       // Check if corresponding user document exists
       const userDocRef = db.collection("users").doc(companyId);
       const userDoc = await userDocRef.get();
-      
+
       if (!userDoc.exists) {
         throw new HttpsError("not-found", `User document ${companyId} does not exist.`);
       }
@@ -542,7 +542,7 @@ export const syncSpecificCompanyToUser = onCall(
         hourlyRate: companyData.hourlyRate || null,
         selectedCategory: companyData.selectedCategory || null,
         selectedSubcategory: companyData.selectedSubcategory || null,
-        
+
         // Location data
         lat: companyData.lat || null,
         lng: companyData.lng || null,
@@ -550,33 +550,33 @@ export const syncSpecificCompanyToUser = onCall(
         companyPostalCodeForBackend: companyData.companyPostalCodeForBackend || companyData.postalCode || null,
         companyCityForBackend: companyData.companyCityForBackend || companyData.companyCity || null,
         companyCountryForBackend: companyData.companyCountryForBackend || null,
-        
+
         // Contact and business info
         companyPhoneNumberForBackend: companyData.companyPhoneNumberForBackend || null,
         companyWebsiteForBackend: companyData.companyWebsiteForBackend || null,
-        
+
         // Profile and media
         profilePictureFirebaseUrl: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
         profilePictureURL: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
-        
+
         // Business details from step2
         'step2.companyName': companyData.companyName || null,
         'step2.description': companyData.description || null,
         'step2.city': companyData.companyCity || companyData.companyCityForBackend || null,
         'step2.country': companyData.companyCountryForBackend || null,
         'step2.industryMcc': companyData.industryMcc || null,
-        
+
         // Technical details from step3  
         'step3.hourlyRate': companyData.hourlyRate ? String(companyData.hourlyRate) : null,
         'step3.profilePictureURL': companyData.profilePictureURL || companyData.profilePictureFirebaseUrl || null,
-        
+
         // Stripe and verification data
         stripeAccountId: companyData.stripeAccountId || null,
         stripeChargesEnabled: companyData.stripeChargesEnabled || false,
         stripePayoutsEnabled: companyData.stripePayoutsEnabled || false,
         stripeDetailsSubmitted: companyData.stripeDetailsSubmitted || false,
         stripeVerificationStatus: companyData.stripeVerificationStatus || null,
-        
+
         // Additional profile data
         specialties: companyData.specialties || null,
         portfolio: companyData.portfolio || null,
@@ -584,14 +584,14 @@ export const syncSpecificCompanyToUser = onCall(
         languages: companyData.languages || null,
         education: companyData.education || null,
         certifications: companyData.certifications || null,
-        
+
         // Metrics and performance
         responseTime: companyData.responseTime || companyData.responseTimeGuarantee || null,
         completionRate: companyData.completionRate || null,
         totalOrders: companyData.totalOrders || null,
         averageRating: companyData.averageRating || null,
         totalReviews: companyData.totalReviews || null,
-        
+
         // Timestamps
         updatedAt: FieldValue.serverTimestamp(),
       };
@@ -625,7 +625,7 @@ export const syncSpecificUserToCompany = onCall(
   async (request: CallableRequest<{ userId?: string }>): Promise<{ success: boolean; message: string; }> => {
     // Use default userId if not provided
     const userId = request.data?.userId || "BsUxClYQtkNWRmpSY17YsJyVR0D2";
-    
+
     logger.info(`[syncSpecificUserToCompany] Syncing user ${userId} to company data`);
 
     if (!userId || typeof userId !== "string") {
@@ -648,16 +648,16 @@ export const syncSpecificUserToCompany = onCall(
       // Check if corresponding company document exists
       const companyDocRef = db.collection("companies").doc(userId);
       const companyDoc = await companyDocRef.get();
-      
+
       // Debug logging for description
       logger.info(`[syncSpecificUserToCompany] Checking description sources for ${userId}:`);
       logger.info(`userData.description: ${userData.description}`);
       logger.info(`userData.step2: ${JSON.stringify(userData.step2)}`);
       logger.info(`userData['step2.description']: ${userData['step2.description']}`);
-      
+
       // Extract step2 data if it exists
       const step2Data = userData.step2 || {};
-      
+
       // Prepare company data update with user data
       const companyDataUpdate: Record<string, any> = {
         // Basic company info
@@ -666,7 +666,7 @@ export const syncSpecificUserToCompany = onCall(
         hourlyRate: userData.hourlyRate || (userData['step3.hourlyRate'] ? parseFloat(userData['step3.hourlyRate']) : null),
         selectedCategory: userData.selectedCategory || null,
         selectedSubcategory: userData.selectedSubcategory || null,
-        
+
         // Location data
         lat: userData.lat || null,
         lng: userData.lng || null,
@@ -674,25 +674,25 @@ export const syncSpecificUserToCompany = onCall(
         postalCode: userData.companyPostalCodeForBackend || null,
         companyCity: userData.companyCityForBackend || userData['step2.city'] || null,
         companyCountryForBackend: userData.companyCountryForBackend || userData['step2.country'] || null,
-        
+
         // Contact and business info
         companyPhoneNumberForBackend: userData.companyPhoneNumberForBackend || null,
         companyWebsiteForBackend: userData.companyWebsiteForBackend || null,
-        
+
         // Profile and media
         profilePictureURL: userData.profilePictureURL || userData.profilePictureFirebaseUrl || userData['step3.profilePictureURL'] || null,
         profilePictureFirebaseUrl: userData.profilePictureFirebaseUrl || userData.profilePictureURL || userData['step3.profilePictureURL'] || null,
-        
+
         // Business details
         industryMcc: userData['step2.industryMcc'] || null,
-        
+
         // Stripe and verification data
         stripeAccountId: userData.stripeAccountId || null,
         stripeChargesEnabled: userData.stripeChargesEnabled || false,
         stripePayoutsEnabled: userData.stripePayoutsEnabled || false,
         stripeDetailsSubmitted: userData.stripeDetailsSubmitted || false,
         stripeVerificationStatus: userData.stripeVerificationStatus || null,
-        
+
         // Additional profile data
         specialties: userData.specialties || null,
         portfolio: userData.portfolio || null,
@@ -710,14 +710,14 @@ export const syncSpecificUserToCompany = onCall(
         })(),
         education: userData.education || null,
         certifications: userData.certifications || null,
-        
+
         // Metrics and performance
         responseTime: userData.responseTime || null,
         completionRate: userData.completionRate || null,
         totalOrders: userData.totalOrders || null,
         averageRating: userData.averageRating || null,
         totalReviews: userData.totalReviews || null,
-        
+
         // Timestamps
         updatedAt: FieldValue.serverTimestamp(),
       };
@@ -725,7 +725,7 @@ export const syncSpecificUserToCompany = onCall(
       // Remove null values but keep debug info
       const cleanedUpdate: { [x: string]: any } = {};
       const removedFields: string[] = [];
-      
+
       for (const [key, value] of Object.entries(companyDataUpdate)) {
         if (value !== null && value !== undefined) {
           cleanedUpdate[key] = value;
@@ -733,7 +733,7 @@ export const syncSpecificUserToCompany = onCall(
           removedFields.push(key);
         }
       }
-      
+
       logger.info(`[syncSpecificUserToCompany] Fields to update: ${Object.keys(cleanedUpdate).join(', ')}`);
       logger.info(`[syncSpecificUserToCompany] Removed null fields: ${removedFields.join(', ')}`);
       logger.info(`[syncSpecificUserToCompany] Description value being set: ${cleanedUpdate.description}`);
@@ -771,46 +771,46 @@ export const updateCompanyStatus = onCall(
   async (request: CallableRequest<{ companyId: string; status: string }>) => {
     try {
       await verifyAdmin(request.auth?.uid || '');
-      
+
       const { companyId, status } = request.data;
-      
+
       if (!companyId || !status) {
         throw new HttpsError("invalid-argument", "CompanyId and status are required");
       }
-      
+
       if (!['active', 'locked'].includes(status)) {
         throw new HttpsError("invalid-argument", "Status must be either 'active' or 'locked'");
       }
-      
+
       const db = getDb();
-      
+
       // Update both users and companies collections
       const batch = db.batch();
-      
+
       const userRef = db.collection('users').doc(companyId);
       const companyRef = db.collection('companies').doc(companyId);
-      
-      batch.update(userRef, { 
+
+      batch.update(userRef, {
         status: status,
         updatedAt: FieldValue.serverTimestamp()
       });
-      
-      batch.update(companyRef, { 
+
+      batch.update(companyRef, {
         status: status,
         isActive: status === 'active',
         updatedAt: FieldValue.serverTimestamp()
       });
-      
+
       await batch.commit();
-      
+
       logger.info(`[updateCompanyStatus] Successfully updated company ${companyId} status to ${status}`);
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: `Company status updated to ${status}`,
         companyId,
         status
       };
-      
+
     } catch (error: any) {
       logger.error(`[updateCompanyStatus] Error updating company status:`, error);
       if (error instanceof HttpsError) {

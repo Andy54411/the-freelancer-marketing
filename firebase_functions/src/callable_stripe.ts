@@ -808,7 +808,7 @@ export const updateStripeCompanyDetails = onCall(
       // Verwende immer die individuelle Profil-URL für Stripe, nicht die Firmen-Website
       const { stripeBusinessProfileUrl } = getEnvironmentUrls(frontendUrlValue, userId);
       businessProfileUpdates.url = stripeBusinessProfileUrl;
-      
+
       if (updatePayloadFromClient.mcc !== undefined) businessProfileUpdates.mcc = updatePayloadFromClient.mcc || undefined;
       if (Object.keys(businessProfileUpdates).length > 0) accountUpdateParams.business_profile = businessProfileUpdates;
 
