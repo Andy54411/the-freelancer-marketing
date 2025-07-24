@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: `Newsletter versendet: ${successCount}/${recipients.length} erfolgreich`,
         results,
-        service: 'Resend',
+        service: 'Taskilo',
       });
     }
 
