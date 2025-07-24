@@ -2,9 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend-Client lazy initialisieren
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY ist nicht gesetzt');
+  }
+  return new Resend(apiKey);
+}
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     return NextResponse.json({
       success: true,
@@ -39,6 +46,8 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`📧 Admin Newsletter-Versand an ${recipients.length} Empfänger`);
+
+      const resend = getResendClient();
 
       // Newsletter über Resend versenden
       const results = [];

@@ -2,7 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend-Client lazy initialisieren
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY ist nicht gesetzt');
+  }
+  return new Resend(apiKey);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +20,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📧 Newsletter-Versand über Resend:', recipient);
+
+    const resend = getResendClient();
 
     // Newsletter über Resend versenden
     const { data, error } = await resend.emails.send({
