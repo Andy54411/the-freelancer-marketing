@@ -30,7 +30,12 @@ export async function GET(request: NextRequest) {
         lastUpdated: data.lastUpdated,
         userId: data.userId,
         userName: data.userName || 'Unbekannter User',
-        lastMessage: data.lastMessage || null,
+        lastMessage: data.lastMessage
+          ? {
+              ...data.lastMessage,
+              timestamp: data.lastMessage.timestamp || null,
+            }
+          : null,
         isLocked: data.isLocked || false,
         users: data.users || [],
         userAvatarUrl: data.userAvatarUrl || null,

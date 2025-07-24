@@ -62,10 +62,14 @@ const ChatList: React.FC<ChatListProps> = ({ chats, selectedChatId, onSelectChat
                   <h3 className="font-semibold text-gray-800 truncate">{chat.userName}</h3>
                   <p className="text-xs text-gray-500 whitespace-nowrap ml-2">
                     {chat.lastMessage?.timestamp
-                      ? formatDistanceToNow(chat.lastMessage.timestamp.toDate(), {
-                          addSuffix: true,
-                          locale: de,
-                        })
+                      ? formatDistanceToNow(
+                          chat.lastMessage.timestamp?.toDate?.() ||
+                            new Date(chat.lastMessage.timestamp),
+                          {
+                            addSuffix: true,
+                            locale: de,
+                          }
+                        )
                       : ''}
                   </p>
                 </div>
