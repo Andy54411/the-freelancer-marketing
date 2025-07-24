@@ -115,7 +115,11 @@ interface BestaetigungsContentPropsForPage {
 // --- ENDE DER INTERFACE DEFINITIONEN ---
 
 // Helper function to compute billing details. Moved outside the component to avoid re-declaration on every render.
-const getBillingDetails = (registration: any, user: User | null): BillingDetailsPayload | null => {
+const getBillingDetails = (
+  registration: any,
+  user: User | null,
+  userProfileData?: any
+): BillingDetailsPayload | null => {
   const baseAddress: CustomerAddress = {
     line1: null,
     line2: null,
@@ -127,26 +131,32 @@ const getBillingDetails = (registration: any, user: User | null): BillingDetails
   let email: string | null = null;
   let phone: string | null = null;
 
-  if (registration.customerType === 'private') {
-    if (
-      registration.personalStreet &&
-      registration.personalPostalCode &&
-      registration.personalCity &&
-      registration.personalCountry
-    ) {
-      baseAddress.line1 = `${registration.personalStreet}${registration.personalHouseNumber ? ` ${registration.personalHouseNumber}` : ''}`;
-      baseAddress.postal_code = registration.personalPostalCode;
-      baseAddress.city = registration.personalCity;
-      baseAddress.country = registration.personalCountry;
+  // ERWEITERT: Fallback auf userProfileData aus Firebase-Datenbank
+  const customerType = registration.customerType || userProfileData?.user_type || 'private';
+
+  if (customerType === 'private' || customerType === 'kunde') {
+    // Prüfe zuerst RegistrationContext, dann userProfileData aus Datenbank
+    const personalStreet = registration.personalStreet || userProfileData?.street;
+    const personalPostalCode = registration.personalPostalCode || userProfileData?.postalCode;
+    const personalCity = registration.personalCity || userProfileData?.city;
+    const personalCountry = registration.personalCountry || userProfileData?.country || 'DE';
+
+    if (personalStreet && personalPostalCode && personalCity && personalCountry) {
+      baseAddress.line1 = `${personalStreet}${registration.personalHouseNumber ? ` ${registration.personalHouseNumber}` : ''}`;
+      baseAddress.postal_code = personalPostalCode;
+      baseAddress.city = personalCity;
+      baseAddress.country = personalCountry;
     }
 
     name =
       registration.firstName && registration.lastName
         ? `${registration.firstName} ${registration.lastName}`
-        : user?.displayName || null;
-    email = registration.email || user?.email || null;
-    phone = registration.phoneNumber || null;
-  } else if (registration.customerType === 'business') {
+        : userProfileData?.firstName && userProfileData?.lastName
+          ? `${userProfileData.firstName} ${userProfileData.lastName}`
+          : user?.displayName || null;
+    email = registration.email || userProfileData?.email || user?.email || null;
+    phone = registration.phoneNumber || userProfileData?.phoneNumber || null;
+  } else if (customerType === 'business') {
     if (
       registration.companyStreet &&
       registration.companyPostalCode &&
@@ -528,6 +538,7 @@ export default function BestaetigungsPage() {
   }, [registration, searchParams, pathParams, router, urlParamsLoaded.current]);
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userProfileData, setUserProfileData] = useState<any>(null); // Für Firebase-Benutzerdaten
   const [kundeStripeCustomerId, setKundeStripeCustomerId] = useState<string | null>(null);
   const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null);
   const [anbieterStripeConnectId, setAnbieterStripeConnectId] = useState<string | null>(null);
@@ -670,7 +681,7 @@ export default function BestaetigungsPage() {
   // Call the helper function inside a useMemo hook at the top level of the component.
   // This follows the Rules of Hooks and ensures the value is only recomputed when its dependencies change.
   const billingAddressDetails = useMemo(() => {
-    return getBillingDetails(registration, currentUser);
+    return getBillingDetails(registration, currentUser, userProfileData);
   }, [
     registration.customerType,
     registration.personalStreet,
@@ -689,6 +700,7 @@ export default function BestaetigungsPage() {
     registration.companyCity,
     registration.companyCountry,
     currentUser,
+    userProfileData, // Neue Abhängigkeit für Firebase-Daten
   ]);
 
   // =================================================================================================
@@ -737,15 +749,16 @@ export default function BestaetigungsPage() {
 
         // KORREKTUR: Lade das Benutzerprofil, um den Kundentyp zuverlässig zu bestimmen,
         // anstatt sich nur auf den RegistrationContext zu verlassen.
-        let userProfileData: { user_type?: 'private' | 'business' } = {};
+        let userProfileDataLocal: { user_type?: 'private' | 'business' } = {};
         try {
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
-            userProfileData = userDocSnap.data() as { user_type?: 'private' | 'business' };
+            userProfileDataLocal = userDocSnap.data() as { user_type?: 'private' | 'business' };
+            setUserProfileData(userProfileDataLocal); // State für billingAddressDetails aktualisieren
             console.log(
               PAGE_LOG,
-              `Benutzerprofil für ${currentUser.uid} geladen. Kundentyp: ${userProfileData.user_type}`
+              `Benutzerprofil für ${currentUser.uid} geladen. Kundentyp: ${userProfileDataLocal.user_type}`
             );
           }
         } catch (e) {
@@ -827,7 +840,8 @@ export default function BestaetigungsPage() {
           priceFromUrlDirect,
         });
 
-        const customerTypeToUse = registration.customerType || userProfileData.user_type || null;
+        const customerTypeToUse =
+          registration.customerType || userProfileDataLocal.user_type || null;
         // VERSUCH, selectedCategory abzuleiten, falls nicht im Context
         let selectedCategoryToUse = registration.selectedCategory || null; // Beginne mit dem Wert aus dem Context
         if (!selectedCategoryToUse && unterkategorieAusPfadDirect) {
