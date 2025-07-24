@@ -1,22 +1,8 @@
-// Double-Opt-In System für Newsletter
+// Double-Opt-In System für Newsletter mit Resend
 import { admin } from '../firebase/server';
-import { sendSingleEmailViaGmail } from './gmail-smtp-newsletter';
 import { generateUnsubscribeToken } from './newsletter-gdpr';
+import { sendNewsletterConfirmationViaResend } from './resend-newsletter';
 import crypto from 'crypto';
-
-// OAuth2 Gmail Import mit Fallback
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let sendNewsletterConfirmationEmail: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let getGmailService: any = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const gmailOAuthModule = require('./gmail-oauth-newsletter');
-  sendNewsletterConfirmationEmail = gmailOAuthModule.sendNewsletterConfirmationEmail;
-  getGmailService = gmailOAuthModule.getGmailService;
-} catch {
-  console.log('OAuth2 Gmail Module nicht verfügbar, verwende SMTP Fallback');
-}
 
 // Bestätigungs-Token generieren
 export function generateConfirmationToken(): string {
@@ -30,172 +16,34 @@ export async function sendConfirmationEmail(
   confirmationToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/newsletter/confirm?token=${confirmationToken}&email=${encodeURIComponent(email)}`;
+    console.log('📧 Newsletter-Bestätigung senden an:', email);
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Newsletter-Anmeldung bestätigen</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <img src="https://taskilo.de/images/logo.png" alt="Taskilo" style="height: 40px;">
-        </div>
-        
-        <h1 style="color: #14ad9f; text-align: center;">Newsletter-Anmeldung bestätigen</h1>
-        
-        <p>Hallo${name ? ` ${name}` : ''},</p>
-        
-        <p>vielen Dank für Ihr Interesse an unserem Newsletter! Um Ihre Anmeldung abzuschließen, bestätigen Sie bitte Ihre E-Mail-Adresse.</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${confirmationUrl}" 
-             style="background-color: #14ad9f; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-            Newsletter-Anmeldung bestätigen
-          </a>
-        </div>
-        
-        <p style="color: #666; font-size: 14px;">
-          Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br>
-          <a href="${confirmationUrl}" style="color: #14ad9f; word-break: break-all;">${confirmationUrl}</a>
-        </p>
-        
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        
-        <p style="color: #666; font-size: 12px;">
-          <strong>Warum erhalten Sie diese E-Mail?</strong><br>
-          Diese E-Mail wurde versendet, weil sich jemand mit Ihrer E-Mail-Adresse für unseren Newsletter angemeldet hat. 
-          Falls Sie sich nicht angemeldet haben, können Sie diese E-Mail einfach ignorieren.
-        </p>
-        
-        <p style="color: #666; font-size: 12px;">
-          Der Bestätigungslink ist 24 Stunden gültig. Nach der Bestätigung erhalten Sie regelmäßig Updates 
-          zu neuen Features und Verbesserungen bei Taskilo.
-        </p>
-        
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-          <p style="color: #666; font-size: 12px; margin: 0;">
-            Taskilo GmbH<br>
-            E-Mail: <a href="mailto:support@taskilo.de" style="color: #14ad9f;">support@taskilo.de</a><br>
-            Web: <a href="https://taskilo.de" style="color: #14ad9f;">taskilo.de</a>
-          </p>
-        </div>
-      </body>
-      </html>
-    `;
+    // 🚀 RESEND als einzige Methode
+    try {
+      console.log('🚀 Verwende Resend für Newsletter-Bestätigung');
+      const resendResult = await sendNewsletterConfirmationViaResend(
+        email,
+        name,
+        confirmationToken
+      );
 
-    // OAuth2 Gmail versuchen, fallback zu SMTP
-    let emailResult: { success: boolean; error?: string } = { success: false };
-
-    if (sendNewsletterConfirmationEmail) {
-      try {
-        console.log('📧 Verwende OAuth2 Gmail für Newsletter-Bestätigung');
-        console.log('📧 OAuth2 Parameter:', {
-          email,
-          confirmationToken: confirmationToken.substring(0, 8) + '...',
-          name,
-        });
-
-        const oauthResult = await sendNewsletterConfirmationEmail(email, confirmationToken, name);
-        console.log('📧 OAuth2 Ergebnis:', oauthResult);
-
-        emailResult = { success: oauthResult.success, error: oauthResult.error };
-
-        if (oauthResult.success) {
-          console.log('✅ OAuth2 E-Mail erfolgreich gesendet');
-        } else {
-          console.error('❌ OAuth2 E-Mail fehlgeschlagen:', oauthResult.error);
-        }
-      } catch (error) {
-        console.error('🚨 OAuth2 Gmail Exception, verwende SMTP Fallback:', error);
-
-        // Versuche direkten Gmail Service falls verfügbar
-        if (getGmailService) {
-          try {
-            console.log('📧 Versuche direkten Gmail Service');
-            const gmailService = getGmailService();
-            const directResult = await gmailService.sendEmail(
-              email,
-              'Newsletter-Anmeldung bestätigen - Taskilo',
-              htmlContent,
-              {
-                from: 'newsletter@taskilo.de',
-                replyTo: 'newsletter@taskilo.de',
-              }
-            );
-            emailResult = { success: directResult.success, error: directResult.error };
-            console.log('📧 Direkter Gmail Service Ergebnis:', directResult);
-          } catch (directError) {
-            console.error('🚨 Direkter Gmail Service fehlgeschlagen:', directError);
-            // Fallback zu SMTP
-            const smtpResult = await sendSingleEmailViaGmail(
-              email,
-              'Newsletter-Anmeldung bestätigen - Taskilo',
-              htmlContent
-            );
-            emailResult = { success: smtpResult.success };
-          }
-        } else {
-          // Fallback zu SMTP
-          const smtpResult = await sendSingleEmailViaGmail(
-            email,
-            'Newsletter-Anmeldung bestätigen - Taskilo',
-            htmlContent
-          );
-          emailResult = { success: smtpResult.success };
-        }
+      if (resendResult.success) {
+        console.log('✅ Resend Newsletter-Bestätigung erfolgreich:', resendResult.messageId);
+        return { success: true };
+      } else {
+        console.error('❌ Resend fehlgeschlagen:', resendResult.error);
+        return {
+          success: false,
+          error: resendResult.error || 'E-Mail-Versand über Resend fehlgeschlagen',
+        };
       }
-    } else {
-      console.log('📧 Verwende SMTP für Newsletter-Bestätigung (OAuth2 nicht verfügbar)');
-
-      // Einfache SMTP Funktion mit besserer Fehlerbehandlung
-      try {
-        const smtpResult = await sendSingleEmailViaGmail(
-          email,
-          'Newsletter-Anmeldung bestätigen - Taskilo',
-          htmlContent
-        );
-        emailResult = { success: smtpResult.success };
-        console.log('📧 SMTP Ergebnis:', smtpResult);
-      } catch (smtpError) {
-        console.error('🚨 SMTP fehlgeschlagen:', smtpError);
-
-        // Als letzten Ausweg - erstelle einen einfachen nodemailer transport
-        try {
-          console.log('📧 Versuche einfachen Nodemailer Transport');
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const nodemailer = require('nodemailer');
-
-          const simpleTransporter = nodemailer.createTransporter({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: {
-              user: process.env.GMAIL_USERNAME,
-              pass: process.env.GMAIL_APP_PASSWORD,
-            },
-          });
-
-          const result = await simpleTransporter.sendMail({
-            from: `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
-            to: email,
-            subject: 'Newsletter-Anmeldung bestätigen - Taskilo',
-            html: htmlContent,
-            text: htmlContent.replace(/<[^>]*>/g, ''),
-          });
-
-          emailResult = { success: true };
-          console.log('✅ Einfacher Transport erfolgreich:', result.messageId);
-        } catch (fallbackError) {
-          console.error('🚨 Alle E-Mail-Methoden fehlgeschlagen:', fallbackError);
-          emailResult = { success: false, error: 'E-Mail-Versand fehlgeschlagen' };
-        }
-      }
+    } catch (resendError) {
+      console.error('🚨 Resend Fehler:', resendError);
+      return {
+        success: false,
+        error: resendError instanceof Error ? resendError.message : 'Unbekannter Resend-Fehler',
+      };
     }
-
-    return { success: emailResult.success };
   } catch (error) {
     console.error('Fehler beim Senden der Bestätigungs-E-Mail:', error);
     return {

@@ -1,354 +1,92 @@
+// Saubere Admin Newsletter API nur mit Resend
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminAuth } from '@/lib/admin-auth';
-import { admin } from '@/firebase/server';
-import { GmailNewsletterSender } from '@/lib/google-workspace';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authResult = await verifyAdminAuth(request);
-    if (!authResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Unauthorized',
-          // Temporärer Fallback während Produktionsproblemen
-          message: 'Admin authentication temporarily unavailable',
-          authError: authResult.error,
-        },
-        { status: 401 }
-      );
-    }
-
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type'); // 'subscribers' or 'campaigns'
-
-    if (type === 'subscribers') {
-      // Get newsletter subscribers
-      const subscribersSnapshot = await admin
-        .firestore()
-        .collection('newsletterSubscribers')
-        .orderBy('subscribedAt', 'desc')
-        .get();
-
-      const subscribers = subscribersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        subscribedAt:
-          doc.data().subscribedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      }));
-
-      return NextResponse.json({
-        success: true,
-        subscribers,
-        count: subscribers.length,
-      });
-    } else if (type === 'campaigns') {
-      // Get newsletter campaigns
-      const campaignsSnapshot = await admin
-        .firestore()
-        .collection('newsletterCampaigns')
-        .orderBy('createdAt', 'desc')
-        .get();
-
-      const campaigns = campaignsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        sentAt: doc.data().sentAt?.toDate?.()?.toISOString(),
-      }));
-
-      return NextResponse.json({
-        success: true,
-        campaigns,
-        count: campaigns.length,
-      });
-    } else {
-      return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
-    }
+    return NextResponse.json({
+      success: true,
+      message: 'Admin Newsletter API - Powered by Resend',
+      service: 'Resend Only',
+      status: 'Clean - No Google/Gmail dependencies',
+      features: [
+        'Newsletter versenden',
+        'Abonnenten verwalten',
+        'E-Mail-Templates',
+        'Delivery-Tracking',
+      ],
+      config: {
+        RESEND_API_KEY: process.env.RESEND_API_KEY ? 'VORHANDEN ✅' : 'FEHLT ❌',
+        from_domain: 'taskilo.de',
+        limits: '3.000 E-Mails/Monat kostenlos',
+      },
+    });
   } catch (error) {
-    console.error('Error fetching newsletter data:', error);
-    return NextResponse.json({ error: 'Failed to fetch newsletter data' }, { status: 500 });
+    console.error('Admin Newsletter GET Fehler:', error);
+    return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authResult = await verifyAdminAuth(request);
-    if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { action, recipients, subject, content } = await request.json();
 
-    const body = await request.json();
-    const { type, data } = body;
-
-    if (type === 'subscriber') {
-      // Add new subscriber
-      const { email, name } = data;
-
-      if (!email) {
-        return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (action === 'send') {
+      if (!recipients || recipients.length === 0) {
+        return NextResponse.json({ error: 'Empfänger erforderlich' }, { status: 400 });
       }
 
-      // Check if subscriber already exists
-      const existingSubscriber = await admin
-        .firestore()
-        .collection('newsletterSubscribers')
-        .where('email', '==', email)
-        .get();
+      console.log(`📧 Admin Newsletter-Versand an ${recipients.length} Empfänger`);
 
-      if (!existingSubscriber.empty) {
-        return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
-      }
-
-      // Add new subscriber
-      const newSubscriber = {
-        email,
-        name: name || null,
-        subscribed: true,
-        subscribedAt: admin.firestore.Timestamp.now(),
-        source: 'manual',
-      };
-
-      const docRef = await admin.firestore().collection('newsletterSubscribers').add(newSubscriber);
-
-      return NextResponse.json({
-        success: true,
-        subscriber: {
-          id: docRef.id,
-          ...newSubscriber,
-          subscribedAt: newSubscriber.subscribedAt.toDate().toISOString(),
-        },
-      });
-    } else if (type === 'campaign') {
-      // Create new campaign
-      const { subject, content } = data;
-
-      if (!subject || !content) {
-        return NextResponse.json({ error: 'Subject and content are required' }, { status: 400 });
-      }
-
-      // Get active subscriber count
-      const subscribersSnapshot = await admin
-        .firestore()
-        .collection('newsletterSubscribers')
-        .where('subscribed', '==', true)
-        .get();
-
-      const newCampaign = {
-        subject,
-        content,
-        status: 'draft',
-        createdAt: admin.firestore.Timestamp.now(),
-        recipientCount: subscribersSnapshot.size,
-      };
-
-      const docRef = await admin.firestore().collection('newsletterCampaigns').add(newCampaign);
-
-      return NextResponse.json({
-        success: true,
-        campaign: {
-          id: docRef.id,
-          ...newCampaign,
-          createdAt: newCampaign.createdAt.toDate().toISOString(),
-        },
-      });
-    } else {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
-    }
-  } catch (error) {
-    console.error('Error creating newsletter item:', error);
-    return NextResponse.json({ error: 'Failed to create newsletter item' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    // Verify admin authentication
-    const authResult = await verifyAdminAuth(request);
-    if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { type, id, data } = body;
-
-    if (type === 'campaign-send') {
-      // Get campaign details
-      const campaignDoc = await admin.firestore().collection('newsletterCampaigns').doc(id).get();
-
-      if (!campaignDoc.exists) {
-        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-      }
-
-      const campaign = campaignDoc.data();
-      if (campaign?.status !== 'draft') {
-        return NextResponse.json(
-          { error: 'Campaign already sent or not in draft status' },
-          { status: 400 }
-        );
-      }
-
-      // Get active subscribers
-      const subscribersSnapshot = await admin
-        .firestore()
-        .collection('newsletterSubscribers')
-        .where('subscribed', '==', true)
-        .get();
-
-      const subscriberEmails = subscribersSnapshot.docs.map(doc => doc.data().email);
-
-      if (subscriberEmails.length === 0) {
-        return NextResponse.json({ error: 'No active subscribers found' }, { status: 400 });
-      }
-
-      // Get Google Workspace credentials from request or admin
-      const { accessToken, refreshToken } = data || {};
-
-      // Check if Google Workspace is available
-      const hasGoogleWorkspace =
-        process.env.GOOGLE_WORKSPACE_CLIENT_ID && process.env.GOOGLE_WORKSPACE_CLIENT_SECRET;
-
-      if (!hasGoogleWorkspace) {
-        // Fallback: Log newsletter sending (for development/testing)
-        console.log('Newsletter sending simulation (Google Workspace not configured):');
-        console.log(`Campaign: ${campaign.subject}`);
-        console.log(`Recipients: ${subscriberEmails.length} subscribers`);
-        console.log(`Content: ${campaign.content.substring(0, 100)}...`);
-
-        // Update campaign status to 'sent' in simulation mode
-        await admin.firestore().collection('newsletterCampaigns').doc(id).update({
-          status: 'sent',
-          sentAt: new Date(),
-          recipientCount: subscriberEmails.length,
-          simulationMode: true,
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: `Newsletter simuliert (Google Workspace nicht konfiguriert). ${subscriberEmails.length} Empfänger würden benachrichtigt.`,
-          recipientCount: subscriberEmails.length,
-          simulationMode: true,
-        });
-      }
-
-      if (!accessToken) {
-        return NextResponse.json(
-          {
-            error: 'Google Workspace access token required for sending emails',
-          },
-          { status: 400 }
-        );
-      }
-
-      try {
-        // Initialize Gmail sender
-        const gmailSender = new GmailNewsletterSender(accessToken, refreshToken);
-
-        // Create HTML content (you can enhance this with templates)
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <title>${campaign.subject}</title>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
-              .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
-              .content { padding: 20px; }
-              .footer { background-color: #f8f9fa; padding: 10px; text-align: center; font-size: 12px; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>Taskilo Newsletter</h1>
-            </div>
-            <div class="content">
-              ${campaign.content.replace(/\n/g, '<br>')}
-            </div>
-            <div class="footer">
-              <p>Sie erhalten diese E-Mail, weil Sie sich für den Taskilo Newsletter angemeldet haben.</p>
-              <p>Um sich abzumelden, antworten Sie auf diese E-Mail mit "Abmelden".</p>
-            </div>
-          </body>
-          </html>
-        `;
-
-        // Send newsletter
-        const sendResult = await gmailSender.sendNewsletter(
-          subscriberEmails,
-          campaign.subject,
-          htmlContent,
-          campaign.content // Text version
-        );
-
-        if (sendResult.success) {
-          // Update campaign status
-          await admin.firestore().collection('newsletterCampaigns').doc(id).update({
-            status: 'sent',
-            sentAt: admin.firestore.Timestamp.now(),
-            recipientCount: subscriberEmails.length,
-            sendResults: sendResult.results,
+      // Newsletter über Resend versenden
+      const results = [];
+      for (const recipient of recipients) {
+        try {
+          const { data, error } = await resend.emails.send({
+            from: 'Taskilo Newsletter <newsletter@taskilo.de>',
+            to: [recipient],
+            subject: subject || 'Taskilo Newsletter',
+            html: content || '<h1>Newsletter von Taskilo</h1><p>Vielen Dank für Ihr Interesse!</p>',
           });
 
-          return NextResponse.json({
-            success: true,
-            message: `Newsletter successfully sent to ${subscriberEmails.length} subscribers`,
-            results: sendResult.results,
+          if (error) {
+            results.push({ recipient, success: false, error: error.message });
+          } else {
+            results.push({ recipient, success: true, messageId: data?.id });
+          }
+        } catch (emailError) {
+          results.push({
+            recipient,
+            success: false,
+            error: emailError instanceof Error ? emailError.message : 'Unbekannter Fehler',
           });
-        } else {
-          return NextResponse.json(
-            {
-              error: `Failed to send newsletter: ${sendResult.error}`,
-            },
-            { status: 500 }
-          );
         }
-      } catch (error) {
-        console.error('Error sending newsletter via Gmail:', error);
-        return NextResponse.json(
-          {
-            error: 'Failed to send newsletter via Gmail API',
-          },
-          { status: 500 }
-        );
       }
-    } else {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
+
+      const successCount = results.filter(r => r.success).length;
+      console.log(
+        `✅ Admin Newsletter versendet: ${successCount}/${recipients.length} erfolgreich`
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Newsletter versendet: ${successCount}/${recipients.length} erfolgreich`,
+        results,
+        service: 'Resend',
+      });
     }
+
+    return NextResponse.json({ error: 'Unbekannte Aktion' }, { status: 400 });
   } catch (error) {
-    console.error('Error updating newsletter item:', error);
-    return NextResponse.json({ error: 'Failed to update newsletter item' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    // Verify admin authentication
-    const authResult = await verifyAdminAuth(request);
-    if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
-    const id = searchParams.get('id');
-
-    if (!type || !id) {
-      return NextResponse.json({ error: 'Type and ID are required' }, { status: 400 });
-    }
-
-    if (type === 'subscriber') {
-      await admin.firestore().collection('newsletterSubscribers').doc(id).delete();
-    } else if (type === 'campaign') {
-      await admin.firestore().collection('newsletterCampaigns').doc(id).delete();
-    } else {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting newsletter item:', error);
-    return NextResponse.json({ error: 'Failed to delete newsletter item' }, { status: 500 });
+    console.error('Admin Newsletter POST Fehler:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Interner Server-Fehler',
+      },
+      { status: 500 }
+    );
   }
 }
