@@ -1,17 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  doc,
-  updateDoc,
-  addDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 as FiLoader, Send as FiSend } from 'lucide-react';
 import ChatMessageBubble from '@/app/dashboard/user/[uid]/components/Support/ChatMessageBubble';
@@ -21,40 +10,59 @@ interface ChatWindowProps {
   chatId: string;
 }
 
-export function ChatWindow({ chatId }: ChatWindowProps) {
-  const { user: adminUser, firebaseUser: adminFirebaseUser } = useAuth();
+export default function ChatWindow({ chatId }: ChatWindowProps) {
+  const { user: adminUser } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    const chatDocRef = doc(db, 'supportChats', chatId);
-    const messagesRef = collection(chatDocRef, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+  // Funktion zum Laden der Nachrichten über API
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/admin/support/${chatId}/messages`);
 
-    const unsubscribe = onSnapshot(
-      q,
-      snapshot => {
-        const loadedMessages = snapshot.docs.map(
-          doc => ({ id: doc.id, ...doc.data() }) as ChatMessage
-        );
-        setMessages(loadedMessages);
-        setLoading(false);
-      },
-      error => {
-        console.error(`Error fetching messages for chat ${chatId}:`, error);
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    );
 
-    updateDoc(chatDocRef, { 'lastMessage.isReadBySupport': true }).catch(err =>
-      console.error('Failed to mark chat as read:', err)
-    );
+      const data = await response.json();
+      if (data.success) {
+        setMessages(data.messages || []);
+      } else {
+        console.error('Fehler beim Laden der Nachrichten:', data.error);
+      }
+    } catch (error) {
+      console.error(`Error fetching messages for chat ${chatId}:`, error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return () => unsubscribe();
+  useEffect(() => {
+    loadMessages();
+
+    // Markiere Chat als gelesen, wenn er geöffnet wird
+    const markChatAsRead = async () => {
+      try {
+        await fetch(`/api/admin/support/${chatId}/messages`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markAsRead: true }),
+        });
+      } catch (error) {
+        console.error('Failed to mark chat as read:', error);
+      }
+    };
+
+    markChatAsRead();
+
+    // Lade Nachrichten alle 5 Sekunden neu für Live-Updates
+    const interval = setInterval(loadMessages, 5000);
+
+    return () => clearInterval(interval);
   }, [chatId]);
 
   useEffect(() => {
@@ -63,102 +71,96 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !adminFirebaseUser || !adminUser) return;
+    if (!newMessage.trim() || !adminUser) return;
 
     setIsSending(true);
-    const chatDocRef = doc(db, 'supportChats', chatId);
-    const messagesRef = collection(chatDocRef, 'messages');
-
-    const isFirstSupportMessage = !messages.some(m => m.senderType === 'support');
-    const customerId =
-      messages.length > 0 && messages[0].chatUsers
-        ? messages[0].chatUsers.find(id => id !== adminFirebaseUser.uid)
-        : chatId.replace('support_chat_', '');
-
-    const messageData = {
-      text: newMessage.trim(),
-      senderId: adminFirebaseUser.uid,
-      senderName: adminUser.firstName || 'Support',
-      senderType: 'support' as const,
-      timestamp: serverTimestamp(),
-      chatUsers: [adminFirebaseUser.uid, customerId].filter(Boolean),
-    };
 
     try {
-      // NEU: Wenn es die erste Nachricht ist, füge die System-Benachrichtigung hinzu
-      if (isFirstSupportMessage) {
-        const systemMessageData = {
-          text: `${adminUser.firstName || 'Support'} (Support-Mitarbeiter) ist dem Chat beigetreten.`,
-          senderId: 'system',
-          senderName: 'System',
-          senderType: 'system' as const,
-          timestamp: serverTimestamp(),
-          chatUsers: [adminFirebaseUser.uid, customerId].filter(Boolean),
-          systemPayload: {
-            agentName:
-              `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || 'Support',
-            agentAvatarUrl: adminUser.profilePictureURL || null,
-          },
-        };
-        await addDoc(messagesRef, systemMessageData);
+      const response = await fetch(`/api/admin/support/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: newMessage.trim(),
+          senderId: adminUser.uid,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      await addDoc(messagesRef, messageData);
-      await updateDoc(chatDocRef, {
-        lastMessage: {
-          text: newMessage.trim(),
-          timestamp: serverTimestamp(),
-          senderId: adminFirebaseUser.uid,
-          isReadBySupport: true,
-        },
-        lastUpdated: serverTimestamp(),
-      });
-      setNewMessage('');
+      const data = await response.json();
+      if (data.success) {
+        setNewMessage('');
+        // Lade Nachrichten neu, um die neue Nachricht anzuzeigen
+        await loadMessages();
+      } else {
+        console.error('Fehler beim Senden der Nachricht:', data.error);
+      }
     } catch (error) {
-      console.error('Error sending support message:', error);
+      console.error('Error sending message:', error);
     } finally {
       setIsSending(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-full">
+        <FiLoader className="animate-spin text-4xl text-teal-500 mb-4" />
+        <span className="text-gray-600">Nachrichten werden geladen...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-800">
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="border-b bg-teal-50 p-4">
+        <h3 className="text-lg font-semibold text-teal-800">
+          Support Chat - {chatId.replace('support_chat_', '')}
+        </h3>
+      </div>
+
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loading ? (
-          <div className="flex justify-center items-center h-full">
-            <FiLoader className="animate-spin text-2xl" />
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">
+            Noch keine Nachrichten in diesem Chat.
           </div>
         ) : (
-          messages.map(msg => (
+          messages.map(message => (
             <ChatMessageBubble
-              key={msg.id}
-              message={msg}
-              isCurrentUser={msg.senderId === adminFirebaseUser?.uid}
+              key={message.id}
+              message={message}
+              isCurrentUser={message.senderId === adminUser?.uid}
             />
           ))
         )}
         <div ref={messagesEndRef} />
       </div>
-      <form
-        onSubmit={handleSendMessage}
-        className="p-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center gap-3"
-      >
-        <input
-          type="text"
-          value={newMessage}
-          onChange={e => setNewMessage(e.target.value)}
-          placeholder="Als Support antworten..."
-          className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600"
-          autoComplete="off"
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim() || isSending}
-          className="p-3 bg-teal-500 text-white rounded-full hover:bg-teal-600 disabled:bg-gray-300"
-        >
-          {isSending ? <FiLoader className="animate-spin" /> : <FiSend />}
-        </button>
-      </form>
+
+      {/* Message Input */}
+      <div className="border-t bg-white p-4">
+        <form onSubmit={handleSendMessage} className="flex space-x-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={e => setNewMessage(e.target.value)}
+            placeholder="Nachricht eingeben..."
+            disabled={isSending}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100"
+          />
+          <button
+            type="submit"
+            disabled={isSending || !newMessage.trim()}
+            className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            {isSending ? <FiLoader className="animate-spin" size={16} /> : <FiSend size={16} />}
+            <span>Senden</span>
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

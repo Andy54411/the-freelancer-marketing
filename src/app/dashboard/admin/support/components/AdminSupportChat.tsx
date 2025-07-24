@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ChatList from './ChatList';
-import { ChatWindow } from './ChatWindow';
+import ChatWindow from './ChatWindow';
 import { MessageSquare as FiMessageSquare, Loader2 as FiLoader } from 'lucide-react';
 
 export interface ChatSession {
