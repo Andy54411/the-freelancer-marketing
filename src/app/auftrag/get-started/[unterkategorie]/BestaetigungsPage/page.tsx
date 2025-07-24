@@ -61,6 +61,8 @@ interface TemporaryJobDraftData {
   jobCalculatedPriceInCents?: number | null; // Dies ist der Basispreis des Anbieters (vom Dienstleister festgelegt)
   tempDraftId?: string | null;
   billingDetails?: BillingDetailsPayload | null;
+  // NEU: Feld für alle spezifischen Formulardaten aus subcategory-forms
+  subcategoryFormData?: any | null;
 }
 
 // NEU: Definition von CustomerAddress hier oben, VOR der ersten Verwendung
@@ -775,6 +777,7 @@ export default function BestaetigungsPage() {
         const postalCodeFromUrlDirect = searchParams?.get('postalCode') ?? '';
         const dateFromUrlDirect =
           (searchParams?.get('additionalData[date]') || searchParams?.get('dateFrom')) ?? '';
+        const dateToUrlDirect = searchParams?.get('dateTo') ?? '';
         const timeUrlDirect =
           (searchParams?.get('additionalData[time]') || searchParams?.get('time')) ?? '';
         const auftragsDauerUrlDirect =
@@ -787,6 +790,7 @@ export default function BestaetigungsPage() {
         console.log(PAGE_LOG, `  auftragsDauerUrlDirect: "${auftragsDauerUrlDirect}"`);
         console.log(PAGE_LOG, `  descriptionFromUrlDirect: "${descriptionFromUrlDirect}"`);
         console.log(PAGE_LOG, `  dateFromUrlDirect: "${dateFromUrlDirect}"`);
+        console.log(PAGE_LOG, `  dateToUrlDirect: "${dateToUrlDirect}"`);
         console.log(PAGE_LOG, `  timeUrlDirect: "${timeUrlDirect}"`);
 
         // DEBUG: Zeige alle verfügbaren searchParams
@@ -867,10 +871,10 @@ export default function BestaetigungsPage() {
         const jobStreetToUse = registration.jobStreet || null;
         const jobPostalCodeToUse = registration.jobPostalCode || postalCodeFromUrlDirect || null;
         const jobCityToUse = registration.jobCity || null;
-        const jobCountryToUse = registration.jobCountry || null;
+        const jobCountryToUse = registration.jobCountry || 'DE'; // Default zu Deutschland
 
         const jobDateFromToUse = registration.jobDateFrom || dateFromUrlDirect || null;
-        const jobDateToToUse = registration.jobDateTo || null;
+        const jobDateToToUse = registration.jobDateTo || dateToUrlDirect || null;
         const jobTimePreferenceToUse = registration.jobTimePreference || timeUrlDirect || null;
         // FIX: Prioritize the anbieterId from the URL, as it's the source of truth for this page.
         const selectedAnbieterIdToUse =
@@ -901,6 +905,8 @@ export default function BestaetigungsPage() {
           jobCalculatedPriceInCents: jobCalculatedPriceInCentsToUse,
           tempDraftId: tempDraftIdFromUrl || null,
           billingDetails: billingAddressDetails, // Rechnungsdetails hier hinzufügen
+          // NEU: Übertrage alle spezifischen Formulardaten aus dem Registration Context
+          subcategoryFormData: registration.subcategoryData || null,
         };
 
         // --- DEBUG: Detaillierte Logs für jeden Wert ---
@@ -912,6 +918,10 @@ export default function BestaetigungsPage() {
         console.log(
           PAGE_LOG,
           `  jobDateFromToUse: "${jobDateFromToUse}" (Context: "${registration.jobDateFrom}", URL: "${dateFromUrlDirect}")`
+        );
+        console.log(
+          PAGE_LOG,
+          `  jobDateToToUse: "${jobDateToToUse}" (Context: "${registration.jobDateTo}", URL: "${dateToUrlDirect}")`
         );
         console.log(
           PAGE_LOG,
@@ -951,6 +961,7 @@ export default function BestaetigungsPage() {
         );
         console.log(PAGE_LOG, `  tempDraftIdFromUrl: "${tempDraftIdFromUrl}"`);
         console.log(PAGE_LOG, `  billingAddressDetails: `, billingAddressDetails);
+        console.log(PAGE_LOG, `  subcategoryFormData: `, registration.subcategoryData);
         // --- ENDE DEBUG LOGS ---
 
         // jobCalculatedPriceInCents ist der Basis-Preis des Anbieters

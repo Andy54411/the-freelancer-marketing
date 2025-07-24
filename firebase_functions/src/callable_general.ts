@@ -36,6 +36,8 @@ interface TemporaryJobDraftData {
   jobDurationString?: string;
   jobTotalCalculatedHours?: number | null;
   jobCalculatedPriceInCents?: number | null;
+  // NEU: Feld für alle spezifischen Formulardaten aus subcategory-forms
+  subcategoryFormData?: any | null;
 }
 
 interface TemporaryJobDraftResult {
@@ -228,6 +230,8 @@ export const createTemporaryJobDraft = onCall(
         jobDurationString: jobDetails.jobDurationString || null,
         jobTotalCalculatedHours: jobDetails.jobTotalCalculatedHours ?? null,
         jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents,
+        // NEU: Speichere alle spezifischen Formulardaten
+        subcategoryFormData: jobDetails.subcategoryFormData || null,
         kundeId: kundeId,
         anbieterStripeAccountId: anbieterStripeAccountId,
         customerFirstName: customerInfo.firstName,
