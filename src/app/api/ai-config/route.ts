@@ -16,6 +16,10 @@ export async function GET() {
         faqs: [],
         rules: [],
         coreProcesses: [],
+        moderationRules: [],
+        moderationEnabled: false,
+        autoEscalation: true,
+        suspiciousWordsThreshold: 3,
       });
     }
 

@@ -12,6 +12,10 @@ interface AiConfig {
   faqs: any[];
   rules: string[];
   coreProcesses: string[];
+  moderationRules?: string[];
+  moderationEnabled?: boolean;
+  autoEscalation?: boolean;
+  suspiciousWordsThreshold?: number;
 }
 
 function AiConfigContent() {
@@ -56,6 +60,11 @@ function AiConfigContent() {
       const faqsString = formData.get('faqs') as string;
       const rulesString = formData.get('rules') as string;
       const coreProcessesString = formData.get('coreProcesses') as string;
+      const moderationRulesString = formData.get('moderationRules') as string;
+      const moderationEnabled = formData.get('moderationEnabled') === 'on';
+      const autoEscalation = formData.get('autoEscalation') === 'on';
+      const suspiciousWordsThreshold =
+        parseInt(formData.get('suspiciousWordsThreshold') as string) || 3;
 
       let faqs;
       try {
@@ -74,13 +83,27 @@ function AiConfigContent() {
         .split('\n')
         .map(process => process.trim())
         .filter(Boolean);
+      const moderationRules = moderationRulesString
+        .split('\n')
+        .map(rule => rule.trim())
+        .filter(Boolean);
 
       const response = await fetch('/api/ai-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ persona, context, faqs, rules, coreProcesses }),
+        body: JSON.stringify({
+          persona,
+          context,
+          faqs,
+          rules,
+          coreProcesses,
+          moderationRules,
+          moderationEnabled,
+          autoEscalation,
+          suspiciousWordsThreshold,
+        }),
       });
 
       if (!response.ok) {
@@ -123,7 +146,7 @@ function AiConfigContent() {
       <div>
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Gemini KI Konfiguration</h1>
         <p className="text-gray-600 mb-6">
-          Bearbeite hier die Wissensdatenbank und die Verhaltensregeln für den Chatbot.
+          Bearbeite hier die Wissensdatenbank, Verhaltensregeln und Chat-Moderation für den Chatbot.
         </p>
       </div>
 
@@ -224,6 +247,125 @@ function AiConfigContent() {
           <p className="mt-1 text-xs text-gray-500">
             Wichtige Geschäftsprozesse, die der Chatbot erklären kann.
           </p>
+        </div>
+
+        {/* Moderation Configuration Section */}
+        <div className="border-t pt-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">🛡️ KI-Chat-Moderation</h2>
+          <p className="text-gray-600 mb-4">
+            Konfiguriere die automatische Inhalts-Moderation für alle Chat-Nachrichten.
+          </p>
+
+          <div className="space-y-4">
+            {/* Moderation Enable/Disable */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="moderationEnabled"
+                id="moderationEnabled"
+                defaultChecked={config?.moderationEnabled ?? false}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="moderationEnabled" className="ml-2 block text-sm text-gray-900">
+                KI-Moderation aktivieren
+              </label>
+            </div>
+
+            {/* Auto Escalation */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="autoEscalation"
+                id="autoEscalation"
+                defaultChecked={config?.autoEscalation ?? true}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="autoEscalation" className="ml-2 block text-sm text-gray-900">
+                Automatische Eskalation an Support bei kritischen Verstößen
+              </label>
+            </div>
+
+            {/* Suspicious Words Threshold */}
+            <div>
+              <label
+                htmlFor="suspiciousWordsThreshold"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Verdächtige Wörter Schwellenwert
+              </label>
+              <input
+                type="number"
+                name="suspiciousWordsThreshold"
+                id="suspiciousWordsThreshold"
+                min="1"
+                max="10"
+                defaultValue={config?.suspiciousWordsThreshold || 3}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Anzahl verdächtiger Begriffe, ab der eine Nachricht automatisch überprüft wird.
+              </p>
+            </div>
+
+            {/* Moderation Rules */}
+            <div>
+              <label
+                htmlFor="moderationRules"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Moderations-Regeln (eine pro Zeile)
+              </label>
+              <textarea
+                name="moderationRules"
+                id="moderationRules"
+                rows={8}
+                defaultValue={(
+                  config?.moderationRules || [
+                    'Keine Weitergabe von persönlichen Kontaktdaten (E-Mail, Telefon, Adresse)',
+                    'Keine beleidigenden oder diskriminierenden Inhalte',
+                    'Keine Spam oder wiederholte unerwünschte Nachrichten',
+                    'Keine illegalen Angebote oder Aktivitäten',
+                    'Keine Umgehung der Plattform-Gebühren',
+                    'Respektvolle und professionelle Kommunikation',
+                    'Keine falschen oder irreführenden Informationen',
+                    'Keine sexuellen oder expliziten Inhalte',
+                  ]
+                ).join('\n')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Regel 1&#10;Regel 2&#10;..."
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Spezifische Regeln für die KI-Moderation. Jede Regel in einer neuen Zeile.
+              </p>
+            </div>
+
+            {/* Moderation Status Info */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Moderation Status: {config?.moderationEnabled ? '✅ Aktiv' : '❌ Inaktiv'}
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>
+                      Die KI-Moderation analysiert alle Chat-Nachrichten in Echtzeit und flaggt
+                      Verstöße gegen die Plattform-Regeln. Bei kritischen Verstößen werden
+                      Nachrichten automatisch blockiert und an das Support-Team weitergeleitet.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { MessageSquare, Users, HeadphonesIcon, Send, Clock, User, Building } from 'lucide-react';
+import { ChatModal } from './ChatModal';
 
 interface ChatData {
   id: string;
@@ -42,6 +43,10 @@ export function ChatsClientPage({ chats: initialChats }: { chats: ChatData[] }) 
     directChats: 0,
     totalChats: 0,
   });
+
+  // Modal states
+  const [selectedChat, setSelectedChat] = useState<ChatData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load chats from API
   const loadChats = async (filter: string = 'all') => {
@@ -103,6 +108,23 @@ export function ChatsClientPage({ chats: initialChats }: { chats: ChatData[] }) 
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // Modal handlers
+  const handleViewChat = (chat: ChatData) => {
+    setSelectedChat(chat);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedChat(null);
+  };
+
+  const handleCloseChat = async (chatId: string) => {
+    // Hier würde normalerweise eine API-Route zum Schließen des Chats aufgerufen
+    console.log('Schließe Chat:', chatId);
+    // TODO: Implementiere API-Call zum Schließen des Chats
   };
 
   // Get chat type icon
@@ -336,8 +358,18 @@ export function ChatsClientPage({ chats: initialChats }: { chats: ChatData[] }) 
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">Ansehen</button>
-                      <button className="text-red-600 hover:text-red-900">Schließen</button>
+                      <button
+                        onClick={() => handleViewChat(chat)}
+                        className="text-blue-600 hover:text-blue-900 mr-3 hover:underline"
+                      >
+                        Ansehen
+                      </button>
+                      <button
+                        onClick={() => handleCloseChat(chat.id)}
+                        className="text-red-600 hover:text-red-900 hover:underline"
+                      >
+                        Schließen
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -346,6 +378,20 @@ export function ChatsClientPage({ chats: initialChats }: { chats: ChatData[] }) 
           </div>
         )}
       </div>
+
+      {/* Chat Modal */}
+      <ChatModal
+        chatId={selectedChat?.id || null}
+        chatType={selectedChat?.type || 'support'}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        chatData={{
+          userName: selectedChat?.userName,
+          companyName: selectedChat?.companyName,
+          status: selectedChat?.status,
+          lastMessage: selectedChat?.lastMessage,
+        }}
+      />
     </div>
   );
 }

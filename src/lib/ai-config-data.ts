@@ -6,6 +6,10 @@ export type AiConfig = {
   faqs: any[];
   rules: string[];
   coreProcesses?: string[];
+  moderationRules?: string[];
+  moderationEnabled?: boolean;
+  autoEscalation?: boolean;
+  suspiciousWordsThreshold?: number;
 };
 
 /**
