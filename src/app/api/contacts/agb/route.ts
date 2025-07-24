@@ -14,61 +14,61 @@ const AGB_CONTACTS: AGBContact[] = [
   {
     section: '§ 1 Geltungsbereich',
     purpose: 'Allgemeine Informationen',
-    email: 'info@taskilo.com',
+    email: 'info@taskilo.de',
     description: 'Für erste Kontaktaufnahme und allgemeine Informationen zur Plattform',
   },
   {
     section: '§ 3 Registrierung',
     purpose: 'Account & Registrierung',
-    email: 'support@taskilo.com',
+    email: 'support@taskilo.de',
     description: 'Für Fragen zur Registrierung, Kontoverifikation und Zugangsdaten',
   },
   {
     section: '§ 5 Gebühren & Zahlungen',
     purpose: 'Rechnungsfragen',
-    email: 'billing@taskilo.com',
+    email: 'billing@taskilo.de',
     description: 'Für Fragen zu Rechnungen, Zahlungen, Gebühren und Abrechnungen',
   },
   {
     section: '§ 6 Geistiges Eigentum',
     purpose: 'Rechtliche Angelegenheiten',
-    email: 'legal@taskilo.com',
+    email: 'legal@taskilo.de',
     description: 'Für Markenrechte, Urheberrecht und andere rechtliche Fragen',
   },
   {
     section: '§ 8 Streitbeilegung',
     purpose: 'Beschwerden & Mediation',
-    email: 'disputes@taskilo.com',
+    email: 'disputes@taskilo.de',
     description: 'Für Beschwerden, Streitbeilegung und Mediation zwischen Parteien',
   },
   {
     section: '§ 8 Streitbeilegung - Support',
     purpose: 'Allgemeine Beschwerden',
-    email: 'support@taskilo.com',
+    email: 'support@taskilo.de',
     description: 'Für allgemeine Beschwerden über Plattform oder Services',
   },
   {
     section: '§ 11 Datenschutz',
     purpose: 'Datenschutzanfragen',
-    email: 'privacy@taskilo.com',
+    email: 'privacy@taskilo.de',
     description: 'Für DSGVO-Anfragen, Datenschutz und Datenverarbeitung',
   },
   {
     section: 'Technischer Support',
     purpose: 'Technische Probleme',
-    email: 'tech@taskilo.com',
+    email: 'tech@taskilo.de',
     description: 'Für technische Probleme, Bugs und Plattform-spezifische Fragen',
   },
   {
     section: 'Geschäftsentwicklung',
     purpose: 'B2B & Partnerschaften',
-    email: 'business@taskilo.com',
+    email: 'business@taskilo.de',
     description: 'Für Partnerschaftsanfragen, B2B-Kooperationen und Geschäftsentwicklung',
   },
   {
     section: 'Medien & Presse',
     purpose: 'Presseanfragen',
-    email: 'press@taskilo.com',
+    email: 'press@taskilo.de',
     description: 'Für Presseanfragen, Medienanfragen und PR-Kooperationen',
   },
 ];
@@ -112,15 +112,15 @@ export async function GET(request: Request) {
     if (format === 'integration') {
       const integrationData = {
         contactBlock: {
-          primaryContact: 'legal@taskilo.com',
-          supportContact: 'support@taskilo.com',
-          technicalContact: 'tech@taskilo.com',
-          privacyContact: 'privacy@taskilo.com',
-          businessContact: 'business@taskilo.com',
-          billingContact: 'billing@taskilo.com',
-          disputesContact: 'disputes@taskilo.com',
-          pressContact: 'press@taskilo.com',
-          infoContact: 'info@taskilo.com',
+          primaryContact: 'legal@taskilo.de',
+          supportContact: 'support@taskilo.de',
+          technicalContact: 'tech@taskilo.de',
+          privacyContact: 'privacy@taskilo.de',
+          businessContact: 'business@taskilo.de',
+          billingContact: 'billing@taskilo.de',
+          disputesContact: 'disputes@taskilo.de',
+          pressContact: 'press@taskilo.de',
+          infoContact: 'info@taskilo.de',
         },
         sectionMapping: contacts.reduce(
           (acc, contact) => {
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
         success: true,
         integration: integrationData,
         metadata: {
-          domain: '@taskilo.com',
+          domain: '@taskilo.de',
           totalContacts: contacts.length,
           lastUpdated: '2025-07-22T00:00:00Z',
         },
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
 
     if (action === 'validate') {
       // Validate if email follows Taskilo domain pattern
-      const isValidTaskiloEmail = email && email.endsWith('@taskilo.com');
+      const isValidTaskiloEmail = email && email.endsWith('@taskilo.de');
       const existsInContacts = AGB_CONTACTS.some(contact => contact.email === email);
 
       return NextResponse.json({
@@ -212,7 +212,7 @@ export async function POST(request: Request) {
                 {
                   section: 'Fallback',
                   purpose: 'Allgemeine Anfragen',
-                  email: 'legal@taskilo.com',
+                  email: 'legal@taskilo.de',
                   description: 'Fallback-Kontakt für nicht kategorisierte AGB-Anfragen',
                 },
               ],

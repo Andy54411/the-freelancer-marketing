@@ -175,7 +175,7 @@ export default function StaffLoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="mitarbeiter@taskilo.com"
+                  placeholder="mitarbeiter@taskilo.de"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="pl-10"

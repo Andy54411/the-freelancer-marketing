@@ -314,7 +314,7 @@ export default function AGBPage() {
                     <strong>8.2 Beschwerdebearbeitung:</strong> Beschwerden über unsere Plattform
                     oder Services bearbeiten wir innerhalb von 48 Stunden. Bei komplexeren Fällen
                     erfolgt eine abschließende Antwort binnen 7 Werktagen. Beschwerden können Sie an
-                    support@taskilo.com richten.
+                    support@taskilo.de richten.
                   </p>
                   <p>
                     <strong>8.3 Eskalationsverfahren:</strong> Können Streitigkeiten nicht durch
@@ -410,7 +410,7 @@ export default function AGBPage() {
                     <strong>10.2 Datenverarbeitung:</strong> Einzelheiten zur Datenverarbeitung,
                     einschließlich Zweck, Rechtsgrundlage, Speicherdauer und Ihren Rechten finden
                     Sie in unserer separaten Datenschutzerklärung. Bei Fragen zum Datenschutz
-                    kontaktieren Sie uns unter privacy@taskilo.com.
+                    kontaktieren Sie uns unter privacy@taskilo.de.
                   </p>
                   <p>
                     <strong>10.3 Zahlungsdaten:</strong> Zahlungsdaten werden ausschließlich durch
@@ -516,8 +516,8 @@ export default function AGBPage() {
                   <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
                   <p>8015, Paphos Cyprus</p>
                   <p>Telefon: +49 1525 1939026</p>
-                  <p>E-Mail: legal@taskilo.com</p>
-                  <p>Website: www.taskilo.com</p>
+                  <p>E-Mail: legal@taskilo.de</p>
+                  <p>Website: www.taskilo.de</p>
                   <p>Registrierungsnummer: HE 458650</p>
                   <p>VAT: CY60058879W</p>
                   <p>Bank: Revolut Bank</p>
@@ -528,11 +528,11 @@ export default function AGBPage() {
                     <p>
                       <strong>Weitere Kontaktmöglichkeiten:</strong>
                     </p>
-                    <p>Allgemeiner Support: support@taskilo.com</p>
-                    <p>Technischer Support: tech@taskilo.com</p>
-                    <p>Datenschutzanfragen: privacy@taskilo.com</p>
-                    <p>Geschäftsanfragen: business@taskilo.com</p>
-                    <p>Rechnungsfragen: billing@taskilo.com</p>
+                    <p>Allgemeiner Support: support@taskilo.de</p>
+                    <p>Technischer Support: tech@taskilo.de</p>
+                    <p>Datenschutzanfragen: privacy@taskilo.de</p>
+                    <p>Geschäftsanfragen: business@taskilo.de</p>
+                    <p>Rechnungsfragen: billing@taskilo.de</p>
                   </div>
 
                   <div className="mt-6 space-y-2">
@@ -541,22 +541,22 @@ export default function AGBPage() {
                     </p>
                     <ul className="list-disc list-inside ml-4 space-y-1 text-xs">
                       <li>
-                        <strong>Allgemeine Anfragen:</strong> info@taskilo.com
+                        <strong>Allgemeine Anfragen:</strong> info@taskilo.de
                       </li>
                       <li>
-                        <strong>Technischer Support:</strong> support@taskilo.com
+                        <strong>Technischer Support:</strong> support@taskilo.de
                       </li>
                       <li>
-                        <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.com
+                        <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.de
                       </li>
                       <li>
-                        <strong>Datenschutz:</strong> privacy@taskilo.com
+                        <strong>Datenschutz:</strong> privacy@taskilo.de
                       </li>
                       <li>
-                        <strong>Beschwerden & Mediation:</strong> disputes@taskilo.com
+                        <strong>Beschwerden & Mediation:</strong> disputes@taskilo.de
                       </li>
                       <li>
-                        <strong>Presse & Medien:</strong> press@taskilo.com
+                        <strong>Presse & Medien:</strong> press@taskilo.de
                       </li>
                     </ul>
                   </div>

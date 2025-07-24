@@ -235,7 +235,7 @@ export default function EmailManagementPage() {
       {
         id: 'emp_001',
         name: 'Demo Mitarbeiter',
-        email: 'demo@taskilo.com',
+        email: 'demo@taskilo.de',
         role: 'employee' as const,
         departments: ['support'],
         permissions: ['view_assigned', 'respond_emails'],

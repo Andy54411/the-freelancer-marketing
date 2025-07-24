@@ -200,15 +200,15 @@ export const useTaskiloContacts = () => {
 
   const getContactBlock = useCallback(() => {
     return {
-      legal: contacts.find(c => c.id === 'legal')?.email || 'legal@taskilo.com',
-      support: contacts.find(c => c.id === 'support')?.email || 'support@taskilo.com',
-      tech: contacts.find(c => c.id === 'tech')?.email || 'tech@taskilo.com',
-      privacy: contacts.find(c => c.id === 'privacy')?.email || 'privacy@taskilo.com',
-      business: contacts.find(c => c.id === 'business')?.email || 'business@taskilo.com',
-      billing: contacts.find(c => c.id === 'billing')?.email || 'billing@taskilo.com',
-      info: contacts.find(c => c.id === 'info')?.email || 'info@taskilo.com',
-      disputes: contacts.find(c => c.id === 'disputes')?.email || 'disputes@taskilo.com',
-      press: contacts.find(c => c.id === 'press')?.email || 'press@taskilo.com',
+      legal: contacts.find(c => c.id === 'legal')?.email || 'legal@taskilo.de',
+      support: contacts.find(c => c.id === 'support')?.email || 'support@taskilo.de',
+      tech: contacts.find(c => c.id === 'tech')?.email || 'tech@taskilo.de',
+      privacy: contacts.find(c => c.id === 'privacy')?.email || 'privacy@taskilo.de',
+      business: contacts.find(c => c.id === 'business')?.email || 'business@taskilo.de',
+      billing: contacts.find(c => c.id === 'billing')?.email || 'billing@taskilo.de',
+      info: contacts.find(c => c.id === 'info')?.email || 'info@taskilo.de',
+      disputes: contacts.find(c => c.id === 'disputes')?.email || 'disputes@taskilo.de',
+      press: contacts.find(c => c.id === 'press')?.email || 'press@taskilo.de',
     };
   }, [contacts]);
 

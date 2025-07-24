@@ -3,7 +3,6 @@
 import { HeroHeader } from '@/components/hero8-header';
 
 export default function ImpressumPage() {
-
   return (
     <>
       <HeroHeader />
@@ -11,122 +10,204 @@ export default function ImpressumPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/20" />
-        
+
         {/* Content */}
         <div className="relative z-10 py-20">
           <div className="max-w-4xl mx-auto px-6">
             <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-8">Impressum</h1>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-8 space-y-6">
-            <section>
-              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                Angaben gemäß § 5 TMG
-              </h2>
-              <div className="text-white/90 drop-shadow-lg space-y-2">
-                <p>
-                  <strong>Taskilo GmbH</strong>
-                </p>
-                <p>Musterstraße 123</p>
-                <p>12345 Musterstadt</p>
-                <p>Deutschland</p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
-              <div className="text-white/90 drop-shadow-lg space-y-2">
-                <p>
-                  <strong>Telefon:</strong> +49 (0) 123 456789
-                </p>
-                <p>
-                  <strong>E-Mail:</strong> info@taskilo.de
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                Handelsregister
-              </h2>
-              <div className="text-white/90 drop-shadow-lg space-y-2">
-                <p>
-                  <strong>Handelsregister:</strong> Amtsgericht Musterstadt
-                </p>
-                <p>
-                  <strong>Registernummer:</strong> HRB 12345
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                Umsatzsteuer-ID
-              </h2>
-              <div className="text-white/90 drop-shadow-lg">
-                <p>
-                  <strong>
-                    Umsatzsteuer-Identifikationsnummer gemäß §27 a Umsatzsteuergesetz:
-                  </strong>
-                </p>
-                <p>DE123456789</p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
-              </h2>
-              <div className="text-white/90 drop-shadow-lg space-y-2">
-                <p>Max Mustermann</p>
-                <p>Musterstraße 123</p>
-                <p>12345 Musterstadt</p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                Haftungsausschluss
-              </h2>
-              <div className="text-white/90 drop-shadow-lg space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Haftung für Inhalte</h3>
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  Angaben gemäß § 5 TMG
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
                   <p>
-                    Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen
-                    Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind
-                    wir als Diensteanbieter jedoch nicht unter der Verpflichtung, übermittelte oder
-                    gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen,
-                    die auf eine rechtswidrige Tätigkeit hinweisen.
+                    <strong>The Freelancer Marketing Ltd.</strong>
+                  </p>
+                  <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
+                  <p>8015, Paphos Cyprus</p>
+                  <p>Registrierungsnummer: HE 458650</p>
+                  <p>VAT: CY60058879W</p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
+                  <p>
+                    <strong>Telefon:</strong> +49 1525 1939026
+                  </p>
+                  <p>
+                    <strong>E-Mail:</strong> info@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Support:</strong> support@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Website:</strong> www.taskilo.de
                   </p>
                 </div>
+              </section>
 
-                <div>
-                  <h3 className="font-semibold mb-2">Hosting</h3>
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
                   <p>
-                    Diese Website wird gehostet bei:
+                    <strong>Telefon:</strong> +49 1525 1939026
                   </p>
-                  <p className="mt-2">
-                    <strong>Siteground</strong><br />
-                    Siteground Spain S.L.<br />
-                    Calle Miquel Granell, 11<br />
-                    03203 Elche, Spanien
+                  <p>
+                    <strong>E-Mail:</strong> info@taskilo.de
                   </p>
-                  <p className="mt-2">
-                    Domain: taskilo.de<br />
-                    Registrar: Siteground
+                  <p>
+                    <strong>Support:</strong> support@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Website:</strong> www.taskilo.de
                   </p>
                 </div>
+              </section>
 
-                <div>
-                  <h3 className="font-semibold mb-2">Haftung für Links</h3>
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  Angaben gemäß § 5 TMG
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
                   <p>
-                    Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir
-                    keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine
-                    Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige
-                    Anbieter oder Betreiber der Seiten verantwortlich.
+                    <strong>The Freelancer Marketing Ltd.</strong>
+                  </p>
+                  <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
+                  <p>8015, Paphos Cyprus</p>
+                  <p>Registrierungsnummer: HE 458650</p>
+                  <p>VAT: CY60058879W</p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
+                  <p>
+                    <strong>Telefon:</strong> +49 1525 1939026
+                  </p>
+                  <p>
+                    <strong>E-Mail:</strong> info@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Support:</strong> support@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.de
+                  </p>
+                  <p>
+                    <strong>Website:</strong> www.taskilo.de
                   </p>
                 </div>
-              </div>
-            </section>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  Handelsregister
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
+                  <p>
+                    <strong>Handelsregister:</strong> Companies Registration Office Cyprus
+                  </p>
+                  <p>
+                    <strong>Registernummer:</strong> HE 458650
+                  </p>
+                  <p>
+                    <strong>VAT-Nummer:</strong> CY60058879W
+                  </p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  Umsatzsteuer-ID
+                </h2>
+                <div className="text-white/90 drop-shadow-lg">
+                  <p>
+                    <strong>VAT-Identifikationsnummer:</strong>
+                  </p>
+                  <p>CY60058879W</p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-2">
+                  <p>Andy Staudinger</p>
+                  <p>Geschäftsführung</p>
+                  <p>The Freelancer Marketing Ltd.</p>
+                  <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
+                  <p>8015, Paphos Cyprus</p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  Haftungsausschluss
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Haftung für Inhalte</h3>
+                    <p>
+                      Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen
+                      Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind
+                      wir als Diensteanbieter jedoch nicht unter der Verpflichtung, übermittelte
+                      oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu
+                      forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">Hosting</h3>
+                    <p>Diese Website wird gehostet bei:</p>
+                    <p className="mt-2">
+                      <strong>Siteground</strong>
+                      <br />
+                      Siteground Spain S.L.
+                      <br />
+                      Calle Miquel Granell, 11
+                      <br />
+                      03203 Elche, Spanien
+                    </p>
+                    <p className="mt-2">
+                      Domain: taskilo.de
+                      <br />
+                      Registrar: Siteground
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">Haftung für Links</h3>
+                    <p>
+                      Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte
+                      wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch
+                      keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der
+                      jeweilige Anbieter oder Betreiber der Seiten verantwortlich.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">Markenhinweis</h3>
+                    <p>
+                      Taskilo ist eine angemeldete Marke (Aktenzeichen: DE 3020252302804,
+                      Anmeldetag: 14.07.2025) der Elisabeth Schröder und Andy Staudinger. Die Marke
+                      ist geschützt für technologische Dienstleistungen, Software-Entwicklung und
+                      elektronische Anwendungen.
+                    </p>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         </div>

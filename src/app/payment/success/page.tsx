@@ -74,8 +74,8 @@ export default function PaymentSuccessPage() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500">
               Fragen zu Ihrer Buchung? Kontaktieren Sie unseren Support unter{' '}
-              <a href="mailto:support@taskilo.com" className="text-[#14ad9f] hover:underline">
-                support@taskilo.com
+              <a href="mailto:support@taskilo.de" className="text-[#14ad9f] hover:underline">
+                support@taskilo.de
               </a>
             </p>
           </div>

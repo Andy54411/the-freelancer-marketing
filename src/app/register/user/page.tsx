@@ -152,13 +152,20 @@ function UserRegisterFormContent() {
     if (registrationSuccess) {
       console.log(PAGE_LOG, '✅ Registrierung erfolgreich! Weiterleitung zur Bestätigungsseite...');
 
-      // Direkter, sofortiger Redirect ohne Wartezeit
-      const confirmationUrl = `/bestatigung?${searchParams?.toString() || ''}`;
-      console.log(PAGE_LOG, '🔄 Sofortige Weiterleitung zu:', confirmationUrl);
-      window.location.replace(confirmationUrl);
+      // Extrahiere die Unterkategorie aus den searchParams für den korrekten Pfad
+      const redirectTo = searchParams?.get('redirectTo');
+
+      if (redirectTo) {
+        // Wenn eine redirectTo URL existiert, verwende diese direkt
+        console.log(PAGE_LOG, '🔄 Weiterleitung zu redirectTo URL:', redirectTo);
+        window.location.replace(redirectTo);
+      } else {
+        // Fallback: Versuche zur Standard-Bestätigungsseite zu navigieren
+        console.warn(PAGE_LOG, '⚠️ Keine redirectTo URL gefunden, verwende Fallback');
+        window.location.replace('/auftrag/get-started');
+      }
     }
   }, [registrationSuccess, searchParams]);
-
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);

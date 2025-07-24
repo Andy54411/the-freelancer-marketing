@@ -305,7 +305,7 @@ export default function StaffManagementPage() {
                   type="email"
                   value={newStaff.email}
                   onChange={e => setNewStaff(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="mitarbeiter@taskilo.com"
+                  placeholder="mitarbeiter@taskilo.de"
                 />
               </div>
               <div>

@@ -45,7 +45,7 @@ export const ContactBlock: React.FC<ContactBlockProps> = ({ variant = 'full', cl
     return (
       <div className={`text-red-300 ${className}`}>
         <p>⚠️ Kontaktinformationen konnten nicht geladen werden.</p>
-        <p className="text-xs mt-1">Fallback: legal@taskilo.com</p>
+        <p className="text-xs mt-1">Fallback: legal@taskilo.de</p>
       </div>
     );
   }
