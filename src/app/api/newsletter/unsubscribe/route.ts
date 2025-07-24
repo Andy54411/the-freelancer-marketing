@@ -24,9 +24,12 @@ export async function POST(request: NextRequest) {
       .get();
 
     if (subscriberQuery.empty) {
-      return NextResponse.json({ 
-        error: 'E-Mail-Adresse nicht in der Newsletter-Liste gefunden' 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: 'E-Mail-Adresse nicht in der Newsletter-Liste gefunden',
+        },
+        { status: 404 }
+      );
     }
 
     const subscriberDoc = subscriberQuery.docs[0];
@@ -34,34 +37,39 @@ export async function POST(request: NextRequest) {
 
     // Optional: Token-Validierung für zusätzliche Sicherheit
     if (unsubscribeToken && subscriberData.unsubscribeToken !== unsubscribeToken) {
-      return NextResponse.json({ 
-        error: 'Ungültiger Abmelde-Token' 
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: 'Ungültiger Abmelde-Token',
+        },
+        { status: 403 }
+      );
     }
 
     // DSGVO-konforme Abmeldung: Subscriber deaktivieren statt löschen
     await subscriberDoc.ref.update({
       subscribed: false,
       unsubscribedAt: admin.firestore.Timestamp.now(),
-      unsubscribeReason: 'user_request'
+      unsubscribeReason: 'user_request',
     });
 
     console.log('Newsletter-Abmeldung verarbeitet:', {
       email,
       timestamp: new Date().toISOString(),
-      subscriberId: subscriberDoc.id
+      subscriberId: subscriberDoc.id,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Sie wurden erfolgreich vom Newsletter abgemeldet.'
+      message: 'Sie wurden erfolgreich vom Newsletter abgemeldet.',
     });
-
   } catch (error) {
     console.error('Newsletter Abmelde-Fehler:', error);
-    return NextResponse.json({ 
-      error: 'Interner Server-Fehler beim Abmelden' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Interner Server-Fehler beim Abmelden',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -101,18 +109,23 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Alle Daten für ${email} wurden DSGVO-konform gelöscht.`,
-        deletedRecords: subscriberQuery.docs.length
+        deletedRecords: subscriberQuery.docs.length,
       });
     } else {
-      return NextResponse.json({ 
-        error: 'Keine Daten für diese E-Mail gefunden' 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: 'Keine Daten für diese E-Mail gefunden',
+        },
+        { status: 404 }
+      );
     }
-
   } catch (error) {
     console.error('DSGVO Löschfehler:', error);
-    return NextResponse.json({ 
-      error: 'Interner Server-Fehler bei der Datenlöschung' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Interner Server-Fehler bei der Datenlöschung',
+      },
+      { status: 500 }
+    );
   }
 }

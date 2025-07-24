@@ -11,13 +11,13 @@ export function generateConfirmationToken(): string {
 
 // Bestätigungs-E-Mail senden
 export async function sendConfirmationEmail(
-  email: string, 
-  name: string | undefined, 
+  email: string,
+  name: string | undefined,
   confirmationToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/newsletter/confirm?token=${confirmationToken}&email=${encodeURIComponent(email)}`;
-    
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -79,12 +79,11 @@ export async function sendConfirmationEmail(
     );
 
     return { success: result.success };
-
   } catch (error) {
     console.error('Fehler beim Senden der Bestätigungs-E-Mail:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler',
     };
   }
 }
@@ -145,17 +144,14 @@ export async function createPendingSubscription(
       confirmationToken,
       createdAt: admin.firestore.Timestamp.now(),
       expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
-      confirmed: false
+      confirmed: false,
     };
 
-    await admin
-      .firestore()
-      .collection('newsletterPendingConfirmations')
-      .add(pendingData);
+    await admin.firestore().collection('newsletterPendingConfirmations').add(pendingData);
 
     // Sende Bestätigungs-E-Mail
     const emailResult = await sendConfirmationEmail(email, options.name, confirmationToken);
-    
+
     if (!emailResult.success) {
       return { success: false, error: 'Fehler beim Senden der Bestätigungs-E-Mail' };
     }
@@ -165,23 +161,22 @@ export async function createPendingSubscription(
       name: options.name || 'Unbekannt',
       source: options.source,
       token: confirmationToken.substring(0, 8) + '...',
-      expiresAt: expiresAt.toISOString()
+      expiresAt: expiresAt.toISOString(),
     });
 
     return { success: true, token: confirmationToken };
-
   } catch (error) {
     console.error('Fehler beim Erstellen der pending subscription:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler',
     };
   }
 }
 
 // Newsletter-Anmeldung bestätigen
 export async function confirmNewsletterSubscription(
-  email: string, 
+  email: string,
   confirmationToken: string
 ): Promise<{ success: boolean; error?: string; subscriberId?: string }> {
   try {
@@ -205,7 +200,7 @@ export async function confirmNewsletterSubscription(
     // Prüfe Ablaufzeit
     const now = new Date();
     const expiresAt = pendingData.expiresAt.toDate();
-    
+
     if (now > expiresAt) {
       // Lösche abgelaufene Bestätigung
       await pendingDoc.ref.delete();
@@ -223,26 +218,26 @@ export async function confirmNewsletterSubscription(
       // Aktiviere bestehenden Subscriber falls deaktiviert
       const subscriberDoc = existingSubscriber.docs[0];
       const subscriberData = subscriberDoc.data();
-      
+
       if (!subscriberData.subscribed) {
         await subscriberDoc.ref.update({
           subscribed: true,
           subscribedAt: admin.firestore.Timestamp.now(),
           confirmedAt: admin.firestore.Timestamp.now(),
           unsubscribedAt: admin.firestore.FieldValue.delete(),
-          unsubscribeReason: admin.firestore.FieldValue.delete()
+          unsubscribeReason: admin.firestore.FieldValue.delete(),
         });
       }
 
       // Markiere pending als bestätigt und lösche
       await pendingDoc.ref.delete();
-      
+
       return { success: true, subscriberId: subscriberDoc.id };
     }
 
     // Erstelle neuen bestätigten Subscriber
     const unsubscribeToken = generateUnsubscribeToken(email);
-    
+
     const subscriberData = {
       email,
       name: pendingData.name,
@@ -259,7 +254,7 @@ export async function confirmNewsletterSubscription(
       // DSGVO: Daten-Retention (3 Jahre nach Abmeldung)
       dataRetentionUntil: admin.firestore.Timestamp.fromDate(
         new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000)
-      )
+      ),
     };
 
     const subscriberRef = await admin
@@ -273,16 +268,15 @@ export async function confirmNewsletterSubscription(
     console.log('Newsletter-Anmeldung bestätigt:', {
       email,
       subscriberId: subscriberRef.id,
-      confirmedAt: new Date().toISOString()
+      confirmedAt: new Date().toISOString(),
     });
 
     return { success: true, subscriberId: subscriberRef.id };
-
   } catch (error) {
     console.error('Fehler bei Newsletter-Bestätigung:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler',
     };
   }
 }
@@ -291,7 +285,7 @@ export async function confirmNewsletterSubscription(
 export async function cleanupExpiredPendingConfirmations(): Promise<{ deletedCount: number }> {
   try {
     const now = admin.firestore.Timestamp.now();
-    
+
     const expiredQuery = await admin
       .firestore()
       .collection('newsletterPendingConfirmations')
@@ -307,13 +301,12 @@ export async function cleanupExpiredPendingConfirmations(): Promise<{ deletedCou
     expiredQuery.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
 
     console.log(`${expiredQuery.docs.length} abgelaufene Newsletter-Bestätigungen gelöscht`);
-    
-    return { deletedCount: expiredQuery.docs.length };
 
+    return { deletedCount: expiredQuery.docs.length };
   } catch (error) {
     console.error('Fehler bei Cleanup von abgelaufenen Bestätigungen:', error);
     return { deletedCount: 0 };

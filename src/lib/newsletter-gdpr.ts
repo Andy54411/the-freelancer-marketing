@@ -59,7 +59,7 @@ export async function addNewsletterSubscriber(
     if (!existingQuery.empty) {
       const existingDoc = existingQuery.docs[0];
       const existingData = existingDoc.data();
-      
+
       // Wenn bereits abgemeldet, reaktivieren
       if (!existingData.subscribed) {
         await existingDoc.ref.update({
@@ -68,9 +68,9 @@ export async function addNewsletterSubscriber(
           unsubscribedAt: admin.firestore.FieldValue.delete(),
           unsubscribeReason: admin.firestore.FieldValue.delete(),
           consentGiven: options.consentGiven !== false,
-          consentTimestamp: admin.firestore.Timestamp.now()
+          consentTimestamp: admin.firestore.Timestamp.now(),
         });
-        
+
         return { success: true, subscriberId: existingDoc.id };
       } else {
         return { success: false, error: 'E-Mail bereits abonniert' };
@@ -80,7 +80,7 @@ export async function addNewsletterSubscriber(
     // Neuen Abonnenten erstellen
     const unsubscribeToken = generateUnsubscribeToken(email);
     const now = admin.firestore.Timestamp.now();
-    
+
     // DSGVO: Daten-Retention (3 Jahre nach Abmeldung)
     const retentionDate = new Date();
     retentionDate.setFullYear(retentionDate.getFullYear() + 3);
@@ -97,28 +97,24 @@ export async function addNewsletterSubscriber(
       userAgent: options.userAgent,
       consentGiven: options.consentGiven !== false,
       consentTimestamp: now.toDate(),
-      dataRetentionUntil: retentionDate
+      dataRetentionUntil: retentionDate,
     };
 
-    const docRef = await admin
-      .firestore()
-      .collection('newsletterSubscribers')
-      .add(subscriberData);
+    const docRef = await admin.firestore().collection('newsletterSubscribers').add(subscriberData);
 
     console.log('DSGVO Newsletter-Abonnent hinzugefügt:', {
       email,
       subscriberId: docRef.id,
       source: options.source,
-      consentGiven: options.consentGiven
+      consentGiven: options.consentGiven,
     });
 
     return { success: true, subscriberId: docRef.id };
-
   } catch (error) {
     console.error('Fehler beim Newsletter-Abonnement:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler',
     };
   }
 }
@@ -139,9 +135,8 @@ export async function getActiveSubscribers(): Promise<NewsletterSubscriber[]> {
       subscribedAt: doc.data().subscribedAt.toDate(),
       unsubscribedAt: doc.data().unsubscribedAt?.toDate(),
       consentTimestamp: doc.data().consentTimestamp.toDate(),
-      dataRetentionUntil: doc.data().dataRetentionUntil?.toDate()
+      dataRetentionUntil: doc.data().dataRetentionUntil?.toDate(),
     })) as NewsletterSubscriber[];
-
   } catch (error) {
     console.error('Fehler beim Abrufen der Abonnenten:', error);
     return [];
@@ -149,9 +144,13 @@ export async function getActiveSubscribers(): Promise<NewsletterSubscriber[]> {
 }
 
 // Newsletter mit Abmelde-Link versenden
-export function addUnsubscribeLinkToHtml(htmlContent: string, email: string, token: string): string {
+export function addUnsubscribeLinkToHtml(
+  htmlContent: string,
+  email: string,
+  token: string
+): string {
   const unsubscribeUrl = generateUnsubscribeUrl(email, token);
-  
+
   const unsubscribeSection = `
     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 12px; color: #666;">
       <p>Sie erhalten diese E-Mail, weil Sie sich für unseren Newsletter angemeldet haben.</p>
@@ -182,7 +181,7 @@ export function addUnsubscribeLinkToHtml(htmlContent: string, email: string, tok
 export async function cleanupExpiredSubscriberData(): Promise<{ deletedCount: number }> {
   try {
     const now = new Date();
-    
+
     const expiredQuery = await admin
       .firestore()
       .collection('newsletterSubscribers')
@@ -198,13 +197,12 @@ export async function cleanupExpiredSubscriberData(): Promise<{ deletedCount: nu
     expiredQuery.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
 
     console.log(`DSGVO Cleanup: ${expiredQuery.docs.length} abgelaufene Newsletter-Daten gelöscht`);
-    
-    return { deletedCount: expiredQuery.docs.length };
 
+    return { deletedCount: expiredQuery.docs.length };
   } catch (error) {
     console.error('Fehler bei DSGVO Datenbereinigung:', error);
     return { deletedCount: 0 };
