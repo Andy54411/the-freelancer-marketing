@@ -6,10 +6,12 @@ import crypto from 'crypto';
 
 // OAuth2 Gmail Import mit Fallback
 let sendNewsletterConfirmationEmail: any = null;
+let getGmailService: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const gmailOAuthModule = require('./gmail-oauth-newsletter');
   sendNewsletterConfirmationEmail = gmailOAuthModule.sendNewsletterConfirmationEmail;
+  getGmailService = gmailOAuthModule.getGmailService;
 } catch (error) {
   console.log('OAuth2 Gmail Module nicht verfügbar, verwende SMTP Fallback');
 }
@@ -88,26 +90,102 @@ export async function sendConfirmationEmail(
     if (sendNewsletterConfirmationEmail) {
       try {
         console.log('📧 Verwende OAuth2 Gmail für Newsletter-Bestätigung');
-        const oauthResult = await sendNewsletterConfirmationEmail(email, confirmationToken);
+        console.log('📧 OAuth2 Parameter:', { email, confirmationToken: confirmationToken.substring(0, 8) + '...', name });
+        
+        const oauthResult = await sendNewsletterConfirmationEmail(email, confirmationToken, name);
+        console.log('📧 OAuth2 Ergebnis:', oauthResult);
+        
         emailResult = { success: oauthResult.success, error: oauthResult.error };
+        
+        if (oauthResult.success) {
+          console.log('✅ OAuth2 E-Mail erfolgreich gesendet');
+        } else {
+          console.error('❌ OAuth2 E-Mail fehlgeschlagen:', oauthResult.error);
+        }
       } catch (error) {
-        console.error('OAuth2 Gmail fehlgeschlagen, verwende SMTP Fallback:', error);
-        // Fallback zu SMTP
+        console.error('🚨 OAuth2 Gmail Exception, verwende SMTP Fallback:', error);
+        
+        // Versuche direkten Gmail Service falls verfügbar
+        if (getGmailService) {
+          try {
+            console.log('📧 Versuche direkten Gmail Service');
+            const gmailService = getGmailService();
+            const directResult = await gmailService.sendEmail(
+              email,
+              'Newsletter-Anmeldung bestätigen - Taskilo',
+              htmlContent,
+              {
+                from: 'newsletter@taskilo.de',
+                replyTo: 'newsletter@taskilo.de'
+              }
+            );
+            emailResult = { success: directResult.success, error: directResult.error };
+            console.log('📧 Direkter Gmail Service Ergebnis:', directResult);
+          } catch (directError) {
+            console.error('🚨 Direkter Gmail Service fehlgeschlagen:', directError);
+            // Fallback zu SMTP
+            const smtpResult = await sendSingleEmailViaGmail(
+              email,
+              'Newsletter-Anmeldung bestätigen - Taskilo',
+              htmlContent
+            );
+            emailResult = { success: smtpResult.success };
+          }
+        } else {
+          // Fallback zu SMTP
+          const smtpResult = await sendSingleEmailViaGmail(
+            email,
+            'Newsletter-Anmeldung bestätigen - Taskilo',
+            htmlContent
+          );
+          emailResult = { success: smtpResult.success };
+        }
+      }
+    } else {
+      console.log('📧 Verwende SMTP für Newsletter-Bestätigung (OAuth2 nicht verfügbar)');
+      
+      // Einfache SMTP Funktion mit besserer Fehlerbehandlung
+      try {
         const smtpResult = await sendSingleEmailViaGmail(
           email,
           'Newsletter-Anmeldung bestätigen - Taskilo',
           htmlContent
         );
         emailResult = { success: smtpResult.success };
+        console.log('📧 SMTP Ergebnis:', smtpResult);
+      } catch (smtpError) {
+        console.error('🚨 SMTP fehlgeschlagen:', smtpError);
+        
+        // Als letzten Ausweg - erstelle einen einfachen nodemailer transport
+        try {
+          console.log('📧 Versuche einfachen Nodemailer Transport');
+          const nodemailer = require('nodemailer');
+          
+          const simpleTransporter = nodemailer.createTransporter({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: {
+              user: process.env.GMAIL_USERNAME,
+              pass: process.env.GMAIL_APP_PASSWORD,
+            },
+          });
+
+          const result = await simpleTransporter.sendMail({
+            from: `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
+            to: email,
+            subject: 'Newsletter-Anmeldung bestätigen - Taskilo',
+            html: htmlContent,
+            text: htmlContent.replace(/<[^>]*>/g, ''),
+          });
+
+          emailResult = { success: true };
+          console.log('✅ Einfacher Transport erfolgreich:', result.messageId);
+        } catch (fallbackError) {
+          console.error('🚨 Alle E-Mail-Methoden fehlgeschlagen:', fallbackError);
+          emailResult = { success: false, error: 'E-Mail-Versand fehlgeschlagen' };
+        }
       }
-    } else {
-      console.log('📧 Verwende SMTP für Newsletter-Bestätigung (OAuth2 nicht verfügbar)');
-      const smtpResult = await sendSingleEmailViaGmail(
-        email,
-        'Newsletter-Anmeldung bestätigen - Taskilo',
-        htmlContent
-      );
-      emailResult = { success: smtpResult.success };
     }
 
     return { success: emailResult.success };

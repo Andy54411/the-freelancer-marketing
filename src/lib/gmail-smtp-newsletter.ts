@@ -1,7 +1,7 @@
 // Gmail SMTP Newsletter System für Google Workspace - OHNE OAuth
 import nodemailer from 'nodemailer';
 import { addUnsubscribeLinkToHtml } from './newsletter-gdpr';
-import { admin } from '@/firebase/server';
+import { admin } from '../firebase/server';
 
 // Google Workspace SMTP Konfiguration
 const gmailTransporter = nodemailer.createTransport({
