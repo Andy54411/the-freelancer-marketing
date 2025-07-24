@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation'; // NEU
-import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { useSearchParams, useRouter } from 'next/navigation';
 import ChatList from './ChatList';
 import { ChatWindow } from './ChatWindow';
 import { MessageSquare as FiMessageSquare, Loader2 as FiLoader } from 'lucide-react';
@@ -33,42 +31,49 @@ const AdminSupportChat = () => {
   const selectedChatId = searchParams?.get('chatId') || null;
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'supportChats'),
-      // KORREKTUR: Nur Chats abrufen, die menschliche Aufmerksamkeit erfordern ('human').
-      // Dies ist effizienter und erfordert einen einfacheren Index.
-      where('status', '==', 'human'),
-      orderBy('lastUpdated', 'desc')
-    );
+    const loadSupportChats = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    const unsubscribe = onSnapshot(
-      q,
-      querySnapshot => {
-        const chatSessions = querySnapshot.docs.map(chatDoc => {
-          const chatData = chatDoc.data();
+        // Verwende Admin API statt direkte Firestore-Queries
+        const response = await fetch('/api/admin/support');
 
-          return {
-            id: chatDoc.id,
-            ...chatData,
-            userName: chatData.userName || 'Unbekannter Benutzer',
-            userAvatarUrl: chatData.userAvatarUrl || undefined,
-          } as ChatSession;
-        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Fehler beim Laden der Support-Chats');
+        }
+
+        // Konvertiere die API-Daten zum erwarteten Format
+        const chatSessions = data.supportChats.map((chatData: any) => ({
+          id: chatData.id,
+          ...chatData,
+          userName: chatData.userName || 'Unbekannter Benutzer',
+          userAvatarUrl: chatData.userAvatarUrl || undefined,
+        })) as ChatSession[];
 
         setChats(chatSessions);
         setLoading(false);
-        setError(null);
-      },
-      error => {
+      } catch (error) {
         console.error('Error fetching chat sessions: ', error);
         setError(
           'Fehler beim Laden der Chats. Bitte prüfen Sie Ihre Firebase-Sicherheitsregeln und die Netzwerkverbindung.'
         );
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    loadSupportChats();
+
+    // Aktualisiere alle 30 Sekunden
+    const interval = setInterval(loadSupportChats, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // NEU: Diese Funktion aktualisiert die URL, anstatt nur den State zu setzen.

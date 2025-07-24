@@ -191,8 +191,8 @@ service cloud.firestore {
                            (request.auth != null && chatId == "support_chat_" + request.auth.uid);
       
       // KORREKTUR: Support-Mitarbeiter müssen Support-Chats auflisten können für Admin-Dashboard
-      // TEMPORÄR: Auch für authentifizierte Benutzer aktiviert bis Custom Claims funktionieren
-      allow list: if isSupportStaff() || request.auth != null;
+      // TEMPORÄR: Breitere Berechtigung für Admin-Dashboard bis Custom Claims korrekt funktionieren
+      allow list: if request.auth != null;
 
       match /messages/{messageId} {
         // Support-Chat-Nachrichten: Gleiche Logik wie für den Chat selbst
