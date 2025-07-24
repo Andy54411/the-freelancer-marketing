@@ -1,6 +1,6 @@
 // Test API für Gmail SMTP Newsletter-System
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSingleEmailViaGmail } from '@/lib/gmail-smtp-newsletter';
+import nodemailer from 'nodemailer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,6 +42,20 @@ export async function POST(request: NextRequest) {
     console.log('📧 Teste E-Mail-Versand an:', email);
     console.log('🔗 Confirmation URL:', confirmationUrl);
 
+    // Gmail Transporter erstellen
+    const gmailTransporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USERNAME,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+      tls: {
+        ciphers: 'SSLv3',
+      },
+    });
+
     // Direkte E-Mail ohne sendConfirmationEmail
     const subject = 'Test: Newsletter-Anmeldung bestätigen - Taskilo';
     const htmlContent = `
@@ -56,7 +70,22 @@ export async function POST(request: NextRequest) {
       </html>
     `;
 
-    const result = await sendSingleEmailViaGmail(email, subject, htmlContent);
+    const mailOptions = {
+      from: `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
+      to: email,
+      subject,
+      html: htmlContent,
+      text: htmlContent.replace(/<[^>]*>/g, ''), // HTML zu Text
+      replyTo: process.env.GMAIL_USERNAME,
+    };
+
+    console.log('📧 Gmail SMTP - Sende E-Mail mit Options:', {
+      ...mailOptions,
+      html: '[HTML Content]',
+      to: email,
+    });
+
+    const result = await gmailTransporter.sendMail(mailOptions);
 
     return NextResponse.json({
       success: true,
