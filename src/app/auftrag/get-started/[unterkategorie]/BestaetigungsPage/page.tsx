@@ -1056,6 +1056,53 @@ export default function BestaetigungsPage() {
           billingAddressDetails.address?.city &&
           billingAddressDetails.address?.country;
 
+        console.log(PAGE_LOG, 'BestaetigungsPage: Rechnungsadress-Status:', {
+          hasBillingAddress,
+          justRegistered,
+          billingAddressDetails,
+          userProfileDataLocal,
+        });
+
+        // VERBESSERUNG: Gib mehr Zeit für Firebase-Synchronisation nach Registrierung
+        if (justRegistered) {
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Benutzer gerade registriert - prüfe ob Daten verfügbar sind...'
+          );
+
+          // Wenn nach der Registrierung noch keine Daten verfügbar sind, warte länger
+          if (!hasBillingAddress && !(userProfileDataLocal as any)?.street) {
+            console.log(
+              PAGE_LOG,
+              'BestaetigungsPage: Warte auf Firebase-Synchronisation nach Registrierung...'
+            );
+
+            // Verzögerte Wiederholung der Initialisierung statt direkter Reload
+            setTimeout(() => {
+              console.log(PAGE_LOG, 'BestaetigungsPage: Versuche Initialisierung erneut...');
+              isInitializing.current = false; // Reset für erneuten Versuch
+              // Trigger einen neuen Initialisierungsversuch durch State-Update
+              setIsLoadingPageData(true);
+            }, 3000); // 3 Sekunden warten
+
+            // Lösche das Flag nach 15 Sekunden
+            setTimeout(() => {
+              console.log(PAGE_LOG, 'BestaetigungsPage: Lösche justRegistered Flag nach Timeout');
+              sessionStorage.removeItem('justRegistered');
+            }, 15000);
+
+            return; // Beende diese Initialisierung
+          }
+
+          // Wenn Daten verfügbar sind, lösche das Flag
+          console.log(
+            PAGE_LOG,
+            'BestaetigungsPage: Registrierungsdaten verfügbar, lösche justRegistered Flag'
+          );
+          sessionStorage.removeItem('justRegistered');
+        }
+
+        // Nur zur Registrierung weiterleiten wenn NICHT gerade registriert wurde
         if (!hasBillingAddress && !justRegistered) {
           console.log(
             PAGE_LOG,
@@ -1075,36 +1122,6 @@ export default function BestaetigungsPage() {
           isInitializing.current = false;
           router.push(registrationRedirectUrl);
           return;
-        }
-
-        // NEU: Wenn Benutzer gerade registriert wurde aber Adresse noch nicht verfügbar ist,
-        // gib ihm etwas Zeit für die Firebase-Synchronisation
-        if (!hasBillingAddress && justRegistered) {
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Benutzer gerade registriert, warte auf Firebase-Synchronisation...'
-          );
-
-          // Lösche das Flag nach kurzer Zeit, um endlose Schleifen zu vermeiden
-          setTimeout(() => {
-            sessionStorage.removeItem('justRegistered');
-          }, 10000); // 10 Sekunden Timeout
-
-          // Kurze Verzögerung für Firebase-Synchronisation
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-
-          return;
-        }
-
-        // Lösche das justRegistered Flag nachdem die Adresse erfolgreich geladen wurde
-        if (hasBillingAddress && justRegistered) {
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Rechnungsadresse erfolgreich geladen, lösche justRegistered Flag'
-          );
-          sessionStorage.removeItem('justRegistered');
         }
 
         // Prüfe andere Pflichtfelder (ohne Rechnungsadresse)
