@@ -105,8 +105,17 @@ export async function POST(request: NextRequest) {
 
       // Bestätigungs-E-Mail senden
       console.log('📧 Newsletter API - Sende Bestätigungs-E-Mail...');
+      console.log('📧 Newsletter API - Gmail Konfiguration:', {
+        username: process.env.GMAIL_USERNAME,
+        hasPassword: !!process.env.GMAIL_APP_PASSWORD,
+        passwordLength: process.env.GMAIL_APP_PASSWORD?.length,
+        appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      });
+
       try {
         const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/newsletter/confirm?token=${confirmationToken}`;
+
+        console.log('📧 Newsletter API - Confirmation URL:', confirmationUrl);
 
         await sendConfirmationEmail(email, name || 'Newsletter-Abonnent', confirmationUrl);
 

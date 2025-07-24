@@ -28,6 +28,15 @@ export async function sendSingleEmailViaGmail(
   }
 ) {
   try {
+    console.log('📧 Gmail SMTP - Starte E-Mail-Versand:', {
+      to,
+      subject,
+      from: options?.from || `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
+      hasGmailUsername: !!process.env.GMAIL_USERNAME,
+      hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD,
+      gmailUsername: process.env.GMAIL_USERNAME,
+    });
+
     const mailOptions = {
       from: options?.from || `"Taskilo Newsletter" <${process.env.GMAIL_USERNAME}>`,
       to,
@@ -37,15 +46,25 @@ export async function sendSingleEmailViaGmail(
       replyTo: options?.replyTo || process.env.GMAIL_USERNAME,
     };
 
+    console.log('📧 Gmail SMTP - Mail Options:', {
+      ...mailOptions,
+      html: '[HTML CONTENT HIDDEN]',
+      text: '[TEXT CONTENT HIDDEN]',
+    });
+
     const result = await gmailTransporter.sendMail(mailOptions);
-    console.log(`E-Mail erfolgreich gesendet an ${to}:`, result.messageId);
+    console.log(`✅ Gmail SMTP - E-Mail erfolgreich gesendet an ${to}:`, result.messageId);
 
     return {
       success: true,
       messageId: result.messageId,
     };
   } catch (error) {
-    console.error(`Fehler beim Senden der E-Mail an ${to}:`, error);
+    console.error(`❌ Gmail SMTP - Fehler beim Senden der E-Mail an ${to}:`, {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      stack: error instanceof Error ? error.stack : 'Kein Stack verfügbar',
+    });
     throw error;
   }
 }
