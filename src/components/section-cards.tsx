@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext'; // useAuth importieren
-import { collection, query, where, getDocs } from 'firebase/firestore'; // onSnapshot, doc, getDoc entfernt
+import { useAuth } from '@/contexts/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   TrendingUp as IconTrendingUp,
@@ -33,7 +33,6 @@ interface DashboardStats {
 }
 
 export function SectionCards() {
-  // unreadMessagesCount direkt aus dem AuthContext holen
   const { user: currentUser, unreadMessagesCount } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     monthlyRevenue: 0,
@@ -45,7 +44,6 @@ export function SectionCards() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Wenn kein Benutzer angemeldet ist, nichts tun.
     if (!currentUser) {
       setLoading(false);
       return;
@@ -54,7 +52,6 @@ export function SectionCards() {
     const uid = currentUser.uid;
     setLoading(true);
 
-    // Einmalige Abfrage für die Auftragsstatistiken und Guthaben.
     const fetchStatsAndBalance = async () => {
       try {
         // 1. Auftragsdaten aus Firestore abrufen
@@ -85,7 +82,6 @@ export function SectionCards() {
         let pendingBalance = 0;
 
         try {
-          // Use the simple mock version temporarily to avoid timeout issues
           const balanceResponse = await fetch(
             `/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`,
             {
@@ -96,22 +92,19 @@ export function SectionCards() {
 
           if (balanceResponse.ok) {
             const balanceData = await balanceResponse.json();
-            availableBalance = (balanceData.available || 0) / 100; // Convert from cents to euros
+            availableBalance = (balanceData.available || 0) / 100;
             pendingBalance = (balanceData.pending || 0) / 100;
           } else {
             console.warn(
               `Stripe balance API error: ${balanceResponse.status} ${balanceResponse.statusText}`
             );
-            // Bei Fehlern wird Balance auf 0 gelassen
             const errorData = await balanceResponse.json().catch(() => ({}));
             console.warn('Error details:', errorData);
           }
         } catch (balanceError) {
           console.warn('Failed to fetch Stripe balance:', balanceError);
-          // Bei Netzwerkfehlern wird Balance auf 0 gelassen
         }
 
-        // Setze alle Statistiken
         setStats({
           monthlyRevenue: monthlyRevenue / 100,
           newOrders,
@@ -131,10 +124,7 @@ export function SectionCards() {
       }
     };
 
-    // Führe die Abfrage aus und setze den Ladezustand danach auf false.
     fetchStatsAndBalance().finally(() => setLoading(false));
-
-    // Da es keine Listener mehr gibt, ist keine Cleanup-Funktion nötig.
   }, [currentUser]);
 
   const formatCurrency = (value: number) => {
@@ -164,7 +154,7 @@ export function SectionCards() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firebaseUserId: currentUser.uid,
-          amount: Math.floor(stats.availableBalance * 100), // Convert to cents
+          amount: Math.floor(stats.availableBalance * 100),
         }),
       });
 
@@ -173,8 +163,6 @@ export function SectionCards() {
         alert(
           `Auszahlung erfolgreich beantragt!\n\nPayout ID: ${result.payoutId}\nBetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\nDas Geld wird in 1-2 Werktagen auf Ihr Konto überwiesen.`
         );
-
-        // Refresh stats to show updated balance
         window.location.reload();
       } else {
         const errorData = await response.json();
@@ -192,22 +180,23 @@ export function SectionCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {[...Array(5)].map((_, i) => (
-          <Card key={i} className="h-32 animate-pulse bg-gray-200 dark:bg-gray-800"></Card>
+          <Card key={i} className="h-40 animate-pulse bg-gray-200 dark:bg-gray-800"></Card>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      <Card className="col-span-1 sm:col-span-2 lg:col-span-1 xl:col-span-2 h-full bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      {/* Guthaben Card */}
+      <Card className="@container/card bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-lg transition-all duration-200">
         <CardHeader className="pb-3">
-          <CardDescription className="flex items-center gap-2 text-green-700 dark:text-green-300">
-            <IconWallet size={16} /> Verfügbares Guthaben
+          <CardDescription className="flex items-center gap-2 text-green-700 dark:text-green-300 text-sm font-medium">
+            <IconWallet size={18} /> Verfügbares Guthaben
           </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums text-green-800 dark:text-green-200">
+          <CardTitle className="text-2xl font-bold tabular-nums text-green-800 dark:text-green-200">
             {formatCurrency(stats.availableBalance)}
           </CardTitle>
         </CardHeader>
@@ -215,7 +204,7 @@ export function SectionCards() {
           <div className="flex flex-col gap-3">
             <Badge
               variant="outline"
-              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit"
+              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-xs font-medium"
             >
               {stats.pendingBalance > 0
                 ? `+${formatCurrency(stats.pendingBalance)} in Bearbeitung`
@@ -225,13 +214,13 @@ export function SectionCards() {
               size="sm"
               onClick={handleWithdraw}
               disabled={isWithdrawing || stats.availableBalance <= 0}
-              className="bg-green-600 hover:bg-green-700 text-white w-full"
+              className="bg-green-600 hover:bg-green-700 text-white w-full text-sm font-medium shadow-md hover:shadow-lg transition-all"
             >
               {isWithdrawing ? (
                 <span>Wird bearbeitet...</span>
               ) : (
                 <>
-                  <IconDownload size={14} className="mr-1" />
+                  <IconDownload size={14} className="mr-2" />
                   Auszahlen
                 </>
               )}
@@ -240,32 +229,42 @@ export function SectionCards() {
         </CardContent>
       </Card>
 
-      <Card className="h-full">
-        <CardHeader>
-          <CardDescription className="flex items-center gap-2">
-            <IconCurrencyEuro size={16} /> Monatlicher Umsatz
+      {/* Monatlicher Umsatz Card */}
+      <Card className="@container/card hover:shadow-lg transition-all duration-200 border-blue-200 dark:border-blue-800">
+        <CardHeader className="pb-4">
+          <CardDescription className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
+            <IconCurrencyEuro size={18} /> Monatlicher Umsatz
           </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums">
+          <CardTitle className="text-2xl font-bold tabular-nums text-blue-800 dark:text-blue-200">
             {formatCurrency(stats.monthlyRevenue)}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
+            <Badge
+              variant="outline"
+              className="text-xs font-medium border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300"
+            >
+              <IconTrendingUp size={12} className="mr-1" />
               Aktueller Monat
             </Badge>
           </CardAction>
         </CardHeader>
       </Card>
 
-      <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block">
-        <Card className="h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-          <CardHeader>
-            <CardDescription className="flex items-center gap-2">
-              <IconPackage size={16} /> Neue Bestellungen
+      {/* Neue Bestellungen Card */}
+      <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block group">
+        <Card className="@container/card h-full hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-orange-200 dark:border-orange-800">
+          <CardHeader className="pb-4">
+            <CardDescription className="flex items-center gap-2 text-orange-600 dark:text-orange-400 text-sm font-medium">
+              <IconPackage size={18} /> Neue Bestellungen
             </CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums">{stats.newOrders}</CardTitle>
+            <CardTitle className="text-2xl font-bold tabular-nums text-orange-800 dark:text-orange-200">
+              {stats.newOrders}
+            </CardTitle>
             <CardAction>
-              <Badge variant={stats.newOrders > 0 ? 'destructive' : 'outline'}>
+              <Badge
+                variant={stats.newOrders > 0 ? 'destructive' : 'outline'}
+                className="text-xs font-medium"
+              >
                 {stats.newOrders > 0 ? 'Ausstehend' : 'Aktuell'}
               </Badge>
             </CardAction>
@@ -273,33 +272,43 @@ export function SectionCards() {
         </Card>
       </Link>
 
-      <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block">
-        <Card className="h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-          <CardHeader>
-            <CardDescription className="flex items-center gap-2">
-              <IconPackage size={16} /> Aktive Aufträge
+      {/* Aktive Aufträge Card */}
+      <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block group">
+        <Card className="@container/card h-full hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-purple-200 dark:border-purple-800">
+          <CardHeader className="pb-4">
+            <CardDescription className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
+              <IconPackage size={18} /> Aktive Aufträge
             </CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums">
+            <CardTitle className="text-2xl font-bold tabular-nums text-purple-800 dark:text-purple-200">
               {stats.activeOrders}
             </CardTitle>
             <CardAction>
-              <Badge variant="outline">In Bearbeitung</Badge>
+              <Badge
+                variant="outline"
+                className="text-xs font-medium border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300"
+              >
+                In Bearbeitung
+              </Badge>
             </CardAction>
           </CardHeader>
         </Card>
       </Link>
 
-      <Link href={`/dashboard/company/${currentUser?.uid}/inbox`} className="block">
-        <Card className="h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-          <CardHeader>
-            <CardDescription className="flex items-center gap-2">
-              <IconMail size={16} /> Ungelesene Nachrichten
+      {/* Ungelesene Nachrichten Card */}
+      <Link href={`/dashboard/company/${currentUser?.uid}/inbox`} className="block group">
+        <Card className="@container/card h-full hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-red-200 dark:border-red-800">
+          <CardHeader className="pb-4">
+            <CardDescription className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm font-medium">
+              <IconMail size={18} /> Ungelesene Nachrichten
             </CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums">
+            <CardTitle className="text-2xl font-bold tabular-nums text-red-800 dark:text-red-200">
               {unreadMessagesCount}
             </CardTitle>
             <CardAction>
-              <Badge variant={unreadMessagesCount > 0 ? 'destructive' : 'outline'}>
+              <Badge
+                variant={unreadMessagesCount > 0 ? 'destructive' : 'outline'}
+                className="text-xs font-medium"
+              >
                 Zum Posteingang
               </Badge>
             </CardAction>

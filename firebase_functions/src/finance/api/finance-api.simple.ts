@@ -1,6 +1,13 @@
-// firebase_functions/src/finance/api/finance-api.ts
+// firebase_functions/src/finance/api/finance-api.simple.ts
 
-import { onRequest } from 'firebase-functions/v2/https';
+import { https } from 'firebase-functions/v1';
+
+// Vereinfachte CORS und Auth Implementation
+async function corsMiddleware(req: any, res: any): Promise<void> {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
 
 async function authenticateUser(req: any): Promise<{ userId: string; companyId: string }> {
     // Vereinfachte Auth - in der Realität würde hier Firebase Auth Token validiert
@@ -71,57 +78,27 @@ interface SimpleFinanceData {
     }[];
 }
 
-export const financeApi = onRequest(async (req, res) => {
-    // CORS - Set headers before any processing
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-company-id, x-user-id');
-    
-    // Handle preflight OPTIONS request
-    if (req.method === 'OPTIONS') {
-        res.status(200).send('');
-        return;
-    }
-
-    // Add logging for debugging
-    console.log(`[financeApi] ${req.method} request from:`, req.headers.origin || 'unknown');
-    console.log(`[financeApi] Auth header:`, req.headers.authorization ? 'present' : 'missing');
+export const financeApiSimple = https.onRequest(async (req, res) => {
+    // CORS
+    await corsMiddleware(req, res);
+    if (req.method === 'OPTIONS') return;
 
     try {
-        // Auth - Simplified for development
-        let userId, companyId;
-        try {
-            const authResult = await authenticateUser(req);
-            userId = authResult.userId;
-            companyId = authResult.companyId;
-        } catch (authError) {
-            console.log('[financeApi] Auth failed, using mock data:', authError);
-            userId = 'mock-user';
-            companyId = 'mock-company';
+        // Auth
+        const { userId, companyId } = await authenticateUser(req);
+        if (!userId || !companyId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
         }
-
-        console.log(`[financeApi] Processing request for user: ${userId}, company: ${companyId}`);
 
         const { method } = req;
         const { action } = req.body || {};
-        const url = new URL(req.url, `https://${req.headers.host}`);
-        const pathname = url.pathname;
-
-        console.log(`[financeApi] Request path: ${pathname}, method: ${method}`);
 
         switch (method) {
             case 'GET':
-                // Handle different GET endpoints
-                if (pathname.endsWith('/stats')) {
-                    // Stats endpoint
-                    const financeData = await getFinanceData(companyId);
-                    const stats = calculateStats(financeData);
-                    res.json(stats);
-                } else {
-                    // Default: Alle Finance-Daten für Dashboard laden
-                    const financeData = await getFinanceData(companyId);
-                    res.json(financeData);
-                }
+                // Alle Finance-Daten für Dashboard laden
+                const financeData = await getFinanceData(companyId);
+                res.json(financeData);
                 break;
 
             case 'POST':
@@ -193,54 +170,6 @@ export const financeApi = onRequest(async (req, res) => {
         });
     }
 });
-
-/**
- * Berechnet Statistiken aus den Finance-Daten
- */
-function calculateStats(financeData: any) {
-    const stats = {
-        totalRevenue: 0,
-        totalExpenses: 0,
-        profit: 0,
-        invoiceCount: 0,
-        customerCount: 0,
-        pendingInvoices: 0,
-        overdueInvoices: 0
-    };
-
-    if (financeData.invoices && Array.isArray(financeData.invoices)) {
-        stats.invoiceCount = financeData.invoices.length;
-        
-        financeData.invoices.forEach((invoice: any) => {
-            if (invoice.total) {
-                stats.totalRevenue += parseFloat(invoice.total) || 0;
-            }
-            
-            if (invoice.status === 'pending') {
-                stats.pendingInvoices++;
-            } else if (invoice.status === 'overdue') {
-                stats.overdueInvoices++;
-            }
-        });
-    }
-
-    if (financeData.expenses && Array.isArray(financeData.expenses)) {
-        financeData.expenses.forEach((expense: any) => {
-            if (expense.amount) {
-                stats.totalExpenses += parseFloat(expense.amount) || 0;
-            }
-        });
-    }
-
-    if (financeData.customers && Array.isArray(financeData.customers)) {
-        stats.customerCount = financeData.customers.length;
-    }
-
-    stats.profit = stats.totalRevenue - stats.totalExpenses;
-
-    console.log('[financeApi] Calculated stats:', stats);
-    return stats;
-}
 
 // Vereinfachte Implementierungen ohne komplexe Models
 

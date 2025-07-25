@@ -21,7 +21,9 @@ export function useCompanyDashboard() {
 
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const [view, setView] = useState<'dashboard' | 'settings'>('dashboard');
+  const [view, setView] = useState<
+    'dashboard' | 'calendar' | 'finance' | 'reviews' | 'profile' | 'settings'
+  >('dashboard');
   const [showPopup, setShowPopup] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [userData, setUserData] = useState<RawFirestoreUserData | null>(null);
