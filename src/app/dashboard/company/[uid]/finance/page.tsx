@@ -146,7 +146,7 @@ export default function FinancePage() {
         setInvoices(data.invoices || []);
         setCustomers(data.customers || []);
         setExpenses(data.expenses || []);
-        setPayments(data.bankAccounts || []); // Using bankAccounts as mock payments
+        setPayments(data.payments || []); // Now using the correct payments field
       }
     } catch (error) {
       console.error('Fehler beim Laden der Finance-Daten:', error);
@@ -187,6 +187,17 @@ export default function FinancePage() {
           category: 'Büroausstattung',
           date: '2024-01-10',
           description: 'Stifte, Papier, etc.',
+        },
+      ]);
+
+      setPayments([
+        {
+          id: 'pay_001',
+          invoiceId: 'inv_001',
+          amount: 1190,
+          date: '2024-01-16',
+          method: 'bank_transfer',
+          reference: 'TRANSFER-2024-001',
         },
       ]);
 
@@ -479,14 +490,16 @@ export default function FinancePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {invoices.slice(0, 5).map(invoice => (
+                  {(invoices || []).slice(0, 5).map(invoice => (
                     <div key={invoice.id} className="flex justify-between items-center">
                       <div>
                         <div className="font-medium">{invoice.invoiceNumber}</div>
                         <div className="text-sm text-muted-foreground">{invoice.customerName}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{formatCurrency(invoice.total)}</div>
+                        <div className="font-medium">
+                          {formatCurrency(invoice.total || invoice.amount)}
+                        </div>
                         <Badge
                           variant={
                             invoice.status === 'paid'
@@ -518,7 +531,7 @@ export default function FinancePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {customers
+                  {(customers || [])
                     .sort((a, b) => b.totalAmount - a.totalAmount)
                     .slice(0, 5)
                     .map(customer => (
@@ -582,7 +595,7 @@ export default function FinancePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {payments.map(payment => (
+                {(payments || []).map(payment => (
                   <div
                     key={payment.id}
                     className="flex justify-between items-center p-4 border rounded-lg"

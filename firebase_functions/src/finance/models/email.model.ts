@@ -169,7 +169,7 @@ export class EmailModel extends BaseModel<EmailTemplate & import('../types').Bas
             clicked: 234,
             bounced: 52,
             complaints: 18,
-            
+
             rates: {
                 deliveryRate: 95.8,
                 openRate: 63.1,
@@ -177,7 +177,7 @@ export class EmailModel extends BaseModel<EmailTemplate & import('../types').Bas
                 bounceRate: 4.2,
                 complaintRate: 1.5,
             },
-            
+
             byType: [],
             thisMonth: {
                 sent: 45,

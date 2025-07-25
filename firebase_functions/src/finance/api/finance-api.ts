@@ -8,7 +8,7 @@ async function authenticateUser(req: any): Promise<{ userId: string; companyId: 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('No valid authorization header');
     }
-    
+
     return {
         userId: 'user_123', // Mock User ID
         companyId: 'company_123' // Mock Company ID
@@ -35,6 +35,14 @@ interface SimpleFinanceData {
         description: string;
         amount: number;
         date: string;
+    }[];
+    payments: {
+        id: string;
+        invoiceId: string;
+        amount: number;
+        date: string;
+        method: string;
+        reference: string;
     }[];
     bankAccounts: {
         id: string;
@@ -76,7 +84,7 @@ export const financeApi = onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-company-id, x-user-id');
-    
+
     // Handle preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         res.status(200).send('');
@@ -210,12 +218,12 @@ function calculateStats(financeData: any) {
 
     if (financeData.invoices && Array.isArray(financeData.invoices)) {
         stats.invoiceCount = financeData.invoices.length;
-        
+
         financeData.invoices.forEach((invoice: any) => {
             if (invoice.amount) {
                 stats.totalRevenue += parseFloat(invoice.amount) || 0;
             }
-            
+
             if (invoice.status === 'OPEN') {
                 stats.pendingInvoices++;
             } else if (invoice.status === 'OVERDUE') {
@@ -273,9 +281,6 @@ async function getFinanceData(companyId: string): Promise<SimpleFinanceData> {
             { id: 'exp_001', description: 'Büromaterial', amount: 150.50, date: '2024-01-10' },
             { id: 'exp_002', description: 'Software-Lizenz', amount: 299.00, date: '2024-01-12' }
         ],
-        bankAccounts: [
-            { id: 'bank_001', bankName: 'Sparkasse', iban: 'DE89370400440532013000', balance: 15750.00 }
-        ],
         recurringInvoices: [
             {
                 id: 'rec_001',
@@ -306,6 +311,27 @@ async function getFinanceData(companyId: string): Promise<SimpleFinanceData> {
                 status: 'COMPLETED',
                 generatedAt: '2024-01-31'
             }
+        ],
+        payments: [
+            {
+                id: 'pay_001',
+                invoiceId: 'inv_001',
+                amount: 1190.00,
+                date: '2024-01-16',
+                method: 'bank_transfer',
+                reference: 'TRANSFER-2024-001'
+            },
+            {
+                id: 'pay_002', 
+                invoiceId: 'inv_002',
+                amount: 1000.00,
+                date: '2024-01-22',
+                method: 'credit_card',
+                reference: 'CC-2024-002'
+            }
+        ],
+        bankAccounts: [
+            { id: 'bank_001', bankName: 'Sparkasse', iban: 'DE89370400440532013000', balance: 15750.00 }
         ]
     };
 }
