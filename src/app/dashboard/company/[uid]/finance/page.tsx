@@ -77,6 +77,34 @@ interface FinanceStats {
   thisMonthRevenue: number;
 }
 
+interface Report {
+  id: string;
+  type: string;
+  title: string;
+  status: string;
+  generatedAt?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface BankAccount {
+  id: string;
+  bankName: string;
+  iban: string;
+  balance: number;
+  accountType?: string;
+  isDefault?: boolean;
+}
+
+interface TaxRecord {
+  id: string;
+  type: string;
+  period: string;
+  amount: number;
+  status: string;
+  dueDate: string;
+}
+
 export default function FinancePage() {
   const params = useParams();
   const { user, loading: authLoading } = useAuth();
@@ -88,6 +116,9 @@ export default function FinancePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [taxes, setTaxes] = useState<TaxRecord[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
 
   // API Base URL - Updated für das neue Backend
@@ -147,6 +178,20 @@ export default function FinancePage() {
         setCustomers(data.customers || []);
         setExpenses(data.expenses || []);
         setPayments(data.payments || []); // Now using the correct payments field
+        setReports(data.reports || []);
+        setBankAccounts(data.bankAccounts || []);
+
+        // Mock tax data (would come from backend)
+        setTaxes([
+          {
+            id: 'tax_001',
+            type: 'Umsatzsteuer-Voranmeldung',
+            period: 'Januar 2024',
+            amount: 380.0,
+            status: 'bezahlt',
+            dueDate: '2024-02-10',
+          },
+        ]);
       }
     } catch (error) {
       console.error('Fehler beim Laden der Finance-Daten:', error);
@@ -198,6 +243,38 @@ export default function FinancePage() {
           date: '2024-01-16',
           method: 'bank_transfer',
           reference: 'TRANSFER-2024-001',
+        },
+      ]);
+
+      setReports([
+        {
+          id: 'rep_001',
+          type: 'EÜR',
+          title: 'Einnahme-Überschuss-Rechnung 2024',
+          status: 'completed',
+          generatedAt: '2024-01-31',
+        },
+      ]);
+
+      setBankAccounts([
+        {
+          id: 'bank_001',
+          bankName: 'Sparkasse',
+          iban: 'DE89370400440532013000',
+          balance: 15750.0,
+          accountType: 'checking',
+          isDefault: true,
+        },
+      ]);
+
+      setTaxes([
+        {
+          id: 'tax_001',
+          type: 'Umsatzsteuer-Voranmeldung',
+          period: 'Januar 2024',
+          amount: 380.0,
+          status: 'bezahlt',
+          dueDate: '2024-02-10',
         },
       ]);
 
@@ -469,6 +546,9 @@ export default function FinancePage() {
             <TabsTrigger value="customers">Kunden</TabsTrigger>
             <TabsTrigger value="expenses">Ausgaben</TabsTrigger>
             <TabsTrigger value="payments">Zahlungen</TabsTrigger>
+            <TabsTrigger value="reports">Berichte</TabsTrigger>
+            <TabsTrigger value="taxes">Steuern</TabsTrigger>
+            <TabsTrigger value="banking">Banking</TabsTrigger>
           </TabsList>
 
           <div className="flex space-x-2">
@@ -488,6 +568,18 @@ export default function FinancePage() {
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Neue Ausgabe
+              </Button>
+            )}
+            {activeTab === 'reports' && (
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Bericht erstellen
+              </Button>
+            )}
+            {activeTab === 'banking' && (
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Konto hinzufügen
               </Button>
             )}
           </div>
@@ -625,6 +717,119 @@ export default function FinancePage() {
                     </div>
                     <div className="font-medium text-green-600">
                       {formatCurrency(payment.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Berichte</CardTitle>
+              <CardDescription>Erstellen und verwalten Sie Finanzberichte</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(reports || []).map(report => (
+                  <div
+                    key={report.id}
+                    className="flex justify-between items-center p-4 border rounded-lg"
+                  >
+                    <div>
+                      <div className="font-medium">{report.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {report.type} •{' '}
+                        {report.generatedAt &&
+                          new Date(report.generatedAt).toLocaleDateString('de-DE')}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={report.status === 'completed' ? 'default' : 'secondary'}>
+                        {report.status === 'completed' ? 'Abgeschlossen' : 'In Bearbeitung'}
+                      </Badge>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="taxes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Steuern</CardTitle>
+              <CardDescription>Verwalten Sie Ihre Steuerpflichten</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(taxes || []).map(tax => (
+                  <div
+                    key={tax.id}
+                    className="flex justify-between items-center p-4 border rounded-lg"
+                  >
+                    <div>
+                      <div className="font-medium">{tax.type}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {tax.period} • Fällig bis{' '}
+                        {new Date(tax.dueDate).toLocaleDateString('de-DE')}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-right">
+                        <div className="font-medium">{formatCurrency(tax.amount)}</div>
+                        <Badge variant={tax.status === 'bezahlt' ? 'default' : 'destructive'}>
+                          {tax.status === 'bezahlt' ? 'Bezahlt' : 'Offen'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="banking" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Banking</CardTitle>
+              <CardDescription>Verwalten Sie Ihre Bankkonten</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(bankAccounts || []).map(account => (
+                  <div
+                    key={account.id}
+                    className="flex justify-between items-center p-4 border rounded-lg"
+                  >
+                    <div>
+                      <div className="font-medium">{account.bankName}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {account.iban} {account.isDefault && '• Standard-Konto'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {account.accountType === 'checking' ? 'Girokonto' : 'Sparkonto'}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(account.balance)}
+                      </div>
+                      <div className="flex space-x-2 mt-2">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
