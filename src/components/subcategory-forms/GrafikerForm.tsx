@@ -136,6 +136,6 @@ const GrafikerForm: React.FC<GrafikerFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Grafiker" />
     </div>
   );
-};
+}
 
 export default GrafikerForm;

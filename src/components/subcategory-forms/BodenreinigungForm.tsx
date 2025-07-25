@@ -106,6 +106,6 @@ const BodenreinigungForm: React.FC<BodenreinigungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Bodenreinigung" />
     </div>
   );
-};
+}
 
 export default BodenreinigungForm;

@@ -24,24 +24,6 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<SchlosserData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -275,6 +257,6 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Schlosser" />
     </div>
   );
-};
+}
 
 export default SchlosserForm;

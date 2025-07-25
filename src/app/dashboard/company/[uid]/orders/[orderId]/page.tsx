@@ -51,8 +51,6 @@ interface OrderData {
   jobDateFrom?: string;
   jobDateTo?: string;
   jobTimePreference?: string;
-  // NEU: Subcategory-spezifische Formulardaten
-  subcategoryFormData?: any;
 }
 
 export default function CompanyOrderDetailPage() {
@@ -180,8 +178,6 @@ export default function CompanyOrderDetailPage() {
           jobDateFrom: orderDataFromDb.jobDateFrom,
           jobDateTo: orderDataFromDb.jobDateTo,
           jobTimePreference: orderDataFromDb.jobTimePreference,
-          // NEU: Subcategory-spezifische Formulardaten
-          subcategoryFormData: orderDataFromDb.subcategoryFormData,
         };
 
         console.log('Constructed orderData object:', orderData);
@@ -322,78 +318,6 @@ export default function CompanyOrderDetailPage() {
     );
   }
 
-  // Hilfsfunktion zum Formatieren der subcategoryFormData
-  const renderSubcategoryFormData = (subcategoryFormData: any) => {
-    if (!subcategoryFormData || typeof subcategoryFormData !== 'object') {
-      return null;
-    }
-
-    const formatValue = (key: string, value: any): string => {
-      if (Array.isArray(value)) {
-        return value.join(', ') || 'Nicht angegeben';
-      }
-      if (typeof value === 'string') {
-        // Deutsche Übersetzungen für häufige Werte
-        const translations: Record<string, string> = {
-          hotel: 'Hotel',
-          restaurant: 'Restaurant',
-          private: 'Privat',
-          deutsch: 'Deutsche Küche',
-          italienisch: 'Italienische Küche',
-          französisch: 'Französische Küche',
-          asiatisch: 'Asiatische Küche',
-          mit_übernachtung: 'Mit Übernachtung',
-          ohne_übernachtung: 'Ohne Übernachtung',
-          HP: 'Halbpension',
-          VP: 'Vollpension',
-          BB: 'Bed & Breakfast',
-          halbtag: 'Halbtag',
-          ganztag: 'Ganztag',
-          vorhanden: 'Vorhanden',
-          nicht_vorhanden: 'Nicht vorhanden',
-          flexibel: 'Flexibel',
-        };
-        return translations[value] || value;
-      }
-      return String(value);
-    };
-
-    const fieldLabels: Record<string, string> = {
-      serviceType: 'Service-Art',
-      cuisine: 'Küchenstil',
-      cuisineType: 'Küchen-Typ',
-      dietaryRestrictions: 'Diätwünsche',
-      duration: 'Dauer',
-      eventType: 'Event-Typ',
-      guestCount: 'Anzahl Gäste',
-      kitchenEquipment: 'Küchenausstattung',
-      projectDescription: 'Projektbeschreibung',
-      accommodation: 'Unterkunft',
-      timeframe: 'Zeitrahmen',
-      subcategory: 'Unterkategorie',
-    };
-
-    return (
-      <div className="col-span-full mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-semibold text-gray-700 mb-3">
-          Spezifische Details zum {order.selectedSubcategory}-Service
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {Object.entries(subcategoryFormData)
-            .filter(
-              ([key, value]) =>
-                key !== 'subcategory' && value !== null && value !== undefined && value !== ''
-            )
-            .map(([key, value]) => (
-              <p key={key} className="text-sm">
-                <strong>{fieldLabels[key] || key}:</strong> {formatValue(key, value)}
-              </p>
-            ))}
-        </div>
-      </div>
-    );
-  };
-
   const isViewerProvider = currentUser.uid === order.providerId;
   const cardUser = isViewerProvider
     ? {
@@ -464,9 +388,6 @@ export default function CompanyOrderDetailPage() {
                 <strong>Beschreibung:</strong>{' '}
                 {order.beschreibung || 'Keine Beschreibung vorhanden.'}
               </p>
-
-              {/* NEU: Anzeige der subcategoryFormData */}
-              {order.subcategoryFormData && renderSubcategoryFormData(order.subcategoryFormData)}
 
               <div className="md:col-span-2 mt-4 flex justify-center">
                 <UserInfoCard

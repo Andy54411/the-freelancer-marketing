@@ -210,6 +210,6 @@ const MöbelTransportierenForm: React.FC<MöbelTransportierenFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="MöbelTransportieren" />
     </div>
   );
-};
+}
 
 export default MöbelTransportierenForm;

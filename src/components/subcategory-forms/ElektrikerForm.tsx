@@ -26,24 +26,6 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<ElektrikerData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -268,6 +250,6 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Elektriker" />
     </div>
   );
-};
+}
 
 export default ElektrikerForm;

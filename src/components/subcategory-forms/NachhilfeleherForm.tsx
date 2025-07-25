@@ -142,6 +142,6 @@ const NachhilfeleherForm: React.FC<NachhilfeleherFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Nachhilfeleher" />
     </div>
   );
-};
+}
 
 export default NachhilfeleherForm;

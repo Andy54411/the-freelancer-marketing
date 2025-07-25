@@ -141,6 +141,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Eventplanung" />
     </div>
   );
-};
+}
 
 export default EventplanungForm;

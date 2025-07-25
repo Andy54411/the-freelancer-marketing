@@ -118,6 +118,6 @@ const SprachunterrichtForm: React.FC<SprachunterrichtFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Sprachunterricht" />
     </div>
   );
-};
+}
 
 export default SprachunterrichtForm;

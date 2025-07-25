@@ -135,6 +135,6 @@ const DekorationForm: React.FC<DekorationFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Dekoration" />
     </div>
   );
-};
+}
 
 export default DekorationForm;

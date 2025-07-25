@@ -129,6 +129,6 @@ const FriseurForm: React.FC<FriseurFormProps> = ({ data, onDataChange, onValidat
       <FormSubmitButton isValid={isFormValid()} subcategory="Friseur" />
     </div>
   );
-};
+}
 
 export default FriseurForm;

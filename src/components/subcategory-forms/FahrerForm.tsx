@@ -20,24 +20,6 @@ interface FahrerFormProps {
 const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<FahrerData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -304,6 +286,6 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
       <FormSubmitButton isValid={isFormValid()} subcategory="Fahrer" />
     </div>
   );
-};
+}
 
 export default FahrerForm;

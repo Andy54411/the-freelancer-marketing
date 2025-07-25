@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MietkochData } from '@/types/subcategory-forms';
 import { FormField, FormSelect, FormSubmitButton, FormTextarea } from './FormComponents';
-import { useRegistration } from '@/contexts/Registration-Context';
 
 interface MietkochFormProps {
   data: MietkochData;
@@ -11,7 +10,6 @@ interface MietkochFormProps {
 
 const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<MietkochData>(data);
-  const { setSubcategoryData } = useRegistration();
 
   const serviceTypeOptions = [
     { value: 'einzelevent', label: 'Einzelevent' },
@@ -54,11 +52,6 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
     onDataChange(updatedData);
-
-    // NEU: Speichere die Formulardaten auch im Registration Context
-    if (setSubcategoryData) {
-      setSubcategoryData(updatedData);
-    }
   };
 
   useEffect(() => {
@@ -136,6 +129,6 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Mietkoch" formData={formData} />
     </div>
   );
-};
+}
 
 export default MietkochForm;

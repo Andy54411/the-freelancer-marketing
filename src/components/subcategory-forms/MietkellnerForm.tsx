@@ -234,6 +234,6 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Mietkellner" />
     </div>
   );
-};
+}
 
 export default MietkellnerForm;

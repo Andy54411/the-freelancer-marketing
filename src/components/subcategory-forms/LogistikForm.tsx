@@ -227,6 +227,6 @@ const LogistikForm: React.FC<LogistikFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Logistik" />
     </div>
   );
-};
+}
 
 export default LogistikForm;

@@ -24,24 +24,6 @@ const FensterputzerForm: React.FC<FensterputzerFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<FensterputzerData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -304,6 +286,6 @@ const FensterputzerForm: React.FC<FensterputzerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Fensterputzer" />
     </div>
   );
-};
+}
 
 export default FensterputzerForm;

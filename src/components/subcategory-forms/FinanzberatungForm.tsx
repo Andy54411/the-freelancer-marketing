@@ -24,24 +24,6 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<FinanzberatungData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -548,6 +530,6 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Finanzberatung" />
     </div>
   );
-};
+}
 
 export default FinanzberatungForm;

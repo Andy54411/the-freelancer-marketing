@@ -26,133 +26,12 @@ const BodenlegerForm: React.FC<BodenlegerFormProps> = ({
   const [formData, setFormData] = useState<BodenlegerData>(data);
   const router = useRouter();
 
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
-    return (
-      <div className="space-y-6 mt-8">
-        {/* Validierungsanzeige */}
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Submit Button - wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'renovierung', label: 'Renovierung' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'austausch', label: 'Austausch' },
-  ];
-
-  const floorTypeOptions = [
-    { value: 'parkett', label: 'Parkett' },
-    { value: 'laminat', label: 'Laminat' },
-    { value: 'vinyl', label: 'Vinyl/PVC' },
-    { value: 'teppich', label: 'Teppich' },
-    { value: 'fliesen', label: 'Fliesen' },
-    { value: 'linoleum', label: 'Linoleum' },
-    { value: 'kork', label: 'Kork' },
-  ];
-
-  const roomTypeOptions = [
-    { value: 'wohnzimmer', label: 'Wohnzimmer' },
-    { value: 'schlafzimmer', label: 'Schlafzimmer' },
-    { value: 'küche', label: 'Küche' },
-    { value: 'bad', label: 'Bad' },
-    { value: 'flur', label: 'Flur' },
-    { value: 'büro', label: 'Büro' },
-    { value: 'gewerbe', label: 'Gewerbebereich' },
-  ];
-
-  const subfloorTypeOptions = [
-    { value: 'estrich', label: 'Estrich' },
-    { value: 'holz', label: 'Holzunterboden' },
-    { value: 'beton', label: 'Beton' },
-    { value: 'trockenestrich', label: 'Trockenestrich' },
-    { value: 'fußbodenheizung', label: 'Fußbodenheizung' },
-  ];
-
-  const patternOptions = [
-    { value: 'parallel', label: 'Parallel zur Wand' },
-    { value: 'diagonal', label: 'Diagonal' },
-    { value: 'fischgrät', label: 'Fischgrätmuster' },
-    { value: 'wiener_würfel', label: 'Wiener Würfel' },
-    { value: 'englisch', label: 'Englischer Verband' },
-  ];
-
-  const materialProvidedOptions = [
-    { value: 'kunde', label: 'Kunde stellt Material' },
-    { value: 'handwerker', label: 'Handwerker bringt Material mit' },
-    { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
-  ];
-
   const handleInputChange = (field: keyof BodenlegerData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
     onDataChange(updatedData);
   };
 
-  // Validierung
-  useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.floorType &&
-      formData.roomType &&
-      formData.subfloorType &&
-      formData.pattern &&
-      formData.materialProvided &&
-      typeof formData.moistureBarrier === 'boolean'
-    );
-    onValidationChange(isValid);
-  }, [formData, onValidationChange]);
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
@@ -160,10 +39,65 @@ const BodenlegerForm: React.FC<BodenlegerFormProps> = ({
       formData.roomType &&
       formData.subfloorType &&
       formData.pattern &&
-      formData.materialProvided &&
-      typeof formData.moistureBarrier === 'boolean'
+      formData.materialProvided
     );
   };
+
+  useEffect(() => {
+    onValidationChange(isFormValid());
+  }, [formData, onValidationChange]);
+
+  const serviceTypeOptions = [
+    { value: 'verlegung', label: 'Bodenverlegung' },
+    { value: 'renovierung', label: 'Bodenrenovierung' },
+    { value: 'reparatur', label: 'Bodenreparatur' },
+    { value: 'beratung', label: 'Beratung und Planung' },
+  ];
+
+  const floorTypeOptions = [
+    { value: 'laminat', label: 'Laminat' },
+    { value: 'parkett', label: 'Parkett' },
+    { value: 'vinylboden', label: 'Vinylboden/LVT' },
+    { value: 'fliesen', label: 'Fliesen' },
+    { value: 'teppich', label: 'Teppich' },
+    { value: 'kork', label: 'Korkboden' },
+    { value: 'linoleum', label: 'Linoleum' },
+    { value: 'estrich', label: 'Estrich' },
+  ];
+
+  const roomTypeOptions = [
+    { value: 'wohnzimmer', label: 'Wohnzimmer' },
+    { value: 'schlafzimmer', label: 'Schlafzimmer' },
+    { value: 'kueche', label: 'Küche' },
+    { value: 'bad', label: 'Badezimmer' },
+    { value: 'flur', label: 'Flur/Diele' },
+    { value: 'keller', label: 'Keller' },
+    { value: 'dachboden', label: 'Dachboden' },
+    { value: 'buero', label: 'Büro/Gewerbe' },
+  ];
+
+  const subfloorTypeOptions = [
+    { value: 'beton', label: 'Beton' },
+    { value: 'estrich', label: 'Estrich' },
+    { value: 'holz', label: 'Holz/Dielen' },
+    { value: 'fliesen', label: 'Alte Fliesen' },
+    { value: 'teppich', label: 'Alter Teppich' },
+    { value: 'unknown', label: 'Unbekannt' },
+  ];
+
+  const patternOptions = [
+    { value: 'gerade', label: 'Gerade Verlegung' },
+    { value: 'diagonal', label: 'Diagonale Verlegung' },
+    { value: 'fischgraet', label: 'Fischgrätmuster' },
+    { value: 'wilder-verband', label: 'Wilder Verband' },
+    { value: 'parallel', label: 'Parallel zur längsten Wand' },
+  ];
+
+  const materialProvidedOptions = [
+    { value: 'kunde', label: 'Kunde stellt Material' },
+    { value: 'anbieter', label: 'Dienstleister beschafft Material' },
+    { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -298,6 +232,6 @@ const BodenlegerForm: React.FC<BodenlegerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Bodenleger" />
     </div>
   );
-};
+}
 
 export default BodenlegerForm;

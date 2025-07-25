@@ -178,6 +178,6 @@ const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="FitnessTraining" />
     </div>
   );
-};
+}
 
 export default FitnessTrainingForm;

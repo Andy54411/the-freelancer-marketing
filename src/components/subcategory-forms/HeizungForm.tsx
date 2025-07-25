@@ -215,6 +215,6 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
       <FormSubmitButton isValid={isFormValid()} subcategory="Heizung" />
     </div>
   );
-};
+}
 
 export default HeizungForm;

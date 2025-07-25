@@ -131,6 +131,6 @@ const RechnungswesenForm: React.FC<RechnungswesenFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Rechnungswesen" />
     </div>
   );
-};
+}
 
 export default RechnungswesenForm;

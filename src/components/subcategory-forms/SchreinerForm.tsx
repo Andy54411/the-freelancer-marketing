@@ -24,24 +24,6 @@ const SchreinerForm: React.FC<SchreinerFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<SchreinerData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -292,6 +274,6 @@ const SchreinerForm: React.FC<SchreinerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Schreiner" />
     </div>
   );
-};
+}
 
 export default SchreinerForm;

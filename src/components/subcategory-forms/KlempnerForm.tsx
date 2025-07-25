@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface KlempnerFormProps {
   data: KlempnerData;
@@ -19,63 +19,6 @@ interface KlempnerFormProps {
 
 const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<KlempnerData>(data);
-  const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
     { value: 'reparatur', label: 'Reparatur' },
@@ -129,10 +72,11 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
       formData.roomType &&
       formData.buildingType &&
       formData.materialProvided &&
-      typeof formData.accessibilityIssues === 'boolean'
+      formData.accessibilityIssues
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
@@ -140,7 +84,7 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
       formData.roomType &&
       formData.buildingType &&
       formData.materialProvided &&
-      typeof formData.accessibilityIssues === 'boolean'
+      formData.accessibilityIssues
     );
   };
 
@@ -200,18 +144,28 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
 
         <div className="mt-4">
           <FormField label="Erreichbarkeit">
-            <FormRadioGroup
-              value={formData.accessibilityIssues || ''}
-              onChange={value => handleInputChange('accessibilityIssues', value)}
-              name="accessibilityIssues"
-              options={[
-                { value: 'normal', label: 'Normale Erreichbarkeit' },
-                {
-                  value: 'difficult',
-                  label: 'Schwierige Erreichbarkeit (z.B. enge Räume, Dachboden)',
-                },
-              ]}
-            />
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="accessibilityIssues"
+                  checked={formData.accessibilityIssues === 'normal'}
+                  onChange={() => handleInputChange('accessibilityIssues', 'normal')}
+                  className="mr-2"
+                />
+                Normale Erreichbarkeit
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="accessibilityIssues"
+                  checked={formData.accessibilityIssues === 'difficult'}
+                  onChange={() => handleInputChange('accessibilityIssues', 'difficult')}
+                  className="mr-2"
+                />
+                Schwierige Erreichbarkeit (z.B. enge Räume, Dachboden)
+              </label>
+            </div>
           </FormField>
         </div>
 
@@ -230,6 +184,6 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Klempner" />
     </div>
   );
-};
+}
 
 export default KlempnerForm;

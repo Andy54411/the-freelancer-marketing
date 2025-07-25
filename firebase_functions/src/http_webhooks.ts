@@ -164,14 +164,6 @@ export const stripeWebhookHandler = onRequest(
 
 
                             const tempJobDraftData = tempJobDraftSnapshot.data()!;
-                            
-                            // 🔍 DEBUG: Log tempJobDraftData um subcategoryFormData zu prüfen
-                            logger.info(`[stripeWebhookHandler] 🔍 DEBUG tempJobDraftData:`, { 
-                                subcategoryFormData: tempJobDraftData.subcategoryFormData,
-                                hasSubcategoryFormData: !!tempJobDraftData.subcategoryFormData,
-                                subcategoryFormDataKeys: tempJobDraftData.subcategoryFormData ? Object.keys(tempJobDraftData.subcategoryFormData) : 'null'
-                            });
-                            
                             const userData = userDocSnapshot.data() as {
                                 savedAddresses?: SavedAddress[];
                                 firstName?: string;
@@ -208,13 +200,6 @@ export const stripeWebhookHandler = onRequest(
                                 clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
                                 buyerApprovedAt: null, // Wird später gesetzt
                             };
-
-                            // 🔍 DEBUG: Log finale auftragData um subcategoryFormData zu prüfen
-                            logger.info(`[stripeWebhookHandler] 🔍 DEBUG finale auftragData:`, { 
-                                subcategoryFormData: (auftragData as any).subcategoryFormData,
-                                hasSubcategoryFormData: !!(auftragData as any).subcategoryFormData,
-                                auftragDataKeys: Object.keys(auftragData)
-                            });
 
                             logger.info(`[stripeWebhookHandler] Transaktion: Daten für neuen Auftrag vorbereitet. Status: ${auftragData.status}`);
                             const newAuftragRef = auftragCollectionRef.doc();

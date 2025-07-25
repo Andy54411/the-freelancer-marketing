@@ -24,24 +24,6 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<DachdeckerData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -273,6 +255,6 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Dachdecker" />
     </div>
   );
-};
+}
 
 export default DachdeckerForm;

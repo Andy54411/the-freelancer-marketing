@@ -142,6 +142,6 @@ const DJServiceForm: React.FC<DJServiceFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="DJService" />
     </div>
   );
-};
+}
 
 export default DJServiceForm;

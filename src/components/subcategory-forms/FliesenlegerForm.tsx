@@ -24,24 +24,6 @@ const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<FliesenlegerData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -292,6 +274,6 @@ const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Fliesenleger" />
     </div>
   );
-};
+}
 
 export default FliesenlegerForm;

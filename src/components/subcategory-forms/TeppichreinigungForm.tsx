@@ -106,6 +106,6 @@ const TeppichreinigungForm: React.FC<TeppichreinigungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Teppichreinigung" />
     </div>
   );
-};
+}
 
 export default TeppichreinigungForm;

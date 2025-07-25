@@ -166,27 +166,7 @@ interface RegistrationProviderProps {
 export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ children }) => {
   // Hilfsfunktion für den initialen State aus localStorage oder Standardwerten
   const getInitialState = (): RegistrationData => {
-    let subcategoryDataFromStorage: SubcategoryData | null = null;
-
     if (typeof window !== 'undefined') {
-      // 🔧 LADE subcategoryData aus localStorage
-      try {
-        const storedSubcategoryData = localStorage.getItem('subcategoryFormData');
-        if (storedSubcategoryData) {
-          subcategoryDataFromStorage = JSON.parse(storedSubcategoryData);
-          console.log(
-            '🔍 [Registration-Context] Loaded subcategoryData from localStorage:',
-            subcategoryDataFromStorage
-          );
-        }
-      } catch (e) {
-        console.error(
-          '🔍 [Registration-Context] Error loading subcategoryData from localStorage:',
-          e
-        );
-        localStorage.removeItem('subcategoryFormData');
-      }
-
       // DEAKTIVIERT: Registrierungsdaten nicht mehr aus localStorage laden
       // const storedData = localStorage.getItem('registrationData');
       // if (storedData) {
@@ -210,7 +190,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       selectedCategory: null,
       selectedSubcategory: null,
       description: '',
-      subcategoryData: subcategoryDataFromStorage, // 🔧 Verwende gespeicherte subcategoryData
+      subcategoryData: null,
       jobStreet: '',
       jobPostalCode: '',
       jobCity: '',
@@ -314,33 +294,10 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     }));
   // NEU: Setter für strukturierte Unterkategorie-Daten
   const setSubcategoryDataState = (value: SetStateAction<SubcategoryData | null | undefined>) =>
-    setRegistrationState(prev => {
-      const newValue = typeof value === 'function' ? value(prev.subcategoryData) : value;
-      console.log('🔍 [Registration-Context] setSubcategoryData called:', {
-        oldValue: prev.subcategoryData,
-        newValue: newValue,
-        valueType: typeof newValue,
-        isNull: newValue === null,
-        isUndefined: newValue === undefined,
-        hasKeys: newValue ? Object.keys(newValue) : 'no keys',
-      });
-
-      // 🔧 PERSISTIERE subcategoryData in localStorage
-      if (typeof window !== 'undefined') {
-        if (newValue) {
-          localStorage.setItem('subcategoryFormData', JSON.stringify(newValue));
-          console.log('🔍 [Registration-Context] Saved subcategoryData to localStorage');
-        } else {
-          localStorage.removeItem('subcategoryFormData');
-          console.log('🔍 [Registration-Context] Removed subcategoryData from localStorage');
-        }
-      }
-
-      return {
-        ...prev,
-        subcategoryData: newValue,
-      };
-    });
+    setRegistrationState(prev => ({
+      ...prev,
+      subcategoryData: typeof value === 'function' ? value(prev.subcategoryData) : value,
+    }));
   const setJobStreetState = (value: SetStateAction<string | undefined>) =>
     setRegistrationState(prev => ({
       ...prev,
@@ -641,7 +598,6 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     setRegistrationState(getInitialState());
     if (typeof window !== 'undefined') {
       localStorage.removeItem('registrationData');
-      localStorage.removeItem('subcategoryFormData'); // 🔧 Lösche auch subcategoryFormData
     }
   };
 

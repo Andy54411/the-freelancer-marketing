@@ -24,24 +24,6 @@ const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<ReinigungskraftData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -296,6 +278,6 @@ const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Reinigungskraft" />
     </div>
   );
-};
+}
 
 export default ReinigungskraftForm;

@@ -400,6 +400,6 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Landschaftsgärtner" />
     </div>
   );
-};
+}
 
 export default LandschaftsgärtnerForm;

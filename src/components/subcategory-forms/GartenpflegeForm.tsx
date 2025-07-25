@@ -394,6 +394,6 @@ const GartenpflegeForm: React.FC<GartenpflegeFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Gartenpflege" />
     </div>
   );
-};
+}
 
 export default GartenpflegeForm;

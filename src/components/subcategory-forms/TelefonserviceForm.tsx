@@ -220,6 +220,6 @@ const TelefonserviceForm: React.FC<TelefonserviceFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Telefonservice" />
     </div>
   );
-};
+}
 
 export default TelefonserviceForm;

@@ -193,6 +193,6 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Kurierdienst" />
     </div>
   );
-};
+}
 
 export default KurierdienstForm;

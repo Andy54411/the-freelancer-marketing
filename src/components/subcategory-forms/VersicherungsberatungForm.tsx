@@ -24,24 +24,6 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<VersicherungsberatungData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -511,6 +493,6 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Versicherungsberatung" />
     </div>
   );
-};
+}
 
 export default VersicherungsberatungForm;

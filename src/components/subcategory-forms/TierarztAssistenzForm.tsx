@@ -219,6 +219,6 @@ const TierarztAssistenzForm: React.FC<TierarztAssistenzFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="TierarztAssistenz" />
     </div>
   );
-};
+}
 
 export default TierarztAssistenzForm;

@@ -24,24 +24,6 @@ const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<TrockenbauData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -321,6 +303,6 @@ const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Trockenbauer" />
     </div>
   );
-};
+}
 
 export default TrockenbauerForm;

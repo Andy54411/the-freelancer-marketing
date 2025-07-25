@@ -20,24 +20,6 @@ interface ZimmererFormProps {
 const ZimmererForm: React.FC<ZimmererFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<ZimmererData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {!isValid && (
@@ -320,6 +302,6 @@ const ZimmererForm: React.FC<ZimmererFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Zimmerer" />
     </div>
   );
-};
+}
 
 export default ZimmererForm;

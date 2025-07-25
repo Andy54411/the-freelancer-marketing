@@ -140,6 +140,6 @@ const OnlineMarketingForm: React.FC<OnlineMarketingFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="OnlineMarketing" />
     </div>
   );
-};
+}
 
 export default OnlineMarketingForm;

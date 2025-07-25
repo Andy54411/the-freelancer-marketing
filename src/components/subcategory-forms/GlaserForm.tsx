@@ -20,24 +20,6 @@ interface GlaserFormProps {
 const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<GlaserData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {/* Validierungsanzeige */}
@@ -271,6 +253,6 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
       <FormSubmitButton isValid={isFormValid()} subcategory="Glaser" />
     </div>
   );
-};
+}
 
 export default GlaserForm;

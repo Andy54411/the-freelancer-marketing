@@ -135,6 +135,6 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Fotograf" />
     </div>
   );
-};
+}
 
 export default FotografForm;

@@ -244,6 +244,6 @@ const VerwaltungForm: React.FC<VerwaltungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Verwaltung" />
     </div>
   );
-};
+}
 
 export default VerwaltungForm;

@@ -189,7 +189,7 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
   formData,
 }) => {
   const router = useRouter();
-  const { setDescription, setSubcategoryData } = useRegistration();
+  const { setDescription } = useRegistration();
 
   const handleNextClick = () => {
     if (!isValid) {
@@ -198,12 +198,6 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
     }
 
     console.log('Form is valid, proceeding to address page');
-
-    // NEU: Speichere die kompletten Formulardaten im Registration Context
-    if (formData && setSubcategoryData) {
-      setSubcategoryData(formData);
-      console.log('Setting subcategoryData in context:', formData);
-    }
 
     // Extrahiere die Beschreibung aus den Formulardaten
     if (formData && setDescription) {

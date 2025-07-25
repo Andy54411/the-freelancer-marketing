@@ -160,6 +160,6 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Catering" />
     </div>
   );
-};
+}
 
 export default CateringForm;

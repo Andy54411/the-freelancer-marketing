@@ -211,6 +211,6 @@ const UnternehmensberatungForm: React.FC<UnternehmensberatungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Unternehmensberatung" />
     </div>
   );
-};
+}
 
 export default UnternehmensberatungForm;

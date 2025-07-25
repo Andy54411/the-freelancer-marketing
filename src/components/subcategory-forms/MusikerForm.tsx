@@ -144,6 +144,6 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
       <FormSubmitButton isValid={isFormValid()} subcategory="Musiker" />
     </div>
   );
-};
+}
 
 export default MusikerForm;

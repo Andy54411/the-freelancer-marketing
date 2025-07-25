@@ -200,6 +200,6 @@ const RechercheForm: React.FC<RechercheFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Recherche" />
     </div>
   );
-};
+}
 
 export default RechercheForm;

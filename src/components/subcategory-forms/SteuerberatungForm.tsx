@@ -24,24 +24,6 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<SteuerberatungData>(data);
   const router = useRouter();
-
-  // Lokale FormSubmitButton Komponente
-  const FormSubmitButton = ({
-    isValid,
-    subcategory,
-  }: {
-    isValid: boolean;
-    subcategory: string;
-  }) => {
-    const handleNextClick = () => {
-      if (!isValid) {
-        return;
-      }
-
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
-    };
-
     return (
       <div className="space-y-6 mt-8">
         {/* Validierungsanzeige */}
@@ -443,6 +425,6 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Steuerberatung" />
     </div>
   );
-};
+}
 
 export default SteuerberatungForm;
