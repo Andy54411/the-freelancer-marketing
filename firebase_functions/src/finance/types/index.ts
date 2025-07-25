@@ -31,8 +31,12 @@ export {
 // Sync Types
 export * from './sync.types';
 
-// Sync Types
-export * from './sync.types';
+// Extended features
+export * from './banking.types';
+export * from './recurring.types';
+export * from './email.types';
+export * from './document.types';
+export * from './reporting.types';
 
 // Gemeinsame Base Types
 export interface BaseEntity {
