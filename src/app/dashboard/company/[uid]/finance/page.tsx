@@ -225,17 +225,26 @@ export default function FinancePage() {
   // Table columns
   const invoiceColumns: ColumnDef<Invoice>[] = [
     {
-      accessorKey: 'invoiceNumber',
+      accessorKey: 'id',
       header: 'Rechnungsnummer',
+      cell: ({ row }) => {
+        const invoiceNumber = (row.original as any).invoiceNumber;
+        const id = row.getValue('id') as string;
+        return invoiceNumber || id || '-';
+      },
     },
     {
       accessorKey: 'customerName',
       header: 'Kunde',
     },
     {
-      accessorKey: 'total',
+      accessorKey: 'amount',
       header: 'Betrag',
-      cell: ({ row }) => formatCurrency(row.getValue('total')),
+      cell: ({ row }) => {
+        const amount = row.getValue('amount') as number;
+        const total = (row.original as any).total;
+        return formatCurrency(total || amount || 0);
+      },
     },
     {
       accessorKey: 'status',
@@ -254,11 +263,14 @@ export default function FinancePage() {
       },
     },
     {
-      accessorKey: 'dueDate',
-      header: 'Fälligkeitsdatum',
+      accessorKey: 'date',
+      header: 'Datum',
       cell: ({ row }) => {
-        const date = new Date(row.getValue('dueDate'));
-        return date.toLocaleDateString('de-DE');
+        const date = row.getValue('date') as string;
+        const dueDate = (row.original as any).dueDate;
+        const dateToUse = dueDate || date;
+        if (!dateToUse) return '-';
+        return new Date(dateToUse).toLocaleDateString('de-DE');
       },
     },
     {
@@ -558,7 +570,7 @@ export default function FinancePage() {
               <CardDescription>Verwalten Sie Ihre Rechnungen</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={invoiceColumns} data={invoices} />
+              <DataTable columns={invoiceColumns} data={invoices || []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -570,7 +582,7 @@ export default function FinancePage() {
               <CardDescription>Verwalten Sie Ihre Kundendaten</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={customerColumns} data={customers} />
+              <DataTable columns={customerColumns} data={customers || []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -582,7 +594,7 @@ export default function FinancePage() {
               <CardDescription>Verwalten Sie Ihre Geschäftsausgaben</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={expenseColumns} data={expenses} />
+              <DataTable columns={expenseColumns} data={expenses || []} />
             </CardContent>
           </Card>
         </TabsContent>
