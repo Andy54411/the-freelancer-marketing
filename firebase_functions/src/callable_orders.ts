@@ -117,6 +117,26 @@ export const acceptOrder = onCall(
                     lastUpdatedAt: FieldValue.serverTimestamp()
                 });
 
+                // Initialisiere Time Tracking für den aktiven Auftrag
+                const originalPlannedHours = orderToAcceptData?.originalPlannedHours || orderToAcceptData?.zeitraum || 8; // Fallback auf Zeitraum oder 8h
+                const hourlyRate = orderToAcceptData?.preis || 50; // Fallback auf 50€/h wenn kein Preis vorhanden
+
+                const orderTimeTracking = {
+                    orderId,
+                    providerId: providerUid,
+                    customerId: orderToAcceptData.customerFirebaseUid || orderToAcceptData.kundeId,
+                    originalPlannedHours,
+                    totalLoggedHours: 0,
+                    totalApprovedHours: 0,
+                    totalBilledHours: 0,
+                    hourlyRate: Math.round(hourlyRate * 100), // Convert to cents
+                    status: 'active',
+                    createdAt: FieldValue.serverTimestamp(),
+                    lastUpdated: FieldValue.serverTimestamp(),
+                };
+
+                transaction.set(db.collection('orderTimeTracking').doc(orderId), orderTimeTracking);
+
                 // NEU: Schalte den zugehörigen Chat frei.
                 // set mit merge:true erstellt das Dokument, falls es nicht existiert,
                 // und aktualisiert es, falls es existiert.

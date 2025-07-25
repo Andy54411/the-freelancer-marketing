@@ -27,6 +27,7 @@ import * as httpWebhooks from './http_webhooks';
 import * as httpFileUploads from './http_file_uploads';
 import * as triggersFirestore from './triggers_firestore';
 import * as callableOrders from './callable_orders';
+import * as callableTimeTracking from './callable_timeTracking';
 import * as getUserOrdersModule from './getUserOrders';
 import * as getProviderOrdersModule from './getProviderOrders';
 import * as triggersChat from './triggers_chat';
@@ -81,6 +82,15 @@ export const acceptOrder = callableOrders.acceptOrder;
 export const acceptOrderHTTP = httpOrders.acceptOrderHTTP;
 export const getUserOrdersHTTP = httpOrders.getUserOrdersHTTP;
 export const rejectOrder = callableOrders.rejectOrder;
+
+// Time Tracking Callables
+export const initializeTimeTracking = callableTimeTracking.initializeTimeTracking;
+export const logTimeEntry = callableTimeTracking.logTimeEntry;
+export const submitForCustomerApproval = callableTimeTracking.submitForCustomerApproval;
+export const processCustomerApproval = callableTimeTracking.processCustomerApproval;
+export const billApprovedAdditionalHours = callableTimeTracking.billApprovedAdditionalHours;
+
+// User Order Functions
 export const getUserOrders = getUserOrdersModule.getUserOrders;
 export const getProviderOrders = getProviderOrdersModule.getProviderOrders;
 
