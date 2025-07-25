@@ -471,5 +471,151 @@ service cloud.firestore {
       // Keine Updates/Deletes - nur für Audit-Trail
       allow update, delete: if false;
     }
+
+    // === FINANCE MODULE COLLECTIONS ===
+    
+    // Finance: Invoices Collection
+    match /invoices/{invoiceId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma, nur wenn nicht immutable
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       (!('gobd' in resource.data) || !resource.data.gobd.immutable) &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff oder eigene Firma (nur Entwürfe)
+      allow delete: if (isSupportStaff()) || 
+                       (request.auth != null && 
+                        resource.data.companyId == request.auth.uid &&
+                        isCompany() &&
+                        resource.data.status == 'DRAFT');
+    }
+
+    // Finance: Customers Collection
+    match /customers/{customerId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Expenses Collection
+    match /expenses/{expenseId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma oder zugewiesener Benutzer
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       (isCompany() || resource.data.assignedUserId == request.auth.uid) &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Payments Collection
+    match /payments/{paymentId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Sync Jobs Collection
+    match /syncJobs/{syncJobId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma (für Status-Updates)
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Audit Trail Collection (optional für GoBD-Compliance)
+    match /financeAudit/{auditId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur System (via Cloud Functions)
+      allow create: if false; // Nur über Cloud Functions erlaubt
+      
+      // Aktualisieren/Löschen: Niemals erlaubt (Audit-Trail ist unveränderlich)
+      allow update, delete: if false;
+    }
   }
 }

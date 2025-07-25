@@ -18,6 +18,7 @@ import {
   User as FiUser,
   Settings as FiSettings,
   MessageSquare as FiMessageSquare,
+  DollarSign as FiDollarSign,
 } from 'lucide-react';
 import { OrderSummaryDrawer } from '@/components/OrderSummaryDrawer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +26,7 @@ import CompanyCalendar from '@/components/CompanyCalendar';
 import { Button } from '@/components/ui/button';
 import { calculateCompanyMetrics, type CompanyMetrics } from '@/lib/companyMetrics';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
+import FinanceComponent from '@/components/FinanceComponent';
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -218,7 +220,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
       {view === 'dashboard' ? (
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 md:w-fit">
+          <TabsList className="grid w-full grid-cols-6 md:w-fit">
             <TabsTrigger value="dashboard">
               <FiGrid className="mr-2 h-4 w-4" />
               Übersicht
@@ -226,6 +228,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             <TabsTrigger value="calendar">
               <FiCalendar className="mr-2 h-4 w-4" />
               Kalender
+            </TabsTrigger>
+            <TabsTrigger value="finance">
+              <FiDollarSign className="mr-2 h-4 w-4" />
+              Finanzen
             </TabsTrigger>
             <TabsTrigger value="reviews">
               <FiMessageSquare className="mr-2 h-4 w-4" />
@@ -264,6 +270,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
           <TabsContent value="calendar" className="mt-4">
             {uid && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}
+          </TabsContent>
+
+          <TabsContent value="finance" className="mt-4">
+            {uid && <FinanceComponent companyUid={uid} />}
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-4">

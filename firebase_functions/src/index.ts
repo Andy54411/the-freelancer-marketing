@@ -37,6 +37,7 @@ import * as triggersAuth from './triggers_auth';
 import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
 import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
+import * as financeHttp from './finance/functions/finance-http';
 
 // Stripe Callables
 export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
@@ -111,3 +112,6 @@ export const handleSupportMessage = chatbot.handleSupportMessage;
 // Enhanced Chatbot APIs
 export const enhancedChatbot = enhancedChatbotAPI.enhancedChatbotAPI;
 export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
+
+// Finance Module APIs
+export const financeApi = financeHttp.financeApi;
