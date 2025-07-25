@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface SchreinerFormProps {
   data: SchreinerData;
@@ -17,102 +17,34 @@ interface SchreinerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SchreinerForm: React.FC<SchreinerFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const SchreinerForm: React.FC<SchreinerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<SchreinerData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'renovierung', label: 'Renovierung' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'restaurierung', label: 'Restaurierung' },
+    { value: 'möbel_anfertigung', label: 'Möbel anfertigen' },
+    { value: 'küche', label: 'Küche/Kücheneinbau' },
+    { value: 'schrank_einbau', label: 'Schrank/Einbauschrank' },
+    { value: 'reparatur', label: 'Möbel reparieren' },
+    { value: 'restaurierung', label: 'Möbel restaurieren' },
+    { value: 'fenster_türen', label: 'Fenster/Türen' },
+    { value: 'treppe', label: 'Treppe' },
+    { value: 'parkett', label: 'Parkett/Holzboden' },
   ];
 
-  const workTypeOptions = [
-    { value: 'möbelbau', label: 'Möbelbau' },
-    { value: 'innenausbau', label: 'Innenausbau' },
-    { value: 'treppen', label: 'Treppenbau' },
-    { value: 'türen', label: 'Türen' },
-    { value: 'fenster', label: 'Fenster' },
-    { value: 'dachstuhl', label: 'Dachstuhl' },
-    { value: 'verkleidung', label: 'Verkleidung' },
+  const materialOptions = [
+    { value: 'massivholz', label: 'Massivholz' },
+    { value: 'spanplatte', label: 'Spanplatte' },
+    { value: 'mdf', label: 'MDF' },
+    { value: 'sperrholz', label: 'Sperrholz' },
+    { value: 'furnier', label: 'Furnier' },
+    { value: 'laminat', label: 'Laminat' },
   ];
 
-  const woodTypeOptions = [
-    { value: 'eiche', label: 'Eiche' },
-    { value: 'buche', label: 'Buche' },
-    { value: 'kiefer', label: 'Kiefer' },
-    { value: 'fichte', label: 'Fichte' },
-    { value: 'lärche', label: 'Lärche' },
-    { value: 'mahagoni', label: 'Mahagoni' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
-  const finishOptions = [
-    { value: 'lackiert', label: 'Lackiert' },
-    { value: 'gebeizt', label: 'Gebeizt' },
-    { value: 'geölt', label: 'Geölt' },
-    { value: 'gewachst', label: 'Gewachst' },
-    { value: 'unbehandelt', label: 'Unbehandelt' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
-  const jointTypeOptions = [
-    { value: 'mortise_tenon', label: 'Zapfenverbindung' },
-    { value: 'dovetail', label: 'Schwalbenschwanz' },
-    { value: 'finger_joint', label: 'Fingerverbindung' },
-    { value: 'biscuit', label: 'Flachdübelverbindung' },
-    { value: 'screw', label: 'Schraubverbindung' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
-  const complexityOptions = [
-    { value: 'einfach', label: 'Einfach' },
-    { value: 'mittel', label: 'Mittel' },
-    { value: 'komplex', label: 'Komplex' },
-    { value: 'sehr_komplex', label: 'Sehr komplex' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
   const handleInputChange = (field: keyof SchreinerData, value: any) => {
@@ -121,28 +53,22 @@ const SchreinerForm: React.FC<SchreinerFormProps> = ({
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.woodType &&
-      formData.finish &&
-      formData.jointType &&
-      formData.complexity &&
-      typeof formData.customDesign === 'boolean'
+      formData.material &&
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.woodType &&
-      formData.finish &&
-      formData.jointType &&
-      formData.complexity &&
-      typeof formData.customDesign === 'boolean'
+      formData.material &&
+      formData.urgency &&
+      formData.projectDescription
     );
   };
 
@@ -150,7 +76,7 @@ const SchreinerForm: React.FC<SchreinerFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Schreiner-Projektdetails
+          Schreiner Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,121 +85,104 @@ const SchreinerForm: React.FC<SchreinerFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Was soll hergestellt/repariert werden?"
             />
           </FormField>
 
-          <FormField label="Art der Schreinerarbeit" required>
+          <FormField label="Material" required>
             <FormSelect
-              value={formData.workType || ''}
-              onChange={value => handleInputChange('workType', value)}
-              options={workTypeOptions}
-              placeholder="Wählen Sie die Art der Schreinerarbeit"
+              value={formData.material || ''}
+              onChange={value => handleInputChange('material', value)}
+              options={materialOptions}
+              placeholder="Welches Material soll verwendet werden?"
             />
           </FormField>
 
-          <FormField label="Holzart" required>
+          <FormField label="Zeitrahmen" required>
             <FormSelect
-              value={formData.woodType || ''}
-              onChange={value => handleInputChange('woodType', value)}
-              options={woodTypeOptions}
-              placeholder="Wählen Sie die Holzart"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann soll das Projekt stattfinden?"
             />
           </FormField>
 
-          <FormField label="Oberflächenbehandlung" required>
-            <FormSelect
-              value={formData.finish || ''}
-              onChange={value => handleInputChange('finish', value)}
-              options={finishOptions}
-              placeholder="Wählen Sie die Oberflächenbehandlung"
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 1.000-3.000 EUR"
             />
           </FormField>
 
-          <FormField label="Verbindungsart" required>
-            <FormSelect
-              value={formData.jointType || ''}
-              onChange={value => handleInputChange('jointType', value)}
-              options={jointTypeOptions}
-              placeholder="Wählen Sie die Verbindungsart"
-            />
-          </FormField>
-
-          <FormField label="Komplexität" required>
-            <FormSelect
-              value={formData.complexity || ''}
-              onChange={value => handleInputChange('complexity', value)}
-              options={complexityOptions}
-              placeholder="Wählen Sie die Komplexität"
-            />
-          </FormField>
-
-          <FormField label="Maße (L x B x H in cm)">
+          <FormField label="Maße (LxBxH in cm)">
             <FormInput
               type="text"
               value={formData.dimensions || ''}
               onChange={value => handleInputChange('dimensions', value)}
-              placeholder="z.B. 200 x 80 x 40"
+              placeholder="z.B. 200x60x180"
             />
           </FormField>
 
           <FormField label="Anzahl Stücke">
             <FormInput
               type="number"
-              value={formData.quantity?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'quantity',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Stücke"
+              value={formData.quantity || ''}
+              onChange={value => handleInputChange('quantity', value)}
+              placeholder="z.B. 1"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Individuelles Design">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="customDesign"
-                  checked={formData.customDesign === true}
-                  onChange={() => handleInputChange('customDesign', true)}
-                  className="mr-2"
-                />
-                Ja, individuelles Design gewünscht
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="customDesign"
-                  checked={formData.customDesign === false}
-                  onChange={() => handleInputChange('customDesign', false)}
-                  className="mr-2"
-                />
-                Nein, Standarddesign ausreichend
-              </label>
-            </div>
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Schreinerprojekt detailliert..."
+              rows={4}
+            />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
-              rows={3}
+          <FormField label="Benötigte Arbeiten">
+            <FormCheckboxGroup
+              value={formData.requiredWork || []}
+              onChange={value => handleInputChange('requiredWork', value)}
+              options={[
+                { value: 'planung', label: 'Planung/Design' },
+                { value: 'aufmaß', label: 'Aufmaß vor Ort' },
+                { value: 'fertigung', label: 'Fertigung in Werkstatt' },
+                { value: 'lieferung', label: 'Lieferung' },
+                { value: 'montage', label: 'Montage vor Ort' },
+                { value: 'lackierung', label: 'Lackierung/Oberflächenbehandlung' },
+                { value: 'demontage', label: 'Demontage alter Möbel' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Materiallieferung">
+            <FormRadioGroup
+              name="materialSupply"
+              value={formData.materialSupply || ''}
+              onChange={value => handleInputChange('materialSupply', value)}
+              options={[
+                { value: 'schreiner', label: 'Schreiner beschafft Material' },
+                { value: 'kunde', label: 'Kunde beschafft Material' },
+                { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Schreiner" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Schreiner" formData={formData} />
     </div>
   );
-}
+};
 
 export default SchreinerForm;

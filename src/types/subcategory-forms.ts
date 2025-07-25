@@ -1609,7 +1609,14 @@ export type SubcategoryData =
   | TexterData
   | UmzugshelferData
   | VideografData
-  | ÜbersetzerData;
+  | ÜbersetzerData
+  | HandwerkerData
+  | HausmeisterData
+  | SpediteurData
+  | SprachlehrerData
+  | SteuerfachangestellterData
+  | SwimmtrainerData
+  | TrockenbauerData;
 
 // Hilfsfunktion zur Typprüfung
 export function getSubcategoryType(subcategory: string): string {
@@ -1828,4 +1835,143 @@ export interface KinderbetreuungData extends BaseSubcategoryData {
   qualifications?: string[];
   languages?: string[];
   specialNotes?: string;
+}
+
+// Handwerker-spezifische Daten
+export interface HandwerkerData extends BaseSubcategoryData {
+  subcategory: 'Handwerker';
+  serviceType: string;
+  tradeType: string;
+  priority: string;
+  projectSize?: string;
+  locationType?: string;
+  experienceRequired?: string;
+  budgetRange?: string;
+  preferredDate?: string;
+  workDescription: string;
+  existingMaterials?: string;
+  requiredServices?: string[];
+  workingHours?: string;
+  materialSupply?: string;
+  specialRequirements?: string;
+}
+
+// Hausmeister-spezifische Daten
+export interface HausmeisterData extends BaseSubcategoryData {
+  subcategory: 'Hausmeister';
+  serviceType: string;
+  propertyType: string;
+  services: string[];
+  urgency: string;
+  frequency?: string;
+  availability?: string[];
+  experience?: string;
+  tools?: string;
+  specialRequirements?: string;
+}
+
+// Spediteur-spezifische Daten
+export interface SpediteurData extends BaseSubcategoryData {
+  subcategory: 'Spediteur';
+  serviceType: string;
+  vehicleType: string;
+  fromLocation: string;
+  toLocation: string;
+  urgency: string;
+  distanceType?: string;
+  weight?: string;
+  volume?: string;
+  cargoType?: string;
+  preferredDate?: string;
+  specialRequirements?: string[];
+  additionalServices?: string[];
+  cargoDescription?: string;
+  specialInstructions?: string;
+  insurance?: string;
+  budgetRange?: string;
+}
+
+// Sprachlehrer-spezifische Daten
+export interface SprachlehrerData extends BaseSubcategoryData {
+  subcategory: 'Sprachlehrer';
+  language: string;
+  level: string;
+  lessonType: string;
+  ageGroup: string;
+  urgency: string;
+  numberOfStudents?: number;
+  hoursPerWeek?: number;
+  duration?: string;
+  otherLanguage?: string;
+  hourlyBudget?: string;
+  specialRequirements?: string[];
+  learningGoals?: string[];
+  preferredTimes?: string[];
+  projectDescription?: string;
+  format?: string;
+  previousExperience?: string;
+}
+
+// Steuerfachangestellte/r-spezifische Daten
+export interface SteuerfachangestellterData extends BaseSubcategoryData {
+  subcategory: 'Steuerfachangestellte/r';
+  serviceType: string;
+  clientType: string;
+  urgency: string;
+  taxYear?: string;
+  numberOfEmployees?: number;
+  industry?: string;
+  annualRevenue?: string;
+  otherLegalForm?: string;
+  taxTypes?: string[];
+  additionalServices?: string[];
+  softwarePreferences?: string[];
+  projectDescription?: string;
+  specialCircumstances?: string;
+  collaborationType?: string;
+  complexity?: string;
+  budgetRange?: string;
+  taxOffice?: string;
+  vatDeductible?: string;
+}
+
+// Schwimmtrainer-spezifische Daten
+export interface SwimmtrainerData extends BaseSubcategoryData {
+  subcategory: 'Schwimmtrainer';
+  serviceType: string;
+  ageGroup: string;
+  skillLevel: string;
+  urgency: string;
+  numberOfStudents?: number;
+  sessionDuration?: string;
+  frequency?: string;
+  location?: string;
+  poolType?: string;
+  specialGoals?: string[];
+  specialRequirements?: string[];
+  projectDescription?: string;
+  hourlyRate?: string;
+  previousExperience?: string;
+  certification?: string;
+}
+
+// Trockenbauer-spezifische Daten
+export interface TrockenbauerData extends BaseSubcategoryData {
+  subcategory: 'Trockenbauer';
+  serviceType: string;
+  area: string;
+  projectSize: string;
+  urgency: string;
+  squareMeters?: number;
+  roomHeight?: string;
+  budgetRange?: string;
+  location?: string;
+  materials?: string[];
+  additionalServices?: string[];
+  specialRequirements?: string[];
+  projectDescription?: string;
+  specialNotes?: string;
+  wallCondition?: string;
+  surfaceQuality?: string;
+  workingTime?: string;
 }

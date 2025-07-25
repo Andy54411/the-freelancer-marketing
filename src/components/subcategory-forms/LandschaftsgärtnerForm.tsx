@@ -397,7 +397,7 @@ const LandschaftsgärtnerForm: React.FC<LandschaftsgärtnerFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Landschaftsgärtner" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Landschaftsgärtner" formData={formData} />
     </div>
   );
 }

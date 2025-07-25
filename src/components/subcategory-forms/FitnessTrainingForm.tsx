@@ -175,7 +175,7 @@ const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
         </CardContent>
       </Card>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="FitnessTraining" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="FitnessTraining" formData={data} />
     </div>
   );
 }

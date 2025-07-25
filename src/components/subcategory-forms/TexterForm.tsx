@@ -124,7 +124,7 @@ const TexterForm: React.FC<TexterFormProps> = ({ data, onDataChange, onValidatio
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Texter" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Texter" formData={formData} />
     </div>
   );
 }

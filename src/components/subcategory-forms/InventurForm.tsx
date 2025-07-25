@@ -215,7 +215,7 @@ const InventurForm: React.FC<InventurFormProps> = ({ data, onDataChange, onValid
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Inventur" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Inventur" formData={data} />
     </div>
   );
 }

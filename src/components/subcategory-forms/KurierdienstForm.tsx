@@ -190,7 +190,7 @@ const KurierdienstForm: React.FC<KurierdienstFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Kurierdienst" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Kurierdienst" formData={formData} />
     </div>
   );
 }

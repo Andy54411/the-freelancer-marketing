@@ -217,7 +217,7 @@ const TelefonserviceForm: React.FC<TelefonserviceFormProps> = ({
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Telefonservice" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Telefonservice" formData={formData} />
     </div>
   );
 }

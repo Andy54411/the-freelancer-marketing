@@ -157,7 +157,7 @@ const CateringForm: React.FC<CateringFormProps> = ({ data, onDataChange, onValid
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Catering" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Catering" formData={formData} />
     </div>
   );
 }

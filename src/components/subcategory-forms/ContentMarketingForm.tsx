@@ -10,7 +10,6 @@ import {
   FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface ContentMarketingFormProps {
   data: ContentMarketingData;
@@ -18,147 +17,54 @@ interface ContentMarketingFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<ContentMarketingData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'content_strategy', label: 'Content-Strategie' },
-    { value: 'content_creation', label: 'Content-Erstellung' },
-    { value: 'copywriting', label: 'Copywriting' },
-    { value: 'blog_writing', label: 'Blog-Artikel' },
-    { value: 'seo_content', label: 'SEO-Content' },
-    { value: 'social_media_content', label: 'Social Media Content' },
-    { value: 'email_content', label: 'E-Mail Content' },
+    { value: 'blog_posts', label: 'Blog-Beiträge' },
+    { value: 'social_media', label: 'Social Media Content' },
+    { value: 'website_content', label: 'Website-Content' },
+    { value: 'email_marketing', label: 'E-Mail-Marketing' },
     { value: 'video_content', label: 'Video-Content' },
     { value: 'infographics', label: 'Infografiken' },
     { value: 'whitepapers', label: 'Whitepapers' },
     { value: 'case_studies', label: 'Case Studies' },
-    { value: 'ebooks', label: 'E-Books' },
+    { value: 'press_releases', label: 'Pressemitteilungen' },
+    { value: 'content_strategy', label: 'Content-Strategie' },
   ];
 
-  const contentTypeOptions = [
-    { value: 'blog_posts', label: 'Blog-Posts' },
-    { value: 'articles', label: 'Artikel' },
-    { value: 'web_copy', label: 'Website-Texte' },
-    { value: 'product_descriptions', label: 'Produktbeschreibungen' },
-    { value: 'press_releases', label: 'Pressemitteilungen' },
-    { value: 'newsletters', label: 'Newsletter' },
-    { value: 'social_posts', label: 'Social Media Posts' },
-    { value: 'video_scripts', label: 'Video-Skripte' },
-    { value: 'podcast_content', label: 'Podcast-Content' },
-    { value: 'landing_pages', label: 'Landing Pages' },
+  const targetAudienceOptions = [
+    { value: 'b2b', label: 'B2B (Business-to-Business)' },
+    { value: 'b2c', label: 'B2C (Business-to-Consumer)' },
+    { value: 'both', label: 'Beide' },
   ];
 
   const industryOptions = [
     { value: 'technology', label: 'Technologie' },
     { value: 'healthcare', label: 'Gesundheitswesen' },
     { value: 'finance', label: 'Finanzwesen' },
-    { value: 'retail', label: 'Einzelhandel' },
     { value: 'education', label: 'Bildung' },
+    { value: 'retail', label: 'Einzelhandel' },
+    { value: 'manufacturing', label: 'Produktion' },
     { value: 'real_estate', label: 'Immobilien' },
-    { value: 'automotive', label: 'Automobil' },
-    { value: 'food_beverage', label: 'Lebensmittel & Getränke' },
-    { value: 'fashion', label: 'Mode' },
-    { value: 'travel', label: 'Reisen' },
-    { value: 'fitness', label: 'Fitness & Wellness' },
-    { value: 'b2b_services', label: 'B2B-Dienstleistungen' },
+    { value: 'hospitality', label: 'Gastgewerbe' },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'other', label: 'Sonstige' },
   ];
 
-  const toneOptions = [
-    { value: 'professional', label: 'Professionell' },
-    { value: 'casual', label: 'Locker' },
-    { value: 'friendly', label: 'Freundlich' },
-    { value: 'authoritative', label: 'Autoritativ' },
-    { value: 'conversational', label: 'Gesprächig' },
-    { value: 'humorous', label: 'Humorvoll' },
-    { value: 'inspirational', label: 'Inspirierend' },
-    { value: 'educational', label: 'Lehrreich' },
+  const contentVolumeOptions = [
+    { value: 'low', label: 'Niedrig (1-5 Beiträge/Monat)' },
+    { value: 'medium', label: 'Mittel (6-15 Beiträge/Monat)' },
+    { value: 'high', label: 'Hoch (16-30 Beiträge/Monat)' },
+    { value: 'very_high', label: 'Sehr hoch (30+ Beiträge/Monat)' },
   ];
+
   const frequencyOptions = [
-    { value: 'daily', label: 'Täglich' },
-    { value: 'weekly', label: 'Wöchentlich' },
-    { value: 'bi_weekly', label: 'Alle 2 Wochen' },
-    { value: 'monthly', label: 'Monatlich' },
-    { value: 'quarterly', label: 'Vierteljährlich' },
-    { value: 'project_based', label: 'Projektbasiert' },
-  ];
-
-  const goalOptions = [
-    { value: 'brand_awareness', label: 'Markenbekanntheit' },
-    { value: 'lead_generation', label: 'Lead-Generierung' },
-    { value: 'seo_improvement', label: 'SEO-Verbesserung' },
-    { value: 'thought_leadership', label: 'Thought Leadership' },
-    { value: 'customer_education', label: 'Kundenbildung' },
-    { value: 'engagement', label: 'Engagement' },
-    { value: 'conversion', label: 'Conversion' },
-    { value: 'retention', label: 'Kundenbindung' },
-  ];
-
-  const languageOptions = [
-    { value: 'deutsch', label: 'Deutsch' },
-    { value: 'englisch', label: 'Englisch' },
-    { value: 'französisch', label: 'Französisch' },
-    { value: 'spanisch', label: 'Spanisch' },
-    { value: 'italienisch', label: 'Italienisch' },
-    { value: 'niederländisch', label: 'Niederländisch' },
-    { value: 'polnisch', label: 'Polnisch' },
-    { value: 'russisch', label: 'Russisch' },
-  ];
-
-  const additionalServicesOptions = [
-    { value: 'seo_optimization', label: 'SEO-Optimierung' },
-    { value: 'keyword_research', label: 'Keyword-Recherche' },
-    { value: 'competitor_analysis', label: 'Konkurrenzanalyse' },
-    { value: 'content_calendar', label: 'Content-Kalender' },
-    { value: 'performance_tracking', label: 'Performance-Tracking' },
-    { value: 'content_distribution', label: 'Content-Distribution' },
-    { value: 'editing_proofreading', label: 'Lektorat & Korrektur' },
-    { value: 'translation', label: 'Übersetzung' },
-    { value: 'graphic_design', label: 'Grafik-Design' },
-    { value: 'video_production', label: 'Video-Produktion' },
+    { value: 'einmalig', label: 'Einmalig' },
+    { value: 'wöchentlich', label: 'Wöchentlich' },
+    { value: 'monatlich', label: 'Monatlich' },
+    { value: 'quartalsweise', label: 'Quartalsweise' },
+    { value: 'laufend', label: 'Laufend' },
   ];
 
   const handleInputChange = (field: keyof ContentMarketingData, value: any) => {
@@ -170,23 +76,22 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.contentTypes &&
+      formData.targetAudience &&
       formData.industry &&
-      formData.tone &&
+      formData.contentVolume &&
       formData.frequency &&
-      formData.goals &&
       formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.contentTypes &&
+      formData.targetAudience &&
       formData.industry &&
-      formData.tone &&
+      formData.contentVolume &&
       formData.frequency &&
-      formData.goals &&
       formData.projectDescription
     );
   };
@@ -195,7 +100,7 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Content Marketing-Projektdetails
+          Content-Marketing Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -204,7 +109,16 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Wählen Sie die Art des Contents"
+            />
+          </FormField>
+
+          <FormField label="Zielgruppe" required>
+            <FormSelect
+              value={formData.targetAudience || ''}
+              onChange={value => handleInputChange('targetAudience', value)}
+              options={targetAudienceOptions}
+              placeholder="Wählen Sie Ihre Zielgruppe"
             />
           </FormField>
 
@@ -217,138 +131,30 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Tonalität" required>
+          <FormField label="Content-Volumen" required>
             <FormSelect
-              value={formData.tone || ''}
-              onChange={value => handleInputChange('tone', value)}
-              options={toneOptions}
-              placeholder="Wählen Sie die gewünschte Tonalität"
+              value={formData.contentVolume || ''}
+              onChange={value => handleInputChange('contentVolume', value)}
+              options={contentVolumeOptions}
+              placeholder="Wie viel Content benötigen Sie?"
             />
           </FormField>
+
           <FormField label="Häufigkeit" required>
             <FormSelect
               value={formData.frequency || ''}
               onChange={value => handleInputChange('frequency', value)}
               options={frequencyOptions}
-              placeholder="Wählen Sie die Häufigkeit"
+              placeholder="Wie oft benötigen Sie Content?"
             />
           </FormField>
 
-          <FormField label="Unternehmen">
-            <FormInput
-              type="text"
-              value={formData.company || ''}
-              onChange={value => handleInputChange('company', value)}
-              placeholder="Ihr Unternehmen"
-            />
-          </FormField>
-
-          <FormField label="Website">
-            <FormInput
-              type="text"
-              value={formData.website || ''}
-              onChange={value => handleInputChange('website', value)}
-              placeholder="Ihre Website-URL"
-            />
-          </FormField>
-
-          <FormField label="Wörter pro Artikel">
-            <FormInput
-              type="number"
-              value={formData.wordsPerArticle?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'wordsPerArticle',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Durchschnittliche Wörter pro Artikel"
-            />
-          </FormField>
-
-          <FormField label="Artikel pro Monat">
-            <FormInput
-              type="number"
-              value={formData.articlesPerMonth?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'articlesPerMonth',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Gewünschte Artikel pro Monat"
-            />
-          </FormField>
-
-          <FormField label="Startdatum">
-            <FormInput
-              type="text"
-              value={formData.startDate || ''}
-              onChange={value => handleInputChange('startDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Projektdauer">
+          <FormField label="Projektzeitraum">
             <FormInput
               type="text"
               value={formData.projectDuration || ''}
               onChange={value => handleInputChange('projectDuration', value)}
-              placeholder="z.B. 6 Monate, 1 Jahr, permanent"
-            />
-          </FormField>
-
-          <FormField label="Revision-Runden">
-            <FormInput
-              type="number"
-              value={formData.revisionRounds?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'revisionRounds',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Revision-Runden"
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Content-Arten" required>
-            <FormCheckboxGroup
-              value={formData.contentTypes || []}
-              onChange={value => handleInputChange('contentTypes', value)}
-              options={contentTypeOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Marketing-Ziele" required>
-            <FormCheckboxGroup
-              value={formData.goals || []}
-              onChange={value => handleInputChange('goals', value)}
-              options={goalOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Sprachen">
-            <FormCheckboxGroup
-              value={formData.languages || []}
-              onChange={value => handleInputChange('languages', value)}
-              options={languageOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zusätzliche Services">
-            <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
+              placeholder="z.B. 3 Monate, 1 Jahr"
             />
           </FormField>
         </div>
@@ -358,52 +164,45 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
             <FormTextarea
               value={formData.projectDescription || ''}
               onChange={value => handleInputChange('projectDescription', value)}
-              placeholder="Beschreiben Sie Ihr Content Marketing-Projekt detailliert"
+              placeholder="Beschreiben Sie Ihr Content-Marketing Projekt detailliert"
               rows={4}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Zielgruppe">
+          <FormField label="Content-Ziele">
             <FormTextarea
-              value={formData.targetAudience || ''}
-              onChange={value => handleInputChange('targetAudience', value)}
-              placeholder="Beschreiben Sie Ihre Zielgruppe detailliert"
+              value={formData.contentGoals || ''}
+              onChange={value => handleInputChange('contentGoals', value)}
+              placeholder="Was möchten Sie mit dem Content erreichen?"
               rows={3}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Themen und Keywords">
-            <FormTextarea
-              value={formData.topicsAndKeywords || ''}
-              onChange={value => handleInputChange('topicsAndKeywords', value)}
-              placeholder="Welche Themen und Keywords sollen behandelt werden?"
-              rows={3}
+          <FormField label="Bestehende Content-Strategie">
+            <FormRadioGroup
+              name="existingStrategy"
+              value={formData.existingStrategy || ''}
+              onChange={value => handleInputChange('existingStrategy', value)}
+              options={[
+                { value: 'ja', label: 'Ja, wir haben bereits eine Content-Strategie' },
+                { value: 'teilweise', label: 'Teilweise, aber sie muss überarbeitet werden' },
+                { value: 'nein', label: 'Nein, wir beginnen von Grund auf' },
+              ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Markenrichtlinien">
-            <FormTextarea
-              value={formData.brandGuidelines || ''}
-              onChange={value => handleInputChange('brandGuidelines', value)}
-              placeholder="Beschreiben Sie Ihre Markenrichtlinien und Stil-Vorgaben"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Wettbewerber">
-            <FormTextarea
-              value={formData.competitors || ''}
-              onChange={value => handleInputChange('competitors', value)}
-              placeholder="Nennen Sie Ihre wichtigsten Konkurrenten"
-              rows={2}
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 1.000-5.000 EUR/Monat"
             />
           </FormField>
         </div>
@@ -413,16 +212,16 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Spezielle Anforderungen, Stil-Vorgaben oder Einschränkungen"
+              placeholder="SEO-Optimierung, bestimmte Keywords, Corporate Design etc."
               rows={3}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="ContentMarketing" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Content Marketing" formData={formData} />
     </div>
   );
-}
+};
 
 export default ContentMarketingForm;

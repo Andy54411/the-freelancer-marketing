@@ -128,7 +128,7 @@ const RechnungswesenForm: React.FC<RechnungswesenFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Rechnungswesen" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Rechnungswesen" formData={formData} />
     </div>
   );
 }

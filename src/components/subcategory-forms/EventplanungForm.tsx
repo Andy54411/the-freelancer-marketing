@@ -138,7 +138,7 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Eventplanung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Eventplanung" formData={formData} />
     </div>
   );
 }

@@ -141,7 +141,7 @@ const MusikerForm: React.FC<MusikerFormProps> = ({ data, onDataChange, onValidat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Musiker" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Musiker" formData={formData} />
     </div>
   );
 }

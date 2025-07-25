@@ -133,7 +133,7 @@ const PhysiotherapieForm: React.FC<PhysiotherapieFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Physiotherapie" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Physiotherapie" formData={formData} />
     </div>
   );
 }

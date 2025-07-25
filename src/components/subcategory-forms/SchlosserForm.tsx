@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface SchlosserFormProps {
   data: SchlosserData;
@@ -17,90 +17,36 @@ interface SchlosserFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SchlosserForm: React.FC<SchlosserFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const SchlosserForm: React.FC<SchlosserFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<SchlosserData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'austausch', label: 'Austausch' },
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'notfall', label: 'Notfall' },
-    { value: 'öffnung', label: 'Türöffnung' },
-  ];
-
-  const workTypeOptions = [
-    { value: 'schloss', label: 'Schlossarbeit' },
-    { value: 'türbeschlag', label: 'Türbeschlag' },
-    { value: 'sicherheit', label: 'Sicherheitstechnik' },
-    { value: 'zaun', label: 'Zaun' },
-    { value: 'gitter', label: 'Gitter' },
-    { value: 'sonstiges', label: 'Sonstiges' },
+    { value: 'türöffnung', label: 'Türöffnung/Aussperrung' },
+    { value: 'schloss_wechsel', label: 'Schloss wechseln' },
+    { value: 'schloss_reparatur', label: 'Schloss reparieren' },
+    { value: 'schlüssel_nachmachen', label: 'Schlüssel nachmachen' },
+    { value: 'sicherheitstechnik', label: 'Sicherheitstechnik installieren' },
+    { value: 'tresor', label: 'Tresor/Safe' },
+    { value: 'notdienst', label: 'Notdienst' },
+    { value: 'beratung', label: 'Sicherheitsberatung' },
   ];
 
   const lockTypeOptions = [
-    { value: 'standardschloss', label: 'Standardschloss' },
-    { value: 'sicherheitsschloss', label: 'Sicherheitsschloss' },
-    { value: 'elektronisch', label: 'Elektronisches Schloss' },
-    { value: 'mehrfachverriegelung', label: 'Mehrfachverriegelung' },
-    { value: 'tresorschloss', label: 'Tresorschloss' },
+    { value: 'haustür', label: 'Haustür-Schloss' },
+    { value: 'wohnungstür', label: 'Wohnungstür-Schloss' },
+    { value: 'kellertür', label: 'Kellertür-Schloss' },
+    { value: 'briefkasten', label: 'Briefkasten-Schloss' },
+    { value: 'auto', label: 'Auto-Schloss' },
+    { value: 'möbel', label: 'Möbel-Schloss' },
+    { value: 'fenster', label: 'Fenster-Schloss' },
   ];
 
-  const securityLevelOptions = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'erhöht', label: 'Erhöht' },
-    { value: 'hoch', label: 'Hoch' },
-    { value: 'sehr_hoch', label: 'Sehr hoch' },
-  ];
-
-  const materialOptions = [
-    { value: 'stahl', label: 'Stahl' },
-    { value: 'edelstahl', label: 'Edelstahl' },
-    { value: 'messing', label: 'Messing' },
-    { value: 'aluminium', label: 'Aluminium' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+  const urgencyOptions = [
+    { value: 'notfall', label: 'Notfall (sofort)' },
+    { value: 'heute', label: 'Heute' },
+    { value: 'morgen', label: 'Morgen' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
   const handleInputChange = (field: keyof SchlosserData, value: any) => {
@@ -109,28 +55,20 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.lockType &&
-      formData.securityLevel &&
-      formData.material &&
-      formData.keyService &&
-      formData.installation
+      formData.urgency &&
+      formData.problemDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.lockType &&
-      formData.securityLevel &&
-      formData.material &&
-      formData.keyService &&
-      formData.installation
+      formData.urgency &&
+      formData.problemDescription
     );
   };
 
@@ -138,7 +76,7 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Schlosser-Projektdetails
+          Schlosser Service Details
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,116 +85,83 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Was wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Art der Schlosserarbeit" required>
-            <FormSelect
-              value={formData.workType || ''}
-              onChange={value => handleInputChange('workType', value)}
-              options={workTypeOptions}
-              placeholder="Wählen Sie die Art der Schlosserarbeit"
-            />
-          </FormField>
-
-          <FormField label="Schlosstyp" required>
+          <FormField label="Art des Schlosses">
             <FormSelect
               value={formData.lockType || ''}
               onChange={value => handleInputChange('lockType', value)}
               options={lockTypeOptions}
-              placeholder="Wählen Sie den Schlosstyp"
+              placeholder="Welches Schloss ist betroffen?"
             />
           </FormField>
 
-          <FormField label="Sicherheitsstufe" required>
+          <FormField label="Dringlichkeit" required>
             <FormSelect
-              value={formData.securityLevel || ''}
-              onChange={value => handleInputChange('securityLevel', value)}
-              options={securityLevelOptions}
-              placeholder="Wählen Sie die Sicherheitsstufe"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wie dringend ist es?"
             />
           </FormField>
 
-          <FormField label="Material" required>
-            <FormSelect
-              value={formData.material || ''}
-              onChange={value => handleInputChange('material', value)}
-              options={materialOptions}
-              placeholder="Wählen Sie das Material"
-            />
-          </FormField>
-
-          <FormField label="Schlüsselservice" required>
-            <FormSelect
-              value={formData.keyService || ''}
-              onChange={value => handleInputChange('keyService', value)}
-              options={[
-                { value: 'inklusive', label: 'Inklusive' },
-                { value: 'separat', label: 'Separat' },
-                { value: 'nicht_nötig', label: 'Nicht nötig' },
-              ]}
-              placeholder="Schlüsselservice erforderlich?"
-            />
-          </FormField>
-
-          <FormField label="Installation" required>
-            <FormSelect
-              value={formData.installation || ''}
-              onChange={value => handleInputChange('installation', value)}
-              options={[
-                { value: 'inklusive', label: 'Inklusive' },
-                { value: 'separat', label: 'Separat' },
-                { value: 'nicht_nötig', label: 'Nicht nötig' },
-              ]}
-              placeholder="Installation erforderlich?"
-            />
-          </FormField>
-
-          <FormField label="Anzahl Schlösser">
+          <FormField label="Budget-Rahmen">
             <FormInput
-              type="number"
-              value={formData.quantity?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'quantity',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Schlösser"
-            />
-          </FormField>
-
-          <FormField label="Anzahl Schlüssel">
-            <FormInput
-              type="number"
-              value={formData.keyQuantity?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'keyQuantity',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Schlüssel"
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 100-300 EUR"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
+          <FormField label="Problembeschreibung" required>
             <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
-              rows={3}
+              value={formData.problemDescription || ''}
+              onChange={value => handleInputChange('problemDescription', value)}
+              placeholder="Beschreiben Sie das Problem oder was gemacht werden soll..."
+              rows={4}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Notdienst erforderlich">
+            <FormRadioGroup
+              name="emergencyService"
+              value={formData.emergencyService || ''}
+              onChange={value => handleInputChange('emergencyService', value)}
+              options={[
+                { value: 'ja', label: 'Ja, Notdienst erforderlich' },
+                { value: 'nein', label: 'Nein, regulärer Termin' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Zusätzliche Services">
+            <FormCheckboxGroup
+              value={formData.additionalServices || []}
+              onChange={value => handleInputChange('additionalServices', value)}
+              options={[
+                { value: 'sicherheitsberatung', label: 'Sicherheitsberatung' },
+                { value: 'mehrere_schlüssel', label: 'Mehrere Schlüssel anfertigen' },
+                { value: 'schließanlage', label: 'Schließanlage' },
+                { value: 'elektronisches_schloss', label: 'Elektronisches Schloss' },
+                { value: 'überwachung', label: 'Überwachungstechnik' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Schlosser" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Schlosser" formData={formData} />
     </div>
   );
-}
+};
 
 export default SchlosserForm;

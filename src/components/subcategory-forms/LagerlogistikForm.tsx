@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface LagerlogistikFormProps {
   data: LagerlogistikData;
@@ -17,105 +17,42 @@ interface LagerlogistikFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<LagerlogistikData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'lagerung', label: 'Lagerung' },
-    { value: 'kommissionierung', label: 'Kommissionierung' },
-    { value: 'versand', label: 'Versand' },
-    { value: 'fulfillment', label: 'Fulfillment' },
-    { value: 'crossdocking', label: 'Cross-Docking' },
-    { value: 'distribution', label: 'Distribution' },
+    { value: 'lagerverwaltung', label: 'Lagerverwaltung' },
+    { value: 'kommissionierung', label: 'Kommissionierung/Picking' },
+    { value: 'verpackung', label: 'Verpackung/Konfektionierung' },
+    { value: 'versand', label: 'Versand/Fulfillment' },
+    { value: 'inventur', label: 'Inventur' },
+    { value: 'umzug', label: 'Lagerumzug' },
+    { value: 'beratung', label: 'Logistik-Beratung' },
+    { value: 'transport', label: 'Transport/Kurierdienst' },
   ];
 
-  const storageTypeOptions = [
-    { value: 'standard', label: 'Standard-Lagerung' },
-    { value: 'kühl', label: 'Kühllagerung' },
-    { value: 'tiefkühl', label: 'Tiefkühllagerung' },
-    { value: 'trocken', label: 'Trockenlagerung' },
-    { value: 'gefährlich', label: 'Gefahrstofflagerung' },
-    { value: 'hochregal', label: 'Hochregallagerung' },
-    { value: 'blocklager', label: 'Blocklagerung' },
+  const warehouseSizeOptions = [
+    { value: 'klein', label: 'Klein (bis 100 m²)' },
+    { value: 'mittel', label: 'Mittel (100-500 m²)' },
+    { value: 'groß', label: 'Groß (500-2000 m²)' },
+    { value: 'sehr_groß', label: 'Sehr groß (über 2000 m²)' },
   ];
 
-  const goodsTypeOptions = [
-    { value: 'standard', label: 'Standard-Güter' },
+  const productTypeOptions = [
+    { value: 'kleinteile', label: 'Kleinteile/Elektronik' },
+    { value: 'kleidung', label: 'Kleidung/Textilien' },
     { value: 'lebensmittel', label: 'Lebensmittel' },
-    { value: 'elektronik', label: 'Elektronik' },
-    { value: 'textilien', label: 'Textilien' },
-    { value: 'möbel', label: 'Möbel' },
-    { value: 'chemikalien', label: 'Chemikalien' },
-    { value: 'medikamente', label: 'Medikamente' },
-    { value: 'sperrig', label: 'Sperrige Güter' },
+    { value: 'möbel', label: 'Möbel/Großteile' },
+    { value: 'chemikalien', label: 'Chemikalien/Gefahrgut' },
+    { value: 'pharma', label: 'Pharma/Medizin' },
+    { value: 'automotive', label: 'Automotive/KFZ-Teile' },
   ];
 
-  const durationOptions = [
-    { value: 'kurz', label: 'Kurzfristig (bis 1 Monat)' },
-    { value: 'mittel', label: 'Mittelfristig (1-6 Monate)' },
-    { value: 'lang', label: 'Langfristig (über 6 Monate)' },
-    { value: 'permanent', label: 'Permanent' },
-  ];
-
-  const temperatureOptions = [
-    { value: 'ambient', label: 'Raumtemperatur' },
-    { value: 'kühl', label: 'Kühl (2-8°C)' },
-    { value: 'tiefkühl', label: 'Tiefkühl (-18°C)' },
-    { value: 'spezial', label: 'Spezialtemperatur' },
-  ];
-
-  const additionalServicesOptions = [
-    { value: 'versicherung', label: 'Lagerversicherung' },
-    { value: 'inventory', label: 'Bestandsmanagement' },
-    { value: 'quality', label: 'Qualitätskontrolle' },
-    { value: 'labeling', label: 'Etikettierung' },
-    { value: 'repackaging', label: 'Umverpackung' },
-    { value: 'returns', label: 'Retourenabwicklung' },
-    { value: 'reporting', label: 'Reporting' },
-    { value: 'tracking', label: 'Tracking' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
   const handleInputChange = (field: keyof LagerlogistikData, value: any) => {
@@ -127,22 +64,19 @@ const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.storageType &&
-      formData.goodsType &&
-      formData.duration &&
-      formData.quantity &&
-      formData.location
+      formData.warehouseSize &&
+      formData.productType &&
+      formData.urgency
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.storageType &&
-      formData.goodsType &&
-      formData.duration &&
-      formData.quantity &&
-      formData.location
+      formData.warehouseSize &&
+      formData.productType &&
+      formData.urgency
     );
   };
 
@@ -150,7 +84,7 @@ const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Lagerlogistik-Projektdetails
+          Lager & Logistik Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,156 +93,123 @@ const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Welche Logistik-Dienstleistung wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Lagerart" required>
+          <FormField label="Lagergröße" required>
             <FormSelect
-              value={formData.storageType || ''}
-              onChange={value => handleInputChange('storageType', value)}
-              options={storageTypeOptions}
-              placeholder="Wählen Sie die Lagerart"
+              value={formData.warehouseSize || ''}
+              onChange={value => handleInputChange('warehouseSize', value)}
+              options={warehouseSizeOptions}
+              placeholder="Wie groß ist das Lager?"
             />
           </FormField>
 
-          <FormField label="Art der Güter" required>
+          <FormField label="Produkttyp" required>
             <FormSelect
-              value={formData.goodsType || ''}
-              onChange={value => handleInputChange('goodsType', value)}
-              options={goodsTypeOptions}
-              placeholder="Wählen Sie die Art der Güter"
+              value={formData.productType || ''}
+              onChange={value => handleInputChange('productType', value)}
+              options={productTypeOptions}
+              placeholder="Welche Produkte werden gelagert?"
             />
           </FormField>
 
-          <FormField label="Lagerdauer" required>
+          <FormField label="Zeitrahmen" required>
             <FormSelect
-              value={formData.duration || ''}
-              onChange={value => handleInputChange('duration', value)}
-              options={durationOptions}
-              placeholder="Wählen Sie die Lagerdauer"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann wird die Dienstleistung benötigt?"
             />
           </FormField>
 
-          <FormField label="Menge/Volumen" required>
-            <FormInput
-              type="text"
-              value={formData.quantity || ''}
-              onChange={value => handleInputChange('quantity', value)}
-              placeholder="z.B. 100 Paletten, 500 m³"
-            />
-          </FormField>
-
-          <FormField label="Standort" required>
-            <FormInput
-              type="text"
-              value={formData.location || ''}
-              onChange={value => handleInputChange('location', value)}
-              placeholder="Gewünschter Standort"
-            />
-          </FormField>
-
-          <FormField label="Gewicht (kg)">
+          <FormField label="Anzahl Mitarbeiter benötigt">
             <FormInput
               type="number"
-              value={formData.weight?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'weight',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Gesamtgewicht in kg"
+              value={formData.numberOfWorkers || ''}
+              onChange={value => handleInputChange('numberOfWorkers', value)}
+              placeholder="z.B. 3"
             />
           </FormField>
 
-          <FormField label="Temperaturanforderung">
-            <FormSelect
-              value={formData.temperatureRequirement || ''}
-              onChange={value => handleInputChange('temperatureRequirement', value)}
-              options={temperatureOptions}
-              placeholder="Wählen Sie die Temperaturanforderung"
-            />
-          </FormField>
-
-          <FormField label="Einlagerdatum">
+          <FormField label="Budget-Rahmen">
             <FormInput
               type="text"
-              value={formData.inboundDate || ''}
-              onChange={value => handleInputChange('inboundDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Auslagerdatum">
-            <FormInput
-              type="text"
-              value={formData.outboundDate || ''}
-              onChange={value => handleInputChange('outboundDate', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Versicherungswert">
-            <FormInput
-              type="number"
-              value={formData.insuranceValue?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'insuranceValue',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Wert in €"
-            />
-          </FormField>
-
-          <FormField label="Zugangszeiten">
-            <FormInput
-              type="text"
-              value={formData.accessTimes || ''}
-              onChange={value => handleInputChange('accessTimes', value)}
-              placeholder="z.B. Mo-Fr 8-18 Uhr"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 2.000-5.000 EUR"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Zusätzliche Dienstleistungen">
+          <FormField label="Projektbeschreibung">
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Lager- und Logistikprojekt..."
+              rows={4}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Benötigte Services">
             <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
+              value={formData.requiredServices || []}
+              onChange={value => handleInputChange('requiredServices', value)}
+              options={[
+                { value: 'wareneingangskontrolle', label: 'Wareneingangskontrolle' },
+                { value: 'qualitätskontrolle', label: 'Qualitätskontrolle' },
+                { value: 'barcode_scanning', label: 'Barcode-Scanning' },
+                { value: 'software_bedienung', label: 'Software-Bedienung (WMS)' },
+                { value: 'gabelstapler', label: 'Gabelstapler-Bedienung' },
+                { value: 'palettierung', label: 'Palettierung' },
+                { value: 'dokumentation', label: 'Dokumentation' },
+                { value: 'reporting', label: 'Reporting/Statistiken' },
+              ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Beschreibung der Güter">
-            <FormTextarea
-              value={formData.goodsDescription || ''}
-              onChange={value => handleInputChange('goodsDescription', value)}
-              placeholder="Detaillierte Beschreibung der zu lagernden Güter"
-              rows={3}
+          <FormField label="Arbeitszeiten">
+            <FormRadioGroup
+              name="workingHours"
+              value={formData.workingHours || ''}
+              onChange={value => handleInputChange('workingHours', value)}
+              options={[
+                { value: 'vollzeit', label: 'Vollzeit (40h/Woche)' },
+                { value: 'teilzeit', label: 'Teilzeit' },
+                { value: 'schicht', label: 'Schichtarbeit' },
+                { value: 'projektbasis', label: 'Projektbasis' },
+              ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Besondere Lager- oder Handhabungsanforderungen"
-              rows={3}
+          <FormField label="Erforderliche Qualifikationen">
+            <FormCheckboxGroup
+              value={formData.requiredQualifications || []}
+              onChange={value => handleInputChange('requiredQualifications', value)}
+              options={[
+                { value: 'logistik_erfahrung', label: 'Logistik-Erfahrung' },
+                { value: 'gabelstapler_schein', label: 'Gabelstapler-Führerschein' },
+                { value: 'gefahrgut', label: 'Gefahrgut-Schulung' },
+                { value: 'wms_kenntnisse', label: 'WMS-Kenntnisse' },
+                { value: 'körperliche_fitness', label: 'Körperliche Fitness' },
+                { value: 'deutschkenntnisse', label: 'Deutsche Sprachkenntnisse' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Lagerlogistik" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Lager & Logistik" formData={formData} />
     </div>
   );
-}
+};
 
 export default LagerlogistikForm;

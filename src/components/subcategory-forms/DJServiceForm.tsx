@@ -139,7 +139,7 @@ const DJServiceForm: React.FC<DJServiceFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="DJService" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="DJService" formData={formData} />
     </div>
   );
 }

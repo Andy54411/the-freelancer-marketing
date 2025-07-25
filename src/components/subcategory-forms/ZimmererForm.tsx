@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface ZimmererFormProps {
   data: ZimmererData;
@@ -19,95 +19,44 @@ interface ZimmererFormProps {
 
 const ZimmererForm: React.FC<ZimmererFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<ZimmererData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'sanierung', label: 'Sanierung' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'anbau', label: 'Anbau' },
-    { value: 'umbau', label: 'Umbau' },
+    { value: 'dachstuhl', label: 'Dachstuhl errichten' },
+    { value: 'dachausbau', label: 'Dachausbau' },
+    { value: 'dachsanierung', label: 'Dachsanierung' },
+    { value: 'carport', label: 'Carport bauen' },
+    { value: 'pergola', label: 'Pergola/Überdachung' },
+    { value: 'holzbau', label: 'Holzbau allgemein' },
+    { value: 'balkon', label: 'Balkon/Terrasse' },
+    { value: 'wintergarten', label: 'Wintergarten' },
+    { value: 'reparatur', label: 'Reparatur/Sanierung' },
+    { value: 'anbau', label: 'Anbau/Erweiterung' },
   ];
 
-  const workTypeOptions = [
-    { value: 'dachstuhl', label: 'Dachstuhl' },
-    { value: 'carport', label: 'Carport' },
-    { value: 'wintergarten', label: 'Wintergarten' },
-    { value: 'terrasse', label: 'Terrasse' },
-    { value: 'balkon', label: 'Balkon' },
-    { value: 'holzhaus', label: 'Holzhaus' },
-    { value: 'fachwerk', label: 'Fachwerk' },
+  const projectSizeOptions = [
+    { value: 'klein', label: 'Klein (1-3 Tage)' },
+    { value: 'mittel', label: 'Mittel (1-2 Wochen)' },
+    { value: 'groß', label: 'Groß (mehrere Wochen)' },
+    { value: 'sehr_groß', label: 'Sehr groß (mehrere Monate)' },
   ];
 
   const woodTypeOptions = [
     { value: 'fichte', label: 'Fichte' },
-    { value: 'tanne', label: 'Tanne' },
     { value: 'kiefer', label: 'Kiefer' },
     { value: 'lärche', label: 'Lärche' },
     { value: 'douglasie', label: 'Douglasie' },
     { value: 'eiche', label: 'Eiche' },
     { value: 'bsh', label: 'Brettschichtholz (BSH)' },
+    { value: 'kvh', label: 'Konstruktionsvollholz (KVH)' },
+    { value: 'beratung_gewünscht', label: 'Beratung gewünscht' },
   ];
 
-  const constructionTypeOptions = [
-    { value: 'traditionell', label: 'Traditioneller Holzbau' },
-    { value: 'modern', label: 'Moderner Holzbau' },
-    { value: 'fertigbau', label: 'Fertigbau' },
-    { value: 'blockbau', label: 'Blockbau' },
-  ];
-
-  const roofTypeOptions = [
-    { value: 'satteldach', label: 'Satteldach' },
-    { value: 'walmdach', label: 'Walmdach' },
-    { value: 'pultdach', label: 'Pultdach' },
-    { value: 'sheddach', label: 'Sheddach' },
-    { value: 'mansarddach', label: 'Mansarddach' },
-  ];
-
-  const treatmentOptions = [
-    { value: 'kesseldruckimprägniert', label: 'Kesseldruckimprägniert' },
-    { value: 'thermisch_behandelt', label: 'Thermisch behandelt' },
-    { value: 'natur', label: 'Natur (unbehandelt)' },
-    { value: 'lasiert', label: 'Lasiert' },
-    { value: 'geölt', label: 'Geölt' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'diesen_monat', label: 'Diesen Monat' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
   const handleInputChange = (field: keyof ZimmererData, value: any) => {
@@ -116,28 +65,22 @@ const ZimmererForm: React.FC<ZimmererFormProps> = ({ data, onDataChange, onValid
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.woodType &&
-      formData.constructionType &&
-      formData.roofType &&
-      formData.treatment &&
-      typeof formData.staticCalculation === 'boolean'
+      formData.projectSize &&
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.woodType &&
-      formData.constructionType &&
-      formData.roofType &&
-      formData.treatment &&
-      typeof formData.staticCalculation === 'boolean'
+      formData.projectSize &&
+      formData.urgency &&
+      formData.projectDescription
     );
   };
 
@@ -145,7 +88,7 @@ const ZimmererForm: React.FC<ZimmererFormProps> = ({ data, onDataChange, onValid
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Zimmerer-Projektdetails
+          Zimmerer Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,154 +97,200 @@ const ZimmererForm: React.FC<ZimmererFormProps> = ({ data, onDataChange, onValid
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Welcher Service wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Art der Zimmererarbeit" required>
+          <FormField label="Projektgröße" required>
             <FormSelect
-              value={formData.workType || ''}
-              onChange={value => handleInputChange('workType', value)}
-              options={workTypeOptions}
-              placeholder="Wählen Sie die Art der Zimmererarbeit"
+              value={formData.projectSize || ''}
+              onChange={value => handleInputChange('projectSize', value)}
+              options={projectSizeOptions}
+              placeholder="Wie groß ist das Projekt?"
             />
           </FormField>
 
-          <FormField label="Holzart" required>
+          <FormField label="Zeitrahmen" required>
+            <FormSelect
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann soll das Projekt starten?"
+            />
+          </FormField>
+
+          <FormField label="Holzart-Präferenz">
             <FormSelect
               value={formData.woodType || ''}
               onChange={value => handleInputChange('woodType', value)}
               options={woodTypeOptions}
-              placeholder="Wählen Sie die Holzart"
+              placeholder="Welche Holzart bevorzugen Sie?"
             />
           </FormField>
 
-          <FormField label="Bauweise" required>
-            <FormSelect
-              value={formData.constructionType || ''}
-              onChange={value => handleInputChange('constructionType', value)}
-              options={constructionTypeOptions}
-              placeholder="Wählen Sie die Bauweise"
-            />
-          </FormField>
-
-          <FormField label="Dachform" required>
-            <FormSelect
-              value={formData.roofType || ''}
-              onChange={value => handleInputChange('roofType', value)}
-              options={roofTypeOptions}
-              placeholder="Wählen Sie die Dachform"
-            />
-          </FormField>
-
-          <FormField label="Holzbehandlung" required>
-            <FormSelect
-              value={formData.treatment || ''}
-              onChange={value => handleInputChange('treatment', value)}
-              options={treatmentOptions}
-              placeholder="Wählen Sie die Holzbehandlung"
-            />
-          </FormField>
-
-          <FormField label="Grundfläche (m²)">
+          <FormField label="Grundfläche in m²">
             <FormInput
               type="number"
-              value={formData.area?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'area',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Grundfläche in m²"
+              value={formData.squareMeters || ''}
+              onChange={value => handleInputChange('squareMeters', Number(value))}
+              placeholder="z.B. 120"
             />
           </FormField>
 
-          <FormField label="Firsthöhe (m)">
+          <FormField label="Länge">
             <FormInput
-              type="number"
-              value={formData.ridgeHeight?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'ridgeHeight',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Firsthöhe in Metern"
+              type="text"
+              value={formData.length || ''}
+              onChange={value => handleInputChange('length', value)}
+              placeholder="z.B. 12m"
             />
           </FormField>
 
-          <FormField label="Dachneigung (°)">
+          <FormField label="Breite">
             <FormInput
-              type="number"
-              value={formData.roofPitch?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'roofPitch',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Dachneigung in Grad"
+              type="text"
+              value={formData.width || ''}
+              onChange={value => handleInputChange('width', value)}
+              placeholder="z.B. 10m"
             />
           </FormField>
 
-          <FormField label="Holzstärke (cm)">
+          <FormField label="Höhe/Firsthöhe">
             <FormInput
-              type="number"
-              value={formData.woodThickness?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'woodThickness',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Holzstärke in cm"
+              type="text"
+              value={formData.height || ''}
+              onChange={value => handleInputChange('height', value)}
+              placeholder="z.B. 8m"
+            />
+          </FormField>
+
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 15.000-30.000 EUR"
+            />
+          </FormField>
+
+          <FormField label="Projektort">
+            <FormInput
+              type="text"
+              value={formData.location || ''}
+              onChange={value => handleInputChange('location', value)}
+              placeholder="z.B. Berlin, 10115"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Statische Berechnung erforderlich">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="staticCalculation"
-                  checked={formData.staticCalculation === true}
-                  onChange={() => handleInputChange('staticCalculation', true)}
-                  className="mr-2"
-                />
-                Ja, statische Berechnung erforderlich
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="staticCalculation"
-                  checked={formData.staticCalculation === false}
-                  onChange={() => handleInputChange('staticCalculation', false)}
-                  className="mr-2"
-                />
-                Nein, keine statische Berechnung erforderlich
-              </label>
-            </div>
+          <FormField label="Zusätzliche Services">
+            <FormCheckboxGroup
+              value={formData.additionalServices || []}
+              onChange={value => handleInputChange('additionalServices', value)}
+              options={[
+                { value: 'planung', label: 'Planung/Statik' },
+                { value: 'genehmigung', label: 'Baugenehmigung beantragen' },
+                { value: 'dämmung', label: 'Dämmung' },
+                { value: 'dacheindeckung', label: 'Dacheindeckung' },
+                { value: 'dachrinnen', label: 'Dachrinnen' },
+                { value: 'fenster', label: 'Dachfenster' },
+                { value: 'isolierung', label: 'Isolierung' },
+                { value: 'materiallieferung', label: 'Materiallieferung' },
+              ]}
+            />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
+          <FormField label="Spezielle Anforderungen">
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
+              placeholder="Besondere Anforderungen oder Wünsche..."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Dachform">
+            <FormRadioGroup
+              name="roofType"
+              value={formData.roofType || ''}
+              onChange={value => handleInputChange('roofType', value)}
+              options={[
+                { value: 'satteldach', label: 'Satteldach' },
+                { value: 'walmdach', label: 'Walmdach' },
+                { value: 'pultdach', label: 'Pultdach' },
+                { value: 'flachdach', label: 'Flachdach' },
+                { value: 'mansardendach', label: 'Mansardendach' },
+                { value: 'tonnendach', label: 'Tonnendach' },
+                { value: 'andere', label: 'Andere Dachform' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Zimmerer-Projekt im Detail..."
+              rows={4}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Besondere Herausforderungen">
+            <FormTextarea
+              value={formData.specialChallenges || ''}
+              onChange={value => handleInputChange('specialChallenges', value)}
+              placeholder="Besondere Herausforderungen oder Umstände des Projekts..."
+              rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Gebäudeart">
+            <FormRadioGroup
+              name="buildingType"
+              value={formData.buildingType || ''}
+              onChange={value => handleInputChange('buildingType', value)}
+              options={[
+                { value: 'neubau', label: 'Neubau' },
+                { value: 'altbau', label: 'Altbau (Sanierung)' },
+                { value: 'anbau', label: 'Anbau' },
+                { value: 'gartenhaus', label: 'Gartenhaus/Nebengebäude' },
+                { value: 'gewerbe', label: 'Gewerbebau' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Zugang zur Baustelle">
+            <FormRadioGroup
+              name="siteAccess"
+              value={formData.siteAccess || ''}
+              onChange={value => handleInputChange('siteAccess', value)}
+              options={[
+                { value: 'gut', label: 'Guter Zugang (Kran möglich)' },
+                { value: 'eingeschränkt', label: 'Eingeschränkter Zugang' },
+                { value: 'schwierig', label: 'Schwieriger Zugang' },
+                { value: 'kein_kran', label: 'Kein Kran möglich' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Zimmerer" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Zimmerer" formData={formData} />
     </div>
   );
-}
+};
 
 export default ZimmererForm;

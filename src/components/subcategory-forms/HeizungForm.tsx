@@ -212,7 +212,7 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Heizung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Heizung" formData={formData} />
     </div>
   );
 }

@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface ReinigungskraftFormProps {
   data: ReinigungskraftData;
@@ -17,105 +17,40 @@ interface ReinigungskraftFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<ReinigungskraftData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'einmalig', label: 'Einmalig' },
-    { value: 'regelmäßig', label: 'Regelmäßig' },
-    { value: 'nach_bedarf', label: 'Nach Bedarf' },
-  ];
-
-  const cleaningTypeOptions = [
-    { value: 'grundreinigung', label: 'Grundreinigung' },
-    { value: 'unterhaltsreinigung', label: 'Unterhaltsreinigung' },
-    { value: 'endreinigung', label: 'Endreinigung' },
+    { value: 'privatreinigung', label: 'Privatreinigung' },
     { value: 'büroreinigung', label: 'Büroreinigung' },
+    { value: 'fensterreinigung', label: 'Fensterreinigung' },
+    { value: 'grundreinigung', label: 'Grundreinigung' },
+    { value: 'umzugsreinigung', label: 'Umzugsreinigung' },
+    { value: 'treppenreinigung', label: 'Treppenreinigung' },
+    { value: 'industriereinigung', label: 'Industriereinigung' },
+    { value: 'sonderreinigung', label: 'Sonderreinigung' },
   ];
 
   const frequencyOptions = [
-    { value: 'täglich', label: 'Täglich' },
+    { value: 'einmalig', label: 'Einmalig' },
     { value: 'wöchentlich', label: 'Wöchentlich' },
-    { value: 'zweiwöchentlich', label: 'Zweiwöchentlich' },
+    { value: '14_tägig', label: '14-tägig' },
     { value: 'monatlich', label: 'Monatlich' },
+    { value: 'nach_bedarf', label: 'Nach Bedarf' },
   ];
 
-  const specialAreasOptions = [
-    { value: 'bad', label: 'Bad' },
-    { value: 'küche', label: 'Küche' },
-    { value: 'fenster', label: 'Fenster' },
-    { value: 'balkon', label: 'Balkon' },
-    { value: 'keller', label: 'Keller' },
-    { value: 'dachboden', label: 'Dachboden' },
+  const areaSizeOptions = [
+    { value: 'bis_50', label: 'Bis 50 m²' },
+    { value: '50_100', label: '50-100 m²' },
+    { value: '100_200', label: '100-200 m²' },
+    { value: 'über_200', label: 'Über 200 m²' },
   ];
 
-  const equipmentOptions = [
-    { value: 'vorhanden', label: 'Reinigungsgeräte sind vorhanden' },
-    { value: 'mitbringen', label: 'Reinigungskraft bringt Geräte mit' },
-    { value: 'bereitstellen', label: 'Geräte werden bereitgestellt' },
-  ];
-
-  const chemicalsOptions = [
-    { value: 'vorhanden', label: 'Reinigungsmittel sind vorhanden' },
-    { value: 'mitbringen', label: 'Reinigungskraft bringt Mittel mit' },
-    { value: 'bereitstellen', label: 'Mittel werden bereitgestellt' },
-    { value: 'umweltfreundlich', label: 'Nur umweltfreundliche Mittel' },
-  ];
-
-  const timePreferenceOptions = [
-    { value: 'morgens', label: 'Morgens' },
-    { value: 'nachmittags', label: 'Nachmittags' },
-    { value: 'abends', label: 'Abends' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
     { value: 'flexibel', label: 'Flexibel' },
-  ];
-
-  const accessMethodOptions = [
-    { value: 'anwesend', label: 'Ich bin anwesend' },
-    { value: 'schlüssel', label: 'Schlüsselübergabe' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
   ];
 
   const handleInputChange = (field: keyof ReinigungskraftData, value: any) => {
@@ -124,30 +59,22 @@ const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.cleaningType &&
-      formData.equipment &&
-      formData.chemicals &&
-      formData.timePreference &&
-      formData.accessMethod &&
-      formData.specialAreas &&
-      formData.specialAreas.length > 0
+      formData.frequency &&
+      formData.areaSize &&
+      formData.urgency
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.cleaningType &&
-      formData.equipment &&
-      formData.chemicals &&
-      formData.timePreference &&
-      formData.accessMethod &&
-      formData.specialAreas &&
-      formData.specialAreas.length > 0
+      formData.frequency &&
+      formData.areaSize &&
+      formData.urgency
     );
   };
 
@@ -155,110 +82,82 @@ const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Reinigungskraft-Projektdetails
+          Reinigungskraft Service Details
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Art der Dienstleistung" required>
+          <FormField label="Art der Reinigung" required>
             <FormSelect
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Welche Art der Reinigung wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Art der Reinigung" required>
+          <FormField label="Häufigkeit" required>
             <FormSelect
-              value={formData.cleaningType || ''}
-              onChange={value => handleInputChange('cleaningType', value)}
-              options={cleaningTypeOptions}
-              placeholder="Wählen Sie die Art der Reinigung"
+              value={formData.frequency || ''}
+              onChange={value => handleInputChange('frequency', value)}
+              options={frequencyOptions}
+              placeholder="Wie oft soll gereinigt werden?"
             />
           </FormField>
 
-          {formData.serviceType === 'regelmäßig' && (
-            <FormField label="Häufigkeit" required>
-              <FormSelect
-                value={formData.frequency || ''}
-                onChange={value => handleInputChange('frequency', value)}
-                options={frequencyOptions}
-                placeholder="Wie oft soll gereinigt werden?"
-              />
-            </FormField>
-          )}
+          <FormField label="Flächengröße" required>
+            <FormSelect
+              value={formData.areaSize || ''}
+              onChange={value => handleInputChange('areaSize', value)}
+              options={areaSizeOptions}
+              placeholder="Wie groß ist die zu reinigende Fläche?"
+            />
+          </FormField>
 
-          <FormField label="Anzahl Räume">
+          <FormField label="Zeitrahmen" required>
+            <FormSelect
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann wird die Reinigung benötigt?"
+            />
+          </FormField>
+
+          <FormField label="Stunden pro Einsatz">
             <FormInput
               type="number"
-              value={formData.roomCount?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'roomCount',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der zu reinigenden Räume"
+              value={formData.hoursPerSession || ''}
+              onChange={value => handleInputChange('hoursPerSession', value)}
+              placeholder="z.B. 3"
             />
           </FormField>
 
-          <FormField label="Quadratmeter">
+          <FormField label="Budget pro Stunde">
             <FormInput
-              type="number"
-              value={formData.squareMeters?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'squareMeters',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Gesamtfläche in m²"
-            />
-          </FormField>
-
-          <FormField label="Reinigungsgeräte" required>
-            <FormSelect
-              value={formData.equipment || ''}
-              onChange={value => handleInputChange('equipment', value)}
-              options={equipmentOptions}
-              placeholder="Verfügbarkeit von Reinigungsgeräten"
-            />
-          </FormField>
-
-          <FormField label="Reinigungsmittel" required>
-            <FormSelect
-              value={formData.chemicals || ''}
-              onChange={value => handleInputChange('chemicals', value)}
-              options={chemicalsOptions}
-              placeholder="Verfügbarkeit von Reinigungsmitteln"
-            />
-          </FormField>
-
-          <FormField label="Zeitpräferenz" required>
-            <FormSelect
-              value={formData.timePreference || ''}
-              onChange={value => handleInputChange('timePreference', value)}
-              options={timePreferenceOptions}
-              placeholder="Bevorzugte Tageszeit"
-            />
-          </FormField>
-
-          <FormField label="Zugang" required>
-            <FormSelect
-              value={formData.accessMethod || ''}
-              onChange={value => handleInputChange('accessMethod', value)}
-              options={accessMethodOptions}
-              placeholder="Wie erfolgt der Zugang?"
+              type="text"
+              value={formData.hourlyRate || ''}
+              onChange={value => handleInputChange('hourlyRate', value)}
+              placeholder="z.B. 15-20 EUR"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Bereiche" required>
+          <FormField label="Zu reinigende Bereiche">
             <FormCheckboxGroup
-              value={formData.specialAreas || []}
-              onChange={value => handleInputChange('specialAreas', value)}
-              options={specialAreasOptions}
+              value={formData.areasToClean || []}
+              onChange={value => handleInputChange('areasToClean', value)}
+              options={[
+                { value: 'küche', label: 'Küche' },
+                { value: 'badezimmer', label: 'Badezimmer' },
+                { value: 'wohnzimmer', label: 'Wohnzimmer' },
+                { value: 'schlafzimmer', label: 'Schlafzimmer' },
+                { value: 'flur', label: 'Flur/Eingang' },
+                { value: 'balkon', label: 'Balkon/Terrasse' },
+                { value: 'keller', label: 'Keller' },
+                { value: 'dachboden', label: 'Dachboden' },
+                { value: 'fenster', label: 'Fenster' },
+                { value: 'büroräume', label: 'Büroräume' },
+              ]}
             />
           </FormField>
         </div>
@@ -268,16 +167,47 @@ const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Reinigungsanforderungen oder Besonderheiten"
+              placeholder="Allergien, Haustiere, besondere Reinigungsanforderungen, etc."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Reinigungsmittel">
+            <FormRadioGroup
+              name="cleaningSupplies"
+              value={formData.cleaningSupplies || ''}
+              onChange={value => handleInputChange('cleaningSupplies', value)}
+              options={[
+                { value: 'mitbringen', label: 'Reinigungskraft bringt Reinigungsmittel mit' },
+                { value: 'vorhanden', label: 'Reinigungsmittel sind vorhanden' },
+                { value: 'bio', label: 'Bio-/Umweltfreundliche Produkte gewünscht' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Zugang zur Wohnung/Büro">
+            <FormRadioGroup
+              name="accessMethod"
+              value={formData.accessMethod || ''}
+              onChange={value => handleInputChange('accessMethod', value)}
+              options={[
+                { value: 'anwesenheit', label: 'Nur bei Anwesenheit' },
+                { value: 'schlüssel', label: 'Schlüsselübergabe möglich' },
+                { value: 'code', label: 'Zugangscode' },
+                { value: 'hausmeister', label: 'Über Hausmeister' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Reinigungskraft" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Reinigungskraft" formData={formData} />
     </div>
   );
-}
+};
 
 export default ReinigungskraftForm;

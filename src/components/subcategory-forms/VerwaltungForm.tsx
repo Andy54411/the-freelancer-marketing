@@ -241,7 +241,7 @@ const VerwaltungForm: React.FC<VerwaltungFormProps> = ({
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Verwaltung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Verwaltung" formData={formData} />
     </div>
   );
 }

@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface FliesenlegerFormProps {
   data: FliesenlegerData;
@@ -17,100 +17,51 @@ interface FliesenlegerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<FliesenlegerData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'renovierung', label: 'Renovierung' },
-    { value: 'reparatur', label: 'Reparatur' },
+    { value: 'fliesen_verlegen', label: 'Fliesen verlegen' },
+    { value: 'fliesen_reparieren', label: 'Fliesen reparieren' },
+    { value: 'fugenerneuerung', label: 'Fugenerneuerung' },
+    { value: 'naturstein', label: 'Naturstein verlegen' },
+    { value: 'mosaik', label: 'Mosaik verlegen' },
+    { value: 'abdichtung', label: 'Abdichtungsarbeiten' },
+    { value: 'beratung', label: 'Beratung/Planung' },
   ];
 
   const roomTypeOptions = [
-    { value: 'bad', label: 'Bad' },
-    { value: 'kueche', label: 'Küche' },
-    { value: 'wohnbereich', label: 'Wohnbereich' },
-    { value: 'terrasse', label: 'Terrasse' },
-    { value: 'balkon', label: 'Balkon' },
-    { value: 'mehrere_raeume', label: 'Mehrere Räume' },
+    { value: 'badezimmer', label: 'Badezimmer' },
+    { value: 'küche', label: 'Küche' },
+    { value: 'wohnzimmer', label: 'Wohnzimmer' },
+    { value: 'terrasse', label: 'Terrasse/Balkon' },
+    { value: 'flur', label: 'Flur/Eingang' },
+    { value: 'keller', label: 'Keller' },
+    { value: 'arbeitszimmer', label: 'Arbeitszimmer' },
+  ];
+
+  const areaSizeOptions = [
+    { value: 'bis_10', label: 'Bis 10 m²' },
+    { value: '10_25', label: '10-25 m²' },
+    { value: '25_50', label: '25-50 m²' },
+    { value: '50_100', label: '50-100 m²' },
+    { value: 'über_100', label: 'Über 100 m²' },
   ];
 
   const tileTypeOptions = [
-    { value: 'keramik', label: 'Keramik' },
-    { value: 'naturstein', label: 'Naturstein' },
+    { value: 'keramik', label: 'Keramikfliesen' },
     { value: 'feinsteinzeug', label: 'Feinsteinzeug' },
+    { value: 'naturstein', label: 'Naturstein' },
     { value: 'mosaik', label: 'Mosaik' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+    { value: 'terrakotta', label: 'Terrakotta' },
+    { value: 'noch_unbekannt', label: 'Noch nicht entschieden' },
   ];
 
-  const tileSizeOptions = [
-    { value: 'klein', label: 'Klein (bis 30x30cm)' },
-    { value: 'mittel', label: 'Mittel (30x30 - 60x60cm)' },
-    { value: 'groß', label: 'Groß (60x60 - 100x100cm)' },
-    { value: 'großformat', label: 'Großformat (über 100x100cm)' },
-  ];
-
-  const patternOptions = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'diagonal', label: 'Diagonal' },
-    { value: 'versetzt', label: 'Versetzt' },
-    { value: 'muster', label: 'Spezielles Muster' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
-  const preparationWorkOptions = [
-    { value: 'benötigt', label: 'Vorarbeiten erforderlich' },
-    { value: 'teilweise', label: 'Teilweise erforderlich' },
-    { value: 'nicht_nötig', label: 'Nicht erforderlich' },
-  ];
-
-  const materialProvidedOptions = [
-    { value: 'kunde', label: 'Kunde stellt Material' },
-    { value: 'handwerker', label: 'Handwerker bringt Material mit' },
-    { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
   const handleInputChange = (field: keyof FliesenlegerData, value: any) => {
@@ -119,30 +70,24 @@ const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
       formData.roomType &&
-      formData.tileType &&
-      formData.tileSize &&
-      formData.pattern &&
-      formData.preparationWork &&
-      formData.materialProvided &&
-      typeof formData.waterproofing === 'boolean'
+      formData.areaSize &&
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
       formData.roomType &&
-      formData.tileType &&
-      formData.tileSize &&
-      formData.pattern &&
-      formData.preparationWork &&
-      formData.materialProvided &&
-      typeof formData.waterproofing === 'boolean'
+      formData.areaSize &&
+      formData.urgency &&
+      formData.projectDescription
     );
   };
 
@@ -150,7 +95,7 @@ const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Fliesenleger-Projektdetails
+          Fliesenleger Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,121 +104,86 @@ const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Was soll gemacht werden?"
             />
           </FormField>
 
-          <FormField label="Raumtyp" required>
+          <FormField label="Raum/Bereich" required>
             <FormSelect
               value={formData.roomType || ''}
               onChange={value => handleInputChange('roomType', value)}
               options={roomTypeOptions}
-              placeholder="Wählen Sie den Raumtyp"
+              placeholder="Welcher Raum soll gefliest werden?"
             />
           </FormField>
 
-          <FormField label="Quadratmeter">
-            <FormInput
-              type="number"
-              value={formData.squareMeters?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'squareMeters',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Fläche in m²"
+          <FormField label="Flächengröße" required>
+            <FormSelect
+              value={formData.areaSize || ''}
+              onChange={value => handleInputChange('areaSize', value)}
+              options={areaSizeOptions}
+              placeholder="Wie groß ist die Fläche?"
             />
           </FormField>
 
-          <FormField label="Fliesenart" required>
+          <FormField label="Fliesentyp">
             <FormSelect
               value={formData.tileType || ''}
               onChange={value => handleInputChange('tileType', value)}
               options={tileTypeOptions}
-              placeholder="Wählen Sie die Fliesenart"
+              placeholder="Welche Fliesen sollen verwendet werden?"
             />
           </FormField>
 
-          <FormField label="Fliesengröße" required>
+          <FormField label="Zeitrahmen" required>
             <FormSelect
-              value={formData.tileSize || ''}
-              onChange={value => handleInputChange('tileSize', value)}
-              options={tileSizeOptions}
-              placeholder="Wählen Sie die Fliesengröße"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann soll das Projekt stattfinden?"
             />
           </FormField>
 
-          <FormField label="Verlegemuster" required>
-            <FormSelect
-              value={formData.pattern || ''}
-              onChange={value => handleInputChange('pattern', value)}
-              options={patternOptions}
-              placeholder="Wählen Sie das Verlegemuster"
-            />
-          </FormField>
-
-          <FormField label="Vorarbeiten" required>
-            <FormSelect
-              value={formData.preparationWork || ''}
-              onChange={value => handleInputChange('preparationWork', value)}
-              options={preparationWorkOptions}
-              placeholder="Sind Vorarbeiten erforderlich?"
-            />
-          </FormField>
-
-          <FormField label="Materialbereitstellung" required>
-            <FormSelect
-              value={formData.materialProvided || ''}
-              onChange={value => handleInputChange('materialProvided', value)}
-              options={materialProvidedOptions}
-              placeholder="Wer stellt das Material?"
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 2.000-5.000 EUR"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Abdichtung erforderlich">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="waterproofing"
-                  checked={formData.waterproofing === true}
-                  onChange={() => handleInputChange('waterproofing', true)}
-                  className="mr-2"
-                />
-                Ja, Abdichtung erforderlich
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="waterproofing"
-                  checked={formData.waterproofing === false}
-                  onChange={() => handleInputChange('waterproofing', false)}
-                  className="mr-2"
-                />
-                Nein, keine Abdichtung erforderlich
-              </label>
-            </div>
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
+          <FormField label="Projektbeschreibung" required>
             <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
-              rows={3}
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Fliesenprojekt detailliert..."
+              rows={4}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Materiallieferung">
+            <FormRadioGroup
+              name="materialSupply"
+              value={formData.materialSupply || ''}
+              onChange={value => handleInputChange('materialSupply', value)}
+              options={[
+                { value: 'handwerker', label: 'Handwerker beschafft Material' },
+                { value: 'kunde', label: 'Kunde beschafft Material' },
+                { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Fliesenleger" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Fliesenleger" formData={formData} />
     </div>
   );
-}
+};
 
 export default FliesenlegerForm;

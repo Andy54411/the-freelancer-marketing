@@ -36,66 +36,6 @@ export default function ImpressumPage() {
                 <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
                 <div className="text-white/90 drop-shadow-lg space-y-2">
                   <p>
-                    <strong>Telefon:</strong> +49 1525 1939026
-                  </p>
-                  <p>
-                    <strong>E-Mail:</strong> info@taskilo.de
-                  </p>
-                  <p>
-                    <strong>Support:</strong> support@taskilo.de
-                  </p>
-                  <p>
-                    <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.de
-                  </p>
-                  <p>
-                    <strong>Website:</strong> www.taskilo.de
-                  </p>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
-                <div className="text-white/90 drop-shadow-lg space-y-2">
-                  <p>
-                    <strong>Telefon:</strong> +49 1525 1939026
-                  </p>
-                  <p>
-                    <strong>E-Mail:</strong> info@taskilo.de
-                  </p>
-                  <p>
-                    <strong>Support:</strong> support@taskilo.de
-                  </p>
-                  <p>
-                    <strong>Rechtliche Angelegenheiten:</strong> legal@taskilo.de
-                  </p>
-                  <p>
-                    <strong>Website:</strong> www.taskilo.de
-                  </p>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
-                  Angaben gemäß § 5 TMG
-                </h2>
-                <div className="text-white/90 drop-shadow-lg space-y-2">
-                  <p>
-                    <strong>The Freelancer Marketing Ltd.</strong>
-                  </p>
-                  <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
-                  <p>8015, Paphos Cyprus</p>
-                  <p>Registrierungsnummer: HE 458650</p>
-                  <p>VAT: CY60058879W</p>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">Kontakt</h2>
-                <div className="text-white/90 drop-shadow-lg space-y-2">
-                  <p>
-                    <strong>Telefon:</strong> +49 1525 1939026
-                  </p>
-                  <p>
                     <strong>E-Mail:</strong> info@taskilo.de
                   </p>
                   <p>

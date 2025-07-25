@@ -127,7 +127,7 @@ const MassageForm: React.FC<MassageFormProps> = ({ data, onDataChange, onValidat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Massage" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Massage" formData={formData} />
     </div>
   );
 }

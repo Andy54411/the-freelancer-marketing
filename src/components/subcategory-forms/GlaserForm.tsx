@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface GlaserFormProps {
   data: GlaserData;
@@ -19,90 +19,34 @@ interface GlaserFormProps {
 
 const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<GlaserData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {/* Validierungsanzeige */}
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Submit Button - wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'austausch', label: 'Austausch' },
+    { value: 'glasreparatur', label: 'Glasreparatur' },
+    { value: 'glasersatz', label: 'Glasersatz' },
+    { value: 'glasschnitt', label: 'Glasschnitt nach Maß' },
+    { value: 'spiegelarbeiten', label: 'Spiegelarbeiten' },
+    { value: 'sicherheitsglas', label: 'Sicherheitsglas' },
+    { value: 'isolierglas', label: 'Isolierglas' },
+    { value: 'duschkabine', label: 'Duschkabinen-Glas' },
     { value: 'notdienst', label: 'Notdienst' },
   ];
 
   const glassTypeOptions = [
-    { value: 'einfachglas', label: 'Einfachglas' },
-    { value: 'isolierglas', label: 'Isolierglas' },
+    { value: 'fensterglas', label: 'Fensterglas' },
     { value: 'sicherheitsglas', label: 'Sicherheitsglas' },
-    { value: 'verbundglas', label: 'Verbundglas' },
-    { value: 'thermoglas', label: 'Thermoglas' },
-    { value: 'sonnenschutzglas', label: 'Sonnenschutzglas' },
-  ];
-
-  const applicationOptions = [
-    { value: 'fenster', label: 'Fenster' },
-    { value: 'türen', label: 'Türen' },
-    { value: 'schaufenster', label: 'Schaufenster' },
+    { value: 'isolierglas', label: 'Isolierglas' },
     { value: 'spiegel', label: 'Spiegel' },
-    { value: 'duschkabine', label: 'Duschkabine' },
-    { value: 'wintergarten', label: 'Wintergarten' },
-    { value: 'vitrine', label: 'Vitrine' },
+    { value: 'duschglas', label: 'Duschkabinen-Glas' },
+    { value: 'vitrinenglas', label: 'Vitrinenglas' },
+    { value: 'ornamentglas', label: 'Ornamentglas' },
   ];
 
-  const thicknessOptions = [
-    { value: '4', label: '4 mm' },
-    { value: '6', label: '6 mm' },
-    { value: '8', label: '8 mm' },
-    { value: '10', label: '10 mm' },
-    { value: '12', label: '12 mm' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
-  const frameTypeOptions = [
-    { value: 'holz', label: 'Holzrahmen' },
-    { value: 'alu', label: 'Aluminiumrahmen' },
-    { value: 'kunststoff', label: 'Kunststoffrahmen' },
-    { value: 'stahl', label: 'Stahlrahmen' },
-    { value: 'rahmenlos', label: 'Rahmenlos' },
+  const urgencyOptions = [
+    { value: 'notfall', label: 'Notfall (sofort)' },
+    { value: 'heute', label: 'Heute' },
+    { value: 'morgen', label: 'Morgen' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
   const handleInputChange = (field: keyof GlaserData, value: any) => {
@@ -111,26 +55,22 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
       formData.glassType &&
-      formData.application &&
-      formData.thickness &&
-      formData.frameType &&
-      typeof formData.measurement === 'string'
+      formData.urgency &&
+      formData.workDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
       formData.glassType &&
-      formData.application &&
-      formData.thickness &&
-      formData.frameType &&
-      typeof formData.measurement === 'string'
+      formData.urgency &&
+      formData.workDescription
     );
   };
 
@@ -138,7 +78,7 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Glaser-Projektdetails
+          Glaser Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,112 +87,85 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Was soll gemacht werden?"
             />
           </FormField>
 
-          <FormField label="Glasart" required>
+          <FormField label="Glastyp" required>
             <FormSelect
               value={formData.glassType || ''}
               onChange={value => handleInputChange('glassType', value)}
               options={glassTypeOptions}
-              placeholder="Wählen Sie die Glasart"
+              placeholder="Welcher Glastyp wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Verwendung" required>
+          <FormField label="Dringlichkeit" required>
             <FormSelect
-              value={formData.application || ''}
-              onChange={value => handleInputChange('application', value)}
-              options={applicationOptions}
-              placeholder="Wählen Sie die Verwendung"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wie dringend ist es?"
             />
           </FormField>
 
-          <FormField label="Glasstärke" required>
-            <FormSelect
-              value={formData.thickness || ''}
-              onChange={value => handleInputChange('thickness', value)}
-              options={thicknessOptions}
-              placeholder="Wählen Sie die Glasstärke"
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 200-500 EUR"
             />
           </FormField>
 
-          <FormField label="Rahmentyp" required>
-            <FormSelect
-              value={formData.frameType || ''}
-              onChange={value => handleInputChange('frameType', value)}
-              options={frameTypeOptions}
-              placeholder="Wählen Sie den Rahmentyp"
-            />
-          </FormField>
-
-          <FormField label="Maße (B x H in cm)">
+          <FormField label="Maße (LxBxD in cm)">
             <FormInput
               type="text"
               value={formData.dimensions || ''}
               onChange={value => handleInputChange('dimensions', value)}
-              placeholder="z.B. 120 x 80"
+              placeholder="z.B. 120x80x0.4"
             />
           </FormField>
 
-          <FormField label="Anzahl Scheiben">
+          <FormField label="Glasstärke (mm)">
             <FormInput
-              type="number"
-              value={formData.quantity?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'quantity',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Scheiben"
+              type="text"
+              value={formData.thickness || ''}
+              onChange={value => handleInputChange('thickness', value)}
+              placeholder="z.B. 4, 6, 8 mm"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Aufmaß vor Ort erforderlich">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="measurement"
-                  checked={formData.measurement === 'benötigt'}
-                  onChange={() => handleInputChange('measurement', 'benötigt')}
-                  className="mr-2"
-                />
-                Ja, Aufmaß vor Ort erforderlich
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="measurement"
-                  checked={formData.measurement === 'vorhanden'}
-                  onChange={() => handleInputChange('measurement', 'vorhanden')}
-                  className="mr-2"
-                />
-                Nein, Maße sind bekannt
-              </label>
-            </div>
+          <FormField label="Arbeitsbeschreibung" required>
+            <FormTextarea
+              value={formData.workDescription || ''}
+              onChange={value => handleInputChange('workDescription', value)}
+              placeholder="Beschreiben Sie genau, was gemacht werden soll..."
+              rows={4}
+            />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
-              rows={3}
+          <FormField label="Notdienst erforderlich">
+            <FormRadioGroup
+              name="emergencyService"
+              value={formData.emergencyService || ''}
+              onChange={value => handleInputChange('emergencyService', value)}
+              options={[
+                { value: 'ja', label: 'Ja, Notdienst erforderlich' },
+                { value: 'nein', label: 'Nein, regulärer Termin' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Glaser" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Glaser" formData={formData} />
     </div>
   );
-}
+};
 
 export default GlaserForm;

@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface DachdeckerFormProps {
   data: DachdeckerData;
@@ -17,58 +17,18 @@ interface DachdeckerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const DachdeckerForm: React.FC<DachdeckerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<DachdeckerData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
+    { value: 'reparatur', label: 'Dachreparatur' },
+    { value: 'neueindeckung', label: 'Neueindeckung' },
     { value: 'sanierung', label: 'Dachsanierung' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'wartung', label: 'Wartung' },
-    { value: 'inspektion', label: 'Inspektion' },
+    { value: 'dachausbau', label: 'Dachausbau' },
+    { value: 'isolierung', label: 'Dachisolierung' },
+    { value: 'reinigung', label: 'Dachreinigung' },
+    { value: 'wartung', label: 'Dachwartung' },
+    { value: 'gutachten', label: 'Dachgutachten' },
   ];
 
   const roofTypeOptions = [
@@ -82,24 +42,24 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
   const materialOptions = [
     { value: 'ziegel', label: 'Ziegel' },
     { value: 'schiefer', label: 'Schiefer' },
-    { value: 'beton', label: 'Betondachsteine' },
-    { value: 'blech', label: 'Metallblech' },
     { value: 'bitumen', label: 'Bitumen' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+    { value: 'metall', label: 'Metall' },
+    { value: 'reet', label: 'Reet' },
+    { value: 'andere', label: 'Andere' },
   ];
 
   const buildingTypeOptions = [
     { value: 'einfamilienhaus', label: 'Einfamilienhaus' },
     { value: 'mehrfamilienhaus', label: 'Mehrfamilienhaus' },
     { value: 'gewerbe', label: 'Gewerbegebäude' },
-    { value: 'industrie', label: 'Industriegebäude' },
-    { value: 'landwirtschaft', label: 'Landwirtschaftsgebäude' },
+    { value: 'garage', label: 'Garage/Carport' },
   ];
 
-  const accessibilityOptions = [
-    { value: 'einfach', label: 'Einfach zugänglich' },
-    { value: 'erschwert', label: 'Erschwert zugänglich' },
-    { value: 'sehr_schwer', label: 'Sehr schwer zugänglich' },
+  const urgencyOptions = [
+    { value: 'notfall', label: 'Notfall (sofort)' },
+    { value: 'dringend', label: 'Dringend (1-7 Tage)' },
+    { value: 'normal', label: 'Normal (1-4 Wochen)' },
+    { value: 'geplant', label: 'Geplant (flexibel)' },
   ];
 
   const handleInputChange = (field: keyof DachdeckerData, value: any) => {
@@ -108,26 +68,26 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
       formData.roofType &&
       formData.material &&
       formData.buildingType &&
-      formData.accessibility &&
-      typeof formData.scaffoldingNeeded === 'boolean'
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
       formData.roofType &&
       formData.material &&
       formData.buildingType &&
-      formData.accessibility &&
-      typeof formData.scaffoldingNeeded === 'boolean'
+      formData.urgency &&
+      formData.projectDescription
     );
   };
 
@@ -144,7 +104,7 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Wählen Sie die Art der Dacharbeit"
             />
           </FormField>
 
@@ -154,20 +114,6 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
               onChange={value => handleInputChange('roofType', value)}
               options={roofTypeOptions}
               placeholder="Wählen Sie den Dachtyp"
-            />
-          </FormField>
-
-          <FormField label="Dachfläche (m²)">
-            <FormInput
-              type="number"
-              value={formData.roofArea?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'roofArea',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Dachfläche in m²"
             />
           </FormField>
 
@@ -189,54 +135,33 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Zugänglichkeit" required>
+          <FormField label="Dringlichkeit" required>
             <FormSelect
-              value={formData.accessibility || ''}
-              onChange={value => handleInputChange('accessibility', value)}
-              options={accessibilityOptions}
-              placeholder="Wie ist die Zugänglichkeit?"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wie dringend ist das Projekt?"
             />
           </FormField>
 
-          <FormField label="Stockwerke">
+          <FormField label="Dachfläche (ca.)">
             <FormInput
-              type="number"
-              value={formData.floors?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'floors',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Stockwerke"
+              type="text"
+              value={formData.roofArea || ''}
+              onChange={value => handleInputChange('roofArea', value)}
+              placeholder="z.B. 100 m²"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Gerüst erforderlich">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="scaffoldingNeeded"
-                  checked={formData.scaffoldingNeeded === true}
-                  onChange={() => handleInputChange('scaffoldingNeeded', true)}
-                  className="mr-2"
-                />
-                Ja, Gerüst erforderlich
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="scaffoldingNeeded"
-                  checked={formData.scaffoldingNeeded === false}
-                  onChange={() => handleInputChange('scaffoldingNeeded', false)}
-                  className="mr-2"
-                />
-                Nein, kein Gerüst erforderlich
-              </label>
-            </div>
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Dachprojekt detailliert"
+              rows={4}
+            />
           </FormField>
         </div>
 
@@ -245,16 +170,42 @@ const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
+              placeholder="Besondere Anforderungen oder Wünsche"
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Baujahr des Gebäudes">
+            <FormInput
+              type="text"
+              value={formData.buildingAge || ''}
+              onChange={value => handleInputChange('buildingAge', value)}
+              placeholder="z.B. 1980"
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Materiallieferung">
+            <FormRadioGroup
+              name="materialSupply"
+              value={formData.materialSupply || ''}
+              onChange={value => handleInputChange('materialSupply', value)}
+              options={[
+                { value: 'dachdecker', label: 'Dachdecker beschafft Material' },
+                { value: 'kunde', label: 'Kunde beschafft Material' },
+                { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Dachdecker" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Dachdecker" formData={formData} />
     </div>
   );
-}
+};
 
 export default DachdeckerForm;

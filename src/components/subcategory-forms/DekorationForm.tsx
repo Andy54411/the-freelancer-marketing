@@ -132,7 +132,7 @@ const DekorationForm: React.FC<DekorationFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Dekoration" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Dekoration" formData={formData} />
     </div>
   );
 }

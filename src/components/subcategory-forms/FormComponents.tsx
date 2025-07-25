@@ -189,7 +189,7 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
   formData,
 }) => {
   const router = useRouter();
-  const { setDescription } = useRegistration();
+  const { setDescription, setSubcategoryData } = useRegistration();
 
   const handleNextClick = () => {
     if (!isValid) {
@@ -198,6 +198,12 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
     }
 
     console.log('Form is valid, proceeding to address page');
+
+    // Speichere die Formulardaten im localStorage über setSubcategoryData
+    if (formData && setSubcategoryData) {
+      console.log('Saving form data to localStorage:', formData);
+      setSubcategoryData(formData);
+    }
 
     // Extrahiere die Beschreibung aus den Formulardaten
     if (formData && setDescription) {

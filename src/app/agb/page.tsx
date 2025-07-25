@@ -515,7 +515,6 @@ export default function AGBPage() {
                   </p>
                   <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
                   <p>8015, Paphos Cyprus</p>
-                  <p>Telefon: +49 1525 1939026</p>
                   <p>E-Mail: legal@taskilo.de</p>
                   <p>Website: www.taskilo.de</p>
                   <p>Registrierungsnummer: HE 458650</p>

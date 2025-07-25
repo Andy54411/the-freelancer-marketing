@@ -224,7 +224,7 @@ const MarktforschungForm: React.FC<MarktforschungFormProps> = ({
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Marktforschung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Marktforschung" formData={formData} />
     </div>
   );
 }

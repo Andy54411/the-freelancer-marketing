@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface FinanzberatungFormProps {
   data: FinanzberatungData;
@@ -17,153 +17,67 @@ interface FinanzberatungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<FinanzberatungData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'investment_advisory', label: 'Anlageberatung' },
-    { value: 'financial_planning', label: 'Finanzplanung' },
-    { value: 'retirement_planning', label: 'Altersvorsorge' },
-    { value: 'insurance_consulting', label: 'Versicherungsberatung' },
-    { value: 'loan_consulting', label: 'Kreditberatung' },
-    { value: 'tax_optimization', label: 'Steueroptimierung' },
-    { value: 'estate_planning', label: 'Vermögensnachfolge' },
-    { value: 'business_financing', label: 'Unternehmensfinanzierung' },
-    { value: 'real_estate_financing', label: 'Immobilienfinanzierung' },
-    { value: 'risk_management', label: 'Risikomanagement' },
+    { value: 'vermögensberatung', label: 'Vermögensberatung' },
+    { value: 'altersvorsorge', label: 'Altersvorsorge-Planung' },
+    { value: 'versicherungsberatung', label: 'Versicherungsberatung' },
+    { value: 'finanzplanung', label: 'Finanzplanung' },
+    { value: 'steuerberatung', label: 'Steuerberatung' },
+    { value: 'investment', label: 'Investment-Beratung' },
+    { value: 'immobilienfinanzierung', label: 'Immobilienfinanzierung' },
+    { value: 'kredit', label: 'Kredit-/Darlehens-Beratung' },
+    { value: 'unternehmensgründung', label: 'Unternehmensgründung' },
+    { value: 'nachfolgeplanung', label: 'Nachfolgeplanung' },
+    { value: 'risikomanagement', label: 'Risikomanagement' },
+    { value: 'portfolio_analyse', label: 'Portfolio-Analyse' },
   ];
 
   const clientTypeOptions = [
     { value: 'privatperson', label: 'Privatperson' },
     { value: 'familie', label: 'Familie' },
-    { value: 'rentner', label: 'Rentner' },
-    { value: 'berufseinsteiger', label: 'Berufseinsteiger' },
-    { value: 'selbstständig', label: 'Selbstständig' },
+    { value: 'selbständig', label: 'Selbständiger' },
     { value: 'freiberufler', label: 'Freiberufler' },
     { value: 'unternehmen', label: 'Unternehmen' },
     { value: 'startup', label: 'Startup' },
+    { value: 'verein', label: 'Verein/Organisation' },
   ];
 
   const incomeRangeOptions = [
-    { value: 'unter_30000', label: 'Unter 30.000€' },
-    { value: '30000_50000', label: '30.000€ - 50.000€' },
-    { value: '50000_80000', label: '50.000€ - 80.000€' },
-    { value: '80000_120000', label: '80.000€ - 120.000€' },
-    { value: '120000_200000', label: '120.000€ - 200.000€' },
-    { value: 'über_200000', label: 'Über 200.000€' },
+    { value: 'bis_30k', label: 'Bis 30.000 EUR' },
+    { value: '30k_50k', label: '30.000-50.000 EUR' },
+    { value: '50k_75k', label: '50.000-75.000 EUR' },
+    { value: '75k_100k', label: '75.000-100.000 EUR' },
+    { value: '100k_150k', label: '100.000-150.000 EUR' },
+    { value: 'über_150k', label: 'Über 150.000 EUR' },
+    { value: 'variabel', label: 'Variabel/Unregelmäßig' },
   ];
 
   const assetRangeOptions = [
-    { value: 'unter_10000', label: 'Unter 10.000€' },
-    { value: '10000_50000', label: '10.000€ - 50.000€' },
-    { value: '50000_100000', label: '50.000€ - 100.000€' },
-    { value: '100000_500000', label: '100.000€ - 500.000€' },
-    { value: '500000_1000000', label: '500.000€ - 1.000.000€' },
-    { value: 'über_1000000', label: 'Über 1.000.000€' },
+    { value: 'bis_10k', label: 'Bis 10.000 EUR' },
+    { value: '10k_50k', label: '10.000-50.000 EUR' },
+    { value: '50k_100k', label: '50.000-100.000 EUR' },
+    { value: '100k_250k', label: '100.000-250.000 EUR' },
+    { value: '250k_500k', label: '250.000-500.000 EUR' },
+    { value: 'über_500k', label: 'Über 500.000 EUR' },
+    { value: 'keine_angabe', label: 'Keine Angabe' },
   ];
 
-  const investmentGoalOptions = [
-    { value: 'capital_growth', label: 'Kapitalwachstum' },
-    { value: 'regular_income', label: 'Regelmäßiges Einkommen' },
-    { value: 'capital_preservation', label: 'Kapitalerhalt' },
-    { value: 'retirement_provision', label: 'Altersvorsorge' },
-    { value: 'tax_savings', label: 'Steuerersparnis' },
-    { value: 'real_estate_purchase', label: 'Immobilienkauf' },
-    { value: 'education_funding', label: 'Bildungsfinanzierung' },
-    { value: 'emergency_fund', label: 'Notgroschen' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'diesen_monat', label: 'Diesen Monat' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
-  const riskToleranceOptions = [
-    { value: 'sehr_konservativ', label: 'Sehr konservativ' },
-    { value: 'konservativ', label: 'Konservativ' },
-    { value: 'ausgewogen', label: 'Ausgewogen' },
-    { value: 'wachstumsorientiert', label: 'Wachstumsorientiert' },
-    { value: 'sehr_risikoreich', label: 'Sehr risikoreich' },
-  ];
-
-  const timeHorizonOptions = [
-    { value: 'kurzfristig', label: 'Kurzfristig (< 2 Jahre)' },
-    { value: 'mittelfristig', label: 'Mittelfristig (2-5 Jahre)' },
-    { value: 'langfristig', label: 'Langfristig (5-10 Jahre)' },
-    { value: 'sehr_langfristig', label: 'Sehr langfristig (> 10 Jahre)' },
-  ];
-  const investmentExperienceOptions = [
-    { value: 'keine', label: 'Keine Erfahrung' },
-    { value: 'wenig', label: 'Wenig Erfahrung' },
-    { value: 'mittel', label: 'Mittlere Erfahrung' },
-    { value: 'viel', label: 'Viel Erfahrung' },
-    { value: 'profi', label: 'Professionell' },
-  ];
-
-  const investmentProductOptions = [
-    { value: 'aktien', label: 'Aktien' },
-    { value: 'anleihen', label: 'Anleihen' },
-    { value: 'fonds', label: 'Investmentfonds' },
-    { value: 'etf', label: 'ETFs' },
-    { value: 'immobilien', label: 'Immobilien' },
-    { value: 'rohstoffe', label: 'Rohstoffe' },
-    { value: 'kryptowährungen', label: 'Kryptowährungen' },
-    { value: 'derivate', label: 'Derivate' },
-    { value: 'festgeld', label: 'Festgeld' },
-    { value: 'tagesgeld', label: 'Tagesgeld' },
-    { value: 'versicherungen', label: 'Versicherungen' },
-    { value: 'edelmetalle', label: 'Edelmetalle' },
-  ];
-
-  const additionalServicesOptions = [
-    { value: 'portfolio_analysis', label: 'Portfolio-Analyse' },
-    { value: 'tax_planning', label: 'Steuerplanung' },
-    { value: 'insurance_check', label: 'Versicherungscheck' },
-    { value: 'loan_optimization', label: 'Kredit-Optimierung' },
-    { value: 'estate_planning', label: 'Nachlassplanung' },
-    { value: 'business_succession', label: 'Unternehmensnachfolge' },
-    { value: 'cash_flow_analysis', label: 'Cashflow-Analyse' },
-    { value: 'budgeting', label: 'Budgetplanung' },
-    { value: 'debt_management', label: 'Schuldenmanagement' },
-    { value: 'financial_education', label: 'Finanzbildung' },
+  const consultationTypeOptions = [
+    { value: 'persönlich', label: 'Persönliches Gespräch' },
+    { value: 'online', label: 'Online-Beratung' },
+    { value: 'telefon', label: 'Telefon-Beratung' },
+    { value: 'hybrid', label: 'Flexibel/Hybrid' },
   ];
 
   const handleInputChange = (field: keyof FinanzberatungData, value: any) => {
@@ -176,23 +90,18 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.clientType &&
-      formData.incomeRange &&
-      formData.assetRange &&
-      formData.riskTolerance &&
-      formData.timeHorizon &&
-      formData.projectDescription
+      formData.urgency &&
+      formData.consultationGoals
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
       formData.clientType &&
-      formData.incomeRange &&
-      formData.assetRange &&
-      formData.riskTolerance &&
-      formData.timeHorizon &&
-      formData.projectDescription
+      formData.urgency &&
+      formData.consultationGoals
     );
   };
 
@@ -200,16 +109,16 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Finanzberatungs-Projektdetails
+          Finanzberatung Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Art der Dienstleistung" required>
+          <FormField label="Art der Beratung" required>
             <FormSelect
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Finanzberatung"
+              placeholder="Welche Art der Finanzberatung wird benötigt?"
             />
           </FormField>
 
@@ -218,318 +127,201 @@ const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
               value={formData.clientType || ''}
               onChange={value => handleInputChange('clientType', value)}
               options={clientTypeOptions}
-              placeholder="Wählen Sie den Kundentyp"
+              placeholder="Wer benötigt die Beratung?"
             />
           </FormField>
 
-          <FormField label="Einkommensbereich" required>
+          <FormField label="Jahreseinkommen (optional)">
             <FormSelect
               value={formData.incomeRange || ''}
               onChange={value => handleInputChange('incomeRange', value)}
               options={incomeRangeOptions}
-              placeholder="Wählen Sie den Einkommensbereich"
+              placeholder="Ungefähres Jahreseinkommen"
             />
           </FormField>
 
-          <FormField label="Vermögensbereich" required>
+          <FormField label="Vorhandenes Vermögen (optional)">
             <FormSelect
               value={formData.assetRange || ''}
               onChange={value => handleInputChange('assetRange', value)}
               options={assetRangeOptions}
-              placeholder="Wählen Sie den Vermögensbereich"
+              placeholder="Ungefähre Vermögenssituation"
             />
           </FormField>
 
-          <FormField label="Risikobereitschaft" required>
+          <FormField label="Zeitrahmen" required>
             <FormSelect
-              value={formData.riskTolerance || ''}
-              onChange={value => handleInputChange('riskTolerance', value)}
-              options={riskToleranceOptions}
-              placeholder="Wählen Sie die Risikobereitschaft"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann wird die Beratung benötigt?"
             />
           </FormField>
 
-          <FormField label="Anlagehorizont" required>
+          <FormField label="Art der Beratung">
             <FormSelect
-              value={formData.timeHorizon || ''}
-              onChange={value => handleInputChange('timeHorizon', value)}
-              options={timeHorizonOptions}
-              placeholder="Wählen Sie den Anlagehorizont"
-            />
-          </FormField>
-          <FormField label="Anlageerfahrung">
-            <FormSelect
-              value={formData.investmentExperience || ''}
-              onChange={value => handleInputChange('investmentExperience', value)}
-              options={investmentExperienceOptions}
-              placeholder="Wählen Sie die Anlageerfahrung"
+              value={formData.consultationType || ''}
+              onChange={value => handleInputChange('consultationType', value)}
+              options={consultationTypeOptions}
+              placeholder="Wie soll die Beratung stattfinden?"
             />
           </FormField>
 
-          <FormField label="Name/Unternehmen">
+          <FormField label="Budget für Beratung">
             <FormInput
               type="text"
-              value={formData.clientName || ''}
-              onChange={value => handleInputChange('clientName', value)}
-              placeholder="Ihr Name oder Unternehmen"
+              value={formData.consultationBudget || ''}
+              onChange={value => handleInputChange('consultationBudget', value)}
+              placeholder="z.B. 200-500 EUR"
             />
           </FormField>
 
-          <FormField label="Alter">
+          <FormField label="Alter (für Altersvorsorge)">
             <FormInput
               type="number"
-              value={formData.age?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'age',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Ihr Alter"
-            />
-          </FormField>
-
-          <FormField label="Monatliches Einkommen">
-            <FormInput
-              type="number"
-              value={formData.monthlyIncome?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'monthlyIncome',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Monatliches Nettoeinkommen in €"
-            />
-          </FormField>
-
-          <FormField label="Monatliche Ausgaben">
-            <FormInput
-              type="number"
-              value={formData.monthlyExpenses?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'monthlyExpenses',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Monatliche Ausgaben in €"
-            />
-          </FormField>
-
-          <FormField label="Verfügbares Kapital">
-            <FormInput
-              type="number"
-              value={formData.availableCapital?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'availableCapital',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Verfügbares Kapital in €"
-            />
-          </FormField>
-
-          <FormField label="Monatliche Sparrate">
-            <FormInput
-              type="number"
-              value={formData.monthlySavings?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'monthlySavings',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Monatliche Sparrate in €"
-            />
-          </FormField>
-
-          <FormField label="Gewünschte Rendite">
-            <FormInput
-              type="number"
-              value={formData.desiredReturn?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'desiredReturn',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Gewünschte Rendite in %"
-            />
-          </FormField>
-
-          <FormField label="Beratungstermin">
-            <FormInput
-              type="text"
-              value={formData.consultationDate || ''}
-              onChange={value => handleInputChange('consultationDate', value)}
-              placeholder="Gewünschter Beratungstermin"
+              value={formData.age || ''}
+              onChange={value => handleInputChange('age', value)}
+              placeholder="Alter in Jahren"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Anlageziele">
-            <FormCheckboxGroup
-              value={formData.investmentGoals || []}
-              onChange={value => handleInputChange('investmentGoals', value)}
-              options={investmentGoalOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Interessante Anlageprodukte">
-            <FormCheckboxGroup
-              value={formData.investmentProducts || []}
-              onChange={value => handleInputChange('investmentProducts', value)}
-              options={investmentProductOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zusätzliche Services">
-            <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Projektbeschreibung" required>
+          <FormField label="Beratungsziele" required>
             <FormTextarea
-              value={formData.projectDescription || ''}
-              onChange={value => handleInputChange('projectDescription', value)}
-              placeholder="Beschreiben Sie Ihr Finanzberatungsanliegen detailliert"
+              value={formData.consultationGoals || ''}
+              onChange={value => handleInputChange('consultationGoals', value)}
+              placeholder="Was möchten Sie mit der Finanzberatung erreichen?"
               rows={4}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Finanzielle Situation">
+          <FormField label="Aktuelle Finanzsituation">
             <FormTextarea
-              value={formData.financialSituation || ''}
-              onChange={value => handleInputChange('financialSituation', value)}
-              placeholder="Beschreiben Sie Ihre aktuelle finanzielle Situation"
+              value={formData.currentSituation || ''}
+              onChange={value => handleInputChange('currentSituation', value)}
+              placeholder="Beschreiben Sie Ihre aktuelle finanzielle Situation..."
               rows={3}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Finanzielle Ziele">
-            <FormTextarea
-              value={formData.financialGoals || ''}
-              onChange={value => handleInputChange('financialGoals', value)}
-              placeholder="Was sind Ihre finanziellen Ziele?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Bestehende Anlagen">
-            <FormTextarea
-              value={formData.existingInvestments || ''}
-              onChange={value => handleInputChange('existingInvestments', value)}
-              placeholder="Welche Anlagen haben Sie bereits?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Besondere Wünsche">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Besondere Wünsche oder Anforderungen"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Lebenssituation">
-            <FormTextarea
-              value={formData.lifeSituation || ''}
-              onChange={value => handleInputChange('lifeSituation', value)}
-              placeholder="Beschreiben Sie Ihre Lebenssituation (Familie, Beruf, etc.)"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Familienstand">
-            <FormRadioGroup
-              name="maritalStatus"
-              value={formData.maritalStatus || ''}
-              onChange={value => handleInputChange('maritalStatus', value)}
+          <FormField label="Interessensgebiete">
+            <FormCheckboxGroup
+              value={formData.areasOfInterest || []}
+              onChange={value => handleInputChange('areasOfInterest', value)}
               options={[
-                { value: 'ledig', label: 'Ledig' },
-                { value: 'verheiratet', label: 'Verheiratet' },
-                { value: 'geschieden', label: 'Geschieden' },
-                { value: 'verwitwet', label: 'Verwitwet' },
+                { value: 'sparen', label: 'Sparen & Anlegen' },
+                { value: 'aktien', label: 'Aktien & ETFs' },
+                { value: 'immobilien', label: 'Immobilien-Investment' },
+                { value: 'rente', label: 'Altersvorsorge' },
+                { value: 'versicherungen', label: 'Versicherungen' },
+                { value: 'steuern', label: 'Steueroptimierung' },
+                { value: 'kredite', label: 'Kredite & Finanzierungen' },
+                { value: 'unternehmen', label: 'Unternehmensfinanzen' },
+                { value: 'erbschaft', label: 'Erbschaft & Nachfolge' },
+                { value: 'ausland', label: 'Internationale Finanzen' },
               ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Kinder">
+          <FormField label="Risikobereitschaft">
             <FormRadioGroup
-              name="hasChildren"
-              value={formData.hasChildren || ''}
-              onChange={value => handleInputChange('hasChildren', value)}
+              name="riskTolerance"
+              value={formData.riskTolerance || ''}
+              onChange={value => handleInputChange('riskTolerance', value)}
               options={[
-                { value: 'ja', label: 'Ja' },
-                { value: 'nein', label: 'Nein' },
-                { value: 'geplant', label: 'Geplant' },
+                { value: 'sehr_niedrig', label: 'Sehr niedrig (Sicherheit steht im Vordergrund)' },
+                { value: 'niedrig', label: 'Niedrig (wenig Risiko)' },
+                { value: 'mittel', label: 'Mittel (ausgewogenes Risiko)' },
+                { value: 'hoch', label: 'Hoch (für höhere Renditen)' },
+                { value: 'sehr_hoch', label: 'Sehr hoch (maximale Rendite)' },
               ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Immobilieneigentum">
+          <FormField label="Anlagehorizont">
             <FormRadioGroup
-              name="realEstateOwnership"
-              value={formData.realEstateOwnership || ''}
-              onChange={value => handleInputChange('realEstateOwnership', value)}
+              name="investmentHorizon"
+              value={formData.investmentHorizon || ''}
+              onChange={value => handleInputChange('investmentHorizon', value)}
               options={[
-                { value: 'ja', label: 'Ja, ich besitze Immobilien' },
-                { value: 'nein', label: 'Nein, ich besitze keine Immobilien' },
-                { value: 'geplant', label: 'Immobilienkauf geplant' },
+                { value: 'kurzfristig', label: 'Kurzfristig (unter 2 Jahre)' },
+                { value: 'mittelfristig', label: 'Mittelfristig (2-10 Jahre)' },
+                { value: 'langfristig', label: 'Langfristig (über 10 Jahre)' },
+                { value: 'gemischt', label: 'Gemischte Ziele' },
               ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Nachhaltige Investments">
+          <FormField label="Erfahrung mit Finanzprodukten">
             <FormRadioGroup
-              name="sustainableInvestments"
-              value={formData.sustainableInvestments || ''}
-              onChange={value => handleInputChange('sustainableInvestments', value)}
+              name="financialExperience"
+              value={formData.financialExperience || ''}
+              onChange={value => handleInputChange('financialExperience', value)}
               options={[
-                { value: 'ja', label: 'Ja, nur nachhaltige Investments' },
-                { value: 'teilweise', label: 'Teilweise interessiert' },
-                { value: 'nein', label: 'Nein, nicht wichtig' },
+                { value: 'keine', label: 'Keine Erfahrung' },
+                { value: 'wenig', label: 'Wenig Erfahrung' },
+                { value: 'grundlagen', label: 'Grundkenntnisse' },
+                { value: 'erfahren', label: 'Erfahren' },
+                { value: 'experte', label: 'Experte' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Bereits vorhandene Finanzprodukte">
+            <FormCheckboxGroup
+              value={formData.existingProducts || []}
+              onChange={value => handleInputChange('existingProducts', value)}
+              options={[
+                { value: 'girokonto', label: 'Girokonto' },
+                { value: 'sparbuch', label: 'Sparbuch/Tagesgeld' },
+                { value: 'festgeld', label: 'Festgeld' },
+                { value: 'aktien', label: 'Aktien/ETFs' },
+                { value: 'fonds', label: 'Investmentfonds' },
+                { value: 'riester', label: 'Riester-Rente' },
+                { value: 'rürup', label: 'Rürup-Rente' },
+                { value: 'betriebsrente', label: 'Betriebliche Altersvorsorge' },
+                { value: 'immobilien', label: 'Immobilien' },
+                { value: 'versicherungen', label: 'Lebensversicherungen' },
+                { value: 'bausparvertrag', label: 'Bausparvertrag' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Bevorzugte Qualifikationen des Beraters">
+            <FormCheckboxGroup
+              value={formData.advisorQualifications || []}
+              onChange={value => handleInputChange('advisorQualifications', value)}
+              options={[
+                { value: 'zertifiziert', label: 'Zertifizierter Finanzberater' },
+                { value: 'steuerberater', label: 'Steuerberater' },
+                { value: 'bankausbildung', label: 'Bank-/Finanzausbildung' },
+                { value: 'versicherungsmakler', label: 'Versicherungsmakler' },
+                { value: 'immobilienerfahrung', label: 'Immobilien-Erfahrung' },
+                { value: 'unabhängig', label: 'Unabhängige Beratung' },
               ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Finanzberatung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Finanzberatung" formData={formData} />
     </div>
   );
-}
+};
 
 export default FinanzberatungForm;

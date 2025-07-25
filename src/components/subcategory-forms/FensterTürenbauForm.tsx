@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface FensterTürenbauFormProps {
   data: FensterTürenbauData;
@@ -17,96 +17,54 @@ interface FensterTürenbauFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<FensterTürenbauData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'austausch', label: 'Austausch' },
+    { value: 'fenster_einbau', label: 'Fenster-Einbau' },
+    { value: 'tür_einbau', label: 'Tür-Einbau' },
+    { value: 'fenster_austausch', label: 'Fenster-Austausch' },
+    { value: 'tür_austausch', label: 'Tür-Austausch' },
     { value: 'reparatur', label: 'Reparatur' },
     { value: 'wartung', label: 'Wartung' },
+    { value: 'sicherheit', label: 'Sicherheitstechnik' },
+    { value: 'beratung', label: 'Beratung/Vermessung' },
   ];
 
   const productTypeOptions = [
-    { value: 'fenster', label: 'Fenster' },
-    { value: 'türen', label: 'Türen' },
-    { value: 'wintergarten', label: 'Wintergarten' },
-    { value: 'rollläden', label: 'Rollläden' },
-    { value: 'jalousien', label: 'Jalousien' },
+    { value: 'kunststofffenster', label: 'Kunststofffenster' },
+    { value: 'holzfenster', label: 'Holzfenster' },
+    { value: 'alufenster', label: 'Aluminiumfenster' },
+    { value: 'holz_alu', label: 'Holz-Alu-Fenster' },
+    { value: 'haustür', label: 'Haustür' },
+    { value: 'innentür', label: 'Innentür' },
+    { value: 'balkontür', label: 'Balkontür' },
+    { value: 'schiebetür', label: 'Schiebetür' },
+    { value: 'dachfenster', label: 'Dachfenster' },
   ];
 
-  const materialOptions = [
-    { value: 'kunststoff', label: 'Kunststoff' },
-    { value: 'holz', label: 'Holz' },
-    { value: 'aluminium', label: 'Aluminium' },
-    { value: 'holz_alu', label: 'Holz-Aluminium' },
-    { value: 'stahl', label: 'Stahl' },
+  const glasTypeOptions = [
+    { value: 'einfachglas', label: 'Einfachglas' },
+    { value: 'doppelglas', label: 'Doppelglas' },
+    { value: 'dreifachglas', label: 'Dreifachglas' },
+    { value: 'sicherheitsglas', label: 'Sicherheitsglas' },
+    { value: 'schallschutzglas', label: 'Schallschutzglas' },
+    { value: 'wärmeschutzglas', label: 'Wärmeschutzglas' },
   ];
 
-  const glazingOptions = [
-    { value: 'einfach', label: 'Einfachverglasung' },
-    { value: 'doppelt', label: 'Doppelverglasung' },
-    { value: 'dreifach', label: 'Dreifachverglasung' },
-    { value: 'schallschutz', label: 'Schallschutzverglasung' },
-    { value: 'sicherheit', label: 'Sicherheitsverglasung' },
+  const buildingTypeOptions = [
+    { value: 'einfamilienhaus', label: 'Einfamilienhaus' },
+    { value: 'mehrfamilienhaus', label: 'Mehrfamilienhaus' },
+    { value: 'wohnung', label: 'Wohnung' },
+    { value: 'gewerbe', label: 'Gewerbegebäude' },
+    { value: 'büro', label: 'Bürogebäude' },
   ];
 
-  const openingTypeOptions = [
-    { value: 'dreh', label: 'Dreh' },
-    { value: 'kipp', label: 'Kipp' },
-    { value: 'dreh_kipp', label: 'Dreh-Kipp' },
-    { value: 'schiebe', label: 'Schiebe' },
-    { value: 'fest', label: 'Festverglasung' },
-  ];
-
-  const energyClassOptions = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'energiespar', label: 'Energiesparend' },
-    { value: 'passivhaus', label: 'Passivhaus' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort (Notfall)' },
+    { value: 'dringend', label: 'Dringend (1-2 Wochen)' },
+    { value: 'normal', label: 'Normal (1-2 Monate)' },
+    { value: 'geplant', label: 'Geplant (flexibel)' },
   ];
 
   const handleInputChange = (field: keyof FensterTürenbauData, value: any) => {
@@ -119,23 +77,22 @@ const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
     const isValid = !!(
       formData.serviceType &&
       formData.productType &&
-      formData.material &&
-      formData.glazing &&
-      formData.openingType &&
-      formData.energyClass &&
-      typeof formData.securityFeatures === 'boolean'
+      formData.glasType &&
+      formData.buildingType &&
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
       formData.productType &&
-      formData.material &&
-      formData.glazing &&
-      formData.openingType &&
-      formData.energyClass &&
-      typeof formData.securityFeatures === 'boolean'
+      formData.glasType &&
+      formData.buildingType &&
+      formData.urgency &&
+      formData.projectDescription
     );
   };
 
@@ -143,7 +100,7 @@ const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Fenster- & Türenbau Projektdetails
+          Fenster- und Türenbau Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -152,7 +109,7 @@ const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Wählen Sie die Art der Arbeit"
             />
           </FormField>
 
@@ -161,94 +118,73 @@ const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
               value={formData.productType || ''}
               onChange={value => handleInputChange('productType', value)}
               options={productTypeOptions}
-              placeholder="Wählen Sie den Produkttyp"
+              placeholder="Was soll eingebaut werden?"
             />
           </FormField>
 
-          <FormField label="Material" required>
+          <FormField label="Glastyp" required>
             <FormSelect
-              value={formData.material || ''}
-              onChange={value => handleInputChange('material', value)}
-              options={materialOptions}
-              placeholder="Wählen Sie das Material"
+              value={formData.glasType || ''}
+              onChange={value => handleInputChange('glasType', value)}
+              options={glasTypeOptions}
+              placeholder="Welcher Glastyp wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Verglasung" required>
+          <FormField label="Gebäudetyp" required>
             <FormSelect
-              value={formData.glazing || ''}
-              onChange={value => handleInputChange('glazing', value)}
-              options={glazingOptions}
-              placeholder="Wählen Sie die Verglasung"
+              value={formData.buildingType || ''}
+              onChange={value => handleInputChange('buildingType', value)}
+              options={buildingTypeOptions}
+              placeholder="Wählen Sie den Gebäudetyp"
             />
           </FormField>
 
-          <FormField label="Öffnungsart" required>
+          <FormField label="Dringlichkeit" required>
             <FormSelect
-              value={formData.openingType || ''}
-              onChange={value => handleInputChange('openingType', value)}
-              options={openingTypeOptions}
-              placeholder="Wählen Sie die Öffnungsart"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wie dringend ist das Projekt?"
             />
           </FormField>
 
-          <FormField label="Energieeffizienz" required>
-            <FormSelect
-              value={formData.energyClass || ''}
-              onChange={value => handleInputChange('energyClass', value)}
-              options={energyClassOptions}
-              placeholder="Wählen Sie die Energieeffizienz"
-            />
-          </FormField>
-
-          <FormField label="Anzahl Elemente">
+          <FormField label="Anzahl Einheiten">
             <FormInput
               type="number"
-              value={formData.quantity?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'quantity',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Elemente"
+              value={formData.numberOfUnits || ''}
+              onChange={value => handleInputChange('numberOfUnits', value)}
+              placeholder="Wie viele Fenster/Türen?"
             />
           </FormField>
 
-          <FormField label="Maße (B x H in cm)">
+          <FormField label="Maße (falls bekannt)">
             <FormInput
               type="text"
               value={formData.dimensions || ''}
               onChange={value => handleInputChange('dimensions', value)}
-              placeholder="z.B. 120 x 150"
+              placeholder="z.B. 120x150 cm"
+            />
+          </FormField>
+
+          <FormField label="Baujahr des Gebäudes">
+            <FormInput
+              type="text"
+              value={formData.buildingAge || ''}
+              onChange={value => handleInputChange('buildingAge', value)}
+              placeholder="z.B. 1980"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Sicherheitsfeatures gewünscht">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="securityFeatures"
-                  checked={formData.securityFeatures === true}
-                  onChange={() => handleInputChange('securityFeatures', true)}
-                  className="mr-2"
-                />
-                Ja, Sicherheitsfeatures erwünscht
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="securityFeatures"
-                  checked={formData.securityFeatures === false}
-                  onChange={() => handleInputChange('securityFeatures', false)}
-                  className="mr-2"
-                />
-                Nein, Standard ausreichend
-              </label>
-            </div>
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Fenster-/Türenprojekt detailliert"
+              rows={4}
+            />
           </FormField>
         </div>
 
@@ -257,16 +193,57 @@ const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
+              placeholder="Energieeffizienz, Schallschutz, Sicherheit etc."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Materiallieferung">
+            <FormRadioGroup
+              name="materialSupply"
+              value={formData.materialSupply || ''}
+              onChange={value => handleInputChange('materialSupply', value)}
+              options={[
+                { value: 'handwerker', label: 'Handwerker beschafft Material' },
+                { value: 'kunde', label: 'Kunde beschafft Material' },
+                { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Demontage alter Fenster/Türen">
+            <FormRadioGroup
+              name="demolition"
+              value={formData.demolition || ''}
+              onChange={value => handleInputChange('demolition', value)}
+              options={[
+                { value: 'ja', label: 'Ja, alte Fenster/Türen müssen entfernt werden' },
+                { value: 'nein', label: 'Nein, Neubau ohne Demontage' },
+                { value: 'teilweise', label: 'Nur teilweise' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 5.000-10.000 EUR"
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="FensterTürenbau" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Fenster- und Türenbau" formData={formData} />
     </div>
   );
-}
+};
 
 export default FensterTürenbauForm;

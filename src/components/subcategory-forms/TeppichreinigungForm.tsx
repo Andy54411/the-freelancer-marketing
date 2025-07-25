@@ -103,7 +103,7 @@ const TeppichreinigungForm: React.FC<TeppichreinigungFormProps> = ({
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Teppichreinigung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Teppichreinigung" formData={formData} />
     </div>
   );
 }

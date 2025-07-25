@@ -630,7 +630,7 @@ const MalerForm: React.FC<MalerFormProps> = ({ data, onDataChange, onValidationC
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Maler" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Maler" formData={formData} />
     </div>
   );
 }

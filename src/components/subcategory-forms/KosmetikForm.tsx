@@ -130,7 +130,7 @@ const KosmetikForm: React.FC<KosmetikFormProps> = ({ data, onDataChange, onValid
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Kosmetik" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Kosmetik" formData={formData} />
     </div>
   );
 }

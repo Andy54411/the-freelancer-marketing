@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { TrockenbauData } from '@/types/subcategory-forms';
+import { TrockenbauerData } from '@/types/subcategory-forms';
 import {
   FormField,
   FormSelect,
@@ -8,142 +8,79 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface TrockenbauerFormProps {
-  data: TrockenbauData;
-  onDataChange: (data: TrockenbauData) => void;
+  data: TrockenbauerData;
+  onDataChange: (data: TrockenbauerData) => void;
   onValidationChange: (isValid: boolean) => void;
 }
 
-const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
-  const [formData, setFormData] = useState<TrockenbauData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
+const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+  const [formData, setFormData] = useState<TrockenbauerData>(data);
 
   const serviceTypeOptions = [
-    { value: 'neubau', label: 'Neubau' },
-    { value: 'renovierung', label: 'Renovierung' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'umbau', label: 'Umbau' },
+    { value: 'wände_stellen', label: 'Wände stellen' },
+    { value: 'decken_abhängen', label: 'Decken abhängen' },
+    { value: 'trennwände', label: 'Trennwände errichten' },
+    { value: 'schallschutz', label: 'Schallschutz' },
+    { value: 'wärmedämmung', label: 'Wärmedämmung' },
+    { value: 'brandschutz', label: 'Brandschutz' },
+    { value: 'spachteln', label: 'Spachteln/Glätten' },
+    { value: 'dämmung', label: 'Dämmarbeiten' },
+    { value: 'komplettausbau', label: 'Kompletter Innenausbau' },
   ];
 
-  const workTypeOptions = [
-    { value: 'trennwand', label: 'Trennwand' },
-    { value: 'abgehängte_decke', label: 'Abgehängte Decke' },
-    { value: 'verkleidung', label: 'Verkleidung' },
-    { value: 'dämmung', label: 'Dämmung' },
-    { value: 'vorsatzschale', label: 'Vorsatzschale' },
+  const areaOptions = [
+    { value: 'wohnzimmer', label: 'Wohnzimmer' },
+    { value: 'schlafzimmer', label: 'Schlafzimmer' },
+    { value: 'küche', label: 'Küche' },
+    { value: 'badezimmer', label: 'Badezimmer' },
+    { value: 'keller', label: 'Keller' },
+    { value: 'dachboden', label: 'Dachboden' },
+    { value: 'büro', label: 'Büro' },
+    { value: 'gewerbe', label: 'Gewerberaum' },
+    { value: 'mehrere_räume', label: 'Mehrere Räume' },
   ];
 
-  const materialOptions = [
-    { value: 'gipskarton', label: 'Gipskarton' },
-    { value: 'gipsfaser', label: 'Gipsfaser' },
-    { value: 'fermacell', label: 'Fermacell' },
-    { value: 'osb', label: 'OSB-Platten' },
-    { value: 'spanplatte', label: 'Spanplatte' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+  const projectSizeOptions = [
+    { value: 'klein', label: 'Klein (bis 20m²)' },
+    { value: 'mittel', label: 'Mittel (20-50m²)' },
+    { value: 'groß', label: 'Groß (50-100m²)' },
+    { value: 'sehr_groß', label: 'Sehr groß (über 100m²)' },
   ];
 
-  const wallThicknessOptions = [
-    { value: '75', label: '75 mm' },
-    { value: '100', label: '100 mm' },
-    { value: '125', label: '125 mm' },
-    { value: '150', label: '150 mm' },
-    { value: '175', label: '175 mm' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'diesen_monat', label: 'Diesen Monat' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
-  const profileTypeOptions = [
-    { value: 'cw', label: 'CW-Profil' },
-    { value: 'uw', label: 'UW-Profil' },
-    { value: 'cd', label: 'CD-Profil' },
-    { value: 'ud', label: 'UD-Profil' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
-  const soundInsulationOptions = [
-    { value: 'benötigt', label: 'Schallschutz erforderlich' },
-    { value: 'nicht_nötig', label: 'Nicht erforderlich' },
-  ];
-
-  const fireProtectionOptions = [
-    { value: 'benötigt', label: 'Brandschutz erforderlich' },
-    { value: 'nicht_nötig', label: 'Nicht erforderlich' },
-  ];
-
-  const handleInputChange = (field: keyof TrockenbauData, value: any) => {
+  const handleInputChange = (field: keyof TrockenbauerData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.material &&
-      formData.wallThickness &&
-      formData.profileType &&
-      formData.soundInsulation &&
-      formData.fireProtection &&
-      typeof formData.insulationNeeded === 'boolean'
+      formData.area &&
+      formData.projectSize &&
+      formData.urgency
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.workType &&
-      formData.material &&
-      formData.wallThickness &&
-      formData.profileType &&
-      formData.soundInsulation &&
-      formData.fireProtection &&
-      typeof formData.insulationNeeded === 'boolean'
+      formData.area &&
+      formData.projectSize &&
+      formData.urgency
     );
   };
 
@@ -151,7 +88,7 @@ const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Trockenbauer-Projektdetails
+          Trockenbauer Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -160,149 +97,204 @@ const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Welcher Service wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Art der Trockenbauarbeit" required>
+          <FormField label="Bereich/Raum" required>
             <FormSelect
-              value={formData.workType || ''}
-              onChange={value => handleInputChange('workType', value)}
-              options={workTypeOptions}
-              placeholder="Wählen Sie die Art der Arbeit"
+              value={formData.area || ''}
+              onChange={value => handleInputChange('area', value)}
+              options={areaOptions}
+              placeholder="In welchem Bereich?"
             />
           </FormField>
 
-          <FormField label="Fläche (m²)">
+          <FormField label="Projektgröße" required>
+            <FormSelect
+              value={formData.projectSize || ''}
+              onChange={value => handleInputChange('projectSize', value)}
+              options={projectSizeOptions}
+              placeholder="Wie groß ist die Fläche?"
+            />
+          </FormField>
+
+          <FormField label="Zeitrahmen" required>
+            <FormSelect
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann soll das Projekt starten?"
+            />
+          </FormField>
+
+          <FormField label="Fläche in m²">
             <FormInput
               type="number"
-              value={formData.area?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'area',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Fläche in m²"
+              value={formData.squareMeters || ''}
+              onChange={value => handleInputChange('squareMeters', Number(value))}
+              placeholder="z.B. 25"
             />
           </FormField>
 
-          <FormField label="Wandhöhe (m)">
+          <FormField label="Raumhöhe">
             <FormInput
-              type="number"
-              value={formData.wallHeight?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'wallHeight',
-                  typeof value === 'string' ? (value ? parseFloat(value) : undefined) : value
-                )
-              }
-              placeholder="Wandhöhe in Metern"
+              type="text"
+              value={formData.roomHeight || ''}
+              onChange={value => handleInputChange('roomHeight', value)}
+              placeholder="z.B. 2,5m"
             />
           </FormField>
 
-          <FormField label="Material" required>
-            <FormSelect
-              value={formData.material || ''}
-              onChange={value => handleInputChange('material', value)}
-              options={materialOptions}
-              placeholder="Wählen Sie das Material"
-            />
-          </FormField>
-
-          <FormField label="Wandstärke" required>
-            <FormSelect
-              value={formData.wallThickness || ''}
-              onChange={value => handleInputChange('wallThickness', value)}
-              options={wallThicknessOptions}
-              placeholder="Wählen Sie die Wandstärke"
-            />
-          </FormField>
-
-          <FormField label="Profiltyp" required>
-            <FormSelect
-              value={formData.profileType || ''}
-              onChange={value => handleInputChange('profileType', value)}
-              options={profileTypeOptions}
-              placeholder="Wählen Sie den Profiltyp"
-            />
-          </FormField>
-
-          <FormField label="Schallschutz" required>
-            <FormSelect
-              value={formData.soundInsulation || ''}
-              onChange={value => handleInputChange('soundInsulation', value)}
-              options={soundInsulationOptions}
-              placeholder="Schallschutz erforderlich?"
-            />
-          </FormField>
-
-          <FormField label="Brandschutz" required>
-            <FormSelect
-              value={formData.fireProtection || ''}
-              onChange={value => handleInputChange('fireProtection', value)}
-              options={fireProtectionOptions}
-              placeholder="Brandschutz erforderlich?"
-            />
-          </FormField>
-
-          <FormField label="Anzahl Öffnungen">
+          <FormField label="Budget-Rahmen">
             <FormInput
-              type="number"
-              value={formData.openings?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'openings',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl Türen/Fenster"
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 1.500-3.000 EUR"
+            />
+          </FormField>
+
+          <FormField label="Projektort">
+            <FormInput
+              type="text"
+              value={formData.location || ''}
+              onChange={value => handleInputChange('location', value)}
+              placeholder="z.B. Berlin, 10115"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Dämmung erforderlich">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="insulationNeeded"
-                  checked={formData.insulationNeeded === true}
-                  onChange={() => handleInputChange('insulationNeeded', true)}
-                  className="mr-2"
-                />
-                Ja, Dämmung erforderlich
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="insulationNeeded"
-                  checked={formData.insulationNeeded === false}
-                  onChange={() => handleInputChange('insulationNeeded', false)}
-                  className="mr-2"
-                />
-                Nein, keine Dämmung erforderlich
-              </label>
-            </div>
+          <FormField label="Materialien">
+            <FormCheckboxGroup
+              value={formData.materials || []}
+              onChange={value => handleInputChange('materials', value)}
+              options={[
+                { value: 'gipskarton', label: 'Gipskarton' },
+                { value: 'gipsfaser', label: 'Gipsfaserplatten' },
+                { value: 'zementbauplatten', label: 'Zementbauplatten' },
+                { value: 'osb_platten', label: 'OSB-Platten' },
+                { value: 'dämmung', label: 'Dämmung' },
+                { value: 'metallprofile', label: 'Metallprofile' },
+                { value: 'beratung_gewünscht', label: 'Beratung gewünscht' },
+              ]}
+            />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
+          <FormField label="Zusätzliche Services">
+            <FormCheckboxGroup
+              value={formData.additionalServices || []}
+              onChange={value => handleInputChange('additionalServices', value)}
+              options={[
+                { value: 'spachteln', label: 'Spachteln/Glätten' },
+                { value: 'grundierung', label: 'Grundierung' },
+                { value: 'anstrich', label: 'Anstrich' },
+                { value: 'tapezieren', label: 'Tapezieren' },
+                { value: 'dämmung', label: 'Dämmung einbauen' },
+                { value: 'elektro_vorbereitung', label: 'Elektro-Vorbereitungen' },
+                { value: 'aufräumen', label: 'Aufräumen/Entsorgung' },
+                { value: 'materiallieferung', label: 'Materiallieferung' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Spezielle Anforderungen">
+            <FormCheckboxGroup
+              value={formData.specialRequirements || []}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
+              options={[
+                { value: 'feuchteschutz', label: 'Feuchteschutz' },
+                { value: 'schallschutz', label: 'Schallschutz' },
+                { value: 'brandschutz', label: 'Brandschutz' },
+                { value: 'wärmedämmung', label: 'Wärmedämmung' },
+                { value: 'dampfsperre', label: 'Dampfsperre' },
+                { value: 'badsanierung', label: 'Feuchtraumgeeignet' },
+                { value: 'abhängung', label: 'Decken-Abhängung' },
+                { value: 'installationen', label: 'Installationsebenen' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Projektbeschreibung">
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Trockenbau-Projekt im Detail..."
+              rows={4}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Besondere Hinweise">
+            <FormTextarea
+              value={formData.specialNotes || ''}
+              onChange={value => handleInputChange('specialNotes', value)}
+              placeholder="Besondere Umstände, Herausforderungen oder Wünsche..."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Zustand der Wände">
+            <FormRadioGroup
+              name="wallCondition"
+              value={formData.wallCondition || ''}
+              onChange={value => handleInputChange('wallCondition', value)}
+              options={[
+                { value: 'neubau', label: 'Neubau (Rohbau)' },
+                { value: 'renovierung', label: 'Renovierung (bestehende Wände)' },
+                { value: 'sanierung', label: 'Sanierung (beschädigte Wände)' },
+                { value: 'anbau', label: 'Anbau/Erweiterung' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Oberflächenqualität">
+            <FormRadioGroup
+              name="surfaceQuality"
+              value={formData.surfaceQuality || ''}
+              onChange={value => handleInputChange('surfaceQuality', value)}
+              options={[
+                { value: 'q1', label: 'Q1 - Grundspachtelung' },
+                { value: 'q2', label: 'Q2 - Standard (Tapete)' },
+                { value: 'q3', label: 'Q3 - Fein (Farbe matt)' },
+                { value: 'q4', label: 'Q4 - Sehr fein (Farbe glänzend)' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Arbeitszeit">
+            <FormRadioGroup
+              name="workingTime"
+              value={formData.workingTime || ''}
+              onChange={value => handleInputChange('workingTime', value)}
+              options={[
+                { value: 'normal', label: 'Normale Arbeitszeiten' },
+                { value: 'abends', label: 'Abends/Wochenende möglich' },
+                { value: 'schnell', label: 'Möglichst schnell' },
+                { value: 'flexibel', label: 'Zeitlich flexibel' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Trockenbauer" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Trockenbauer" formData={formData} />
     </div>
   );
-}
+};
 
 export default TrockenbauerForm;

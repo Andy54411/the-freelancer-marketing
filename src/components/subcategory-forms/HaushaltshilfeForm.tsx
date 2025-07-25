@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface HaushaltshilfeFormProps {
   data: HaushaltshilfeData;
@@ -17,93 +17,42 @@ interface HaushaltshilfeFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<HaushaltshilfeData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'regelmäßig', label: 'Regelmäßig' },
-    { value: 'einmalig', label: 'Einmalig' },
-    { value: 'nach_bedarf', label: 'Nach Bedarf' },
-  ];
-
-  const servicesOptions = [
-    { value: 'putzen', label: 'Putzen' },
-    { value: 'waschen', label: 'Waschen' },
-    { value: 'bügeln', label: 'Bügeln' },
-    { value: 'kochen', label: 'Kochen' },
-    { value: 'einkaufen', label: 'Einkaufen' },
+    { value: 'regelmäßige_reinigung', label: 'Regelmäßige Haushaltsreinigung' },
+    { value: 'grundreinigung', label: 'Grundreinigung' },
+    { value: 'fensterreinigung', label: 'Fensterreinigung' },
+    { value: 'bügelservice', label: 'Bügelservice' },
+    { value: 'einkaufen', label: 'Einkaufen/Besorgungen' },
+    { value: 'kochen', label: 'Kochen/Mahlzeiten' },
     { value: 'kinderbetreuung', label: 'Kinderbetreuung' },
+    { value: 'seniorenbetreuung', label: 'Seniorenbetreuung' },
+    { value: 'gartenarbeit', label: 'Gartenarbeit' },
+    { value: 'umzugshilfe', label: 'Umzugshilfe' },
   ];
 
   const frequencyOptions = [
-    { value: 'täglich', label: 'Täglich' },
+    { value: 'einmalig', label: 'Einmalig' },
     { value: 'wöchentlich', label: 'Wöchentlich' },
-    { value: 'zweiwöchentlich', label: 'Zweiwöchentlich' },
+    { value: '14_tägig', label: '14-tägig' },
     { value: 'monatlich', label: 'Monatlich' },
+    { value: 'nach_bedarf', label: 'Nach Bedarf' },
   ];
 
-  const timePreferenceOptions = [
-    { value: 'morgens', label: 'Morgens' },
-    { value: 'nachmittags', label: 'Nachmittags' },
-    { value: 'abends', label: 'Abends' },
+  const houseSizeOptions = [
+    { value: 'bis_50', label: 'Bis 50 m²' },
+    { value: '50_100', label: '50-100 m²' },
+    { value: '100_150', label: '100-150 m²' },
+    { value: 'über_150', label: 'Über 150 m²' },
+  ];
+
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
     { value: 'flexibel', label: 'Flexibel' },
-  ];
-
-  const languageOptions = [
-    { value: 'deutsch', label: 'Deutsch' },
-    { value: 'englisch', label: 'Englisch' },
-    { value: 'spanisch', label: 'Spanisch' },
-    { value: 'französisch', label: 'Französisch' },
-    { value: 'sonstiges', label: 'Sonstiges' },
-  ];
-
-  const experienceOptions = [
-    { value: 'egal', label: 'Egal' },
-    { value: 'erfahren', label: 'Erfahren' },
-    { value: 'sehr_erfahren', label: 'Sehr erfahren' },
   ];
 
   const handleInputChange = (field: keyof HaushaltshilfeData, value: any) => {
@@ -112,30 +61,22 @@ const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.services &&
-      formData.services.length > 0 &&
-      formData.timePreference &&
-      formData.languages &&
-      formData.languages.length > 0 &&
-      formData.experience &&
-      typeof formData.ownTransport === 'boolean'
+      formData.frequency &&
+      formData.houseSize &&
+      formData.urgency
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.services &&
-      formData.services.length > 0 &&
-      formData.timePreference &&
-      formData.languages &&
-      formData.languages.length > 0 &&
-      formData.experience &&
-      typeof formData.ownTransport === 'boolean'
+      formData.frequency &&
+      formData.houseSize &&
+      formData.urgency
     );
   };
 
@@ -143,7 +84,7 @@ const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Haushaltshilfe-Projektdetails
+          Haushaltshilfe Service Details
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -152,116 +93,107 @@ const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Welche Hilfe wird benötigt?"
             />
           </FormField>
 
-          {formData.serviceType === 'regelmäßig' && (
-            <FormField label="Häufigkeit" required>
-              <FormSelect
-                value={formData.frequency || ''}
-                onChange={value => handleInputChange('frequency', value)}
-                options={frequencyOptions}
-                placeholder="Wie oft wird Hilfe benötigt?"
-              />
-            </FormField>
-          )}
+          <FormField label="Häufigkeit" required>
+            <FormSelect
+              value={formData.frequency || ''}
+              onChange={value => handleInputChange('frequency', value)}
+              options={frequencyOptions}
+              placeholder="Wie oft wird Hilfe benötigt?"
+            />
+          </FormField>
+
+          <FormField label="Wohnungsgröße" required>
+            <FormSelect
+              value={formData.houseSize || ''}
+              onChange={value => handleInputChange('houseSize', value)}
+              options={houseSizeOptions}
+              placeholder="Wie groß ist die Wohnung/das Haus?"
+            />
+          </FormField>
+
+          <FormField label="Zeitrahmen" required>
+            <FormSelect
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann wird die Hilfe benötigt?"
+            />
+          </FormField>
 
           <FormField label="Stunden pro Einsatz">
             <FormInput
               type="number"
-              value={formData.hours?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'hours',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl Stunden pro Einsatz"
+              value={formData.hoursPerSession || ''}
+              onChange={value => handleInputChange('hoursPerSession', value)}
+              placeholder="z.B. 3"
             />
           </FormField>
 
-          <FormField label="Zeitpräferenz" required>
-            <FormSelect
-              value={formData.timePreference || ''}
-              onChange={value => handleInputChange('timePreference', value)}
-              options={timePreferenceOptions}
-              placeholder="Bevorzugte Tageszeit"
-            />
-          </FormField>
-
-          <FormField label="Erfahrung" required>
-            <FormSelect
-              value={formData.experience || ''}
-              onChange={value => handleInputChange('experience', value)}
-              options={experienceOptions}
-              placeholder="Gewünschte Erfahrung"
+          <FormField label="Budget pro Stunde">
+            <FormInput
+              type="text"
+              value={formData.hourlyBudget || ''}
+              onChange={value => handleInputChange('hourlyBudget', value)}
+              placeholder="z.B. 15-20 EUR"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Benötigte Services" required>
+          <FormField label="Spezielle Aufgaben">
             <FormCheckboxGroup
-              value={formData.services || []}
-              onChange={value => handleInputChange('services', value)}
-              options={servicesOptions}
+              value={formData.specificTasks || []}
+              onChange={value => handleInputChange('specificTasks', value)}
+              options={[
+                { value: 'staubsaugen', label: 'Staubsaugen' },
+                { value: 'wischen', label: 'Böden wischen' },
+                { value: 'badezimmer', label: 'Badezimmer reinigen' },
+                { value: 'küche', label: 'Küche reinigen' },
+                { value: 'fenster', label: 'Fenster putzen' },
+                { value: 'bügeln', label: 'Bügeln' },
+                { value: 'wäsche', label: 'Wäsche waschen' },
+                { value: 'einkaufen', label: 'Einkaufen' },
+                { value: 'kochen', label: 'Kochen' },
+                { value: 'aufräumen', label: 'Aufräumen' },
+              ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Sprachen" required>
-            <FormCheckboxGroup
-              value={formData.languages || []}
-              onChange={value => handleInputChange('languages', value)}
-              options={languageOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Eigener Transport">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="ownTransport"
-                  checked={formData.ownTransport === true}
-                  onChange={() => handleInputChange('ownTransport', true)}
-                  className="mr-2"
-                />
-                Ja, hat eigenen Transport
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="ownTransport"
-                  checked={formData.ownTransport === false}
-                  onChange={() => handleInputChange('ownTransport', false)}
-                  className="mr-2"
-                />
-                Nein, kein eigener Transport
-              </label>
-            </div>
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Besondere Anforderungen">
+          <FormField label="Zusätzliche Informationen">
             <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten"
+              value={formData.additionalInfo || ''}
+              onChange={value => handleInputChange('additionalInfo', value)}
+              placeholder="Besondere Wünsche, Allergien, Haustiere, etc."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Reinigungsmittel">
+            <FormRadioGroup
+              name="cleaningSupplies"
+              value={formData.cleaningSupplies || ''}
+              onChange={value => handleInputChange('cleaningSupplies', value)}
+              options={[
+                { value: 'mitbringen', label: 'Haushaltshilfe bringt Reinigungsmittel mit' },
+                { value: 'vorhanden', label: 'Reinigungsmittel sind vorhanden' },
+                { value: 'bio', label: 'Bio-/Umweltfreundliche Produkte gewünscht' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Haushaltshilfe" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Haushaltshilfe" formData={formData} />
     </div>
   );
-}
+};
 
 export default HaushaltshilfeForm;

@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface TischlerFormProps {
   data: TischlerData;
@@ -19,88 +19,43 @@ interface TischlerFormProps {
 
 const TischlerForm: React.FC<TischlerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<TischlerData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'anfertigung', label: 'Anfertigung' },
-    { value: 'restauration', label: 'Restauration' },
-    { value: 'beratung', label: 'Beratung' },
-  ];
-
-  const furnitureTypeOptions = [
-    { value: 'küche', label: 'Küche' },
-    { value: 'schrank', label: 'Schrank' },
-    { value: 'tisch', label: 'Tisch' },
-    { value: 'stuhl', label: 'Stuhl' },
-    { value: 'türen', label: 'Türen' },
-    { value: 'fenster', label: 'Fenster' },
-    { value: 'parkett', label: 'Parkett' },
-    { value: 'sonstiges', label: 'Sonstiges' },
+    { value: 'möbelbau', label: 'Möbelbau' },
+    { value: 'küchenbau', label: 'Küchenbau' },
+    { value: 'innenausbau', label: 'Innenausbau' },
+    { value: 'fenster_türen', label: 'Fenster und Türen' },
+    { value: 'treppen', label: 'Treppenbau' },
+    { value: 'parkett', label: 'Parkett/Böden' },
+    { value: 'wintergarten', label: 'Wintergarten' },
+    { value: 'carport', label: 'Carport/Überdachung' },
+    { value: 'reparatur', label: 'Reparatur/Restaurierung' },
+    { value: 'einbauschränke', label: 'Einbauschränke' },
   ];
 
   const materialOptions = [
-    { value: 'holz', label: 'Holz (allgemein)' },
+    { value: 'massivholz', label: 'Massivholz' },
+    { value: 'furnier', label: 'Furnier' },
     { value: 'mdf', label: 'MDF' },
     { value: 'spanplatte', label: 'Spanplatte' },
-    { value: 'massivholz', label: 'Massivholz' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
+    { value: 'sperrholz', label: 'Sperrholz' },
+    { value: 'holzwerkstoffe', label: 'Holzwerkstoffe' },
+    { value: 'exotische_hölzer', label: 'Exotische Hölzer' },
+    { value: 'beratung_gewünscht', label: 'Beratung gewünscht' },
   ];
 
-  const complexityOptions = [
-    { value: 'einfach', label: 'Einfach' },
-    { value: 'mittel', label: 'Mittel' },
-    { value: 'komplex', label: 'Komplex' },
+  const projectSizeOptions = [
+    { value: 'klein', label: 'Klein (1-3 Tage)' },
+    { value: 'mittel', label: 'Mittel (1-2 Wochen)' },
+    { value: 'groß', label: 'Groß (mehrere Wochen)' },
+    { value: 'sehr_groß', label: 'Sehr groß (mehrere Monate)' },
   ];
 
-  const materialProvidedOptions = [
-    { value: 'kunde', label: 'Kunde stellt Material' },
-    { value: 'handwerker', label: 'Handwerker bringt Material mit' },
-    { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
-  ];
-
-  const timeframeOptions = [
+  const urgencyOptions = [
     { value: 'sofort', label: 'Sofort' },
-    { value: 'innerhalb_woche', label: 'Innerhalb einer Woche' },
-    { value: 'innerhalb_monat', label: 'Innerhalb eines Monats' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'diesen_monat', label: 'Diesen Monat' },
     { value: 'flexibel', label: 'Flexibel' },
   ];
 
@@ -110,26 +65,22 @@ const TischlerForm: React.FC<TischlerFormProps> = ({ data, onDataChange, onValid
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.furnitureType &&
-      formData.material &&
-      formData.complexity &&
-      formData.materialProvided &&
-      formData.timeframe
+      formData.projectSize &&
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.furnitureType &&
-      formData.material &&
-      formData.complexity &&
-      formData.materialProvided &&
-      formData.timeframe
+      formData.projectSize &&
+      formData.urgency &&
+      formData.projectDescription
     );
   };
 
@@ -137,7 +88,7 @@ const TischlerForm: React.FC<TischlerFormProps> = ({ data, onDataChange, onValid
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Tischler-Projektdetails
+          Tischler Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -146,71 +97,110 @@ const TischlerForm: React.FC<TischlerFormProps> = ({ data, onDataChange, onValid
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Welcher Service wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Möbeltyp" required>
+          <FormField label="Projektgröße" required>
             <FormSelect
-              value={formData.furnitureType || ''}
-              onChange={value => handleInputChange('furnitureType', value)}
-              options={furnitureTypeOptions}
-              placeholder="Wählen Sie den Möbeltyp"
-            />
-          </FormField>
-
-          <FormField label="Material" required>
-            <FormSelect
-              value={formData.material || ''}
-              onChange={value => handleInputChange('material', value)}
-              options={materialOptions}
-              placeholder="Wählen Sie das Material"
-            />
-          </FormField>
-
-          <FormField label="Holzart (falls spezifisch)">
-            <FormInput
-              value={formData.woodType || ''}
-              onChange={value => handleInputChange('woodType', value)}
-              placeholder="z.B. Eiche, Buche, Kiefer"
-            />
-          </FormField>
-
-          <FormField label="Komplexität" required>
-            <FormSelect
-              value={formData.complexity || ''}
-              onChange={value => handleInputChange('complexity', value)}
-              options={complexityOptions}
-              placeholder="Wählen Sie die Komplexität"
-            />
-          </FormField>
-
-          <FormField label="Materialbereitstellung" required>
-            <FormSelect
-              value={formData.materialProvided || ''}
-              onChange={value => handleInputChange('materialProvided', value)}
-              options={materialProvidedOptions}
-              placeholder="Wer stellt das Material?"
+              value={formData.projectSize || ''}
+              onChange={value => handleInputChange('projectSize', value)}
+              options={projectSizeOptions}
+              placeholder="Wie groß ist das Projekt?"
             />
           </FormField>
 
           <FormField label="Zeitrahmen" required>
             <FormSelect
-              value={formData.timeframe || ''}
-              onChange={value => handleInputChange('timeframe', value)}
-              options={timeframeOptions}
-              placeholder="Wählen Sie den Zeitrahmen"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wann soll das Projekt starten?"
+            />
+          </FormField>
+
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 2.000-5.000 EUR"
+            />
+          </FormField>
+
+          <FormField label="Projektort">
+            <FormInput
+              type="text"
+              value={formData.location || ''}
+              onChange={value => handleInputChange('location', value)}
+              placeholder="z.B. Berlin, 10115"
+            />
+          </FormField>
+
+          <FormField label="Maße/Größe">
+            <FormInput
+              type="text"
+              value={formData.dimensions || ''}
+              onChange={value => handleInputChange('dimensions', value)}
+              placeholder="z.B. 3m x 2m x 0.8m"
+            />
+          </FormField>
+
+          <FormField label="Gewünschter Stil">
+            <FormInput
+              type="text"
+              value={formData.style || ''}
+              onChange={value => handleInputChange('style', value)}
+              placeholder="z.B. Modern, Rustikal, Klassisch"
+            />
+          </FormField>
+
+          <FormField label="Anzahl Stücke">
+            <FormInput
+              type="number"
+              value={formData.quantity || ''}
+              onChange={value => handleInputChange('quantity', Number(value))}
+              placeholder="Wie viele Stücke?"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Abmessungen">
+          <FormField label="Material-Präferenzen">
+            <FormCheckboxGroup
+              value={formData.materials || []}
+              onChange={value => handleInputChange('materials', value)}
+              options={materialOptions}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Zusätzliche Services">
+            <FormCheckboxGroup
+              value={formData.additionalServices || []}
+              onChange={value => handleInputChange('additionalServices', value)}
+              options={[
+                { value: 'planung', label: 'Planung/Design' },
+                { value: 'beratung', label: 'Materialberatung' },
+                { value: 'lieferung', label: 'Lieferung' },
+                { value: 'montage', label: 'Montage vor Ort' },
+                { value: 'oberflächenbehandlung', label: 'Oberflächenbehandlung' },
+                { value: 'maßanfertigung', label: 'Maßanfertigung' },
+                { value: 'reparatur', label: 'Reparatur/Restaurierung' },
+                { value: 'wartung', label: 'Wartung/Pflege' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Projektbeschreibung" required>
             <FormTextarea
-              value={formData.dimensions || ''}
-              onChange={value => handleInputChange('dimensions', value)}
-              placeholder="Geben Sie die gewünschten Abmessungen an (z.B. 200x80x75 cm)"
-              rows={2}
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihr Tischler-Projekt im Detail..."
+              rows={4}
             />
           </FormField>
         </div>
@@ -220,16 +210,47 @@ const TischlerForm: React.FC<TischlerFormProps> = ({ data, onDataChange, onValid
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten"
+              placeholder="Besondere Wünsche, Anforderungen oder Herausforderungen..."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Qualität">
+            <FormRadioGroup
+              name="quality"
+              value={formData.quality || ''}
+              onChange={value => handleInputChange('quality', value)}
+              options={[
+                { value: 'standard', label: 'Standard-Qualität' },
+                { value: 'premium', label: 'Premium-Qualität' },
+                { value: 'luxus', label: 'Luxus-Ausführung' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Erfahrung mit Handwerk">
+            <FormRadioGroup
+              name="experience"
+              value={formData.experience || ''}
+              onChange={value => handleInputChange('experience', value)}
+              options={[
+                { value: 'keine', label: 'Keine Erfahrung' },
+                { value: 'wenig', label: 'Wenig Erfahrung' },
+                { value: 'gut', label: 'Gute Erfahrung' },
+                { value: 'experte', label: 'Sehr erfahren' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Tischler" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Tischler" formData={formData} />
     </div>
   );
-}
+};
 
 export default TischlerForm;

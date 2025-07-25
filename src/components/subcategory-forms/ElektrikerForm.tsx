@@ -1,17 +1,15 @@
 'use client';
-// Elektriker-spezifisches Formular
 import React, { useState, useEffect } from 'react';
 import { ElektrikerData } from '@/types/subcategory-forms';
 import {
   FormField,
   FormSelect,
   FormInput,
+  FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
-  FormTextarea,
-  SelectOption,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface ElektrikerFormProps {
   data: ElektrikerData;
@@ -19,116 +17,85 @@ interface ElektrikerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const ElektrikerForm: React.FC<ElektrikerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<ElektrikerData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
-  const updateData = (updates: Partial<ElektrikerData>) => {
-    const updatedData = { ...formData, ...updates };
+  const serviceTypeOptions = [
+    { value: 'installation', label: 'Installation' },
+    { value: 'reparatur', label: 'Reparatur' },
+    { value: 'wartung', label: 'Wartung' },
+    { value: 'notfall', label: 'Notfall' },
+    { value: 'sanierung', label: 'Elektrosanierung' },
+    { value: 'smart_home', label: 'Smart Home Installation' },
+    { value: 'sicherheitstechnik', label: 'Sicherheitstechnik' },
+  ];
+
+  const problemTypeOptions = [
+    { value: 'stromausfall', label: 'Stromausfall' },
+    { value: 'kurzschluss', label: 'Kurzschluss' },
+    { value: 'defekte_steckdose', label: 'Defekte Steckdose' },
+    { value: 'defekte_beleuchtung', label: 'Defekte Beleuchtung' },
+    { value: 'sicherung_fliegt', label: 'Sicherung fliegt raus' },
+    { value: 'neue_installation', label: 'Neue Installation' },
+    { value: 'erweiterung', label: 'Erweiterung bestehender Anlage' },
+    { value: 'sonstiges', label: 'Sonstiges' },
+  ];
+
+  const roomTypeOptions = [
+    { value: 'wohnzimmer', label: 'Wohnzimmer' },
+    { value: 'kueche', label: 'Küche' },
+    { value: 'bad', label: 'Bad' },
+    { value: 'schlafzimmer', label: 'Schlafzimmer' },
+    { value: 'keller', label: 'Keller' },
+    { value: 'dachboden', label: 'Dachboden' },
+    { value: 'garage', label: 'Garage' },
+    { value: 'buero', label: 'Büro' },
+    { value: 'garten', label: 'Garten/Außenbereich' },
+    { value: 'mehrere_raeume', label: 'Mehrere Räume' },
+  ];
+
+  const buildingTypeOptions = [
+    { value: 'einfamilienhaus', label: 'Einfamilienhaus' },
+    { value: 'wohnung', label: 'Wohnung' },
+    { value: 'gewerbe', label: 'Gewerbe' },
+    { value: 'buero', label: 'Büro' },
+  ];
+
+  const urgencyOptions = [
+    { value: 'notfall', label: 'Notfall (sofort)' },
+    { value: 'dringend', label: 'Dringend (heute)' },
+    { value: 'normal', label: 'Normal (1-3 Tage)' },
+    { value: 'geplant', label: 'Geplant (flexibel)' },
+  ];
+
+  const handleInputChange = (field: keyof ElektrikerData, value: any) => {
+    const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
     onDataChange(updatedData);
   };
 
-  // Validierung
   useEffect(() => {
     const isValid = !!(
       formData.serviceType &&
-      formData.workType &&
+      formData.problemType &&
+      formData.roomType &&
       formData.buildingType &&
-      formData.existingInstallation &&
-      formData.materialProvided &&
-      typeof formData.certificationNeeded === 'boolean'
+      formData.urgency &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
-      formData.workType &&
+      formData.problemType &&
+      formData.roomType &&
       formData.buildingType &&
-      formData.existingInstallation &&
-      formData.materialProvided &&
-      typeof formData.certificationNeeded === 'boolean'
+      formData.urgency &&
+      formData.projectDescription
     );
   };
-
-  const serviceTypeOptions: SelectOption[] = [
-    { value: 'installation', label: 'Installation' },
-    { value: 'reparatur', label: 'Reparatur' },
-    { value: 'wartung', label: 'Wartung' },
-    { value: 'neubau', label: 'Neubau' },
-  ];
-
-  const workTypeOptions: SelectOption[] = [
-    { value: 'steckdosen', label: 'Steckdosen' },
-    { value: 'schalter', label: 'Schalter' },
-    { value: 'beleuchtung', label: 'Beleuchtung' },
-    { value: 'sicherungskasten', label: 'Sicherungskasten' },
-    { value: 'verkabelung', label: 'Verkabelung' },
-    { value: 'smart_home', label: 'Smart Home' },
-    { value: 'sonstiges', label: 'Sonstiges' },
-  ];
-
-  const buildingTypeOptions: SelectOption[] = [
-    { value: 'einfamilienhaus', label: 'Einfamilienhaus' },
-    { value: 'wohnung', label: 'Wohnung' },
-    { value: 'gewerbe', label: 'Gewerbe' },
-    { value: 'neubau', label: 'Neubau' },
-  ];
-
-  const existingInstallationOptions: SelectOption[] = [
-    { value: 'vorhanden', label: 'Komplett vorhanden' },
-    { value: 'teilweise', label: 'Teilweise vorhanden' },
-    { value: 'nicht_vorhanden', label: 'Nicht vorhanden' },
-  ];
-
-  const materialProvidedOptions: SelectOption[] = [
-    { value: 'kunde', label: 'Kunde stellt Material bereit' },
-    { value: 'handwerker', label: 'Handwerker bringt Material mit' },
-    { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
-  ];
 
   return (
     <div className="space-y-6">
@@ -141,97 +108,66 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
           <FormField label="Art der Dienstleistung" required>
             <FormSelect
               value={formData.serviceType || ''}
-              onChange={value =>
-                updateData({ serviceType: value as ElektrikerData['serviceType'] })
-              }
+              onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Wählen Sie die Art der Elektroarbeit"
             />
           </FormField>
 
-          <FormField label="Arbeitstyp" required>
+          <FormField label="Problem/Aufgabe" required>
             <FormSelect
-              value={formData.workType || ''}
-              onChange={value => updateData({ workType: value as ElektrikerData['workType'] })}
-              options={workTypeOptions}
-              placeholder="Wählen Sie den Arbeitstyp"
+              value={formData.problemType || ''}
+              onChange={value => handleInputChange('problemType', value)}
+              options={problemTypeOptions}
+              placeholder="Was ist das Problem oder die Aufgabe?"
             />
           </FormField>
 
-          <FormField label="Gebäudeart" required>
+          <FormField label="Betroffener Raum" required>
+            <FormSelect
+              value={formData.roomType || ''}
+              onChange={value => handleInputChange('roomType', value)}
+              options={roomTypeOptions}
+              placeholder="In welchem Raum liegt das Problem?"
+            />
+          </FormField>
+
+          <FormField label="Gebäudetyp" required>
             <FormSelect
               value={formData.buildingType || ''}
-              onChange={value =>
-                updateData({ buildingType: value as ElektrikerData['buildingType'] })
-              }
+              onChange={value => handleInputChange('buildingType', value)}
               options={buildingTypeOptions}
-              placeholder="Wählen Sie die Gebäudeart"
+              placeholder="Wählen Sie den Gebäudetyp"
             />
           </FormField>
 
-          <FormField label="Bestehende Installation" required>
+          <FormField label="Dringlichkeit" required>
             <FormSelect
-              value={formData.existingInstallation || ''}
-              onChange={value =>
-                updateData({
-                  existingInstallation: value as ElektrikerData['existingInstallation'],
-                })
-              }
-              options={existingInstallationOptions}
-              placeholder="Zustand der bestehenden Installation"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wie dringend ist das Problem?"
             />
           </FormField>
 
-          <FormField label="Materialbereitstellung" required>
-            <FormSelect
-              value={formData.materialProvided || ''}
-              onChange={value =>
-                updateData({ materialProvided: value as ElektrikerData['materialProvided'] })
-              }
-              options={materialProvidedOptions}
-              placeholder="Wer stellt das Material bereit?"
-            />
-          </FormField>
-
-          <FormField label="Anzahl Räume">
+          <FormField label="Anzahl betroffener Punkte">
             <FormInput
               type="number"
-              value={formData.roomCount?.toString() || ''}
-              onChange={value =>
-                updateData({
-                  roomCount:
-                    typeof value === 'string' ? (value ? parseInt(value) : undefined) : value,
-                })
-              }
-              placeholder="Anzahl der betroffenen Räume"
+              value={formData.numberOfPoints || ''}
+              onChange={value => handleInputChange('numberOfPoints', value)}
+              placeholder="z.B. 5 Steckdosen"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Zertifizierung erforderlich">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="certificationNeeded"
-                  checked={formData.certificationNeeded === true}
-                  onChange={() => updateData({ certificationNeeded: true })}
-                  className="mr-2"
-                />
-                Ja, Zertifizierung erforderlich
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="certificationNeeded"
-                  checked={formData.certificationNeeded === false}
-                  onChange={() => updateData({ certificationNeeded: false })}
-                  className="mr-2"
-                />
-                Nein, keine Zertifizierung erforderlich
-              </label>
-            </div>
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie das elektrische Problem oder Projekt detailliert"
+              rows={4}
+            />
           </FormField>
         </div>
 
@@ -239,17 +175,48 @@ const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
           <FormField label="Besondere Anforderungen">
             <FormTextarea
               value={formData.specialRequirements || ''}
-              onChange={value => updateData({ specialRequirements: value })}
-              placeholder="Beschreiben Sie besondere Wünsche, Sicherheitsanforderungen oder Besonderheiten"
+              onChange={value => handleInputChange('specialRequirements', value)}
+              placeholder="Besondere Anforderungen oder Sicherheitsaspekte"
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Materiallieferung">
+            <FormRadioGroup
+              name="materialSupply"
+              value={formData.materialSupply || ''}
+              onChange={value => handleInputChange('materialSupply', value)}
+              options={[
+                { value: 'elektriker', label: 'Elektriker bringt Material mit' },
+                { value: 'kunde', label: 'Kunde beschafft Material' },
+                { value: 'gemeinsam', label: 'Gemeinsame Beschaffung' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Sicherungskasten zugänglich">
+            <FormRadioGroup
+              name="fuseBoxAccess"
+              value={formData.fuseBoxAccess || ''}
+              onChange={value => handleInputChange('fuseBoxAccess', value)}
+              options={[
+                { value: 'ja', label: 'Ja, leicht zugänglich' },
+                { value: 'eingeschränkt', label: 'Eingeschränkt zugänglich' },
+                { value: 'nein', label: 'Nein, nicht zugänglich' },
+                { value: 'unbekannt', label: 'Weiß ich nicht' },
+              ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Elektriker" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Elektriker" formData={formData} />
     </div>
   );
-}
+};
 
 export default ElektrikerForm;

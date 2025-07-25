@@ -197,7 +197,7 @@ const RechercheForm: React.FC<RechercheFormProps> = ({
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Recherche" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Recherche" formData={formData} />
     </div>
   );
 }

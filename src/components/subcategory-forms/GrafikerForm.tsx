@@ -133,7 +133,7 @@ const GrafikerForm: React.FC<GrafikerFormProps> = ({ data, onDataChange, onValid
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Grafiker" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Grafiker" formData={formData} />
     </div>
   );
 }

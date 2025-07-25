@@ -229,7 +229,7 @@ const BodenlegerForm: React.FC<BodenlegerFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Bodenleger" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Bodenleger" formData={formData} />
     </div>
   );
 }

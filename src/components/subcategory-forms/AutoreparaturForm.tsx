@@ -216,7 +216,7 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Autoreparatur" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Autoreparatur" formData={formData} />
     </div>
   );
 }

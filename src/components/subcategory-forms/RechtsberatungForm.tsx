@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface RechtsberatungFormProps {
   data: RechtsberatungData;
@@ -17,124 +17,52 @@ interface RechtsberatungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
-  data,
-  onDataChange,
-  onValidationChange,
-}) => {
+const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<RechtsberatungData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const serviceTypeOptions = [
-    { value: 'contract_review', label: 'Vertragsüberprüfung' },
-    { value: 'contract_drafting', label: 'Vertragserstellung' },
-    { value: 'legal_advice', label: 'Rechtsberatung' },
-    { value: 'dispute_resolution', label: 'Streitbeilegung' },
-    { value: 'litigation', label: 'Gerichtsverfahren' },
-    { value: 'compliance', label: 'Compliance-Beratung' },
-    { value: 'corporate_law', label: 'Gesellschaftsrecht' },
-    { value: 'intellectual_property', label: 'Gewerblicher Rechtsschutz' },
-    { value: 'labor_law', label: 'Arbeitsrecht' },
-    { value: 'real_estate_law', label: 'Immobilienrecht' },
-  ];
 
   const legalAreaOptions = [
-    { value: 'civil_law', label: 'Zivilrecht' },
-    { value: 'commercial_law', label: 'Handelsrecht' },
-    { value: 'corporate_law', label: 'Gesellschaftsrecht' },
-    { value: 'labor_law', label: 'Arbeitsrecht' },
-    { value: 'intellectual_property', label: 'Gewerblicher Rechtsschutz' },
-    { value: 'real_estate_law', label: 'Immobilienrecht' },
-    { value: 'family_law', label: 'Familienrecht' },
-    { value: 'criminal_law', label: 'Strafrecht' },
-    { value: 'administrative_law', label: 'Verwaltungsrecht' },
-    { value: 'tax_law', label: 'Steuerrecht' },
-    { value: 'data_protection', label: 'Datenschutzrecht' },
-    { value: 'bankruptcy_law', label: 'Insolvenzrecht' },
+    { value: 'arbeitsrecht', label: 'Arbeitsrecht' },
+    { value: 'mietrecht', label: 'Mietrecht' },
+    { value: 'familienrecht', label: 'Familienrecht' },
+    { value: 'verkehrsrecht', label: 'Verkehrsrecht' },
+    { value: 'vertragsrecht', label: 'Vertragsrecht' },
+    { value: 'strafrecht', label: 'Strafrecht' },
+    { value: 'gesellschaftsrecht', label: 'Gesellschaftsrecht' },
+    { value: 'erbrecht', label: 'Erbrecht' },
+    { value: 'immobilienrecht', label: 'Immobilienrecht' },
+    { value: 'versicherungsrecht', label: 'Versicherungsrecht' },
+    { value: 'steuerrecht', label: 'Steuerrecht' },
+    { value: 'sozialrecht', label: 'Sozialrecht' },
+  ];
+
+  const serviceTypeOptions = [
+    { value: 'beratung', label: 'Rechtliche Beratung' },
+    { value: 'vertretung', label: 'Rechtliche Vertretung' },
+    { value: 'prüfung', label: 'Rechtliche Prüfung' },
+    { value: 'erstellung', label: 'Vertragserstellung' },
   ];
 
   const clientTypeOptions = [
     { value: 'privatperson', label: 'Privatperson' },
-    { value: 'einzelunternehmen', label: 'Einzelunternehmen' },
-    { value: 'kleine_unternehmen', label: 'Kleines Unternehmen' },
-    { value: 'mittelstand', label: 'Mittelstand' },
-    { value: 'grossunternehmen', label: 'Großunternehmen' },
-    { value: 'startup', label: 'Startup' },
-    { value: 'verein', label: 'Verein' },
-    { value: 'stiftung', label: 'Stiftung' },
+    { value: 'unternehmen', label: 'Unternehmen' },
+    { value: 'selbständig', label: 'Selbständiger' },
+    { value: 'verein', label: 'Verein/Organisation' },
   ];
 
-  const complexityOptions = [
-    { value: 'einfach', label: 'Einfach' },
-    { value: 'mittel', label: 'Mittel' },
-    { value: 'komplex', label: 'Komplex' },
-    { value: 'sehr_komplex', label: 'Sehr komplex' },
-  ];
-  const caseStageOptions = [
-    { value: 'praevention', label: 'Prävention' },
-    { value: 'beratung', label: 'Beratung' },
-    { value: 'verhandlung', label: 'Verhandlung' },
-    { value: 'gerichtlich', label: 'Gerichtlich' },
-    { value: 'vollstreckung', label: 'Vollstreckung' },
+  const urgencyOptions = [
+    { value: 'sofort', label: 'Sofort (Notfall)' },
+    { value: 'diese_woche', label: 'Diese Woche' },
+    { value: 'nächste_woche', label: 'Nächste Woche' },
+    { value: 'flexibel', label: 'Flexibel' },
   ];
 
-  const communicationOptions = [
-    { value: 'email', label: 'E-Mail' },
-    { value: 'telefon', label: 'Telefon' },
-    { value: 'persoenlich', label: 'Persönlich' },
-    { value: 'videokonferenz', label: 'Videokonferenz' },
-    { value: 'post', label: 'Post' },
-  ];
-
-  const additionalServicesOptions = [
-    { value: 'document_review', label: 'Dokumentenprüfung' },
-    { value: 'negotiation', label: 'Verhandlungsführung' },
+  const consultationTypeOptions = [
+    { value: 'erstberatung', label: 'Erstberatung' },
+    { value: 'vertretung', label: 'Vertretung vor Gericht' },
+    { value: 'vertragsgestaltung', label: 'Vertragsgestaltung' },
+    { value: 'gutachten', label: 'Rechtsgutachten' },
     { value: 'mediation', label: 'Mediation' },
-    { value: 'arbitration', label: 'Schiedsverfahren' },
-    { value: 'notarization', label: 'Beurkundung' },
-    { value: 'translation', label: 'Übersetzung' },
-    { value: 'research', label: 'Rechtliche Recherche' },
-    { value: 'training', label: 'Schulungen' },
-    { value: 'compliance_monitoring', label: 'Compliance-Überwachung' },
-    { value: 'risk_assessment', label: 'Risikobewertung' },
+    { value: 'außergerichtlich', label: 'Außergerichtliche Vertretung' },
   ];
 
   const handleInputChange = (field: keyof RechtsberatungData, value: any) => {
@@ -145,21 +73,20 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
 
   useEffect(() => {
     const isValid = !!(
-      formData.serviceType &&
       formData.legalArea &&
       formData.clientType &&
-      formData.complexity &&
-      formData.projectDescription
+      formData.urgency &&
+      formData.legalIssue
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
-      formData.serviceType &&
       formData.legalArea &&
       formData.clientType &&
-      formData.complexity &&
-      formData.projectDescription
+      formData.urgency &&
+      formData.legalIssue
     );
   };
 
@@ -167,7 +94,7 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Rechtsberatungs-Projektdetails
+          Rechtsberatung Projektdetails
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,7 +103,16 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Rechtsberatung"
+              placeholder="Was wird benötigt?"
+            />
+          </FormField>
+
+          <FormField label="Mandantentyp" required>
+            <FormSelect
+              value={formData.clientType || ''}
+              onChange={value => handleInputChange('clientType', value)}
+              options={clientTypeOptions}
+              placeholder="Wer benötigt die Rechtsberatung?"
             />
           </FormField>
 
@@ -188,176 +124,56 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
             />
           </FormField>
 
-          <FormField label="Mandantentyp" required>
+          <FormField label="Zeitrahmen" required>
             <FormSelect
-              value={formData.clientType || ''}
-              onChange={value => handleInputChange('clientType', value)}
-              options={clientTypeOptions}
-              placeholder="Wählen Sie den Mandantentyp"
+              value={formData.urgency || ''}
+              onChange={value => handleInputChange('urgency', value)}
+              options={urgencyOptions}
+              placeholder="Wie dringend ist die Angelegenheit?"
             />
           </FormField>
 
-          <FormField label="Komplexität" required>
+          <FormField label="Art der Beratung">
             <FormSelect
-              value={formData.complexity || ''}
-              onChange={value => handleInputChange('complexity', value)}
-              options={complexityOptions}
-              placeholder="Wählen Sie die Komplexität"
-            />
-          </FormField>
-          <FormField label="Fallstadium">
-            <FormSelect
-              value={formData.caseStage || ''}
-              onChange={value => handleInputChange('caseStage', value)}
-              options={caseStageOptions}
-              placeholder="Wählen Sie das Fallstadium"
+              value={formData.consultationType || ''}
+              onChange={value => handleInputChange('consultationType', value)}
+              options={consultationTypeOptions}
+              placeholder="Welche Art der Hilfe wird benötigt?"
             />
           </FormField>
 
-          <FormField label="Name/Unternehmen">
+          <FormField label="Budget-Rahmen">
             <FormInput
               type="text"
-              value={formData.clientName || ''}
-              onChange={value => handleInputChange('clientName', value)}
-              placeholder="Ihr Name oder Unternehmen"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 500-1.500 EUR"
             />
           </FormField>
 
-          <FormField label="Streitwert">
-            <FormInput
-              type="number"
-              value={formData.disputeValue?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'disputeValue',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Streitwert in €"
-            />
-          </FormField>
-
-          <FormField label="Frist">
+          <FormField label="Streitwert (falls bekannt)">
             <FormInput
               type="text"
-              value={formData.deadline || ''}
-              onChange={value => handleInputChange('deadline', value)}
-              placeholder="TT.MM.JJJJ"
-            />
-          </FormField>
-
-          <FormField label="Gegenseite">
-            <FormInput
-              type="text"
-              value={formData.opposingParty || ''}
-              onChange={value => handleInputChange('opposingParty', value)}
-              placeholder="Name der Gegenseite"
-            />
-          </FormField>
-
-          <FormField label="Aktenzeichen">
-            <FormInput
-              type="text"
-              value={formData.caseNumber || ''}
-              onChange={value => handleInputChange('caseNumber', value)}
-              placeholder="Aktenzeichen (falls vorhanden)"
-            />
-          </FormField>
-
-          <FormField label="Gericht">
-            <FormInput
-              type="text"
-              value={formData.court || ''}
-              onChange={value => handleInputChange('court', value)}
-              placeholder="Zuständiges Gericht"
-            />
-          </FormField>
-
-          <FormField label="Vorheriger Anwalt">
-            <FormInput
-              type="text"
-              value={formData.previousLawyer || ''}
-              onChange={value => handleInputChange('previousLawyer', value)}
-              placeholder="Vorheriger Anwalt (falls vorhanden)"
-            />
-          </FormField>
-
-          <FormField label="Versicherung">
-            <FormInput
-              type="text"
-              value={formData.insurance || ''}
-              onChange={value => handleInputChange('insurance', value)}
-              placeholder="Rechtsschutzversicherung"
+              value={formData.disputeValue || ''}
+              onChange={value => handleInputChange('disputeValue', value)}
+              placeholder="z.B. 10.000 EUR"
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Kommunikationsart">
-            <FormCheckboxGroup
-              value={formData.communicationPreference || []}
-              onChange={value => handleInputChange('communicationPreference', value)}
-              options={communicationOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zusätzliche Services">
-            <FormCheckboxGroup
-              value={formData.additionalServices || []}
-              onChange={value => handleInputChange('additionalServices', value)}
-              options={additionalServicesOptions}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Projektbeschreibung" required>
+          <FormField label="Rechtliches Problem" required>
             <FormTextarea
-              value={formData.projectDescription || ''}
-              onChange={value => handleInputChange('projectDescription', value)}
-              placeholder="Beschreiben Sie Ihr rechtliches Anliegen detailliert"
+              value={formData.legalIssue || ''}
+              onChange={value => handleInputChange('legalIssue', value)}
+              placeholder="Beschreiben Sie Ihr rechtliches Problem detailliert..."
               rows={4}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Sachverhalt">
-            <FormTextarea
-              value={formData.caseDetails || ''}
-              onChange={value => handleInputChange('caseDetails', value)}
-              placeholder="Beschreiben Sie den Sachverhalt detailliert"
-              rows={4}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Gewünschtes Ergebnis">
-            <FormTextarea
-              value={formData.desiredOutcome || ''}
-              onChange={value => handleInputChange('desiredOutcome', value)}
-              placeholder="Was möchten Sie erreichen?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Dokumente vorhanden">
-            <FormTextarea
-              value={formData.availableDocuments || ''}
-              onChange={value => handleInputChange('availableDocuments', value)}
-              placeholder="Welche Dokumente/Unterlagen haben Sie bereits?"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Bisherige Maßnahmen">
+          <FormField label="Bereits unternommene Schritte">
             <FormTextarea
               value={formData.previousActions || ''}
               onChange={value => handleInputChange('previousActions', value)}
@@ -368,77 +184,94 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
         </div>
 
         <div className="mt-4">
-          <FormField label="Spezielle Anforderungen">
-            <FormTextarea
-              value={formData.specialRequirements || ''}
-              onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Besondere Anforderungen oder Wünsche"
-              rows={3}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Zeitrahmen">
-            <FormTextarea
-              value={formData.timeframe || ''}
-              onChange={value => handleInputChange('timeframe', value)}
-              placeholder="Gewünschter Zeitrahmen für die Bearbeitung"
-              rows={2}
-            />
-          </FormField>
-        </div>
-
-        <div className="mt-4">
-          <FormField label="Erfahrung mit Rechtsberatung">
-            <FormRadioGroup
-              name="experienceLevel"
-              value={formData.experienceLevel || ''}
-              onChange={value => handleInputChange('experienceLevel', value)}
+          <FormField label="Gewünschte Leistungen">
+            <FormCheckboxGroup
+              value={formData.desiredServices || []}
+              onChange={value => handleInputChange('desiredServices', value)}
               options={[
-                { value: 'keine', label: 'Keine Erfahrung' },
-                { value: 'wenig', label: 'Wenig Erfahrung' },
-                { value: 'mittel', label: 'Mittlere Erfahrung' },
-                { value: 'viel', label: 'Viel Erfahrung' },
+                { value: 'beratung', label: 'Rechtliche Beratung' },
+                { value: 'schriftverkehr', label: 'Schriftverkehr führen' },
+                { value: 'verhandlung', label: 'Verhandlungen führen' },
+                { value: 'klage', label: 'Klage einreichen' },
+                { value: 'verteidigung', label: 'Verteidigung' },
+                { value: 'vertragscheck', label: 'Verträge prüfen' },
+                { value: 'vertragsgestaltung', label: 'Verträge erstellen' },
+                { value: 'mediation', label: 'Mediation/Schlichtung' },
               ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Laufendes Verfahren">
-            <FormRadioGroup
-              name="ongoingProcedure"
-              value={formData.ongoingProcedure || ''}
-              onChange={value => handleInputChange('ongoingProcedure', value)}
+          <FormField label="Vorhandene Dokumente">
+            <FormCheckboxGroup
+              value={formData.availableDocuments || []}
+              onChange={value => handleInputChange('availableDocuments', value)}
               options={[
-                { value: 'ja', label: 'Ja, laufendes Verfahren' },
-                { value: 'nein', label: 'Nein, kein Verfahren' },
-                { value: 'geplant', label: 'Verfahren geplant' },
+                { value: 'verträge', label: 'Verträge' },
+                { value: 'korrespondenz', label: 'E-Mails/Briefe' },
+                { value: 'rechnungen', label: 'Rechnungen/Belege' },
+                { value: 'zeugenaussagen', label: 'Zeugenaussagen' },
+                { value: 'fotos', label: 'Fotos/Videos' },
+                { value: 'gutachten', label: 'Gutachten' },
+                { value: 'behördenschreiben', label: 'Behördenschreiben' },
               ]}
             />
           </FormField>
         </div>
 
         <div className="mt-4">
-          <FormField label="Vertretung vor Gericht">
+          <FormField label="Rechtschutzversicherung vorhanden">
             <FormRadioGroup
-              name="courtRepresentation"
-              value={formData.courtRepresentation || ''}
-              onChange={value => handleInputChange('courtRepresentation', value)}
+              name="legalInsurance"
+              value={formData.legalInsurance || ''}
+              onChange={value => handleInputChange('legalInsurance', value)}
               options={[
-                { value: 'ja', label: 'Ja, Vertretung vor Gericht gewünscht' },
-                { value: 'nein', label: 'Nein, nur Beratung' },
-                { value: 'bei_bedarf', label: 'Bei Bedarf' },
+                { value: 'ja', label: 'Ja, Rechtschutzversicherung vorhanden' },
+                { value: 'nein', label: 'Nein, keine Rechtschutzversicherung' },
+                { value: 'unbekannt', label: 'Unbekannt/muss geprüft werden' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Bevorzugte Kommunikation">
+            <FormRadioGroup
+              name="preferredCommunication"
+              value={formData.preferredCommunication || ''}
+              onChange={value => handleInputChange('preferredCommunication', value)}
+              options={[
+                { value: 'persönlich', label: 'Persönliche Termine' },
+                { value: 'telefon', label: 'Telefon' },
+                { value: 'email', label: 'E-Mail' },
+                { value: 'video', label: 'Videokonferenz' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Gegnerische Partei">
+            <FormRadioGroup
+              name="opposingParty"
+              value={formData.opposingParty || ''}
+              onChange={value => handleInputChange('opposingParty', value)}
+              options={[
+                { value: 'privatperson', label: 'Privatperson' },
+                { value: 'unternehmen', label: 'Unternehmen' },
+                { value: 'versicherung', label: 'Versicherung' },
+                { value: 'behörde', label: 'Behörde/Amt' },
+                { value: 'unbekannt', label: 'Noch unbekannt' },
               ]}
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Rechtsberatung" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Rechtsberatung" formData={formData} />
     </div>
   );
-}
+};
 
 export default RechtsberatungForm;

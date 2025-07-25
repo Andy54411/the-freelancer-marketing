@@ -8,8 +8,8 @@ import {
   FormTextarea,
   FormCheckboxGroup,
   FormRadioGroup,
+  FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface FahrerFormProps {
   data: FahrerData;
@@ -19,95 +19,51 @@ interface FahrerFormProps {
 
 const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidationChange }) => {
   const [formData, setFormData] = useState<FahrerData>(data);
-  const router = useRouter();
-    return (
-      <div className="space-y-6 mt-8">
-        {!isValid && (
-          <div className="text-center">
-            <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-3 text-[#14ad9f]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-gray-700 font-medium">
-                Bitte füllen Sie alle Pflichtfelder aus, um fortzufahren.
-              </span>
-            </div>
-          </div>
-        )}
-        {isValid && (
-          <div className="text-center">
-            <button
-              className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"
-              onClick={handleNextClick}
-            >
-              Weiter zur Adresseingabe
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const serviceTypeOptions = [
-    { value: 'einmalig', label: 'Einmalige Fahrt' },
-    { value: 'regelmäßig', label: 'Regelmäßige Fahrten' },
-    { value: 'stundenweise', label: 'Stundenweise' },
-    { value: 'tagesweise', label: 'Tagesweise' },
+    { value: 'privat_chauffeur', label: 'Privatchauffeur' },
+    { value: 'business_fahrer', label: 'Business-Fahrer' },
+    { value: 'event_fahrer', label: 'Event-Fahrer' },
+    { value: 'flughafen_transfer', label: 'Flughafen-Transfer' },
+    { value: 'stadt_tour', label: 'Stadttour' },
+    { value: 'kurierfahrt', label: 'Kurierfahrt' },
+    { value: 'umzugshilfe', label: 'Umzugshilfe Fahrdienst' },
+    { value: 'seniorenfahrt', label: 'Seniorenfahrdienst' },
   ];
 
   const vehicleTypeOptions = [
-    { value: 'pkw', label: 'PKW' },
+    { value: 'limousine', label: 'Limousine' },
+    { value: 'suv', label: 'SUV' },
+    { value: 'van', label: 'Van/Kleinbus' },
     { value: 'kombi', label: 'Kombi' },
-    { value: 'transporter', label: 'Transporter' },
-    { value: 'lkw', label: 'LKW' },
-    { value: 'bus', label: 'Bus' },
-    { value: 'motorrad', label: 'Motorrad' },
+    { value: 'cabrio', label: 'Cabrio' },
+    { value: 'luxusfahrzeug', label: 'Luxusfahrzeug' },
+    { value: 'egal', label: 'Fahrzeugtyp egal' },
   ];
 
-  const purposeOptions = [
-    { value: 'person', label: 'Personentransport' },
-    { value: 'transport', label: 'Warentransport' },
-    { value: 'umzug', label: 'Umzug' },
-    { value: 'einkauf', label: 'Einkaufsfahrt' },
-    { value: 'arzt', label: 'Arztbesuch' },
-    { value: 'flughafen', label: 'Flughafen-Transfer' },
-    { value: 'event', label: 'Event-Transport' },
-    { value: 'business', label: 'Business-Fahrt' },
+  const durationOptions = [
+    { value: 'stundenweise', label: 'Stundenweise' },
+    { value: 'halbtags', label: 'Halbtags' },
+    { value: 'ganztags', label: 'Ganztags' },
+    { value: 'mehrere_tage', label: 'Mehrere Tage' },
+    { value: 'wochen', label: 'Wochenweise' },
+    { value: 'monatlich', label: 'Monatlich' },
   ];
 
   const distanceOptions = [
     { value: 'lokal', label: 'Lokal (bis 50 km)' },
     { value: 'regional', label: 'Regional (50-200 km)' },
-    { value: 'überregional', label: 'Überregional (über 200 km)' },
+    { value: 'national', label: 'National (über 200 km)' },
     { value: 'international', label: 'International' },
   ];
 
-  const durationOptions = [
-    { value: 'unter_1h', label: 'Unter 1 Stunde' },
-    { value: '1_3h', label: '1-3 Stunden' },
-    { value: '3_6h', label: '3-6 Stunden' },
-    { value: 'ganztags', label: 'Ganztags' },
-    { value: 'mehrtägig', label: 'Mehrtägig' },
-  ];
-
-  const licenseOptions = [
-    { value: 'b', label: 'Führerschein Klasse B' },
-    { value: 'be', label: 'Führerschein Klasse BE' },
-    { value: 'c', label: 'Führerschein Klasse C' },
-    { value: 'ce', label: 'Führerschein Klasse CE' },
-    { value: 'd', label: 'Führerschein Klasse D' },
-    { value: 'taxi', label: 'Taxi-Schein' },
+  const specialRequirementsOptions = [
+    { value: 'kindersitze', label: 'Kindersitze erforderlich' },
+    { value: 'rollstuhl', label: 'Rollstuhlgerecht' },
+    { value: 'gepäckraum', label: 'Großer Gepäckraum' },
+    { value: 'luxus', label: 'Luxusausstattung' },
+    { value: 'diskret', label: 'Diskretion erforderlich' },
+    { value: 'pünktlichkeit', label: 'Höchste Pünktlichkeit' },
   ];
 
   const handleInputChange = (field: keyof FahrerData, value: any) => {
@@ -120,23 +76,22 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
     const isValid = !!(
       formData.serviceType &&
       formData.vehicleType &&
-      formData.purpose &&
-      formData.distance &&
       formData.duration &&
-      formData.license &&
-      typeof formData.ownVehicle === 'boolean'
+      formData.distance &&
+      formData.startLocation &&
+      formData.projectDescription
     );
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
+
   const isFormValid = () => {
     return !!(
       formData.serviceType &&
       formData.vehicleType &&
-      formData.purpose &&
-      formData.distance &&
       formData.duration &&
-      formData.license &&
-      typeof formData.ownVehicle === 'boolean'
+      formData.distance &&
+      formData.startLocation &&
+      formData.projectDescription
     );
   };
 
@@ -153,7 +108,7 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
               value={formData.serviceType || ''}
               onChange={value => handleInputChange('serviceType', value)}
               options={serviceTypeOptions}
-              placeholder="Wählen Sie die Art der Dienstleistung"
+              placeholder="Wählen Sie die Art des Fahrdienstes"
             />
           </FormField>
 
@@ -162,25 +117,7 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
               value={formData.vehicleType || ''}
               onChange={value => handleInputChange('vehicleType', value)}
               options={vehicleTypeOptions}
-              placeholder="Wählen Sie den Fahrzeugtyp"
-            />
-          </FormField>
-
-          <FormField label="Zweck der Fahrt" required>
-            <FormSelect
-              value={formData.purpose || ''}
-              onChange={value => handleInputChange('purpose', value)}
-              options={purposeOptions}
-              placeholder="Wählen Sie den Zweck"
-            />
-          </FormField>
-
-          <FormField label="Entfernung" required>
-            <FormSelect
-              value={formData.distance || ''}
-              onChange={value => handleInputChange('distance', value)}
-              options={distanceOptions}
-              placeholder="Wählen Sie die Entfernung"
+              placeholder="Welcher Fahrzeugtyp wird benötigt?"
             />
           </FormField>
 
@@ -189,39 +126,25 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
               value={formData.duration || ''}
               onChange={value => handleInputChange('duration', value)}
               options={durationOptions}
-              placeholder="Wählen Sie die Dauer"
+              placeholder="Wie lange wird der Fahrer benötigt?"
             />
           </FormField>
 
-          <FormField label="Führerschein" required>
+          <FormField label="Entfernung" required>
             <FormSelect
-              value={formData.license || ''}
-              onChange={value => handleInputChange('license', value)}
-              options={licenseOptions}
-              placeholder="Erforderlicher Führerschein"
+              value={formData.distance || ''}
+              onChange={value => handleInputChange('distance', value)}
+              options={distanceOptions}
+              placeholder="Welche Entfernungen werden gefahren?"
             />
           </FormField>
 
-          <FormField label="Anzahl Personen">
-            <FormInput
-              type="number"
-              value={formData.numberOfPeople?.toString() || ''}
-              onChange={value =>
-                handleInputChange(
-                  'numberOfPeople',
-                  typeof value === 'string' ? (value ? parseInt(value) : undefined) : value
-                )
-              }
-              placeholder="Anzahl der Personen"
-            />
-          </FormField>
-
-          <FormField label="Startort">
+          <FormField label="Startort" required>
             <FormInput
               type="text"
               value={formData.startLocation || ''}
               onChange={value => handleInputChange('startLocation', value)}
-              placeholder="Startort der Fahrt"
+              placeholder="Von wo soll gestartet werden?"
             />
           </FormField>
 
@@ -230,44 +153,26 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
               type="text"
               value={formData.destination || ''}
               onChange={value => handleInputChange('destination', value)}
-              placeholder="Zielort der Fahrt"
+              placeholder="Wohin soll gefahren werden?"
             />
           </FormField>
 
-          <FormField label="Datum und Zeit">
+          <FormField label="Datum und Uhrzeit">
             <FormInput
               type="text"
               value={formData.dateTime || ''}
               onChange={value => handleInputChange('dateTime', value)}
-              placeholder="TT.MM.JJJJ HH:MM"
+              placeholder="Wann wird der Fahrer benötigt?"
             />
           </FormField>
-        </div>
 
-        <div className="mt-4">
-          <FormField label="Eigenes Fahrzeug">
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="ownVehicle"
-                  checked={formData.ownVehicle === true}
-                  onChange={() => handleInputChange('ownVehicle', true)}
-                  className="mr-2"
-                />
-                Ja, eigenes Fahrzeug wird gestellt
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="ownVehicle"
-                  checked={formData.ownVehicle === false}
-                  onChange={() => handleInputChange('ownVehicle', false)}
-                  className="mr-2"
-                />
-                Nein, Fahrzeug wird benötigt
-              </label>
-            </div>
+          <FormField label="Anzahl Passagiere">
+            <FormInput
+              type="number"
+              value={formData.numberOfPassengers || ''}
+              onChange={value => handleInputChange('numberOfPassengers', value)}
+              placeholder="Wie viele Personen fahren mit?"
+            />
           </FormField>
         </div>
 
@@ -276,16 +181,64 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
             <FormTextarea
               value={formData.specialRequirements || ''}
               onChange={value => handleInputChange('specialRequirements', value)}
-              placeholder="Beschreiben Sie besondere Wünsche, Anforderungen oder Besonderheiten des Auftrags"
+              placeholder="Besondere Anforderungen an den Fahrer..."
               rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Projektbeschreibung" required>
+            <FormTextarea
+              value={formData.projectDescription || ''}
+              onChange={value => handleInputChange('projectDescription', value)}
+              placeholder="Beschreiben Sie Ihren Fahrdienst-Bedarf detailliert"
+              rows={4}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Zusätzliche Informationen">
+            <FormTextarea
+              value={formData.additionalInfo || ''}
+              onChange={value => handleInputChange('additionalInfo', value)}
+              placeholder="Weitere wichtige Informationen oder Wünsche"
+              rows={3}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Fahrzeug bereitstellen">
+            <FormRadioGroup
+              name="vehicleProvision"
+              value={formData.vehicleProvision || ''}
+              onChange={value => handleInputChange('vehicleProvision', value)}
+              options={[
+                { value: 'fahrer_fahrzeug', label: 'Fahrer bringt eigenes Fahrzeug mit' },
+                { value: 'kunde_fahrzeug', label: 'Kunde stellt Fahrzeug zur Verfügung' },
+                { value: 'mietwagen', label: 'Mietwagen wird organisiert' },
+              ]}
+            />
+          </FormField>
+        </div>
+
+        <div className="mt-4">
+          <FormField label="Budget-Rahmen">
+            <FormInput
+              type="text"
+              value={formData.budgetRange || ''}
+              onChange={value => handleInputChange('budgetRange', value)}
+              placeholder="z.B. 25-50 EUR/Stunde"
             />
           </FormField>
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Fahrer" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Fahrer" formData={formData} />
     </div>
   );
-}
+};
 
 export default FahrerForm;

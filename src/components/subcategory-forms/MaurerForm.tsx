@@ -26,15 +26,22 @@ const MaurerForm: React.FC<MaurerFormProps> = ({ data, onDataChange, onValidatio
   const FormSubmitButton = ({
     isValid,
     subcategory,
+    formData: passedFormData,
   }: {
     isValid: boolean;
     subcategory: string;
+    formData?: any;
   }) => {
-    const { setDescription } = useRegistration();
+    const { setDescription, setSubcategoryData } = useRegistration();
 
     const handleNextClick = () => {
       if (!isValid) {
         return;
+      }
+
+      // Speichere die Formulardaten im localStorage
+      if (formData && setSubcategoryData) {
+        setSubcategoryData(formData);
       }
 
       // Extrahiere die Beschreibung aus den Formulardaten
@@ -345,7 +352,7 @@ const MaurerForm: React.FC<MaurerFormProps> = ({ data, onDataChange, onValidatio
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Maurer" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Maurer" formData={formData} />
     </div>
   );
 }

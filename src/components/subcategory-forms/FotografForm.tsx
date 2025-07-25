@@ -132,7 +132,7 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Fotograf" />
+      <FormSubmitButton isValid={isFormValid()} subcategory="Fotograf" formData={formData} />
     </div>
   );
 }
