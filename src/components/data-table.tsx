@@ -174,7 +174,10 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
     useSensor(KeyboardSensor, {})
   );
 
-  const dataIds = React.useMemo<UniqueIdentifier[]>(() => data?.map(({ id }) => id) || [], [data]);
+  const dataIds = React.useMemo<UniqueIdentifier[]>(
+    () => (Array.isArray(data) ? data.map(({ id }) => id) : []),
+    [data]
+  );
 
   const table = useReactTable({
     data,
@@ -205,6 +208,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
       setData(data => {
+        if (!Array.isArray(data)) return data;
         const oldIndex = dataIds.indexOf(active.id);
         const newIndex = dataIds.indexOf(over.id);
         return arrayMove(data, oldIndex, newIndex);

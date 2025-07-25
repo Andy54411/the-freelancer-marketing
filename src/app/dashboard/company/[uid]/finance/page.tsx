@@ -293,10 +293,11 @@ export default function FinancePage() {
 
   // Format currency
   const formatCurrency = (amount: number) => {
+    const validAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: 'EUR',
-    }).format(amount);
+    }).format(validAmount);
   };
 
   // Table columns
@@ -422,6 +423,7 @@ export default function FinancePage() {
       header: 'Datum',
       cell: ({ row }) => {
         const date = new Date(row.getValue('date'));
+        if (isNaN(date.getTime())) return '-';
         return date.toLocaleDateString('de-DE');
       },
     },
@@ -715,7 +717,11 @@ export default function FinancePage() {
                       <div>
                         <div className="font-medium">Zahlung für Rechnung #{payment.invoiceId}</div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(payment.date).toLocaleDateString('de-DE')} • {payment.method}
+                          {(() => {
+                            const date = new Date(payment.date);
+                            return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('de-DE');
+                          })()}{' '}
+                          • {payment.method}
                         </div>
                         {payment.reference && (
                           <div className="text-sm text-muted-foreground">
@@ -752,7 +758,10 @@ export default function FinancePage() {
                         <div className="text-sm text-muted-foreground">
                           {report.type} •{' '}
                           {report.generatedAt &&
-                            new Date(report.generatedAt).toLocaleDateString('de-DE')}
+                            (() => {
+                              const date = new Date(report.generatedAt);
+                              return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('de-DE');
+                            })()}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -788,7 +797,10 @@ export default function FinancePage() {
                         <div className="font-medium">{tax.type}</div>
                         <div className="text-sm text-muted-foreground">
                           {tax.period} • Fällig bis{' '}
-                          {new Date(tax.dueDate).toLocaleDateString('de-DE')}
+                          {(() => {
+                            const date = new Date(tax.dueDate);
+                            return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('de-DE');
+                          })()}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
