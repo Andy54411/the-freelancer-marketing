@@ -594,36 +594,39 @@ export default function FinancePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {(invoices || []).slice(0, 5).map(invoice => (
-                    <div key={invoice.id} className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{invoice.invoiceNumber}</div>
-                        <div className="text-sm text-muted-foreground">{invoice.customerName}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">
-                          {formatCurrency(invoice.total || invoice.amount)}
+                  {Array.isArray(invoices) &&
+                    invoices.slice(0, 5).map(invoice => (
+                      <div key={invoice.id} className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{invoice.invoiceNumber}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {invoice.customerName}
+                          </div>
                         </div>
-                        <Badge
-                          variant={
-                            invoice.status === 'paid'
-                              ? 'default'
+                        <div className="text-right">
+                          <div className="font-medium">
+                            {formatCurrency(invoice.total || invoice.amount)}
+                          </div>
+                          <Badge
+                            variant={
+                              invoice.status === 'paid'
+                                ? 'default'
+                                : invoice.status === 'overdue'
+                                  ? 'destructive'
+                                  : 'secondary'
+                            }
+                          >
+                            {invoice.status === 'paid'
+                              ? 'Bezahlt'
                               : invoice.status === 'overdue'
-                                ? 'destructive'
-                                : 'secondary'
-                          }
-                        >
-                          {invoice.status === 'paid'
-                            ? 'Bezahlt'
-                            : invoice.status === 'overdue'
-                              ? 'Überfällig'
-                              : invoice.status === 'sent'
-                                ? 'Gesendet'
-                                : 'Entwurf'}
-                        </Badge>
+                                ? 'Überfällig'
+                                : invoice.status === 'sent'
+                                  ? 'Gesendet'
+                                  : 'Entwurf'}
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -635,20 +638,21 @@ export default function FinancePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {(customers || [])
-                    .sort((a, b) => b.totalAmount - a.totalAmount)
-                    .slice(0, 5)
-                    .map(customer => (
-                      <div key={customer.id} className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{customer.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {customer.totalInvoices} Rechnungen
+                  {Array.isArray(customers) &&
+                    customers
+                      .sort((a, b) => b.totalAmount - a.totalAmount)
+                      .slice(0, 5)
+                      .map(customer => (
+                        <div key={customer.id} className="flex justify-between items-center">
+                          <div>
+                            <div className="font-medium">{customer.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {customer.totalInvoices} Rechnungen
+                            </div>
                           </div>
+                          <div className="font-medium">{formatCurrency(customer.totalAmount)}</div>
                         </div>
-                        <div className="font-medium">{formatCurrency(customer.totalAmount)}</div>
-                      </div>
-                    ))}
+                      ))}
                 </div>
               </CardContent>
             </Card>
@@ -662,7 +666,7 @@ export default function FinancePage() {
               <CardDescription>Verwalten Sie Ihre Rechnungen</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={invoiceColumns} data={invoices || []} />
+              <DataTable columns={invoiceColumns} data={Array.isArray(invoices) ? invoices : []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -674,7 +678,10 @@ export default function FinancePage() {
               <CardDescription>Verwalten Sie Ihre Kundendaten</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={customerColumns} data={customers || []} />
+              <DataTable
+                columns={customerColumns}
+                data={Array.isArray(customers) ? customers : []}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -686,7 +693,7 @@ export default function FinancePage() {
               <CardDescription>Verwalten Sie Ihre Geschäftsausgaben</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={expenseColumns} data={expenses || []} />
+              <DataTable columns={expenseColumns} data={Array.isArray(expenses) ? expenses : []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -699,27 +706,28 @@ export default function FinancePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(payments || []).map(payment => (
-                  <div
-                    key={payment.id}
-                    className="flex justify-between items-center p-4 border rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium">Zahlung für Rechnung #{payment.invoiceId}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(payment.date).toLocaleDateString('de-DE')} • {payment.method}
-                      </div>
-                      {payment.reference && (
+                {Array.isArray(payments) &&
+                  payments.map(payment => (
+                    <div
+                      key={payment.id}
+                      className="flex justify-between items-center p-4 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">Zahlung für Rechnung #{payment.invoiceId}</div>
                         <div className="text-sm text-muted-foreground">
-                          Referenz: {payment.reference}
+                          {new Date(payment.date).toLocaleDateString('de-DE')} • {payment.method}
                         </div>
-                      )}
+                        {payment.reference && (
+                          <div className="text-sm text-muted-foreground">
+                            Referenz: {payment.reference}
+                          </div>
+                        )}
+                      </div>
+                      <div className="font-medium text-green-600">
+                        {formatCurrency(payment.amount)}
+                      </div>
                     </div>
-                    <div className="font-medium text-green-600">
-                      {formatCurrency(payment.amount)}
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -733,29 +741,30 @@ export default function FinancePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(reports || []).map(report => (
-                  <div
-                    key={report.id}
-                    className="flex justify-between items-center p-4 border rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium">{report.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {report.type} •{' '}
-                        {report.generatedAt &&
-                          new Date(report.generatedAt).toLocaleDateString('de-DE')}
+                {Array.isArray(reports) &&
+                  reports.map(report => (
+                    <div
+                      key={report.id}
+                      className="flex justify-between items-center p-4 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{report.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {report.type} •{' '}
+                          {report.generatedAt &&
+                            new Date(report.generatedAt).toLocaleDateString('de-DE')}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={report.status === 'completed' ? 'default' : 'secondary'}>
+                          {report.status === 'completed' ? 'Abgeschlossen' : 'In Bearbeitung'}
+                        </Badge>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={report.status === 'completed' ? 'default' : 'secondary'}>
-                        {report.status === 'completed' ? 'Abgeschlossen' : 'In Bearbeitung'}
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -769,28 +778,29 @@ export default function FinancePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(taxes || []).map(tax => (
-                  <div
-                    key={tax.id}
-                    className="flex justify-between items-center p-4 border rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium">{tax.type}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {tax.period} • Fällig bis{' '}
-                        {new Date(tax.dueDate).toLocaleDateString('de-DE')}
+                {Array.isArray(taxes) &&
+                  taxes.map(tax => (
+                    <div
+                      key={tax.id}
+                      className="flex justify-between items-center p-4 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{tax.type}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {tax.period} • Fällig bis{' '}
+                          {new Date(tax.dueDate).toLocaleDateString('de-DE')}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="text-right">
+                          <div className="font-medium">{formatCurrency(tax.amount)}</div>
+                          <Badge variant={tax.status === 'bezahlt' ? 'default' : 'destructive'}>
+                            {tax.status === 'bezahlt' ? 'Bezahlt' : 'Offen'}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(tax.amount)}</div>
-                        <Badge variant={tax.status === 'bezahlt' ? 'default' : 'destructive'}>
-                          {tax.status === 'bezahlt' ? 'Bezahlt' : 'Offen'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -804,35 +814,36 @@ export default function FinancePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(bankAccounts || []).map(account => (
-                  <div
-                    key={account.id}
-                    className="flex justify-between items-center p-4 border rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium">{account.bankName}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {account.iban} {account.isDefault && '• Standard-Konto'}
+                {Array.isArray(bankAccounts) &&
+                  bankAccounts.map(account => (
+                    <div
+                      key={account.id}
+                      className="flex justify-between items-center p-4 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{account.bankName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {account.iban} {account.isDefault && '• Standard-Konto'}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {account.accountType === 'checking' ? 'Girokonto' : 'Sparkonto'}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {account.accountType === 'checking' ? 'Girokonto' : 'Sparkonto'}
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">
+                          {formatCurrency(account.balance)}
+                        </div>
+                        <div className="flex space-x-2 mt-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(account.balance)}
-                      </div>
-                      <div className="flex space-x-2 mt-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
