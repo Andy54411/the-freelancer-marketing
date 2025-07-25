@@ -32,7 +32,7 @@ export default function ProjectGallery({ userId }: Props) {
             Array.isArray(data.projectImages) &&
             data.projectImages.every(i => typeof i === 'string')
           ) {
-            setImages(data.projectImages.slice(0, 10));
+            setImages(Array.isArray(data.projectImages) ? data.projectImages.slice(0, 10) : []);
           } else {
             setImages([]);
           }

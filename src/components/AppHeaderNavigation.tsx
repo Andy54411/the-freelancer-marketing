@@ -64,11 +64,13 @@ const AppHeaderNavigation: React.FC = () => {
   };
 
   // Organize categories into columns for mega menu
-  const megaMenuColumns = [
-    categories.slice(0, Math.ceil(categories.length / 3)),
-    categories.slice(Math.ceil(categories.length / 3), Math.ceil((categories.length * 2) / 3)),
-    categories.slice(Math.ceil((categories.length * 2) / 3)),
-  ];
+  const megaMenuColumns = Array.isArray(categories)
+    ? [
+        categories.slice(0, Math.ceil(categories.length / 3)),
+        categories.slice(Math.ceil(categories.length / 3), Math.ceil((categories.length * 2) / 3)),
+        categories.slice(Math.ceil((categories.length * 2) / 3)),
+      ]
+    : [[], [], []];
 
   return (
     <nav className="bg-gray-50 border-t border-gray-200 relative">

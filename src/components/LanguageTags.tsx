@@ -16,7 +16,8 @@ export const LanguageTags: React.FC<LanguageTagsProps> = ({ languages, maxTags }
     .filter(lang => lang.length > 0);
 
   // Optional: Tags begrenzen
-  const displayLanguages = maxTags ? languageArray.slice(0, maxTags) : languageArray;
+  const displayLanguages =
+    maxTags && Array.isArray(languageArray) ? languageArray.slice(0, maxTags) : languageArray;
   const hasMore = maxTags && languageArray.length > maxTags;
 
   if (languageArray.length === 0) {
