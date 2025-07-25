@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/data-table';
 import { ColumnDef } from '@tanstack/react-table';
+import InvoiceCreateModal from '@/components/finance/InvoiceCreateModal';
 
 // Types basierend auf Backend-Models
 interface Invoice {
@@ -205,6 +206,7 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
   const { user, loading: authLoading } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [stats, setStats] = useState<FinanceStats | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -312,6 +314,28 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
       console.error('Fehler beim Laden der Finance-Daten:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle invoice creation
+  const handleCreateInvoice = async (data: any) => {
+    try {
+      const response = await fetch(`${API_BASE}/invoices`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const newInvoice = await response.json();
+        setInvoices(prev => [newInvoice, ...prev]);
+        await loadFinanceData(); // Reload to update stats
+      } else {
+        throw new Error('Fehler beim Erstellen der Rechnung');
+      }
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Rechnung:', error);
+      throw error;
     }
   };
 
@@ -630,7 +654,7 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
 
           <div className="flex space-x-2">
             {activeTab === 'invoices' && (
-              <Button>
+              <Button onClick={() => setShowInvoiceModal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Neue Rechnung
               </Button>
@@ -1065,6 +1089,14 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Invoice Create Modal */}
+      <InvoiceCreateModal
+        isOpen={showInvoiceModal}
+        onClose={() => setShowInvoiceModal(false)}
+        customers={customers}
+        onSubmit={handleCreateInvoice}
+      />
     </div>
   );
 }
