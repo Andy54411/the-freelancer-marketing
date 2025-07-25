@@ -550,6 +550,99 @@ export class TimeTracker {
   }
 
   /**
+   * Holt alle ausstehenden Approval Requests für einen Kunden
+   */
+  static async getPendingApprovalRequests(customerId: string): Promise<CustomerApprovalRequest[]> {
+    try {
+      const q = query(
+        collection(db, 'customerApprovalRequests'),
+        where('customerId', '==', customerId),
+        where('status', '==', 'pending'),
+        orderBy('submittedAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const requests: CustomerApprovalRequest[] = [];
+
+      for (const docSnap of querySnapshot.docs) {
+        const data = docSnap.data();
+        
+        // Load time entries for this request
+        const timeEntries: TimeEntry[] = [];
+        if (data.timeEntryIds && Array.isArray(data.timeEntryIds)) {
+          for (const entryId of data.timeEntryIds) {
+            const entryDoc = await getDoc(doc(db, 'timeEntries', entryId));
+            if (entryDoc.exists()) {
+              timeEntries.push({ id: entryDoc.id, ...entryDoc.data() } as TimeEntry);
+            }
+          }
+        }
+
+        requests.push({
+          id: docSnap.id,
+          orderId: data.orderId,
+          providerId: data.providerId,
+          customerId: data.customerId,
+          timeEntries,
+          totalHours: data.totalHours || 0,
+          totalAmount: data.totalAmount || 0,
+          submittedAt: data.submittedAt,
+          status: data.status,
+          providerMessage: data.providerMessage,
+        });
+      }
+
+      return requests;
+    } catch (error) {
+      console.error('Error fetching pending approval requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Holt Order-Details für eine Auftrags-ID
+   */
+  static async getOrderDetails(orderId: string): Promise<any> {
+    try {
+      const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
+      if (orderDoc.exists()) {
+        return { id: orderDoc.id, ...orderDoc.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verarbeitet Kundenfreigabe (Instance-Methode)
+   */
+  async processCustomerApproval(
+    approvalRequestId: string,
+    customerId: string,
+    decision: 'approved' | 'rejected' | 'partially_approved',
+    approvedEntryIds?: string[],
+    customerFeedback?: string
+  ): Promise<void> {
+    return TimeTracker.processCustomerApproval(approvalRequestId, customerId, decision, approvedEntryIds, customerFeedback);
+  }
+
+  /**
+   * Holt ausstehende Approval Requests (Instance-Methode)
+   */
+  async getPendingApprovalRequests(customerId: string): Promise<CustomerApprovalRequest[]> {
+    return TimeTracker.getPendingApprovalRequests(customerId);
+  }
+
+  /**
+   * Holt Order-Details (Instance-Methode)
+   */
+  async getOrderDetails(orderId: string): Promise<any> {
+    return TimeTracker.getOrderDetails(orderId);
+  }
+
+  /**
    * Berechnet Stunden aus Start- und Endzeit
    */
   static calculateHoursFromTime(

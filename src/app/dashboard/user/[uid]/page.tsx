@@ -45,6 +45,8 @@ import SupportChatInterface from './components/Support/SupportChatInterface';
 import TaskiloProjectAssistant from '@/components/TaskiloProjectAssistant';
 import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
 import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
+import TimeTrackingOverview from '@/components/TimeTrackingOverview';
+import BillingHistory from '@/components/BillingHistory';
 
 import { stripePromise } from '@/lib/stripe';
 
@@ -658,6 +660,28 @@ export default function UserDashboardPage() {
                 <div className="mt-12">
                   <FaqSection />
                 </div>
+                
+                {/* TimeTracking Overview Section */}
+                {currentUser && (
+                  <div className="mt-12">
+                    <TimeTrackingOverview
+                      customerId={currentUser.uid}
+                      onRequestsUpdated={() => {
+                        // Optional: Refresh der Seite oder show success message
+                        console.log('Time tracking requests updated');
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {/* Billing History Section */}
+                {currentUser && (
+                  <div className="mt-12">
+                    <BillingHistory
+                      customerId={currentUser.uid}
+                    />
+                  </div>
+                )}
               </div>{' '}
               {/* Schließt max-w-5xl mx-auto space-y-6 */}
             </Suspense>
