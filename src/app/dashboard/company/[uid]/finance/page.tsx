@@ -3,6 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { FinanceOverview } from '@/components/finance/FinanceOverview';
+import { InvoiceComponent } from '@/components/finance/InvoiceComponent';
+import { ExpenseComponent } from '@/components/finance/ExpenseComponent';
+import { CustomerComponent } from '@/components/finance/CustomerComponent';
+import { PaymentComponent } from '@/components/finance/PaymentComponent';
+import { BankingComponent } from '@/components/finance/BankingComponent';
+import { TaxComponent } from '@/components/finance/TaxComponent';
 import {
   Loader2,
   Plus,
@@ -79,554 +86,138 @@ interface FinanceStats {
 
 export default function FinancePage() {
   const params = useParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<FinanceStats | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // API Base URL - Updated für das neue Backend
-  const API_BASE = 'https://financeapi-d4kdcd73ia-ew.a.run.app';
-
-  // Headers für API-Calls - Updated für das neue Backend
-  const getHeaders = () => ({
-    'Content-Type': 'application/json',
-    'x-user-id': user?.uid || 'mock-user',
-    'x-company-id': uid,
-  });
-
-  // Data loading
-  useEffect(() => {
-    if (!user || !uid || authLoading) return;
-
-    loadFinanceData();
-  }, [user, uid, authLoading]);
-
-  const loadFinanceData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Load stats from the dedicated /stats endpoint
-      const statsResponse = await fetch(`${API_BASE}/stats`, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        console.log('Stats data received:', statsData);
-
-        // Map backend stats to frontend format
-        setStats({
-          totalRevenue: statsData.totalRevenue || 0,
-          totalExpenses: statsData.totalExpenses || 0,
-          netProfit: statsData.profit || 0,
-          outstandingInvoices: statsData.pendingInvoices || 0,
-          outstandingAmount: 0, // Could be calculated from pending invoices
-          thisMonthRevenue: statsData.totalRevenue || 0, // Simplified for now
-        });
-      }
-
-      // Load all finance data from the unified API
-      const response = await fetch(API_BASE, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Finance data received:', data);
-
-        // Extract data from the unified response
-        setInvoices(data.invoices || []);
-        setCustomers(data.customers || []);
-        setExpenses(data.expenses || []);
-        setPayments(data.bankAccounts || []); // Using bankAccounts as mock payments
-
-        // Calculate stats from actual data
-        const totalRevenue =
-          data.invoices?.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) || 0;
-        const totalExpenses =
-          data.expenses?.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0) || 0;
-        const outstandingInvoices =
-          data.invoices?.filter((inv: any) => inv.status === 'OPEN').length || 0;
-        const outstandingAmount =
-          data.invoices
-            ?.filter((inv: any) => inv.status === 'OPEN')
-            .reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) || 0;
-
-        setStats({
-          totalRevenue,
-          totalExpenses,
-          netProfit: totalRevenue - totalExpenses,
-          outstandingInvoices,
-          outstandingAmount,
-          thisMonthRevenue: totalRevenue * 0.3, // Mock: 30% this month
-        });
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Finance-Daten:', error);
-
-      // Fallback: Load mock data if API fails
-      setInvoices([
-        {
-          id: 'inv_001',
-          invoiceNumber: 'R-2024-001',
-          customerId: 'cust_001',
-          customerName: 'Mustermann GmbH',
-          amount: 1000,
-          tax: 190,
-          total: 1190,
-          status: 'paid',
-          issueDate: '2024-01-15',
-          dueDate: '2024-02-15',
-          description: 'Webentwicklung',
-        },
-      ]);
-
-      setCustomers([
-        {
-          id: 'cust_001',
-          name: 'Mustermann GmbH',
-          email: 'info@mustermann.de',
-          address: 'Musterstraße 1, 12345 Musterstadt',
-          totalInvoices: 5,
-          totalAmount: 5950,
-        },
-      ]);
-
-      setExpenses([
-        {
-          id: 'exp_001',
-          title: 'Büromaterial',
-          amount: 150.5,
-          category: 'Büroausstattung',
-          date: '2024-01-10',
-          description: 'Stifte, Papier, etc.',
-        },
-      ]);
-
-      setStats({
-        totalRevenue: 15750,
-        totalExpenses: 3250,
-        netProfit: 12500,
-        outstandingInvoices: 2,
-        outstandingAmount: 2380,
-        thisMonthRevenue: 4725,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  // Table columns
-  const invoiceColumns: ColumnDef<Invoice>[] = [
-    {
-      accessorKey: 'invoiceNumber',
-      header: 'Rechnungsnummer',
-    },
-    {
-      accessorKey: 'customerName',
-      header: 'Kunde',
-    },
-    {
-      accessorKey: 'total',
-      header: 'Betrag',
-      cell: ({ row }) => formatCurrency(row.getValue('total')),
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => {
-        const status = row.getValue('status') as string;
-        const statusConfig = {
-          draft: { label: 'Entwurf', variant: 'secondary' as const },
-          sent: { label: 'Gesendet', variant: 'default' as const },
-          paid: { label: 'Bezahlt', variant: 'default' as const },
-          overdue: { label: 'Überfällig', variant: 'destructive' as const },
-          cancelled: { label: 'Storniert', variant: 'secondary' as const },
-        };
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
-        return <Badge variant={config.variant}>{config.label}</Badge>;
-      },
-    },
-    {
-      accessorKey: 'dueDate',
-      header: 'Fälligkeitsdatum',
-      cell: ({ row }) => {
-        const date = new Date(row.getValue('dueDate'));
-        return date.toLocaleDateString('de-DE');
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Aktionen',
-      cell: ({ row }) => (
-        <div className="flex space-x-2">
-          <Button variant="ghost" size="sm">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const customerColumns: ColumnDef<Customer>[] = [
-    {
-      accessorKey: 'name',
-      header: 'Name',
-    },
-    {
-      accessorKey: 'email',
-      header: 'E-Mail',
-    },
-    {
-      accessorKey: 'totalInvoices',
-      header: 'Rechnungen',
-    },
-    {
-      accessorKey: 'totalAmount',
-      header: 'Gesamtumsatz',
-      cell: ({ row }) => formatCurrency(row.getValue('totalAmount')),
-    },
-    {
-      id: 'actions',
-      header: 'Aktionen',
-      cell: ({ row }) => (
-        <div className="flex space-x-2">
-          <Button variant="ghost" size="sm">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Edit className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const expenseColumns: ColumnDef<Expense>[] = [
-    {
-      accessorKey: 'title',
-      header: 'Titel',
-    },
-    {
-      accessorKey: 'category',
-      header: 'Kategorie',
-    },
-    {
-      accessorKey: 'amount',
-      header: 'Betrag',
-      cell: ({ row }) => formatCurrency(row.getValue('amount')),
-    },
-    {
-      accessorKey: 'date',
-      header: 'Datum',
-      cell: ({ row }) => {
-        const date = new Date(row.getValue('date'));
-        return date.toLocaleDateString('de-DE');
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Aktionen',
-      cell: ({ row }) => (
-        <div className="flex space-x-2">
-          <Button variant="ghost" size="sm">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  if (authLoading || isLoading) {
+  // Autorisierung prüfen
+  if (!user || user.uid !== uid) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-        Finance-Daten werden geladen...
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
       </div>
     );
   }
 
+  // Mock data für Demo-Zwecke
+  const mockStats: FinanceStats = {
+    totalRevenue: 15750,
+    totalExpenses: 3250,
+    netProfit: 12500,
+    outstandingInvoices: 2,
+    outstandingAmount: 2380,
+    thisMonthRevenue: 4725,
+  };
+
+  const mockInvoices = [
+    {
+      id: 'inv_001',
+      invoiceNumber: 'R-2024-001',
+      customerId: 'cust_001',
+      customerName: 'Mustermann GmbH',
+      amount: 1000,
+      tax: 190,
+      total: 1190,
+      status: 'paid' as const,
+      issueDate: '2024-01-15',
+      dueDate: '2024-02-15',
+      description: 'Webentwicklung',
+    },
+  ];
+
+  const mockCustomers = [
+    {
+      id: 'cust_001',
+      name: 'Mustermann GmbH',
+      email: 'info@mustermann.de',
+      address: 'Musterstraße 1, 12345 Musterstadt',
+      totalInvoices: 5,
+      totalAmount: 5950,
+    },
+  ];
+
+  const mockExpenses = [
+    {
+      id: 'exp_001',
+      title: 'Büromaterial',
+      amount: 150.5,
+      category: 'Büroausstattung',
+      date: '2024-01-10',
+      description: 'Stifte, Papier, etc.',
+    },
+  ];
+
+  const mockPayments = [
+    {
+      id: 'pay_001',
+      invoiceId: 'inv_001',
+      amount: 1190,
+      date: '2024-01-20',
+      method: 'bank_transfer' as const,
+      reference: 'BANK-REF-123',
+    },
+  ];
+
+  const mockTaxData = [
+    {
+      quarter: 'Q1 2024',
+      revenue: 5000,
+      expenses: 1000,
+      taxableIncome: 4000,
+      vatOwed: 760,
+      incomeTaxOwed: 800,
+    },
+  ];
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Finanzen</h1>
-          <p className="text-muted-foreground">
-            Verwalten Sie Ihre Rechnungen, Kunden und Ausgaben
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="border-b border-gray-200 pb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Finanzen</h1>
+        <p className="text-gray-600 mt-1">
+          Verwalten Sie Ihre Rechnungen, Ausgaben und finanzielle Übersicht
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamtumsatz</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats ? formatCurrency(stats.totalRevenue) : '€0,00'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ausgaben</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats ? formatCurrency(stats.totalExpenses) : '€0,00'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nettogewinn</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats ? formatCurrency(stats.netProfit) : '€0,00'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offene Rechnungen</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats ? stats.outstandingInvoices : 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offener Betrag</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats ? formatCurrency(stats.outstandingAmount) : '€0,00'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dieser Monat</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats ? formatCurrency(stats.thisMonthRevenue) : '€0,00'}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="overview">Übersicht</TabsTrigger>
-            <TabsTrigger value="invoices">Rechnungen</TabsTrigger>
-            <TabsTrigger value="customers">Kunden</TabsTrigger>
-            <TabsTrigger value="expenses">Ausgaben</TabsTrigger>
-            <TabsTrigger value="payments">Zahlungen</TabsTrigger>
-          </TabsList>
-
-          <div className="flex space-x-2">
-            {activeTab === 'invoices' && (
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Neue Rechnung
-              </Button>
-            )}
-            {activeTab === 'customers' && (
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Neuer Kunde
-              </Button>
-            )}
-            {activeTab === 'expenses' && (
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Neue Ausgabe
-              </Button>
-            )}
-          </div>
-        </div>
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="invoices">Rechnungen</TabsTrigger>
+          <TabsTrigger value="customers">Kunden</TabsTrigger>
+          <TabsTrigger value="expenses">Ausgaben</TabsTrigger>
+          <TabsTrigger value="payments">Zahlungen</TabsTrigger>
+          <TabsTrigger value="banking">Banking</TabsTrigger>
+          <TabsTrigger value="taxes">Steuern</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Aktuelle Rechnungen</CardTitle>
-                <CardDescription>Die neuesten Rechnungen im Überblick</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {invoices.slice(0, 5).map(invoice => (
-                    <div key={invoice.id} className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{invoice.invoiceNumber}</div>
-                        <div className="text-sm text-muted-foreground">{invoice.customerName}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(invoice.total)}</div>
-                        <Badge
-                          variant={
-                            invoice.status === 'paid'
-                              ? 'default'
-                              : invoice.status === 'overdue'
-                                ? 'destructive'
-                                : 'secondary'
-                          }
-                        >
-                          {invoice.status === 'paid'
-                            ? 'Bezahlt'
-                            : invoice.status === 'overdue'
-                              ? 'Überfällig'
-                              : invoice.status === 'sent'
-                                ? 'Gesendet'
-                                : 'Entwurf'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Kunden</CardTitle>
-                <CardDescription>Ihre wertvollsten Kunden</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {customers
-                    .sort((a, b) => b.totalAmount - a.totalAmount)
-                    .slice(0, 5)
-                    .map(customer => (
-                      <div key={customer.id} className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{customer.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {customer.totalInvoices} Rechnungen
-                          </div>
-                        </div>
-                        <div className="font-medium">{formatCurrency(customer.totalAmount)}</div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <FinanceOverview stats={mockStats} />
         </TabsContent>
 
         <TabsContent value="invoices" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rechnungen</CardTitle>
-              <CardDescription>Verwalten Sie Ihre Rechnungen</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DataTable columns={invoiceColumns} data={invoices} />
-            </CardContent>
-          </Card>
+          <InvoiceComponent invoices={mockInvoices} />
         </TabsContent>
 
         <TabsContent value="customers" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kunden</CardTitle>
-              <CardDescription>Verwalten Sie Ihre Kundendaten</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DataTable columns={customerColumns} data={customers} />
-            </CardContent>
-          </Card>
+          <CustomerComponent customers={mockCustomers} />
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ausgaben</CardTitle>
-              <CardDescription>Verwalten Sie Ihre Geschäftsausgaben</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DataTable columns={expenseColumns} data={expenses} />
-            </CardContent>
-          </Card>
+          <ExpenseComponent expenses={mockExpenses} />
         </TabsContent>
 
         <TabsContent value="payments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Zahlungen</CardTitle>
-              <CardDescription>Übersicht über eingegangene Zahlungen</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {payments.map(payment => (
-                  <div
-                    key={payment.id}
-                    className="flex justify-between items-center p-4 border rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium">Zahlung für Rechnung #{payment.invoiceId}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(payment.date).toLocaleDateString('de-DE')} • {payment.method}
-                      </div>
-                      {payment.reference && (
-                        <div className="text-sm text-muted-foreground">
-                          Referenz: {payment.reference}
-                        </div>
-                      )}
-                    </div>
-                    <div className="font-medium text-green-600">
-                      {formatCurrency(payment.amount)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <PaymentComponent payments={mockPayments} />
+        </TabsContent>
+
+        <TabsContent value="banking" className="space-y-4">
+          <BankingComponent bankAccounts={[]} />
+        </TabsContent>
+
+        <TabsContent value="taxes" className="space-y-4">
+          <TaxComponent taxData={mockTaxData} />
         </TabsContent>
       </Tabs>
     </div>

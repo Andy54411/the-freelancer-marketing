@@ -1,8 +1,8 @@
 // /Users/andystaudinger/Taskilo/src/app/dashboard/company/[uid]/layout.tsx
 'use client';
 
-import React, { useMemo, useCallback, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import Header from '@/components/Header';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
@@ -68,11 +68,19 @@ const navigationItems: NavigationItem[] = [
 export default function CompanyDashboardLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
   const { isChecking, isAuthorized, userData, view, setView } = useCompanyDashboard();
+
+  // Bestimme den aktuellen Pfad für die Navigation
+  const getCurrentView = useCallback(() => {
+    if (pathname?.includes('/finance')) return 'finance';
+    if (pathname?.includes('/profile')) return 'profile';
+    return view;
+  }, [pathname, view]);
 
   // Unternehmensdaten für die Header-Komponente vorbereiten
   const companyDataForHeader = useMemo(() => {
@@ -104,13 +112,15 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return;
       }
 
-      // Für andere Views - verwende View-State
+      // Für Einstellungen - verwende View-State mit Query Parameter
       if (value === 'settings') {
         router.push(`/dashboard/company/${uid}?view=settings`);
-      } else {
-        router.push(`/dashboard/company/${uid}`);
+        setView('settings');
+        return;
       }
 
+      // Für andere Views - verwende View-State ohne Query Parameter
+      router.push(`/dashboard/company/${uid}`);
       setView(value as 'dashboard' | 'calendar' | 'finance' | 'reviews' | 'profile' | 'settings');
     },
     [router, uid, setView]
@@ -135,7 +145,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     );
   }
 
-  const currentNavItem = navigationItems.find(item => item.value === view) || navigationItems[0];
+  const currentNavItem =
+    navigationItems.find(item => item.value === getCurrentView()) || navigationItems[0];
 
   return (
     <SidebarVisibilityProvider>
@@ -162,8 +173,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                 </div>
                 <nav className="mt-5 flex-1 px-2 space-y-1">
                   {navigationItems.map(item => {
+                    const currentView = getCurrentView();
                     const isActive =
-                      view === item.value || (view === 'dashboard' && item.value === 'dashboard');
+                      currentView === item.value ||
+                      (currentView === 'dashboard' && item.value === 'dashboard');
                     return (
                       <button
                         key={item.value}
@@ -206,8 +219,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                 </div>
                 <nav className="flex-1 px-2 py-4 space-y-1">
                   {navigationItems.map(item => {
+                    const currentView = getCurrentView();
                     const isActive =
-                      view === item.value || (view === 'dashboard' && item.value === 'dashboard');
+                      currentView === item.value ||
+                      (currentView === 'dashboard' && item.value === 'dashboard');
                     return (
                       <button
                         key={item.value}

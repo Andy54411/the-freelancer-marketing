@@ -180,24 +180,24 @@ export function SectionCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-6">
         {[...Array(5)].map((_, i) => (
-          <Card key={i} className="min-h-[200px] animate-pulse bg-gray-200 dark:bg-gray-800"></Card>
+          <Card key={i} className="min-h-[220px] animate-pulse bg-gray-200 dark:bg-gray-800"></Card>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-6">
       {/* Guthaben Card */}
-      <Card className="@container/card min-h-[200px] flex flex-col bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-lg transition-all duration-200">
+      <Card className="@container/card min-h-[220px] flex flex-col bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-lg transition-all duration-200">
         <CardHeader className="pb-3 flex-shrink-0">
           <CardDescription className="flex items-center gap-2 text-green-700 dark:text-green-300 text-sm font-medium">
             <IconWallet size={18} className="flex-shrink-0" />
-            <span>Verfügbares Guthaben</span>
+            <span className="truncate">Verfügbares Guthaben</span>
           </CardDescription>
-          <CardTitle className="text-2xl font-bold tabular-nums text-green-800 dark:text-green-200">
+          <CardTitle className="text-xl lg:text-2xl font-bold tabular-nums text-green-800 dark:text-green-200 break-words">
             {formatCurrency(stats.availableBalance)}
           </CardTitle>
         </CardHeader>
@@ -231,13 +231,13 @@ export function SectionCards() {
       </Card>
 
       {/* Monatlicher Umsatz Card */}
-      <Card className="@container/card min-h-[200px] flex flex-col hover:shadow-lg transition-all duration-200 border-blue-200 dark:border-blue-800">
+      <Card className="@container/card min-h-[220px] flex flex-col hover:shadow-lg transition-all duration-200 border-blue-200 dark:border-blue-800">
         <CardHeader className="pb-4 flex-grow">
           <CardDescription className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
             <IconCurrencyEuro size={18} className="flex-shrink-0" />
-            <span>Monatlicher Umsatz</span>
+            <span className="truncate">Monatlicher Umsatz</span>
           </CardDescription>
-          <CardTitle className="text-2xl font-bold tabular-nums text-blue-800 dark:text-blue-200">
+          <CardTitle className="text-xl lg:text-2xl font-bold tabular-nums text-blue-800 dark:text-blue-200 break-words">
             {formatCurrency(stats.monthlyRevenue)}
           </CardTitle>
           <CardAction className="mt-auto">
@@ -254,13 +254,13 @@ export function SectionCards() {
 
       {/* Neue Bestellungen Card */}
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block group">
-        <Card className="@container/card min-h-[200px] flex flex-col hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-orange-200 dark:border-orange-800 cursor-pointer">
+        <Card className="@container/card min-h-[220px] flex flex-col hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-orange-200 dark:border-orange-800 cursor-pointer">
           <CardHeader className="pb-4 flex-grow">
             <CardDescription className="flex items-center gap-2 text-orange-600 dark:text-orange-400 text-sm font-medium">
               <IconPackage size={18} className="flex-shrink-0" />
-              <span>Neue Bestellungen</span>
+              <span className="truncate">Neue Bestellungen</span>
             </CardDescription>
-            <CardTitle className="text-2xl font-bold tabular-nums text-orange-800 dark:text-orange-200">
+            <CardTitle className="text-xl lg:text-2xl font-bold tabular-nums text-orange-800 dark:text-orange-200">
               {stats.newOrders}
             </CardTitle>
             <CardAction className="mt-auto">
@@ -277,13 +277,13 @@ export function SectionCards() {
 
       {/* Aktive Aufträge Card */}
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block group">
-        <Card className="@container/card min-h-[200px] flex flex-col hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-purple-200 dark:border-purple-800 cursor-pointer">
+        <Card className="@container/card min-h-[220px] flex flex-col hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-purple-200 dark:border-purple-800 cursor-pointer">
           <CardHeader className="pb-4 flex-grow">
             <CardDescription className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
               <IconPackage size={18} className="flex-shrink-0" />
-              <span>Aktive Aufträge</span>
+              <span className="truncate">Aktive Aufträge</span>
             </CardDescription>
-            <CardTitle className="text-2xl font-bold tabular-nums text-purple-800 dark:text-purple-200">
+            <CardTitle className="text-xl lg:text-2xl font-bold tabular-nums text-purple-800 dark:text-purple-200">
               {stats.activeOrders}
             </CardTitle>
             <CardAction className="mt-auto">
@@ -300,13 +300,13 @@ export function SectionCards() {
 
       {/* Ungelesene Nachrichten Card */}
       <Link href={`/dashboard/company/${currentUser?.uid}/inbox`} className="block group">
-        <Card className="@container/card min-h-[200px] flex flex-col hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-red-200 dark:border-red-800 cursor-pointer">
+        <Card className="@container/card min-h-[220px] flex flex-col hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02] border-red-200 dark:border-red-800 cursor-pointer">
           <CardHeader className="pb-4 flex-grow">
             <CardDescription className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm font-medium">
               <IconMail size={18} className="flex-shrink-0" />
-              <span>Ungelesene Nachrichten</span>
+              <span className="truncate">Ungelesene Nachrichten</span>
             </CardDescription>
-            <CardTitle className="text-2xl font-bold tabular-nums text-red-800 dark:text-red-200">
+            <CardTitle className="text-xl lg:text-2xl font-bold tabular-nums text-red-800 dark:text-red-200">
               {unreadMessagesCount}
             </CardTitle>
             <CardAction className="mt-auto">
