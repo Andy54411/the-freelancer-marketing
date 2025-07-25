@@ -47,6 +47,7 @@ interface OrderData {
   selectedCategory?: string; // Direkt aus Firestore, optional gemacht
   selectedSubcategory?: string; // Direkt aus Firestore, optional gemacht
   jobTotalCalculatedHours?: number; // Direkt aus Firestore (bereits vorhanden)
+  jobDurationString?: string | number; // Stunden pro Tag
   beschreibung?: string; // Mapped from description
   jobDateFrom?: string; // Datum
   jobDateTo?: string; // Datum
@@ -285,7 +286,27 @@ export default function OrderDetailPage() {
                 {order.selectedSubcategory || 'N/A'}
               </p>
               <p>
-                <strong>Dauer:</strong> {order.jobTotalCalculatedHours || 'N/A'} Stunden
+                <strong>Dauer:</strong>{' '}
+                {(() => {
+                  // Berechne korrekte Stunden basierend auf Datum
+                  if (
+                    order.jobDateFrom &&
+                    order.jobDateTo &&
+                    order.jobDateFrom !== order.jobDateTo
+                  ) {
+                    const startDate = new Date(order.jobDateFrom);
+                    const endDate = new Date(order.jobDateTo);
+                    const totalDays =
+                      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
+                      1;
+                    const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                    const totalHours = totalDays * hoursPerDay;
+                    return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
+                  } else {
+                    const hours = order.jobTotalCalculatedHours || order.jobDurationString || 'N/A';
+                    return `${hours} Stunden`;
+                  }
+                })()}
               </p>
               <p>
                 <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR

@@ -180,8 +180,30 @@ export const stripeWebhookHandler = onRequest(
                             const clearingEndsDate = new Date(paidAtDate.getTime() + clearingPeriodDays * 24 * 60 * 60 * 1000);
                             const clearingPeriodEndsAtTimestamp = Timestamp.fromDate(clearingEndsDate);
 
+                            // KRITISCHE KORREKTUR: Berechne jobTotalCalculatedHours neu für Multi-Tag Aufträge
+                            let correctedJobTotalCalculatedHours = tempJobDraftData.jobTotalCalculatedHours;
+                            
+                            // Prüfe, ob es ein Multi-Tag Auftrag ist und korrigiere die Stunden
+                            if (tempJobDraftData.jobDateFrom && tempJobDraftData.jobDateTo) {
+                                const startDate = new Date(tempJobDraftData.jobDateFrom);
+                                const endDate = new Date(tempJobDraftData.jobDateTo);
+                                
+                                if (startDate.getTime() !== endDate.getTime()) {
+                                    // Multi-Tag Auftrag: Berechne Tage und multipliziere
+                                    const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                                    
+                                    // Extrahiere Stunden pro Tag aus jobDurationString
+                                    const durationMatch = tempJobDraftData.jobDurationString?.match(/(\d+(\.\d+)?)/);
+                                    const hoursPerDay = durationMatch ? parseFloat(durationMatch[1]) : 8; // Fallback auf 8 Stunden
+                                    
+                                    correctedJobTotalCalculatedHours = hoursPerDay * daysDiff;
+                                    logger.info(`[stripeWebhookHandler] Multi-Tag Auftrag korrigiert: ${daysDiff} Tage × ${hoursPerDay}h = ${correctedJobTotalCalculatedHours}h`);
+                                }
+                            }
+
                             const auftragData = {
                                 ...tempJobDraftData,
+                                jobTotalCalculatedHours: correctedJobTotalCalculatedHours, // KORRIGIERTE Stunden verwenden
                                 status: 'zahlung_erhalten_clearing', // Neuer Status für die Clearing-Periode
                                 paymentIntentId: paymentIntentSucceeded.id, // WICHTIG: Speichern für eventuelle Rückerstattungen
                                 paidAt: FieldValue.serverTimestamp(),

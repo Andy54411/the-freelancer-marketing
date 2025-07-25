@@ -49,6 +49,7 @@ interface OrderData {
   selectedCategory?: string;
   selectedSubcategory?: string;
   jobTotalCalculatedHours?: number;
+  jobDurationString?: string | number; // Stunden pro Tag
   beschreibung?: string;
   jobDateFrom?: string;
   jobDateTo?: string;
@@ -372,7 +373,27 @@ export default function CompanyOrderDetailPage() {
                 {order.selectedSubcategory || 'N/A'}
               </p>
               <p>
-                <strong>Dauer:</strong> {order.jobTotalCalculatedHours || 'N/A'} Stunden
+                <strong>Dauer:</strong>{' '}
+                {(() => {
+                  // Berechne korrekte Stunden basierend auf Datum
+                  if (
+                    order.jobDateFrom &&
+                    order.jobDateTo &&
+                    order.jobDateFrom !== order.jobDateTo
+                  ) {
+                    const startDate = new Date(order.jobDateFrom);
+                    const endDate = new Date(order.jobDateTo);
+                    const totalDays =
+                      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
+                      1;
+                    const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                    const totalHours = totalDays * hoursPerDay;
+                    return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
+                  } else {
+                    const hours = order.jobTotalCalculatedHours || 'N/A';
+                    return `${hours} Stunden`;
+                  }
+                })()}
               </p>
               <p>
                 <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
@@ -412,8 +433,46 @@ export default function CompanyOrderDetailPage() {
               <TimeTrackingManager
                 orderId={orderId}
                 customerName={order.customerName}
-                originalPlannedHours={order.jobTotalCalculatedHours || 8}
-                hourlyRate={order.priceInCents / 100 / (order.jobTotalCalculatedHours || 8)}
+                originalPlannedHours={(() => {
+                  // Berechne korrekte Stunden basierend auf Datum
+                  if (
+                    order.jobDateFrom &&
+                    order.jobDateTo &&
+                    order.jobDateFrom !== order.jobDateTo
+                  ) {
+                    const startDate = new Date(order.jobDateFrom);
+                    const endDate = new Date(order.jobDateTo);
+                    const totalDays =
+                      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
+                      1;
+                    const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                    return totalDays * hoursPerDay;
+                  } else {
+                    return order.jobTotalCalculatedHours || 8;
+                  }
+                })()}
+                hourlyRate={(() => {
+                  // Berechne korrekten Stundensatz
+                  const totalHours = (() => {
+                    if (
+                      order.jobDateFrom &&
+                      order.jobDateTo &&
+                      order.jobDateFrom !== order.jobDateTo
+                    ) {
+                      const startDate = new Date(order.jobDateFrom);
+                      const endDate = new Date(order.jobDateTo);
+                      const totalDays =
+                        Math.ceil(
+                          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+                        ) + 1;
+                      const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                      return totalDays * hoursPerDay;
+                    } else {
+                      return order.jobTotalCalculatedHours || 8;
+                    }
+                  })();
+                  return totalHours > 0 ? order.priceInCents / 100 / totalHours : 50;
+                })()}
                 onTimeSubmitted={() => {
                   // Optional: Reload order data or show success message
                   console.log('Time tracking updated');

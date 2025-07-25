@@ -348,9 +348,22 @@ export default function CompanyProviderDetailPage() {
         throw new Error('Ungültige Dauer ausgewählt.');
       }
 
-      // Preisberechnung
+      // Preisberechnung mit korrekter Multi-Tag-Behandlung
       const hourlyRateNum = provider.hourlyRate;
-      const totalHours = hoursInput; // Für einfache Buchung, ohne Tage-Multiplikation
+
+      // KRITISCHE KORREKTUR: Multi-Tag-Aufträge müssen korrekt berechnet werden
+      // Ermittle Buchungscharakteristiken für die Kategorie
+      let totalHours = hoursInput; // Standard: direkte Stunden
+
+      // Prüfe, ob es ein Multi-Tag Auftrag ist (verschiedene Daten)
+      if (calculatedNumberOfDays > 1) {
+        // Multi-Tag Auftrag: hoursInput sind Stunden pro Tag
+        totalHours = hoursInput * calculatedNumberOfDays;
+        console.log(
+          `KORREKTUR Provider-Buchung: ${calculatedNumberOfDays} Tage × ${hoursInput}h = ${totalHours}h total`
+        );
+      }
+
       const servicePrice = totalHours * hourlyRateNum;
       const servicePriceInCents = Math.round(servicePrice * 100);
       const totalPriceInCents = servicePriceInCents;

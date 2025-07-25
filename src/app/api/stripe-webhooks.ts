@@ -64,12 +64,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             `[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`
           );
           // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
-          return res
-            .status(200)
-            .json({
-              received: true,
-              message: 'Wichtige Metadaten (tempJobDraftId oder firebaseUserId) fehlen.',
-            });
+          return res.status(200).json({
+            received: true,
+            message: 'Wichtige Metadaten (tempJobDraftId oder firebaseUserId) fehlen.',
+          });
         }
 
         try {
@@ -100,8 +98,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const clearingPeriodEndsAtTimestamp =
               admin.firestore.Timestamp.fromDate(clearingEndsDate);
 
+            // KRITISCHE KORREKTUR: Berechne jobTotalCalculatedHours neu für Multi-Tag Aufträge
+            let correctedJobTotalCalculatedHours = tempJobDraftData.jobTotalCalculatedHours;
+
+            // Prüfe, ob es ein Multi-Tag Auftrag ist und korrigiere die Stunden
+            if (tempJobDraftData.jobDateFrom && tempJobDraftData.jobDateTo) {
+              const startDate = new Date(tempJobDraftData.jobDateFrom);
+              const endDate = new Date(tempJobDraftData.jobDateTo);
+
+              if (startDate.getTime() !== endDate.getTime()) {
+                // Multi-Tag Auftrag: Berechne Tage und multipliziere
+                const daysDiff =
+                  Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+                // Extrahiere Stunden pro Tag aus jobDurationString
+                const durationMatch = tempJobDraftData.jobDurationString?.match(/(\d+(\.\d+)?)/);
+                const hoursPerDay = durationMatch ? parseFloat(durationMatch[1]) : 8; // Fallback auf 8 Stunden
+
+                correctedJobTotalCalculatedHours = hoursPerDay * daysDiff;
+                console.log(
+                  `[WEBHOOK CORRECTION] Multi-Tag Auftrag korrigiert: ${daysDiff} Tage × ${hoursPerDay}h = ${correctedJobTotalCalculatedHours}h`
+                );
+              }
+            }
+
             const auftragData = {
               ...tempJobDraftData,
+              jobTotalCalculatedHours: correctedJobTotalCalculatedHours, // KORRIGIERTE Stunden verwenden
               status: 'zahlung_erhalten_clearing', // Neuer Status für die Clearing-Periode
               paymentIntentId: paymentIntentSucceeded.id,
               paidAt: admin.firestore.FieldValue.serverTimestamp(),

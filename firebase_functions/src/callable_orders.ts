@@ -118,8 +118,33 @@ export const acceptOrder = onCall(
                 });
 
                 // Initialisiere Time Tracking für den aktiven Auftrag
-                const originalPlannedHours = orderToAcceptData?.originalPlannedHours || orderToAcceptData?.zeitraum || 8; // Fallback auf Zeitraum oder 8h
-                const hourlyRate = orderToAcceptData?.preis || 50; // Fallback auf 50€/h wenn kein Preis vorhanden
+                // Berechne die tatsächlichen Gesamtstunden basierend auf den Daten
+                const dateFrom = orderToAcceptData?.jobDateFrom;
+                const dateTo = orderToAcceptData?.jobDateTo;
+                const hoursPerDay = parseFloat(String(orderToAcceptData?.jobDurationString || 8)); // Stunden pro Tag aus jobDurationString
+                
+                let totalDays = 1; // Mindestens 1 Tag
+                let originalPlannedHours: number;
+                
+                if (dateFrom && dateTo && dateFrom !== dateTo) {
+                    // Mehrtägiger Auftrag: Berechne Anzahl Tage
+                    const startDate = new Date(dateFrom);
+                    const endDate = new Date(dateTo);
+                    totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                    originalPlannedHours = totalDays * hoursPerDay; // Tage × Stunden pro Tag
+                    
+                    console.log(`Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${originalPlannedHours}h`);
+                } else {
+                    // Eintägiger Auftrag: Verwende jobTotalCalculatedHours oder hoursPerDay
+                    originalPlannedHours = orderToAcceptData?.jobTotalCalculatedHours || hoursPerDay;
+                    
+                    console.log(`Eintägiger Auftrag: ${originalPlannedHours}h`);
+                }
+                
+                const totalPriceInCents = orderToAcceptData?.jobCalculatedPriceInCents || 0;
+                const hourlyRateInCents = originalPlannedHours > 0 ? Math.round(totalPriceInCents / originalPlannedHours) : 5000; // Berechne Stundensatz in Cent
+                
+                console.log(`Berechnung: ${totalPriceInCents}¢ ÷ ${originalPlannedHours}h = ${hourlyRateInCents}¢/h (${(hourlyRateInCents/100).toFixed(2)}€/h)`);
 
                 const orderTimeTracking = {
                     orderId,
@@ -129,7 +154,7 @@ export const acceptOrder = onCall(
                     totalLoggedHours: 0,
                     totalApprovedHours: 0,
                     totalBilledHours: 0,
-                    hourlyRate: Math.round(hourlyRate * 100), // Convert to cents
+                    hourlyRate: hourlyRateInCents, // Bereits in Cent
                     status: 'active',
                     createdAt: FieldValue.serverTimestamp(),
                     lastUpdated: FieldValue.serverTimestamp(),
