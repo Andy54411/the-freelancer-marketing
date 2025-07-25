@@ -1,32 +1,36 @@
 'use client';
 
-import { ChartAreaInteractive } from '@/components/chart-area-interactive';
-import { DataTable } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
-import { SectionCards } from '@/components/section-cards';
-import { callHttpsFunction } from '@/lib/httpsFunctions';
-import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SettingsPage from '@/components/SettingsPage';
+import Link from 'next/link';
+import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
+import { calculateCompanyMetrics, type CompanyMetrics } from '@/lib/companyMetrics';
+import { OrderSummaryDrawer } from '@/components/OrderSummaryDrawer';
+import { DataTable } from '@/components/data-table';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 import {
-  Grid as FiGrid,
-  Calendar as FiCalendar,
-  User as FiUser,
-  Settings as FiSettings,
-  MessageSquare as FiMessageSquare,
-  DollarSign as FiDollarSign,
-} from 'lucide-react';
-import { OrderSummaryDrawer } from '@/components/OrderSummaryDrawer';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CompanyCalendar from '@/components/CompanyCalendar';
+  FiGrid,
+  FiCalendar,
+  FiDollarSign,
+  FiMessageSquare,
+  FiUser,
+  FiSettings,
+  FiMenu,
+  FiX,
+} from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
-import { calculateCompanyMetrics, type CompanyMetrics } from '@/lib/companyMetrics';
-import CompanyReviewManagement from '@/components/CompanyReviewManagement';
+import { cn } from '@/lib/utils';
+import { SectionCards } from '@/components/section-cards';
+import { ChartAreaInteractive } from '@/components/chart-area-interactive';
+import CompanyCalendar from '@/components/CompanyCalendar';
 import FinanceComponent from '@/components/FinanceComponent';
+import CompanyReviewManagement from '@/components/CompanyReviewManagement';
+import SettingsPage from '@/components/SettingsPage';
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -34,10 +38,10 @@ type OrderData = {
   selectedSubcategory: string;
   customerName: string;
   status: string;
-  orderDate?: { _seconds: number; _nanoseconds: number } | string; // Use the consistent date field from the backend
+  orderDate?: { _seconds: number; _nanoseconds: number } | string;
   totalAmountPaidByBuyer: number;
-  uid: string; // Anbieter-UID
-  orderedBy: string; // Kunden-UID, für Chat-Funktionalität benötigt
+  uid: string;
+  orderedBy: string;
 };
 
 const isNonEmptyString = (val: unknown): val is string =>
@@ -145,6 +149,20 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   // Get the company name from the already fetched user data to pass to the drawer.
   const companyName = userData?.companyName || userData?.step2?.companyName || 'Ihre Firma';
 
+  // Sidebar State
+  const [activeView, setActiveView] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Sidebar Navigation Items
+  const navigationItems = [
+    { id: 'dashboard', label: 'Übersicht', icon: FiGrid },
+    { id: 'calendar', label: 'Kalender', icon: FiCalendar },
+    { id: 'finance', label: 'Finanzen', icon: FiDollarSign },
+    { id: 'reviews', label: 'Bewertungen', icon: FiMessageSquare },
+    { id: 'profile', label: 'Profil', icon: FiUser },
+    { id: 'settings', label: 'Einstellungen', icon: FiSettings },
+  ];
+
   // NEU: State für Auftragsdaten
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -217,38 +235,96 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   }, [searchParams, view, setView]);
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
-      {view === 'dashboard' ? (
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 md:w-fit">
-            <TabsTrigger value="dashboard">
-              <FiGrid className="mr-2 h-4 w-4" />
-              Übersicht
-            </TabsTrigger>
-            <TabsTrigger value="calendar">
-              <FiCalendar className="mr-2 h-4 w-4" />
-              Kalender
-            </TabsTrigger>
-            <TabsTrigger value="finance">
-              <FiDollarSign className="mr-2 h-4 w-4" />
-              Finanzen
-            </TabsTrigger>
-            <TabsTrigger value="reviews">
-              <FiMessageSquare className="mr-2 h-4 w-4" />
-              Bewertungen
-            </TabsTrigger>
-            <TabsTrigger value="profile">
-              <FiUser className="mr-2 h-4 w-4" />
-              Profil
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <FiSettings className="mr-2 h-4 w-4" />
-              Einstellungen
-            </TabsTrigger>
-          </TabsList>
+    <div className="flex h-screen bg-gray-50">
+      {/* Mobile Sidebar */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="flex h-full flex-col">
+            <div className="p-6 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
+            </div>
+            <nav className="flex-1 p-4 space-y-2">
+              {navigationItems.map(item => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveView(item.id);
+                      setSidebarOpen(false);
+                    }}
+                    className={cn(
+                      'w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                      activeView === item.id
+                        ? 'bg-[#14ad9f] text-white'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    )}
+                  >
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-          <TabsContent value="dashboard" className="mt-4">
-            <div className="flex flex-col gap-4 md:gap-6">
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex md:w-64 md:flex-col">
+        <div className="flex h-full flex-col bg-white border-r border-gray-200">
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
+            <p className="text-sm text-gray-500 mt-1">{companyName}</p>
+          </div>
+          <nav className="flex-1 p-4 space-y-2">
+            {navigationItems.map(item => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveView(item.id)}
+                  className={cn(
+                    'w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                    activeView === item.id
+                      ? 'bg-[#14ad9f] text-white'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  )}
+                >
+                  <Icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:hidden mr-3"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <FiMenu className="h-5 w-5" />
+              </Button>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {navigationItems.find(item => item.id === activeView)?.label || 'Dashboard'}
+              </h1>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          {activeView === 'dashboard' && (
+            <div className="space-y-6">
               <SectionCards />
               {uid && <ChartAreaInteractive companyUid={uid} />}
               <DataTable
@@ -257,7 +333,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 isLoading={loadingOrders}
                 onRowClick={handleRowClick}
               />
-              <div className="mt-8 text-center">
+              <div className="text-center">
                 <Link
                   href={`/dashboard/company/${uid}/orders/overview`}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
@@ -266,17 +342,15 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 </Link>
               </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="calendar" className="mt-4">
-            {uid && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}
-          </TabsContent>
+          {activeView === 'calendar' && uid && (
+            <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />
+          )}
 
-          <TabsContent value="finance" className="mt-4">
-            {uid && <FinanceComponent companyUid={uid} />}
-          </TabsContent>
+          {activeView === 'finance' && uid && <FinanceComponent companyUid={uid} />}
 
-          <TabsContent value="reviews" className="mt-4">
+          {activeView === 'reviews' && (
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Bewertungen verwalten</h2>
@@ -291,15 +365,14 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 />
               )}
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="profile" className="mt-4">
+          {activeView === 'profile' && (
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Firmenprofil</h2>
                 <p className="text-gray-600 mt-2">Verwalten Sie Ihr Unternehmensprofil</p>
               </div>
-              {/* Platzhalter für zukünftige Profil-Features */}
               <div className="text-center py-12">
                 <FiUser className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">Profilverwaltung</h3>
@@ -308,16 +381,15 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 </p>
               </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="settings" className="mt-4">
-            <SettingsPage userData={userData} onDataSaved={() => console.log('Settings updated')} />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <SettingsPage userData={userData} onDataSaved={() => setView('dashboard')} />
-      )}
-      {/* NEU: Die Sidebar-Komponente, die außerhalb des Haupt-Renderings liegt */}
+          {activeView === 'settings' && (
+            <SettingsPage userData={userData} onDataSaved={() => setActiveView('dashboard')} />
+          )}
+        </main>
+      </div>
+
+      {/* Order Summary Drawer */}
       <OrderSummaryDrawer
         order={selectedOrder}
         isOpen={isDrawerOpen}
