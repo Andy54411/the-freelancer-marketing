@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiClock, FiEye, FiCheck, FiX, FiAlertCircle, FiDollarSign } from 'react-icons/fi';
-import { CustomerApprovalRequest, TimeEntry, OrderTimeTracking } from '@/types/timeTracking';
+import { CustomerApprovalRequest } from '@/types/timeTracking';
 import { TimeTracker } from '@/lib/timeTracker';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -254,7 +254,7 @@ export default function TimeTrackingOverview({
                     </p>
                     {request.providerMessage && (
                       <p className="text-sm text-gray-700 mt-2 italic">
-                        "{request.providerMessage}"
+                        &quot;{request.providerMessage}&quot;
                       </p>
                     )}
                   </div>

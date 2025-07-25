@@ -5,7 +5,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiClock, FiDollarSign, FiCheck, FiX, FiEye, FiCalendar } from 'react-icons/fi';
 import { TimeEntry, CustomerApprovalRequest } from '@/types/timeTracking';
-import { TimeTracker } from '@/lib/timeTracker';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
