@@ -19,6 +19,7 @@ import {
 } from 'react-icons/fi'; // FiUser hinzugefügt
 
 import UserInfoCard from '@/components/UserInfoCard'; // Importiere die neue, generische Komponente
+import CustomerApprovalInterface from '@/components/CustomerApprovalInterface';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
 
@@ -330,6 +331,26 @@ export default function OrderDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Customer Approval Interface für aktive Aufträge */}
+          {order.status === 'AKTIV' && currentUser.uid === order.customerId && (
+            <div className="bg-white shadow rounded-lg p-6 mb-8">
+              <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                <FiAlertCircle className="mr-2" /> Stundenfreigabe
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Der Anbieter kann zusätzliche Arbeitsstunden zur Freigabe einreichen. Sie können
+                diese überprüfen und genehmigen oder ablehnen.
+              </p>
+              <CustomerApprovalInterface
+                orderId={orderId}
+                onApprovalProcessed={() => {
+                  // Optional: Reload order data or show success message
+                  console.log('Approval processed');
+                }}
+              />
+            </div>
+          )}
 
           {/* Chat-Bereich */}
           <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">

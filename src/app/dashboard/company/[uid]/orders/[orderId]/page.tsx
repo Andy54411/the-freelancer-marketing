@@ -16,10 +16,12 @@ import {
   ArrowLeft as FiArrowLeft,
   AlertTriangle as FiAlertTriangle,
   Slash as FiSlash,
+  Clock as FiClock,
 } from 'lucide-react';
 
 // Komponenten
 import UserInfoCard from '@/components/UserInfoCard';
+import TimeTrackingManager from '@/components/TimeTrackingManager';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
 
@@ -400,6 +402,25 @@ export default function CompanyOrderDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Time Tracking für aktive Aufträge */}
+          {order.status === 'AKTIV' && isViewerProvider && (
+            <div className="bg-white shadow rounded-lg p-6 mb-8">
+              <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                <FiClock className="mr-2" /> Zeiterfassung
+              </h2>
+              <TimeTrackingManager
+                orderId={orderId}
+                customerName={order.customerName}
+                originalPlannedHours={order.jobTotalCalculatedHours || 8}
+                hourlyRate={order.priceInCents / 100 / (order.jobTotalCalculatedHours || 8)}
+                onTimeSubmitted={() => {
+                  // Optional: Reload order data or show success message
+                  console.log('Time tracking updated');
+                }}
+              />
+            </div>
+          )}
 
           {/* Aktions-Box für den Anbieter */}
           {order.status === 'zahlung_erhalten_clearing' && isViewerProvider && (
