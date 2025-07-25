@@ -303,20 +303,23 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 py-4 sm:px-6 lg:px-8">
+        <header className="bg-white border-b border-gray-200 px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="md:hidden mr-3"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <FiMenu className="h-5 w-5" />
-              </Button>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {navigationItems.find(item => item.id === activeView)?.label || 'Dashboard'}
-              </h1>
+            <div className="flex flex-col">
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden mr-3"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <FiMenu className="h-5 w-5" />
+                </Button>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {navigationItems.find(item => item.id === activeView)?.label || 'Übersicht'}
+                </h1>
+              </div>
+              <p className="text-lg text-gray-600 mt-1 ml-0 md:ml-0">{companyName}</p>
             </div>
           </div>
         </header>

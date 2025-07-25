@@ -148,10 +148,10 @@ export function SectionCards() {
 
     const confirmWithdraw = confirm(
       `Auszahlung bestätigen\n\n` +
-      `Verfügbar: ${formatCurrency(stats.availableBalance)}\n` +
-      `Gebühr: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
-      `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
-      `Möchten Sie fortfahren?`
+        `Verfügbar: ${formatCurrency(stats.availableBalance)}\n` +
+        `Gebühr: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
+        `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
+        `Möchten Sie fortfahren?`
     );
 
     if (!confirmWithdraw) return;
@@ -201,14 +201,13 @@ export function SectionCards() {
   }
 
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-5">
-      {/* Guthaben Card */}
-      <Card className="@container/card h-full bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <Card className="col-span-1 sm:col-span-2 lg:col-span-1 xl:col-span-2 h-full bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
         <CardHeader className="pb-3">
           <CardDescription className="flex items-center gap-2 text-green-700 dark:text-green-300">
             <IconWallet size={16} /> Verfügbares Guthaben
           </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-green-800 dark:text-green-200">
+          <CardTitle className="text-2xl font-semibold tabular-nums text-green-800 dark:text-green-200">
             {formatCurrency(stats.availableBalance)}
           </CardTitle>
         </CardHeader>
@@ -241,12 +240,12 @@ export function SectionCards() {
         </CardContent>
       </Card>
 
-      <Card className="@container/card h-full">
+      <Card className="h-full">
         <CardHeader>
           <CardDescription className="flex items-center gap-2">
             <IconCurrencyEuro size={16} /> Monatlicher Umsatz
           </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-2xl font-semibold tabular-nums">
             {formatCurrency(stats.monthlyRevenue)}
           </CardTitle>
           <CardAction>
@@ -257,15 +256,14 @@ export function SectionCards() {
           </CardAction>
         </CardHeader>
       </Card>
+
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block">
-        <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <Card className="h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
             <CardDescription className="flex items-center gap-2">
               <IconPackage size={16} /> Neue Bestellungen
             </CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-              {stats.newOrders}
-            </CardTitle>
+            <CardTitle className="text-2xl font-semibold tabular-nums">{stats.newOrders}</CardTitle>
             <CardAction>
               <Badge variant={stats.newOrders > 0 ? 'destructive' : 'outline'}>
                 {stats.newOrders > 0 ? 'Ausstehend' : 'Aktuell'}
@@ -274,13 +272,14 @@ export function SectionCards() {
           </CardHeader>
         </Card>
       </Link>
+
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block">
-        <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <Card className="h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
             <CardDescription className="flex items-center gap-2">
               <IconPackage size={16} /> Aktive Aufträge
             </CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            <CardTitle className="text-2xl font-semibold tabular-nums">
               {stats.activeOrders}
             </CardTitle>
             <CardAction>
@@ -289,13 +288,14 @@ export function SectionCards() {
           </CardHeader>
         </Card>
       </Link>
+
       <Link href={`/dashboard/company/${currentUser?.uid}/inbox`} className="block">
-        <Card className="@container/card h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <Card className="h-full hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
           <CardHeader>
             <CardDescription className="flex items-center gap-2">
               <IconMail size={16} /> Ungelesene Nachrichten
             </CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            <CardTitle className="text-2xl font-semibold tabular-nums">
               {unreadMessagesCount}
             </CardTitle>
             <CardAction>
