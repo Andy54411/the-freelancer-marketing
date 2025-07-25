@@ -1,6 +1,6 @@
-// firebase_functions/src/finance/api/finance-api.simple.ts
+// firebase_functions/src/finance/api/finance-api.ts
 
-import { https } from 'firebase-functions/v1';
+import { onRequest } from 'firebase-functions/v2/https';
 
 // Vereinfachte CORS und Auth Implementation
 async function corsMiddleware(req: any, res: any): Promise<void> {
@@ -78,7 +78,7 @@ interface SimpleFinanceData {
     }[];
 }
 
-export const financeApiSimple = https.onRequest(async (req, res) => {
+export const financeApi = onRequest(async (req, res) => {
     // CORS
     await corsMiddleware(req, res);
     if (req.method === 'OPTIONS') return;

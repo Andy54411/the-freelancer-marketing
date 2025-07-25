@@ -91,7 +91,7 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('overview');
 
   // API Base URL - Updated für das neue Backend
-  const API_BASE = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiSimple';
+  const API_BASE = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApi';
 
   // Headers für API-Calls - Updated für das neue Backend
   const getHeaders = () => ({
