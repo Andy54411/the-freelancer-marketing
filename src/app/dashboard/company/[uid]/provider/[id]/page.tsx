@@ -597,11 +597,10 @@ export default function CompanyProviderDetailPage() {
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-5 h-5 ${
-                              i < Math.floor(provider.rating ?? 0)
+                            className={`w-5 h-5 ${i < Math.floor(provider.rating ?? 0)
                                 ? 'text-yellow-400 fill-current'
                                 : 'text-gray-300'
-                            }`}
+                              }`}
                           />
                         ))}
                       </div>
@@ -798,53 +797,53 @@ export default function CompanyProviderDetailPage() {
               (provider.languages &&
                 Array.isArray(provider.languages) &&
                 provider.languages.length > 0)) && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3
-                  className="text-lg font-semibold text-gray-900 dark:text-white mb-4"
-                  data-translatable
-                  data-translation-key="provider.additional.title"
-                >
-                  Weitere Informationen
-                </h3>
-                <div className="space-y-3">
-                  {provider.founded && (
-                    <div>
-                      <label
-                        className="text-sm font-medium text-gray-500 dark:text-gray-400"
-                        data-translatable
-                        data-translation-key="provider.additional.founded"
-                      >
-                        Gegründet
-                      </label>
-                      <p className="text-gray-900 dark:text-white">{provider.founded}</p>
-                    </div>
-                  )}
-                  {provider.languages &&
-                    Array.isArray(provider.languages) &&
-                    provider.languages.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <h3
+                    className="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                    data-translatable
+                    data-translation-key="provider.additional.title"
+                  >
+                    Weitere Informationen
+                  </h3>
+                  <div className="space-y-3">
+                    {provider.founded && (
                       <div>
                         <label
                           className="text-sm font-medium text-gray-500 dark:text-gray-400"
                           data-translatable
-                          data-translation-key="provider.additional.languages"
+                          data-translation-key="provider.additional.founded"
                         >
-                          Sprachen
+                          Gegründet
                         </label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {provider.languages.map((language, index) => (
-                            <span
-                              key={index}
-                              className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-sm"
-                            >
-                              {language}
-                            </span>
-                          ))}
-                        </div>
+                        <p className="text-gray-900 dark:text-white">{provider.founded}</p>
                       </div>
                     )}
+                    {provider.languages &&
+                      Array.isArray(provider.languages) &&
+                      provider.languages.length > 0 && (
+                        <div>
+                          <label
+                            className="text-sm font-medium text-gray-500 dark:text-gray-400"
+                            data-translatable
+                            data-translation-key="provider.additional.languages"
+                          >
+                            Sprachen
+                          </label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {provider.languages.map((language, index) => (
+                              <span
+                                key={index}
+                                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-sm"
+                              >
+                                {language}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Quick Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">

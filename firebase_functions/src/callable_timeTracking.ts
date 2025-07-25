@@ -46,10 +46,10 @@ interface BillAdditionalHoursPayload {
 }
 
 const allowedOrigins = [
-    "http://localhost:3000", 
-    "http://localhost:3001", 
+    "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:3002",
-    "https://tilvo-f142f.web.app", 
+    "https://tilvo-f142f.web.app",
     "http://localhost:5002",
     "https://tasko-rho.vercel.app",
     "https://tasko-zh8k.vercel.app",
@@ -62,13 +62,13 @@ const allowedOrigins = [
  * Initialisiert Time Tracking für einen aktiven Auftrag
  */
 export const initializeTimeTracking = onCall(
-    { 
+    {
         cors: allowedOrigins,
         region: "europe-west1"
     },
     async (request: CallableRequest<InitializeTimeTrackingPayload>) => {
         logger.info(`[initializeTimeTracking] Called for order: ${request.data.orderId}`);
-        
+
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
@@ -86,7 +86,7 @@ export const initializeTimeTracking = onCall(
             // Prüfe ob Auftrag existiert und User berechtigt ist
             const orderRef = db.collection('auftraege').doc(orderId);
             const orderDoc = await orderRef.get();
-            
+
             if (!orderDoc.exists) {
                 throw new HttpsError('not-found', 'Order not found.');
             }
@@ -128,13 +128,13 @@ export const initializeTimeTracking = onCall(
  * Loggt eine neue Zeiteintragung
  */
 export const logTimeEntry = onCall(
-    { 
+    {
         cors: allowedOrigins,
         region: "europe-west1"
     },
     async (request: CallableRequest<LogTimeEntryPayload>) => {
         logger.info(`[logTimeEntry] Called for order: ${request.data.orderId}`);
-        
+
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
@@ -191,13 +191,13 @@ export const logTimeEntry = onCall(
  * Reicht Zeiteinträge zur Kundenfreigabe ein
  */
 export const submitForCustomerApproval = onCall(
-    { 
+    {
         cors: allowedOrigins,
         region: "europe-west1"
     },
     async (request: CallableRequest<SubmitForApprovalPayload>) => {
         logger.info(`[submitForCustomerApproval] Called for order: ${request.data.orderId}`);
-        
+
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
@@ -236,7 +236,7 @@ export const submitForCustomerApproval = onCall(
 
             const customerId = entries[0].customerId;
             const totalHours = entries.reduce((sum: number, entry: any) => sum + entry.hours, 0);
-            
+
             // Berechne Gesamtbetrag (nur zusätzliche Stunden)
             const additionalEntries = entries.filter((entry: any) => entry.category === 'additional');
             const totalAmount = additionalEntries.reduce((sum: number, entry: any) => sum + (entry.billableAmount || 0), 0);
@@ -287,13 +287,13 @@ export const submitForCustomerApproval = onCall(
  * Verarbeitet Kundenfreigabe
  */
 export const processCustomerApproval = onCall(
-    { 
+    {
         cors: allowedOrigins,
         region: "europe-west1"
     },
     async (request: CallableRequest<ProcessApprovalPayload>) => {
         logger.info(`[processCustomerApproval] Called for request: ${request.data.approvalRequestId}`);
-        
+
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
@@ -305,7 +305,7 @@ export const processCustomerApproval = onCall(
 
         try {
             const batch = db.batch();
-            
+
             // Hole Approval Request
             const approvalRef = db.collection('customerApprovalRequests').doc(approvalRequestId);
             const approvalDoc = await approvalRef.get();
@@ -331,7 +331,7 @@ export const processCustomerApproval = onCall(
             const entryIds = approvalData.timeEntryIds || [];
             for (const entryId of entryIds) {
                 let newStatus: string;
-                
+
                 if (decision === 'approved') {
                     newStatus = 'customer_approved';
                 } else if (decision === 'rejected') {
@@ -350,7 +350,7 @@ export const processCustomerApproval = onCall(
             // Aktualisiere Order Time Tracking
             const orderId = approvalData.orderId;
             let orderStatus: string;
-            
+
             if (decision === 'approved') {
                 orderStatus = 'fully_approved';
             } else if (decision === 'rejected') {
@@ -385,14 +385,14 @@ export const processCustomerApproval = onCall(
  * Rechnet genehmigte zusätzliche Stunden ab
  */
 export const billApprovedAdditionalHours = onCall(
-    { 
+    {
         cors: allowedOrigins,
         region: "europe-west1",
         secrets: [STRIPE_SECRET_KEY_TIME]
     },
     async (request: CallableRequest<BillAdditionalHoursPayload>) => {
         logger.info(`[billApprovedAdditionalHours] Called for order: ${request.data.orderId}`);
-        
+
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
@@ -438,7 +438,7 @@ export const billApprovedAdditionalHours = onCall(
             const orderDoc = await db.collection('auftraege').doc(orderId).get();
             const orderData = orderDoc.data();
             const customerId = orderData?.customerFirebaseUid;
-            
+
             if (!customerId) {
                 throw new HttpsError('failed-precondition', 'Customer ID not found.');
             }
@@ -474,7 +474,7 @@ export const billApprovedAdditionalHours = onCall(
 
             // Markiere Einträge als "billed"
             const batch = db.batch();
-            
+
             for (const entry of approvedEntries) {
                 batch.update(db.collection('timeEntries').doc(entry.id), {
                     status: 'billed',
@@ -492,12 +492,12 @@ export const billApprovedAdditionalHours = onCall(
             await batch.commit();
 
             logger.info(`[billApprovedAdditionalHours] Successfully created payment intent: ${paymentIntent.id}`);
-            return { 
-                success: true, 
+            return {
+                success: true,
                 paymentIntentId: paymentIntent.id,
                 clientSecret: paymentIntent.client_secret,
                 amount: totalAmount,
-                message: 'Payment intent created for additional hours.' 
+                message: 'Payment intent created for additional hours.'
             };
 
         } catch (error: any) {

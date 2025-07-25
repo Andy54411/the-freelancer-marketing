@@ -19,12 +19,12 @@ const doRangesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): bo
  * Ändert den Status von 'zahlung_erhalten_clearing' zu 'AKTIV'.
  */
 export const acceptOrderHTTP = onRequest(
-    { 
+    {
         cors: [
-            "http://localhost:3000", 
-            "http://localhost:3001", 
+            "http://localhost:3000",
+            "http://localhost:3001",
             "http://localhost:3002",
-            "https://tilvo-f142f.web.app", 
+            "https://tilvo-f142f.web.app",
             "http://localhost:5002",
             "https://tasko-rho.vercel.app",
             "https://tasko-zh8k.vercel.app",
@@ -64,7 +64,7 @@ export const acceptOrderHTTP = onRequest(
             const providerUid = decodedToken.uid;
 
             const { orderId } = request.body as OrderActionPayload;
-            
+
             logger.info(`[acceptOrderHTTP] Called for order: ${orderId} by user: ${providerUid}`);
 
             if (!orderId) {
@@ -127,29 +127,29 @@ export const acceptOrderHTTP = onRequest(
                 const dateFrom = orderToAcceptData?.jobDateFrom;
                 const dateTo = orderToAcceptData?.jobDateTo;
                 const hoursPerDay = parseFloat(String(orderToAcceptData?.jobDurationString || 8)); // Stunden pro Tag aus jobDurationString
-                
+
                 let totalDays = 1; // Mindestens 1 Tag
                 let originalPlannedHours: number;
-                
+
                 if (dateFrom && dateTo && dateFrom !== dateTo) {
                     // Mehrtägiger Auftrag: Berechne Anzahl Tage
                     const startDate = new Date(dateFrom);
                     const endDate = new Date(dateTo);
                     totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                     originalPlannedHours = totalDays * hoursPerDay; // Tage × Stunden pro Tag
-                    
+
                     console.log(`Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${originalPlannedHours}h`);
                 } else {
                     // Eintägiger Auftrag: Verwende jobTotalCalculatedHours oder hoursPerDay
                     originalPlannedHours = orderToAcceptData?.jobTotalCalculatedHours || hoursPerDay;
-                    
+
                     console.log(`Eintägiger Auftrag: ${originalPlannedHours}h`);
                 }
-                
+
                 const totalPriceInCents = orderToAcceptData?.jobCalculatedPriceInCents || 0;
                 const hourlyRateInCents = originalPlannedHours > 0 ? Math.round(totalPriceInCents / originalPlannedHours) : 5000; // Berechne Stundensatz in Cent
-                
-                console.log(`Berechnung: ${totalPriceInCents}¢ ÷ ${originalPlannedHours}h = ${hourlyRateInCents}¢/h (${(hourlyRateInCents/100).toFixed(2)}€/h)`);
+
+                console.log(`Berechnung: ${totalPriceInCents}¢ ÷ ${originalPlannedHours}h = ${hourlyRateInCents}¢/h (${(hourlyRateInCents / 100).toFixed(2)}€/h)`);
 
                 const orderTimeTracking = {
                     orderId,
@@ -258,7 +258,7 @@ export const getUserOrdersHTTP = onRequest(
 
             for (const orderDoc of ordersSnapshot.docs) {
                 const orderData = orderDoc.data();
-                
+
                 // Get user data
                 let userData = null;
                 if (userType === 'customer' && orderData.selectedAnbieterId) {
