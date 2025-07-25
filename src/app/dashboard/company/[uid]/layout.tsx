@@ -45,6 +45,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Finanzen',
     icon: FiDollarSign,
     value: 'finance',
+    href: 'finance',
   },
   {
     label: 'Bewertungen',
@@ -55,6 +56,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Profil',
     icon: FiUser,
     value: 'profile',
+    href: 'profile',
   },
   {
     label: 'Einstellungen',
@@ -89,13 +91,27 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Navigation handler
   const handleNavigation = useCallback(
     (value: string) => {
+      setIsSidebarOpen(false);
+
+      // Für Finanzen und Profil - verwende echte Navigation
+      if (value === 'finance') {
+        router.push(`/dashboard/company/${uid}/finance`);
+        return;
+      }
+
+      if (value === 'profile') {
+        router.push(`/dashboard/company/${uid}/profile`);
+        return;
+      }
+
+      // Für andere Views - verwende View-State
       if (value === 'settings') {
         router.push(`/dashboard/company/${uid}?view=settings`);
       } else {
         router.push(`/dashboard/company/${uid}`);
       }
+
       setView(value as 'dashboard' | 'calendar' | 'finance' | 'reviews' | 'profile' | 'settings');
-      setIsSidebarOpen(false);
     },
     [router, uid, setView]
   );
