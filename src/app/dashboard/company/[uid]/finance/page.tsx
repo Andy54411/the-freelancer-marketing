@@ -91,12 +91,13 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('overview');
 
   // API Base URL - Updated für das neue Backend
-  const API_BASE = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApi';
+  const API_BASE = 'https://financeapi-d4kdcd73ia-ew.a.run.app';
 
   // Headers für API-Calls - Updated für das neue Backend
   const getHeaders = () => ({
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${user?.uid || 'mock-token'}`,
+    'x-user-id': user?.uid || 'mock-user',
+    'x-company-id': uid,
   });
 
   // Data loading
@@ -110,7 +111,28 @@ export default function FinancePage() {
     try {
       setIsLoading(true);
 
-      // Load all finance data from the new unified API
+      // Load stats from the dedicated /stats endpoint
+      const statsResponse = await fetch(`${API_BASE}/stats`, {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        console.log('Stats data received:', statsData);
+
+        // Map backend stats to frontend format
+        setStats({
+          totalRevenue: statsData.totalRevenue || 0,
+          totalExpenses: statsData.totalExpenses || 0,
+          netProfit: statsData.profit || 0,
+          outstandingInvoices: statsData.pendingInvoices || 0,
+          outstandingAmount: 0, // Could be calculated from pending invoices
+          thisMonthRevenue: statsData.totalRevenue || 0, // Simplified for now
+        });
+      }
+
+      // Load all finance data from the unified API
       const response = await fetch(API_BASE, {
         method: 'GET',
         headers: getHeaders(),
@@ -118,33 +140,13 @@ export default function FinancePage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Finance data received:', data);
 
         // Extract data from the unified response
         setInvoices(data.invoices || []);
         setCustomers(data.customers || []);
         setExpenses(data.expenses || []);
         setPayments(data.bankAccounts || []); // Using bankAccounts as mock payments
-
-        // Calculate stats from the data
-        const totalRevenue =
-          data.invoices?.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) || 0;
-        const totalExpenses =
-          data.expenses?.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0) || 0;
-        const outstandingInvoices =
-          data.invoices?.filter((inv: any) => inv.status === 'OPEN').length || 0;
-        const outstandingAmount =
-          data.invoices
-            ?.filter((inv: any) => inv.status === 'OPEN')
-            .reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) || 0;
-
-        setStats({
-          totalRevenue,
-          totalExpenses,
-          netProfit: totalRevenue - totalExpenses,
-          outstandingInvoices,
-          outstandingAmount,
-          thisMonthRevenue: totalRevenue * 0.3, // Mock: 30% this month
-        });
       }
     } catch (error) {
       console.error('Fehler beim Laden der Finance-Daten:', error);
