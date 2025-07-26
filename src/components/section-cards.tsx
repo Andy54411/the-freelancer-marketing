@@ -202,10 +202,10 @@ export function SectionCards() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 pb-2 flex flex-col flex-grow justify-end">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <Badge
               variant="outline"
-              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-xs font-medium"
+              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[10px] px-1.5 py-0.5 font-medium"
             >
               {stats.pendingBalance > 0
                 ? `+${formatCurrency(stats.pendingBalance)} pending`
@@ -215,13 +215,13 @@ export function SectionCards() {
               size="sm"
               onClick={handleWithdraw}
               disabled={isWithdrawing || stats.availableBalance <= 0}
-              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs font-medium shadow-sm hover:shadow-md transition-all"
+              className="bg-green-600 hover:bg-green-700 text-white w-full text-[10px] h-6 px-2 font-medium shadow-sm hover:shadow-md transition-all"
             >
               {isWithdrawing ? (
                 <span>...</span>
               ) : (
                 <>
-                  <IconDownload size={12} className="mr-1 flex-shrink-0" />
+                  <IconDownload size={10} className="mr-1 flex-shrink-0" />
                   <span>Auszahlen</span>
                 </>
               )}
