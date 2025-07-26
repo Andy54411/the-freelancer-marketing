@@ -151,8 +151,16 @@ service cloud.firestore {
                    // Öffentlicher Lesezugriff für CategoryGrid (begrenzt auf 500 Dokumente)
                    (request.query.limit <= 500);
 
+      // Provider können ihre eigenen Aufträge für TimeTracking aktualisieren
+      // Kunden können ihre eigenen Aufträge aktualisieren  
+      // Support-Staff kann alle Aufträge verwalten
+      allow update: if request.auth != null && resource != null && (
+        resource.data.selectedAnbieterId == request.auth.uid ||
+        resource.data.customerFirebaseUid == request.auth.uid ||
+        isSupportStaff()
+      );
+
       allow create,
-            update,
             delete: if false;
 
       // Sub-Collection: nachrichten
