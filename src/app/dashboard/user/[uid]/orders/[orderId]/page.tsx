@@ -236,17 +236,17 @@ export default function OrderDetailPage() {
   const isViewerCustomer = currentUser.uid === order.customerId;
   const cardUser = isViewerCustomer
     ? {
-      id: order.providerId,
-      name: order.providerName,
-      avatarUrl: order.providerAvatarUrl,
-      role: 'provider' as const,
-    }
+        id: order.providerId,
+        name: order.providerName,
+        avatarUrl: order.providerAvatarUrl,
+        role: 'provider' as const,
+      }
     : {
-      id: order.customerId,
-      name: order.customerName,
-      avatarUrl: order.customerAvatarUrl,
-      role: 'customer' as const,
-    };
+        id: order.customerId,
+        name: order.customerName,
+        avatarUrl: order.customerAvatarUrl,
+        role: 'customer' as const,
+      };
 
   return (
     <Suspense
@@ -354,6 +354,17 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Customer Approval Interface für aktive Aufträge */}
+          {(() => {
+            console.log(
+              '[DEBUG ORDER PAGE] Order Status:',
+              order.status,
+              'Current User ID:',
+              currentUser?.uid,
+              'Customer ID:',
+              order.customerId
+            );
+            return null;
+          })()}
           {order.status === 'AKTIV' && currentUser.uid === order.customerId && (
             <div className="bg-white shadow rounded-lg p-6 mb-8">
               <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
