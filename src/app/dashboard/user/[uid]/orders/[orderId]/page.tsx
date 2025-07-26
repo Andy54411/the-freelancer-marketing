@@ -355,13 +355,18 @@ export default function OrderDetailPage() {
 
           {/* Customer Approval Interface für aktive Aufträge */}
           {(() => {
+            console.log('[DEBUG ORDER PAGE] Full Order Data:', order);
+            console.log('[DEBUG ORDER PAGE] Order Status:', order.status);
+            console.log('[DEBUG ORDER PAGE] Current User ID:', currentUser?.uid);
+            console.log('[DEBUG ORDER PAGE] Customer ID:', order.customerId);
             console.log(
-              '[DEBUG ORDER PAGE] Order Status:',
-              order.status,
-              'Current User ID:',
-              currentUser?.uid,
-              'Customer ID:',
-              order.customerId
+              '[DEBUG ORDER PAGE] User is customer:',
+              currentUser.uid === order.customerId
+            );
+            console.log('[DEBUG ORDER PAGE] Status is AKTIV:', order.status === 'AKTIV');
+            console.log(
+              '[DEBUG ORDER PAGE] Should show interface:',
+              order.status === 'AKTIV' && currentUser.uid === order.customerId
             );
             return null;
           })()}
