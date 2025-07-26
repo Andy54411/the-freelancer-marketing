@@ -180,11 +180,20 @@ export default function DatenschutzPage() {
                   5. Zahlungsdienstleister (Stripe)
                 </h2>
                 <div className="text-white/90 drop-shadow-lg space-y-4">
-                  <h3 className="font-semibold">Stripe Payment Processing</h3>
+                  <h3 className="font-semibold">
+                    Stripe Payment Processing & Platform Account Hold
+                  </h3>
                   <p>
                     Für die Abwicklung von Zahlungen auf unserer Website verwenden wir Stripe, einen
                     sicheren und PCI-DSS-konformen Zahlungsdienstleister. Stripe verarbeitet
                     Zahlungsdaten direkt und sicher.
+                  </p>
+                  <p>
+                    <strong>Platform Account Hold System:</strong> Wir nutzen Stripe&apos;s Platform
+                    Account Hold System zur sicheren Zahlungsabwicklung. Dabei werden Zahlungen
+                    zunächst auf unserem Platform Account gehalten und erst nach erfolgreicher
+                    Projektabnahme durch beide Parteien an die Dienstleister übertragen. Dies dient
+                    dem Schutz aller Beteiligten und ermöglicht eine faire Konfliktlösung.
                   </p>
 
                   <h3 className="font-semibold">Verarbeitete Daten</h3>
@@ -194,6 +203,11 @@ export default function DatenschutzPage() {
                     <li>Transaktionsdaten und Bestellinformationen</li>
                     <li>IP-Adresse für Betrugsschutz</li>
                     <li>Geräteinformationen für Sicherheitsprüfungen</li>
+                    <li>
+                      Platform Hold Informationen (gehaltene Beträge, Transfer-Status,
+                      Freigabedaten)
+                    </li>
+                    <li>Projektabnahme-Status für automatische Geldfreigabe</li>
                   </ul>
 
                   <h3 className="font-semibold">Sicherheit und Compliance</h3>

@@ -200,11 +200,19 @@ export default function AGBPage() {
                     Zahlungsverzug werden Mahngebühren in Höhe von 10€ pro Mahnung erhoben.
                   </p>
                   <p>
-                    <strong>5.4 Zahlungsmethoden:</strong> Die Zahlungsabwicklung erfolgt über
-                    unseren Partner Stripe, Inc. Wir akzeptieren SEPA-Lastschrift, Kreditkarten
-                    (Visa, Mastercard, American Express), PayPal, Apple Pay, Google Pay und
-                    Banküberweisungen. Bei Lastschriftrückgaben fallen Gebühren in Höhe von 5€ an.
-                    Für die sichere Abwicklung gelten zusätzlich die AGB von Stripe.
+                    <strong>5.4 Zahlungsmethoden & Platform Hold System:</strong> Die
+                    Zahlungsabwicklung erfolgt über unseren Partner Stripe, Inc. Wir akzeptieren
+                    SEPA-Lastschrift, Kreditkarten (Visa, Mastercard, American Express), PayPal,
+                    Apple Pay, Google Pay und Banküberweisungen. Bei Lastschriftrückgaben fallen
+                    Gebühren in Höhe von 5€ an. Für die sichere Abwicklung gelten zusätzlich die AGB
+                    von Stripe.
+                  </p>
+                  <p>
+                    <strong>Platform Account Hold:</strong> Zum Schutz aller Beteiligten nutzen wir
+                    Stripe&apos;s Platform Account Hold System. Zahlungen werden zunächst auf
+                    unserem Platform Account gehalten und erst nach erfolgreicher Projektabnahme
+                    durch beide Parteien automatisch an den Dienstleister übertragen. Dies erfolgt
+                    über sichere Stripe Transfers und gewährleistet eine faire Konfliktlösung.
                   </p>
                   <p>
                     <strong>5.5 Rechnungsstellung:</strong> Rechnungen werden automatisiert
@@ -260,6 +268,48 @@ export default function AGBPage() {
                     rechtliche Schritte zur Folge haben. Bei Verstoß gegen die Markenrechte behalten
                     sich die Betreiber das Recht vor, den Zugang zur Plattform zu sperren und
                     rechtliche Schritte einzuleiten.
+                  </p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  § 6A Platform Account Hold System
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <p>
+                    <strong>6A.1 Funktionsweise:</strong> Taskilo nutzt Stripe&apos;s Platform
+                    Account Hold System zur sicheren Zahlungsabwicklung. Zahlungen werden zunächst
+                    auf unserem Stripe Platform Account gehalten und erst nach erfolgreicher
+                    Projektabnahme durch beide Parteien automatisch an den Dienstleister übertragen.
+                  </p>
+                  <p>
+                    <strong>6A.2 Freigabebedingungen:</strong> Die automatische Geldfreigabe erfolgt
+                    wenn:
+                  </p>
+                  <ul className="list-disc list-inside ml-4 space-y-2">
+                    <li>
+                      Sowohl Kunde als auch Dienstleister das Projekt als abgeschlossen markiert
+                      haben
+                    </li>
+                    <li>Keine offenen Streitigkeiten oder Reklamationen vorliegen</li>
+                    <li>Der vereinbarte Leistungsumfang erfüllt wurde</li>
+                  </ul>
+                  <p>
+                    <strong>6A.3 Manuelle Freigabe:</strong> In Ausnahmefällen kann Taskilo Gelder
+                    manuell freigeben, insbesondere bei Streitigkeiten nach entsprechender Prüfung
+                    und Mediation zwischen den Parteien.
+                  </p>
+                  <p>
+                    <strong>6A.4 Zinsen und Erträge:</strong> Auf gehaltene Gelder werden keine
+                    Zinsen gezahlt. Eventuelle Zinserträge auf dem Platform Account verbleiben bei
+                    Taskilo als Vergütung für die Bereitstellung des Sicherheitsdienstes.
+                  </p>
+                  <p>
+                    <strong>6A.5 Rechtliche Basis:</strong> Das Platform Hold System basiert auf
+                    Stripe&apos;s lizenzierten Finanzdienstleistungen und ist rechtlich abgesichert.
+                    Taskilo fungiert dabei als autorisierte Plattform unter Stripe&apos;s
+                    Regulierung.
                   </p>
                 </div>
               </section>
