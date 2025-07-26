@@ -53,6 +53,7 @@ export interface CustomerApprovalRequest {
   customerResponseAt?: Timestamp;
   providerMessage?: string;
   approvedEntryIds?: string[]; // Bei partial approval
+  timeEntries?: TimeEntry[]; // Für UI-Anzeige, wird zur Laufzeit hinzugefügt
 }
 
 // Erweiterte Auftrag-Schnittstelle für TimeTracking

@@ -38,13 +38,44 @@ export default function CustomerApprovalInterface({
   }, [orderId]);
 
   const loadApprovalRequests = async () => {
-    // TODO: Muss an neue integrierte Struktur angepasst werden
-    // Temporär deaktiviert für Build-Erfolg
     try {
       setLoading(true);
-      setApprovalRequests([]);
+      if (!user) return;
+
+      // Hole Auftrag-Details direkt und prüfe auf ausstehende Approval Requests
+      const orderDetails = await TimeTracker.getOrderDetails(orderId);
+      if (orderDetails && orderDetails.approvalRequests) {
+        const pendingRequests = orderDetails.approvalRequests.filter(
+          (req: any) => req.status === 'pending'
+        );
+
+        // Erweitere Requests mit TimeEntry-Details aus dem Auftrag
+        const enrichedRequests = pendingRequests.map((request: any) => {
+          const timeEntries: TimeEntry[] = [];
+          if (orderDetails.timeTracking && orderDetails.timeTracking.timeEntries) {
+            for (const entryId of request.timeEntryIds) {
+              const entry = orderDetails.timeTracking.timeEntries.find(
+                (e: any) => e.id === entryId
+              );
+              if (entry) {
+                timeEntries.push(entry);
+              }
+            }
+          }
+
+          return {
+            ...request,
+            timeEntries, // Füge TimeEntries für Anzeige hinzu
+          };
+        });
+
+        setApprovalRequests(enrichedRequests);
+      } else {
+        setApprovalRequests([]);
+      }
     } catch (error) {
       console.error('Error loading approval requests:', error);
+      setApprovalRequests([]);
     } finally {
       setLoading(false);
     }
@@ -66,9 +97,10 @@ export default function CustomerApprovalInterface({
             ? approvalRequests.find(req => req.id === requestId)?.timeEntryIds || []
             : [];
 
+      // Korrekte Parameter-Reihenfolge für processCustomerApproval
       await TimeTracker.processCustomerApproval(
-        requestId,
-        user.uid,
+        orderId, // orderId zuerst
+        requestId, // dann approvalRequestId
         decision,
         approvedIds,
         feedback || undefined
@@ -175,25 +207,98 @@ export default function CustomerApprovalInterface({
           {/* Time Entries */}
           <div className="p-6">
             <div className="space-y-3">
-              {/* TODO: Anpassung an neue integrierte Struktur erforderlich */}
-              <div className="p-4 text-center text-gray-500">
-                <p>
-                  Diese Komponente muss an die neue integrierte TimeTracker-Struktur angepasst
-                  werden.
-                </p>
-                <p className="text-sm mt-1">
-                  Verwenden Sie die TimeTrackingManager-Komponente für TimeTracking-Funktionen.
-                </p>
-              </div>
+              {request.timeEntries && request.timeEntries.length > 0 ? (
+                request.timeEntries.map((entry: TimeEntry) => (
+                  <div
+                    key={entry.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedEntries.has(entry.id)
+                        ? 'border-[#14ad9f] bg-green-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => toggleEntrySelection(entry.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedEntries.has(entry.id)}
+                              onChange={() => toggleEntrySelection(entry.id)}
+                              className="w-4 h-4 text-[#14ad9f] border-gray-300 rounded focus:ring-[#14ad9f]"
+                            />
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(entry.date).toLocaleDateString('de-DE')}
+                            </span>
+                          </div>
+
+                          <div className="text-sm text-gray-600">
+                            {entry.startTime}
+                            {entry.endTime && ` - ${entry.endTime}`}
+                          </div>
+
+                          <div className="text-sm font-medium text-gray-900">
+                            {entry.hours.toFixed(1)}h
+                          </div>
+
+                          {entry.category === 'additional' && entry.billableAmount && (
+                            <div className="text-sm font-semibold text-orange-600">
+                              +{(entry.billableAmount / 100).toFixed(2)}€
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-700">{entry.description}</p>
+                          {entry.notes && (
+                            <p className="text-xs text-gray-500 mt-1">Notiz: {entry.notes}</p>
+                          )}
+                        </div>
+
+                        <div className="mt-2 flex gap-2">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              entry.category === 'additional'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {entry.category === 'additional' ? 'Zusätzlich' : 'Original geplant'}
+                          </span>
+
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              entry.status === 'submitted'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {entry.status === 'submitted'
+                              ? 'Zur Freigabe eingereicht'
+                              : entry.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  <p>Keine Zeiteinträge für diese Anfrage gefunden.</p>
+                </div>
+              )}
             </div>
 
-            {/* Selection Summary - Temporär deaktiviert */}
-            {selectedEntries.size > 0 && (
+            {/* Selection Summary */}
+            {selectedEntries.size > 0 && request.timeEntries && (
               <div className="mt-4 p-3 bg-green-50 rounded-lg">
                 <p className="text-sm text-green-900">
                   <span className="font-medium">{selectedEntries.size} Einträge ausgewählt</span>
                   {' • '}
-                  <span className="font-medium">Berechnung wird überarbeitet</span>
+                  <span className="font-medium">
+                    {(calculateTotalAmount(request.timeEntries, selectedEntries) / 100).toFixed(2)}€
+                  </span>
                 </p>
               </div>
             )}
