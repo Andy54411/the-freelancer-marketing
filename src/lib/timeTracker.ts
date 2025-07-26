@@ -697,14 +697,26 @@ export class TimeTracker {
    * Holt Order-Details für eine Auftrags-ID
    */
   static async getOrderDetails(orderId: string): Promise<any> {
+    console.log('[DEBUG TimeTracker] getOrderDetails called for:', orderId);
     try {
+      console.log('[DEBUG TimeTracker] Fetching document from auftraege collection');
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
+      console.log('[DEBUG TimeTracker] Document exists:', orderDoc.exists());
+
       if (orderDoc.exists()) {
-        return { id: orderDoc.id, ...orderDoc.data() };
+        const data = orderDoc.data();
+        console.log('[DEBUG TimeTracker] Document data keys:', Object.keys(data || {}));
+        console.log('[DEBUG TimeTracker] timeTracking exists:', !!data?.timeTracking);
+        console.log('[DEBUG TimeTracker] approvalRequests exists:', !!data?.approvalRequests);
+
+        const result = { id: orderDoc.id, ...data };
+        console.log('[DEBUG TimeTracker] Returning order details');
+        return result;
       }
+      console.log('[DEBUG TimeTracker] Document does not exist');
       return null;
     } catch (error) {
-      console.error('Error fetching order details:', error);
+      console.error('[DEBUG TimeTracker] Error fetching order details:', error);
       throw error;
     }
   }

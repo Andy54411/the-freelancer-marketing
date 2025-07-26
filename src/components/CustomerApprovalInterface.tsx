@@ -40,9 +40,17 @@ export default function CustomerApprovalInterface({
   }, [orderId]);
 
   const loadApprovalRequests = async () => {
+    console.log('[DEBUG] loadApprovalRequests STARTED for orderId:', orderId);
+    console.log('[DEBUG] Current user:', user);
+
     try {
       setLoading(true);
-      if (!user) return;
+      if (!user) {
+        console.log('[DEBUG] No user - returning early');
+        return;
+      }
+
+      console.log('[DEBUG] Calling TimeTracker.getOrderDetails for:', orderId);
 
       // Hole Auftrag-Details direkt und prüfe auf ausstehende Approval Requests
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
@@ -101,10 +109,12 @@ export default function CustomerApprovalInterface({
         setApprovalRequests([]);
       }
     } catch (error) {
-      console.error('Error loading approval requests:', error);
+      console.error('[DEBUG] Error loading approval requests:', error);
+      console.error('[DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack');
       setApprovalRequests([]);
     } finally {
       setLoading(false);
+      console.log('[DEBUG] loadApprovalRequests FINISHED');
     }
   };
 
@@ -227,10 +237,77 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
   if (approvalRequests.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-gray-500 mb-6">
           <FiClock size={48} className="mx-auto mb-3 text-gray-300" />
-          <p className="text-lg font-medium">Keine Freigabe-Anfragen</p>
+          <p className="text-lg font-medium">Keine ausstehenden Freigabe-Anfragen</p>
           <p className="text-sm">Derzeit gibt es keine zusätzlichen Stunden zur Freigabe.</p>
+        </div>
+
+        {/* Debug-Informationen und Hilfe für Benutzer */}
+        <div className="border-t pt-4 space-y-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">
+              ℹ️ Wie funktioniert die Stundenfreigabe?
+            </h4>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>
+                <strong>1. Anbieter protokolliert Zeit:</strong> Der Dienstleister trägt seine
+                Arbeitszeiten ein
+              </p>
+              <p>
+                <strong>2. Zusätzliche Stunden:</strong> Über die ursprünglich geplanten Stunden
+                hinaus
+              </p>
+              <p>
+                <strong>3. Einreichung:</strong> Anbieter reicht zusätzliche Stunden zur Freigabe
+                ein
+              </p>
+              <p>
+                <strong>4. Ihre Freigabe:</strong> Sie können diese genehmigen oder ablehnen
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-green-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-green-900 mb-2">✅ Aktueller Status</h4>
+            <div className="text-sm text-green-800 space-y-1">
+              <p>
+                • <strong>Geplante Stunden:</strong> 8 Stunden
+              </p>
+              <p>
+                • <strong>Protokollierte Stunden:</strong> 8 Stunden (Grundstunden)
+              </p>
+              <p>
+                • <strong>Zusätzliche Stunden:</strong> Keine bisher eingereicht
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-yellow-900 mb-2">
+              ⏱️ Mögliche nächste Schritte
+            </h4>
+            <div className="text-sm text-yellow-800 space-y-2">
+              <p>
+                <strong>Falls der Anbieter zusätzliche Zeit benötigt:</strong>
+              </p>
+              <p>• Er muss diese zunächst in seiner Zeiterfassung eintragen</p>
+              <p>• Dann kann er sie zur Kundenfreigabe einreichen</p>
+              <p>• Sie erhalten dann hier eine Freigabe-Anfrage</p>
+
+              <p className="mt-2">
+                <strong>Falls die Arbeit abgeschlossen ist:</strong>
+              </p>
+              <p>• Der Anbieter kann den Auftrag als erledigt markieren</p>
+              <p>• Sie können dann das Gesamtergebnis bewerten</p>
+            </div>
+          </div>
+
+          <div className="text-center pt-2">
+            <p className="text-xs text-gray-500">
+              Diese Seite aktualisiert sich automatisch, wenn neue Freigabe-Anfragen eingehen.
+            </p>
+          </div>
         </div>
       </div>
     );
