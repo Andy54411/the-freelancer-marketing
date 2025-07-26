@@ -20,6 +20,7 @@ export default function CustomerApprovalInterface({
 }: CustomerApprovalInterfaceProps) {
   const [user, setUser] = useState<User | null>(null);
   const [approvalRequests, setApprovalRequests] = useState<CustomerApprovalRequest[]>([]);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
@@ -34,6 +35,9 @@ export default function CustomerApprovalInterface({
 
       // Hole Auftrag-Details direkt und prüfe auf ausstehende Approval Requests
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
+      
+      // Speichere Order Details im State für UI-Anzeige
+      setOrderDetails(orderDetails);
 
       // DEBUG: Logge den kompletten Zustand für Troubleshooting
       console.log('🔍 [CustomerApprovalInterface] Debug Order Details:', {
@@ -43,6 +47,12 @@ export default function CustomerApprovalInterface({
         timeEntriesCount: orderDetails?.timeTracking?.timeEntries?.length || 0,
         hasApprovalRequests: !!orderDetails?.approvalRequests,
         approvalRequestsCount: orderDetails?.approvalRequests?.length || 0,
+        timeTrackingData: orderDetails?.timeTracking ? {
+          originalPlannedHours: orderDetails.timeTracking.originalPlannedHours,
+          totalLoggedHours: orderDetails.timeTracking.totalLoggedHours,
+          totalApprovedHours: orderDetails.timeTracking.totalApprovedHours,
+          status: orderDetails.timeTracking.status
+        } : null,
         timeEntries:
           orderDetails?.timeTracking?.timeEntries?.map((e: any) => ({
             id: e.id,
@@ -50,6 +60,7 @@ export default function CustomerApprovalInterface({
             status: e.status,
             hours: e.hours,
             description: e.description.substring(0, 50) + '...',
+            date: e.date
           })) || [],
         approvalRequests:
           orderDetails?.approvalRequests?.map((r: any) => ({
@@ -269,14 +280,16 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
             <h4 className="text-sm font-medium text-green-900 mb-2">✅ Aktueller Status</h4>
             <div className="text-sm text-green-800 space-y-1">
               <p>
-                • <strong>Geplante Stunden:</strong> 8 Stunden (Originalauftrag)
+                • <strong>Geplante Stunden:</strong> {orderDetails?.timeTracking?.originalPlannedHours || 8} Stunden (Originalauftrag)
               </p>
               <p>
-                • <strong>Protokollierte Stunden:</strong> 8 Stunden (Grundstunden, bereits
-                abgerechnet)
+                • <strong>Protokollierte Stunden:</strong> {orderDetails?.timeTracking?.totalLoggedHours || 0} Stunden (Total geloggt)
               </p>
               <p>
-                • <strong>Zusätzliche Stunden:</strong> Keine bisher eingereicht
+                • <strong>Original Stunden:</strong> {orderDetails?.timeTracking?.timeEntries?.filter((e: any) => e.category === 'original').reduce((sum: number, e: any) => sum + e.hours, 0) || 0} Stunden
+              </p>
+              <p>
+                • <strong>Zusätzliche Stunden:</strong> {orderDetails?.timeTracking?.timeEntries?.filter((e: any) => e.category === 'additional').reduce((sum: number, e: any) => sum + e.hours, 0) || 0} Stunden
               </p>
               <p className="text-xs text-green-600 mt-2">
                 ℹ️ Zusätzliche Stunden müssen separat als &ldquo;Zusätzlich&rdquo; kategorisiert und
@@ -336,6 +349,68 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                 🔧 Debug: Daten neu laden & console.log
               </button>
             )}
+
+            {/* Erweiterte Debug-Anzeige - immer sichtbar für Troubleshooting */}
+            <div className="mt-4 bg-gray-50 rounded-lg p-4 border">
+              <h4 className="text-sm font-medium text-gray-900 mb-2">
+                🔧 Debug-Informationen (Live-Daten)
+              </h4>
+              <button
+                onClick={async () => {
+                  try {
+                    const orderDetails = await TimeTracker.getOrderDetails(orderId);
+                    
+                    // Zeige Debug-Info direkt in der UI
+                    const debugElement = document.getElementById('debug-output');
+                    if (debugElement) {
+                      debugElement.innerHTML = `
+                        <div class="text-xs space-y-2">
+                          <div><strong>Order ID:</strong> ${orderId}</div>
+                          <div><strong>Order gefunden:</strong> ${orderDetails ? 'Ja' : 'Nein'}</div>
+                          <div><strong>Time Tracking:</strong> ${orderDetails?.timeTracking ? 'Ja' : 'Nein'}</div>
+                          <div><strong>Anzahl Time Entries:</strong> ${orderDetails?.timeTracking?.timeEntries?.length || 0}</div>
+                          <div><strong>Approval Requests:</strong> ${orderDetails?.approvalRequests?.length || 0}</div>
+                          
+                          ${orderDetails?.timeTracking?.timeEntries ? `
+                            <div class="mt-2">
+                              <strong>Time Entries Details:</strong>
+                              <ul class="ml-4 list-disc">
+                                ${orderDetails.timeTracking.timeEntries.map((e: any) => `
+                                  <li>${e.category} - ${e.hours}h - Status: ${e.status} - ${e.description.substring(0, 50)}...</li>
+                                `).join('')}
+                              </ul>
+                            </div>
+                          ` : ''}
+                          
+                          ${orderDetails?.approvalRequests ? `
+                            <div class="mt-2">
+                              <strong>Approval Requests Details:</strong>
+                              <ul class="ml-4 list-disc">
+                                ${orderDetails.approvalRequests.map((r: any) => `
+                                  <li>ID: ${r.id} - Status: ${r.status} - ${r.totalHours}h - Entry IDs: ${r.timeEntryIds.join(', ')}</li>
+                                `).join('')}
+                              </ul>
+                            </div>
+                          ` : ''}
+                        </div>
+                      `;
+                    }
+                  } catch (error) {
+                    console.error('Debug error:', error);
+                    const debugElement = document.getElementById('debug-output');
+                    if (debugElement) {
+                      debugElement.innerHTML = `<div class="text-red-600 text-xs">Fehler: ${error}</div>`;
+                    }
+                  }
+                }}
+                className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                📊 Live-Debug anzeigen
+              </button>
+              <div id="debug-output" className="mt-3 p-3 bg-white rounded border text-gray-700">
+                Klicken Sie auf "Live-Debug anzeigen" um aktuelle Datenbank-Daten zu sehen
+              </div>
+            </div>
           </div>
         </div>
       </div>
