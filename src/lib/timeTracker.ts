@@ -124,7 +124,7 @@ export class TimeTracker {
         id: entryId,
         ...entry,
         status: 'logged',
-        createdAt: serverTimestamp() as Timestamp,
+        createdAt: Timestamp.now(), // serverTimestamp() nicht in Arrays erlaubt
       };
 
       // Berechne billableAmount für zusätzliche Stunden
@@ -285,7 +285,7 @@ export class TimeTracker {
         timeEntryIds: entryIds,
         totalHours,
         totalAmount,
-        submittedAt: serverTimestamp() as Timestamp,
+        submittedAt: Timestamp.now(), // serverTimestamp() nicht in Arrays erlaubt
         status: 'pending',
         providerMessage,
       };
@@ -296,7 +296,7 @@ export class TimeTracker {
           return {
             ...entry,
             status: 'submitted' as const,
-            submittedAt: serverTimestamp() as Timestamp,
+            submittedAt: Timestamp.now(), // serverTimestamp() nicht in Arrays erlaubt
           };
         }
         return entry;
@@ -361,7 +361,7 @@ export class TimeTracker {
         ...approvalRequest,
         status: decision,
         customerFeedback,
-        customerResponseAt: serverTimestamp() as Timestamp,
+        customerResponseAt: Timestamp.now(), // serverTimestamp() nicht in Arrays erlaubt
         approvedEntryIds: decision === 'partially_approved' ? approvedEntryIds : undefined,
       };
 
@@ -387,7 +387,7 @@ export class TimeTracker {
         return {
           ...entry,
           status: newStatus,
-          customerResponseAt: serverTimestamp() as Timestamp,
+          customerResponseAt: Timestamp.now(), // serverTimestamp() nicht in Arrays erlaubt
         };
       });
 
