@@ -152,7 +152,19 @@ export class TimeTracker {
 
       // Berechne billableAmount für zusätzliche Stunden
       if (entry.category === 'additional') {
-        timeEntry.billableAmount = Math.round(entry.hours * orderData.timeTracking.hourlyRate);
+        // KORREKTUR: Verwende den korrekten Stundensatz in Cents
+        // Der hourlyRate sollte bereits in Cents sein (z.B. 4100 = 41€)
+        const correctHourlyRateInCents = orderData.timeTracking.hourlyRate;
+
+        // Debug: Log zur Überprüfung
+        console.log('[TimeTracker] Billing calculation:', {
+          hours: entry.hours,
+          hourlyRateInCents: correctHourlyRateInCents,
+          calculatedAmount: Math.round(entry.hours * correctHourlyRateInCents),
+          hourlyRateInEuros: correctHourlyRateInCents / 100,
+        });
+
+        timeEntry.billableAmount = Math.round(entry.hours * correctHourlyRateInCents);
       }
 
       // Füge Entry zu timeEntries Array hinzu
