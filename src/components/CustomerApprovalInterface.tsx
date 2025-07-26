@@ -46,10 +46,18 @@ export default function CustomerApprovalInterface({
 
       // Hole Auftrag-Details direkt und prüfe auf ausstehende Approval Requests
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
+
+      // DEBUG: Log order details
+      console.log('[DEBUG] Order Details for', orderId, ':', orderDetails);
+      console.log('[DEBUG] TimeTracking:', orderDetails?.timeTracking);
+      console.log('[DEBUG] Approval Requests:', orderDetails?.approvalRequests);
+
       if (orderDetails && orderDetails.approvalRequests) {
         const pendingRequests = orderDetails.approvalRequests.filter(
           (req: any) => req.status === 'pending'
         );
+
+        console.log('[DEBUG] Pending Requests:', pendingRequests);
 
         // Erweitere Requests mit TimeEntry-Details aus dem Auftrag
         const enrichedRequests = pendingRequests.map((request: any) => {
