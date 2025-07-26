@@ -167,7 +167,9 @@ export default function CustomerApprovalInterface({
 
           console.log('✅ Stripe PaymentIntent erfolgreich erstellt:', {
             paymentIntentId: billingResult.paymentIntentId,
-            amount: billingResult.amount / 100,
+            customerPays: billingResult.customerPays / 100,
+            companyReceives: billingResult.companyReceives / 100,
+            platformFee: billingResult.platformFee / 100,
             clientSecret: billingResult.clientSecret,
           });
 
@@ -178,10 +180,11 @@ export default function CustomerApprovalInterface({
 
 ✅ Genehmigung erfolgreich verarbeitet
 💳 Stripe PaymentIntent erstellt: ${billingResult.paymentIntentId}
-💰 Betrag: €${(billingResult.amount / 100).toFixed(2)}
+💰 Kunde zahlt: €${(billingResult.customerPays / 100).toFixed(2)}
+🏢 Anbieter erhält: €${(billingResult.companyReceives / 100).toFixed(2)}
+📊 Plattformgebühr: €${(billingResult.platformFee / 100).toFixed(2)}
 
-Die zusätzlichen Stunden wurden zur automatischen Abrechnung freigegeben.
-Der Kunde erhält eine Zahlungsaufforderung über Stripe.`;
+Die zusätzlichen Stunden wurden zur automatischen Abrechnung freigegeben.`;
 
           alert(message);
 

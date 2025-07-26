@@ -108,10 +108,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API /bill-additional-hours] Erstelle PaymentIntent für ${totalAmount} Cents`);
 
-    // Berechne Plattformgebühr (4.5% vom Anbieter getragen)
+    // Berechne Plattformgebühr (4.5% - wird bei Auszahlung an Company abgezogen)
     const platformFee = Math.round(totalAmount * 0.045);
 
+    // Company erhält den Betrag minus Plattformgebühr
+    const companyAmount = totalAmount - platformFee;
+
     // Erstelle Stripe PaymentIntent für zusätzliche Stunden
+    // Kunde zahlt den vollen Betrag, Company erhält Betrag minus Plattformgebühr
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'eur',
@@ -119,6 +123,7 @@ export async function POST(request: NextRequest) {
       application_fee_amount: platformFee,
       transfer_data: {
         destination: providerStripeAccountId,
+        amount: companyAmount, // Company erhält totalAmount - platformFee
       },
       confirm: false,
       setup_future_usage: 'off_session',
@@ -136,6 +141,7 @@ export async function POST(request: NextRequest) {
         originalOrderAmount: orderData.jobCalculatedPriceInCents?.toString() || '0',
         additionalAmount: totalAmount.toString(),
         platformFee: platformFee.toString(),
+        companyReceives: companyAmount.toString(),
       },
       description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId}`,
     });
@@ -149,7 +155,8 @@ export async function POST(request: NextRequest) {
       success: true,
       paymentIntentId: paymentIntent.id,
       clientSecret: paymentIntent.client_secret,
-      amount: totalAmount,
+      customerPays: totalAmount, // Kunde zahlt vollen Betrag
+      companyReceives: companyAmount, // Company erhält Betrag minus Plattformgebühr
       platformFee: platformFee,
       additionalHours: approvedEntries.reduce((sum: number, entry: any) => sum + entry.hours, 0),
       message: 'PaymentIntent für zusätzliche Stunden erfolgreich erstellt.',

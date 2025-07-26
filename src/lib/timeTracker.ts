@@ -514,9 +514,13 @@ export class TimeTracker {
   } /**
    * Genehmigte Stunden in Stripe abrechnen (integriert in Auftrag)
    */
-  static async billApprovedHours(
-    orderId: string
-  ): Promise<{ paymentIntentId: string; amount: number; clientSecret: string }> {
+  static async billApprovedHours(orderId: string): Promise<{
+    paymentIntentId: string;
+    customerPays: number;
+    companyReceives: number;
+    platformFee: number;
+    clientSecret: string;
+  }> {
     try {
       // Hole den Auftrag
       const orderRef = doc(db, 'auftraege', orderId);
@@ -623,7 +627,8 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
         'timeTracking.billingData': {
           paymentIntentId: paymentData.paymentIntentId,
-          amount: totalAmount,
+          customerPays: paymentData.customerPays,
+          companyReceives: paymentData.companyReceives,
           platformFee: paymentData.platformFee,
           initiatedAt: serverTimestamp(),
           status: 'pending',
@@ -632,13 +637,17 @@ export class TimeTracker {
 
       console.log('[TimeTracker] PaymentIntent created successfully:', {
         paymentIntentId: paymentData.paymentIntentId,
-        amount: totalAmount,
+        customerPays: paymentData.customerPays,
+        companyReceives: paymentData.companyReceives,
+        platformFee: paymentData.platformFee,
         clientSecret: paymentData.clientSecret,
       });
 
       return {
         paymentIntentId: paymentData.paymentIntentId,
-        amount: totalAmount,
+        customerPays: paymentData.customerPays,
+        companyReceives: paymentData.companyReceives,
+        platformFee: paymentData.platformFee,
         clientSecret: paymentData.clientSecret,
       };
     } catch (error) {
