@@ -405,11 +405,6 @@ export default function TimeTrackingManager({
                       {entry.travelTime && entry.travelCost && entry.travelCost > 0 && (
                         <span> + {(entry.travelCost / 100).toFixed(2)}€ Anfahrt</span>
                       )}
-                      {entry.travelTime &&
-                        (!entry.travelCost || entry.travelCost === 0) &&
-                        entry.travelMinutes && (
-                          <span> (inkl. {entry.travelMinutes}min Anfahrt)</span>
-                        )}
                       {entry.billableAmount && (
                         <span className="ml-2 text-green-600 font-medium">
                           +{(entry.billableAmount / 100).toFixed(2)}€
@@ -560,20 +555,7 @@ export default function TimeTrackingManager({
                     <span className="text-sm font-medium text-gray-700">Anfahrt hinzufügen</span>
                   </label>
                   {formData.travelTime && (
-                    <div className="mt-2 space-y-2">
-                      <input
-                        type="number"
-                        value={formData.travelMinutes}
-                        onChange={e =>
-                          setFormData(prev => ({
-                            ...prev,
-                            travelMinutes: parseInt(e.target.value) || 0,
-                          }))
-                        }
-                        onBlur={handleTimeCalculation}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                        placeholder="Anfahrtsdauer in Minuten (nur Anzeige)"
-                      />
+                    <div className="mt-2">
                       <div className="relative">
                         <input
                           type="number"
