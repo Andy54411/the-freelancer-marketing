@@ -212,10 +212,10 @@ export default function TimeTrackingManager({
       .filter(entry => entry.status === 'customer_approved')
       .reduce((sum, entry) => sum + entry.hours, 0),
     escrowAuthorizedHours: timeEntries
-      .filter(entry => entry.status === 'escrow_authorized')
+      .filter(entry => entry.status === 'platform_held')
       .reduce((sum, entry) => sum + entry.hours, 0),
     escrowReleasedHours: timeEntries
-      .filter(entry => entry.status === 'escrow_released')
+      .filter(entry => entry.status === 'platform_released')
       .reduce((sum, entry) => sum + entry.hours, 0),
     // Anfahrtskosten-Tracking
     totalTravelCosts: timeEntries
@@ -298,7 +298,7 @@ export default function TimeTrackingManager({
             <div className="text-2xl font-bold text-blue-600">
               {summary.escrowAuthorizedHours.toFixed(1)}
             </div>
-            <div className="text-sm text-gray-600">In Escrow</div>
+            <div className="text-sm text-gray-600">Platform Hold</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
@@ -321,12 +321,12 @@ export default function TimeTrackingManager({
           </div>
         )}
 
-        {/* Escrow-System Erklärung */}
+        {/* Platform Hold System Erklärung */}
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <div className="text-sm text-blue-800">
-            <strong>💰 Escrow-System:</strong> Zusätzliche Stunden werden zuerst vom Kunden bezahlt
-            und sicher gehalten. Das Geld wird erst nach beidseitiger Projektabnahme an die Firma
-            ausgezahlt.
+            <strong>💰 Platform Hold System:</strong> Zusätzliche Stunden werden zuerst vom Kunden
+            bezahlt und sicher auf unserem Platform Account gehalten. Das Geld wird erst nach
+            beidseitiger Projektabnahme automatisch an die Firma übertragen.
           </div>
         </div>
       </div>
@@ -378,9 +378,9 @@ export default function TimeTrackingManager({
                               ? 'bg-yellow-100 text-yellow-800'
                               : entry.status === 'customer_rejected'
                                 ? 'bg-red-100 text-red-800'
-                                : entry.status === 'escrow_authorized'
+                                : entry.status === 'platform_held'
                                   ? 'bg-blue-100 text-blue-800'
-                                  : entry.status === 'escrow_released'
+                                  : entry.status === 'platform_released'
                                     ? 'bg-purple-100 text-purple-800'
                                     : 'bg-gray-100 text-gray-800'
                         }`}
@@ -391,10 +391,10 @@ export default function TimeTrackingManager({
                             ? 'Eingereicht'
                             : entry.status === 'customer_rejected'
                               ? 'Abgelehnt'
-                              : entry.status === 'escrow_authorized'
-                                ? 'In Escrow (Autorisiert)'
-                                : entry.status === 'escrow_released'
-                                  ? 'Escrow Freigegeben'
+                              : entry.status === 'platform_held'
+                                ? 'Platform Hold (Gehalten)'
+                                : entry.status === 'platform_released'
+                                  ? 'Platform Hold Freigegeben'
                                   : 'Erfasst'}
                       </span>
                     </div>
@@ -408,11 +408,11 @@ export default function TimeTrackingManager({
                       {entry.billableAmount && (
                         <span className="ml-2 text-green-600 font-medium">
                           +{(entry.billableAmount / 100).toFixed(2)}€
-                          {entry.escrowStatus === 'authorized' && (
-                            <span className="ml-1 text-blue-600 text-xs">(In Escrow)</span>
+                          {entry.platformHoldStatus === 'held' && (
+                            <span className="ml-1 text-blue-600 text-xs">(Platform Hold)</span>
                           )}
-                          {entry.escrowStatus === 'released' && (
-                            <span className="ml-1 text-purple-600 text-xs">(Ausgezahlt)</span>
+                          {entry.platformHoldStatus === 'transferred' && (
+                            <span className="ml-1 text-purple-600 text-xs">(Übertragen)</span>
                           )}
                         </span>
                       )}
