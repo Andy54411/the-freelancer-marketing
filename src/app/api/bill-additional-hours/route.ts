@@ -37,7 +37,12 @@ export async function POST(request: NextRequest) {
       JSON.stringify(body, null, 2)
     );
 
-    const { orderId, approvedEntryIds, customerStripeId, providerStripeAccountId } = body;
+    const {
+      orderId,
+      approvedEntryIds,
+      customerStripeId,
+      providerStripeAccountId: initialProviderStripeAccountId,
+    } = body;
 
     // Validierung
     if (
@@ -54,10 +59,6 @@ export async function POST(request: NextRequest) {
 
     if (!customerStripeId || !customerStripeId.startsWith('cus_')) {
       return NextResponse.json({ error: 'Ungültige Kunde Stripe ID.' }, { status: 400 });
-    }
-
-    if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
-      return NextResponse.json({ error: 'Ungültige Anbieter Stripe Account ID.' }, { status: 400 });
     }
 
     // Hole Auftragsdaten aus Firebase
@@ -78,6 +79,78 @@ export async function POST(request: NextRequest) {
         { error: 'Keine Zeiterfassung für diesen Auftrag gefunden.' },
         { status: 404 }
       );
+    }
+
+    // Provider Stripe Account ID validieren und ggf. Fallback verwenden
+    let providerStripeAccountId = initialProviderStripeAccountId;
+
+    if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
+      console.log(
+        '[API /bill-additional-hours] Invalid provider Stripe Account ID, checking for fallback...'
+      );
+
+      // Versuche Fallback aus users collection zu holen
+      try {
+        const userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
+
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const fallbackStripeAccountId = userData?.stripeAccountId;
+
+          if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
+            console.log(
+              '[API /bill-additional-hours] Found fallback Stripe Account ID:',
+              fallbackStripeAccountId
+            );
+
+            // Migriere die ID zur companies collection (Server-Side)
+            try {
+              await db.collection('companies').doc(orderData.selectedAnbieterId).update({
+                stripeConnectAccountId: fallbackStripeAccountId,
+                migratedFromUsers: true,
+                migratedAt: new Date(),
+              });
+              console.log(
+                '[API /bill-additional-hours] Successfully migrated Stripe Account ID to companies collection'
+              );
+            } catch (migrationError) {
+              console.warn(
+                '[API /bill-additional-hours] Could not migrate Stripe Account ID (non-critical):',
+                migrationError
+              );
+            }
+
+            // Verwende Fallback für diese Anfrage
+            providerStripeAccountId = fallbackStripeAccountId;
+          } else {
+            return NextResponse.json(
+              {
+                error:
+                  'Provider hat keine gültige Stripe Account ID (weder in companies noch in users collection).',
+              },
+              { status: 400 }
+            );
+          }
+        } else {
+          return NextResponse.json(
+            {
+              error: 'Provider-Benutzer nicht gefunden.',
+            },
+            { status: 404 }
+          );
+        }
+      } catch (fallbackError) {
+        console.error(
+          '[API /bill-additional-hours] Error checking fallback Stripe Account ID:',
+          fallbackError
+        );
+        return NextResponse.json(
+          {
+            error: 'Fehler beim Prüfen der Provider Stripe-Konfiguration.',
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Finde genehmigte zusätzliche Zeiteinträge

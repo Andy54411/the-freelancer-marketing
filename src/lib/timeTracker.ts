@@ -1051,19 +1051,8 @@ export class TimeTracker {
             '[TimeTracker] Using fallback Stripe Account ID from users collection:',
             fallbackStripeAccountId
           );
-          // Aktualisiere companies collection mit gefundener ID
-          try {
-            await updateDoc(doc(db, 'companies', orderData.selectedAnbieterId), {
-              stripeConnectAccountId: fallbackStripeAccountId,
-              migratedFromUsers: true,
-              migratedAt: serverTimestamp(),
-            });
-            console.log('[TimeTracker] Migrated Stripe Account ID to companies collection');
-          } catch (migrationError) {
-            console.warn('[TimeTracker] Could not migrate Stripe Account ID:', migrationError);
-          }
 
-          // Fortsetzung mit der gefundenen ID
+          // Fortsetzung mit der gefundenen ID - Migration wird Server-seitig in der API behandelt
           const providerStripeAccountIdFallback = fallbackStripeAccountId;
 
           console.log(
