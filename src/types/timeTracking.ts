@@ -36,7 +36,7 @@ export interface OrderTimeTracking {
     | 'partially_approved'
     | 'fully_approved'
     | 'completed';
-  customerFeedback?: string;
+  customerFeedback?: string | null;
   lastUpdated: Timestamp;
   inititalizedAt?: Timestamp; // Wann TimeTracking gestartet wurde
 }
@@ -49,7 +49,7 @@ export interface CustomerApprovalRequest {
   totalAmount: number; // In Cents
   submittedAt: Timestamp;
   status: 'pending' | 'approved' | 'rejected' | 'partially_approved';
-  customerFeedback?: string;
+  customerFeedback?: string | null;
   customerResponseAt?: Timestamp;
   providerMessage?: string;
   approvedEntryIds?: string[]; // Bei partial approval

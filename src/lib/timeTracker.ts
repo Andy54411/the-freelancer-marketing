@@ -420,7 +420,7 @@ export class TimeTracker {
     approvalRequestId: string,
     decision: 'approved' | 'rejected' | 'partially_approved',
     approvedEntryIds?: string[],
-    customerFeedback?: string
+    customerFeedback?: string | null
   ): Promise<void> {
     try {
       // Hole den Auftrag
@@ -452,9 +452,9 @@ export class TimeTracker {
       updatedApprovalRequests[approvalIndex] = {
         ...approvalRequest,
         status: decision,
-        customerFeedback,
+        customerFeedback: customerFeedback || null, // undefined → null für Firestore
         customerResponseAt: Timestamp.now(), // serverTimestamp() nicht in Arrays erlaubt
-        approvedEntryIds: decision === 'partially_approved' ? approvedEntryIds : undefined,
+        approvedEntryIds: decision === 'partially_approved' ? approvedEntryIds || [] : [],
       };
 
       // Aktualisiere Time Entries basierend auf Entscheidung
@@ -496,15 +496,25 @@ export class TimeTracker {
         newTimeTrackingStatus = 'partially_approved';
       }
 
-      // Update den Auftrag
-      await updateDoc(orderRef, {
+      // Update den Auftrag - filtere undefined Werte raus
+      const updateData: any = {
         'timeTracking.timeEntries': updatedTimeEntries,
         'timeTracking.totalApprovedHours': totalApprovedHours,
         'timeTracking.status': newTimeTrackingStatus,
-        'timeTracking.customerFeedback': customerFeedback,
         'timeTracking.lastUpdated': serverTimestamp(),
         approvalRequests: updatedApprovalRequests,
-      });
+      };
+
+      // Füge customerFeedback nur hinzu wenn es einen Wert hat
+      if (
+        customerFeedback !== undefined &&
+        customerFeedback !== null &&
+        customerFeedback.trim() !== ''
+      ) {
+        updateData['timeTracking.customerFeedback'] = customerFeedback;
+      }
+
+      await updateDoc(orderRef, updateData);
 
       console.log('[TimeTracker] Customer approval processed:', approvalRequestId);
     } catch (error) {

@@ -150,7 +150,7 @@ export default function CustomerApprovalInterface({
         requestId, // dann approvalRequestId
         decision,
         approvedIds,
-        feedback || undefined
+        feedback?.trim() || null // leere Strings zu null konvertieren
       );
 
       // AUTOMATISCHE STRIPE-ABRECHNUNG: Falls Stunden genehmigt wurden
