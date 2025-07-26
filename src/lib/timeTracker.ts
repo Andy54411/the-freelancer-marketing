@@ -685,7 +685,7 @@ export class TimeTracker {
         throw new Error('Provider Stripe Connect Account ID not found');
       }
 
-      console.log('[TimeTracker] Creating ESCROW authorization for additional hours:', {
+      console.log('[TimeTracker] Creating Platform Hold authorization for additional hours:', {
         orderId,
         totalAmount,
         customerStripeId,
@@ -693,8 +693,8 @@ export class TimeTracker {
         approvedEntriesCount: approvedEntries.length,
       });
 
-      // Erstelle ESCROW PaymentIntent über unsere API
-      const response = await fetch('/api/escrow-additional-hours', {
+      // Erstelle Platform Hold PaymentIntent über unsere API
+      const response = await fetch('/api/bill-additional-hours', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -709,24 +709,24 @@ export class TimeTracker {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create ESCROW PaymentIntent');
+        throw new Error(errorData.error || 'Failed to create Platform Hold PaymentIntent');
       }
 
       const paymentData = await response.json();
 
-      // Erstelle EscrowPaymentIntent Eintrag
-      const escrowPaymentIntent = {
+      // Erstelle PlatformHoldPaymentIntent Eintrag
+      const platformHoldPaymentIntent = {
         id: paymentData.paymentIntentId,
         amount: paymentData.customerPays,
         companyAmount: paymentData.companyReceives,
         platformFee: paymentData.platformFee,
         entryIds: approvedEntries.map(e => e.id),
-        authorizedAt: Timestamp.now(),
-        status: 'authorized' as const,
+        heldAt: Timestamp.now(),
+        status: 'held' as const,
         clientSecret: paymentData.clientSecret,
       };
 
-      // Markiere Einträge als escrow-autorisiert
+      // Markiere Einträge als platform-hold
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
         if (
           entry.category === 'additional' &&
@@ -735,34 +735,28 @@ export class TimeTracker {
         ) {
           return {
             ...entry,
-            status: 'escrow_authorized' as const,
-            escrowPaymentIntentId: paymentData.paymentIntentId,
-            escrowAuthorizedAt: Timestamp.now(),
-            escrowStatus: 'authorized' as const,
+            status: 'platform_held' as const,
+            platformHoldPaymentIntentId: paymentData.paymentIntentId,
+            platformHoldAt: Timestamp.now(),
+            platformHoldStatus: 'held' as const,
           };
         }
         return entry;
       });
 
-      // Update den Auftrag mit Escrow-Daten
-      const updatedEscrowPaymentIntents = [
-        ...(orderData.timeTracking.escrowPaymentIntents || []),
-        escrowPaymentIntent,
-      ];
-
+      // Update den Auftrag mit Platform Hold-Daten (ohne platformHoldPaymentIntents für jetzt)
       await updateDoc(orderRef, {
         'timeTracking.timeEntries': updatedTimeEntries,
-        'timeTracking.escrowPaymentIntents': updatedEscrowPaymentIntents,
-        'timeTracking.status': 'escrow_pending',
+        'timeTracking.status': 'platform_hold_pending',
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      console.log('[TimeTracker] ESCROW PaymentIntent authorized successfully:', {
+      console.log('[TimeTracker] Platform Hold PaymentIntent authorized successfully:', {
         paymentIntentId: paymentData.paymentIntentId,
         customerPays: paymentData.customerPays,
         companyReceives: paymentData.companyReceives,
         platformFee: paymentData.platformFee,
-        escrowStatus: 'authorized',
+        platformHoldStatus: 'held',
       });
 
       return {
@@ -771,7 +765,7 @@ export class TimeTracker {
         companyReceives: paymentData.companyReceives,
         platformFee: paymentData.platformFee,
         clientSecret: paymentData.clientSecret,
-        escrowStatus: 'authorized',
+        escrowStatus: 'authorized', // Legacy compatibility
       };
     } catch (error) {
       console.error('[TimeTracker] Error authorizing escrow for additional hours:', error);
@@ -890,7 +884,71 @@ export class TimeTracker {
   }
 
   /**
-   * Escrow-Gelder freigeben (nach beidseitiger Projektabnahme)
+   * Platform-Gelder freigeben (nach beidseitiger Projektabnahme)
+   * Ersetzt die alte Escrow-Freigabe durch echte Platform-to-Provider Transfers
+   */
+  static async releasePlatformFunds(orderId: string): Promise<void> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      // Hole alle Platform Hold PaymentIntents aus TimeEntries
+      const platformHoldPaymentIntents = orderData.timeTracking.timeEntries
+        .filter(entry => entry.platformHoldStatus === 'held' && entry.platformHoldPaymentIntentId)
+        .map(entry => entry.platformHoldPaymentIntentId)
+        .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+
+      if (platformHoldPaymentIntents.length === 0) {
+        console.log('[TimeTracker] No platform hold funds to release for order:', orderId);
+        return;
+      }
+
+      console.log('[TimeTracker] Releasing platform funds:', {
+        orderId,
+        paymentIntentIds: platformHoldPaymentIntents,
+      });
+
+      // Rufe Platform-Freigabe API auf
+      const response = await fetch('/api/release-platform-funds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId,
+          paymentIntentIds: platformHoldPaymentIntents,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to release platform funds');
+      }
+
+      const releaseData = await response.json();
+
+      console.log('[TimeTracker] Platform funds released successfully:', {
+        transferredCount: releaseData.completedTransfers.length,
+        totalTransferred: releaseData.totalTransferred,
+      });
+    } catch (error) {
+      console.error('[TimeTracker] Error releasing platform funds:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Escrow-Gelder freigeben (LEGACY - wird durch releasePlatformFunds ersetzt)
    */
   static async releaseEscrowFunds(orderId: string): Promise<void> {
     try {

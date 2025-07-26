@@ -17,6 +17,8 @@ export interface TimeEntry {
     | 'customer_rejected'
     | 'escrow_authorized'
     | 'escrow_released'
+    | 'platform_held'
+    | 'platform_released'
     | 'billed';
   isBreakTime?: boolean; // Pausenzeit abziehen
   breakMinutes?: number;
@@ -28,11 +30,18 @@ export interface TimeEntry {
   customerResponseAt?: Timestamp;
   billableAmount?: number; // In Cents
   notes?: string;
-  // Escrow-System Felder
+  // Escrow-System Felder (LEGACY)
   escrowPaymentIntentId?: string; // Stripe PaymentIntent ID für gehaltenes Geld
   escrowAuthorizedAt?: Timestamp; // Wann das Geld autorisiert/gehalten wurde
   escrowReleasedAt?: Timestamp; // Wann das Geld freigegeben wurde
   escrowStatus?: 'none' | 'authorized' | 'released' | 'failed'; // Status des Escrow-Prozesses
+
+  // Platform Hold System Felder (NEU)
+  platformHoldPaymentIntentId?: string; // Stripe PaymentIntent ID für Platform Hold
+  platformHoldAt?: Timestamp; // Wann das Geld auf Platform Account gehalten wurde
+  platformHoldStatus?: 'none' | 'held' | 'transferred' | 'failed'; // Platform Hold Status
+  transferId?: string; // Stripe Transfer ID vom Platform zu Provider
+  transferredAt?: Timestamp; // Wann der Transfer durchgeführt wurde
 }
 
 // TimeTracking wird direkt im Auftrag gespeichert

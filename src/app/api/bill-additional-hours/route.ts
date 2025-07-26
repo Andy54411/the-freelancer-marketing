@@ -114,19 +114,17 @@ export async function POST(request: NextRequest) {
     // Company erhält den Betrag minus Plattformgebühr
     const companyAmount = totalAmount - platformFee;
 
-    // Erstelle Stripe PaymentIntent für zusätzliche Stunden mit ESCROW (manual capture)
-    // Kunde zahlt den vollen Betrag, aber Geld wird gehalten bis Projekt abgeschlossen
+    // PLATFORM HOLD SYSTEM: Echtes Escrow-System
+    // Geld wird SOFORT eingezogen und auf unserem Platform Account gehalten
+    // Transfer an Provider erfolgt erst nach Projektabschluss via separaten API-Call
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'eur',
       customer: customerStripeId,
-      application_fee_amount: platformFee,
-      transfer_data: {
-        destination: providerStripeAccountId,
-        amount: companyAmount, // Company erhält totalAmount - platformFee
-      },
+      // KRITISCH: KEIN transfer_data und KEINE application_fee_amount!
+      // Geld bleibt komplett auf Platform Account bis zur manuellen Transfer-Freigabe
       confirm: false,
-      capture_method: 'manual', // ESCROW: Geld wird gehalten, nicht sofort captured
+      capture_method: 'automatic', // Sofortige Einziehung = sicheres Geld
       setup_future_usage: 'off_session',
       automatic_payment_methods: {
         enabled: true,
@@ -134,8 +132,9 @@ export async function POST(request: NextRequest) {
       },
       metadata: {
         orderId,
-        type: 'additional_hours_escrow',
+        type: 'additional_hours_platform_hold',
         entryIds: approvedEntryIds.join(','),
+        providerStripeAccountId, // Für späteren Transfer
         totalHours: approvedEntries
           .reduce((sum: number, entry: any) => sum + entry.hours, 0)
           .toString(),
@@ -143,13 +142,13 @@ export async function POST(request: NextRequest) {
         additionalAmount: totalAmount.toString(),
         platformFee: platformFee.toString(),
         companyReceives: companyAmount.toString(),
-        escrowEnabled: 'true',
+        platformHoldEnabled: 'true',
       },
-      description: `Zusätzliche Arbeitsstunden (Escrow) für Auftrag ${orderId}`,
+      description: `Zusätzliche Arbeitsstunden (Platform Hold) für Auftrag ${orderId}`,
     });
 
     console.log(
-      '[API /bill-additional-hours] Escrow PaymentIntent erfolgreich erstellt:',
+      '[API /bill-additional-hours] Platform Hold PaymentIntent erfolgreich erstellt:',
       paymentIntent.id
     );
 
@@ -161,9 +160,9 @@ export async function POST(request: NextRequest) {
       companyReceives: companyAmount, // Company erhält Betrag minus Plattformgebühr
       platformFee: platformFee,
       additionalHours: approvedEntries.reduce((sum: number, entry: any) => sum + entry.hours, 0),
-      escrowEnabled: true,
+      platformHoldEnabled: true,
       message:
-        'Escrow PaymentIntent für zusätzliche Stunden erfolgreich erstellt. Geld wird gehalten bis Projektabschluss.',
+        'Platform Hold PaymentIntent für zusätzliche Stunden erfolgreich erstellt. Geld wird nach Projektabschluss übertragen.',
     });
   } catch (error: unknown) {
     let errorMessage =
