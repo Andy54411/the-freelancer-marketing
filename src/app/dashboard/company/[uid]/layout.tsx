@@ -40,6 +40,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Kalender',
     icon: FiCalendar,
     value: 'calendar',
+    href: 'calendar',
   },
   {
     label: 'Finanzen',
@@ -79,6 +80,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const getCurrentView = useCallback(() => {
     if (pathname?.includes('/finance')) return 'finance';
     if (pathname?.includes('/profile')) return 'profile';
+    if (pathname?.includes('/calendar')) return 'calendar';
     return view;
   }, [pathname, view]);
 
@@ -101,7 +103,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     (value: string) => {
       setIsSidebarOpen(false);
 
-      // Für Finanzen und Profil - verwende echte Navigation
+      // Für Finanzen, Profil und Kalender - verwende echte Navigation
       if (value === 'finance') {
         router.push(`/dashboard/company/${uid}/finance`);
         return;
@@ -109,6 +111,11 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
       if (value === 'profile') {
         router.push(`/dashboard/company/${uid}/profile`);
+        return;
+      }
+
+      if (value === 'calendar') {
+        router.push(`/dashboard/company/${uid}/calendar`);
         return;
       }
 
