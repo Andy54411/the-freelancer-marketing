@@ -354,41 +354,6 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Customer Approval Interface für aktive Aufträge */}
-          {(() => {
-            console.log('[DEBUG ORDER PAGE] Full Order Data:', order);
-            console.log('[DEBUG ORDER PAGE] Order Status:', order.status);
-            console.log('[DEBUG ORDER PAGE] Current User ID:', currentUser?.uid);
-            console.log('[DEBUG ORDER PAGE] Customer ID:', order.customerId);
-            console.log(
-              '[DEBUG ORDER PAGE] User is customer:',
-              currentUser.uid === order.customerId
-            );
-            console.log('[DEBUG ORDER PAGE] Status is AKTIV:', order.status === 'AKTIV');
-            console.log(
-              '[DEBUG ORDER PAGE] Should show interface:',
-              order.status === 'AKTIV' && currentUser.uid === order.customerId
-            );
-            return null;
-          })()}
-
-          {/* FORCE SHOW für Debug - Zeige CustomerApprovalInterface immer für Kunden */}
-          {currentUser.uid === order.customerId && (
-            <div className="bg-white shadow rounded-lg p-6 mb-8">
-              <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                <FiAlertCircle className="mr-2" /> Stundenfreigabe (DEBUG)
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Status: {order.status} | Debugging Interface für Zeiterfassung
-              </p>
-              <CustomerApprovalInterface
-                orderId={orderId}
-                onApprovalProcessed={() => {
-                  console.log('Approval processed');
-                }}
-              />
-            </div>
-          )}
-
           {order.status === 'AKTIV' && currentUser.uid === order.customerId && (
             <div className="bg-white shadow rounded-lg p-6 mb-8">
               <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">

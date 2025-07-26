@@ -40,49 +40,16 @@ export default function CustomerApprovalInterface({
   }, [orderId]);
 
   const loadApprovalRequests = async () => {
-    console.log('[DEBUG] loadApprovalRequests STARTED for orderId:', orderId);
-    console.log('[DEBUG] Current user:', user);
-
     try {
       setLoading(true);
-      if (!user) {
-        console.log('[DEBUG] No user - returning early');
-        return;
-      }
-
-      console.log('[DEBUG] Calling TimeTracker.getOrderDetails for:', orderId);
+      if (!user) return;
 
       // Hole Auftrag-Details direkt und prüfe auf ausstehende Approval Requests
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
-
-      // DEBUG: Log order details
-      console.log('[DEBUG] Order Details for', orderId, ':', orderDetails);
-      console.log('[DEBUG] TimeTracking:', orderDetails?.timeTracking);
-      console.log('[DEBUG] Approval Requests:', orderDetails?.approvalRequests);
-
-      // DEBUG: Analysiere Zeiteinträge
-      if (orderDetails?.timeTracking?.timeEntries) {
-        const timeEntries = orderDetails.timeTracking.timeEntries;
-        console.log('[DEBUG] Alle Zeiteinträge:', timeEntries);
-
-        const additionalEntries = timeEntries.filter(
-          (entry: any) => entry.category === 'additional'
-        );
-        console.log('[DEBUG] Zusätzliche Einträge:', additionalEntries);
-
-        const loggedEntries = timeEntries.filter((entry: any) => entry.status === 'logged');
-        console.log('[DEBUG] Einträge mit Status "logged":', loggedEntries);
-
-        const submittedEntries = timeEntries.filter((entry: any) => entry.status === 'submitted');
-        console.log('[DEBUG] Einträge mit Status "submitted":', submittedEntries);
-      }
-
       if (orderDetails && orderDetails.approvalRequests) {
         const pendingRequests = orderDetails.approvalRequests.filter(
           (req: any) => req.status === 'pending'
         );
-
-        console.log('[DEBUG] Pending Requests:', pendingRequests);
 
         // Erweitere Requests mit TimeEntry-Details aus dem Auftrag
         const enrichedRequests = pendingRequests.map((request: any) => {
@@ -109,12 +76,10 @@ export default function CustomerApprovalInterface({
         setApprovalRequests([]);
       }
     } catch (error) {
-      console.error('[DEBUG] Error loading approval requests:', error);
-      console.error('[DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('Error loading approval requests:', error);
       setApprovalRequests([]);
     } finally {
       setLoading(false);
-      console.log('[DEBUG] loadApprovalRequests FINISHED');
     }
   };
 
