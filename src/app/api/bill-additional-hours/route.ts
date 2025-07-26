@@ -1,8 +1,7 @@
 // API Route für die Abrechnung zusätzlicher Stunden über Stripe
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { db } from '@/firebase/server';
 
 // Stripe initialization
 function getStripeInstance() {
@@ -62,14 +61,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Hole Auftragsdaten aus Firebase
-    const orderRef = doc(db, 'auftraege', orderId);
-    const orderDoc = await getDoc(orderRef);
+    const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
-    if (!orderDoc.exists()) {
+    if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Auftrag nicht gefunden.' }, { status: 404 });
     }
 
     const orderData = orderDoc.data();
+
+    if (!orderData) {
+      return NextResponse.json({ error: 'Auftragsdaten nicht verfügbar.' }, { status: 404 });
+    }
 
     if (!orderData.timeTracking) {
       return NextResponse.json(
