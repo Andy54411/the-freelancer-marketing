@@ -192,20 +192,20 @@ export function SectionCards() {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {/* Guthaben Card */}
       <Card className="h-[140px] flex flex-col bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200">
-        <CardHeader className="pb-2 flex-shrink-0">
+        <CardHeader className="pb-1 flex-shrink-0">
           <CardDescription className="flex items-center gap-1 text-green-700 dark:text-green-300 text-xs font-medium">
             <IconWallet size={14} className="flex-shrink-0" />
             <span className="truncate">Guthaben</span>
           </CardDescription>
-          <CardTitle className="text-lg font-bold tabular-nums text-green-800 dark:text-green-200 break-words">
+          <CardTitle className="text-lg font-bold tabular-nums text-green-800 dark:text-green-200 break-words leading-tight">
             {formatCurrency(stats.availableBalance)}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 pb-2 flex flex-col flex-grow justify-end">
-          <div className="flex flex-col gap-1">
+        <CardContent className="pt-0 pb-1 flex flex-col flex-grow justify-end">
+          <div className="flex flex-col gap-0.5">
             <Badge
               variant="outline"
-              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[10px] px-1.5 py-0.5 font-medium"
+              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight"
             >
               {stats.pendingBalance > 0
                 ? `+${formatCurrency(stats.pendingBalance)} pending`
@@ -215,13 +215,13 @@ export function SectionCards() {
               size="sm"
               onClick={handleWithdraw}
               disabled={isWithdrawing || stats.availableBalance <= 0}
-              className="bg-green-600 hover:bg-green-700 text-white w-full text-[10px] h-6 px-2 font-medium shadow-sm hover:shadow-md transition-all"
+              className="bg-green-600 hover:bg-green-700 text-white w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight"
             >
               {isWithdrawing ? (
                 <span>...</span>
               ) : (
                 <>
-                  <IconDownload size={10} className="mr-1 flex-shrink-0" />
+                  <IconDownload size={8} className="mr-0.5 flex-shrink-0" />
                   <span>Auszahlen</span>
                 </>
               )}
