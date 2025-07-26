@@ -10,7 +10,14 @@ export interface TimeEntry {
   hours: number; // Berechnete oder eingegebene Stunden
   description: string;
   category: 'original' | 'additional'; // Original geplant oder zusätzlich
-  status: 'logged' | 'submitted' | 'customer_approved' | 'customer_rejected' | 'billed';
+  status:
+    | 'logged'
+    | 'submitted'
+    | 'customer_approved'
+    | 'customer_rejected'
+    | 'escrow_authorized'
+    | 'escrow_released'
+    | 'billed';
   isBreakTime?: boolean; // Pausenzeit abziehen
   breakMinutes?: number;
   travelTime?: boolean; // Anfahrt hinzufügen
@@ -20,6 +27,11 @@ export interface TimeEntry {
   customerResponseAt?: Timestamp;
   billableAmount?: number; // In Cents
   notes?: string;
+  // Escrow-System Felder
+  escrowPaymentIntentId?: string; // Stripe PaymentIntent ID für gehaltenes Geld
+  escrowAuthorizedAt?: Timestamp; // Wann das Geld autorisiert/gehalten wurde
+  escrowReleasedAt?: Timestamp; // Wann das Geld freigegeben wurde
+  escrowStatus?: 'none' | 'authorized' | 'released' | 'failed'; // Status des Escrow-Prozesses
 }
 
 // TimeTracking wird direkt im Auftrag gespeichert
@@ -37,10 +49,39 @@ export interface OrderTimeTracking {
     | 'submitted_for_approval'
     | 'partially_approved'
     | 'fully_approved'
-    | 'completed';
+    | 'escrow_pending' // Geld ist autorisiert/gehalten
+    | 'completed'; // Geld ist freigegeben
   customerFeedback?: string | null;
   lastUpdated: Timestamp;
   inititalizedAt?: Timestamp; // Wann TimeTracking gestartet wurde
+  // Escrow-System Felder
+  escrowPaymentIntents?: EscrowPaymentIntent[]; // Alle gehaltenen PaymentIntents
+  projectCompletionStatus?: ProjectCompletionStatus; // Status der Projektabnahme
+}
+
+// Escrow PaymentIntent Tracking
+export interface EscrowPaymentIntent {
+  id: string; // Stripe PaymentIntent ID
+  amount: number; // In Cents - Kundenzahlung
+  companyAmount: number; // In Cents - Was die Firma erhält (minus Plattformgebühr)
+  platformFee: number; // In Cents - Plattformgebühr
+  entryIds: string[]; // TimeEntry IDs die zu dieser Zahlung gehören
+  authorizedAt: Timestamp; // Wann autorisiert
+  releasedAt?: Timestamp; // Wann freigegeben (optional)
+  status: 'authorized' | 'released' | 'failed' | 'cancelled';
+  clientSecret: string; // Für Frontend
+}
+
+// Projektabnahme Status
+export interface ProjectCompletionStatus {
+  customerMarkedComplete: boolean; // Kunde hat Projekt als erledigt markiert
+  customerCompletedAt?: Timestamp;
+  providerMarkedComplete: boolean; // Anbieter hat Projekt als erledigt markiert
+  providerCompletedAt?: Timestamp;
+  bothPartiesComplete: boolean; // Beide haben bestätigt → Geld kann freigegeben werden
+  finalCompletionAt?: Timestamp; // Wann beide bestätigt haben
+  escrowReleaseInitiated: boolean; // Ob Escrow-Freigabe bereits gestartet wurde
+  escrowReleaseAt?: Timestamp; // Wann Freigabe durchgeführt wurde
 }
 
 // Approval Requests werden direkt im Auftrag verwaltet

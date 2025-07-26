@@ -207,6 +207,12 @@ export default function TimeTrackingManager({
     approvedHours: timeEntries
       .filter(entry => entry.status === 'customer_approved')
       .reduce((sum, entry) => sum + entry.hours, 0),
+    escrowAuthorizedHours: timeEntries
+      .filter(entry => entry.status === 'escrow_authorized')
+      .reduce((sum, entry) => sum + entry.hours, 0),
+    escrowReleasedHours: timeEntries
+      .filter(entry => entry.status === 'escrow_released')
+      .reduce((sum, entry) => sum + entry.hours, 0),
   };
 
   if (loading) {
@@ -248,7 +254,7 @@ export default function TimeTrackingManager({
 
       {/* Zusammenfassung */}
       <div className="p-6 bg-gray-50 border-b border-gray-200">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{summary.totalHours.toFixed(1)}</div>
             <div className="text-sm text-gray-600">Gesamt Stunden</div>
@@ -276,6 +282,27 @@ export default function TimeTrackingManager({
               {summary.approvedHours.toFixed(1)}
             </div>
             <div className="text-sm text-gray-600">Freigegeben</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              {summary.escrowAuthorizedHours.toFixed(1)}
+            </div>
+            <div className="text-sm text-gray-600">In Escrow</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              {summary.escrowReleasedHours.toFixed(1)}
+            </div>
+            <div className="text-sm text-gray-600">Ausgezahlt</div>
+          </div>
+        </div>
+
+        {/* Escrow-System Erklärung */}
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="text-sm text-blue-800">
+            <strong>💰 Escrow-System:</strong> Zusätzliche Stunden werden zuerst vom Kunden bezahlt
+            und sicher gehalten. Das Geld wird erst nach beidseitiger Projektabnahme an die Firma
+            ausgezahlt.
           </div>
         </div>
       </div>
@@ -327,7 +354,11 @@ export default function TimeTrackingManager({
                               ? 'bg-yellow-100 text-yellow-800'
                               : entry.status === 'customer_rejected'
                                 ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
+                                : entry.status === 'escrow_authorized'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : entry.status === 'escrow_released'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : 'bg-gray-100 text-gray-800'
                         }`}
                       >
                         {entry.status === 'customer_approved'
@@ -336,7 +367,11 @@ export default function TimeTrackingManager({
                             ? 'Eingereicht'
                             : entry.status === 'customer_rejected'
                               ? 'Abgelehnt'
-                              : 'Erfasst'}
+                              : entry.status === 'escrow_authorized'
+                                ? 'In Escrow (Autorisiert)'
+                                : entry.status === 'escrow_released'
+                                  ? 'Escrow Freigegeben'
+                                  : 'Erfasst'}
                       </span>
                     </div>
                     <p className="text-gray-700 mb-1">{entry.description}</p>
@@ -347,6 +382,12 @@ export default function TimeTrackingManager({
                       {entry.billableAmount && (
                         <span className="ml-2 text-green-600 font-medium">
                           +{(entry.billableAmount / 100).toFixed(2)}€
+                          {entry.escrowStatus === 'authorized' && (
+                            <span className="ml-1 text-blue-600 text-xs">(In Escrow)</span>
+                          )}
+                          {entry.escrowStatus === 'released' && (
+                            <span className="ml-1 text-purple-600 text-xs">(Ausgezahlt)</span>
+                          )}
                         </span>
                       )}
                     </div>

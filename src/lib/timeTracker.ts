@@ -611,8 +611,345 @@ export class TimeTracker {
       console.error('[TimeTracker] Error processing customer approval:', error);
       throw error;
     }
-  } /**
-   * Genehmigte Stunden in Stripe abrechnen (integriert in Auftrag)
+  }
+
+  /**
+   * ESCROW-SYSTEM: Genehmigte Stunden in Escrow autorisieren (Geld halten, nicht auszahlen)
+   */
+  static async authorizeAdditionalHoursEscrow(orderId: string): Promise<{
+    paymentIntentId: string;
+    customerPays: number;
+    companyReceives: number;
+    platformFee: number;
+    clientSecret: string;
+    escrowStatus: string;
+  }> {
+    try {
+      // Hole den Auftrag
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      // Hole genehmigte zusätzliche Stunden die noch nicht in Escrow sind
+      const approvedEntries = orderData.timeTracking.timeEntries.filter(
+        entry =>
+          entry.category === 'additional' &&
+          entry.status === 'customer_approved' &&
+          entry.escrowStatus !== 'authorized' &&
+          entry.escrowStatus !== 'released'
+      );
+
+      if (approvedEntries.length === 0) {
+        throw new Error('No approved additional hours available for escrow authorization');
+      }
+
+      const totalAmount = approvedEntries.reduce(
+        (sum, entry) => sum + (entry.billableAmount || 0),
+        0
+      );
+
+      if (totalAmount <= 0) {
+        throw new Error('No billable amount found');
+      }
+
+      // Hole Kundendaten für Stripe Customer ID
+      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));
+      const customerData = customerDoc.data();
+      const customerStripeId = customerData?.stripeCustomerId;
+
+      if (!customerStripeId) {
+        throw new Error('Customer Stripe ID not found');
+      }
+
+      // Hole Anbieter Stripe Account ID
+      const providerDoc = await getDoc(doc(db, 'companies', orderData.selectedAnbieterId));
+      const providerData = providerDoc.data();
+      const providerStripeAccountId = providerData?.stripeConnectAccountId;
+
+      if (!providerStripeAccountId) {
+        throw new Error('Provider Stripe Connect Account ID not found');
+      }
+
+      console.log('[TimeTracker] Creating ESCROW authorization for additional hours:', {
+        orderId,
+        totalAmount,
+        customerStripeId,
+        providerStripeAccountId,
+        approvedEntriesCount: approvedEntries.length,
+      });
+
+      // Erstelle ESCROW PaymentIntent über unsere API
+      const response = await fetch('/api/escrow-additional-hours', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId,
+          approvedEntryIds: approvedEntries.map(e => e.id),
+          customerStripeId,
+          providerStripeAccountId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create ESCROW PaymentIntent');
+      }
+
+      const paymentData = await response.json();
+
+      // Erstelle EscrowPaymentIntent Eintrag
+      const escrowPaymentIntent = {
+        id: paymentData.paymentIntentId,
+        amount: paymentData.customerPays,
+        companyAmount: paymentData.companyReceives,
+        platformFee: paymentData.platformFee,
+        entryIds: approvedEntries.map(e => e.id),
+        authorizedAt: Timestamp.now(),
+        status: 'authorized' as const,
+        clientSecret: paymentData.clientSecret,
+      };
+
+      // Markiere Einträge als escrow-autorisiert
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if (
+          entry.category === 'additional' &&
+          entry.status === 'customer_approved' &&
+          approvedEntries.some(e => e.id === entry.id)
+        ) {
+          return {
+            ...entry,
+            status: 'escrow_authorized' as const,
+            escrowPaymentIntentId: paymentData.paymentIntentId,
+            escrowAuthorizedAt: Timestamp.now(),
+            escrowStatus: 'authorized' as const,
+          };
+        }
+        return entry;
+      });
+
+      // Update den Auftrag mit Escrow-Daten
+      const updatedEscrowPaymentIntents = [
+        ...(orderData.timeTracking.escrowPaymentIntents || []),
+        escrowPaymentIntent,
+      ];
+
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.escrowPaymentIntents': updatedEscrowPaymentIntents,
+        'timeTracking.status': 'escrow_pending',
+        'timeTracking.lastUpdated': serverTimestamp(),
+      });
+
+      console.log('[TimeTracker] ESCROW PaymentIntent authorized successfully:', {
+        paymentIntentId: paymentData.paymentIntentId,
+        customerPays: paymentData.customerPays,
+        companyReceives: paymentData.companyReceives,
+        platformFee: paymentData.platformFee,
+        escrowStatus: 'authorized',
+      });
+
+      return {
+        paymentIntentId: paymentData.paymentIntentId,
+        customerPays: paymentData.customerPays,
+        companyReceives: paymentData.companyReceives,
+        platformFee: paymentData.platformFee,
+        clientSecret: paymentData.clientSecret,
+        escrowStatus: 'authorized',
+      };
+    } catch (error) {
+      console.error('[TimeTracker] Error authorizing escrow for additional hours:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Projektabnahme durch Kunde markieren
+   */
+  static async markProjectCompleteByCustomer(
+    orderId: string,
+    customerMessage?: string
+  ): Promise<void> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      const currentCompletion = orderData.timeTracking.projectCompletionStatus || {
+        customerMarkedComplete: false,
+        providerMarkedComplete: false,
+        bothPartiesComplete: false,
+        escrowReleaseInitiated: false,
+      };
+
+      const updatedCompletion = {
+        ...currentCompletion,
+        customerMarkedComplete: true,
+        customerCompletedAt: serverTimestamp(),
+        bothPartiesComplete: currentCompletion.providerMarkedComplete && true,
+        finalCompletionAt: currentCompletion.providerMarkedComplete
+          ? serverTimestamp()
+          : currentCompletion.finalCompletionAt,
+      };
+
+      await updateDoc(orderRef, {
+        'timeTracking.projectCompletionStatus': updatedCompletion,
+        'timeTracking.lastUpdated': serverTimestamp(),
+      });
+
+      // Wenn beide Parteien bestätigt haben, initiere Escrow-Freigabe
+      if (updatedCompletion.bothPartiesComplete && !updatedCompletion.escrowReleaseInitiated) {
+        await this.releaseEscrowFunds(orderId);
+      }
+
+      console.log('[TimeTracker] Customer marked project as complete:', orderId);
+    } catch (error) {
+      console.error('[TimeTracker] Error marking project complete by customer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Projektabnahme durch Anbieter markieren
+   */
+  static async markProjectCompleteByProvider(
+    orderId: string,
+    providerMessage?: string
+  ): Promise<void> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      const currentCompletion = orderData.timeTracking.projectCompletionStatus || {
+        customerMarkedComplete: false,
+        providerMarkedComplete: false,
+        bothPartiesComplete: false,
+        escrowReleaseInitiated: false,
+      };
+
+      const updatedCompletion = {
+        ...currentCompletion,
+        providerMarkedComplete: true,
+        providerCompletedAt: serverTimestamp(),
+        bothPartiesComplete: currentCompletion.customerMarkedComplete && true,
+        finalCompletionAt: currentCompletion.customerMarkedComplete
+          ? serverTimestamp()
+          : currentCompletion.finalCompletionAt,
+      };
+
+      await updateDoc(orderRef, {
+        'timeTracking.projectCompletionStatus': updatedCompletion,
+        'timeTracking.lastUpdated': serverTimestamp(),
+      });
+
+      // Wenn beide Parteien bestätigt haben, initiere Escrow-Freigabe
+      if (updatedCompletion.bothPartiesComplete && !updatedCompletion.escrowReleaseInitiated) {
+        await this.releaseEscrowFunds(orderId);
+      }
+
+      console.log('[TimeTracker] Provider marked project as complete:', orderId);
+    } catch (error) {
+      console.error('[TimeTracker] Error marking project complete by provider:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Escrow-Gelder freigeben (nach beidseitiger Projektabnahme)
+   */
+  static async releaseEscrowFunds(orderId: string): Promise<void> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      // Hole alle authorisierten Escrow PaymentIntents
+      const authorizedEscrowPaymentIntents = (
+        orderData.timeTracking.escrowPaymentIntents || []
+      ).filter(escrowPI => escrowPI.status === 'authorized');
+
+      if (authorizedEscrowPaymentIntents.length === 0) {
+        console.log('[TimeTracker] No authorized escrow funds to release for order:', orderId);
+        return;
+      }
+
+      const paymentIntentIds = authorizedEscrowPaymentIntents.map(escrowPI => escrowPI.id);
+
+      console.log('[TimeTracker] Releasing escrow funds:', {
+        orderId,
+        paymentIntentIds,
+      });
+
+      // Rufe Escrow-Freigabe API auf
+      const response = await fetch('/api/release-escrow-funds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId,
+          paymentIntentIds,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to release escrow funds');
+      }
+
+      const releaseData = await response.json();
+
+      console.log('[TimeTracker] Escrow funds released successfully:', {
+        releasedCount: releaseData.releasedPaymentIntents.length,
+        totalReleased: releaseData.totalReleased,
+      });
+    } catch (error) {
+      console.error('[TimeTracker] Error releasing escrow funds:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Genehmigte Stunden in Stripe abrechnen (integriert in Auftrag) - LEGACY VERSION
+   * Diese Methode wird durch das Escrow-System ersetzt, bleibt aber für Rückwärtskompatibilität
    */
   static async billApprovedHours(orderId: string): Promise<{
     paymentIntentId: string;
