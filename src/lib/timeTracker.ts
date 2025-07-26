@@ -816,9 +816,9 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      // Wenn beide Parteien bestätigt haben, initiere Escrow-Freigabe
+      // Wenn beide Parteien bestätigt haben, initiere Platform Fund Release
       if (updatedCompletion.bothPartiesComplete && !updatedCompletion.escrowReleaseInitiated) {
-        await this.releaseEscrowFunds(orderId);
+        await this.releasePlatformFunds(orderId);
       }
 
       console.log('[TimeTracker] Customer marked project as complete:', orderId);
@@ -871,9 +871,9 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      // Wenn beide Parteien bestätigt haben, initiere Escrow-Freigabe
+      // Wenn beide Parteien bestätigt haben, initiere Platform Fund Release
       if (updatedCompletion.bothPartiesComplete && !updatedCompletion.escrowReleaseInitiated) {
-        await this.releaseEscrowFunds(orderId);
+        await this.releasePlatformFunds(orderId);
       }
 
       console.log('[TimeTracker] Provider marked project as complete:', orderId);
@@ -943,70 +943,6 @@ export class TimeTracker {
       });
     } catch (error) {
       console.error('[TimeTracker] Error releasing platform funds:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Escrow-Gelder freigeben (LEGACY - wird durch releasePlatformFunds ersetzt)
-   */
-  static async releaseEscrowFunds(orderId: string): Promise<void> {
-    try {
-      const orderRef = doc(db, 'auftraege', orderId);
-      const orderDoc = await getDoc(orderRef);
-
-      if (!orderDoc.exists()) {
-        throw new Error('Order not found');
-      }
-
-      const orderData = orderDoc.data() as AuftragWithTimeTracking;
-
-      if (!orderData.timeTracking) {
-        throw new Error('Time tracking not found');
-      }
-
-      // Hole alle authorisierten Escrow PaymentIntents
-      const authorizedEscrowPaymentIntents = (
-        orderData.timeTracking.escrowPaymentIntents || []
-      ).filter(escrowPI => escrowPI.status === 'authorized');
-
-      if (authorizedEscrowPaymentIntents.length === 0) {
-        console.log('[TimeTracker] No authorized escrow funds to release for order:', orderId);
-        return;
-      }
-
-      const paymentIntentIds = authorizedEscrowPaymentIntents.map(escrowPI => escrowPI.id);
-
-      console.log('[TimeTracker] Releasing escrow funds:', {
-        orderId,
-        paymentIntentIds,
-      });
-
-      // Rufe Escrow-Freigabe API auf
-      const response = await fetch('/api/release-escrow-funds', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId,
-          paymentIntentIds,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to release escrow funds');
-      }
-
-      const releaseData = await response.json();
-
-      console.log('[TimeTracker] Escrow funds released successfully:', {
-        releasedCount: releaseData.releasedPaymentIntents.length,
-        totalReleased: releaseData.totalReleased,
-      });
-    } catch (error) {
-      console.error('[TimeTracker] Error releasing escrow funds:', error);
       throw error;
     }
   }
