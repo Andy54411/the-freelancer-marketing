@@ -1380,6 +1380,118 @@ export class TimeTracker {
   }
 
   /**
+   * KUNDE-INITIIERTE FREIGABE: Kunde kann zusätzliche Stunden selbst zur Freigabe anfordern
+   * Falls der Anbieter vergessen hat, die zusätzlichen Stunden einzureichen
+   */
+  static async customerInitiateAdditionalHoursApproval(
+    orderId: string,
+    customerMessage?: string
+  ): Promise<{
+    success: boolean;
+    approvalRequestId?: string;
+    message: string;
+    additionalHours: number;
+    totalAmount: number;
+  }> {
+    try {
+      // Hole den Auftrag
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      // Finde alle nicht-eingereichten zusätzlichen Stunden
+      const unsubmittedAdditionalEntries = orderData.timeTracking.timeEntries.filter(
+        entry => entry.category === 'additional' && entry.status === 'logged'
+      );
+
+      if (unsubmittedAdditionalEntries.length === 0) {
+        return {
+          success: false,
+          message:
+            'Keine zusätzlichen Stunden gefunden, die zur Freigabe eingereicht werden können.',
+          additionalHours: 0,
+          totalAmount: 0,
+        };
+      }
+
+      // Berechne Statistiken
+      const additionalHours = unsubmittedAdditionalEntries.reduce(
+        (sum, entry) => sum + entry.hours,
+        0
+      );
+      const totalAmount = unsubmittedAdditionalEntries.reduce(
+        (sum, entry) => sum + (entry.billableAmount || 0),
+        0
+      );
+
+      // Erstelle automatisch eine Approval Request (Kunde-initiiert)
+      const entryIds = unsubmittedAdditionalEntries.map(entry => entry.id);
+      const approvalRequestId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+
+      const approvalRequest: CustomerApprovalRequest = {
+        id: approvalRequestId,
+        timeEntryIds: entryIds,
+        totalHours: additionalHours,
+        totalAmount,
+        submittedAt: Timestamp.now(),
+        status: 'pending',
+        providerMessage: `🤝 Kunde-initiierte Freigabe: ${customerMessage || 'Kunde möchte zusätzliche Stunden freigeben'}`,
+        customerInitiated: true, // Markierung dass Kunde die Freigabe angefordert hat
+      };
+
+      // Aktualisiere Entries auf "submitted"
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if (entryIds.includes(entry.id)) {
+          return {
+            ...entry,
+            status: 'submitted' as const,
+            submittedAt: Timestamp.now(),
+            customerInitiated: true,
+          };
+        }
+        return entry;
+      });
+
+      const updatedApprovalRequests = [...(orderData.approvalRequests || []), approvalRequest];
+
+      // Update den Auftrag
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.status': 'submitted_for_approval',
+        'timeTracking.lastUpdated': serverTimestamp(),
+        approvalRequests: updatedApprovalRequests,
+      });
+
+      console.log('[TimeTracker] Customer-initiated approval request created:', approvalRequestId);
+
+      return {
+        success: true,
+        approvalRequestId,
+        message: `✅ Erfolgreich! ${additionalHours.toFixed(1)} zusätzliche Stunden wurden zur Freigabe eingereicht. Sie können diese nun genehmigen.`,
+        additionalHours,
+        totalAmount,
+      };
+    } catch (error) {
+      console.error('[TimeTracker] Error creating customer-initiated approval:', error);
+      return {
+        success: false,
+        message: `Fehler beim Einreichen zur Freigabe: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        additionalHours: 0,
+        totalAmount: 0,
+      };
+    }
+  }
+
+  /**
    * Berechnet Stunden aus Start- und Endzeit
    */
   static calculateHoursFromTime(

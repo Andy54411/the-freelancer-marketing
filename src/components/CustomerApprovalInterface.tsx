@@ -336,11 +336,58 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                   </div>
                 </div>
                 <div className="mt-4 p-3 bg-amber-100 rounded-lg">
-                  <p className="text-sm text-amber-800">
-                    <strong>Nächste Schritte:</strong> Der Anbieter muss die zusätzlichen Stunden
-                    zur Freigabe einreichen. Sie erhalten eine Benachrichtigung, sobald eine
-                    Freigabe-Anfrage vorliegt.
+                  <p className="text-sm text-amber-800 mb-3">
+                    <strong>
+                      Sie können die zusätzlichen Stunden selbst zur Freigabe anfordern!
+                    </strong>
                   </p>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          `Möchten Sie die ${(totalLoggedHours - originalPlannedHours).toFixed(1)} zusätzlichen Stunden zur Freigabe einreichen und genehmigen?`
+                        )
+                      )
+                        return;
+
+                      try {
+                        // Schritt 1: Kunde-initiierte Freigabe
+                        const result = await TimeTracker.customerInitiateAdditionalHoursApproval(
+                          orderId,
+                          'Kunde möchte zusätzliche Arbeitszeit freigeben'
+                        );
+
+                        if (result.success && result.approvalRequestId) {
+                          // Schritt 2: Sofort genehmigen
+                          await TimeTracker.processCustomerApproval(
+                            orderId,
+                            result.approvalRequestId,
+                            'approved',
+                            undefined,
+                            'Automatisch genehmigt durch Kunde-Initiative'
+                          );
+
+                          // Schritt 3: Automatische Stripe-Abrechnung
+                          const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                          alert(
+                            `✅ Erfolgreich!\n\n${result.additionalHours.toFixed(1)} zusätzliche Stunden wurden freigegeben und zur Abrechnung eingereicht.\n\nKosten: €${(billingResult.customerPays / 100).toFixed(2)}`
+                          );
+
+                          await loadApprovalRequests();
+                        } else {
+                          alert(result.message);
+                        }
+                      } catch (error) {
+                        console.error('Error processing customer-initiated approval:', error);
+                        alert('Fehler beim Freigeben der zusätzlichen Stunden');
+                      }
+                    }}
+                    className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#0f8a7e] transition-colors font-medium"
+                  >
+                    🚀 {(totalLoggedHours - originalPlannedHours).toFixed(1)}h zusätzliche
+                    Arbeitszeit freigeben
+                  </button>
                 </div>
               </div>
             </div>

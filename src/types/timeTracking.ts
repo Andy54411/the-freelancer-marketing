@@ -54,6 +54,7 @@ export interface CustomerApprovalRequest {
   providerMessage?: string;
   approvedEntryIds?: string[]; // Bei partial approval
   timeEntries?: TimeEntry[]; // Für UI-Anzeige, wird zur Laufzeit hinzugefügt
+  customerInitiated?: boolean; // Flag: Wurde vom Kunden selbst initiiert?
 }
 
 // Erweiterte Auftrag-Schnittstelle für TimeTracking
