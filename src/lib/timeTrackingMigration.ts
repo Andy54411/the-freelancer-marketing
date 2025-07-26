@@ -115,6 +115,33 @@ export class TimeTrackingMigration {
       });
 
       console.log(`✅ [Migration] TimeTracking erfolgreich korrigiert für Order: ${orderId}`);
+
+      // 5. AUTOMATISCHE EINREICHUNG: Reiche zusätzliche Stunden zur Freigabe ein
+      const additionalEntries = updatedTimeEntries.filter(
+        e => e.category === 'additional' && e.status === 'logged'
+      );
+
+      if (additionalEntries.length > 0) {
+        console.log(
+          `🚀 [Migration] Reiche ${additionalEntries.length} zusätzliche Stunden automatisch zur Freigabe ein...`
+        );
+
+        // Importiere TimeTracker dynamisch um zirkuläre Abhängigkeiten zu vermeiden
+        const { TimeTracker } = await import('@/lib/timeTracker');
+
+        const additionalEntryIds = additionalEntries.map(e => e.id);
+        const approvalRequestId = await TimeTracker.submitForCustomerApproval(
+          orderId,
+          additionalEntryIds,
+          `Automatische Einreichung nach TimeTracking-Korrektur: ${additionalHours}h zusätzliche Arbeit über die geplanten ${correctOriginalPlannedHours}h hinaus.`
+        );
+
+        console.log(
+          `✅ [Migration] Zusätzliche Stunden automatisch eingereicht. Approval Request ID: ${approvalRequestId}`
+        );
+      } else {
+        console.log(`ℹ️ [Migration] Keine zusätzlichen Stunden zum Einreichen vorhanden.`);
+      }
     } catch (error) {
       console.error(`❌ [Migration] Fehler bei TimeTracking-Korrektur:`, error);
       throw error;
