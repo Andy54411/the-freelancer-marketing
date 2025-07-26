@@ -27,25 +27,23 @@ export function FinanceOverview({ stats }: FinanceOverviewProps) {
 
   if (!stats) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[...Array(6)].map((_, i) => (
-          <Card key={i} className="h-32 animate-pulse bg-gray-200 dark:bg-gray-800"></Card>
+          <Card key={i} className="h-24 animate-pulse bg-gray-200 dark:bg-gray-800"></Card>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-6">
-      <Card className="min-h-[120px]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium truncate">Gesamtumsatz</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <Card className="h-24">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+          <CardTitle className="text-xs font-medium truncate">Umsatz</CardTitle>
+          <DollarSign className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-xl lg:text-2xl font-bold break-words">
-            {formatCurrency(stats.totalRevenue)}
-          </div>
+        <CardContent className="pt-0">
+          <div className="text-sm font-bold break-words">{formatCurrency(stats.totalRevenue)}</div>
         </CardContent>
       </Card>
 
@@ -73,35 +71,35 @@ export function FinanceOverview({ stats }: FinanceOverviewProps) {
         </CardContent>
       </Card>
 
-      <Card className="min-h-[120px]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium truncate">Offene Rechnungen</CardTitle>
-          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <Card className="h-24">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+          <CardTitle className="text-xs font-medium truncate">Rechnungen</CardTitle>
+          <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-xl lg:text-2xl font-bold">{stats.outstandingInvoices}</div>
+        <CardContent className="pt-0">
+          <div className="text-sm font-bold">{stats.outstandingInvoices}</div>
         </CardContent>
       </Card>
 
-      <Card className="min-h-[120px]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium truncate">Offener Betrag</CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <Card className="h-24">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+          <CardTitle className="text-xs font-medium truncate">Offen</CardTitle>
+          <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-xl lg:text-2xl font-bold break-words">
+        <CardContent className="pt-0">
+          <div className="text-sm font-bold break-words">
             {formatCurrency(stats.outstandingAmount)}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="min-h-[120px]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium truncate">Dieser Monat</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <Card className="h-24">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+          <CardTitle className="text-xs font-medium truncate">Monat</CardTitle>
+          <TrendingUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-xl lg:text-2xl font-bold break-words">
+        <CardContent className="pt-0">
+          <div className="text-sm font-bold break-words">
             {formatCurrency(stats.thisMonthRevenue)}
           </div>
         </CardContent>
