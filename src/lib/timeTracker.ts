@@ -84,6 +84,82 @@ export class TimeTracker {
 
       const orderData = orderDoc.data() as AuftragWithTimeTracking;
 
+      // KORREKTUR: Hole IMMER den aktuellen Firmen-Stundensatz (ZUERST companies, DANN users als Fallback)
+      const providerId = orderData.selectedAnbieterId;
+      let hourlyRateInEuros: number | null = null; // Zunächst null
+
+      if (providerId) {
+        // 1. Versuche zuerst companies Collection
+        const companyRef = doc(db, 'companies', providerId);
+        const companyDoc = await getDoc(companyRef);
+
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data();
+          if (companyData.hourlyRate && companyData.hourlyRate > 0) {
+            hourlyRateInEuros = companyData.hourlyRate;
+            console.log(
+              `[TimeTracker] Verwende Firmen-Stundensatz (companies): ${hourlyRateInEuros}€/h (Provider: ${providerId})`
+            );
+          }
+        }
+
+        // 2. Fallback: Suche in users Collection (nur wenn nicht in companies gefunden)
+        if (hourlyRateInEuros === null) {
+          const userRef = doc(db, 'users', providerId);
+          const userDoc = await getDoc(userRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.hourlyRate && userData.hourlyRate > 0) {
+              hourlyRateInEuros = userData.hourlyRate;
+              console.log(
+                `[TimeTracker] Verwende User-Stundensatz (users fallback): ${hourlyRateInEuros}€/h (Provider: ${providerId})`
+              );
+            }
+          }
+        }
+      }
+
+      // 3. LETZTER FALLBACK: Manueller Input per Popup
+      if (hourlyRateInEuros === null) {
+        console.warn(
+          `[TimeTracker] Kein Stundensatz für Provider ${providerId} gefunden - zeige Eingabe-Popup`
+        );
+
+        const userInput = prompt(
+          `⚠️ STUNDENSATZ ERFORDERLICH\n\n` +
+            `Für diesen Anbieter wurde kein Stundensatz gefunden.\n` +
+            `Bitte geben Sie den Stundensatz ein (in €/h):\n\n` +
+            `Beispiel: 41 (für 41€/h)`,
+          '41'
+        );
+
+        if (userInput && !isNaN(parseFloat(userInput))) {
+          hourlyRateInEuros = parseFloat(userInput);
+          console.log(`[TimeTracker] Manuell eingegebener Stundensatz: ${hourlyRateInEuros}€/h`);
+
+          // Optional: Speichere den Stundensatz in der users Collection für zukünftige Verwendung
+          if (providerId) {
+            try {
+              await updateDoc(doc(db, 'users', providerId), {
+                hourlyRate: hourlyRateInEuros,
+                hourlyRateUpdatedAt: serverTimestamp(),
+                hourlyRateUpdatedBy: 'manual_input',
+              });
+              console.log(
+                `[TimeTracker] Stundensatz ${hourlyRateInEuros}€/h für Provider ${providerId} gespeichert`
+              );
+            } catch (error) {
+              console.warn('[TimeTracker] Konnte Stundensatz nicht speichern:', error);
+            }
+          }
+        } else {
+          throw new Error(
+            'Stundensatz-Eingabe abgebrochen oder ungültig. Zeiterfassung kann nicht fortgesetzt werden.'
+          );
+        }
+      }
+
       // Auto-initialisiere TimeTracking falls nicht vorhanden
       if (!orderData.timeTracking) {
         console.log('[TimeTracker] Auto-initializing time tracking for order:', orderId);
@@ -115,31 +191,7 @@ export class TimeTracker {
           console.log(`[TimeTracker] Eintägiger Auftrag: ${originalPlannedHours}h`);
         }
 
-        // KORREKTUR: Verwende den von der Firma angegebenen Stundensatz, nicht berechnet aus Auftragspreis
-        // Hole den Firmen-Stundensatz aus der companies Collection
-        const providerId = orderData.selectedAnbieterId; // Korrekte Provider ID aus Auftrag
-        let hourlyRateInEuros = 41; // Fallback
-
-        if (providerId) {
-          const companyRef = doc(db, 'companies', providerId);
-          const companyDoc = await getDoc(companyRef);
-
-          if (companyDoc.exists()) {
-            const companyData = companyDoc.data();
-            hourlyRateInEuros = companyData.hourlyRate || 41; // Von Firma angegebener Stundensatz
-            console.log(
-              `[TimeTracker] Verwende Firmen-Stundensatz: ${hourlyRateInEuros}€/h (Provider: ${providerId})`
-            );
-          } else {
-            console.log(
-              `[TimeTracker] Firma ${providerId} nicht gefunden, verwende Fallback: ${hourlyRateInEuros}€/h`
-            );
-          }
-        } else {
-          console.log(
-            `[TimeTracker] Keine Provider ID gefunden, verwende Fallback: ${hourlyRateInEuros}€/h`
-          );
-        }
+        // hourlyRateInEuros ist bereits oben geholt worden
 
         const orderTimeTracking: OrderTimeTracking = {
           isActive: true,
@@ -176,9 +228,8 @@ export class TimeTracker {
 
       // Berechne billableAmount für zusätzliche Stunden
       if (entry.category === 'additional') {
-        // KORREKTUR: Verwende den korrekten Stundensatz in Cents
-        // Der hourlyRate sollte bereits in Cents sein (z.B. 4100 = 41€)
-        const correctHourlyRateInCents = orderData.timeTracking.hourlyRate;
+        // KORREKTUR: Verwende den Firmen-Stundensatz, nicht den gespeicherten falschen Wert
+        const correctHourlyRateInCents = Math.round(hourlyRateInEuros * 100); // Verwende den geholtenen Firmen-Stundensatz
 
         // Debug: Log zur Überprüfung
         console.log('[TimeTracker] Billing calculation:', {
@@ -186,6 +237,7 @@ export class TimeTracker {
           hourlyRateInCents: correctHourlyRateInCents,
           calculatedAmount: Math.round(entry.hours * correctHourlyRateInCents),
           hourlyRateInEuros: correctHourlyRateInCents / 100,
+          source: 'company.hourlyRate (not stored timeTracking.hourlyRate)',
         });
 
         timeEntry.billableAmount = Math.round(entry.hours * correctHourlyRateInCents);

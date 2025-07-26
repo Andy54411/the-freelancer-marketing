@@ -51,12 +51,13 @@ export class TimeTrackingMigration {
       const timeEntries = [...orderData.timeTracking.timeEntries];
       let totalOriginalHours = 0;
 
-      // KORREKTUR: Verwende Firmen-Stundensatz aus companies Collection statt berechnet aus Auftragspreis
+      // KORREKTUR: Verwende Firmen-Stundensatz aus companies Collection (mit users fallback) statt berechnet aus Auftragspreis
       const providerId = orderData.selectedAnbieterId;
       let correctHourlyRateInEuros = 41; // Fallback
 
       if (providerId) {
         try {
+          // 1. Versuche zuerst companies Collection
           const companyRef = doc(db, 'companies', providerId);
           const companyDoc = await getDoc(companyRef);
 
@@ -64,15 +65,27 @@ export class TimeTrackingMigration {
             const companyData = companyDoc.data();
             correctHourlyRateInEuros = companyData.hourlyRate || 41;
             console.log(
-              `🔧 [Migration] Verwende Firmen-Stundensatz: ${correctHourlyRateInEuros}€/h`
+              `🔧 [Migration] Verwende Firmen-Stundensatz (companies): ${correctHourlyRateInEuros}€/h`
             );
           } else {
-            console.log(
-              `🔧 [Migration] Firma nicht gefunden, verwende Fallback: ${correctHourlyRateInEuros}€/h`
-            );
+            // 2. Fallback: Suche in users Collection
+            const userRef = doc(db, 'users', providerId);
+            const userDoc = await getDoc(userRef);
+
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              correctHourlyRateInEuros = userData.hourlyRate || 41;
+              console.log(
+                `🔧 [Migration] Verwende User-Stundensatz (users fallback): ${correctHourlyRateInEuros}€/h`
+              );
+            } else {
+              console.log(
+                `🔧 [Migration] Provider nicht gefunden, verwende Fallback: ${correctHourlyRateInEuros}€/h`
+              );
+            }
           }
         } catch (error) {
-          console.error(`🔧 [Migration] Fehler beim Laden der Firma:`, error);
+          console.error(`🔧 [Migration] Fehler beim Laden des Providers:`, error);
           console.log(`🔧 [Migration] Verwende Fallback: ${correctHourlyRateInEuros}€/h`);
         }
       }
