@@ -65,6 +65,15 @@ export interface AuftragWithTimeTracking {
   jobTotalCalculatedHours: number;
   originalJobPriceInCents: number;
 
+  // Zusätzliche Live-Daten Felder
+  jobCalculatedPriceInCents?: number;
+  jobDateFrom?: string;
+  jobDateTo?: string;
+  jobDurationString?: string;
+  providerName?: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+
   // TimeTracking-Erweiterung
   timeTracking?: OrderTimeTracking;
   approvalRequests?: CustomerApprovalRequest[];

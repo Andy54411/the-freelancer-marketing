@@ -84,8 +84,38 @@ export class TimeTracker {
 
       const orderData = orderDoc.data() as AuftragWithTimeTracking;
 
+      // Auto-initialisiere TimeTracking falls nicht vorhanden
       if (!orderData.timeTracking) {
-        throw new Error('Time tracking not initialized for this order');
+        console.log('[TimeTracker] Auto-initializing time tracking for order:', orderId);
+
+        // Verwende korrekte Werte aus Live-Daten
+        const totalPrice =
+          orderData.jobCalculatedPriceInCents || orderData.originalJobPriceInCents || 98400;
+        const totalHours = orderData.jobTotalCalculatedHours || 24; // 3 Tage a 8 Stunden
+        const hourlyRateInEuros = totalPrice / 100 / totalHours; // z.B. 984€ / 24h = 41€/h
+
+        const orderTimeTracking: OrderTimeTracking = {
+          isActive: true,
+          originalPlannedHours: totalHours,
+          totalLoggedHours: 0,
+          totalApprovedHours: 0,
+          totalBilledHours: 0,
+          hourlyRate: Math.round(hourlyRateInEuros * 100), // Convert to cents, z.B. 4100 cents = 41€
+          timeEntries: [],
+          status: 'active',
+          lastUpdated: serverTimestamp() as Timestamp,
+          inititalizedAt: serverTimestamp() as Timestamp,
+        };
+
+        // Aktualisiere den Auftrag mit TimeTracking
+        await updateDoc(orderRef, {
+          timeTracking: orderTimeTracking,
+          approvalRequests: [],
+        });
+
+        // Update lokale Daten
+        orderData.timeTracking = orderTimeTracking;
+        orderData.approvalRequests = [];
       }
 
       // Erstelle neue TimeEntry
