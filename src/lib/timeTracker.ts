@@ -931,6 +931,8 @@ export class TimeTracker {
 
               requests.push({
                 ...approvalRequest,
+                orderId: orderDoc.id, // Füge Order ID hinzu
+                orderTitle: 'Auftrag',
                 // Temporär für Kompatibilität - sollte entfernt werden
                 timeEntries,
               } as any);
@@ -942,6 +944,144 @@ export class TimeTracker {
       return requests;
     } catch (error) {
       console.error('Error fetching pending approval requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Erweiterte Funktion: Holt alle Approval-relevanten Informationen für bessere UX
+   */
+  static async getApprovalStatus(customerId: string): Promise<{
+    pendingRequests: CustomerApprovalRequest[];
+    unsubmittedAdditionalHours: Array<{
+      orderId: string;
+      orderTitle: string;
+      additionalEntries: TimeEntry[];
+      totalHours: number;
+      totalAmount: number;
+      providerMessage?: string;
+    }>;
+    summary: {
+      hasPendingApprovals: boolean;
+      hasUnsubmittedHours: boolean;
+      totalPendingHours: number;
+      totalUnsubmittedHours: number;
+      actionRequired: 'approval' | 'waiting_for_provider' | 'none';
+      userFriendlyMessage: string;
+    };
+  }> {
+    try {
+      // Hole alle Aufträge des Kunden
+      const ordersQuery = query(
+        collection(db, 'auftraege'),
+        where('customerFirebaseUid', '==', customerId)
+      );
+
+      const ordersSnapshot = await getDocs(ordersQuery);
+      const pendingRequests: CustomerApprovalRequest[] = [];
+      const unsubmittedAdditionalHours: Array<{
+        orderId: string;
+        orderTitle: string;
+        additionalEntries: TimeEntry[];
+        totalHours: number;
+        totalAmount: number;
+        providerMessage?: string;
+      }> = [];
+
+      let totalPendingHours = 0;
+      let totalUnsubmittedHours = 0;
+
+      for (const orderDoc of ordersSnapshot.docs) {
+        const orderData = orderDoc.data() as AuftragWithTimeTracking;
+        const orderId = orderDoc.id;
+        const orderTitle = 'Auftrag';
+
+        // 1. Sammle eingereichte Approval Requests
+        if (orderData.approvalRequests) {
+          for (const approvalRequest of orderData.approvalRequests) {
+            if (approvalRequest.status === 'pending') {
+              // Hole die entsprechenden TimeEntries
+              const timeEntries: TimeEntry[] = [];
+              if (orderData.timeTracking) {
+                for (const entryId of approvalRequest.timeEntryIds) {
+                  const entry = orderData.timeTracking.timeEntries.find(e => e.id === entryId);
+                  if (entry) {
+                    timeEntries.push(entry);
+                  }
+                }
+              }
+
+              pendingRequests.push({
+                ...approvalRequest,
+                orderId,
+                orderTitle,
+                timeEntries,
+              } as any);
+
+              totalPendingHours += approvalRequest.totalHours || 0;
+            }
+          }
+        }
+
+        // 2. Sammle nicht-eingereichte zusätzliche Stunden
+        if (orderData.timeTracking) {
+          const additionalEntries = orderData.timeTracking.timeEntries.filter(
+            entry => entry.category === 'additional' && entry.status === 'logged' // Noch nicht eingereicht
+          );
+
+          if (additionalEntries.length > 0) {
+            const totalHours = additionalEntries.reduce((sum, entry) => sum + entry.hours, 0);
+            const totalAmount = additionalEntries.reduce(
+              (sum, entry) => sum + (entry.billableAmount || 0),
+              0
+            );
+
+            unsubmittedAdditionalHours.push({
+              orderId,
+              orderTitle,
+              additionalEntries,
+              totalHours,
+              totalAmount,
+            });
+
+            totalUnsubmittedHours += totalHours;
+          }
+        }
+      }
+
+      // 3. Erstelle benutzerfreundliche Zusammenfassung
+      const hasPendingApprovals = pendingRequests.length > 0;
+      const hasUnsubmittedHours = unsubmittedAdditionalHours.length > 0;
+
+      let actionRequired: 'approval' | 'waiting_for_provider' | 'none' = 'none';
+      let userFriendlyMessage = '';
+
+      if (hasPendingApprovals) {
+        actionRequired = 'approval';
+        const requestCount = pendingRequests.length;
+        userFriendlyMessage = `${requestCount} Freigabe-Anfrage${requestCount > 1 ? 'n' : ''} warten auf Ihre Entscheidung (${totalPendingHours.toFixed(1)} Stunden)`;
+      } else if (hasUnsubmittedHours) {
+        actionRequired = 'waiting_for_provider';
+        const orderCount = unsubmittedAdditionalHours.length;
+        userFriendlyMessage = `${totalUnsubmittedHours.toFixed(1)} zusätzliche Stunden in ${orderCount} Auftrag${orderCount > 1 ? 'ägen' : ''} protokolliert, aber noch nicht zur Freigabe eingereicht. Der Anbieter muss diese zuerst einreichen.`;
+      } else {
+        userFriendlyMessage = 'Derzeit gibt es keine zusätzlichen Stunden zur Freigabe.';
+      }
+
+      return {
+        pendingRequests,
+        unsubmittedAdditionalHours,
+        summary: {
+          hasPendingApprovals,
+          hasUnsubmittedHours,
+          totalPendingHours,
+          totalUnsubmittedHours,
+          actionRequired,
+          userFriendlyMessage,
+        },
+      };
+    } catch (error) {
+      console.error('[TimeTracker] Error getting approval status:', error);
       throw error;
     }
   }

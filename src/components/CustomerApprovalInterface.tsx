@@ -295,246 +295,185 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
   }
 
   if (approvalRequests.length === 0) {
+    // Intelligente Nachrichtenerstellung basierend auf Auftragsstatus
+    const hasAdditionalHours = orderDetails?.timeTracking?.timeEntries?.some(
+      (e: any) => e.category === 'additional'
+    );
+    const totalLoggedHours = orderDetails?.timeTracking?.totalLoggedHours || 0;
+    const originalPlannedHours = orderDetails?.timeTracking?.originalPlannedHours || 0;
+    const hasExtraWork = totalLoggedHours > originalPlannedHours;
+
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="text-center text-gray-500 mb-6">
-          <FiClock size={48} className="mx-auto mb-3 text-gray-300" />
-          <p className="text-lg font-medium">Keine ausstehenden Freigabe-Anfragen</p>
-          <p className="text-sm">Derzeit gibt es keine zusätzlichen Stunden zur Freigabe.</p>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="text-center mb-6">
+          <FiClock size={48} className="mx-auto mb-4 text-gray-300" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Stundenfreigabe</h2>
         </div>
 
-        {/* Debug-Informationen und Hilfe für Benutzer */}
-        <div className="border-t pt-4 space-y-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">
-              ℹ️ Wie funktioniert die Stundenfreigabe?
-            </h4>
-            <div className="text-sm text-blue-800 space-y-1">
-              <p>
-                <strong>1. Anbieter protokolliert Zeit:</strong> Der Dienstleister trägt seine
-                Arbeitszeiten ein (original geplant oder zusätzlich)
-              </p>
-              <p>
-                <strong>2. Zusätzliche Stunden identifizieren:</strong> Nur Stunden über die
-                ursprünglich geplanten hinaus (Kategorie: &ldquo;Zusätzlich&rdquo;)
-              </p>
-              <p>
-                <strong>3. Einreichung zur Freigabe:</strong> Anbieter muss zusätzliche Stunden
-                explizit zur Kundenfreigabe einreichen
-              </p>
-              <p>
-                <strong>4. Ihre Freigabe:</strong> Sie können eingereichte zusätzliche Stunden
-                genehmigen oder ablehnen
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-green-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-green-900 mb-2">✅ Aktueller Status</h4>
-            <div className="text-sm text-green-800 space-y-1">
-              <p>
-                • <strong>Geplante Stunden:</strong>{' '}
-                {orderDetails?.timeTracking?.originalPlannedHours || 8} Stunden (Originalauftrag)
-              </p>
-              <p>
-                • <strong>Protokollierte Stunden:</strong>{' '}
-                {orderDetails?.timeTracking?.totalLoggedHours || 0} Stunden (Total geloggt)
-              </p>
-              <p>
-                • <strong>Original Stunden:</strong>{' '}
-                {orderDetails?.timeTracking?.timeEntries
-                  ?.filter((e: any) => e.category === 'original')
-                  .reduce((sum: number, e: any) => sum + e.hours, 0) || 0}{' '}
-                Stunden
-              </p>
-              <p>
-                • <strong>Zusätzliche Stunden:</strong>{' '}
-                {orderDetails?.timeTracking?.timeEntries
-                  ?.filter((e: any) => e.category === 'additional')
-                  .reduce((sum: number, e: any) => sum + e.hours, 0) || 0}{' '}
-                Stunden
-              </p>
-              <p className="text-xs text-green-600 mt-2">
-                ℹ️ Zusätzliche Stunden müssen separat als &ldquo;Zusätzlich&rdquo; kategorisiert und
-                dann zur Freigabe eingereicht werden.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-yellow-900 mb-2">
-              ⏱️ Was muss der Anbieter tun?
-            </h4>
-            <div className="text-sm text-yellow-800 space-y-2">
-              <p>
-                <strong>Falls zusätzliche Arbeit erforderlich war:</strong>
-              </p>
-              <ol className="list-decimal ml-4 space-y-1">
-                <li>In der Zeiterfassung neue Einträge erstellen</li>
-                <li>
-                  Kategorie auf &ldquo;Zusätzliche Stunden&rdquo; setzen (nicht
-                  &ldquo;Geplant&rdquo;)
-                </li>
-                <li>Beschreibung der zusätzlichen Arbeit hinzufügen</li>
-                <li>Button &ldquo;Zusätzliche Stunden zur Freigabe einreichen&rdquo; klicken</li>
-              </ol>
-
-              <p className="mt-3">
-                <strong>Erst dann erscheinen Freigabe-Anfragen hier!</strong>
-              </p>
-
-              <p className="mt-2">
-                <strong>Falls die Arbeit planmäßig abgeschlossen ist:</strong>
-              </p>
-              <p>• Der Anbieter kann den Auftrag als erledigt markieren</p>
-              <p>• Keine weiteren Freigaben erforderlich</p>
-            </div>
-          </div>
-
-          <div className="text-center pt-2 border-t">
-            <p className="text-xs text-gray-500 mb-2">
-              Diese Seite aktualisiert sich automatisch, wenn neue Freigabe-Anfragen eingehen.
-            </p>
-
-            {/* Debug Button - nur in Development */}
-            {process.env.NODE_ENV === 'development' && (
-              <button
-                onClick={async () => {
-                  console.log('🔧 Manual Debug Trigger');
-                  await loadApprovalRequests();
-
-                  // Zusätzliche Debug-Info in der Console
-                  const orderDetails = await TimeTracker.getOrderDetails(orderId);
-                  console.log('🔧 [DEBUG] Full Order Details:', orderDetails);
-                }}
-                className="mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-              >
-                🔧 Debug: Daten neu laden &amp; console.log
-              </button>
-            )}
-
-            {/* Erweiterte Debug-Anzeige - immer sichtbar für Troubleshooting */}
-            <div className="mt-4 bg-gray-50 rounded-lg p-4 border">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">
-                🔧 Debug-Informationen (Live-Daten)
-              </h4>
-              <button
-                onClick={async () => {
-                  try {
-                    const orderDetails = await TimeTracker.getOrderDetails(orderId);
-
-                    // Zeige Debug-Info direkt in der UI
-                    const debugElement = document.getElementById('debug-output');
-                    if (debugElement) {
-                      debugElement.innerHTML = `
-                        <div class="text-xs space-y-2">
-                          <div><strong>Order ID:</strong> ${orderId}</div>
-                          <div><strong>Order gefunden:</strong> ${orderDetails ? 'Ja' : 'Nein'}</div>
-                          <div><strong>Time Tracking:</strong> ${orderDetails?.timeTracking ? 'Ja' : 'Nein'}</div>
-                          <div><strong>Anzahl Time Entries:</strong> ${orderDetails?.timeTracking?.timeEntries?.length || 0}</div>
-                          <div><strong>Approval Requests:</strong> ${orderDetails?.approvalRequests?.length || 0}</div>
-                          
-                          ${
-                            orderDetails?.timeTracking?.timeEntries
-                              ? `
-                            <div class="mt-2">
-                              <strong>Time Entries Details:</strong>
-                              <ul class="ml-4 list-disc">
-                                ${orderDetails.timeTracking.timeEntries
-                                  .map(
-                                    (e: any) => `
-                                  <li>${e.category} - ${e.hours}h - Status: ${e.status} - ${e.description.substring(0, 50)}...</li>
-                                `
-                                  )
-                                  .join('')}
-                              </ul>
-                            </div>
-                          `
-                              : ''
-                          }
-                          
-                          ${
-                            orderDetails?.approvalRequests
-                              ? `
-                            <div class="mt-2">
-                              <strong>Approval Requests Details:</strong>
-                              <ul class="ml-4 list-disc">
-                                ${orderDetails.approvalRequests
-                                  .map(
-                                    (r: any) => `
-                                  <li>ID: ${r.id} - Status: ${r.status} - ${r.totalHours}h - Entry IDs: ${r.timeEntryIds.join(', ')}</li>
-                                `
-                                  )
-                                  .join('')}
-                              </ul>
-                            </div>
-                          `
-                              : ''
-                          }
-                        </div>
-                      `;
-                    }
-                  } catch (error) {
-                    console.error('Debug error:', error);
-                    const debugElement = document.getElementById('debug-output');
-                    if (debugElement) {
-                      debugElement.innerHTML = `<div class="text-red-600 text-xs">Fehler: ${error}</div>`;
-                    }
-                  }
-                }}
-                className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                📊 Live-Debug anzeigen
-              </button>
-
-              <button
-                onClick={async () => {
-                  if (
-                    !confirm(
-                      'Soll das TimeTracking für diesen Auftrag korrigiert werden? Dies berechnet die geplanten Stunden neu und kategorisiert die Time Entries korrekt.'
-                    )
-                  ) {
-                    return;
-                  }
-
-                  try {
-                    const debugElement = document.getElementById('debug-output');
-                    if (debugElement) {
-                      debugElement.innerHTML =
-                        '<div class="text-blue-600 text-xs">⏳ TimeTracking wird korrigiert...</div>';
-                    }
-
-                    await TimeTrackingMigration.fixTimeTrackingForOrder(orderId);
-
-                    // Lade Daten neu
-                    await loadApprovalRequests();
-
-                    if (debugElement) {
-                      debugElement.innerHTML =
-                        '<div class="text-green-600 text-xs">✅ TimeTracking wurde erfolgreich korrigiert! Seite wird automatisch aktualisiert.</div>';
-                    }
-
-                    alert('TimeTracking wurde erfolgreich korrigiert!');
-                  } catch (error) {
-                    console.error('Migration error:', error);
-                    const debugElement = document.getElementById('debug-output');
-                    if (debugElement) {
-                      debugElement.innerHTML = `<div class="text-red-600 text-xs">❌ Fehler: ${error}</div>`;
-                    }
-                    alert(`Fehler bei der Korrektur: ${error}`);
-                  }
-                }}
-                className="ml-2 px-3 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
-              >
-                🔧 TimeTracking korrigieren
-              </button>
-              <div id="debug-output" className="mt-3 p-3 bg-white rounded border text-gray-700">
-                Klicken Sie auf &ldquo;Live-Debug anzeigen&rdquo; um aktuelle Datenbank-Daten zu
-                sehen
+        {hasAdditionalHours ? (
+          // Fall 1: Es gibt zusätzliche Stunden, aber sie wurden noch nicht eingereicht
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <FiAlertCircle className="text-amber-600 mt-1 flex-shrink-0" size={20} />
+              <div>
+                <h3 className="text-lg font-medium text-amber-900 mb-2">
+                  Zusätzliche Arbeit protokolliert
+                </h3>
+                <p className="text-amber-800 mb-3">
+                  Der Anbieter hat zusätzliche Arbeitszeit protokolliert, aber noch nicht zur
+                  Freigabe eingereicht.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-amber-200">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Geplant:</span>
+                      <span className="font-medium ml-2">{originalPlannedHours}h</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Protokolliert:</span>
+                      <span className="font-medium ml-2">{totalLoggedHours}h</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-amber-100 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    <strong>Nächste Schritte:</strong> Der Anbieter muss die zusätzlichen Stunden
+                    zur Freigabe einreichen. Sie erhalten eine Benachrichtigung, sobald eine
+                    Freigabe-Anfrage vorliegt.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+        ) : hasExtraWork ? (
+          // Fall 2: Mehr Stunden protokolliert als geplant, aber nicht als "zusätzlich" kategorisiert
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <FiAlertCircle className="text-blue-600 mt-1 flex-shrink-0" size={20} />
+              <div>
+                <h3 className="text-lg font-medium text-blue-900 mb-2">
+                  Arbeitszeit-Überprüfung erforderlich
+                </h3>
+                <p className="text-blue-800 mb-3">
+                  Es wurden mehr Stunden protokolliert als ursprünglich geplant.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Geplant:</span>
+                      <span className="font-medium ml-2">{originalPlannedHours}h</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Protokolliert:</span>
+                      <span className="font-medium ml-2 text-blue-600">{totalLoggedHours}h</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    Der Anbieter sollte prüfen, ob zusätzliche Arbeit als &ldquo;Zusätzliche
+                    Stunden&rdquo; kategorisiert und zur Freigabe eingereicht werden muss.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Fall 3: Alles normal, keine zusätzlichen Stunden
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <FiCheck className="text-green-600 mt-1 flex-shrink-0" size={20} />
+              <div>
+                <h3 className="text-lg font-medium text-green-900 mb-2">
+                  Keine zusätzlichen Stunden
+                </h3>
+                <p className="text-green-800 mb-3">
+                  Der Auftrag wird planmäßig ohne zusätzliche Arbeitszeit durchgeführt.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <div className="text-sm">
+                    <span className="text-gray-600">Geplante Arbeitszeit:</span>
+                    <span className="font-medium ml-2">{originalPlannedHours}h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Automatische Aktualisierung Hinweis */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-600">
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+            Diese Seite wird automatisch aktualisiert
+          </div>
         </div>
+
+        {/* Admin/Debug-Bereich - nur für Development oder Admin-Users */}
+        {process.env.NODE_ENV === 'development' && (
+          <details className="mt-8 border border-gray-200 rounded-lg">
+            <summary className="px-4 py-2 bg-gray-50 font-medium text-sm text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors">
+              🔧 Admin-Tools & Debug-Informationen
+            </summary>
+            <div className="p-4 space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 space-y-2">
+                  <div>
+                    <strong>Order ID:</strong> {orderId}
+                  </div>
+                  <div>
+                    <strong>Geplante Stunden:</strong> {originalPlannedHours}h
+                  </div>
+                  <div>
+                    <strong>Protokollierte Stunden:</strong> {totalLoggedHours}h
+                  </div>
+                  <div>
+                    <strong>Original Stunden:</strong>{' '}
+                    {orderDetails?.timeTracking?.timeEntries
+                      ?.filter((e: any) => e.category === 'original')
+                      .reduce((sum: number, e: any) => sum + e.hours, 0) || 0}
+                    h
+                  </div>
+                  <div>
+                    <strong>Zusätzliche Stunden:</strong>{' '}
+                    {orderDetails?.timeTracking?.timeEntries
+                      ?.filter((e: any) => e.category === 'additional')
+                      .reduce((sum: number, e: any) => sum + e.hours, 0) || 0}
+                    h
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={async () => {
+                    await loadApprovalRequests();
+                    alert('Daten neu geladen');
+                  }}
+                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  � Daten neu laden
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (!confirm('TimeTracking für diesen Auftrag korrigieren?')) return;
+                    try {
+                      await TimeTrackingMigration.fixTimeTrackingForOrder(orderId);
+                      await loadApprovalRequests();
+                      alert('TimeTracking erfolgreich korrigiert!');
+                    } catch (error) {
+                      alert(`Fehler: ${error}`);
+                    }
+                  }}
+                  className="px-3 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
+                >
+                  🔧 TimeTracking korrigieren
+                </button>
+              </div>
+            </div>
+          </details>
+        )}
       </div>
     );
   }
