@@ -579,7 +579,160 @@ export class TimeTracker {
       const providerStripeAccountId = providerData?.stripeConnectAccountId;
 
       if (!providerStripeAccountId) {
-        throw new Error('Provider Stripe Account ID not found');
+        // Versuche auch in der users Collection zu suchen (Fallback für alte Daten)
+        const providerUserDoc = await getDoc(doc(db, 'users', orderData.selectedAnbieterId));
+        const providerUserData = providerUserDoc.data();
+        const fallbackStripeAccountId = providerUserData?.stripeAccountId;
+
+        console.error(
+          '[TimeTracker] Provider Stripe Connect Setup missing - Detaillierte Diagnose:',
+          {
+            orderId,
+            providerId: orderData.selectedAnbieterId,
+            // companies Collection
+            companiesDoc: {
+              exists: providerDoc.exists(),
+              data: providerData
+                ? {
+                    companyName: providerData.companyName,
+                    hasStripeConnectAccountId: !!providerData.stripeConnectAccountId,
+                    stripeConnectAccountId: providerData.stripeConnectAccountId,
+                    stripeConnectStatus: providerData.stripeConnectStatus || 'not_started',
+                    allKeys: Object.keys(providerData),
+                  }
+                : 'NO_DATA',
+            },
+            // users Collection (Fallback)
+            usersDoc: {
+              exists: providerUserDoc.exists(),
+              data: providerUserData
+                ? {
+                    userType: providerUserData.user_type,
+                    hasStripeAccountId: !!providerUserData.stripeAccountId,
+                    stripeAccountId: providerUserData.stripeAccountId,
+                    allKeys: Object.keys(providerUserData).filter(k => k.includes('stripe')),
+                  }
+                : 'NO_DATA',
+            },
+            fallbackAccountId: fallbackStripeAccountId,
+          }
+        );
+
+        // Falls Fallback verfügbar, verwende ihn
+        if (fallbackStripeAccountId) {
+          console.warn(
+            '[TimeTracker] Using fallback Stripe Account ID from users collection:',
+            fallbackStripeAccountId
+          );
+          // Aktualisiere companies collection mit gefundener ID
+          try {
+            await updateDoc(doc(db, 'companies', orderData.selectedAnbieterId), {
+              stripeConnectAccountId: fallbackStripeAccountId,
+              migratedFromUsers: true,
+              migratedAt: serverTimestamp(),
+            });
+            console.log('[TimeTracker] Migrated Stripe Account ID to companies collection');
+          } catch (migrationError) {
+            console.warn('[TimeTracker] Could not migrate Stripe Account ID:', migrationError);
+          }
+
+          // Fortsetzung mit der gefundenen ID
+          const providerStripeAccountIdFallback = fallbackStripeAccountId;
+
+          console.log(
+            '[TimeTracker] Creating Stripe PaymentIntent for additional hours (with fallback):',
+            {
+              orderId,
+              totalAmount,
+              customerStripeId,
+              providerStripeAccountId: providerStripeAccountIdFallback,
+              approvedEntriesCount: approvedEntries.length,
+              usedFallback: true,
+            }
+          );
+
+          // Erstelle PaymentIntent über unsere API (mit Fallback ID)
+          const response = await fetch('/api/bill-additional-hours', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              orderId,
+              approvedEntryIds: approvedEntries.map(e => e.id),
+              customerStripeId,
+              providerStripeAccountId: providerStripeAccountIdFallback,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create PaymentIntent');
+          }
+
+          const paymentData = await response.json();
+
+          // Markiere Einträge als abgerechnet (vorläufig)
+          const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+            if (entry.category === 'additional' && entry.status === 'customer_approved') {
+              return {
+                ...entry,
+                status: 'billing_pending' as const,
+                paymentIntentId: paymentData.paymentIntentId,
+                billingInitiatedAt: Timestamp.now(),
+              };
+            }
+            return entry;
+          });
+
+          // Berechne neue Statistiken
+          const totalBilledHours = updatedTimeEntries
+            .filter(entry => entry.status === 'billed' || entry.status === 'billing_pending')
+            .reduce((sum, entry) => sum + entry.hours, 0);
+
+          // Update den Auftrag
+          await updateDoc(orderRef, {
+            'timeTracking.timeEntries': updatedTimeEntries,
+            'timeTracking.totalBilledHours': totalBilledHours,
+            'timeTracking.status': 'billing_pending',
+            'timeTracking.lastUpdated': serverTimestamp(),
+            'timeTracking.billingData': {
+              paymentIntentId: paymentData.paymentIntentId,
+              customerPays: paymentData.customerPays,
+              companyReceives: paymentData.companyReceives,
+              platformFee: paymentData.platformFee,
+              initiatedAt: serverTimestamp(),
+              status: 'pending',
+            },
+          });
+
+          console.log('[TimeTracker] PaymentIntent created successfully (with fallback):', {
+            paymentIntentId: paymentData.paymentIntentId,
+            customerPays: paymentData.customerPays,
+            companyReceives: paymentData.companyReceives,
+            platformFee: paymentData.platformFee,
+            clientSecret: paymentData.clientSecret,
+          });
+
+          return {
+            paymentIntentId: paymentData.paymentIntentId,
+            customerPays: paymentData.customerPays,
+            companyReceives: paymentData.companyReceives,
+            platformFee: paymentData.platformFee,
+            clientSecret: paymentData.clientSecret,
+          };
+        }
+
+        throw new Error(
+          `❌ STRIPE CONNECT SETUP ERFORDERLICH\n\n` +
+            `Problem: Kein Stripe Connect Account für Provider gefunden.\n` +
+            `Provider ID: ${orderData.selectedAnbieterId}\n\n` +
+            `Lösungsschritte:\n` +
+            `1. Provider muss Stripe Connect Onboarding abschließen\n` +
+            `2. In companies/${orderData.selectedAnbieterId} sollte 'stripeConnectAccountId' vorhanden sein\n` +
+            `3. Account muss Status 'active' haben\n\n` +
+            `Für Details siehe Browser Console.`
+        );
       }
 
       console.log('[TimeTracker] Creating Stripe PaymentIntent for additional hours:', {
@@ -900,6 +1053,188 @@ export class TimeTracker {
       console.log('[TimeTracker] Time entry updated:', entryId);
     } catch (error) {
       console.error('[TimeTracker] Error updating time entry:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin-Funktion: Migriert Stripe Account ID von users zu companies collection
+   */
+  static async migrateProviderStripeAccount(providerId: string): Promise<{
+    success: boolean;
+    message: string;
+    migratedAccountId?: string;
+  }> {
+    try {
+      // Hole beide Dokumente
+      const usersDoc = await getDoc(doc(db, 'users', providerId));
+      const companiesDoc = await getDoc(doc(db, 'companies', providerId));
+
+      if (!usersDoc.exists()) {
+        return {
+          success: false,
+          message: `Provider ${providerId} nicht in users-Collection gefunden`,
+        };
+      }
+
+      const usersData = usersDoc.data();
+      const stripeAccountId = usersData?.stripeAccountId;
+
+      if (!stripeAccountId) {
+        return {
+          success: false,
+          message: `Keine Stripe Account ID in users-Collection gefunden für Provider ${providerId}`,
+        };
+      }
+
+      // Prüfe ob companies bereits eine ID hat
+      const companiesData = companiesDoc.data();
+      if (companiesData?.stripeConnectAccountId) {
+        return {
+          success: false,
+          message: `Companies-Collection hat bereits stripeConnectAccountId: ${companiesData.stripeConnectAccountId}`,
+        };
+      }
+
+      // Migriere zur companies-Collection
+      const migrationData = {
+        stripeConnectAccountId: stripeAccountId,
+        stripeConnectStatus: usersData.stripeAccountDetailsSubmitted
+          ? 'details_submitted'
+          : 'pending',
+        migratedFromUsers: true,
+        migratedAt: serverTimestamp(),
+        companyName: usersData.companyName || companiesData?.companyName || 'Unbekannt',
+      };
+
+      if (companiesDoc.exists()) {
+        await updateDoc(doc(db, 'companies', providerId), migrationData);
+      } else {
+        // Erstelle companies-Dokument falls nicht vorhanden
+        await updateDoc(doc(db, 'companies', providerId), {
+          ...migrationData,
+          createdAt: serverTimestamp(),
+          createdByMigration: true,
+        });
+      }
+
+      console.log(
+        `[TimeTracker] Successfully migrated Stripe Account ID for provider ${providerId}:`,
+        {
+          accountId: stripeAccountId,
+          from: 'users',
+          to: 'companies',
+        }
+      );
+
+      return {
+        success: true,
+        message: `Stripe Account ID ${stripeAccountId} erfolgreich migriert`,
+        migratedAccountId: stripeAccountId,
+      };
+    } catch (error) {
+      console.error('[TimeTracker] Error migrating provider Stripe account:', error);
+      return {
+        success: false,
+        message: `Fehler bei der Migration: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+      };
+    }
+  }
+
+  /**
+   * Diagnostische Funktion für Provider Stripe Connect Status
+   */
+  static async diagnoseProviderStripeSetup(providerId: string): Promise<{
+    hasStripeAccount: boolean;
+    accountSource: 'companies' | 'users' | 'none';
+    stripeAccountId?: string;
+    status?: string;
+    recommendations: string[];
+    debugInfo: any;
+  }> {
+    try {
+      // Prüfe companies collection
+      const companiesDoc = await getDoc(doc(db, 'companies', providerId));
+      const companiesData = companiesDoc.data();
+
+      // Prüfe users collection (Fallback)
+      const usersDoc = await getDoc(doc(db, 'users', providerId));
+      const usersData = usersDoc.data();
+
+      const debugInfo = {
+        providerId,
+        companies: {
+          exists: companiesDoc.exists(),
+          stripeConnectAccountId: companiesData?.stripeConnectAccountId,
+          stripeConnectStatus: companiesData?.stripeConnectStatus,
+          companyName: companiesData?.companyName,
+        },
+        users: {
+          exists: usersDoc.exists(),
+          stripeAccountId: usersData?.stripeAccountId,
+          userType: usersData?.user_type,
+          stripeAccountDetailsSubmitted: usersData?.stripeAccountDetailsSubmitted,
+          stripeAccountPayoutsEnabled: usersData?.stripeAccountPayoutsEnabled,
+        },
+      };
+
+      let hasStripeAccount = false;
+      let accountSource: 'companies' | 'users' | 'none' = 'none';
+      let stripeAccountId: string | undefined;
+      let status: string | undefined;
+      const recommendations: string[] = [];
+
+      // Prüfe companies collection zuerst
+      if (companiesData?.stripeConnectAccountId) {
+        hasStripeAccount = true;
+        accountSource = 'companies';
+        stripeAccountId = companiesData.stripeConnectAccountId;
+        status = companiesData.stripeConnectStatus || 'unknown';
+      }
+      // Fallback auf users collection
+      else if (usersData?.stripeAccountId) {
+        hasStripeAccount = true;
+        accountSource = 'users';
+        stripeAccountId = usersData.stripeAccountId;
+        status = usersData.stripeAccountDetailsSubmitted ? 'details_submitted' : 'pending';
+
+        recommendations.push(
+          '✅ Stripe Account in users-Collection gefunden - Migration zu companies-Collection empfohlen'
+        );
+      }
+
+      // Generiere Empfehlungen
+      if (!hasStripeAccount) {
+        recommendations.push('❌ Kein Stripe Connect Account gefunden');
+        recommendations.push('🔧 Provider muss Registrierung abschließen: /register/company/step5');
+        recommendations.push(
+          '📋 Oder Admin muss manuell stripeConnectAccountId in companies-Collection hinzufügen'
+        );
+      } else {
+        if (accountSource === 'users') {
+          recommendations.push(
+            '🔄 Migration der Stripe Account ID zur companies-Collection erforderlich'
+          );
+        }
+
+        if (status === 'pending' || status === 'unknown') {
+          recommendations.push('⏳ Stripe Connect Onboarding nicht abgeschlossen');
+          recommendations.push('🔗 Provider muss Account Link vervollständigen');
+        } else if (status === 'details_submitted' || status === 'active') {
+          recommendations.push('✅ Stripe Connect Account ist aktiv');
+        }
+      }
+
+      return {
+        hasStripeAccount,
+        accountSource,
+        stripeAccountId,
+        status,
+        recommendations,
+        debugInfo,
+      };
+    } catch (error) {
+      console.error('[TimeTracker] Error diagnosing provider Stripe setup:', error);
       throw error;
     }
   }
