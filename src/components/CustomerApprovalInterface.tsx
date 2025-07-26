@@ -2,8 +2,8 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { FiClock, FiCheck, FiX, FiAlertCircle, FiEye } from 'react-icons/fi';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FiClock, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
 import { CustomerApprovalRequest, TimeEntry } from '@/types/timeTracking';
 import { TimeTracker } from '@/lib/timeTracker';
 import { auth } from '@/firebase/clients';
@@ -24,31 +24,50 @@ export default function CustomerApprovalInterface({
   const [processing, setProcessing] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState('');
-  const [showDetails, setShowDetails] = useState<string | null>(null);
   const [showCompleteApproval, setShowCompleteApproval] = useState(false);
   const [completeApprovalFeedback, setCompleteApprovalFeedback] = useState('');
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, currentUser => {
-      setUser(currentUser);
-      if (currentUser) {
-        loadApprovalRequests();
-      }
-    });
-
-    return () => unsubscribe();
-  }, [orderId]);
-
-  const loadApprovalRequests = async () => {
+  const loadApprovalRequests = useCallback(async () => {
     try {
       setLoading(true);
       if (!user) return;
 
       // Hole Auftrag-Details direkt und prüfe auf ausstehende Approval Requests
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
+
+      // DEBUG: Logge den kompletten Zustand für Troubleshooting
+      console.log('🔍 [CustomerApprovalInterface] Debug Order Details:', {
+        orderId,
+        hasOrderDetails: !!orderDetails,
+        hasTimeTracking: !!orderDetails?.timeTracking,
+        timeEntriesCount: orderDetails?.timeTracking?.timeEntries?.length || 0,
+        hasApprovalRequests: !!orderDetails?.approvalRequests,
+        approvalRequestsCount: orderDetails?.approvalRequests?.length || 0,
+        timeEntries:
+          orderDetails?.timeTracking?.timeEntries?.map((e: any) => ({
+            id: e.id,
+            category: e.category,
+            status: e.status,
+            hours: e.hours,
+            description: e.description.substring(0, 50) + '...',
+          })) || [],
+        approvalRequests:
+          orderDetails?.approvalRequests?.map((r: any) => ({
+            id: r.id,
+            status: r.status,
+            timeEntryIds: r.timeEntryIds,
+            totalHours: r.totalHours,
+          })) || [],
+      });
+
       if (orderDetails && orderDetails.approvalRequests) {
         const pendingRequests = orderDetails.approvalRequests.filter(
           (req: any) => req.status === 'pending'
+        );
+
+        console.log(
+          '🔍 [CustomerApprovalInterface] Pending Requests Found:',
+          pendingRequests.length
         );
 
         // Erweitere Requests mit TimeEntry-Details aus dem Auftrag
@@ -73,6 +92,7 @@ export default function CustomerApprovalInterface({
 
         setApprovalRequests(enrichedRequests);
       } else {
+        console.log('🔍 [CustomerApprovalInterface] No approval requests found');
         setApprovalRequests([]);
       }
     } catch (error) {
@@ -81,7 +101,18 @@ export default function CustomerApprovalInterface({
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId, user]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, currentUser => {
+      setUser(currentUser);
+      if (currentUser) {
+        loadApprovalRequests();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [loadApprovalRequests]);
 
   const handleApproval = async (
     requestId: string,
@@ -217,18 +248,19 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
             <div className="text-sm text-blue-800 space-y-1">
               <p>
                 <strong>1. Anbieter protokolliert Zeit:</strong> Der Dienstleister trägt seine
-                Arbeitszeiten ein
+                Arbeitszeiten ein (original geplant oder zusätzlich)
               </p>
               <p>
-                <strong>2. Zusätzliche Stunden:</strong> Über die ursprünglich geplanten Stunden
-                hinaus
+                <strong>2. Zusätzliche Stunden identifizieren:</strong> Nur Stunden über die
+                ursprünglich geplanten hinaus (Kategorie: &ldquo;Zusätzlich&rdquo;)
               </p>
               <p>
-                <strong>3. Einreichung:</strong> Anbieter reicht zusätzliche Stunden zur Freigabe
-                ein
+                <strong>3. Einreichung zur Freigabe:</strong> Anbieter muss zusätzliche Stunden
+                explizit zur Kundenfreigabe einreichen
               </p>
               <p>
-                <strong>4. Ihre Freigabe:</strong> Sie können diese genehmigen oder ablehnen
+                <strong>4. Ihre Freigabe:</strong> Sie können eingereichte zusätzliche Stunden
+                genehmigen oder ablehnen
               </p>
             </div>
           </div>
@@ -237,41 +269,73 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
             <h4 className="text-sm font-medium text-green-900 mb-2">✅ Aktueller Status</h4>
             <div className="text-sm text-green-800 space-y-1">
               <p>
-                • <strong>Geplante Stunden:</strong> 8 Stunden
+                • <strong>Geplante Stunden:</strong> 8 Stunden (Originalauftrag)
               </p>
               <p>
-                • <strong>Protokollierte Stunden:</strong> 8 Stunden (Grundstunden)
+                • <strong>Protokollierte Stunden:</strong> 8 Stunden (Grundstunden, bereits
+                abgerechnet)
               </p>
               <p>
                 • <strong>Zusätzliche Stunden:</strong> Keine bisher eingereicht
+              </p>
+              <p className="text-xs text-green-600 mt-2">
+                ℹ️ Zusätzliche Stunden müssen separat als &ldquo;Zusätzlich&rdquo; kategorisiert und
+                dann zur Freigabe eingereicht werden.
               </p>
             </div>
           </div>
 
           <div className="bg-yellow-50 rounded-lg p-4">
             <h4 className="text-sm font-medium text-yellow-900 mb-2">
-              ⏱️ Mögliche nächste Schritte
+              ⏱️ Was muss der Anbieter tun?
             </h4>
             <div className="text-sm text-yellow-800 space-y-2">
               <p>
-                <strong>Falls der Anbieter zusätzliche Zeit benötigt:</strong>
+                <strong>Falls zusätzliche Arbeit erforderlich war:</strong>
               </p>
-              <p>• Er muss diese zunächst in seiner Zeiterfassung eintragen</p>
-              <p>• Dann kann er sie zur Kundenfreigabe einreichen</p>
-              <p>• Sie erhalten dann hier eine Freigabe-Anfrage</p>
+              <ol className="list-decimal ml-4 space-y-1">
+                <li>In der Zeiterfassung neue Einträge erstellen</li>
+                <li>
+                  Kategorie auf &ldquo;Zusätzliche Stunden&rdquo; setzen (nicht
+                  &ldquo;Geplant&rdquo;)
+                </li>
+                <li>Beschreibung der zusätzlichen Arbeit hinzufügen</li>
+                <li>Button &ldquo;Zusätzliche Stunden zur Freigabe einreichen&rdquo; klicken</li>
+              </ol>
+
+              <p className="mt-3">
+                <strong>Erst dann erscheinen Freigabe-Anfragen hier!</strong>
+              </p>
 
               <p className="mt-2">
-                <strong>Falls die Arbeit abgeschlossen ist:</strong>
+                <strong>Falls die Arbeit planmäßig abgeschlossen ist:</strong>
               </p>
               <p>• Der Anbieter kann den Auftrag als erledigt markieren</p>
-              <p>• Sie können dann das Gesamtergebnis bewerten</p>
+              <p>• Keine weiteren Freigaben erforderlich</p>
             </div>
           </div>
 
-          <div className="text-center pt-2">
-            <p className="text-xs text-gray-500">
+          <div className="text-center pt-2 border-t">
+            <p className="text-xs text-gray-500 mb-2">
               Diese Seite aktualisiert sich automatisch, wenn neue Freigabe-Anfragen eingehen.
             </p>
+
+            {/* Debug Button - nur in Development */}
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={async () => {
+                  console.log('🔧 Manual Debug Trigger');
+                  await loadApprovalRequests();
+
+                  // Zusätzliche Debug-Info in der Console
+                  const orderDetails = await TimeTracker.getOrderDetails(orderId);
+                  console.log('🔧 [DEBUG] Full Order Details:', orderDetails);
+                }}
+                className="mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+              >
+                🔧 Debug: Daten neu laden & console.log
+              </button>
+            )}
           </div>
         </div>
       </div>
