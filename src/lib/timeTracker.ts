@@ -1943,8 +1943,9 @@ export class TimeTracker {
     // Subtract break time
     workingMinutes -= breakMinutes;
 
-    // Add travel time (Anfahrt wird zur Arbeitszeit hinzugefügt)
-    workingMinutes += travelMinutes;
+    // ANFAHRT WIRD NICHT MEHR ZUR ARBEITSZEIT ADDIERT
+    // Travel time wird jetzt als separater Kostenpunkt (travelCost) behandelt
+    // workingMinutes += travelMinutes; // <- ENTFERNT
 
     return Math.max(0, workingMinutes / 60);
   }

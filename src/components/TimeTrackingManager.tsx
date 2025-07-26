@@ -43,6 +43,7 @@ export default function TimeTrackingManager({
     breakMinutes: 30,
     travelTime: false,
     travelMinutes: 0,
+    travelCost: 0, // Anfahrtskosten in Cent
     notes: '',
   });
 
@@ -126,6 +127,7 @@ export default function TimeTrackingManager({
         breakMinutes: formData.isBreakTime ? formData.breakMinutes : 0,
         travelTime: formData.travelTime,
         travelMinutes: formData.travelTime ? formData.travelMinutes : 0,
+        travelCost: formData.travelTime ? formData.travelCost : 0,
         notes: formData.notes,
       };
 
@@ -146,6 +148,7 @@ export default function TimeTrackingManager({
         breakMinutes: 30,
         travelTime: false,
         travelMinutes: 0,
+        travelCost: 0,
         notes: '',
       });
       setShowAddForm(false);
@@ -175,6 +178,7 @@ export default function TimeTrackingManager({
       breakMinutes: entry.breakMinutes || 0,
       travelTime: entry.travelTime || false,
       travelMinutes: entry.travelMinutes || 0,
+      travelCost: entry.travelCost || 0,
       notes: entry.notes || '',
     });
     setShowAddForm(true);
@@ -213,6 +217,13 @@ export default function TimeTrackingManager({
     escrowReleasedHours: timeEntries
       .filter(entry => entry.status === 'escrow_released')
       .reduce((sum, entry) => sum + entry.hours, 0),
+    // Anfahrtskosten-Tracking
+    totalTravelCosts: timeEntries
+      .filter(entry => entry.travelTime && entry.travelCost)
+      .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
+    approvedTravelCosts: timeEntries
+      .filter(entry => entry.status === 'customer_approved' && entry.travelTime && entry.travelCost)
+      .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
   };
 
   if (loading) {
@@ -297,6 +308,19 @@ export default function TimeTrackingManager({
           </div>
         </div>
 
+        {/* Anfahrtskosten-Übersicht */}
+        {summary.totalTravelCosts > 0 && (
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+            <div className="text-sm text-amber-800">
+              <strong>🚗 Anfahrtskosten:</strong> Gesamt:{' '}
+              {(summary.totalTravelCosts / 100).toFixed(2)}€
+              {summary.approvedTravelCosts > 0 && (
+                <span> • Genehmigt: {(summary.approvedTravelCosts / 100).toFixed(2)}€</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Escrow-System Erklärung */}
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <div className="text-sm text-blue-800">
@@ -378,7 +402,14 @@ export default function TimeTrackingManager({
                     <div className="text-sm text-gray-600">
                       <span className="font-medium">{entry.hours}h</span>
                       {entry.isBreakTime && <span> (inkl. {entry.breakMinutes}min Pause)</span>}
-                      {entry.travelTime && <span> (inkl. {entry.travelMinutes}min Anfahrt)</span>}
+                      {entry.travelTime && entry.travelCost && entry.travelCost > 0 && (
+                        <span> + {(entry.travelCost / 100).toFixed(2)}€ Anfahrt</span>
+                      )}
+                      {entry.travelTime &&
+                        (!entry.travelCost || entry.travelCost === 0) &&
+                        entry.travelMinutes && (
+                          <span> (inkl. {entry.travelMinutes}min Anfahrt)</span>
+                        )}
                       {entry.billableAmount && (
                         <span className="ml-2 text-green-600 font-medium">
                           +{(entry.billableAmount / 100).toFixed(2)}€
@@ -529,19 +560,40 @@ export default function TimeTrackingManager({
                     <span className="text-sm font-medium text-gray-700">Anfahrt hinzufügen</span>
                   </label>
                   {formData.travelTime && (
-                    <input
-                      type="number"
-                      value={formData.travelMinutes}
-                      onChange={e =>
-                        setFormData(prev => ({
-                          ...prev,
-                          travelMinutes: parseInt(e.target.value) || 0,
-                        }))
-                      }
-                      onBlur={handleTimeCalculation}
-                      className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                      placeholder="Anfahrtsdauer in Minuten"
-                    />
+                    <div className="mt-2 space-y-2">
+                      <input
+                        type="number"
+                        value={formData.travelMinutes}
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            travelMinutes: parseInt(e.target.value) || 0,
+                          }))
+                        }
+                        onBlur={handleTimeCalculation}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                        placeholder="Anfahrtsdauer in Minuten (nur Anzeige)"
+                      />
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={formData.travelCost / 100}
+                          onChange={e =>
+                            setFormData(prev => ({
+                              ...prev,
+                              travelCost: Math.round((parseFloat(e.target.value) || 0) * 100),
+                            }))
+                          }
+                          step="0.01"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] pr-8"
+                          placeholder="Anfahrtskosten"
+                        />
+                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                          €
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
 

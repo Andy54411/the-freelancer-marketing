@@ -21,7 +21,8 @@ export interface TimeEntry {
   isBreakTime?: boolean; // Pausenzeit abziehen
   breakMinutes?: number;
   travelTime?: boolean; // Anfahrt hinzufügen
-  travelMinutes?: number; // Anfahrtsdauer in Minuten
+  travelMinutes?: number; // Anfahrtsdauer in Minuten (nur für Anzeige)
+  travelCost?: number; // Anfahrtskosten in Cents (feste Pauschale)
   createdAt: Timestamp;
   submittedAt?: Timestamp;
   customerResponseAt?: Timestamp;
