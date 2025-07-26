@@ -13,6 +13,8 @@ export interface TimeEntry {
   status: 'logged' | 'submitted' | 'customer_approved' | 'customer_rejected' | 'billed';
   isBreakTime?: boolean; // Pausenzeit abziehen
   breakMinutes?: number;
+  travelTime?: boolean; // Anfahrt hinzufügen
+  travelMinutes?: number; // Anfahrtsdauer in Minuten
   createdAt: Timestamp;
   submittedAt?: Timestamp;
   customerResponseAt?: Timestamp;

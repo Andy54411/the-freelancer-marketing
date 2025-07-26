@@ -41,6 +41,8 @@ export default function TimeTrackingManager({
     description: '',
     isBreakTime: false,
     breakMinutes: 30,
+    travelTime: false,
+    travelMinutes: 0,
     notes: '',
   });
 
@@ -83,7 +85,8 @@ export default function TimeTrackingManager({
       const calculatedHours = TimeTracker.calculateHoursFromTime(
         formData.startTime,
         formData.endTime,
-        formData.isBreakTime ? formData.breakMinutes : 0
+        formData.isBreakTime ? formData.breakMinutes : 0,
+        formData.travelTime ? formData.travelMinutes : 0
       );
       setFormData(prev => ({ ...prev, hours: calculatedHours }));
     }
@@ -121,6 +124,8 @@ export default function TimeTrackingManager({
         category: autoCategory, // Verwende automatische Kategorisierung statt Benutzer-Auswahl
         isBreakTime: formData.isBreakTime,
         breakMinutes: formData.isBreakTime ? formData.breakMinutes : 0,
+        travelTime: formData.travelTime,
+        travelMinutes: formData.travelTime ? formData.travelMinutes : 0,
         notes: formData.notes,
       };
 
@@ -139,6 +144,8 @@ export default function TimeTrackingManager({
         description: '',
         isBreakTime: false,
         breakMinutes: 30,
+        travelTime: false,
+        travelMinutes: 0,
         notes: '',
       });
       setShowAddForm(false);
@@ -166,6 +173,8 @@ export default function TimeTrackingManager({
       description: entry.description,
       isBreakTime: entry.isBreakTime || false,
       breakMinutes: entry.breakMinutes || 0,
+      travelTime: entry.travelTime || false,
+      travelMinutes: entry.travelMinutes || 0,
       notes: entry.notes || '',
     });
     setShowAddForm(true);
@@ -334,6 +343,7 @@ export default function TimeTrackingManager({
                     <div className="text-sm text-gray-600">
                       <span className="font-medium">{entry.hours}h</span>
                       {entry.isBreakTime && <span> (inkl. {entry.breakMinutes}min Pause)</span>}
+                      {entry.travelTime && <span> (inkl. {entry.travelMinutes}min Anfahrt)</span>}
                       {entry.billableAmount && (
                         <span className="ml-2 text-green-600 font-medium">
                           +{(entry.billableAmount / 100).toFixed(2)}€
@@ -458,6 +468,38 @@ export default function TimeTrackingManager({
                       onBlur={handleTimeCalculation}
                       className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                       placeholder="Pausenzeit in Minuten"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.travelTime}
+                      onChange={e =>
+                        setFormData(prev => ({
+                          ...prev,
+                          travelTime: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Anfahrt hinzufügen</span>
+                  </label>
+                  {formData.travelTime && (
+                    <input
+                      type="number"
+                      value={formData.travelMinutes}
+                      onChange={e =>
+                        setFormData(prev => ({
+                          ...prev,
+                          travelMinutes: parseInt(e.target.value) || 0,
+                        }))
+                      }
+                      onBlur={handleTimeCalculation}
+                      className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                      placeholder="Anfahrtsdauer in Minuten"
                     />
                   )}
                 </div>

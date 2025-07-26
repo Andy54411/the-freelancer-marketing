@@ -70,6 +70,8 @@ export class TimeTracker {
       category: 'original' | 'additional';
       isBreakTime?: boolean;
       breakMinutes?: number;
+      travelTime?: boolean;
+      travelMinutes?: number;
       notes?: string;
     }
   ): Promise<string> {
@@ -1585,7 +1587,8 @@ export class TimeTracker {
   static calculateHoursFromTime(
     startTime: string,
     endTime: string,
-    breakMinutes: number = 0
+    breakMinutes: number = 0,
+    travelMinutes: number = 0
   ): number {
     const [startHours, startMinutes] = startTime.split(':').map(Number);
     const [endHours, endMinutes] = endTime.split(':').map(Number);
@@ -1602,6 +1605,9 @@ export class TimeTracker {
 
     // Subtract break time
     workingMinutes -= breakMinutes;
+
+    // Add travel time (Anfahrt wird zur Arbeitszeit hinzugefügt)
+    workingMinutes += travelMinutes;
 
     return Math.max(0, workingMinutes / 60);
   }
