@@ -411,13 +411,14 @@ export default function DatenschutzPage() {
                   </p>
                   <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg mt-2">
                     <p>
-                      <strong>Taskilo GmbH</strong>
+                      <strong>The Freelancer Marketing Ltd.</strong>
                     </p>
-                    <p>Musterstraße 123</p>
-                    <p>12345 Musterstadt</p>
-                    <p>Deutschland</p>
+                    <p>Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2</p>
+                    <p>8015, Paphos Cyprus</p>
+                    <p>Registrierungsnummer: HE 458650</p>
+                    <p>VAT: CY60058879W</p>
                     <p>
-                      <strong>E-Mail:</strong> datenschutz@taskilo.de
+                      <strong>E-Mail:</strong> legal@taskilo.de
                     </p>
                   </div>
                 </div>
