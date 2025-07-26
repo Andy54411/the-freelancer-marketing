@@ -47,21 +47,42 @@ export class TimeTrackingMigration {
         console.log(`🔧 [Migration] Eintägiger Auftrag: ${correctOriginalPlannedHours}h`);
       }
 
-      // 2. Kategorisiere Time Entries neu und korrigiere billableAmount
+      // 2. Kategorisiere Time Entries neu und korrigiere billableAmount mit Firmen-Stundensatz
       const timeEntries = [...orderData.timeTracking.timeEntries];
       let totalOriginalHours = 0;
 
-      // Berechne korrekten Stundensatz
-      const totalPrice =
-        orderData.jobCalculatedPriceInCents || orderData.originalJobPriceInCents || 98400;
-      const correctHourlyRateInEuros = totalPrice / 100 / correctOriginalPlannedHours;
+      // KORREKTUR: Verwende Firmen-Stundensatz aus companies Collection statt berechnet aus Auftragspreis
+      const providerId = orderData.selectedAnbieterId;
+      let correctHourlyRateInEuros = 41; // Fallback
+
+      if (providerId) {
+        try {
+          const companyRef = doc(db, 'companies', providerId);
+          const companyDoc = await getDoc(companyRef);
+
+          if (companyDoc.exists()) {
+            const companyData = companyDoc.data();
+            correctHourlyRateInEuros = companyData.hourlyRate || 41;
+            console.log(
+              `🔧 [Migration] Verwende Firmen-Stundensatz: ${correctHourlyRateInEuros}€/h`
+            );
+          } else {
+            console.log(
+              `🔧 [Migration] Firma nicht gefunden, verwende Fallback: ${correctHourlyRateInEuros}€/h`
+            );
+          }
+        } catch (error) {
+          console.error(`🔧 [Migration] Fehler beim Laden der Firma:`, error);
+          console.log(`🔧 [Migration] Verwende Fallback: ${correctHourlyRateInEuros}€/h`);
+        }
+      }
+
       const correctHourlyRateInCents = Math.round(correctHourlyRateInEuros * 100);
 
       console.log(`🔧 [Migration] Stundensatz-Korrektur:`);
-      console.log(`  - Total Price: ${totalPrice} Cents (${(totalPrice / 100).toFixed(2)}€)`);
-      console.log(`  - Planned Hours: ${correctOriginalPlannedHours}h`);
+      console.log(`  - Provider ID: ${providerId}`);
       console.log(
-        `  - Correct Rate: ${correctHourlyRateInEuros.toFixed(2)}€/h (${correctHourlyRateInCents} Cents)`
+        `  - Company Rate: ${correctHourlyRateInEuros}€/h (${correctHourlyRateInCents} Cents)`
       );
       console.log(
         `  - Stored Rate: ${(orderData.timeTracking.hourlyRate / 100).toFixed(2)}€/h (${orderData.timeTracking.hourlyRate} Cents)`

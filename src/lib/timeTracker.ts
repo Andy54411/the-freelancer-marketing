@@ -115,7 +115,31 @@ export class TimeTracker {
           console.log(`[TimeTracker] Eintägiger Auftrag: ${originalPlannedHours}h`);
         }
 
-        const hourlyRateInEuros = totalPrice / 100 / originalPlannedHours; // Korrekte Berechnung
+        // KORREKTUR: Verwende den von der Firma angegebenen Stundensatz, nicht berechnet aus Auftragspreis
+        // Hole den Firmen-Stundensatz aus der companies Collection
+        const providerId = orderData.selectedAnbieterId; // Korrekte Provider ID aus Auftrag
+        let hourlyRateInEuros = 41; // Fallback
+
+        if (providerId) {
+          const companyRef = doc(db, 'companies', providerId);
+          const companyDoc = await getDoc(companyRef);
+
+          if (companyDoc.exists()) {
+            const companyData = companyDoc.data();
+            hourlyRateInEuros = companyData.hourlyRate || 41; // Von Firma angegebener Stundensatz
+            console.log(
+              `[TimeTracker] Verwende Firmen-Stundensatz: ${hourlyRateInEuros}€/h (Provider: ${providerId})`
+            );
+          } else {
+            console.log(
+              `[TimeTracker] Firma ${providerId} nicht gefunden, verwende Fallback: ${hourlyRateInEuros}€/h`
+            );
+          }
+        } else {
+          console.log(
+            `[TimeTracker] Keine Provider ID gefunden, verwende Fallback: ${hourlyRateInEuros}€/h`
+          );
+        }
 
         const orderTimeTracking: OrderTimeTracking = {
           isActive: true,
