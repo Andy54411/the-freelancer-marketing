@@ -7,7 +7,6 @@ import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
 import LogoForm from '@/components/dashboard_setting/logo';
-import PublicProfileForm from '@/components/dashboard_setting/public-profile';
 import { PAGE_ERROR } from '@/lib/constants'; // Stellen Sie sicher, dass dies korrekt ist
 import { Loader2 as FiLoader, Save as FiSave, X as FiX } from 'lucide-react';
 import Link from 'next/link';
@@ -202,7 +201,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'general' | 'accounting' | 'bank' | 'logo' | 'public-profile' | 'payouts'
+    'general' | 'accounting' | 'bank' | 'logo' | 'payouts'
   >('general');
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
 
@@ -787,7 +786,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   }, [form, userData, onDataSaved, handleChange]); // Abhängigkeiten für useCallback
 
   // Alle Hooks müssen vor bedingten Returns aufgerufen werden
-  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'public-profile' | 'payouts';
+  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'payouts';
   interface TabDefinition {
     key: TabKey;
     label: string;
@@ -795,7 +794,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
   const tabsToDisplay: TabDefinition[] = [
     { key: 'general', label: 'Allgemein' },
-    { key: 'public-profile', label: 'Öffentliches Profil' },
     { key: 'accounting', label: 'Buchhaltung & Steuer' },
     { key: 'bank', label: 'Bankverbindung' },
     { key: 'logo', label: 'Logo & Dokumente' },
@@ -834,7 +832,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       <main className="flex-1 p-6 sm:p-8 md:p-10 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-8">
           {activeTab === 'general' && 'Allgemeine Firmendaten'}
-          {activeTab === 'public-profile' && 'Öffentliches Company-Profil'}
           {activeTab === 'accounting' && 'Buchhaltung & Steuern'}
           {activeTab === 'bank' && 'Bankverbindung'}
           {activeTab === 'logo' && 'Logo & Dokumente'}
@@ -847,9 +844,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
             handleChange={handleChange}
             onOpenManagingDirectorPersonalModal={() => setShowManagingDirectorPersonalModal(true)}
           />
-        )}
-        {form && activeTab === 'public-profile' && (
-          <PublicProfileForm formData={form} handleChange={handleChange} />
         )}
         {form && activeTab === 'accounting' && (
           <AccountingForm formData={form} handleChange={handleChange} />

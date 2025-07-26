@@ -47,6 +47,16 @@ interface EditableCompanyProfile {
   skills: string[];
   education: { school: string; degree: string; year: string }[];
   certifications: { name: string; from: string; year: string }[];
+  // Öffentliches Profil Features
+  publicDescription: string;
+  specialties: string[];
+  servicePackages: ServicePackage[];
+  workingHours: WorkingHours[];
+  instantBooking: boolean;
+  responseTimeGuarantee: number;
+  faqs: FAQ[];
+  profileBannerImage: string;
+  businessLicense: string;
 }
 
 interface PortfolioItem {
@@ -56,6 +66,28 @@ interface PortfolioItem {
   imageUrl?: string;
   projectUrl?: string;
   category: string;
+}
+
+interface ServicePackage {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  duration: string;
+  features: string[];
+}
+
+interface WorkingHours {
+  day: string;
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
 }
 
 interface CompanyProfileManagerProps {
@@ -82,8 +114,31 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
   });
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // State für öffentliches Profil Features
+  const [newSpecialty, setNewSpecialty] = useState('');
+  const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
+  const [newServicePackage, setNewServicePackage] = useState<ServicePackage>({
+    id: '',
+    title: '',
+    description: '',
+    price: 0,
+    duration: '',
+    features: [],
+  });
+
   useEffect(() => {
     if (userData) {
+      // Standard-Arbeitsstunden
+      const defaultWorkingHours: WorkingHours[] = [
+        { day: 'Montag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
+        { day: 'Dienstag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
+        { day: 'Mittwoch', isOpen: true, openTime: '08:00', closeTime: '18:00' },
+        { day: 'Donnerstag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
+        { day: 'Freitag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
+        { day: 'Samstag', isOpen: false, openTime: '09:00', closeTime: '16:00' },
+        { day: 'Sonntag', isOpen: false, openTime: '10:00', closeTime: '14:00' },
+      ];
+
       setProfile({
         uid: userData.uid,
         username: userData.username || '',
@@ -102,6 +157,16 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         skills: userData.skills || [],
         education: userData.education || [],
         certifications: userData.certifications || [],
+        // Öffentliches Profil Features
+        publicDescription: userData.publicDescription || userData.description || '',
+        specialties: userData.specialties || [],
+        servicePackages: userData.servicePackages || [],
+        workingHours: userData.workingHours || defaultWorkingHours,
+        instantBooking: userData.instantBooking ?? false,
+        responseTimeGuarantee: userData.responseTimeGuarantee || 24,
+        faqs: userData.faqs || [],
+        profileBannerImage: userData.profileBannerImage || '',
+        businessLicense: userData.businessLicense || '',
       });
       setLoading(false);
     }
@@ -126,6 +191,16 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         skills: profile.skills,
         education: profile.education,
         certifications: profile.certifications,
+        // Öffentliches Profil Features
+        publicDescription: profile.publicDescription,
+        specialties: profile.specialties,
+        servicePackages: profile.servicePackages,
+        workingHours: profile.workingHours,
+        instantBooking: profile.instantBooking,
+        responseTimeGuarantee: profile.responseTimeGuarantee,
+        faqs: profile.faqs,
+        profileBannerImage: profile.profileBannerImage,
+        businessLicense: profile.businessLicense,
         updatedAt: new Date(),
       });
 
@@ -205,6 +280,123 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
     );
   };
 
+  // Öffentliches Profil Helper-Funktionen
+  const addSpecialty = () => {
+    if (!newSpecialty.trim() || profile?.specialties.includes(newSpecialty)) return;
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            specialties: [...prev.specialties, newSpecialty],
+          }
+        : null
+    );
+    setNewSpecialty('');
+  };
+
+  const removeSpecialty = (specialty: string) => {
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            specialties: prev.specialties.filter(s => s !== specialty),
+          }
+        : null
+    );
+  };
+
+  const addServicePackage = () => {
+    if (!newServicePackage.title || !newServicePackage.description) {
+      toast.error('Bitte fülle alle Pflichtfelder aus');
+      return;
+    }
+
+    const servicePackage: ServicePackage = {
+      ...newServicePackage,
+      id: Date.now().toString(),
+    };
+
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            servicePackages: [...prev.servicePackages, servicePackage],
+          }
+        : null
+    );
+
+    setNewServicePackage({
+      id: '',
+      title: '',
+      description: '',
+      price: 0,
+      duration: '',
+      features: [],
+    });
+
+    toast.success('Service Package hinzugefügt');
+  };
+
+  const removeServicePackage = (id: string) => {
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            servicePackages: prev.servicePackages.filter(pkg => pkg.id !== id),
+          }
+        : null
+    );
+  };
+
+  const addFAQ = () => {
+    if (!newFAQ.question.trim() || !newFAQ.answer.trim()) {
+      toast.error('Bitte fülle Frage und Antwort aus');
+      return;
+    }
+
+    const faq: FAQ = {
+      id: Date.now().toString(),
+      question: newFAQ.question,
+      answer: newFAQ.answer,
+    };
+
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            faqs: [...prev.faqs, faq],
+          }
+        : null
+    );
+
+    setNewFAQ({ question: '', answer: '' });
+    toast.success('FAQ hinzugefügt');
+  };
+
+  const removeFAQ = (id: string) => {
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            faqs: prev.faqs.filter(faq => faq.id !== id),
+          }
+        : null
+    );
+  };
+
+  const updateWorkingHours = (dayIndex: number, field: keyof WorkingHours, value: any) => {
+    setProfile(prev =>
+      prev
+        ? {
+            ...prev,
+            workingHours: prev.workingHours.map((day, index) =>
+              index === dayIndex ? { ...day, [field]: value } : day
+            ),
+          }
+        : null
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -225,6 +417,7 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'basic', label: 'Grunddaten', icon: FiUser },
+            { id: 'public', label: 'Öffentliches Profil', icon: FiEye },
             { id: 'metrics', label: 'Metriken', icon: FiTrendingUp },
             { id: 'portfolio', label: 'Portfolio', icon: FiImage },
             { id: 'skills', label: 'Skills & Sprachen', icon: FiAward },
@@ -314,6 +507,263 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'public' && (
+        <div className="space-y-8">
+          {/* Öffentliche Beschreibung */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Öffentliche Beschreibung</h3>
+            <textarea
+              value={profile.publicDescription}
+              onChange={e =>
+                setProfile(prev => (prev ? { ...prev, publicDescription: e.target.value } : null))
+              }
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+              placeholder="Beschreibung für Ihr öffentliches Profil..."
+            />
+          </div>
+
+          {/* Spezialisierungen */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Spezialisierungen</h3>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {profile.specialties.map(specialty => (
+                <span
+                  key={specialty}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                >
+                  {specialty}
+                  <button
+                    onClick={() => removeSpecialty(specialty)}
+                    className="text-blue-600 hover:text-blue-800 ml-1"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Neue Spezialisierung hinzufügen"
+                value={newSpecialty}
+                onChange={e => setNewSpecialty(e.target.value)}
+                onKeyPress={e => {
+                  if (e.key === 'Enter') {
+                    addSpecialty();
+                  }
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+              />
+              <button
+                onClick={addSpecialty}
+                className="bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600"
+              >
+                <FiPlus />
+              </button>
+            </div>
+          </div>
+
+          {/* Service Packages */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Packages</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {profile.servicePackages.map(pkg => (
+                <div key={pkg.id} className="bg-white border rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900">{pkg.title}</h4>
+                  <p className="text-sm text-gray-600 mt-1">{pkg.description}</p>
+                  <p className="text-lg font-bold text-[#14ad9f] mt-2">€{pkg.price}</p>
+                  <p className="text-xs text-gray-500">{pkg.duration}</p>
+                  <button
+                    onClick={() => removeServicePackage(pkg.id)}
+                    className="mt-2 text-red-600 hover:text-red-800 text-sm"
+                  >
+                    <FiTrash2 className="inline mr-1" /> Entfernen
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Neues Service Package hinzufügen */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-4">Neues Service Package</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Titel"
+                  value={newServicePackage.title}
+                  onChange={e => setNewServicePackage(prev => ({ ...prev, title: e.target.value }))}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                />
+                <input
+                  type="number"
+                  placeholder="Preis (€)"
+                  value={newServicePackage.price}
+                  onChange={e =>
+                    setNewServicePackage(prev => ({
+                      ...prev,
+                      price: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                />
+                <input
+                  type="text"
+                  placeholder="Dauer (z.B. 2-3 Tage)"
+                  value={newServicePackage.duration}
+                  onChange={e =>
+                    setNewServicePackage(prev => ({ ...prev, duration: e.target.value }))
+                  }
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                />
+                <div></div>
+                <textarea
+                  placeholder="Beschreibung"
+                  value={newServicePackage.description}
+                  onChange={e =>
+                    setNewServicePackage(prev => ({ ...prev, description: e.target.value }))
+                  }
+                  className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                  rows={3}
+                />
+              </div>
+              <button
+                onClick={addServicePackage}
+                className="mt-4 bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors flex items-center gap-2"
+              >
+                <FiPlus /> Hinzufügen
+              </button>
+            </div>
+          </div>
+
+          {/* Arbeitszeiten */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Arbeitszeiten</h3>
+            <div className="space-y-2">
+              {profile.workingHours.map((day, index) => (
+                <div key={day.day} className="flex items-center gap-4 p-3 bg-gray-50 rounded">
+                  <div className="w-24">
+                    <span className="font-medium">{day.day}</span>
+                  </div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={day.isOpen}
+                      onChange={e => updateWorkingHours(index, 'isOpen', e.target.checked)}
+                      className="mr-2"
+                    />
+                    Geöffnet
+                  </label>
+                  {day.isOpen && (
+                    <>
+                      <input
+                        type="time"
+                        value={day.openTime}
+                        onChange={e => updateWorkingHours(index, 'openTime', e.target.value)}
+                        className="px-2 py-1 border rounded"
+                      />
+                      <span>bis</span>
+                      <input
+                        type="time"
+                        value={day.closeTime}
+                        onChange={e => updateWorkingHours(index, 'closeTime', e.target.value)}
+                        className="px-2 py-1 border rounded"
+                      />
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* FAQ */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Häufig gestellte Fragen (FAQ)
+            </h3>
+            <div className="space-y-4 mb-4">
+              {profile.faqs.map(faq => (
+                <div key={faq.id} className="bg-white border rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">{faq.question}</h4>
+                  <p className="text-gray-600 mb-2">{faq.answer}</p>
+                  <button
+                    onClick={() => removeFAQ(faq.id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    <FiTrash2 className="inline mr-1" /> Entfernen
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Neue FAQ hinzufügen */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-4">Neue FAQ hinzufügen</h4>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Frage"
+                  value={newFAQ.question}
+                  onChange={e => setNewFAQ(prev => ({ ...prev, question: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                />
+                <textarea
+                  placeholder="Antwort"
+                  value={newFAQ.answer}
+                  onChange={e => setNewFAQ(prev => ({ ...prev, answer: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                  rows={3}
+                />
+                <button
+                  onClick={addFAQ}
+                  className="bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors flex items-center gap-2"
+                >
+                  <FiPlus /> Hinzufügen
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Business Settings */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Einstellungen</h3>
+            <div className="space-y-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={profile.instantBooking}
+                  onChange={e =>
+                    setProfile(prev =>
+                      prev ? { ...prev, instantBooking: e.target.checked } : null
+                    )
+                  }
+                  className="mr-3"
+                />
+                <span className="font-medium">Sofortbuchung aktivieren</span>
+              </label>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Antwortzeit-Garantie (Stunden)
+                </label>
+                <input
+                  type="number"
+                  value={profile.responseTimeGuarantee}
+                  onChange={e =>
+                    setProfile(prev =>
+                      prev
+                        ? { ...prev, responseTimeGuarantee: parseInt(e.target.value) || 24 }
+                        : null
+                    )
+                  }
+                  className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                />
+              </div>
             </div>
           </div>
         </div>
