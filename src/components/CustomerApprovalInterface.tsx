@@ -52,6 +52,23 @@ export default function CustomerApprovalInterface({
       console.log('[DEBUG] TimeTracking:', orderDetails?.timeTracking);
       console.log('[DEBUG] Approval Requests:', orderDetails?.approvalRequests);
 
+      // DEBUG: Analysiere Zeiteinträge
+      if (orderDetails?.timeTracking?.timeEntries) {
+        const timeEntries = orderDetails.timeTracking.timeEntries;
+        console.log('[DEBUG] Alle Zeiteinträge:', timeEntries);
+
+        const additionalEntries = timeEntries.filter(
+          (entry: any) => entry.category === 'additional'
+        );
+        console.log('[DEBUG] Zusätzliche Einträge:', additionalEntries);
+
+        const loggedEntries = timeEntries.filter((entry: any) => entry.status === 'logged');
+        console.log('[DEBUG] Einträge mit Status "logged":', loggedEntries);
+
+        const submittedEntries = timeEntries.filter((entry: any) => entry.status === 'submitted');
+        console.log('[DEBUG] Einträge mit Status "submitted":', submittedEntries);
+      }
+
       if (orderDetails && orderDetails.approvalRequests) {
         const pendingRequests = orderDetails.approvalRequests.filter(
           (req: any) => req.status === 'pending'
