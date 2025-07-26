@@ -153,6 +153,57 @@ export default function CustomerApprovalInterface({
         feedback || undefined
       );
 
+      // AUTOMATISCHE STRIPE-ABRECHNUNG: Falls Stunden genehmigt wurden
+      if (
+        decision === 'approved' ||
+        (decision === 'partially_approved' && approvedIds.length > 0)
+      ) {
+        console.log(
+          '💳 Starte automatische Stripe-Abrechnung für genehmigte zusätzliche Stunden...'
+        );
+
+        try {
+          const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+          console.log('✅ Stripe PaymentIntent erfolgreich erstellt:', {
+            paymentIntentId: billingResult.paymentIntentId,
+            amount: billingResult.amount / 100,
+            clientSecret: billingResult.clientSecret,
+          });
+
+          // Zeige Erfolgsbestätigung mit Zahlungslink
+          const decisionText = decision === 'approved' ? 'genehmigt' : 'teilweise genehmigt';
+
+          const message = `Zeiterfassung ${decisionText}!
+
+✅ Genehmigung erfolgreich verarbeitet
+💳 Stripe PaymentIntent erstellt: ${billingResult.paymentIntentId}
+💰 Betrag: €${(billingResult.amount / 100).toFixed(2)}
+
+Die zusätzlichen Stunden wurden zur automatischen Abrechnung freigegeben.
+Der Kunde erhält eine Zahlungsaufforderung über Stripe.`;
+
+          alert(message);
+
+          // Optional: Öffne Stripe Dashboard für Monitoring
+          if (confirm('Möchten Sie das Stripe Dashboard öffnen um die Zahlung zu überwachen?')) {
+            window.open(
+              `https://dashboard.stripe.com/payments/${billingResult.paymentIntentId}`,
+              '_blank'
+            );
+          }
+        } catch (billingError) {
+          console.error('❌ Fehler bei der automatischen Stripe-Abrechnung:', billingError);
+          alert(
+            `Genehmigung erfolgreich, aber Fehler bei der Abrechnung: ${billingError instanceof Error ? billingError.message : 'Unbekannter Fehler'}`
+          );
+        }
+      } else {
+        // Normale Bestätigung für andere Entscheidungen
+        const decisionText = decision === 'rejected' ? 'abgelehnt' : 'teilweise genehmigt';
+        alert(`Zeiterfassung ${decisionText}!`);
+      }
+
       await loadApprovalRequests();
 
       if (onApprovalProcessed) {
@@ -162,10 +213,6 @@ export default function CustomerApprovalInterface({
       // Reset state
       setSelectedEntries(new Set());
       setFeedback('');
-
-      alert(
-        `Zeiterfassung ${decision === 'approved' ? 'genehmigt' : decision === 'rejected' ? 'abgelehnt' : 'teilweise genehmigt'}!`
-      );
     } catch (error) {
       console.error('Error processing approval:', error);
       alert('Fehler bei der Verarbeitung der Freigabe');

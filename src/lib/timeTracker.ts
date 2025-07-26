@@ -91,23 +91,30 @@ export class TimeTracker {
         // Verwende korrekte Werte aus Live-Daten
         const totalPrice =
           orderData.jobCalculatedPriceInCents || orderData.originalJobPriceInCents || 98400;
-        
+
         // KORREKTUR: Verwende echte Auftragsdaten statt hardcodierte Werte
         let originalPlannedHours = orderData.jobTotalCalculatedHours || 8; // Default fallback
-        
+
         // Berechne Stunden aus Datum-Range falls mehrtägig
-        if (orderData.jobDateFrom && orderData.jobDateTo && orderData.jobDateFrom !== orderData.jobDateTo) {
+        if (
+          orderData.jobDateFrom &&
+          orderData.jobDateTo &&
+          orderData.jobDateFrom !== orderData.jobDateTo
+        ) {
           const startDate = new Date(orderData.jobDateFrom);
           const endDate = new Date(orderData.jobDateTo);
-          const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          const totalDays =
+            Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
           const hoursPerDay = parseFloat(String(orderData.jobDurationString || 8)); // Stunden pro Tag aus jobDurationString
           originalPlannedHours = totalDays * hoursPerDay;
-          
-          console.log(`[TimeTracker] Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${originalPlannedHours}h`);
+
+          console.log(
+            `[TimeTracker] Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${originalPlannedHours}h`
+          );
         } else {
           console.log(`[TimeTracker] Eintägiger Auftrag: ${originalPlannedHours}h`);
         }
-        
+
         const hourlyRateInEuros = totalPrice / 100 / originalPlannedHours; // Korrekte Berechnung
 
         const orderTimeTracking: OrderTimeTracking = {
@@ -509,7 +516,7 @@ export class TimeTracker {
    */
   static async billApprovedHours(
     orderId: string
-  ): Promise<{ paymentIntentId: string; amount: number }> {
+  ): Promise<{ paymentIntentId: string; amount: number; clientSecret: string }> {
     try {
       // Hole den Auftrag
       const orderRef = doc(db, 'auftraege', orderId);
@@ -543,18 +550,61 @@ export class TimeTracker {
         throw new Error('No billable amount found');
       }
 
-      // TODO: Implementiere Stripe Payment Intent für zusätzliche Stunden
-      // Ähnlich wie in create-payment-intent/route.ts aber für zusätzliche Stunden
+      // Hole Kundendaten für Stripe Customer ID
+      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));
+      const customerData = customerDoc.data();
+      const customerStripeId = customerData?.stripeCustomerId;
 
-      // Für jetzt simuliert - in echter Implementierung Stripe API aufrufen
-      const mockPaymentIntentId = `pi_additional_${Date.now()}`;
+      if (!customerStripeId) {
+        throw new Error('Customer Stripe ID not found');
+      }
 
-      // Markiere Einträge als abgerechnet
+      // Hole Anbieter Stripe Account ID
+      const providerDoc = await getDoc(doc(db, 'companies', orderData.selectedAnbieterId));
+      const providerData = providerDoc.data();
+      const providerStripeAccountId = providerData?.stripeConnectAccountId;
+
+      if (!providerStripeAccountId) {
+        throw new Error('Provider Stripe Account ID not found');
+      }
+
+      console.log('[TimeTracker] Creating Stripe PaymentIntent for additional hours:', {
+        orderId,
+        totalAmount,
+        customerStripeId,
+        providerStripeAccountId,
+        approvedEntriesCount: approvedEntries.length,
+      });
+
+      // Erstelle PaymentIntent über unsere API
+      const response = await fetch('/api/bill-additional-hours', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId,
+          approvedEntryIds: approvedEntries.map(e => e.id),
+          customerStripeId,
+          providerStripeAccountId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create PaymentIntent');
+      }
+
+      const paymentData = await response.json();
+
+      // Markiere Einträge als abgerechnet (vorläufig)
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
         if (entry.category === 'additional' && entry.status === 'customer_approved') {
           return {
             ...entry,
-            status: 'billed' as const,
+            status: 'billing_pending' as const,
+            paymentIntentId: paymentData.paymentIntentId,
+            billingInitiatedAt: Timestamp.now(),
           };
         }
         return entry;
@@ -562,19 +612,35 @@ export class TimeTracker {
 
       // Berechne neue Statistiken
       const totalBilledHours = updatedTimeEntries
-        .filter(entry => entry.status === 'billed')
+        .filter(entry => entry.status === 'billed' || entry.status === 'billing_pending')
         .reduce((sum, entry) => sum + entry.hours, 0);
 
       // Update den Auftrag
       await updateDoc(orderRef, {
         'timeTracking.timeEntries': updatedTimeEntries,
         'timeTracking.totalBilledHours': totalBilledHours,
-        'timeTracking.status': 'completed',
+        'timeTracking.status': 'billing_pending',
         'timeTracking.lastUpdated': serverTimestamp(),
+        'timeTracking.billingData': {
+          paymentIntentId: paymentData.paymentIntentId,
+          amount: totalAmount,
+          platformFee: paymentData.platformFee,
+          initiatedAt: serverTimestamp(),
+          status: 'pending',
+        },
       });
 
-      console.log('[TimeTracker] Billed approved hours:', { orderId, amount: totalAmount });
-      return { paymentIntentId: mockPaymentIntentId, amount: totalAmount };
+      console.log('[TimeTracker] PaymentIntent created successfully:', {
+        paymentIntentId: paymentData.paymentIntentId,
+        amount: totalAmount,
+        clientSecret: paymentData.clientSecret,
+      });
+
+      return {
+        paymentIntentId: paymentData.paymentIntentId,
+        amount: totalAmount,
+        clientSecret: paymentData.clientSecret,
+      };
     } catch (error) {
       console.error('[TimeTracker] Error billing approved hours:', error);
       throw error;
