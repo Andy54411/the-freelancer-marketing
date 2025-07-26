@@ -25,6 +25,8 @@ export default function CustomerApprovalInterface({
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState('');
   const [showDetails, setShowDetails] = useState<string | null>(null);
+  const [showCompleteApproval, setShowCompleteApproval] = useState(false);
+  const [completeApprovalFeedback, setCompleteApprovalFeedback] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -127,6 +129,47 @@ export default function CustomerApprovalInterface({
     }
   };
 
+  const handleCompleteOrderApproval = async () => {
+    if (!user) return;
+
+    const confirmMessage = `Sind Sie sicher, dass Sie den kompletten Auftrag freigeben möchten? 
+    
+Dies wird:
+• ALLE ausstehenden Stunden genehmigen
+• Den Auftrag als ABGESCHLOSSEN markieren
+• Keine weiteren Änderungen zulassen
+
+Diese Aktion kann nicht rückgängig gemacht werden.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      await TimeTracker.approveCompleteOrder(orderId, completeApprovalFeedback || undefined);
+
+      if (onApprovalProcessed) {
+        onApprovalProcessed();
+      }
+
+      // Reset state
+      setCompleteApprovalFeedback('');
+      setShowCompleteApproval(false);
+
+      alert('Kompletter Auftrag wurde freigegeben und abgeschlossen!');
+
+      // Lade Approval Requests neu (sollten jetzt leer sein)
+      await loadApprovalRequests();
+    } catch (error) {
+      console.error('Error processing complete order approval:', error);
+      alert('Fehler bei der kompletten Auftragsfreigabe');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const toggleEntrySelection = (entryId: string) => {
     const newSelection = new Set(selectedEntries);
     if (newSelection.has(entryId)) {
@@ -170,6 +213,79 @@ export default function CustomerApprovalInterface({
 
   return (
     <div className="space-y-6">
+      {/* Komplette Auftragsfreigabe - nur anzeigen wenn Approval Requests vorhanden */}
+      {approvalRequests.length > 0 && (
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FiCheck className="text-green-600" />
+                Kompletten Auftrag freigeben
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Alle ausstehenden Stunden genehmigen und Auftrag als abgeschlossen markieren
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowCompleteApproval(!showCompleteApproval)}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+            >
+              {showCompleteApproval ? 'Ausblenden' : 'Auftrag freigeben'}
+            </button>
+          </div>
+
+          {showCompleteApproval && (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <FiAlertCircle className="text-yellow-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-800">Wichtiger Hinweis</h4>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Diese Aktion genehmigt <strong>ALLE</strong> ausstehenden Stunden und markiert
+                      den Auftrag als
+                      <strong> ABGESCHLOSSEN</strong>. Dies kann nicht rückgängig gemacht werden.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Abschlussfeedback (optional)
+                </label>
+                <textarea
+                  value={completeApprovalFeedback}
+                  onChange={e => setCompleteApprovalFeedback(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Ihr Feedback zum gesamten Auftrag..."
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCompleteApproval(false)}
+                  disabled={processing}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleCompleteOrderApproval}
+                  disabled={processing}
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
+                >
+                  {processing ? 'Wird verarbeitet...' : 'Auftrag komplett freigeben'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bestehende Approval Requests */}
       {approvalRequests.map(request => (
         <div key={request.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
           {/* Header */}

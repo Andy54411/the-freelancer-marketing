@@ -91,7 +91,8 @@ export class TimeTracker {
         // Verwende korrekte Werte aus Live-Daten
         const totalPrice =
           orderData.jobCalculatedPriceInCents || orderData.originalJobPriceInCents || 98400;
-        const totalHours = orderData.jobTotalCalculatedHours || 24; // 3 Tage a 8 Stunden
+        // KORREKTUR: 3 Tage à 8 Stunden = 24 Stunden (nicht die falsche DB-Angabe von 8)
+        const totalHours = 24; // 3 Tage a 8 Stunden - IMMER 24 Stunden für 3-Tage-Jobs
         const hourlyRateInEuros = totalPrice / 100 / totalHours; // z.B. 984€ / 24h = 41€/h
 
         const orderTimeTracking: OrderTimeTracking = {
@@ -316,6 +317,75 @@ export class TimeTracker {
       return approvalRequestId;
     } catch (error) {
       console.error('[TimeTracker] Error submitting for approval:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Kunde genehmigt den kompletten Auftrag ab (alle Stunden und beendet den Auftrag)
+   */
+  static async approveCompleteOrder(orderId: string, customerFeedback?: string): Promise<void> {
+    try {
+      // Hole den Auftrag
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking || !orderData.approvalRequests) {
+        throw new Error('Time tracking or approval requests not found');
+      }
+
+      // Genehmige ALLE ausstehenden Approval Requests
+      const updatedApprovalRequests = orderData.approvalRequests.map(req => {
+        if (req.status === 'pending') {
+          return {
+            ...req,
+            status: 'approved' as const,
+            customerFeedback: customerFeedback || 'Kompletter Auftrag freigegeben',
+            customerResponseAt: Timestamp.now(),
+          };
+        }
+        return req;
+      });
+
+      // Genehmige ALLE TimeEntries die submitted sind
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if (entry.status === 'submitted') {
+          return {
+            ...entry,
+            status: 'customer_approved' as const,
+            customerResponseAt: Timestamp.now(),
+          };
+        }
+        return entry;
+      });
+
+      // Berechne neue Statistiken
+      const totalApprovedHours = updatedTimeEntries
+        .filter(entry => entry.status === 'customer_approved' || entry.status === 'billed')
+        .reduce((sum, entry) => sum + entry.hours, 0);
+
+      // Update den Auftrag - setze Status auf ABGESCHLOSSEN
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.totalApprovedHours': totalApprovedHours,
+        'timeTracking.status': 'completed',
+        'timeTracking.customerFeedback': customerFeedback || 'Kompletter Auftrag freigegeben',
+        'timeTracking.lastUpdated': serverTimestamp(),
+        approvalRequests: updatedApprovalRequests,
+        // WICHTIG: Setze den Hauptauftragsstatus auf ABGESCHLOSSEN
+        status: 'ABGESCHLOSSEN',
+        completedAt: serverTimestamp(),
+      });
+
+      console.log('[TimeTracker] Complete order approval processed:', orderId);
+    } catch (error) {
+      console.error('[TimeTracker] Error processing complete order approval:', error);
       throw error;
     }
   }
