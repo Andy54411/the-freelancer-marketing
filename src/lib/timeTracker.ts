@@ -72,6 +72,7 @@ export class TimeTracker {
       breakMinutes?: number;
       travelTime?: boolean;
       travelMinutes?: number;
+      travelCost?: number; // Anfahrtskosten in Cents
       notes?: string;
     }
   ): Promise<string> {
@@ -236,13 +237,18 @@ export class TimeTracker {
         // Debug: Log zur Überprüfung
         console.log('[TimeTracker] Billing calculation:', {
           hours: entry.hours,
+          travelCost: entry.travelCost || 0,
           hourlyRateInCents: correctHourlyRateInCents,
-          calculatedAmount: Math.round(entry.hours * correctHourlyRateInCents),
+          hoursAmount: Math.round(entry.hours * correctHourlyRateInCents),
+          totalAmount: Math.round(entry.hours * correctHourlyRateInCents) + (entry.travelCost || 0),
           hourlyRateInEuros: correctHourlyRateInCents / 100,
           source: 'company.hourlyRate (not stored timeTracking.hourlyRate)',
         });
 
-        timeEntry.billableAmount = Math.round(entry.hours * correctHourlyRateInCents);
+        // Berechne billableAmount: Stunden × Stundensatz + Anfahrtskosten
+        const hoursAmount = Math.round(entry.hours * correctHourlyRateInCents);
+        const travelCostAmount = entry.travelCost || 0;
+        timeEntry.billableAmount = hoursAmount + travelCostAmount;
       }
 
       // Füge Entry zu timeEntries Array hinzu
@@ -1601,11 +1607,46 @@ export class TimeTracker {
 
       // Update die Entry
       const updatedTimeEntries = [...orderData.timeTracking.timeEntries];
-      updatedTimeEntries[entryIndex] = {
+      const updatedEntry = {
         ...entry,
         ...updates,
         id: entryId, // ID darf nicht geändert werden
       };
+
+      // Neu berechne billableAmount bei zusätzlichen Stunden, wenn sich die Stunden geändert haben
+      if (updatedEntry.category === 'additional' && updates.hours !== undefined) {
+        // Hole die Firmendetails für den korrekten Stundensatz
+        const companyRef = doc(db, 'companies', orderData.selectedAnbieterId);
+        const companyDoc = await getDoc(companyRef);
+
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data();
+          const hourlyRateInEuros = companyData.hourlyRate || 50; // Fallback auf 50€
+          const correctHourlyRateInCents = Math.round(hourlyRateInEuros * 100);
+
+          // Debug: Log zur Überprüfung
+          console.log('[TimeTracker] Billing recalculation on update:', {
+            hours: updatedEntry.hours,
+            travelCost: updatedEntry.travelCost || 0,
+            hourlyRateInCents: correctHourlyRateInCents,
+            hoursAmount: Math.round(updatedEntry.hours * correctHourlyRateInCents),
+            totalAmount:
+              Math.round(updatedEntry.hours * correctHourlyRateInCents) +
+              (updatedEntry.travelCost || 0),
+            hourlyRateInEuros: correctHourlyRateInCents / 100,
+            entryId: entryId,
+          });
+
+          // Berechne billableAmount: Stunden × Stundensatz + Anfahrtskosten
+          const hoursAmount = Math.round(updatedEntry.hours * correctHourlyRateInCents);
+          const travelCostAmount = updatedEntry.travelCost || 0;
+          updatedEntry.billableAmount = hoursAmount + travelCostAmount;
+        } else {
+          console.warn('[TimeTracker] Company not found for billableAmount calculation on update');
+        }
+      }
+
+      updatedTimeEntries[entryIndex] = updatedEntry;
 
       // Berechne neue Statistiken
       const totalLoggedHours = updatedTimeEntries.reduce((sum, e) => sum + e.hours, 0);
