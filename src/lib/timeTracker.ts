@@ -91,13 +91,28 @@ export class TimeTracker {
         // Verwende korrekte Werte aus Live-Daten
         const totalPrice =
           orderData.jobCalculatedPriceInCents || orderData.originalJobPriceInCents || 98400;
-        // KORREKTUR: 3 Tage à 8 Stunden = 24 Stunden (nicht die falsche DB-Angabe von 8)
-        const totalHours = 24; // 3 Tage a 8 Stunden - IMMER 24 Stunden für 3-Tage-Jobs
-        const hourlyRateInEuros = totalPrice / 100 / totalHours; // z.B. 984€ / 24h = 41€/h
+        
+        // KORREKTUR: Verwende echte Auftragsdaten statt hardcodierte Werte
+        let originalPlannedHours = orderData.jobTotalCalculatedHours || 8; // Default fallback
+        
+        // Berechne Stunden aus Datum-Range falls mehrtägig
+        if (orderData.jobDateFrom && orderData.jobDateTo && orderData.jobDateFrom !== orderData.jobDateTo) {
+          const startDate = new Date(orderData.jobDateFrom);
+          const endDate = new Date(orderData.jobDateTo);
+          const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          const hoursPerDay = parseFloat(String(orderData.jobDurationString || 8)); // Stunden pro Tag aus jobDurationString
+          originalPlannedHours = totalDays * hoursPerDay;
+          
+          console.log(`[TimeTracker] Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${originalPlannedHours}h`);
+        } else {
+          console.log(`[TimeTracker] Eintägiger Auftrag: ${originalPlannedHours}h`);
+        }
+        
+        const hourlyRateInEuros = totalPrice / 100 / originalPlannedHours; // Korrekte Berechnung
 
         const orderTimeTracking: OrderTimeTracking = {
           isActive: true,
-          originalPlannedHours: totalHours,
+          originalPlannedHours: originalPlannedHours, // Verwende korrekte Variable
           totalLoggedHours: 0,
           totalApprovedHours: 0,
           totalBilledHours: 0,

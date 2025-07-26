@@ -346,7 +346,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                 }}
                 className="mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
               >
-                🔧 Debug: Daten neu laden & console.log
+                🔧 Debug: Daten neu laden &amp; console.log
               </button>
             )}
 
@@ -408,7 +408,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                 📊 Live-Debug anzeigen
               </button>
               <div id="debug-output" className="mt-3 p-3 bg-white rounded border text-gray-700">
-                Klicken Sie auf "Live-Debug anzeigen" um aktuelle Datenbank-Daten zu sehen
+                Klicken Sie auf &ldquo;Live-Debug anzeigen&rdquo; um aktuelle Datenbank-Daten zu sehen
               </div>
             </div>
           </div>
