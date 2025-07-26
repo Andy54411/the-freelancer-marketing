@@ -9,6 +9,7 @@ import { TimeTracker } from '@/lib/timeTracker';
 import { TimeTrackingMigration } from '@/lib/timeTrackingMigration';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import InlinePaymentComponent from './InlinePaymentComponent';
 
 interface CustomerApprovalInterfaceProps {
   orderId: string;
@@ -28,6 +29,10 @@ export default function CustomerApprovalInterface({
   const [feedback, setFeedback] = useState('');
   const [showCompleteApproval, setShowCompleteApproval] = useState(false);
   const [completeApprovalFeedback, setCompleteApprovalFeedback] = useState('');
+  const [showInlinePayment, setShowInlinePayment] = useState(false);
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentHours, setPaymentHours] = useState(0);
 
   const loadApprovalRequests = useCallback(async () => {
     try {
@@ -383,16 +388,13 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                         // Direkt zur Stripe-Abrechnung, da die Stunden bereits genehmigt sind
                         const billingResult = await TimeTracker.billApprovedHours(orderId);
 
-                        alert(
-                          `✅ Erfolgreich!\n\n${totalApprovedAdditionalHours.toFixed(1)} zusätzliche Stunden wurden zur Abrechnung eingereicht.\n\nKosten: €${(billingResult.customerPays / 100).toFixed(2)}\n\nSie werden zur Stripe-Zahlungsseite weitergeleitet.`
-                        );
+                        // Setze Payment-Daten für Inline-Komponente
+                        setPaymentClientSecret(billingResult.clientSecret);
+                        setPaymentAmount(billingResult.customerPays);
+                        setPaymentHours(totalApprovedAdditionalHours);
+                        setShowInlinePayment(true);
 
-                        // Weiterleitung zur Stripe-Zahlungsseite
-                        if (billingResult.clientSecret) {
-                          window.location.href = `/payment?client_secret=${billingResult.clientSecret}&order_id=${orderId}`;
-                        }
-
-                        await loadApprovalRequests();
+                        // Keine Weiterleitung mehr - Payment wird inline angezeigt
                       } catch (error) {
                         console.error('Error processing approved hours billing:', error);
                         alert('Fehler beim Erstellen der Zahlung für genehmigte Stunden');
@@ -878,6 +880,49 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           </div>
         </div>
       ))}
+
+      {/* Inline Payment Component */}
+      {showInlinePayment && paymentClientSecret && (
+        <InlinePaymentComponent
+          clientSecret={paymentClientSecret}
+          orderId={orderId}
+          totalAmount={paymentAmount}
+          totalHours={paymentHours}
+          isOpen={showInlinePayment}
+          onClose={() => {
+            setShowInlinePayment(false);
+            setPaymentClientSecret(null);
+            setPaymentAmount(0);
+            setPaymentHours(0);
+          }}
+          onSuccess={async paymentIntentId => {
+            console.log('Payment successful:', paymentIntentId);
+
+            // Schließe Payment Modal
+            setShowInlinePayment(false);
+            setPaymentClientSecret(null);
+            setPaymentAmount(0);
+            setPaymentHours(0);
+
+            // Zeige Erfolgsmeldung
+            alert(
+              `✅ Zahlung erfolgreich!\n\nPayment ID: ${paymentIntentId}\n\nDie zusätzlichen Stunden wurden erfolgreich bezahlt.`
+            );
+
+            // Aktualisiere die Daten
+            await loadApprovalRequests();
+
+            // Callback für Parent-Komponente
+            if (onApprovalProcessed) {
+              onApprovalProcessed();
+            }
+          }}
+          onError={error => {
+            console.error('Payment error:', error);
+            alert(`❌ Zahlungsfehler:\n\n${error}\n\nBitte versuchen Sie es erneut.`);
+          }}
+        />
+      )}
     </div>
   );
 }
