@@ -96,22 +96,25 @@ export const initializeTimeTracking = onCall(
                 throw new HttpsError('permission-denied', 'Not authorized for this order.');
             }
 
-            // Erstelle Order Time Tracking
+            // Erstelle Order Time Tracking (integriert in Auftrag)
             const orderTimeTracking = {
-                orderId,
-                providerId,
-                customerId: orderData.customerFirebaseUid || orderData.kundeId,
+                isActive: true,
                 originalPlannedHours,
                 totalLoggedHours: 0,
                 totalApprovedHours: 0,
                 totalBilledHours: 0,
                 hourlyRate: Math.round(hourlyRate * 100), // Convert to cents
+                timeEntries: [],
                 status: 'active',
-                createdAt: FieldValue.serverTimestamp(),
                 lastUpdated: FieldValue.serverTimestamp(),
+                inititalizedAt: FieldValue.serverTimestamp(),
             };
 
-            await db.collection('orderTimeTracking').doc(orderId).set(orderTimeTracking);
+            // Update den Auftrag mit TimeTracking
+            await orderRef.update({
+                timeTracking: orderTimeTracking,
+                approvalRequests: [],
+            });
 
             logger.info(`[initializeTimeTracking] Successfully initialized for order: ${orderId}`);
             return { success: true, message: 'Time tracking initialized successfully.' };
@@ -145,22 +148,27 @@ export const logTimeEntry = onCall(
         const db = getDb();
 
         try {
-            // Prüfe Berechtigung
-            const trackingDoc = await db.collection('orderTimeTracking').doc(orderId).get();
-            if (!trackingDoc.exists) {
-                throw new HttpsError('not-found', 'Time tracking not found for this order.');
+            // Prüfe Berechtigung und hole Auftrag
+            const orderRef = db.collection('auftraege').doc(orderId);
+            const orderDoc = await orderRef.get();
+
+            if (!orderDoc.exists) {
+                throw new HttpsError('not-found', 'Order not found.');
             }
 
-            const trackingData = trackingDoc.data();
-            if (trackingData?.providerId !== providerId) {
+            const orderData = orderDoc.data();
+            if (orderData?.selectedAnbieterId !== providerId) {
                 throw new HttpsError('permission-denied', 'Not authorized for this order.');
             }
 
-            // Erstelle Time Entry
+            if (!orderData.timeTracking) {
+                throw new HttpsError('failed-precondition', 'Time tracking not initialized for this order.');
+            }
+
+            // Erstelle neue Time Entry
+            const entryId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
             const timeEntry: any = {
-                orderId,
-                providerId,
-                customerId: trackingData.customerId,
+                id: entryId,
                 ...entryData,
                 status: 'logged',
                 createdAt: FieldValue.serverTimestamp(),
@@ -168,16 +176,24 @@ export const logTimeEntry = onCall(
 
             // Berechne billableAmount für zusätzliche Stunden
             if (entryData.category === 'additional') {
-                timeEntry.billableAmount = Math.round(entryData.hours * trackingData.hourlyRate);
+                timeEntry.billableAmount = Math.round(entryData.hours * orderData.timeTracking.hourlyRate);
             }
 
-            const entryRef = await db.collection('timeEntries').add(timeEntry);
+            // Füge Entry zu timeEntries Array hinzu
+            const updatedTimeEntries = [...(orderData.timeTracking.timeEntries || []), timeEntry];
+            
+            // Berechne neue Statistiken
+            const totalLoggedHours = updatedTimeEntries.reduce((sum: number, e: any) => sum + e.hours, 0);
 
-            // Aktualisiere Order Time Tracking Statistiken
-            await updateOrderTimeTrackingStats(orderId);
+            // Update den Auftrag
+            await orderRef.update({
+                'timeTracking.timeEntries': updatedTimeEntries,
+                'timeTracking.totalLoggedHours': totalLoggedHours,
+                'timeTracking.lastUpdated': FieldValue.serverTimestamp(),
+            });
 
-            logger.info(`[logTimeEntry] Successfully logged entry: ${entryRef.id}`);
-            return { success: true, entryId: entryRef.id, message: 'Time entry logged successfully.' };
+            logger.info(`[logTimeEntry] Successfully logged entry: ${entryId}`);
+            return { success: true, entryId: entryId, message: 'Time entry logged successfully.' };
 
         } catch (error: any) {
             logger.error(`[logTimeEntry] Error:`, error);
