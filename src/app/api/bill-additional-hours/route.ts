@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
     // Company erhält den Betrag minus Plattformgebühr
     const companyAmount = totalAmount - platformFee;
 
-    // Erstelle Stripe PaymentIntent für zusätzliche Stunden
-    // Kunde zahlt den vollen Betrag, Company erhält Betrag minus Plattformgebühr
+    // Erstelle Stripe PaymentIntent für zusätzliche Stunden mit ESCROW (manual capture)
+    // Kunde zahlt den vollen Betrag, aber Geld wird gehalten bis Projekt abgeschlossen
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'eur',
@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
         amount: companyAmount, // Company erhält totalAmount - platformFee
       },
       confirm: false,
+      capture_method: 'manual', // ESCROW: Geld wird gehalten, nicht sofort captured
       setup_future_usage: 'off_session',
       automatic_payment_methods: {
         enabled: true,
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
       },
       metadata: {
         orderId,
-        type: 'additional_hours',
+        type: 'additional_hours_escrow',
         entryIds: approvedEntryIds.join(','),
         totalHours: approvedEntries
           .reduce((sum: number, entry: any) => sum + entry.hours, 0)
@@ -142,12 +143,13 @@ export async function POST(request: NextRequest) {
         additionalAmount: totalAmount.toString(),
         platformFee: platformFee.toString(),
         companyReceives: companyAmount.toString(),
+        escrowEnabled: 'true',
       },
-      description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId}`,
+      description: `Zusätzliche Arbeitsstunden (Escrow) für Auftrag ${orderId}`,
     });
 
     console.log(
-      '[API /bill-additional-hours] PaymentIntent erfolgreich erstellt:',
+      '[API /bill-additional-hours] Escrow PaymentIntent erfolgreich erstellt:',
       paymentIntent.id
     );
 
@@ -159,7 +161,9 @@ export async function POST(request: NextRequest) {
       companyReceives: companyAmount, // Company erhält Betrag minus Plattformgebühr
       platformFee: platformFee,
       additionalHours: approvedEntries.reduce((sum: number, entry: any) => sum + entry.hours, 0),
-      message: 'PaymentIntent für zusätzliche Stunden erfolgreich erstellt.',
+      escrowEnabled: true,
+      message:
+        'Escrow PaymentIntent für zusätzliche Stunden erfolgreich erstellt. Geld wird gehalten bis Projektabschluss.',
     });
   } catch (error: unknown) {
     let errorMessage =
