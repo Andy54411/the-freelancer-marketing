@@ -299,9 +299,32 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
     const hasAdditionalHours = orderDetails?.timeTracking?.timeEntries?.some(
       (e: any) => e.category === 'additional'
     );
+
+    // Differenziere zwischen verschiedenen Zuständen der zusätzlichen Stunden
+    const additionalEntries =
+      orderDetails?.timeTracking?.timeEntries?.filter((e: any) => e.category === 'additional') ||
+      [];
+
+    const additionalLoggedEntries = additionalEntries.filter((e: any) => e.status === 'logged');
+    const additionalApprovedEntries = additionalEntries.filter(
+      (e: any) => e.status === 'customer_approved'
+    );
+    const additionalBilledEntries = additionalEntries.filter(
+      (e: any) => e.status === 'platform_held' || e.status === 'platform_released'
+    );
+
     const totalLoggedHours = orderDetails?.timeTracking?.totalLoggedHours || 0;
     const originalPlannedHours = orderDetails?.timeTracking?.originalPlannedHours || 0;
     const hasExtraWork = totalLoggedHours > originalPlannedHours;
+
+    const totalApprovedAdditionalHours = additionalApprovedEntries.reduce(
+      (sum: number, e: any) => sum + (e.hours || 0),
+      0
+    );
+    const totalApprovedAdditionalAmount = additionalApprovedEntries.reduce(
+      (sum: number, e: any) => sum + (e.billableAmount || 0),
+      0
+    );
 
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
@@ -310,8 +333,82 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Stundenfreigabe</h2>
         </div>
 
-        {hasAdditionalHours ? (
-          // Fall 1: Es gibt zusätzliche Stunden, aber sie wurden noch nicht eingereicht
+        {additionalApprovedEntries.length > 0 ? (
+          // Fall 1: Es gibt bereits genehmigte zusätzliche Stunden - diese müssen bezahlt werden
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <FiCheck className="text-green-600 mt-1 flex-shrink-0" size={20} />
+              <div>
+                <h3 className="text-lg font-medium text-green-900 mb-2">
+                  Zusätzliche Stunden genehmigt - Bezahlung erforderlich
+                </h3>
+                <p className="text-green-800 mb-3">
+                  Die zusätzlichen Arbeitsstunden wurden bereits genehmigt und müssen jetzt bezahlt
+                  werden.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Geplant:</span>
+                      <span className="font-medium ml-2">{originalPlannedHours}h</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Genehmigt:</span>
+                      <span className="font-medium ml-2 text-green-600">
+                        {totalApprovedAdditionalHours}h
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Kosten:</span>
+                      <span className="font-medium ml-2 text-green-600">
+                        €{(totalApprovedAdditionalAmount / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-green-100 rounded-lg">
+                  <p className="text-sm text-green-800 mb-3">
+                    <strong>Bereit zur Bezahlung der genehmigten zusätzlichen Stunden!</strong>
+                  </p>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          `Möchten Sie die ${totalApprovedAdditionalHours.toFixed(1)} genehmigten zusätzlichen Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} bezahlen?`
+                        )
+                      )
+                        return;
+
+                      try {
+                        // Direkt zur Stripe-Abrechnung, da die Stunden bereits genehmigt sind
+                        const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                        alert(
+                          `✅ Erfolgreich!\n\n${totalApprovedAdditionalHours.toFixed(1)} zusätzliche Stunden wurden zur Abrechnung eingereicht.\n\nKosten: €${(billingResult.customerPays / 100).toFixed(2)}\n\nSie werden zur Stripe-Zahlungsseite weitergeleitet.`
+                        );
+
+                        // Weiterleitung zur Stripe-Zahlungsseite
+                        if (billingResult.clientSecret) {
+                          window.location.href = `/payment?client_secret=${billingResult.clientSecret}&order_id=${orderId}`;
+                        }
+
+                        await loadApprovalRequests();
+                      } catch (error) {
+                        console.error('Error processing approved hours billing:', error);
+                        alert('Fehler beim Erstellen der Zahlung für genehmigte Stunden');
+                      }
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  >
+                    💳 {totalApprovedAdditionalHours.toFixed(1)}h bezahlen - €
+                    {(totalApprovedAdditionalAmount / 100).toFixed(2)}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : additionalLoggedEntries.length > 0 ? (
+          // Fall 2: Es gibt protokollierte zusätzliche Stunden, die zur Freigabe eingereicht werden müssen
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
             <div className="flex items-start gap-3">
               <FiAlertCircle className="text-amber-600 mt-1 flex-shrink-0" size={20} />
@@ -393,7 +490,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
             </div>
           </div>
         ) : hasExtraWork ? (
-          // Fall 2: Mehr Stunden protokolliert als geplant, aber nicht als "zusätzlich" kategorisiert
+          // Fall 3: Mehr Stunden protokolliert als geplant, aber nicht als "zusätzlich" kategorisiert
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
             <div className="flex items-start gap-3">
               <FiAlertCircle className="text-blue-600 mt-1 flex-shrink-0" size={20} />
@@ -426,7 +523,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
             </div>
           </div>
         ) : (
-          // Fall 3: Alles normal, keine zusätzlichen Stunden
+          // Fall 4: Alles normal, keine zusätzlichen Stunden
           <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
             <div className="flex items-start gap-3">
               <FiCheck className="text-green-600 mt-1 flex-shrink-0" size={20} />
