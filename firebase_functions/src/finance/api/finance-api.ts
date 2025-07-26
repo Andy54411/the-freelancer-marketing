@@ -8,7 +8,7 @@ async function authenticateUser(req: any): Promise<{ userId: string; companyId: 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('No valid authorization header');
     }
-    
+
     return {
         userId: 'user_123', // Mock User ID
         companyId: 'company_123' // Mock Company ID
@@ -76,7 +76,7 @@ export const financeApi = onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-company-id, x-user-id');
-    
+
     // Handle preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         res.status(200).send('');
@@ -210,12 +210,12 @@ function calculateStats(financeData: any) {
 
     if (financeData.invoices && Array.isArray(financeData.invoices)) {
         stats.invoiceCount = financeData.invoices.length;
-        
+
         financeData.invoices.forEach((invoice: any) => {
             if (invoice.total) {
                 stats.totalRevenue += parseFloat(invoice.total) || 0;
             }
-            
+
             if (invoice.status === 'pending') {
                 stats.pendingInvoices++;
             } else if (invoice.status === 'overdue') {

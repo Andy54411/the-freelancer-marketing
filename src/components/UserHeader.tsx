@@ -89,6 +89,24 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       return () => {};
     }
 
+    // KORREKTUR: Prüfe Auth-Status bevor Query ausgeführt wird
+    if (!auth.currentUser) {
+      console.log(`[UserHeader] User not authenticated, skipping notifications subscription`);
+      setUnreadNotificationsCount(0);
+      setNotifications([]);
+      return () => {};
+    }
+
+    // KORREKTUR: Stelle sicher, dass der aktuelle User dem UID entspricht
+    if (auth.currentUser.uid !== uid) {
+      console.warn(
+        `[UserHeader] UID mismatch: auth.uid=${auth.currentUser.uid}, requested.uid=${uid}`
+      );
+      setUnreadNotificationsCount(0);
+      setNotifications([]);
+      return () => {};
+    }
+
     console.log(`[UserHeader] Subscribing to notifications for user: ${uid}`);
 
     // KORREKTUR: Explizite where-Klausel hinzufügen, um den Firestore-Sicherheitsregeln zu entsprechen
@@ -118,31 +136,17 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         setUnreadNotificationsCount(unreadCount);
       },
       error => {
-        console.error('[UserHeader] Fehler beim Laden der Benachrichtigungen:', error);
-        console.error('[UserHeader] Detaillierte Fehleranalyse:', {
-          code: error.code,
-          message: error.message,
-          uid: uid,
-          isAuthenticated: !!auth.currentUser,
-          currentUserUid: auth.currentUser?.uid,
-          queryPath: 'notifications',
-          queryConstraints: [
-            `where('userId', '==', '${uid}')`,
-            `orderBy('createdAt', 'desc')`,
-            `limit(10)`,
-          ],
-        });
-
-        // Zusätzliche Diagnostik für Firestore Rules
+        // KORREKTUR: Verwende warn statt error für permission-denied, um Console-Spam zu reduzieren
         if (error.code === 'permission-denied') {
-          console.warn('[UserHeader] Permission Denied - mögliche Ursachen:');
-          console.warn("1. Firestore Rules erlauben keine 'list'-Operation für notifications");
-          console.warn('2. User ist nicht authentifiziert oder Auth-Token ist abgelaufen');
-          console.warn('3. Where-Klausel stimmt nicht mit den Firestore Rules überein');
-          console.warn('4. Index fehlt für die Query');
+          console.warn('[UserHeader] Permission denied für notifications - silent fallback');
+        } else {
+          console.error(
+            '[UserHeader] Unerwarteter Fehler beim Laden der Benachrichtigungen:',
+            error
+          );
         }
 
-        // Fallback: Setze leere Arrays bei Fehlern
+        // Fallback: Setze leere Arrays bei Fehlern (ohne weitere Console-Ausgaben)
         setNotifications([]);
         setUnreadNotificationsCount(0);
       }
@@ -220,13 +224,18 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {
-    if (currentUser?.uid) {
+    // KORREKTUR: Nur subscribe wenn currentUser und currentUid übereinstimmen
+    if (currentUser?.uid && currentUser.uid === currentUid) {
       const unsubscribeNotifications = subscribeToNotifications(currentUser.uid);
       return () => {
         unsubscribeNotifications();
       };
+    } else {
+      // Cleanup wenn User nicht übereinstimmt
+      setNotifications([]);
+      setUnreadNotificationsCount(0);
     }
-  }, [currentUser, subscribeToNotifications]);
+  }, [currentUser?.uid, currentUid, subscribeToNotifications]);
 
   useEffect(() => {
     const handleProfileUpdate = (event: Event) => {

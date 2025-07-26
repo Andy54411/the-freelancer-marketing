@@ -15,7 +15,7 @@ async function authenticateUser(req: any): Promise<{ userId: string; companyId: 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('No valid authorization header');
     }
-    
+
     return {
         userId: 'user_123', // Mock User ID
         companyId: 'company_123' // Mock Company ID

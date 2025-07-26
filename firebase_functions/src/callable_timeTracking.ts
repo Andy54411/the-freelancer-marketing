@@ -181,7 +181,7 @@ export const logTimeEntry = onCall(
 
             // Füge Entry zu timeEntries Array hinzu
             const updatedTimeEntries = [...(orderData.timeTracking.timeEntries || []), timeEntry];
-            
+
             // Berechne neue Statistiken
             const totalLoggedHours = updatedTimeEntries.reduce((sum: number, e: any) => sum + e.hours, 0);
 
