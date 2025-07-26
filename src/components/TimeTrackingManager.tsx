@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit3, FiTrash2, FiClock, FiCheck, FiX, FiSend } from 'react-icons/fi';
+import { FiPlus, FiEdit3, FiTrash2, FiClock, FiCheck, FiX } from 'react-icons/fi';
 import { TimeEntry, OrderTimeTracking, TimeTrackingStats } from '@/types/timeTracking';
 import { TimeTracker } from '@/lib/timeTracker';
 import { auth } from '@/firebase/clients';
@@ -39,7 +39,6 @@ export default function TimeTrackingManager({
     endTime: '17:00',
     hours: 8,
     description: '',
-    category: 'original' as 'original' | 'additional',
     isBreakTime: false,
     breakMinutes: 30,
     notes: '',
@@ -96,13 +95,30 @@ export default function TimeTrackingManager({
     if (!user) return;
 
     try {
+      // INTELLIGENTE KATEGORISIERUNG: Berechne automatisch ob "original" oder "additional"
+      const currentOriginalHours = timeEntries
+        .filter(entry => entry.category === 'original')
+        .reduce((sum, entry) => sum + entry.hours, 0);
+
+      const remainingOriginalHours = Math.max(0, originalPlannedHours - currentOriginalHours);
+
+      // Automatische Kategorisierung basierend auf verbleibenden geplanten Stunden
+      let autoCategory: 'original' | 'additional';
+      if (remainingOriginalHours >= formData.hours) {
+        // Genug geplante Stunden verfügbar
+        autoCategory = 'original';
+      } else {
+        // Überschreitet geplante Stunden - wird als zusätzlich kategorisiert
+        autoCategory = 'additional';
+      }
+
       const entryData = {
         date: formData.date,
         startTime: formData.startTime,
         endTime: formData.endTime,
         hours: formData.hours,
         description: formData.description,
-        category: formData.category,
+        category: autoCategory, // Verwende automatische Kategorisierung statt Benutzer-Auswahl
         isBreakTime: formData.isBreakTime,
         breakMinutes: formData.isBreakTime ? formData.breakMinutes : 0,
         notes: formData.notes,
@@ -121,7 +137,6 @@ export default function TimeTrackingManager({
         endTime: '17:00',
         hours: 8,
         description: '',
-        category: 'original',
         isBreakTime: false,
         breakMinutes: 30,
         notes: '',
@@ -149,7 +164,6 @@ export default function TimeTrackingManager({
       endTime: entry.endTime || '',
       hours: entry.hours,
       description: entry.description,
-      category: entry.category,
       isBreakTime: entry.isBreakTime || false,
       breakMinutes: entry.breakMinutes || 0,
       notes: entry.notes || '',
@@ -166,38 +180,6 @@ export default function TimeTrackingManager({
     } catch (error) {
       console.error('Error deleting time entry:', error);
       alert('Fehler beim Löschen der Zeiteintragung');
-    }
-  };
-
-  const handleSubmitForApproval = async () => {
-    if (!user) return;
-
-    const unsubmittedEntries = timeEntries.filter(
-      entry => entry.status === 'logged' && entry.category === 'additional'
-    );
-
-    if (unsubmittedEntries.length === 0) {
-      alert('Keine zusätzlichen Stunden zur Freigabe vorhanden');
-      return;
-    }
-
-    if (
-      !confirm(`${unsubmittedEntries.length} zusätzliche Stunden zur Kundenfreigabe einreichen?`)
-    ) {
-      return;
-    }
-
-    try {
-      const entryIds = unsubmittedEntries.map(entry => entry.id!).filter(Boolean);
-      const message = prompt('Nachricht an den Kunden (optional):');
-
-      await TimeTracker.submitForCustomerApproval(orderId, entryIds, message || undefined);
-      await loadTimeTracking();
-
-      alert('Zusätzliche Stunden erfolgreich zur Freigabe eingereicht!');
-    } catch (error) {
-      console.error('Error submitting for approval:', error);
-      alert('Fehler beim Einreichen zur Freigabe');
     }
   };
 
@@ -287,18 +269,6 @@ export default function TimeTrackingManager({
             <div className="text-sm text-gray-600">Freigegeben</div>
           </div>
         </div>
-
-        {summary.additionalHours > 0 && (
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={handleSubmitForApproval}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
-            >
-              <FiSend size={16} />
-              Zusätzliche Stunden zur Freigabe einreichen
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Zeiteinträge */}
@@ -493,21 +463,46 @@ export default function TimeTrackingManager({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kategorie</label>
-                  <select
-                    value={formData.category}
-                    onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        category: e.target.value as 'original' | 'additional',
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                    required
-                  >
-                    <option value="original">Geplante Stunden</option>
-                    <option value="additional">Zusätzliche Stunden</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorie (automatisch berechnet)
+                  </label>
+                  <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
+                    {(() => {
+                      const currentOriginalHours = timeEntries
+                        .filter(entry => entry.category === 'original')
+                        .reduce((sum, entry) => sum + entry.hours, 0);
+
+                      const remainingOriginalHours = Math.max(
+                        0,
+                        originalPlannedHours - currentOriginalHours
+                      );
+
+                      if (remainingOriginalHours >= formData.hours) {
+                        return (
+                          <span className="flex items-center gap-2 text-blue-700">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            Geplante Stunden ({remainingOriginalHours.toFixed(1)}h verfügbar)
+                          </span>
+                        );
+                      } else {
+                        const additionalHours = formData.hours - remainingOriginalHours;
+                        return (
+                          <span className="flex items-center gap-2 text-orange-700">
+                            <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                            Zusätzliche Stunden (
+                            {remainingOriginalHours > 0
+                              ? `${remainingOriginalHours.toFixed(1)}h geplant + ${additionalHours.toFixed(1)}h zusätzlich`
+                              : `${formData.hours.toFixed(1)}h zusätzlich`}
+                            )
+                          </span>
+                        );
+                      }
+                    })()}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Das System kategorisiert automatisch basierend auf den geplanten{' '}
+                    {originalPlannedHours}h
+                  </p>
                 </div>
 
                 <div>
