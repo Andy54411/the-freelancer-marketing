@@ -578,11 +578,92 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                   )}
                 </div>
                 <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    Der Anbieter sollte die {unpaidAdditionalHours.toFixed(1)} unbezahlten
-                    zusätzlichen Stunden als &ldquo;Zusätzliche Stunden&rdquo; kategorisieren und
-                    zur Freigabe einreichen.
+                  <p className="text-sm text-blue-800 mb-3">
+                    <strong>
+                      Sie können die unbezahlten zusätzlichen Stunden selbst zur Freigabe anfordern!
+                    </strong>
                   </p>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Der Anbieter hat vergessen, die {unpaidAdditionalHours.toFixed(1)} zusätzlichen
+                    Stunden zur Freigabe einzureichen. Sie können diese selbst einreichen und sofort
+                    bezahlen.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          `Möchten Sie die ${unpaidAdditionalHours.toFixed(1)} unbezahlten zusätzlichen Stunden zur Freigabe einreichen und genehmigen?`
+                        )
+                      )
+                        return;
+
+                      try {
+                        // Schritt 1: Kunde-initiierte Freigabe
+                        const result = await TimeTracker.customerInitiateAdditionalHoursApproval(
+                          orderId,
+                          'Kunde reicht unbezahlte zusätzliche Arbeitszeit zur Freigabe ein'
+                        );
+
+                        if (result.success && result.approvalRequestId) {
+                          // Schritt 2: Sofort genehmigen
+                          await TimeTracker.processCustomerApproval(
+                            orderId,
+                            result.approvalRequestId,
+                            'approved',
+                            undefined,
+                            'Automatisch genehmigt durch Kunde-Initiative für unbezahlte Stunden'
+                          );
+
+                          // Schritt 3: Öffne Inline Payment Modal
+                          const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                          // Setze Payment-Daten für Inline-Modal
+                          setPaymentClientSecret(billingResult.clientSecret);
+                          setPaymentAmount(billingResult.customerPays);
+                          setPaymentHours(result.additionalHours);
+                          setShowInlinePayment(true);
+
+                          console.log(
+                            '🔓 Customer-initiated Inline Payment Modal für unbezahlte Stunden geöffnet:',
+                            {
+                              clientSecret: billingResult.clientSecret,
+                              amount: billingResult.customerPays / 100,
+                              hours: result.additionalHours,
+                            }
+                          );
+
+                          // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
+                        } else {
+                          alert(result.message);
+                        }
+                      } catch (error) {
+                        console.error(
+                          'Error processing customer-initiated approval for unpaid hours:',
+                          error
+                        );
+
+                        // Bessere Fehlerbehandlung für Stripe Connect Probleme
+                        const errorMessage =
+                          error instanceof Error ? error.message : 'Unbekannter Fehler';
+                        if (
+                          errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+                          errorMessage.includes('Stripe Connect')
+                        ) {
+                          alert(
+                            'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
+                              'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+                          );
+                        } else {
+                          alert(
+                            `Fehler beim Freigeben der unbezahlten zusätzlichen Stunden: ${errorMessage}`
+                          );
+                        }
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    🚀 {unpaidAdditionalHours.toFixed(1)}h unbezahlte Stunden freigeben & bezahlen
+                  </button>
                 </div>
               </div>
             </div>
