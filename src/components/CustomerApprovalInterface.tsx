@@ -175,11 +175,38 @@ export default function CustomerApprovalInterface({
             clientSecret: billingResult.clientSecret,
           });
 
-          // Berechne Payment Hours
+          // Berechne Payment Hours - KORRIGIERT: Erweiterte Status-Berücksichtigung
           const paymentHours =
             orderDetails?.timeTracking?.timeEntries
-              ?.filter((e: any) => e.category === 'additional' && e.status === 'customer_approved')
+              ?.filter((e: any) => {
+                // Alle zusätzlichen Stunden die genehmigt sind (egal welcher Status nach Genehmigung)
+                return (
+                  e.category === 'additional' &&
+                  (e.status === 'customer_approved' ||
+                    e.status === 'billing_pending' ||
+                    e.status === 'billed' ||
+                    e.status === 'platform_held' ||
+                    e.status === 'platform_released')
+                );
+              })
               ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
+
+          console.log('🔍 APPROVAL: Payment hours calculation:', {
+            allAdditionalEntries: orderDetails?.timeTracking?.timeEntries?.filter(
+              (e: any) => e.category === 'additional'
+            ),
+            filteredForPayment: orderDetails?.timeTracking?.timeEntries?.filter((e: any) => {
+              return (
+                e.category === 'additional' &&
+                (e.status === 'customer_approved' ||
+                  e.status === 'billing_pending' ||
+                  e.status === 'billed' ||
+                  e.status === 'platform_held' ||
+                  e.status === 'platform_released')
+              );
+            }),
+            calculatedHours: paymentHours,
+          });
 
           // Rufe Parent Payment Handler auf
           if (onPaymentRequest) {
@@ -329,14 +356,33 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           amount: billingResult.customerPays / 100,
         });
 
-        // Schritt 4: Rufe Parent Payment Handler auf
+        // Schritt 4: Berechne korrekte Payment Hours für Modal
+        const currentOrderDetails = await TimeTracker.getOrderDetails(orderId);
+        const actualPaymentHours =
+          currentOrderDetails?.timeTracking?.timeEntries
+            ?.filter((e: any) => {
+              return (
+                e.category === 'additional' &&
+                (e.status === 'customer_approved' ||
+                  e.status === 'billing_pending' ||
+                  e.status === 'billed' ||
+                  e.status === 'platform_held' ||
+                  e.status === 'platform_released')
+              );
+            })
+            ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
+
+        // Schritt 5: Rufe Parent Payment Handler auf
         if (onPaymentRequest) {
           onPaymentRequest(
             billingResult.clientSecret,
             billingResult.customerPays,
-            result.additionalHours
+            actualPaymentHours
           );
-          console.log('🔓 [PAYMENT SECURITY] Parent payment handler called');
+          console.log(
+            '🔓 [PAYMENT SECURITY] Parent payment handler called with hours:',
+            actualPaymentHours
+          );
         } else {
           console.warn('🔓 [PAYMENT SECURITY] No payment handler provided');
         }
@@ -626,17 +672,35 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                               'Automatisch genehmigt durch Kunde-Initiative'
                             );
 
-                            // Schritt 3: Rufe Parent Payment Handler auf
+                            // Schritt 3: Berechne korrekte Payment Hours für Modal
                             const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                            const currentOrderDetails = await TimeTracker.getOrderDetails(orderId);
+                            const actualPaymentHours =
+                              currentOrderDetails?.timeTracking?.timeEntries
+                                ?.filter((e: any) => {
+                                  return (
+                                    e.category === 'additional' &&
+                                    (e.status === 'customer_approved' ||
+                                      e.status === 'billing_pending' ||
+                                      e.status === 'billed' ||
+                                      e.status === 'platform_held' ||
+                                      e.status === 'platform_released')
+                                  );
+                                })
+                                ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
                             // Rufe Parent Payment Handler auf
                             if (onPaymentRequest) {
                               onPaymentRequest(
                                 billingResult.clientSecret,
                                 billingResult.customerPays,
-                                result.additionalHours
+                                actualPaymentHours
                               );
-                              console.log('🔓 Neue Stunden - Parent payment handler called');
+                              console.log(
+                                '🔓 Neue Stunden - Parent payment handler called with hours:',
+                                actualPaymentHours
+                              );
                             } else {
                               console.warn('🔓 Neue Stunden - No payment handler provided');
                             }
@@ -732,17 +796,35 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             'Automatisch genehmigt durch Kunde-Initiative'
                           );
 
-                          // Schritt 3: Rufe Parent Payment Handler auf
+                          // Schritt 3: Berechne korrekte Payment Hours für Modal
                           const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                          const currentOrderDetails = await TimeTracker.getOrderDetails(orderId);
+                          const actualPaymentHours =
+                            currentOrderDetails?.timeTracking?.timeEntries
+                              ?.filter((e: any) => {
+                                return (
+                                  e.category === 'additional' &&
+                                  (e.status === 'customer_approved' ||
+                                    e.status === 'billing_pending' ||
+                                    e.status === 'billed' ||
+                                    e.status === 'platform_held' ||
+                                    e.status === 'platform_released')
+                                );
+                              })
+                              ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
                           // Rufe Parent Payment Handler auf
                           if (onPaymentRequest) {
                             onPaymentRequest(
                               billingResult.clientSecret,
                               billingResult.customerPays,
-                              result.additionalHours
+                              actualPaymentHours
                             );
-                            console.log('🔓 Customer-initiated parent payment handler called');
+                            console.log(
+                              '🔓 Customer-initiated parent payment handler called with hours:',
+                              actualPaymentHours
+                            );
                           } else {
                             console.warn('🔓 Customer-initiated - No payment handler provided');
                           }

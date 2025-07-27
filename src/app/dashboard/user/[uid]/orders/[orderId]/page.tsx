@@ -252,12 +252,31 @@ export default function OrderDetailPage() {
         clientSecret: billingResult.clientSecret,
       });
 
-      // Berechne echte Payment Hours aus OrderDetails
+      // Berechne echte Payment Hours aus OrderDetails - KORRIGIERT: Suche nach billing_pending Status
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
       const paymentHours =
         orderDetails?.timeTracking?.timeEntries
-          ?.filter((e: any) => e.category === 'additional' && e.status === 'customer_approved')
+          ?.filter((e: any) => {
+            // Alle Stunden die genehmigt sind aber noch bezahlt werden müssen
+            return (
+              e.category === 'additional' &&
+              (e.status === 'customer_approved' || e.status === 'billing_pending')
+            );
+          })
           ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
+
+      console.log('🔍 DIRECT: Payment hours calculation:', {
+        allAdditionalEntries: orderDetails?.timeTracking?.timeEntries?.filter(
+          (e: any) => e.category === 'additional'
+        ),
+        filteredForPayment: orderDetails?.timeTracking?.timeEntries?.filter((e: any) => {
+          return (
+            e.category === 'additional' &&
+            (e.status === 'customer_approved' || e.status === 'billing_pending')
+          );
+        }),
+        calculatedHours: paymentHours,
+      });
 
       // Setze echte Daten
       setPaymentClientSecret(billingResult.clientSecret);
