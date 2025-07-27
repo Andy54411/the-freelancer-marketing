@@ -4,6 +4,59 @@ applyTo: '**'
 
 # KI-Arbeitsablauf Anweisungen für Taskilo Projekt
 
+## 🏢 PROJEKT KONTEXT: TASKILO PLATFORM
+
+### 📖 Was ist Taskilo?
+**Taskilo** ist eine hybride Service-Marktplatz-Plattform, die Elemente von **Taskrabbit**, **Fiverr**, **Malt** und **sevdesk/lexoffice** kombiniert:
+
+- **🔧 Taskrabbit-Style**: Lokale Dienstleistungen & Handwerker buchen
+- **💼 Fiverr-Approach**: Freelancer & digitale Services anbieten  
+- **🎯 Malt-Features**: Professionelle B2B-Projekte & Expertise
+- **📊 sevdesk/lexoffice-Integration**: Rechnungsstellung, Buchhaltung & Business-Management
+
+### 💳 Technologie-Stack:
+- **Payment**: Stripe Connect für sichere Zahlungsabwicklung
+- **Frontend**: Next.js 15 mit TypeScript & Tailwind CSS
+- **Backend**: Firebase (Firestore, Auth, Functions)
+- **Design**: **Modern, clean & professional** - inspiriert von modernen SaaS-Plattformen
+
+### 🎯 Zielgruppen:
+1. **Kunden**: Privatpersonen & Unternehmen die Services benötigen
+2. **Anbieter**: Handwerker, Freelancer, Agenturen & Consultants
+3. **Platform**: Kommissions-basiertes Geschäftsmodell
+
+### � B2C & B2B GESCHÄFTSMODELL:
+
+#### 🛍️ B2C (Business-to-Consumer):
+- **Privatpersonen** buchen Handwerker, Reinigungskräfte, Mietköche
+- **Einfache Buchung**: Schnelle Service-Auswahl über App/Web
+- **Sofortige Verfügbarkeit**: Lokale Dienstleister in der Nähe
+- **Bewertungssystem**: Vertrauen durch Kundenbewertungen
+- **Direkte Zahlung**: Stripe-basierte Sofortzahlung
+
+#### 🏭 B2B (Business-to-Business):
+- **Unternehmen** beauftragen Agenturen, Consultants, Fachkräfte
+- **Projekt-Management**: Komplexe Aufträge mit Zeiterfassung
+- **Rechnungsstellung**: Integration mit sevdesk/lexoffice
+- **Langzeit-Projekte**: Stundenbasierte Abrechnung
+- **Compliance**: Geschäftskonforme Prozesse & Dokumentation
+
+#### 🔄 Hybride Funktionen:
+- **Flexible Preismodelle**: Festpreis (B2C) + Stundenabrechnung (B2B)
+- **Skalierbare Services**: Vom Einzelauftrag bis zum Großprojekt
+- **Multi-User-Accounts**: Persönliche + Firmen-Profile
+- **Angepasste Workflows**: Je nach Kundentyp & Projektumfang
+
+### �🏗️ Kernfunktionen:
+- Service-Buchung & Projektmanagement
+- Zeiterfassung & Stundenabrechnung  
+- Stripe-basierte Zahlungsabwicklung
+- Bewertungssystem & Qualitätssicherung
+- Dashboard für Kunden & Anbieter
+- Admin-Panel für Platform-Management
+
+---
+
 ## 🔍 REGEL 1: IMMER PROJEKT ANALYSIEREN VOR AUSFÜHRUNG
 - **BEVOR** du einen Prompt ausführst, analysiere das KOMPLETTE Projekt
 - Verwende `file_search`, `grep_search` oder `semantic_search` um den aktuellen Stand zu verstehen
@@ -70,6 +123,34 @@ applyTo: '**'
 - **KONSISTENZ**: Behalte bestehende Strukturen und Patterns bei
 - **EFFIZIENZ**: Repariere und verbessere statt neu zu erstellen
 - **QUALITÄT**: Verstehe bevor du handelst
+
+## 🎨 DESIGN & ENTWICKLUNGS-RICHTLINIEN
+
+### 🖼️ Design-Prinzipien:
+- **Modern & Clean**: Minimalistisches, professionelles Design
+- **SaaS-inspiriert**: Moderne Business-Software Ästhetik
+- **Mobile-First**: Responsive Design für alle Geräte
+- **Taskilo-Branding**: Hauptfarbe `#14ad9f` (Türkis/Teal)
+- **Konsistente UI**: Shadcn/ui Komponenten verwenden
+
+### 💻 Technische Standards:
+- **TypeScript**: Strikte Typisierung für alle Komponenten
+- **Tailwind CSS**: Utility-first CSS für konsistentes Styling
+- **Stripe Integration**: Sichere Zahlungsabwicklung mit Connect
+- **Firebase**: Firestore für Datenbank, Auth für Authentifizierung
+- **Performance**: Optimierte Ladezeiten & SEO-Freundlichkeit
+- **B2C/B2B-Architektur**: Flexible Datenmodelle für beide Geschäftsmodelle
+- **Multi-Tenant**: Unterstützung für Firmen- und Privatkonten
+- **Rechnungssystem**: Integration für sevdesk/lexoffice-kompatible Rechnungen
+
+### 🔧 Code-Qualität:
+- **Component-basiert**: Wiederverwendbare React-Komponenten
+- **Error Handling**: Umfassende Fehlerbehandlung
+- **Loading States**: Aussagekräftige Loading-Indikatoren
+- **Accessibility**: WCAG-konforme Benutzerfreundlichkeit
+- **Stripe-Best-Practices**: Sichere Payment-Implementierung
+- **B2C/B2B-UX**: Adaptives Interface je nach Kundentyp
+- **Workflow-Engine**: Unterschiedliche Buchungs- und Abrechnungsprozesse
 
 ---
 
