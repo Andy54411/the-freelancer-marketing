@@ -630,6 +630,89 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     </button>
                   </div>
                 )}
+
+                {/* Zusätzlicher Bereich für neue unbezahlte Stunden */}
+                {additionalLoggedEntries.length > 0 && unpaidAdditionalHours > 0 && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <h4 className="font-medium text-amber-900 mb-2">
+                      🚨 Neue unbezahlte Stunden erkannt!
+                    </h4>
+                    <p className="text-sm text-amber-800 mb-3">
+                      Der Anbieter hat {unpaidAdditionalHours}h zusätzliche Arbeitszeit
+                      protokolliert, die noch nicht genehmigt und bezahlt wurde.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        if (
+                          !confirm(
+                            `Möchten Sie die ${unpaidAdditionalHours.toFixed(1)} neuen unbezahlten zusätzlichen Stunden zur Freigabe einreichen und genehmigen?`
+                          )
+                        )
+                          return;
+
+                        try {
+                          // Schritt 1: Kunde-initiierte Freigabe für die neuen Stunden
+                          const result = await TimeTracker.customerInitiateAdditionalHoursApproval(
+                            orderId,
+                            'Kunde möchte weitere zusätzliche Arbeitszeit freigeben'
+                          );
+
+                          if (result.success && result.approvalRequestId) {
+                            // Schritt 2: Sofort genehmigen
+                            await TimeTracker.processCustomerApproval(
+                              orderId,
+                              result.approvalRequestId,
+                              'approved',
+                              undefined,
+                              'Automatisch genehmigt durch Kunde-Initiative'
+                            );
+
+                            // Schritt 3: Öffne Inline Payment Modal
+                            const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                            // Setze Payment-Daten für Inline-Modal
+                            setPaymentClientSecret(billingResult.clientSecret);
+                            setPaymentAmount(billingResult.customerPays);
+                            setPaymentHours(result.additionalHours);
+                            setShowInlinePayment(true);
+
+                            console.log('🔓 Neue Stunden - Inline Payment Modal geöffnet:', {
+                              clientSecret: billingResult.clientSecret,
+                              amount: billingResult.customerPays / 100,
+                              hours: result.additionalHours,
+                            });
+
+                            // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
+                          } else {
+                            alert(result.message);
+                          }
+                        } catch (error) {
+                          console.error('Error processing new additional hours approval:', error);
+
+                          // Bessere Fehlerbehandlung für Stripe Connect Probleme
+                          const errorMessage =
+                            error instanceof Error ? error.message : 'Unbekannter Fehler';
+                          if (
+                            errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+                            errorMessage.includes('Stripe Connect')
+                          ) {
+                            alert(
+                              'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
+                                'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+                            );
+                          } else {
+                            alert(
+                              `Fehler beim Freigeben der neuen zusätzlichen Stunden: ${errorMessage}`
+                            );
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#0f8a7e] transition-colors font-medium"
+                    >
+                      🚀 {unpaidAdditionalHours.toFixed(1)}h neue Stunden freigeben
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
