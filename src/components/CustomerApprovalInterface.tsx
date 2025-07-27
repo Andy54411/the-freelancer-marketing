@@ -590,14 +590,26 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     </p>
                     <button
                       onClick={async e => {
-                        console.log('🚨 JETZT BEZAHLEN Button geklickt! EXTENDED DEBUG:', {
+                        // SOFORTIGE SICHTBARE DEBUG-ANZEIGE
+                        const debugInfo = {
+                          timestamp: new Date().toISOString(),
+                          buttonClicked: true,
                           totalBillingPendingHours,
                           totalApprovedAdditionalAmount,
                           orderId,
-                          timestamp: new Date().toISOString(),
-                          windowLocation: window.location.href,
                           userAgent: navigator.userAgent,
-                        });
+                          currentUrl: window.location.href,
+                        };
+
+                        // ALERT für sofortiges Debug-Feedback
+                        alert(
+                          `🚨 DEBUG: JETZT BEZAHLEN Button geklickt!\n\n${JSON.stringify(debugInfo, null, 2)}`
+                        );
+
+                        console.log(
+                          '🚨 JETZT BEZAHLEN Button geklickt! EXTENDED DEBUG:',
+                          debugInfo
+                        );
 
                         // Event propagation stoppen
                         e.preventDefault();
@@ -609,10 +621,12 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                               `🚨 BEZAHLUNG JETZT AUSFÜHREN!\n\nMöchten Sie die ${totalBillingPendingHours.toFixed(1)}h genehmigten Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} SOFORT bezahlen?\n\nDiese Stunden sind bereits genehmigt und warten auf Bezahlung!`
                             )
                           ) {
+                            alert('❌ Bezahlung vom Benutzer abgebrochen');
                             console.log('❌ Bezahlung vom Benutzer abgebrochen');
                             return;
                           }
 
+                          alert('🔄 Starte Bezahlung für billing_pending Stunden...');
                           console.log('🔄 Starte Bezahlung für billing_pending Stunden...');
 
                           // Loading State anzeigen
@@ -640,12 +654,17 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             }
                           );
 
+                          alert('🔄 Rufe TimeTracker.billApprovedHours auf...');
+
                           // Direkt zur Stripe-Abrechnung für billing_pending Stunden mit Timeout
                           const billingResult = (await Promise.race([
                             TimeTracker.billApprovedHours(orderId),
                             timeoutPromise,
                           ])) as any;
 
+                          alert(
+                            `✅ Billing Result erhalten: ${JSON.stringify(billingResult, null, 2)}`
+                          );
                           console.log('✅ Billing Result erhalten - DETAILED:', {
                             billingResult,
                             hasClientSecret: !!billingResult?.clientSecret,
@@ -674,6 +693,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           }
 
                           // Setze Payment-Daten für Inline-Komponente
+                          alert('🔧 Setting payment data...');
                           console.log('🔧 Setting payment data:', {
                             clientSecret: billingResult.clientSecret.substring(0, 20) + '...',
                             amount: billingResult.customerPays,
@@ -692,13 +712,21 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                           setShowInlinePayment(true);
 
-                          console.log('🔓 BILLING_PENDING Payment Modal geöffnet - FINAL CHECK:', {
+                          const modalInfo = {
                             clientSecret: !!billingResult.clientSecret,
                             amount: billingResult.customerPays / 100,
                             hours: totalBillingPendingHours,
                             showInlinePayment: true,
                             modalShouldBeVisible: true,
-                          });
+                          };
+
+                          alert(
+                            `🔓 BILLING_PENDING Payment Modal geöffnet: ${JSON.stringify(modalInfo, null, 2)}`
+                          );
+                          console.log(
+                            '🔓 BILLING_PENDING Payment Modal geöffnet - FINAL CHECK:',
+                            modalInfo
+                          );
 
                           // Button zurücksetzen
                           button.disabled = false;
