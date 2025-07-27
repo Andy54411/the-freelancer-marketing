@@ -24,6 +24,15 @@ import {
   FiBriefcase,
 } from 'react-icons/fi';
 import { HeroHeader } from '@/components/hero8-header';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import Link from 'next/link';
 
 // FAQ Data Structure
 const faqSections = [
@@ -219,9 +228,31 @@ export default function BlogPage() {
       <div className="relative z-10">
         <HeroHeader />
 
+        {/* Breadcrumb Navigation */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/" className="text-white/80 hover:text-white transition-colors">
+                    <FiHome className="w-4 h-4 mr-1 inline" />
+                    Startseite
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="text-white/60" />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-white font-medium">
+                  Hilfe & Information
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         {/* SEO-optimized Header */}
-        <div className="text-white py-16">
-          <div className="max-w-6xl mx-auto px-4">
+        <div className="text-white py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">
               Taskilo Hilfe & Information
             </h1>
@@ -247,7 +278,7 @@ export default function BlogPage() {
         </div>
 
         {/* Quick Navigation */}
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Schnellnavigation</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -268,7 +299,7 @@ export default function BlogPage() {
         </div>
 
         {/* Platform Overview */}
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <section className="mb-12">
             <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
               <div className="text-center mb-8">
@@ -326,7 +357,7 @@ export default function BlogPage() {
         </div>
 
         {/* FAQ Sections */}
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {faqSections.map(section => (
             <div key={section.id} id={section.id}>
               <FAQSection section={section} />
@@ -335,7 +366,7 @@ export default function BlogPage() {
         </div>
 
         {/* Existing Articles */}
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <section className="mb-12">
             <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Detaillierte Anleitungen</h2>
@@ -384,7 +415,7 @@ export default function BlogPage() {
         </div>
 
         {/* Contact & Support */}
-        <div className="max-w-6xl mx-auto px-4 py-8 mb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-12">
           <section>
             <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
               <div className="text-center mb-8">

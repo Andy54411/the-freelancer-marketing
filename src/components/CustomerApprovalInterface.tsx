@@ -612,8 +612,28 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                           console.log('🔄 Starte Bezahlung für billing_pending Stunden...');
 
-                          // Direkt zur Stripe-Abrechnung für billing_pending Stunden
-                          const billingResult = await TimeTracker.billApprovedHours(orderId);
+                          // Loading State anzeigen
+                          const button = e.target as HTMLButtonElement;
+                          const originalText = button.textContent;
+                          button.disabled = true;
+                          button.textContent = '⏳ Verarbeitung läuft...';
+
+                          // Timeout für API Call (30 Sekunden)
+                          const timeoutPromise = new Promise((_, reject) => {
+                            setTimeout(
+                              () =>
+                                reject(
+                                  new Error('API-Aufruf hat zu lange gedauert (Timeout nach 30s)')
+                                ),
+                              30000
+                            );
+                          });
+
+                          // Direkt zur Stripe-Abrechnung für billing_pending Stunden mit Timeout
+                          const billingResult = (await Promise.race([
+                            TimeTracker.billApprovedHours(orderId),
+                            timeoutPromise,
+                          ])) as any;
 
                           console.log('✅ Billing Result erhalten:', billingResult);
 
@@ -630,6 +650,10 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             showInlinePayment: true,
                           });
 
+                          // Button zurücksetzen
+                          button.disabled = false;
+                          button.textContent = originalText;
+
                           // Keine Weiterleitung mehr - Payment wird inline angezeigt
                         } catch (error) {
                           console.error(
@@ -637,19 +661,42 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             error
                           );
 
-                          // Bessere Fehlerbehandlung für Stripe Connect Probleme
+                          // Button zurücksetzen
+                          const button = e.target as HTMLButtonElement;
+                          button.disabled = false;
+                          button.textContent = `💥 JETZT BEZAHLEN: ${totalBillingPendingHours.toFixed(1)}h - €${(totalApprovedAdditionalAmount / 100).toFixed(2)}`;
+
+                          // Detaillierte Fehlerbehandlung
                           const errorMessage =
                             error instanceof Error ? error.message : 'Unbekannter Fehler';
-                          if (
+
+                          if (errorMessage.includes('Timeout')) {
+                            alert(
+                              '⏰ ZEITÜBERSCHREITUNG!\n\n' +
+                                'Der Zahlungsvorgang hat zu lange gedauert.\n\n' +
+                                'Mögliche Ursachen:\n' +
+                                '• Langsame Internetverbindung\n' +
+                                '• Server-Überlastung\n' +
+                                '• Stripe Connect Probleme\n\n' +
+                                'Versuchen Sie es in wenigen Minuten erneut oder kontaktieren Sie den Support.'
+                            );
+                          } else if (
                             errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
                             errorMessage.includes('Stripe Connect')
                           ) {
                             alert(
-                              'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
-                                'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+                              '🔧 ZAHLUNGSEINRICHTUNG ERFORDERLICH!\n\n' +
+                                'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
+                                'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.\n\n' +
+                                'Technische Details: ' +
+                                errorMessage
                             );
                           } else {
-                            alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
+                            alert(
+                              `💥 BEZAHLUNG FEHLGESCHLAGEN!\n\n` +
+                                `Fehler: ${errorMessage}\n\n` +
+                                `Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.`
+                            );
                           }
                         }
                       }}
