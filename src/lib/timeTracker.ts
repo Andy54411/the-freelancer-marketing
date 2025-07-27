@@ -973,9 +973,11 @@ export class TimeTracker {
         throw new Error('Time tracking not found');
       }
 
-      // Hole genehmigte zusätzliche Stunden
+      // Hole genehmigte zusätzliche Stunden (customer_approved ODER billing_pending)
       const approvedEntries = orderData.timeTracking.timeEntries.filter(
-        entry => entry.category === 'additional' && entry.status === 'customer_approved'
+        entry =>
+          entry.category === 'additional' &&
+          (entry.status === 'customer_approved' || entry.status === 'billing_pending')
       );
 
       if (approvedEntries.length === 0) {

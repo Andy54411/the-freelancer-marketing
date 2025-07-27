@@ -15,6 +15,7 @@ export interface TimeEntry {
     | 'submitted'
     | 'customer_approved'
     | 'customer_rejected'
+    | 'billing_pending'
     | 'escrow_authorized'
     | 'escrow_released'
     | 'platform_held'
