@@ -209,17 +209,7 @@ function CheckoutForm({
             layout: 'tabs',
             paymentMethodOrder: ['card'],
             fields: {
-              billingDetails: 'never', // Keine Billing-Details erfragen
-            },
-            defaultValues: {
-              billingDetails: {
-                name: '',
-                email: '',
-                phone: '',
-                address: {
-                  country: 'DE',
-                },
-              },
+              billingDetails: 'auto', // Ändere von 'never' zu 'auto' für bessere Stripe-Kompatibilität
             },
           }}
         />
@@ -440,6 +430,7 @@ export default function InlinePaymentComponent({
             {/* Content */}
             <div className="px-6 pb-6">
               <Elements
+                key={clientSecret} // Force re-mount when clientSecret changes to prevent mutability warning
                 stripe={stripePromise}
                 options={{
                   clientSecret,
