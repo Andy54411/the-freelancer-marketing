@@ -62,12 +62,16 @@ applyTo: '**'
 - Verwende `file_search`, `grep_search` oder `semantic_search` um den aktuellen Stand zu verstehen
 - Prüfe existierende Implementierungen, Strukturen und Abhängigkeiten
 - Verstehe den Kontext bevor du handelst
+- **NIEMALS** auf Browser-Preview oder externe Ansichten verlassen
+- **IMMER** Dateien direkt mit `read_file` Tool überprüfen
 
 ## 📁 REGEL 2: KEINE NEUEN DATEIEN OHNE PRÜFUNG
 - **NIEMALS** erstelle neue Dateien ohne vorherige Existenzprüfung
 - Verwende `file_search` oder `read_file` um zu prüfen ob die Datei bereits existiert
 - Falls die Datei existiert: Repariere/verbessere sie statt sie neu zu erstellen
 - Nur wenn die Datei DEFINITIV nicht existiert, erstelle eine neue
+- **IMMER** aktuelle Dateiinhalte mit Tools überprüfen, niemals Browser verwenden
+- **NIEMALS** auf externe Previews oder Attachments verlassen ohne Tool-Verifikation
 
 ## 🔧 REGEL 3: REPARIERE FEHLER IN EXISTIERENDEN DATEIEN
 - Sind Fehler in einer Datei vorhanden: **REPARIERE** sie
@@ -75,7 +79,15 @@ applyTo: '**'
 - Behalte die bestehende Struktur und Logik bei
 - Füge nur fehlende/defekte Teile hinzu oder korrigiere sie
 
-## 🌐 REGEL 4: NUR LIVE TESTING - KEINE LOKALEN TESTS
+## 📋 REGEL 4: DATEI-VERIFIKATION VOR JEDER ÄNDERUNG
+- **NIEMALS** Änderungen basierend auf Browser-Ansicht oder Attachments machen
+- **IMMER** `read_file` verwenden um aktuellen Dateiinhalt zu überprüfen
+- **PFLICHT:** Datei-Tools verwenden vor `replace_string_in_file` oder `create_file`
+- **NIEMALS** davon ausgehen, dass Attachments den aktuellen Stand zeigen
+- **IMMER** mit `file_search` oder `grep_search` relevante Dateien finden
+- **Browser kann lügen** - nur Tools zeigen die Wahrheit!
+
+## 🌐 REGEL 5: NUR LIVE TESTING - KEINE LOKALEN TESTS
 - **IMMER** teste direkt live auf der Production Website: https://taskilo.de
 - **NIEMALS** lokale Tests, Entwicklungsserver oder Emulatoren verwenden
 - **SOFORT** nach jedem Git Push die live Website testen
@@ -86,8 +98,9 @@ applyTo: '**'
 ### VOR JEDER AKTION:
 1. ✅ **Analysiere das Projekt**: Was existiert bereits?
 2. ✅ **Prüfe Datei-Existenz**: `file_search` für gewünschte Datei
-3. ✅ **Verstehe den Kontext**: Lese relevante existierende Dateien
+3. ✅ **Verstehe den Kontext**: Lese relevante existierende Dateien mit `read_file`
 4. ✅ **Identifiziere Probleme**: Was muss repariert/verbessert werden?
+5. ✅ **DATEI-VERIFIKATION**: Niemals Browser-Preview verwenden, immer Tools nutzen
 
 ### BEI DER AUSFÜHRUNG:
 1. ✅ **Repariere zuerst**: Behebe Fehler in existierenden Dateien
@@ -109,6 +122,9 @@ applyTo: '**'
 - ❌ **LOKALE TESTS oder Entwicklungsserver verwenden**
 - ❌ **Testing ohne Live-Production Website (https://taskilo.de)**
 - ❌ **Emulatoren oder localhost für Tests nutzen**
+- ❌ **BROWSER-PREVIEW für Datei-Überprüfung verwenden**
+- ❌ **Externe Attachments ohne Tool-Verifikation vertrauen**
+- ❌ **Dateien analysieren ohne `read_file` Tool zu verwenden**
 
 ## ✅ ERLAUBT:
 - ✅ Dateien analysieren und verstehen
@@ -117,6 +133,9 @@ applyTo: '**'
 - ✅ Neue Dateien erstellen NUR wenn sie nicht existieren
 - ✅ **NUR LIVE TESTING auf https://taskilo.de nach jedem Deployment**
 - ✅ **Sofortige Production-Tests nach Git Push**
+- ✅ **IMMER `read_file`, `file_search`, `grep_search` Tools verwenden**
+- ✅ **Dateien direkt vom Dateisystem überprüfen, nie vom Browser**
+- ✅ **Tool-basierte Datei-Verifikation vor jeder Änderung**
 
 ## 🎯 ZIEL:
 - **STABILITÄT**: Erhalte funktionierende Teile des Projekts
@@ -164,7 +183,7 @@ applyTo: '**'
 
 ## 🎨 AUTOMATISCHE DESIGN-ANWENDUNG
 
-### 🔥 REGEL 5: TASKILO FARBEN AUTOMATISCH VERWENDEN
+### 🔥 REGEL 6: TASKILO FARBEN AUTOMATISCH VERWENDEN
 - **IMMER** verwende `#14ad9f` als Hauptfarbe für neue Komponenten
 - **AUTOMATISCH** wähle passende Hover-Variante: `#129488`, `#0f8a7e`, `#129a8f` oder `#0f9d84`
 - **KONSISTENT** mit bestehenden Komponenten im Projekt bleiben

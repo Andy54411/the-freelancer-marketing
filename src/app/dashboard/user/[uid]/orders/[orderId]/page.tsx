@@ -366,6 +366,61 @@ export default function OrderDetailPage() {
                   Der Anbieter kann zusätzliche Arbeitsstunden zur Freigabe einreichen. Sie können
                   diese überprüfen und genehmigen oder ablehnen.
                 </p>
+
+                {/* 🔧 DEBUG: Payment Modal Test Button */}
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h4 className="font-medium text-yellow-900 mb-2">🔧 DEBUG: Payment Modal Test</h4>
+                  <p className="text-sm text-yellow-800 mb-3">
+                    Test-Button um das Payment Modal direkt anzuzeigen (für Debugging)
+                  </p>
+                  <button
+                    onClick={() => {
+                      // Simuliere Payment Modal mit Test-Daten
+                      const testClientSecret = 'pi_test_1234567890_secret_test123';
+                      const testAmount = 342100; // €3421.00 in cents
+                      const testHours = 81.0;
+
+                      console.log('🔧 DEBUG: Simuliere Payment Modal mit Test-Daten:', {
+                        testClientSecret,
+                        testAmount,
+                        testHours,
+                        orderId,
+                      });
+
+                      // Import der InlinePaymentComponent simulieren
+                      import('@/components/InlinePaymentComponent')
+                        .then(module => {
+                          const InlinePaymentComponent = module.default;
+
+                          // Modal-Container erstellen
+                          const modalContainer = document.createElement('div');
+                          modalContainer.id = 'debug-payment-modal';
+                          document.body.appendChild(modalContainer);
+
+                          // React Portal simulieren für Test
+                          alert(
+                            '🔧 DEBUG: Payment Modal Test würde hier erscheinen!\n\n' +
+                              `Betrag: €${(testAmount / 100).toFixed(2)}\n` +
+                              `Stunden: ${testHours}h\n` +
+                              `Client Secret: ${testClientSecret}\n` +
+                              `Order ID: ${orderId}\n\n` +
+                              'Prüfe Browser Console für Details!'
+                          );
+                        })
+                        .catch(error => {
+                          console.error(
+                            '🔧 DEBUG: Fehler beim Import der Payment-Komponente:',
+                            error
+                          );
+                          alert('❌ DEBUG: Payment-Komponente konnte nicht geladen werden!');
+                        });
+                    }}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+                  >
+                    🔧 Payment Modal Test (€3421.00 / 81.0h)
+                  </button>
+                </div>
+
                 <CustomerApprovalInterface
                   orderId={orderId}
                   onApprovalProcessed={() => {
