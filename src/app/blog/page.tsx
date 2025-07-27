@@ -394,6 +394,30 @@ export default function BlogPage() {
                   </div>
                 </a>
 
+                <a
+                  href="/blog/preisinformationen"
+                  className="block bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiDollarSign className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Preisinformationen & Tarife</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Transparente Preisstrukturen, Kostenfaktoren und Richtwerte für alle
+                        Service-Kategorien bei Taskilo.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>6 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Preise & Kostenübersicht</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
                   <div className="flex items-start gap-4">
                     <FiBookOpen className="text-2xl text-gray-500 mt-1" />
