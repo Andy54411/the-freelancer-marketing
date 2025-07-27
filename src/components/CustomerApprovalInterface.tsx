@@ -960,7 +960,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       }}
                       className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-lg"
                     >
-                      � JETZT BEZAHLEN: {totalBillingPendingHours.toFixed(1)}h - €
+                      💰 JETZT BEZAHLEN: {totalBillingPendingHours.toFixed(1)}h - €
                       {(totalApprovedAdditionalAmount / 100).toFixed(2)}
                     </button>
                   </div>
@@ -1795,25 +1795,34 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
               // Payment Modal öffnen mit echten Daten
               console.log('🔧 FORCE PAYMENT: Setting modal state...');
+
+              // Berechne realistische Stunden basierend auf dem Auftrag
+              const calculatedHours =
+                orderDetails?.timeTracking?.timeEntries
+                  ?.filter((e: any) => e.category === 'additional')
+                  ?.reduce((sum: number, e: any) => sum + (e.hours || 0), 0) || 1.0;
+
               setPaymentClientSecret(billingResult.clientSecret);
               setPaymentAmount(billingResult.customerPays);
-              setPaymentHours(81.0); // Force 81 Stunden für Test
+              setPaymentHours(calculatedHours);
               setShowInlinePayment(true);
 
               console.log('🔧 FORCE PAYMENT: Modal state updated:', {
                 showInlinePayment: true,
                 paymentClientSecret: billingResult.clientSecret ? 'SET' : 'MISSING',
                 paymentAmount: billingResult.customerPays,
-                paymentHours: 81.0,
+                paymentHours: calculatedHours,
+                realDataUsed: true,
+                apiResponse: billingResult,
               });
 
               alert(
-                `🔧 FORCE PAYMENT SUCCESS!\n\nModal wurde ausgelöst!\n\nState:\n• showInlinePayment: true\n• clientSecret: ${billingResult.clientSecret ? 'SET' : 'MISSING'}\n• amount: €${(billingResult.customerPays / 100).toFixed(2)}\n• hours: 81.0h\n\nPrüfen Sie jetzt das DOM!`
+                `🔧 FORCE PAYMENT SUCCESS!\n\nModal wurde ausgelöst!\n\nState:\n• showInlinePayment: true\n• clientSecret: ${billingResult.clientSecret ? 'SET' : 'MISSING'}\n• amount: €${(billingResult.customerPays / 100).toFixed(2)}\n• hours: ${calculatedHours.toFixed(1)}h\n• ECHTE API-DATEN!\n\nPrüfen Sie jetzt das DOM!`
               );
 
               // Button zurücksetzen
               button.disabled = false;
-              button.textContent = '🔧 Force Payment Modal';
+              button.textContent = '🔧 Force Payment Modal (ECHTE API-DATEN)';
             } catch (error) {
               console.error('🔧 FORCE PAYMENT ERROR:', error);
 
@@ -1825,12 +1834,12 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
               const button = e.target as HTMLButtonElement;
               button.disabled = false;
-              button.textContent = '🔧 Force Payment Modal';
+              button.textContent = '🔧 Force Payment Modal (ECHTE API-DATEN)';
             }
           }}
           className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
         >
-          🔧 Force Payment Modal (€3421.00 Test)
+          🔧 Force Payment Modal (ECHTE API-DATEN)
         </button>
       </div>
     </div>
