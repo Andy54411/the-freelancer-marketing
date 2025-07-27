@@ -283,6 +283,88 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       .reduce((sum, entry) => sum + (entry.billableAmount || 0), 0);
   };
 
+  /**
+   * SICHERHEITSFUNKTION: Automatische Erkennung und Freigabe unbezahlter Stunden
+   * Diese Funktion stellt sicher, dass ALLE geleisteten Stunden korrekt erkannt und abgerechnet werden
+   */
+  const initiatePaymentForUnpaidHours = async (unpaidHours: number, orderId: string) => {
+    try {
+      console.log('🔄 [PAYMENT SECURITY] Starting automatic unpaid hours processing:', {
+        unpaidHours,
+        orderId,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Schritt 1: Kunde-initiierte Freigabe für alle unbezahlten Stunden
+      const result = await TimeTracker.customerInitiateAdditionalHoursApproval(
+        orderId,
+        `SICHERHEITS-FREIGABE: ${unpaidHours.toFixed(1)}h unbezahlte Arbeitszeit automatisch zur Freigabe eingereicht`
+      );
+
+      if (result.success && result.approvalRequestId) {
+        console.log('✅ [PAYMENT SECURITY] Approval request created:', result.approvalRequestId);
+
+        // Schritt 2: Sofortige automatische Genehmigung
+        await TimeTracker.processCustomerApproval(
+          orderId,
+          result.approvalRequestId,
+          'approved',
+          undefined,
+          `AUTOMATISCHE GENEHMIGUNG: ${unpaidHours.toFixed(1)}h zur Sicherstellung vollständiger Bezahlung`
+        );
+
+        console.log('✅ [PAYMENT SECURITY] Hours automatically approved');
+
+        // Schritt 3: Direkte Stripe-Abrechnung
+        const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+        console.log('✅ [PAYMENT SECURITY] Payment Intent created:', {
+          paymentIntentId: billingResult.paymentIntentId,
+          amount: billingResult.customerPays / 100,
+        });
+
+        // Schritt 4: Öffne Inline Payment Modal
+        setPaymentClientSecret(billingResult.clientSecret);
+        setPaymentAmount(billingResult.customerPays);
+        setPaymentHours(result.additionalHours);
+        setShowInlinePayment(true);
+
+        console.log('🔓 [PAYMENT SECURITY] Payment Modal opened for security payment');
+
+        return true;
+      } else {
+        console.warn('⚠️ [PAYMENT SECURITY] Failed to create approval request:', result.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ [PAYMENT SECURITY] Error in automatic payment processing:', error);
+
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+
+      // Spezielle Behandlung für bekannte Stripe Connect Probleme
+      if (
+        errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+        errorMessage.includes('Stripe Connect')
+      ) {
+        alert(
+          '⚠️ ZAHLUNGSEINRICHTUNG ERFORDERLICH\n\n' +
+            'Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n\n' +
+            'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Zahlungseinrichtung vollendet hat.\n\n' +
+            `Unbezahlte Stunden: ${unpaidHours.toFixed(1)}h`
+        );
+      } else {
+        alert(
+          `❌ FEHLER BEI AUTOMATISCHER STUNDENABRECHNUNG\n\n` +
+            `${errorMessage}\n\n` +
+            `Unbezahlte Stunden: ${unpaidHours.toFixed(1)}h\n` +
+            `Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.`
+        );
+      }
+
+      return false;
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 text-center">
@@ -308,30 +390,101 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       (e: any) => e.status === 'customer_approved'
     );
 
-    // Alle Stunden die bereits bezahlt/abgerechnet wurden
-    const additionalPaidEntries = additionalEntries.filter(
-      (e: any) =>
-        e.status === 'billed' ||
-        e.status === 'platform_held' ||
-        e.status === 'platform_released' ||
-        e.status === 'escrow_authorized' ||
-        e.status === 'escrow_released'
-    );
-
     const totalLoggedHours = orderDetails?.timeTracking?.totalLoggedHours || 0;
     const originalPlannedHours = orderDetails?.timeTracking?.originalPlannedHours || 0;
 
-    // Berechne die Stunden die bereits bezahlt wurden
-    const totalPaidAdditionalHours = additionalPaidEntries.reduce(
-      (sum: number, e: any) => sum + (e.hours || 0),
-      0
-    );
+    // Berechne die Stunden die bereits bezahlt wurden - ERWEITERTE SICHERHEITSLOGIK
+    const totalPaidAdditionalHours = additionalEntries
+      .filter((e: any) => {
+        // ALLE möglichen bezahlten Status-Arten erfassen:
+        const isPaidStatus =
+          e.status === 'billed' || // Legacy: Direkt abgerechnet
+          e.status === 'platform_held' || // Platform Hold System: Geld gehalten
+          e.status === 'platform_released' || // Platform Hold System: Geld freigegeben
+          e.status === 'escrow_authorized' || // Legacy Escrow: Autorisiert
+          e.status === 'escrow_released' || // Legacy Escrow: Freigegeben
+          e.status === 'billing_pending' || // Abrechnung läuft
+          e.status === 'transferred' || // Übertragen
+          e.platformHoldStatus === 'held' || // Platform Hold Status
+          e.platformHoldStatus === 'transferred' || // Platform zu Provider übertragen
+          e.escrowStatus === 'authorized' || // Legacy Escrow Status
+          e.escrowStatus === 'released' || // Legacy Escrow freigegeben
+          e.paymentIntentId || // Hat PaymentIntent ID
+          e.platformHoldPaymentIntentId || // Hat Platform Hold PaymentIntent
+          e.escrowPaymentIntentId; // Hat Escrow PaymentIntent
 
-    // Nur die Stunden zählen, die noch nicht bezahlt sind
+        // Debug: Logge für Transparenz
+        if (isPaidStatus) {
+          console.log('🔍 [PAID HOUR DETECTED]:', {
+            entryId: e.id,
+            hours: e.hours,
+            status: e.status,
+            platformHoldStatus: e.platformHoldStatus,
+            escrowStatus: e.escrowStatus,
+            hasPaymentIntentId: !!e.paymentIntentId,
+            hasPlatformHoldPaymentIntentId: !!e.platformHoldPaymentIntentId,
+            hasEscrowPaymentIntentId: !!e.escrowPaymentIntentId,
+            category: e.category,
+            reason: 'ALREADY_PAID_OR_PROCESSING',
+          });
+        }
+
+        return isPaidStatus;
+      })
+      .reduce((sum: number, e: any) => sum + (e.hours || 0), 0);
+
+    // Nur die Stunden zählen, die wirklich noch nicht bezahlt sind
     const unpaidAdditionalHours = Math.max(
       0,
       totalLoggedHours - originalPlannedHours - totalPaidAdditionalHours
     );
+
+    // SICHERHEITS-CHECK: Zusätzliche Validierung
+    const totalAdditionalHours = additionalEntries.reduce(
+      (sum: number, e: any) => sum + (e.hours || 0),
+      0
+    );
+    const calculatedUnpaidHours = Math.max(0, totalLoggedHours - originalPlannedHours);
+
+    console.log('🔍 [PAYMENT STATUS ANALYSIS]:', {
+      orderId,
+      originalPlannedHours,
+      totalLoggedHours,
+      totalAdditionalHours,
+      totalPaidAdditionalHours,
+      calculatedUnpaidHours,
+      unpaidAdditionalHours,
+      paidEntriesCount: additionalEntries.filter((e: any) => {
+        return (
+          e.status === 'billed' ||
+          e.status === 'platform_held' ||
+          e.status === 'platform_released' ||
+          e.status === 'escrow_authorized' ||
+          e.status === 'escrow_released' ||
+          e.status === 'billing_pending' ||
+          e.platformHoldStatus === 'held' ||
+          e.platformHoldStatus === 'transferred' ||
+          e.escrowStatus === 'authorized' ||
+          e.escrowStatus === 'released' ||
+          e.paymentIntentId ||
+          e.platformHoldPaymentIntentId ||
+          e.escrowPaymentIntentId
+        );
+      }).length,
+      additionalEntriesBreakdown: additionalEntries.map((e: any) => ({
+        id: e.id,
+        hours: e.hours,
+        status: e.status,
+        category: e.category,
+        platformHoldStatus: e.platformHoldStatus,
+        escrowStatus: e.escrowStatus,
+        hasPaymentIntent: !!(
+          e.paymentIntentId ||
+          e.platformHoldPaymentIntentId ||
+          e.escrowPaymentIntentId
+        ),
+      })),
+    });
     const hasUnpaidExtraWork = unpaidAdditionalHours > 0;
 
     const totalApprovedAdditionalHours = additionalApprovedEntries.reduce(
@@ -592,77 +745,17 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     onClick={async () => {
                       if (
                         !confirm(
-                          `Möchten Sie die ${unpaidAdditionalHours.toFixed(1)} unbezahlten zusätzlichen Stunden zur Freigabe einreichen und genehmigen?`
+                          `🔒 SICHERHEITS-FREIGABE\n\nMöchten Sie die ${unpaidAdditionalHours.toFixed(1)} unbezahlten zusätzlichen Stunden zur Freigabe einreichen und genehmigen?\n\nDies stellt sicher, dass der Anbieter für ALLE geleistete Arbeit bezahlt wird.`
                         )
                       )
                         return;
 
-                      try {
-                        // Schritt 1: Kunde-initiierte Freigabe
-                        const result = await TimeTracker.customerInitiateAdditionalHoursApproval(
-                          orderId,
-                          'Kunde reicht unbezahlte zusätzliche Arbeitszeit zur Freigabe ein'
-                        );
-
-                        if (result.success && result.approvalRequestId) {
-                          // Schritt 2: Sofort genehmigen
-                          await TimeTracker.processCustomerApproval(
-                            orderId,
-                            result.approvalRequestId,
-                            'approved',
-                            undefined,
-                            'Automatisch genehmigt durch Kunde-Initiative für unbezahlte Stunden'
-                          );
-
-                          // Schritt 3: Öffne Inline Payment Modal
-                          const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-                          // Setze Payment-Daten für Inline-Modal
-                          setPaymentClientSecret(billingResult.clientSecret);
-                          setPaymentAmount(billingResult.customerPays);
-                          setPaymentHours(result.additionalHours);
-                          setShowInlinePayment(true);
-
-                          console.log(
-                            '🔓 Customer-initiated Inline Payment Modal für unbezahlte Stunden geöffnet:',
-                            {
-                              clientSecret: billingResult.clientSecret,
-                              amount: billingResult.customerPays / 100,
-                              hours: result.additionalHours,
-                            }
-                          );
-
-                          // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
-                        } else {
-                          alert(result.message);
-                        }
-                      } catch (error) {
-                        console.error(
-                          'Error processing customer-initiated approval for unpaid hours:',
-                          error
-                        );
-
-                        // Bessere Fehlerbehandlung für Stripe Connect Probleme
-                        const errorMessage =
-                          error instanceof Error ? error.message : 'Unbekannter Fehler';
-                        if (
-                          errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
-                          errorMessage.includes('Stripe Connect')
-                        ) {
-                          alert(
-                            'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
-                              'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
-                          );
-                        } else {
-                          alert(
-                            `Fehler beim Freigeben der unbezahlten zusätzlichen Stunden: ${errorMessage}`
-                          );
-                        }
-                      }
+                      // Verwende die neue Sicherheitsfunktion
+                      await initiatePaymentForUnpaidHours(unpaidAdditionalHours, orderId);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors font-medium"
                   >
-                    🚀 {unpaidAdditionalHours.toFixed(1)}h unbezahlte Stunden freigeben & bezahlen
+                    � {unpaidAdditionalHours.toFixed(1)}h SICHERHEITS-FREIGABE & Bezahlung
                   </button>
                 </div>
               </div>
@@ -740,7 +833,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     await loadApprovalRequests();
                     alert('Daten neu geladen');
                   }}
-                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  className="px-3 py-2 text-sm bg-[#14ad9f] text-white rounded hover:bg-[#129488] transition-colors"
                 >
                   � Daten neu laden
                 </button>

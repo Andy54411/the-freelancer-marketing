@@ -133,6 +133,16 @@ applyTo: '**'
 - **Taskilo-Branding**: Hauptfarbe `#14ad9f` (Türkis/Teal)
 - **Konsistente UI**: Shadcn/ui Komponenten verwenden
 
+### 🎨 TASKILO FARB-PALETTE (AUTOMATISCH VERWENDEN):
+- **Hauptfarbe (Primary):** `#14ad9f` - Türkis/Teal für alle primären Aktionen
+- **Hover-Varianten (automatisch wählen):**
+  - `#129488` - Standard dunklerer Hover-Effekt
+  - `#0f8a7e` - Alternative für spezielle Buttons
+  - `#129a8f` - Chat/Interactive Elements
+  - `#0f9d84` - Hero-Sections und Call-to-Actions
+- **Verwendung:** Verwende IMMER diese Farben für neue Komponenten
+- **Tailwind Classes:** `bg-[#14ad9f]`, `hover:bg-[#129488]`, `text-[#14ad9f]`, `border-[#14ad9f]`
+
 ### 💻 Technische Standards:
 - **TypeScript**: Strikte Typisierung für alle Komponenten
 - **Tailwind CSS**: Utility-first CSS für konsistentes Styling
@@ -151,6 +161,28 @@ applyTo: '**'
 - **Stripe-Best-Practices**: Sichere Payment-Implementierung
 - **B2C/B2B-UX**: Adaptives Interface je nach Kundentyp
 - **Workflow-Engine**: Unterschiedliche Buchungs- und Abrechnungsprozesse
+
+## 🎨 AUTOMATISCHE DESIGN-ANWENDUNG
+
+### 🔥 REGEL 5: TASKILO FARBEN AUTOMATISCH VERWENDEN
+- **IMMER** verwende `#14ad9f` als Hauptfarbe für neue Komponenten
+- **AUTOMATISCH** wähle passende Hover-Variante: `#129488`, `#0f8a7e`, `#129a8f` oder `#0f9d84`
+- **KONSISTENT** mit bestehenden Komponenten im Projekt bleiben
+- **NIEMALS** andere Farben ohne ausdrückliche Anweisung verwenden
+
+### 📋 STANDARD DESIGN-PATTERNS:
+1. **Primäre Buttons:** `bg-[#14ad9f] hover:bg-[#129488] text-white`
+2. **Sekundäre Buttons:** `border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white`
+3. **Links:** `text-[#14ad9f] hover:text-[#129488]`
+4. **Focus States:** `focus:ring-[#14ad9f] focus:border-[#14ad9f]`
+5. **Loading Spinner:** `border-[#14ad9f]`
+6. **Active States:** `bg-[#14ad9f] text-white`
+
+### 🎯 AUTOMATISCHE UI-ENTSCHEIDUNGEN:
+- **Neue Komponenten:** Automatisch Taskilo-Farben verwenden
+- **Bestehende reparieren:** Inkonsistente Farben zu Taskilo-Standard ändern  
+- **Hover-Effekte:** Automatisch passende dunklere Variante wählen
+- **Responsive Design:** Mobile-First mit Taskilo-Branding
 
 ---
 
