@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { FiLoader, FiCreditCard, FiX, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import Head from 'next/head';
@@ -226,6 +227,13 @@ export default function InlinePaymentComponent({
   onError,
 }: InlinePaymentComponentProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Client-side mounting check für Portal
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   // Debug logging for client secret
   useEffect(() => {
@@ -295,62 +303,27 @@ export default function InlinePaymentComponent({
     totalAmount,
     totalHours,
     orderId,
+    mounted,
     timestamp: new Date().toISOString(),
   });
+
+  // Nicht rendern wenn nicht gemountet (SSR)
+  if (!mounted) {
+    console.log('❌ [InlinePaymentComponent] Not rendering: not mounted (SSR)');
+    return null;
+  }
 
   if (!isOpen) {
     console.log('❌ [InlinePaymentComponent] Not rendering: isOpen =', isOpen);
     return null;
   }
 
-  // Show error if clientSecret is missing
-  if (!clientSecret) {
-    console.log('❌ [InlinePaymentComponent] Rendering error modal: clientSecret missing');
-    return (
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
-        style={{ zIndex: 999999 }}
-        data-component="InlinePaymentComponent-Error"
-      >
-        <div
-          className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-          style={{ zIndex: 999999 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-red-600">Payment Setup Fehler</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <FiX size={20} />
-            </button>
-          </div>
-          <div className="text-center">
-            <FiAlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-            <p className="text-gray-700 mb-4">
-              Das Payment-System konnte nicht initialisiert werden. Dies liegt wahrscheinlich daran,
-              dass der Dienstleister seine Stripe Connect Einrichtung noch nicht abgeschlossen hat.
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine
-              Zahlungseinrichtung vollendet hat.
-            </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Schließen
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('✅ [InlinePaymentComponent] Rendering main payment modal');
-
-  return (
+  // Modal Content erstellen
+  const modalContent = (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
       style={{
-        zIndex: 999999,
+        zIndex: 2147483647, // Max z-index value
         position: 'fixed',
         top: 0,
         left: 0,
@@ -359,92 +332,143 @@ export default function InlinePaymentComponent({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
       }}
-      data-component="InlinePaymentComponent-Main"
+      data-component="InlinePaymentComponent-Portal"
       data-testid="payment-modal-overlay"
+      onClick={e => {
+        // Close modal when clicking backdrop
+        if (e.target === e.currentTarget) {
+          console.log('🔘 [InlinePaymentComponent] Backdrop geklickt - Modal schließen');
+          onClose();
+        }
+      }}
     >
       <div
         className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         style={{
-          zIndex: 999999,
+          zIndex: 2147483647,
           position: 'relative',
+          backgroundColor: 'white',
         }}
         data-testid="payment-modal-container"
+        onClick={e => e.stopPropagation()} // Prevent backdrop click when clicking modal content
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <FiCreditCard className="text-[#14ad9f] mr-2" size={20} />
-            <h3 className="text-lg font-semibold text-gray-900">💳 Zusätzliche Stunden bezahlen</h3>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-          >
-            <FiX size={20} />
-          </button>
-        </div>
-
-        {/* Critical Payment Notice */}
-        <div className="p-6 pb-3">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center">
-              <FiAlertCircle className="text-red-600 mr-2" size={16} />
-              <span className="text-red-800 font-bold">🚨 SOFORTIGE BEZAHLUNG ERFORDERLICH!</span>
+        {!clientSecret ? (
+          // Error Modal Content
+          <>
+            <div className="flex items-center justify-between mb-4 p-6">
+              <h3 className="text-lg font-semibold text-red-600">Payment Setup Fehler</h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <FiX size={20} />
+              </button>
             </div>
-            <p className="text-red-700 mt-2">
-              {totalHours}h sind bereits genehmigt, aber die Bezahlung steht noch aus!
-            </p>
-            <p className="text-red-800 font-bold mt-1">
-              💰 JETZT BEZAHLEN: {totalHours.toFixed(1)}h - €{(totalAmount / 100).toFixed(2)}
-            </p>
-            <p className="text-red-600 text-sm mt-2">
-              Es ist doch nicht so schwer das Payment einzubauen!
-            </p>
-          </div>
-        </div>
+            <div className="text-center p-6">
+              <FiAlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+              <p className="text-gray-700 mb-4">
+                Das Payment-System konnte nicht initialisiert werden. Dies liegt wahrscheinlich
+                daran, dass der Dienstleister seine Stripe Connect Einrichtung noch nicht
+                abgeschlossen hat.
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine
+                Zahlungseinrichtung vollendet hat.
+              </p>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Schließen
+              </button>
+            </div>
+          </>
+        ) : (
+          // Main Payment Modal Content
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center">
+                <FiCreditCard className="text-[#14ad9f] mr-2" size={20} />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  💳 Zusätzliche Stunden bezahlen
+                </h3>
+              </div>
+              <button
+                onClick={onClose}
+                disabled={isProcessing}
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
 
-        {/* Content */}
-        <div className="px-6 pb-6">
-          <Elements
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              appearance: {
-                theme: 'stripe',
-                variables: {
-                  colorPrimary: '#14ad9f',
-                  colorBackground: '#ffffff',
-                  colorText: '#1f2937',
-                  colorDanger: '#dc2626',
-                  fontFamily: 'system-ui, sans-serif',
-                  spacingUnit: '4px',
-                  borderRadius: '8px',
-                },
-              },
-              loader: 'auto',
-            }}
-          >
-            <CheckoutForm
-              clientSecret={clientSecret}
-              totalAmount={totalAmount}
-              totalHours={totalHours}
-              onSuccess={onSuccess}
-              onError={onError}
-              onProcessing={setIsProcessing}
-            />
-          </Elements>
-        </div>
+            {/* Critical Payment Notice */}
+            <div className="p-6 pb-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center">
+                  <FiAlertCircle className="text-red-600 mr-2" size={16} />
+                  <span className="text-red-800 font-bold">
+                    🚨 SOFORTIGE BEZAHLUNG ERFORDERLICH!
+                  </span>
+                </div>
+                <p className="text-red-700 mt-2">
+                  {totalHours}h sind bereits genehmigt, aber die Bezahlung steht noch aus!
+                </p>
+                <p className="text-red-800 font-bold mt-1">
+                  💰 JETZT BEZAHLEN: {totalHours.toFixed(1)}h - €{(totalAmount / 100).toFixed(2)}
+                </p>
+                <p className="text-red-600 text-sm mt-2">
+                  💻 DOM PORTAL LÖSUNG: Modal direkt in document.body!
+                </p>
+              </div>
+            </div>
 
-        {/* Footer */}
-        <div className="px-6 pb-6">
-          <div className="flex items-center text-xs text-gray-500">
-            <FiCheckCircle className="mr-1" />
-            Ihre Zahlung wird sicher über Stripe verarbeitet
-          </div>
-        </div>
+            {/* Content */}
+            <div className="px-6 pb-6">
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#14ad9f',
+                      colorBackground: '#ffffff',
+                      colorText: '#1f2937',
+                      colorDanger: '#dc2626',
+                      fontFamily: 'system-ui, sans-serif',
+                      spacingUnit: '4px',
+                      borderRadius: '8px',
+                    },
+                  },
+                  loader: 'auto',
+                }}
+              >
+                <CheckoutForm
+                  clientSecret={clientSecret}
+                  totalAmount={totalAmount}
+                  totalHours={totalHours}
+                  onSuccess={onSuccess}
+                  onError={onError}
+                  onProcessing={setIsProcessing}
+                />
+              </Elements>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6">
+              <div className="flex items-center text-xs text-gray-500">
+                <FiCheckCircle className="mr-1" />
+                Ihre Zahlung wird sicher über Stripe verarbeitet
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
+
+  // Portal: Modal direkt in document.body rendern für maximale DOM-Sichtbarkeit
+  console.log('🚀 [InlinePaymentComponent] Rendering via Portal in document.body');
+  return createPortal(modalContent, document.body);
 }
