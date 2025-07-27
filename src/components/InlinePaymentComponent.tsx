@@ -156,13 +156,47 @@ function CheckoutForm({
         </div>
       </div>
 
+      {/* DEBUG: Test-Karten Information */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <h5 className="font-medium text-blue-900 mb-2">
+          🧪 Test-Modus - Verwenden Sie Stripe Test-Karten:
+        </h5>
+        <div className="text-sm text-blue-800 space-y-1">
+          <p>
+            <strong>Erfolg:</strong> 4242 4242 4242 4242
+          </p>
+          <p>
+            <strong>Ablauf:</strong> Beliebiges zukünftiges Datum (z.B. 12/25)
+          </p>
+          <p>
+            <strong>CVC:</strong> Beliebige 3 Ziffern (z.B. 123)
+          </p>
+          <p>
+            <strong>PLZ:</strong> Beliebige Postleitzahl (z.B. 12345)
+          </p>
+        </div>
+      </div>
+
       {/* Stripe Payment Element */}
       <div className="border border-gray-200 rounded-lg p-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">Zahlungsmethode</label>
         <PaymentElement
           options={{
             layout: 'tabs',
-            paymentMethodOrder: ['card', 'sepa_debit'],
+            paymentMethodOrder: ['card'],
+            fields: {
+              billingDetails: 'never', // Keine Billing-Details erfragen
+            },
+            defaultValues: {
+              billingDetails: {
+                name: '',
+                email: '',
+                phone: '',
+                address: {
+                  country: 'DE',
+                },
+              },
+            },
           }}
         />
       </div>
