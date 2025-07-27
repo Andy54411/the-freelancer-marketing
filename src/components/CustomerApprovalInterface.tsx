@@ -390,7 +390,21 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                         // Keine Weiterleitung mehr - Payment wird inline angezeigt
                       } catch (error) {
                         console.error('Error processing approved hours billing:', error);
-                        alert('Fehler beim Erstellen der Zahlung für genehmigte Stunden');
+
+                        // Bessere Fehlerbehandlung für Stripe Connect Probleme
+                        const errorMessage =
+                          error instanceof Error ? error.message : 'Unbekannter Fehler';
+                        if (
+                          errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+                          errorMessage.includes('Stripe Connect')
+                        ) {
+                          alert(
+                            'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
+                              'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+                          );
+                        } else {
+                          alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
+                        }
                       }
                     }}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
@@ -480,7 +494,21 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                         }
                       } catch (error) {
                         console.error('Error processing customer-initiated approval:', error);
-                        alert('Fehler beim Freigeben der zusätzlichen Stunden');
+
+                        // Bessere Fehlerbehandlung für Stripe Connect Probleme
+                        const errorMessage =
+                          error instanceof Error ? error.message : 'Unbekannter Fehler';
+                        if (
+                          errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+                          errorMessage.includes('Stripe Connect')
+                        ) {
+                          alert(
+                            'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
+                              'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+                          );
+                        } else {
+                          alert(`Fehler beim Freigeben der zusätzlichen Stunden: ${errorMessage}`);
+                        }
                       }
                     }}
                     className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#0f8a7e] transition-colors font-medium"

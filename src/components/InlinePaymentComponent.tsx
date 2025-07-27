@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { FiLoader, FiCreditCard, FiX, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import Head from 'next/head';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -40,11 +41,22 @@ function CheckoutForm({
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Debug logging for Stripe initialization
+  useEffect(() => {
+    console.log('[CheckoutForm] Stripe and Elements status:', {
+      stripe: stripe ? 'LOADED' : 'LOADING',
+      elements: elements ? 'LOADED' : 'LOADING',
+      clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
+    });
+  }, [stripe, elements, clientSecret]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!stripe || !elements) {
-      onError('Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.');
+      const errorMsg = 'Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
+      setMessage(errorMsg);
+      onError(errorMsg);
       return;
     }
 
@@ -97,6 +109,16 @@ function CheckoutForm({
       onProcessing(false);
     }
   };
+
+  // Show loading state if Stripe is not ready
+  if (!stripe || !elements) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <FiLoader className="animate-spin mr-2" />
+        <span>Zahlungssystem wird geladen...</span>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -176,7 +198,75 @@ export default function InlinePaymentComponent({
 }: InlinePaymentComponentProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Debug logging for client secret
+  useEffect(() => {
+    console.log('[InlinePaymentComponent] Component mounted with:', {
+      isOpen,
+      clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
+      orderId,
+      totalAmount,
+      totalHours,
+    });
+  }, [isOpen, clientSecret, orderId, totalAmount, totalHours]);
+
+  // Ensure viewport meta tag is present for Stripe Elements
+  useEffect(() => {
+    // Check if viewport meta tag exists and has correct content
+    const existingViewport = document.querySelector('meta[name="viewport"]');
+    if (
+      !existingViewport ||
+      !existingViewport.getAttribute('content')?.includes('width=device-width')
+    ) {
+      // Create or update viewport meta tag
+      const viewport = existingViewport || document.createElement('meta');
+      viewport.setAttribute('name', 'viewport');
+      viewport.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes'
+      );
+
+      if (!existingViewport) {
+        document.head.appendChild(viewport);
+      }
+
+      console.log('[InlinePaymentComponent] Viewport meta tag ensured for Stripe Elements');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  // Show error if clientSecret is missing
+  if (!clientSecret) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-red-600">Payment Setup Fehler</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <FiX size={20} />
+            </button>
+          </div>
+          <div className="text-center">
+            <FiAlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <p className="text-gray-700 mb-4">
+              Das Payment-System konnte nicht initialisiert werden. Dies liegt wahrscheinlich daran,
+              dass der Dienstleister seine Stripe Connect Einrichtung noch nicht abgeschlossen hat.
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine
+              Zahlungseinrichtung vollendet hat.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -214,6 +304,7 @@ export default function InlinePaymentComponent({
                   borderRadius: '8px',
                 },
               },
+              loader: 'auto',
             }}
           >
             <CheckoutForm

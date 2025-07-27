@@ -1012,37 +1012,26 @@ export class TimeTracker {
         const fallbackStripeAccountId = providerUserData?.stripeAccountId;
 
         console.log(
-          '[TimeTracker] Provider Stripe Connect Setup missing - using fallback account:',
+          '[TimeTracker] Provider Stripe Connect Setup missing - Detaillierte Diagnose:',
           {
             orderId,
             providerId: orderData.selectedAnbieterId,
+            companiesDoc: providerDoc.exists()
+              ? {
+                  companyName: providerData?.companyName,
+                  hasStripeConnectAccountId: !!providerData?.stripeConnectAccountId,
+                  stripeConnectAccountId: providerData?.stripeConnectAccountId,
+                  stripeConnectStatus: providerData?.stripeConnectStatus || 'not_started',
+                }
+              : 'NO_COMPANIES_DOC',
+            usersDoc: providerUserDoc.exists()
+              ? {
+                  userType: providerUserData?.user_type,
+                  hasStripeAccountId: !!providerUserData?.stripeAccountId,
+                  stripeAccountId: providerUserData?.stripeAccountId,
+                }
+              : 'NO_USERS_DOC',
             fallbackAccountId: fallbackStripeAccountId,
-            // Detailed diagnosis available in development mode
-            ...(process.env.NODE_ENV === 'development' && {
-              companiesDoc: {
-                exists: providerDoc.exists(),
-                data: providerData
-                  ? {
-                      companyName: providerData.companyName,
-                      hasStripeConnectAccountId: !!providerData.stripeConnectAccountId,
-                      stripeConnectAccountId: providerData.stripeConnectAccountId,
-                      stripeConnectStatus: providerData.stripeConnectStatus || 'not_started',
-                      allKeys: Object.keys(providerData),
-                    }
-                  : 'NO_DATA',
-              },
-              usersDoc: {
-                exists: providerUserDoc.exists(),
-                data: providerUserData
-                  ? {
-                      userType: providerUserData.user_type,
-                      hasStripeAccountId: !!providerUserData.stripeAccountId,
-                      stripeAccountId: providerUserData.stripeAccountId,
-                      allKeys: Object.keys(providerUserData).filter(k => k.includes('stripe')),
-                    }
-                  : 'NO_DATA',
-              },
-            }),
           }
         );
 
@@ -1084,6 +1073,22 @@ export class TimeTracker {
 
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('[TimeTracker] API Error creating PaymentIntent (fallback):', errorData);
+
+            // Spezielle Behandlung für Stripe Connect Probleme
+            if (
+              errorData.error?.includes('Stripe Connect') ||
+              errorData.error?.includes('account')
+            ) {
+              console.error('[TimeTracker] Stripe Connect Setup Problem detected');
+              throw new Error(
+                `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
+                  `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
+                  `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
+                  `Technische Details: ${errorData.error}`
+              );
+            }
+
             throw new Error(errorData.error || 'Failed to create PaymentIntent');
           }
 
@@ -1176,6 +1181,19 @@ export class TimeTracker {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[TimeTracker] API Error creating PaymentIntent:', errorData);
+
+        // Spezielle Behandlung für Stripe Connect Probleme
+        if (errorData.error?.includes('Stripe Connect') || errorData.error?.includes('account')) {
+          console.error('[TimeTracker] Stripe Connect Setup Problem detected');
+          throw new Error(
+            `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
+              `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
+              `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
+              `Technische Details: ${errorData.error}`
+          );
+        }
+
         throw new Error(errorData.error || 'Failed to create PaymentIntent');
       }
 
