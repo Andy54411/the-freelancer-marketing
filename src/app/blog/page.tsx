@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FiBookOpen, FiTrendingUp, FiUsers, FiZap } from 'react-icons/fi';
+import { FiBookOpen, FiTrendingUp, FiUsers, FiZap, FiCreditCard } from 'react-icons/fi';
 import { HeroHeader } from '@/components/hero8-header';
 
 export default function BlogPage() {
@@ -10,7 +10,7 @@ export default function BlogPage() {
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
-        
+
         {/* Header */}
         <div className="text-white py-16">
           <div className="max-w-4xl mx-auto px-4">
@@ -66,8 +66,31 @@ export default function BlogPage() {
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-gray-200">
+                  {/* Verfügbare Artikel */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Verfügbare Artikel:
+                    </h3>
+                    <div className="space-y-3">
+                      <a
+                        href="/blog/zahlungsablaeufe"
+                        className="block bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-[#129488] hover:to-teal-700 text-white rounded-lg p-4 transition-all duration-200 transform hover:scale-105 shadow-md"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FiCreditCard className="text-xl" />
+                          <div>
+                            <h4 className="font-semibold">Zahlungsabläufe bei Taskilo</h4>
+                            <p className="text-sm text-white/90">
+                              Transparente und sichere Zahlungen für Kunden und Dienstleister
+                            </p>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+
                   <p className="text-gray-500">
-                    Möchtest du informiert werden, wenn der Blog online geht?
+                    Möchtest du informiert werden, wenn weitere Artikel online gehen?
                   </p>
                   <a
                     href="mailto:blog@taskilo.de"
