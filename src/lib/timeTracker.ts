@@ -1011,43 +1011,44 @@ export class TimeTracker {
         const providerUserData = providerUserDoc.data();
         const fallbackStripeAccountId = providerUserData?.stripeAccountId;
 
-        console.error(
-          '[TimeTracker] Provider Stripe Connect Setup missing - Detaillierte Diagnose:',
+        console.log(
+          '[TimeTracker] Provider Stripe Connect Setup missing - using fallback account:',
           {
             orderId,
             providerId: orderData.selectedAnbieterId,
-            // companies Collection
-            companiesDoc: {
-              exists: providerDoc.exists(),
-              data: providerData
-                ? {
-                    companyName: providerData.companyName,
-                    hasStripeConnectAccountId: !!providerData.stripeConnectAccountId,
-                    stripeConnectAccountId: providerData.stripeConnectAccountId,
-                    stripeConnectStatus: providerData.stripeConnectStatus || 'not_started',
-                    allKeys: Object.keys(providerData),
-                  }
-                : 'NO_DATA',
-            },
-            // users Collection (Fallback)
-            usersDoc: {
-              exists: providerUserDoc.exists(),
-              data: providerUserData
-                ? {
-                    userType: providerUserData.user_type,
-                    hasStripeAccountId: !!providerUserData.stripeAccountId,
-                    stripeAccountId: providerUserData.stripeAccountId,
-                    allKeys: Object.keys(providerUserData).filter(k => k.includes('stripe')),
-                  }
-                : 'NO_DATA',
-            },
             fallbackAccountId: fallbackStripeAccountId,
+            // Detailed diagnosis available in development mode
+            ...(process.env.NODE_ENV === 'development' && {
+              companiesDoc: {
+                exists: providerDoc.exists(),
+                data: providerData
+                  ? {
+                      companyName: providerData.companyName,
+                      hasStripeConnectAccountId: !!providerData.stripeConnectAccountId,
+                      stripeConnectAccountId: providerData.stripeConnectAccountId,
+                      stripeConnectStatus: providerData.stripeConnectStatus || 'not_started',
+                      allKeys: Object.keys(providerData),
+                    }
+                  : 'NO_DATA',
+              },
+              usersDoc: {
+                exists: providerUserDoc.exists(),
+                data: providerUserData
+                  ? {
+                      userType: providerUserData.user_type,
+                      hasStripeAccountId: !!providerUserData.stripeAccountId,
+                      stripeAccountId: providerUserData.stripeAccountId,
+                      allKeys: Object.keys(providerUserData).filter(k => k.includes('stripe')),
+                    }
+                  : 'NO_DATA',
+              },
+            }),
           }
         );
 
         // Falls Fallback verfügbar, verwende ihn
         if (fallbackStripeAccountId) {
-          console.warn(
+          console.log(
             '[TimeTracker] Using fallback Stripe Account ID from users collection:',
             fallbackStripeAccountId
           );
