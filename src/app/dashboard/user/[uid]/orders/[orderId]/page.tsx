@@ -99,6 +99,17 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [authLoading, currentUser, orderId, router]);
 
+  // Payment Modal State Monitor
+  useEffect(() => {
+    console.log('🔍 PAYMENT STATE CHANGE:', {
+      showInlinePayment,
+      paymentClientSecret: paymentClientSecret ? 'SET' : 'NULL',
+      paymentAmount,
+      paymentHours,
+      timestamp: new Date().toISOString(),
+    });
+  }, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);
+
   // NEU: Die Logik zum Laden des Auftrags in eine useCallback-Funktion extrahiert,
   // damit wir sie nach einer Aktion erneut aufrufen können.
   const fetchOrder = useCallback(async () => {
@@ -203,7 +214,7 @@ export default function OrderDetailPage() {
 
   // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden
   const handlePaymentRequest = (clientSecret: string, amount: number, hours: number) => {
-    console.log('🔄 Opening payment modal from CustomerApprovalInterface:', {
+    console.log('🔄 CRITICAL: Payment request received from CustomerApprovalInterface:', {
       clientSecret,
       amount,
       hours,
@@ -213,24 +224,51 @@ export default function OrderDetailPage() {
     setPaymentAmount(amount);
     setPaymentHours(hours);
     setShowInlinePayment(true);
+
+    console.log('🔓 CRITICAL: Payment modal state set:', {
+      showInlinePayment: true,
+      paymentClientSecret: clientSecret,
+      paymentAmount: amount,
+      paymentHours: hours,
+    });
   };
 
-  // Payment Modal Handler
+  // Direct Payment Modal Handler - Direct Test
   const handleOpenPayment = async () => {
     if (!orderId) return;
 
     try {
-      console.log('🔄 Opening payment modal for order:', orderId);
+      console.log('🔄 DIRECT: Opening payment modal for order:', orderId);
 
       // Mock payment data für Test
-      setPaymentClientSecret('pi_test_1234567890_secret_12345'); // Test client secret
-      setPaymentAmount(5000); // 50.00 EUR
-      setPaymentHours(2.5);
+      const testClientSecret = 'pi_test_1234567890_secret_12345';
+      const testAmount = 5000; // 50.00 EUR
+      const testHours = 2.5;
+
+      console.log('🔄 DIRECT: Setting payment state...', {
+        clientSecret: testClientSecret,
+        amount: testAmount,
+        hours: testHours,
+      });
+
+      setPaymentClientSecret(testClientSecret);
+      setPaymentAmount(testAmount);
+      setPaymentHours(testHours);
       setShowInlinePayment(true);
 
-      console.log('✅ Payment modal opened');
+      console.log('✅ DIRECT: Payment modal opened successfully');
+
+      // Wait a bit and check state
+      setTimeout(() => {
+        console.log('🔓 DIRECT: State check after 100ms:', {
+          showInlinePayment,
+          paymentClientSecret,
+          paymentAmount,
+          paymentHours,
+        });
+      }, 100);
     } catch (error) {
-      console.error('❌ Error opening payment modal:', error);
+      console.error('❌ DIRECT: Error opening payment modal:', error);
     }
   };
 
@@ -427,8 +465,42 @@ export default function OrderDetailPage() {
                     console.log('Approval processed');
                     fetchOrder(); // Reload order data
                   }}
-                  onPaymentRequest={handlePaymentRequest}
                 />
+
+                {/* Direct Payment Test Button - Independent of CustomerApprovalInterface */}
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    💳 Payment Test (Page Level)
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Direkter Test-Button für das Payment-Modal - unabhängig von der
+                    CustomerApprovalInterface
+                  </p>
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleOpenPayment}
+                      className="bg-[#14ad9f] hover:bg-[#129488] text-white font-medium py-2 px-4 rounded-lg transition-colors mr-2"
+                    >
+                      🔓 Test Payment Modal öffnen
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPaymentClientSecret('pi_test_real_12345');
+                        setPaymentAmount(2500); // 25 EUR
+                        setPaymentHours(1.5);
+                        setShowInlinePayment(true);
+                        console.log('🔓 DIRECT: Payment modal opened manually');
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      🚀 Direct Modal Open
+                    </button>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Modal State: showInlinePayment={showInlinePayment.toString()}, clientSecret=
+                    {paymentClientSecret ? 'SET' : 'NULL'}
+                  </div>
+                </div>
               </div>
             )}
 

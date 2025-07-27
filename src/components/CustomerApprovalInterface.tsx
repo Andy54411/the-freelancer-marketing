@@ -188,8 +188,15 @@ export default function CustomerApprovalInterface({
 
           // Rufe Parent Payment Handler auf, wenn verfügbar
           if (onPaymentRequest) {
+            console.log('🔓 CRITICAL: Calling onPaymentRequest with:', {
+              clientSecret: billingResult.clientSecret,
+              amount: billingResult.customerPays,
+              hours: paymentHours,
+            });
             onPaymentRequest(billingResult.clientSecret, billingResult.customerPays, paymentHours);
+            console.log('🔓 CRITICAL: onPaymentRequest called successfully');
           } else {
+            console.log('🔓 CRITICAL: No onPaymentRequest handler - using fallback');
             // Fallback: Eigenes Payment Modal (old behavior)
             setPaymentClientSecret(billingResult.clientSecret);
             setPaymentAmount(billingResult.customerPays);
