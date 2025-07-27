@@ -973,7 +973,8 @@ export class TimeTracker {
         throw new Error('Time tracking not found');
       }
 
-      // Hole genehmigte zusätzliche Stunden (customer_approved ODER billing_pending)
+      // Hole genehmigte zusätzliche Stunden (customer_approved UND billing_pending)
+      // billing_pending = bereits genehmigt aber Payment fehlgeschlagen/wiederholt
       const approvedEntries = orderData.timeTracking.timeEntries.filter(
         entry =>
           entry.category === 'additional' &&
@@ -1096,14 +1097,20 @@ export class TimeTracker {
 
           const paymentData = await response.json();
 
-          // Markiere Einträge als abgerechnet (vorläufig)
+          // Markiere NEUE Einträge als billing_pending, aktualisiere BEREITS billing_pending Einträge
           const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
-            if (entry.category === 'additional' && entry.status === 'customer_approved') {
+            if (
+              entry.category === 'additional' &&
+              (entry.status === 'customer_approved' || entry.status === 'billing_pending')
+            ) {
               return {
                 ...entry,
                 status: 'billing_pending' as const,
                 paymentIntentId: paymentData.paymentIntentId,
-                billingInitiatedAt: Timestamp.now(),
+                billingInitiatedAt:
+                  entry.status === 'billing_pending' && 'billingInitiatedAt' in entry
+                    ? entry.billingInitiatedAt
+                    : Timestamp.now(),
               };
             }
             return entry;
@@ -1201,14 +1208,20 @@ export class TimeTracker {
 
       const paymentData = await response.json();
 
-      // Markiere Einträge als abgerechnet (vorläufig)
+      // Markiere NEUE Einträge als billing_pending, aktualisiere BEREITS billing_pending Einträge
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
-        if (entry.category === 'additional' && entry.status === 'customer_approved') {
+        if (
+          entry.category === 'additional' &&
+          (entry.status === 'customer_approved' || entry.status === 'billing_pending')
+        ) {
           return {
             ...entry,
             status: 'billing_pending' as const,
             paymentIntentId: paymentData.paymentIntentId,
-            billingInitiatedAt: Timestamp.now(),
+            billingInitiatedAt:
+              entry.status === 'billing_pending' && 'billingInitiatedAt' in entry
+                ? entry.billingInitiatedAt
+                : Timestamp.now(),
           };
         }
         return entry;
