@@ -271,13 +271,37 @@ export default function InlinePaymentComponent({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
+      // Force body scroll lock
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+
+      console.log('🔒 [InlinePaymentComponent] Body scroll locked for modal');
+
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        console.log('🔓 [InlinePaymentComponent] Body scroll unlocked');
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Show error if clientSecret is missing
   if (!clientSecret) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+        style={{ zIndex: 9999 }}
+      >
+        <div
+          className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+          style={{ zIndex: 10000 }}
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-red-600">Payment Setup Fehler</h3>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -307,8 +331,14 @@ export default function InlinePaymentComponent({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+      style={{ zIndex: 9999 }}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        style={{ zIndex: 10000 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center">

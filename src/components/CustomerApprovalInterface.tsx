@@ -760,6 +760,64 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                           setShowInlinePayment(true);
 
+                          // DOM-Element Sichtbarkeits-Check nach 500ms
+                          setTimeout(() => {
+                            console.log('='.repeat(80));
+                            console.log('🔍 MODAL DOM VISIBILITY CHECK');
+                            console.log('='.repeat(80));
+
+                            // Prüfe alle Modal-relevanten DOM-Elemente
+                            const modalOverlay = document.querySelector(
+                              '.fixed.inset-0.bg-black.bg-opacity-50'
+                            );
+                            const modalContainer = document.querySelector(
+                              '.bg-white.rounded-lg.shadow-xl'
+                            );
+                            const stripeElements = document.querySelector(
+                              '[data-testid="payment-element"]'
+                            );
+
+                            const domCheck = {
+                              modalOverlay: {
+                                found: !!modalOverlay,
+                                visible: modalOverlay
+                                  ? getComputedStyle(modalOverlay).display !== 'none'
+                                  : false,
+                                zIndex: modalOverlay
+                                  ? getComputedStyle(modalOverlay).zIndex
+                                  : 'N/A',
+                                opacity: modalOverlay
+                                  ? getComputedStyle(modalOverlay).opacity
+                                  : 'N/A',
+                              },
+                              modalContainer: {
+                                found: !!modalContainer,
+                                visible: modalContainer
+                                  ? getComputedStyle(modalContainer).display !== 'none'
+                                  : false,
+                                position: modalContainer
+                                  ? getComputedStyle(modalContainer).position
+                                  : 'N/A',
+                              },
+                              stripeElements: {
+                                found: !!stripeElements,
+                                elementCount: document.querySelectorAll('[class*="stripe"]').length,
+                              },
+                              bodyOverflow: getComputedStyle(document.body).overflow,
+                              documentHeight: document.documentElement.scrollHeight,
+                              viewportHeight: window.innerHeight,
+                              scrollPosition: window.scrollY,
+                            };
+
+                            console.log('DOM_VISIBILITY_CHECK:', JSON.stringify(domCheck, null, 2));
+                            console.log('='.repeat(80));
+
+                            // Alert mit DOM-Status
+                            alert(
+                              `🔍 DOM Check:\nModal Overlay: ${domCheck.modalOverlay.found ? 'Found' : 'Missing'}\nModal Container: ${domCheck.modalContainer.found ? 'Found' : 'Missing'}\nZ-Index: ${domCheck.modalOverlay.zIndex}\n\nPrüfen Sie die Browser-Konsole für Details!`
+                            );
+                          }, 500);
+
                           const modalInfo = {
                             clientSecret: !!billingResult.clientSecret,
                             amount: billingResult.customerPays / 100,
