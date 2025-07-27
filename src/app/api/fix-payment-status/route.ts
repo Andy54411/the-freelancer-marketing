@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const updates = [];
-    const entryIds = [];
+    const updates: Array<{ id: string; oldStatus: any; newStatus: string }> = [];
+    const entryIds: string[] = [];
 
     // Batch update all time entries
     const batch = db.batch();
