@@ -307,13 +307,32 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
     const additionalApprovedEntries = additionalEntries.filter(
       (e: any) => e.status === 'customer_approved'
     );
-    const additionalBilledEntries = additionalEntries.filter(
-      (e: any) => e.status === 'platform_held' || e.status === 'platform_released'
+
+    // Alle Stunden die bereits bezahlt/abgerechnet wurden
+    const additionalPaidEntries = additionalEntries.filter(
+      (e: any) =>
+        e.status === 'billed' ||
+        e.status === 'platform_held' ||
+        e.status === 'platform_released' ||
+        e.status === 'escrow_authorized' ||
+        e.status === 'escrow_released'
     );
 
     const totalLoggedHours = orderDetails?.timeTracking?.totalLoggedHours || 0;
     const originalPlannedHours = orderDetails?.timeTracking?.originalPlannedHours || 0;
-    const hasExtraWork = totalLoggedHours > originalPlannedHours;
+
+    // Berechne die Stunden die bereits bezahlt wurden
+    const totalPaidAdditionalHours = additionalPaidEntries.reduce(
+      (sum: number, e: any) => sum + (e.hours || 0),
+      0
+    );
+
+    // Nur die Stunden zählen, die noch nicht bezahlt sind
+    const unpaidAdditionalHours = Math.max(
+      0,
+      totalLoggedHours - originalPlannedHours - totalPaidAdditionalHours
+    );
+    const hasUnpaidExtraWork = unpaidAdditionalHours > 0;
 
     const totalApprovedAdditionalHours = additionalApprovedEntries.reduce(
       (sum: number, e: any) => sum + (e.hours || 0),
@@ -451,7 +470,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     onClick={async () => {
                       if (
                         !confirm(
-                          `Möchten Sie die ${(totalLoggedHours - originalPlannedHours).toFixed(1)} zusätzlichen Stunden zur Freigabe einreichen und genehmigen?`
+                          `Möchten Sie die ${unpaidAdditionalHours.toFixed(1)} unbezahlten zusätzlichen Stunden zur Freigabe einreichen und genehmigen?`
                         )
                       )
                         return;
@@ -520,7 +539,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
               </div>
             </div>
           </div>
-        ) : hasExtraWork ? (
+        ) : hasUnpaidExtraWork ? (
           // Fall 3: Mehr Stunden protokolliert als geplant, aber nicht als "zusätzlich" kategorisiert
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
             <div className="flex items-start gap-3">
@@ -533,7 +552,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                   Es wurden mehr Stunden protokolliert als ursprünglich geplant.
                 </p>
                 <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Geplant:</span>
                       <span className="font-medium ml-2">{originalPlannedHours}h</span>
@@ -542,12 +561,27 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       <span className="text-gray-600">Protokolliert:</span>
                       <span className="font-medium ml-2 text-blue-600">{totalLoggedHours}h</span>
                     </div>
+                    <div>
+                      <span className="text-gray-600">Noch nicht bezahlt:</span>
+                      <span className="font-medium ml-2 text-orange-600">
+                        {unpaidAdditionalHours.toFixed(1)}h
+                      </span>
+                    </div>
                   </div>
+                  {totalPaidAdditionalHours > 0 && (
+                    <div className="mt-2 pt-2 border-t border-blue-200">
+                      <span className="text-sm text-gray-600">Bereits bezahlt: </span>
+                      <span className="text-sm font-medium text-green-600">
+                        {totalPaidAdditionalHours.toFixed(1)}h
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4 p-3 bg-blue-100 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    Der Anbieter sollte prüfen, ob zusätzliche Arbeit als &ldquo;Zusätzliche
-                    Stunden&rdquo; kategorisiert und zur Freigabe eingereicht werden muss.
+                    Der Anbieter sollte die {unpaidAdditionalHours.toFixed(1)} unbezahlten
+                    zusätzlichen Stunden als &ldquo;Zusätzliche Stunden&rdquo; kategorisieren und
+                    zur Freigabe einreichen.
                   </p>
                 </div>
               </div>
@@ -927,28 +961,104 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           onSuccess={async paymentIntentId => {
             console.log('Payment successful:', paymentIntentId);
 
-            // Schließe Payment Modal
-            setShowInlinePayment(false);
-            setPaymentClientSecret(null);
-            setPaymentAmount(0);
-            setPaymentHours(0);
+            try {
+              // Schritt 1: Verifikation der Zahlung über Backend API
+              console.log('🔍 Verifying payment status...');
+              const verifyResponse = await fetch('/api/verify-payment-status', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  paymentIntentId,
+                  orderId,
+                }),
+              });
 
-            // Zeige Erfolgsmeldung
-            alert(
-              `✅ Zahlung erfolgreich!\n\nPayment ID: ${paymentIntentId}\n\nDie zusätzlichen Stunden wurden erfolgreich bezahlt.`
-            );
+              if (!verifyResponse.ok) {
+                throw new Error('Fehler bei der Zahlungsverifikation');
+              }
 
-            // Aktualisiere die Daten
-            await loadApprovalRequests();
+              const verifyData = await verifyResponse.json();
+              console.log('✅ Payment verification result:', verifyData);
 
-            // Callback für Parent-Komponente
-            if (onApprovalProcessed) {
-              onApprovalProcessed();
+              // Schritt 2: Nur bei verifizierter Zahlung UI aktualisieren
+              if (verifyData.verified && verifyData.status === 'succeeded') {
+                // Schließe Payment Modal
+                setShowInlinePayment(false);
+                setPaymentClientSecret(null);
+                setPaymentAmount(0);
+                setPaymentHours(0);
+
+                // Zeige Erfolgsmeldung
+                alert(
+                  `✅ Zahlung erfolgreich!\n\nPayment ID: ${paymentIntentId}\n\nDie zusätzlichen Stunden wurden erfolgreich bezahlt und der Status wurde aktualisiert.`
+                );
+
+                // Aktualisiere die Daten
+                await loadApprovalRequests();
+
+                // Callback für Parent-Komponente
+                if (onApprovalProcessed) {
+                  onApprovalProcessed();
+                }
+              } else {
+                throw new Error(
+                  `Zahlung wurde nicht korrekt verarbeitet. Status: ${verifyData.status || 'unbekannt'}`
+                );
+              }
+            } catch (error) {
+              console.error('Payment verification failed:', error);
+
+              // Zahlung war nicht erfolgreich - UI nicht ändern
+              const errorMessage =
+                error instanceof Error ? error.message : 'Unbekannter Verifikationsfehler';
+              alert(
+                `❌ Zahlungsverifikation fehlgeschlagen:\n\n${errorMessage}\n\nBitte überprüfen Sie Ihren Account oder kontaktieren Sie den Support.`
+              );
+
+              // Modal schließen aber keine Daten aktualisieren
+              setShowInlinePayment(false);
+              setPaymentClientSecret(null);
+              setPaymentAmount(0);
+              setPaymentHours(0);
             }
           }}
           onError={error => {
             console.error('Payment error:', error);
-            alert(`❌ Zahlungsfehler:\n\n${error}\n\nBitte versuchen Sie es erneut.`);
+
+            // Bessere Kategorisierung von Zahlungsfehlern
+            let errorCategory = 'Unbekannter Fehler';
+            let userMessage = '';
+
+            if (error.includes('canceled') || error.includes('cancelled')) {
+              errorCategory = 'Zahlung abgebrochen';
+              userMessage =
+                'Die Zahlung wurde vom Benutzer abgebrochen. Sie können es jederzeit erneut versuchen.';
+            } else if (error.includes('insufficient_funds')) {
+              errorCategory = 'Unzureichende Mittel';
+              userMessage =
+                'Nicht genügend Guthaben auf der Karte. Bitte verwenden Sie eine andere Zahlungsmethode.';
+            } else if (error.includes('card_declined')) {
+              errorCategory = 'Karte abgelehnt';
+              userMessage =
+                'Die Karte wurde abgelehnt. Bitte überprüfen Sie Ihre Kartendetails oder verwenden Sie eine andere Karte.';
+            } else if (error.includes('authentication_required')) {
+              errorCategory = '3D Secure erforderlich';
+              userMessage =
+                'Zusätzliche Authentifizierung ist erforderlich. Bitte befolgen Sie die Anweisungen Ihrer Bank.';
+            } else {
+              userMessage = error;
+            }
+
+            console.log(`❌ Payment failed - Category: ${errorCategory}, Message: ${userMessage}`);
+
+            alert(
+              `❌ ${errorCategory}:\n\n${userMessage}\n\nDie Stunden bleiben zur Zahlung verfügbar.`
+            );
+
+            // Bei Fehler: Modal schließen aber Zahlungsdaten behalten für erneuten Versuch
+            // Zahlung ist fehlgeschlagen - Stunden sind weiterhin unbezahlt
           }}
         />
       )}
