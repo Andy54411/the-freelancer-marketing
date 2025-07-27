@@ -588,40 +588,14 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     </p>
                     <button
                       onClick={async e => {
-                        // SOFORTIGE SICHTBARE DEBUG-ANZEIGE
-                        const debugInfo = {
-                          timestamp: new Date().toISOString(),
-                          buttonClicked: true,
-                          totalBillingPendingHours,
-                          totalApprovedAdditionalAmount,
-                          orderId,
-                          userAgent: navigator.userAgent,
-                          currentUrl: window.location.href,
-                        };
-
-                        // STRUKTURIERTE Console-Logs für einfaches Kopieren
-                        console.log('='.repeat(80));
-                        console.log('🚨 PAYMENT DEBUG START - STEP 1: BUTTON CLICKED');
-                        console.log('='.repeat(80));
-                        console.log('DEBUG_DATA:', JSON.stringify(debugInfo, null, 2));
-                        console.log('='.repeat(80));
-
-                        // Entfernt: console.log() - nur console logging für Debugging
-                        console.log(
-                          `🚨 STEP 1: Button geklickt! €${(totalApprovedAdditionalAmount / 100).toFixed(2)} für ${totalBillingPendingHours.toFixed(1)}h`
-                        );
+                        console.log('🚨 PAYMENT START - PRODUCTION BUTTON CLICKED');
 
                         // Event propagation stoppen
                         e.preventDefault();
                         e.stopPropagation();
 
                         try {
-                          // Entfernt: confirm() - direkt zur Payment-Verarbeitung
-                          console.log('✅ STEP 2: Starte Payment-Verarbeitung direkt');
-
-                          console.log('='.repeat(80));
-                          console.log('🚨 PAYMENT DEBUG - STEP 2: STARTING PAYMENT');
-                          console.log('='.repeat(80));
+                          console.log('✅ Starte Payment-Verarbeitung direkt');
 
                           // Loading State anzeigen
                           const button = e.target as HTMLButtonElement;
@@ -629,324 +603,51 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           button.disabled = true;
                           button.textContent = '⏳ Verarbeitung läuft...';
 
-                          // Timeout für API Call (30 Sekunden)
-                          const timeoutPromise = new Promise((_, reject) => {
-                            setTimeout(
-                              () =>
-                                reject(
-                                  new Error('API-Aufruf hat zu lange gedauert (Timeout nach 30s)')
-                                ),
-                              30000
-                            );
-                          });
+                          console.log('🔄 API-Aufruf startet jetzt...');
 
-                          console.log('='.repeat(80));
-                          console.log('� PAYMENT DEBUG - STEP 3: API CALL STARTING');
-                          console.log('='.repeat(80));
+                          // Direkt zur Stripe-Abrechnung für billing_pending Stunden
+                          const billingResult = await TimeTracker.billApprovedHours(orderId);
+
                           console.log(
-                            'API_CALL_DATA:',
-                            JSON.stringify(
-                              {
-                                orderId,
-                                timeBeforeCall: new Date().toISOString(),
-                              },
-                              null,
-                              2
-                            )
-                          );
-                          console.log('='.repeat(80));
-
-                          console.log('🔄 STEP 3: API-Aufruf startet jetzt...');
-
-                          // Direkt zur Stripe-Abrechnung für billing_pending Stunden mit Timeout
-                          const billingResult = (await Promise.race([
-                            TimeTracker.billApprovedHours(orderId),
-                            timeoutPromise,
-                          ])) as any;
-
-                          console.log('='.repeat(80));
-                          console.log('🚨 PAYMENT DEBUG - STEP 4: API RESPONSE RECEIVED');
-                          console.log('='.repeat(80));
-                          console.log('BILLING_RESULT:', JSON.stringify(billingResult, null, 2));
-                          console.log(
-                            'BILLING_ANALYSIS:',
-                            JSON.stringify(
-                              {
-                                hasClientSecret: !!billingResult?.clientSecret,
-                                clientSecretLength: billingResult?.clientSecret?.length || 0,
-                                customerPays: billingResult?.customerPays,
-                                timeAfterCall: new Date().toISOString(),
-                              },
-                              null,
-                              2
-                            )
-                          );
-                          console.log('='.repeat(80));
-
-                          // Entfernt: console.log() - nur console logging für Debugging
-                          console.log(
-                            `✅ STEP 4: API Response! Hat clientSecret: ${!!billingResult?.clientSecret}, Betrag: €${(billingResult?.customerPays || 0) / 100}`
+                            '✅ API Response! Hat clientSecret:',
+                            !!billingResult?.clientSecret
                           );
 
                           // Validierung der Billing Result Daten
-                          if (!billingResult) {
-                            throw new Error('❌ CRITICAL: billingResult ist null/undefined');
-                          }
-
-                          if (!billingResult.clientSecret) {
-                            console.error(
-                              '❌ CRITICAL: Kein clientSecret in billingResult:',
-                              billingResult
-                            );
+                          if (!billingResult || !billingResult.clientSecret) {
                             throw new Error(
-                              '❌ CRITICAL: Kein clientSecret erhalten - Payment Setup fehlgeschlagen'
+                              '❌ Kein clientSecret erhalten - Payment Setup fehlgeschlagen'
                             );
                           }
 
-                          if (!billingResult.customerPays || billingResult.customerPays <= 0) {
-                            throw new Error('❌ CRITICAL: Ungültiger customerPays Betrag');
-                          }
+                          console.log('🔧 Payment-Daten werden gesetzt...');
 
-                          // Setze Payment-Daten für Inline-Komponente
-                          console.log('='.repeat(80));
-                          console.log('� PAYMENT DEBUG - STEP 5: SETTING PAYMENT DATA');
-                          console.log('='.repeat(80));
-                          console.log(
-                            'PAYMENT_SETUP:',
-                            JSON.stringify(
-                              {
-                                clientSecret: billingResult.clientSecret.substring(0, 20) + '...',
-                                amount: billingResult.customerPays,
-                                hours: totalBillingPendingHours,
-                              },
-                              null,
-                              2
-                            )
-                          );
-                          console.log('='.repeat(80));
-
-                          // Entfernt: console.log() - nur console logging für Debugging
-                          console.log('🔧 STEP 5: Payment-Daten werden gesetzt...');
-
-                          setPaymentClientSecret(billingResult.clientSecret);
-                          setPaymentAmount(billingResult.customerPays);
-                          setPaymentHours(totalBillingPendingHours);
-
-                          console.log('='.repeat(80));
-                          console.log('🚨 PAYMENT DEBUG - STEP 6: OPENING MODAL');
-                          console.log('='.repeat(80));
-                          console.log(
-                            'MODAL_STATE_BEFORE:',
-                            JSON.stringify(
-                              {
-                                paymentClientSecret: !!billingResult.clientSecret,
-                                paymentAmount: billingResult.customerPays,
-                                paymentHours: totalBillingPendingHours,
-                              },
-                              null,
-                              2
-                            )
-                          );
-                          console.log('='.repeat(80));
-
-                          // State setzen
+                          // Setze Payment-Daten für Inline-Modal
                           setPaymentClientSecret(billingResult.clientSecret);
                           setPaymentAmount(billingResult.customerPays);
                           setPaymentHours(totalBillingPendingHours);
                           setShowInlinePayment(true);
 
-                          // Debugging: State nach Setzen prüfen (mit setTimeout da State async ist)
-                          setTimeout(() => {
-                            console.log('='.repeat(80));
-                            console.log('🔍 STATE VERIFICATION AFTER SET');
-                            console.log('='.repeat(80));
-                            console.log('showInlinePayment should be:', true);
-                            console.log(
-                              'paymentClientSecret should be present:',
-                              !!billingResult.clientSecret
-                            );
-                            console.log('paymentAmount should be:', billingResult.customerPays);
-                            console.log('paymentHours should be:', totalBillingPendingHours);
-                            console.log('='.repeat(80));
-
-                            // DOM Check
-                            const modalElements = document.querySelectorAll(
-                              '.fixed.inset-0.bg-black.bg-opacity-50'
-                            );
-                            const zIndexElements = document.querySelectorAll(
-                              '[style*="z-index: 9999"]'
-                            );
-                            console.log('DOM ELEMENTS AFTER STATE SET:');
-                            console.log('  Modal overlays found:', modalElements.length);
-                            console.log('  Z-index 9999 elements:', zIndexElements.length);
-
-                            if (modalElements.length === 0 && zIndexElements.length === 0) {
-                              console.log(
-                                '❌ PROBLEM: Modal not rendered despite state being set!'
-                              );
-                              console.log('This indicates either:');
-                              console.log(
-                                '1. State is not actually set (React state update issue)'
-                              );
-                              console.log('2. Component render condition is not met');
-                              console.log(
-                                '3. Component is rendering but with display:none or similar'
-                              );
-                            } else {
-                              console.log('✅ Modal elements found in DOM');
-                              modalElements.forEach((el, i) => {
-                                const style = getComputedStyle(el);
-                                console.log(
-                                  `  Modal ${i}: display=${style.display}, opacity=${style.opacity}, zIndex=${style.zIndex}`
-                                );
-                              });
-                            }
-                            console.log('='.repeat(80));
-                          }, 100);
-
-                          // DOM-Element Sichtbarkeits-Check nach 500ms
-                          setTimeout(() => {
-                            console.log('='.repeat(80));
-                            console.log('🔍 MODAL DOM VISIBILITY CHECK');
-                            console.log('='.repeat(80));
-
-                            // Prüfe alle Modal-relevanten DOM-Elemente
-                            const modalOverlay = document.querySelector(
-                              '.fixed.inset-0.bg-black.bg-opacity-50'
-                            );
-                            const modalContainer = document.querySelector(
-                              '.bg-white.rounded-lg.shadow-xl'
-                            );
-                            const stripeElements = document.querySelector(
-                              '[data-testid="payment-element"]'
-                            );
-
-                            const domCheck = {
-                              modalOverlay: {
-                                found: !!modalOverlay,
-                                visible: modalOverlay
-                                  ? getComputedStyle(modalOverlay).display !== 'none'
-                                  : false,
-                                zIndex: modalOverlay
-                                  ? getComputedStyle(modalOverlay).zIndex
-                                  : 'N/A',
-                                opacity: modalOverlay
-                                  ? getComputedStyle(modalOverlay).opacity
-                                  : 'N/A',
-                              },
-                              modalContainer: {
-                                found: !!modalContainer,
-                                visible: modalContainer
-                                  ? getComputedStyle(modalContainer).display !== 'none'
-                                  : false,
-                                position: modalContainer
-                                  ? getComputedStyle(modalContainer).position
-                                  : 'N/A',
-                              },
-                              stripeElements: {
-                                found: !!stripeElements,
-                                elementCount: document.querySelectorAll('[class*="stripe"]').length,
-                              },
-                              bodyOverflow: getComputedStyle(document.body).overflow,
-                              documentHeight: document.documentElement.scrollHeight,
-                              viewportHeight: window.innerHeight,
-                              scrollPosition: window.scrollY,
-                            };
-
-                            console.log('DOM_VISIBILITY_CHECK:', JSON.stringify(domCheck, null, 2));
-                            console.log('='.repeat(80));
-
-                            // Alert mit DOM-Status
-                            console.log(
-                              `🔍 DOM Check:\nModal Overlay: ${domCheck.modalOverlay.found ? 'Found' : 'Missing'}\nModal Container: ${domCheck.modalContainer.found ? 'Found' : 'Missing'}\nZ-Index: ${domCheck.modalOverlay.zIndex}\n\nPrüfen Sie die Browser-Konsole für Details!`
-                            );
-                          }, 500);
-
-                          const modalInfo = {
-                            clientSecret: !!billingResult.clientSecret,
-                            amount: billingResult.customerPays / 100,
-                            hours: totalBillingPendingHours,
-                            showInlinePayment: true,
-                            modalShouldBeVisible: true,
-                          };
-
-                          console.log('='.repeat(80));
-                          console.log('� PAYMENT DEBUG - STEP 7: MODAL OPENED');
-                          console.log('='.repeat(80));
-                          console.log('FINAL_MODAL_INFO:', JSON.stringify(modalInfo, null, 2));
-                          console.log('='.repeat(80));
-
                           console.log(
-                            `🔓 STEP 6/7: Modal geöffnet!\nBetrag: €${modalInfo.amount}\nStunden: ${modalInfo.hours}h\n\nModal sollte jetzt sichtbar sein!`
+                            '� Modal geöffnet! Betrag:',
+                            billingResult.customerPays / 100,
+                            '€'
                           );
 
                           // Button zurücksetzen
                           button.disabled = false;
                           button.textContent = originalText;
-
-                          // Keine Weiterleitung mehr - Payment wird inline angezeigt
                         } catch (error) {
-                          console.log('='.repeat(80));
-                          console.log('🚨 PAYMENT DEBUG - ERROR OCCURRED');
-                          console.log('='.repeat(80));
+                          console.error('Payment Error:', error);
                           console.log(
-                            'ERROR_DETAILS:',
-                            JSON.stringify(
-                              {
-                                error,
-                                errorMessage:
-                                  error instanceof Error ? error.message : 'Unknown error',
-                                errorStack: error instanceof Error ? error.stack : 'No stack',
-                                timestamp: new Date().toISOString(),
-                              },
-                              null,
-                              2
-                            )
-                          );
-                          console.log('='.repeat(80));
-
-                          console.log(
-                            `❌ FEHLER: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}\n\nPrüfen Sie Console für Details!`
+                            '❌ Fehler bei der Zahlungsverarbeitung:',
+                            error instanceof Error ? error.message : 'Unknown error'
                           );
 
                           // Button zurücksetzen
                           const button = e.target as HTMLButtonElement;
                           button.disabled = false;
                           button.textContent = `💥 JETZT BEZAHLEN: ${totalBillingPendingHours.toFixed(1)}h - €${(totalApprovedAdditionalAmount / 100).toFixed(2)}`;
-
-                          // Detaillierte Fehlerbehandlung
-                          const errorMessage =
-                            error instanceof Error ? error.message : 'Unbekannter Fehler';
-
-                          if (errorMessage.includes('Timeout')) {
-                            console.log(
-                              '⏰ ZEITÜBERSCHREITUNG!\n\n' +
-                                'Der Zahlungsvorgang hat zu lange gedauert.\n\n' +
-                                'Mögliche Ursachen:\n' +
-                                '• Langsame Internetverbindung\n' +
-                                '• Server-Überlastung\n' +
-                                '• Stripe Connect Probleme\n\n' +
-                                'Versuchen Sie es in wenigen Minuten erneut oder kontaktieren Sie den Support.'
-                            );
-                          } else if (
-                            errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
-                            errorMessage.includes('Stripe Connect')
-                          ) {
-                            console.log(
-                              '🔧 ZAHLUNGSEINRICHTUNG ERFORDERLICH!\n\n' +
-                                'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
-                                'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.\n\n' +
-                                'Technische Details: ' +
-                                errorMessage
-                            );
-                          } else {
-                            console.log(
-                              `💥 BEZAHLUNG FEHLGESCHLAGEN!\n\n` +
-                                `Fehler: ${errorMessage}\n\n` +
-                                `Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.\n\n` +
-                                `DEBUG: Siehe Browser Console für Details.`
-                            );
-                          }
                         }
                       }}
                       className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-lg"
