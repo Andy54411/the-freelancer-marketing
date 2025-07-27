@@ -90,8 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
               const orderData = orderSnapshot.data()!;
 
-              // WICHTIG: TimeEntries sind im Array gespeichert, nicht als Subcollection!
-              const timeEntries = orderData.timeEntries || [];
+              // WICHTIG: TimeEntries sind im timeTracking.timeEntries Array gespeichert!
+              const timeEntries = orderData.timeTracking?.timeEntries || [];
               let updatedCount = 0;
 
               const updatedTimeEntries = timeEntries.map((entry: any) => {
@@ -111,7 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
               // Update the order document with the fixed time entries
               transaction.update(orderRef, {
-                timeEntries: updatedTimeEntries,
+                'timeTracking.timeEntries': updatedTimeEntries,
                 'timeTracking.status': 'completed',
                 'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
               });

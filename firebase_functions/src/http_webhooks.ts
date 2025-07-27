@@ -156,12 +156,13 @@ export const stripeWebhookHandler = onRequest(
 
                                 const orderData = orderSnapshot.data()!;
                                 
-                                // WICHTIG: TimeEntries sind im Array gespeichert, nicht als Subcollection!
-                                const timeEntries = orderData.timeEntries || [];
+                                // WICHTIG: TimeEntries sind im timeTracking.timeEntries Array gespeichert!
+                                const timeEntries = orderData.timeTracking?.timeEntries || [];
                                 let updatedCount = 0;
                                 
                                 const updatedTimeEntries = timeEntries.map((entry: any) => {
                                     // Check if this entry is in the entryIds list and has billing_pending status
+                                    // (regardless of whether paymentIntentId is already set - handle retry scenario)
                                     if (entryIdsList.includes(entry.id) && entry.status === 'billing_pending') {
                                         updatedCount++;
                                         logger.info(`[stripeWebhookHandler] TimeEntry ${entry.id} marked as platform_held`);
@@ -177,7 +178,7 @@ export const stripeWebhookHandler = onRequest(
                                 
                                 // Update the order document with the fixed time entries
                                 transaction.update(orderRef, {
-                                    timeEntries: updatedTimeEntries,
+                                    'timeTracking.timeEntries': updatedTimeEntries,
                                     'timeTracking.status': 'completed',
                                     'timeTracking.lastUpdated': FieldValue.serverTimestamp(),
                                 });
