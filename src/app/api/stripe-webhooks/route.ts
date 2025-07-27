@@ -13,6 +13,21 @@ const db = getFirestore();
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+// Rate limiting for error logs to prevent Sentry overload
+const errorLogCache = new Map<string, number>();
+const ERROR_LOG_COOLDOWN = 60000; // 1 minute cooldown per error type
+
+function shouldLogError(errorKey: string): boolean {
+  const now = Date.now();
+  const lastLog = errorLogCache.get(errorKey);
+
+  if (!lastLog || now - lastLog > ERROR_LOG_COOLDOWN) {
+    errorLogCache.set(errorKey, now);
+    return true;
+  }
+  return false;
+}
+
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
       apiVersion: '2024-06-20',
@@ -21,7 +36,10 @@ const stripe = stripeSecretKey
 
 export async function POST(req: NextRequest) {
   if (!stripe) {
-    console.error('[WEBHOOK ERROR] Stripe ist nicht konfiguriert.');
+    const errorKey = 'stripe_not_configured';
+    if (shouldLogError(errorKey)) {
+      console.error('[WEBHOOK ERROR] Stripe ist nicht konfiguriert.');
+    }
     return NextResponse.json(
       { received: false, error: 'Stripe nicht konfiguriert' },
       { status: 500 }
@@ -29,7 +47,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (!webhookSecret) {
-    console.error('[WEBHOOK ERROR] STRIPE_WEBHOOK_SECRET ist nicht gesetzt.');
+    const errorKey = 'webhook_secret_missing';
+    if (shouldLogError(errorKey)) {
+      console.error('[WEBHOOK ERROR] STRIPE_WEBHOOK_SECRET ist nicht gesetzt.');
+    }
     return NextResponse.json(
       { received: false, error: 'Webhook secret nicht konfiguriert' },
       { status: 500 }
@@ -41,7 +62,10 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
-      console.error('[WEBHOOK ERROR] Keine Stripe-Signatur gefunden.');
+      const errorKey = 'missing_signature';
+      if (shouldLogError(errorKey)) {
+        console.error('[WEBHOOK ERROR] Keine Stripe-Signatur gefunden.');
+      }
       return NextResponse.json({ received: false, error: 'Keine Signatur' }, { status: 400 });
     }
 
@@ -54,7 +78,10 @@ export async function POST(req: NextRequest) {
       if (err instanceof Error) {
         errorMessage = err.message;
       }
-      console.error(`[WEBHOOK ERROR] ${errorMessage}`, err);
+      const errorKey = `webhook_verification_${errorMessage.slice(0, 20)}`;
+      if (shouldLogError(errorKey)) {
+        console.error(`[WEBHOOK ERROR] ${errorMessage}`, err);
+      }
       return NextResponse.json({ received: false, error: errorMessage }, { status: 400 });
     }
 
@@ -75,9 +102,12 @@ export async function POST(req: NextRequest) {
           const entryIds = paymentIntentSucceeded.metadata?.entryIds;
 
           if (!orderId || !entryIds) {
-            console.error(
-              `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im PI ${paymentIntentSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
-            );
+            const errorKey = `missing_metadata_${paymentIntentSucceeded.id}`;
+            if (shouldLogError(errorKey)) {
+              console.error(
+                `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im PI ${paymentIntentSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
+              );
+            }
             return NextResponse.json({
               received: true,
               message: 'Wichtige Metadaten (orderId oder entryIds) für zusätzliche Stunden fehlen.',
@@ -167,7 +197,10 @@ export async function POST(req: NextRequest) {
             if (dbError instanceof Error) {
               dbErrorMessage = dbError.message;
             }
-            console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden:`, dbError);
+            const errorKey = `db_additional_hours_${orderId}`;
+            if (shouldLogError(errorKey)) {
+              console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden:`, dbError);
+            }
             return NextResponse.json({
               received: true,
               message: `Additional hours processing failed: ${dbErrorMessage}`,
@@ -181,9 +214,12 @@ export async function POST(req: NextRequest) {
         const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
 
         if (!tempJobDraftId || !firebaseUserId) {
-          console.error(
-            `[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`
-          );
+          const errorKey = `missing_draft_metadata_${paymentIntentSucceeded.id}`;
+          if (shouldLogError(errorKey)) {
+            console.error(
+              `[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`
+            );
+          }
           // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
           return NextResponse.json({
             received: true,
@@ -308,7 +344,10 @@ export async function POST(req: NextRequest) {
           if (dbError instanceof Error) {
             dbErrorMessage = dbError.message;
           }
-          console.error(`[WEBHOOK ERROR] Fehler in der Transaktion:`, dbError);
+          const errorKey = `db_job_conversion_${tempJobDraftId}`;
+          if (shouldLogError(errorKey)) {
+            console.error(`[WEBHOOK ERROR] Fehler in der Transaktion:`, dbError);
+          }
           return NextResponse.json({
             received: true,
             message: `Job conversion failed: ${dbErrorMessage}`,
@@ -331,7 +370,10 @@ export async function POST(req: NextRequest) {
     if (error instanceof Error) {
       errorMessage = error.message;
     }
-    console.error('[WEBHOOK ERROR] Fehler beim Verarbeiten des Webhooks:', error);
+    const errorKey = `webhook_general_error`;
+    if (shouldLogError(errorKey)) {
+      console.error('[WEBHOOK ERROR] Fehler beim Verarbeiten des Webhooks:', error);
+    }
     return NextResponse.json({ received: false, error: errorMessage }, { status: 500 });
   }
 }
