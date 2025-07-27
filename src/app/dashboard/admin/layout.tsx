@@ -2,6 +2,7 @@
 
 import React, { useEffect, Suspense, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { StaffAuthProvider } from '@/hooks/useStaffAuth';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Loader2 as FiLoader } from 'lucide-react';
@@ -56,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // If it's the login page, render it without auth check
   if (isLoginPage) {
-    return <>{children}</>;
+    return <StaffAuthProvider>{children}</StaffAuthProvider>;
   }
 
   if (loading || !user) {
@@ -68,20 +69,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <Sidebar />
-      <div className="flex flex-col">
-        <Header />
-        <Suspense
-          fallback={
-            <div className="flex-1 flex items-center justify-center">
-              <FiLoader className="h-8 w-8 animate-spin text-teal-500" />
-            </div>
-          }
-        >
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
-        </Suspense>
+    <StaffAuthProvider>
+      <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+        <Sidebar />
+        <div className="flex flex-col">
+          <Header />
+          <Suspense
+            fallback={
+              <div className="flex-1 flex items-center justify-center">
+                <FiLoader className="h-8 w-8 animate-spin text-teal-500" />
+              </div>
+            }
+          >
+            <main className="flex-1 p-4 sm:p-6">{children}</main>
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </StaffAuthProvider>
   );
 }

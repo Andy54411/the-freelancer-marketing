@@ -6,7 +6,6 @@ import { Providers } from './providers';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
-import { StaffAuthProvider } from '@/hooks/useStaffAuth';
 import Chatbot from '@/components/Chatbot';
 // import { FooterSection } from '@/components/FooterSection';
 // import GoogleAnalytics from '@/components/GoogleAnalytics'; // Removed to avoid conflicts with GTM
@@ -148,17 +147,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <CookieConsentProvider>
             <AnalyticsProvider>
-              <StaffAuthProvider>
-                <Providers>
-                  {children}
-                  <Footer />
-                  <Chatbot />
-                  <CookieBanner />
-                  {/* GoogleAnalytics removed - GTM handles all analytics */}
-                  <Analytics />
-                  <SpeedInsights />
-                </Providers>
-              </StaffAuthProvider>
+              <Providers>
+                {children}
+                <Footer />
+                <Chatbot />
+                <CookieBanner />
+                {/* GoogleAnalytics removed - GTM handles all analytics */}
+                <Analytics />
+                <SpeedInsights />
+              </Providers>
             </AnalyticsProvider>
           </CookieConsentProvider>
         </ThemeProvider>
