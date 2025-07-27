@@ -240,8 +240,8 @@ export default function OrderDetailPage() {
     try {
       console.log('🔄 DIRECT: Opening payment modal for order:', orderId);
 
-      // Mock payment data für Test
-      const testClientSecret = 'pi_test_1234567890_secret_12345';
+      // Mock payment data für Test - KORREKTE STRIPE CLIENT SECRET FORMAT
+      const testClientSecret = 'pi_1234567890abcdef_secret_1234567890abcdef';
       const testAmount = 5000; // 50.00 EUR
       const testHours = 2.5;
 
@@ -470,35 +470,63 @@ export default function OrderDetailPage() {
                 {/* Direct Payment Test Button - Independent of CustomerApprovalInterface */}
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    💳 Payment Test (Page Level)
+                    💳 Payment Modal Test (Popup/Overlay)
                   </h3>
                   <p className="text-sm text-gray-600 mb-3">
-                    Direkter Test-Button für das Payment-Modal - unabhängig von der
-                    CustomerApprovalInterface
+                    Direkter Test für das Payment-Popup - sollte als Overlay über der Seite
+                    erscheinen
                   </p>
                   <div className="space-y-2">
                     <button
                       onClick={handleOpenPayment}
                       className="bg-[#14ad9f] hover:bg-[#129488] text-white font-medium py-2 px-4 rounded-lg transition-colors mr-2"
                     >
-                      🔓 Test Payment Modal öffnen
+                      � Payment Popup öffnen
                     </button>
                     <button
                       onClick={() => {
-                        setPaymentClientSecret('pi_test_real_12345');
-                        setPaymentAmount(2500); // 25 EUR
-                        setPaymentHours(1.5);
+                        console.log('🔥 INSTANT OPEN: Setting payment modal state directly');
+                        setPaymentClientSecret('pi_test_instant_12345');
+                        setPaymentAmount(3500); // 35 EUR
+                        setPaymentHours(2.0);
                         setShowInlinePayment(true);
-                        console.log('🔓 DIRECT: Payment modal opened manually');
+                        console.log('� INSTANT OPEN: Modal should now be visible!');
                       }}
-                      className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                      className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                     >
-                      🚀 Direct Modal Open
+                      🔥 Sofort-Popup (Instant)
+                    </button>
+                    <button
+                      onClick={() => {
+                        console.log('❌ CLOSE: Closing payment modal');
+                        setShowInlinePayment(false);
+                        setPaymentClientSecret(null);
+                      }}
+                      className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      ❌ Modal schließen
                     </button>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    Modal State: showInlinePayment={showInlinePayment.toString()}, clientSecret=
-                    {paymentClientSecret ? 'SET' : 'NULL'}
+                  <div className="mt-3 p-2 bg-white rounded text-xs font-mono">
+                    <div className="text-green-600">✅ Modal State:</div>
+                    <div>
+                      showInlinePayment:{' '}
+                      <span className="font-bold text-blue-600">
+                        {showInlinePayment.toString()}
+                      </span>
+                    </div>
+                    <div>
+                      clientSecret:{' '}
+                      <span className="font-bold text-blue-600">
+                        {paymentClientSecret ? 'SET' : 'NULL'}
+                      </span>
+                    </div>
+                    <div>
+                      amount: <span className="font-bold text-blue-600">{paymentAmount}¢</span>
+                    </div>
+                    <div>
+                      hours: <span className="font-bold text-blue-600">{paymentHours}h</span>
+                    </div>
                   </div>
                 </div>
               </div>
