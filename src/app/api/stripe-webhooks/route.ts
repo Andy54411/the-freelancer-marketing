@@ -1,8 +1,6 @@
-// src/app/api/stripe-webhooks.ts
-import { NextApiRequest, NextApiResponse } from 'next';
+// src/app/api/stripe-webhooks/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { buffer } from 'micro';
-
 import * as admin from 'firebase-admin';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -11,12 +9,6 @@ if (!getApps().length) {
   initializeApp();
 }
 const db = getFirestore();
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -27,28 +19,43 @@ const stripe = stripeSecretKey
     })
   : null;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    if (!stripe || !webhookSecret) {
-      return res.status(500).send('Server-Konfigurationsfehler.');
-    }
-    const buf = await buffer(req);
-    const sig = req.headers['stripe-signature']!;
-    let event: Stripe.Event;
+export async function POST(req: NextRequest) {
+  if (!stripe) {
+    console.error('[WEBHOOK ERROR] Stripe ist nicht konfiguriert.');
+    return NextResponse.json(
+      { received: false, error: 'Stripe nicht konfiguriert' },
+      { status: 500 }
+    );
+  }
 
+  if (!webhookSecret) {
+    console.error('[WEBHOOK ERROR] STRIPE_WEBHOOK_SECRET ist nicht gesetzt.');
+    return NextResponse.json(
+      { received: false, error: 'Webhook secret nicht konfiguriert' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const body = await req.text();
+    const signature = req.headers.get('stripe-signature');
+
+    if (!signature) {
+      console.error('[WEBHOOK ERROR] Keine Stripe-Signatur gefunden.');
+      return NextResponse.json({ received: false, error: 'Keine Signatur' }, { status: 400 });
+    }
+
+    let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log(`[WEBHOOK LOG] Event empfangen: ${event.type} (${event.id})`);
     } catch (err: unknown) {
-      // err ist hier vom Typ unknown
-      let errorMessage = 'Fehler bei der Webhook-Signaturverifizierung.';
-      if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
-        errorMessage = `⚠️  Webhook signature verification failed: ${err.message}`;
-      } else if (err instanceof Error) {
-        // Fallback für andere Fehler
-        errorMessage = `⚠️  Webhook error: ${err.message}`;
+      let errorMessage = 'Fehler bei der Webhook-Verifikation.';
+      if (err instanceof Error) {
+        errorMessage = err.message;
       }
       console.error(`[WEBHOOK ERROR] ${errorMessage}`, err);
-      return res.status(400).send(errorMessage);
+      return NextResponse.json({ received: false, error: errorMessage }, { status: 400 });
     }
 
     switch (event.type) {
@@ -71,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.error(
               `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im PI ${paymentIntentSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
             );
-            return res.status(200).json({
+            return NextResponse.json({
               received: true,
               message: 'Wichtige Metadaten (orderId oder entryIds) für zusätzliche Stunden fehlen.',
             });
@@ -161,7 +168,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               dbErrorMessage = dbError.message;
             }
             console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden:`, dbError);
-            return res.status(200).json({
+            return NextResponse.json({
               received: true,
               message: `Additional hours processing failed: ${dbErrorMessage}`,
             });
@@ -178,7 +185,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             `[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`
           );
           // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
-          return res.status(200).json({
+          return NextResponse.json({
             received: true,
             message: 'Wichtige Metadaten (tempJobDraftId oder firebaseUserId) fehlen.',
           });
@@ -302,9 +309,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             dbErrorMessage = dbError.message;
           }
           console.error(`[WEBHOOK ERROR] Fehler in der Transaktion:`, dbError);
-          return res
-            .status(200)
-            .json({ received: true, message: `Job conversion failed: ${dbErrorMessage}` });
+          return NextResponse.json({
+            received: true,
+            message: `Job conversion failed: ${dbErrorMessage}`,
+          });
         }
         break;
       }
@@ -317,9 +325,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log(`[WEBHOOK LOG] Unbehandelter Event-Typ ${event.type}.`);
     }
 
-    res.status(200).json({ received: true });
-  } else {
-    res.setHeader('Allow', 'POST');
-    res.status(405).end('Method Not Allowed');
+    return NextResponse.json({ received: true });
+  } catch (error: unknown) {
+    let errorMessage = 'Unbekannter Fehler beim Verarbeiten des Webhooks.';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    console.error('[WEBHOOK ERROR] Fehler beim Verarbeiten des Webhooks:', error);
+    return NextResponse.json({ received: false, error: errorMessage }, { status: 500 });
   }
+}
+
+// Andere HTTP-Methoden nicht erlaubt
+export async function GET() {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }
