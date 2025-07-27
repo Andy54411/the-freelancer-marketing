@@ -289,14 +289,28 @@ export default function InlinePaymentComponent({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  console.log('🔍 [InlinePaymentComponent] Render check:', {
+    isOpen,
+    clientSecret: !!clientSecret,
+    totalAmount,
+    totalHours,
+    orderId,
+    timestamp: new Date().toISOString()
+  });
+
+  if (!isOpen) {
+    console.log('❌ [InlinePaymentComponent] Not rendering: isOpen =', isOpen);
+    return null;
+  }
 
   // Show error if clientSecret is missing
   if (!clientSecret) {
+    console.log('❌ [InlinePaymentComponent] Rendering error modal: clientSecret missing');
     return (
       <div
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
         style={{ zIndex: 9999 }}
+        data-component="InlinePaymentComponent-Error"
       >
         <div
           className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
@@ -330,14 +344,19 @@ export default function InlinePaymentComponent({
     );
   }
 
+  console.log('✅ [InlinePaymentComponent] Rendering main payment modal');
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
+      data-component="InlinePaymentComponent-Main"
+      data-testid="payment-modal-overlay"
     >
       <div
         className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         style={{ zIndex: 10000 }}
+        data-testid="payment-modal-container"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
