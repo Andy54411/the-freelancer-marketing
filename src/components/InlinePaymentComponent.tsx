@@ -81,6 +81,29 @@ function CheckoutForm({
 
       if (submitError) {
         console.error('❌ [InlinePaymentComponent] Stripe elements submit error:', submitError);
+
+        // ⚠️ SPEZIAL-BEHANDLUNG für test_mode_live_card Fehler
+        if (
+          submitError.message?.includes('test_mode_live_card') ||
+          (submitError as any).decline_code === 'test_mode_live_card'
+        ) {
+          const testCardMessage = `🧪 STRIPE TEST-MODUS FEHLER:
+
+Sie haben eine echte Kreditkarte in unserem Test-System verwendet.
+
+✅ BITTE VERWENDEN SIE STRIPE TEST-KARTEN:
+• Kartennummer: 4242 4242 4242 4242
+• Ablaufdatum: 12/25 (beliebiges zukünftiges Datum)
+• CVC: 123 (beliebige 3 Ziffern)
+• PLZ: 12345 (beliebige Postleitzahl)
+
+⚠️ Echte Kartendaten funktionieren nicht im Test-Modus!`;
+
+          setMessage(testCardMessage);
+          onError(testCardMessage);
+          return;
+        }
+
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
@@ -106,6 +129,29 @@ function CheckoutForm({
 
       if (confirmError) {
         console.error('❌ [InlinePaymentComponent] Stripe confirm payment error:', confirmError);
+
+        // ⚠️ SPEZIAL-BEHANDLUNG für test_mode_live_card Fehler
+        if (
+          confirmError.message?.includes('test_mode_live_card') ||
+          (confirmError as any).decline_code === 'test_mode_live_card'
+        ) {
+          const testCardMessage = `🧪 STRIPE TEST-MODUS FEHLER:
+
+Ihre Karte wurde abgelehnt, weil Sie eine echte Karte im Test-System verwendet haben.
+
+✅ LÖSUNG - VERWENDEN SIE STRIPE TEST-KARTEN:
+• Kartennummer: 4242 4242 4242 4242
+• Ablaufdatum: 12/25
+• CVC: 123
+• PLZ: 12345
+
+💡 TIPP: Leeren Sie Ihren Browser-Cache oder verwenden Sie einen privaten Browser-Tab.`;
+
+          setMessage(testCardMessage);
+          onError(testCardMessage);
+          return;
+        }
+
         const errorMessage = confirmError.message || 'Fehler bei der Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
