@@ -1276,54 +1276,6 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       ))}
 
       {/* Inline Payment Component */}
-      {/* DEBUG: Render condition logged in useEffect */}
-      {(() => {
-        // Debug logging für render condition
-        console.log('🎭 RENDER CHECK:', {
-          showInlinePayment,
-          paymentClientSecret: !!paymentClientSecret,
-          paymentClientSecretLength: paymentClientSecret?.length || 0,
-          paymentAmount,
-          paymentHours,
-          shouldRender: showInlinePayment && paymentClientSecret,
-        });
-        return null;
-      })()}
-
-      {/* DEBUG: Payment Modal Render Conditions */}
-      {(() => {
-        console.log('🔍 PAYMENT MODAL RENDER CHECK:', {
-          showInlinePayment,
-          paymentClientSecret: !!paymentClientSecret,
-          paymentAmount,
-          paymentHours,
-          orderId,
-          timestamp: new Date().toISOString(),
-        });
-
-        if (!showInlinePayment) {
-          console.log('❌ Modal nicht gerendert: showInlinePayment =', showInlinePayment);
-        } else if (!paymentClientSecret) {
-          console.log('❌ Modal nicht gerendert: paymentClientSecret =', paymentClientSecret);
-        } else {
-          console.log('✅ Modal sollte gerendert werden!');
-
-          // DOM Check nach kleiner Verzögerung
-          setTimeout(() => {
-            const modal = document.querySelector(
-              '[class*="modal"], [class*="payment"], [class*="stripe"]'
-            );
-            console.log('🔍 DOM Modal Check nach Render:', {
-              modalFound: !!modal,
-              element: modal,
-              className: modal?.className,
-              zIndex: modal ? window.getComputedStyle(modal).zIndex : 'N/A',
-            });
-          }, 100);
-        }
-        return null;
-      })()}
-
       {showInlinePayment && paymentClientSecret && (
         <InlinePaymentComponent
           clientSecret={paymentClientSecret}
