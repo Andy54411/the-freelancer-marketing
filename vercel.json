@@ -1,6 +1,6 @@
 {
   "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' pnpm build",
-  "framework": "nextjs",
+  "framework": "nextjs", 
   "regions": [
     "fra1"
   ],
