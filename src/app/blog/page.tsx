@@ -3,20 +3,16 @@
 import React, { useState } from 'react';
 import {
   FiBookOpen,
-  FiTrendingUp,
-  FiUsers,
   FiZap,
   FiCreditCard,
   FiChevronDown,
   FiChevronUp,
-  FiHelpCircle,
   FiShield,
   FiClock,
   FiDollarSign,
   FiStar,
   FiCheckCircle,
   FiMessageSquare,
-  FiSettings,
   FiPhone,
   FiMail,
   FiTool,
@@ -411,6 +407,52 @@ export default function BlogPage() {
                         <span>6 Min. Lesezeit</span>
                         <span>•</span>
                         <span>Preise & Kostenübersicht</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <a
+                  href="/blog/verifizierungsprozess"
+                  className="block bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiShield className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Unser Verifizierungsprozess</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Schritt-für-Schritt Erklärung, wie wir Anbieter prüfen: Personalausweis,
+                        Gewerbeschein, Referenzen und Zertifikate für Ihr Vertrauen.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>4 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Qualität & Sicherheit</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="/blog/kaeufer-schutz-garantie"
+                  className="block bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiShield className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Käuferschutz & Garantie</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Detaillierte Erklärung der sicheren Bezahlung, Geld-zurück-Garantie,
+                        Schlichtungsverfahren und Absicherung bis 10.000€.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>7 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Käuferschutz & Garantien</span>
                       </div>
                     </div>
                   </div>
