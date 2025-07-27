@@ -27,14 +27,16 @@ export const metadata: Metadata = {
 
 export default function KaeuferschutzPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#14ad9f] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-[#14ad9f] font-bold text-sm">T</span>
               </div>
               <span className="text-xl font-bold text-gray-900">Taskilo</span>
             </Link>
@@ -50,13 +52,13 @@ export default function KaeuferschutzPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white py-16">
+      <section className="text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3 mb-6">
             <Shield className="w-12 h-12" />
-            <h1 className="text-4xl md:text-5xl font-bold">Käuferschutz & Garantie</h1>
+            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">Käuferschutz & Garantie</h1>
           </div>
-          <p className="text-xl text-[#e6fffe] leading-relaxed">
+          <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
             Ihre Sicherheit ist unser Versprechen. Erfahren Sie, wie unser umfassender Käuferschutz
             Sie bei jedem Auftrag absichert.
           </p>
@@ -109,7 +111,7 @@ export default function KaeuferschutzPage() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* How Secure Payment Works */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-12">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
             <CreditCard className="w-6 h-6 mr-2 text-[#14ad9f]" />
             So funktioniert die sichere Bezahlung
@@ -167,7 +169,7 @@ export default function KaeuferschutzPage() {
         </div>
 
         {/* Protection Levels */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-12">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
             <Shield className="w-6 h-6 mr-2 text-[#14ad9f]" />
             Unsere Schutzleistungen im Detail
@@ -262,7 +264,7 @@ export default function KaeuferschutzPage() {
         </div>
 
         {/* Dispute Resolution Process */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-12">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
             <Scale className="w-6 h-6 mr-2 text-[#14ad9f]" />
             Unser Schlichtungsverfahren
@@ -326,7 +328,7 @@ export default function KaeuferschutzPage() {
         </div>
 
         {/* Coverage Limits */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-12">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             💎 Absicherungssummen nach Auftragswert
           </h2>
@@ -382,7 +384,7 @@ export default function KaeuferschutzPage() {
         </div>
 
         {/* What NOT Covered */}
-        <div className="bg-orange-50 rounded-xl p-8 border border-orange-200 mb-12">
+        <div className="bg-orange-50 rounded-xl p-8 border-orange-200 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
             <AlertTriangle className="w-6 h-6 mr-2 text-orange-600" />
             Was ist nicht abgedeckt?
@@ -456,9 +458,9 @@ export default function KaeuferschutzPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. |
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">
               Datenschutz
@@ -470,6 +472,7 @@ export default function KaeuferschutzPage() {
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

@@ -15,14 +15,16 @@ export const metadata: Metadata = {
 
 export default function RenovierungsfehlerPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#14ad9f] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-[#14ad9f] font-bold text-sm">T</span>
               </div>
               <span className="text-xl font-bold text-gray-900">Taskilo</span>
             </Link>
@@ -42,7 +44,7 @@ export default function RenovierungsfehlerPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3 mb-6">
             <AlertTriangle className="w-12 h-12" />
-            <h1 className="text-4xl md:text-5xl font-bold">
+            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">
               Die 5 häufigsten Renovierungsfehler
             </h1>
           </div>
@@ -102,7 +104,7 @@ export default function RenovierungsfehlerPage() {
 
         {/* Fehler 1 */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">1</span>
@@ -179,7 +181,7 @@ export default function RenovierungsfehlerPage() {
 
         {/* Fehler 2 */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">2</span>
@@ -259,7 +261,7 @@ export default function RenovierungsfehlerPage() {
 
         {/* Fehler 3 */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">3</span>
@@ -336,7 +338,7 @@ export default function RenovierungsfehlerPage() {
 
         {/* Fehler 4 */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">4</span>
@@ -418,7 +420,7 @@ export default function RenovierungsfehlerPage() {
 
         {/* Fehler 5 */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">5</span>
@@ -553,7 +555,7 @@ export default function RenovierungsfehlerPage() {
 
         {/* Checkliste */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
               <Lightbulb className="w-8 h-8 mr-2 text-[#14ad9f]" />
               Ihre Renovierungs-Checkliste
@@ -616,7 +618,7 @@ export default function RenovierungsfehlerPage() {
         </div>
 
         {/* Call to Action */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 text-center">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Ihre Renovierung in professionellen Händen
           </h2>
@@ -642,15 +644,16 @@ export default function RenovierungsfehlerPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. | 
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> | 
             <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

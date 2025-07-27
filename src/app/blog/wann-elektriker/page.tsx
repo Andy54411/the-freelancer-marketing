@@ -15,9 +15,11 @@ export const metadata: Metadata = {
 
 export default function ElektrikerRatgeberPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
@@ -516,15 +518,16 @@ export default function ElektrikerRatgeberPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. | 
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> | 
             <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

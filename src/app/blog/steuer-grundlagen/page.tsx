@@ -15,54 +15,54 @@ export const metadata: Metadata = {
 
 export default function SteuerGrundlagenPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#14ad9f] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">Taskilo</span>
-            </Link>
-            <Link 
-              href="/blog" 
-              className="flex items-center space-x-2 text-gray-600 hover:text-[#14ad9f] transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Zurück zum Blog</span>
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <Link href="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-[#14ad9f] font-bold text-sm">T</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900">Taskilo</span>
+              </Link>
+              <Link 
+                href="/blog" 
+                className="flex items-center space-x-2 text-gray-600 hover:text-[#14ad9f] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Zurück zum Blog</span>
+              </Link>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-green-500 to-blue-600 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-3 mb-6">
-            <Calculator className="w-12 h-12" />
-            <h1 className="text-4xl md:text-5xl font-bold">
-              Steuer-Grundlagen für Selbstständige
-            </h1>
+        {/* Hero Section */}
+        <section className="text-white py-16">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <Calculator className="w-12 h-12 drop-shadow-lg" />
+              <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">
+                Steuer-Grundlagen für Selbstständige
+              </h1>
+            </div>
+            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
+              Der komplette Leitfaden für Dienstleister auf Taskilo: Von der Gewerbeanmeldung bis zur 
+              Steuererklärung - alles was Sie über Steuern als Selbstständiger wissen müssen.
+            </p>
           </div>
-          <p className="text-xl text-green-100 leading-relaxed">
-            Der komplette Leitfaden für Dienstleister auf Taskilo: Von der Gewerbeanmeldung bis zur 
-            Steuererklärung - alles was Sie über Steuern als Selbstständiger wissen müssen.
-          </p>
-        </div>
-      </section>
+        </section>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        
-        {/* Wichtiger Hinweis */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-12">
+        {/* Main Content */}
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">        {/* Wichtiger Hinweis */}
+        <div className="bg-white/95 backdrop-blur-sm border border-[#14ad9f]/30 rounded-xl p-6 mb-12 shadow-xl">
           <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-1" />
+            <AlertTriangle className="w-8 h-8 text-[#14ad9f] flex-shrink-0 mt-1" />
             <div>
-              <h2 className="text-xl font-bold text-yellow-800 mb-2">⚠️ WICHTIGER HINWEIS</h2>
-              <p className="text-yellow-700 text-lg">
+              <h2 className="text-xl font-bold text-[#14ad9f] mb-2">⚠️ WICHTIGER HINWEIS</h2>
+              <p className="text-gray-700 text-lg">
                 Dieser Artikel bietet eine Grundorientierung und ersetzt keine individuelle Steuerberatung. 
                 Steuergesetze ändern sich häufig - konsultieren Sie immer einen Steuerberater für Ihre 
                 spezifische Situation!
@@ -73,35 +73,35 @@ export default function SteuerGrundlagenPage() {
 
         {/* Übersicht */}
         <div className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Ihre Steuer-Roadmap als Taskilo-Dienstleister</h2>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center drop-shadow-lg">Ihre Steuer-Roadmap als Taskilo-Dienstleister</h2>
           
           <div className="grid md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100 text-center">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 border border-white/30 text-center">
+              <div className="w-16 h-16 bg-[#14ad9f] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">1</span>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Gewerbeanmeldung</h3>
               <p className="text-gray-600 text-sm">Status klären & anmelden</p>
             </div>
             
-            <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100 text-center">
-              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 border border-white/30 text-center">
+              <div className="w-16 h-16 bg-[#14ad9f] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">2</span>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Umsatzsteuer</h3>
               <p className="text-gray-600 text-sm">Kleinunternehmer vs. Regelbesteuerung</p>
             </div>
             
-            <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100 text-center">
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 border border-white/30 text-center">
+              <div className="w-16 h-16 bg-[#14ad9f] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">3</span>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Buchhaltung</h3>
               <p className="text-gray-600 text-sm">Einnahmen & Ausgaben dokumentieren</p>
             </div>
             
-            <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100 text-center">
-              <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 border border-white/30 text-center">
+              <div className="w-16 h-16 bg-[#14ad9f] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">4</span>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Steuererklärung</h3>
@@ -112,9 +112,9 @@ export default function SteuerGrundlagenPage() {
 
         {/* 1. Gewerbeanmeldung */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-[#14ad9f] rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">1</span>
               </div>
               <h2 className="text-3xl font-bold text-gray-900">Gewerbeanmeldung: Ihr erster Schritt</h2>
@@ -124,9 +124,9 @@ export default function SteuerGrundlagenPage() {
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">🏢 Wann ist eine Gewerbeanmeldung nötig?</h3>
                 <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h4 className="font-semibold text-green-800 mb-2">✅ Gewerbeanmeldung NÖTIG:</h4>
-                    <ul className="text-green-700 text-sm space-y-1">
+                  <div className="bg-[#14ad9f]/10 p-4 rounded-lg border border-[#14ad9f]/30">
+                    <h4 className="font-semibold text-[#14ad9f] mb-2">✅ Gewerbeanmeldung NÖTIG:</h4>
+                    <ul className="text-gray-700 text-sm space-y-1">
                       <li>• Handwerk (Elektriker, Klempner, Maler)</li>
                       <li>• Dienstleistungen (Reinigung, Umzug, Reparaturen)</li>
                       <li>• Handel (Materialverkauf)</li>
@@ -135,9 +135,9 @@ export default function SteuerGrundlagenPage() {
                     </ul>
                   </div>
                   
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-blue-800 mb-2">ℹ️ KEINE Gewerbeanmeldung:</h4>
-                    <ul className="text-blue-700 text-sm space-y-1">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-2">ℹ️ KEINE Gewerbeanmeldung:</h4>
+                    <ul className="text-gray-700 text-sm space-y-1">
                       <li>• Freie Berufe (Berater, Übersetzer, Künstler)</li>
                       <li>• Vermietung (nur Räume/Gegenstände)</li>
                       <li>• Gelegentliche Verkäufe</li>
@@ -788,15 +788,16 @@ export default function SteuerGrundlagenPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. | 
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> | 
             <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

@@ -15,49 +15,49 @@ export const metadata: Metadata = {
 
 export default function PerfektesAngebotPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#14ad9f] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">Taskilo</span>
-            </Link>
-            <Link 
-              href="/blog" 
-              className="flex items-center space-x-2 text-gray-600 hover:text-[#14ad9f] transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Zurück zum Blog</span>
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <Link href="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-[#14ad9f] font-bold text-sm">T</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900">Taskilo</span>
+              </Link>
+              <Link 
+                href="/blog" 
+                className="flex items-center space-x-2 text-gray-600 hover:text-[#14ad9f] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Zurück zum Blog</span>
+              </Link>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-3 mb-6">
-            <FileText className="w-12 h-12" />
-            <h1 className="text-4xl md:text-5xl font-bold">
-              So schreibst du das perfekte Angebot
-            </h1>
+        {/* Hero Section */}
+        <section className="text-white py-16">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <FileText className="w-12 h-12 drop-shadow-lg" />
+              <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">
+                So schreibst du das perfekte Angebot
+              </h1>
+            </div>
+            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
+              Gewinne mehr Aufträge mit professionellen Angeboten. Der komplette Leitfaden für 
+              überzeugende Kostenvoranschläge, die Kunden zum "Ja" bringen.
+            </p>
           </div>
-          <p className="text-xl text-[#e6fffe] leading-relaxed">
-            Gewinne mehr Aufträge mit professionellen Angeboten. Der komplette Leitfaden für 
-            überzeugende Kostenvoranschläge, die Kunden zum "Ja" bringen.
-          </p>
-        </div>
-      </section>
+        </section>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        
-        {/* Success Statistics */}
-        <div className="bg-[#14ad9f] bg-opacity-10 rounded-xl p-8 mb-12">
+        {/* Main Content */}
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">        {/* Success Statistics */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl p-8 mb-12 shadow-xl border border-white/30">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Erfolgsstatistiken auf Taskilo</h2>
           <div className="grid md:grid-cols-4 gap-6">
             <div className="text-center">
@@ -687,15 +687,16 @@ export default function PerfektesAngebotPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. | 
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> | 
             <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

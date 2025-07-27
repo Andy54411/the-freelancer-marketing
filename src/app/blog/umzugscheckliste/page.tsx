@@ -15,14 +15,16 @@ export const metadata: Metadata = {
 
 export default function UmzugschecklistePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#14ad9f] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-[#14ad9f] font-bold text-sm">T</span>
               </div>
               <span className="text-xl font-bold text-gray-900">Taskilo</span>
             </Link>
@@ -38,15 +40,15 @@ export default function UmzugschecklistePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white py-16">
+      <section className="text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3 mb-6">
             <Home className="w-12 h-12" />
-            <h1 className="text-4xl md:text-5xl font-bold">
+            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">
               Checkliste für den Umzug
             </h1>
           </div>
-          <p className="text-xl text-[#e6fffe] leading-relaxed">
+          <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
             Von der ersten Planung bis zum ersten Tag im neuen Zuhause - Ihre komplette Anleitung für einen stressfreien Umzug.
           </p>
         </div>
@@ -101,7 +103,7 @@ export default function UmzugschecklistePage() {
 
         {/* 8 Wochen vorher */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-[#14ad9f] rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">8W</span>
@@ -167,7 +169,7 @@ export default function UmzugschecklistePage() {
 
         {/* 4 Wochen vorher */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">4W</span>
@@ -247,7 +249,7 @@ export default function UmzugschecklistePage() {
 
         {/* 1 Woche vorher */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">1W</span>
@@ -314,7 +316,7 @@ export default function UmzugschecklistePage() {
 
         {/* Umzugstag */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">✓</span>
@@ -394,7 +396,7 @@ export default function UmzugschecklistePage() {
 
         {/* Nach dem Umzug */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">📅 Nach dem Umzug (erste 2 Wochen)</h2>
             
             <div className="space-y-6">
@@ -402,19 +404,19 @@ export default function UmzugschecklistePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">🏛️ Behördengänge</h3>
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
-                    <Clock className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span><strong>Binnen 14 Tagen:</strong> Anmeldung beim Einwohnermeldeamt</span>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <Clock className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Führerschein und Fahrzeugpapiere ummelden</span>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <Clock className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Wahlberechtigung ummelden</span>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <Clock className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Finanzamt über Adressänderung informieren</span>
                   </div>
                 </div>
@@ -424,19 +426,19 @@ export default function UmzugschecklistePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">🏠 Eingewöhnung</h3>
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
-                    <CheckCircle className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Möbel aufbauen und Wohnung einrichten</span>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <CheckCircle className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Neue Umgebung erkunden (Supermärkte, Ärzte, etc.)</span>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <CheckCircle className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Kontakt zu neuen Nachbarn aufbauen</span>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <CheckCircle className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
                     <span>Einweihungsfeier planen</span>
                   </div>
                 </div>
@@ -482,7 +484,7 @@ export default function UmzugschecklistePage() {
         </div>
 
         {/* Call to Action */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 text-center">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Professionelle Umzugshilfe gesucht?
           </h2>
@@ -508,15 +510,16 @@ export default function UmzugschecklistePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. | 
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> | 
             <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

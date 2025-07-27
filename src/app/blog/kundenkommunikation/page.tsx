@@ -15,14 +15,16 @@ export const metadata: Metadata = {
 
 export default function KundenkommunikationPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#14ad9f] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-[#14ad9f] font-bold text-sm">T</span>
               </div>
               <span className="text-xl font-bold text-gray-900">Taskilo</span>
             </Link>
@@ -42,7 +44,7 @@ export default function KundenkommunikationPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3 mb-6">
             <MessageCircle className="w-12 h-12" />
-            <h1 className="text-4xl md:text-5xl font-bold">
+            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">
               Tipps zur Kundenkommunikation auf Taskilo
             </h1>
           </div>
@@ -84,7 +86,7 @@ export default function KundenkommunikationPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-8">Die 5 Phasen der erfolgreichen Kundenkommunikation</h2>
           
           {/* Phase 1: Erstkontakt */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-8">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">1</span>
@@ -146,7 +148,7 @@ export default function KundenkommunikationPage() {
           </div>
 
           {/* Phase 2: Beratung & Angebot */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-8">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">2</span>
@@ -201,7 +203,7 @@ export default function KundenkommunikationPage() {
           </div>
 
           {/* Phase 3: Auftragsbegleitung */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-8">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">3</span>
@@ -255,7 +257,7 @@ export default function KundenkommunikationPage() {
           </div>
 
           {/* Phase 4: Abschluss & Übergabe */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-8">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">4</span>
@@ -311,7 +313,7 @@ export default function KundenkommunikationPage() {
           </div>
 
           {/* Phase 5: Nachbetreuung */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 mb-8">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 mb-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">5</span>
@@ -366,7 +368,7 @@ export default function KundenkommunikationPage() {
 
         {/* Schwierige Situationen meistern */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
               <AlertTriangle className="w-8 h-8 mr-2 text-orange-500" />
               Schwierige Situationen professionell meistern
@@ -444,7 +446,7 @@ export default function KundenkommunikationPage() {
 
         {/* Chat-Etikette */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
               <MessageCircle className="w-8 h-8 mr-2 text-blue-500" />
               Taskilo-Chat perfekt nutzen
@@ -567,7 +569,7 @@ export default function KundenkommunikationPage() {
 
         {/* Kommunikations-Templates */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">📝 Kommunikations-Templates für jede Situation</h2>
             
             <div className="grid lg:grid-cols-2 gap-8">
@@ -638,7 +640,7 @@ export default function KundenkommunikationPage() {
 
         {/* Erfolgsmessung */}
         <div className="mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
             <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
               <Users className="w-8 h-8 mr-2 text-[#14ad9f]" />
               Ihren Kommunikationserfolg messen
@@ -697,7 +699,7 @@ export default function KundenkommunikationPage() {
         </div>
 
         {/* Call to Action */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 text-center">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Starten Sie mit professioneller Kommunikation durch!
           </h2>
@@ -723,15 +725,16 @@ export default function KundenkommunikationPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-16">
+      <footer className="bg-gray-900/90 backdrop-blur-sm text-white py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             © 2025 Taskilo. Alle Rechte vorbehalten. | 
             <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> | 
             <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

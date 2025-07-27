@@ -220,7 +220,7 @@ function FAQSection({ section }: { section: (typeof faqSections)[0] }) {
 export default function BlogPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
 
@@ -230,15 +230,15 @@ export default function BlogPage() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/" className="text-white/80 hover:text-white transition-colors">
+                  <Link href="/" className="text-white/90 hover:text-white transition-colors">
                     <FiHome className="w-4 h-4 mr-1 inline" />
                     Startseite
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="text-white/60" />
+              <BreadcrumbSeparator className="text-white/70" />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-white font-medium">
+                <BreadcrumbPage className="text-white font-semibold">
                   Hilfe & Information
                 </BreadcrumbPage>
               </BreadcrumbItem>
@@ -247,26 +247,26 @@ export default function BlogPage() {
         </div>
 
         {/* SEO-optimized Header */}
-        <div className="text-white py-12">
+        <div className="text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg tracking-tight">
               Taskilo Hilfe & Information
             </h1>
-            <p className="text-xl text-white/90 drop-shadow-md mb-4 max-w-3xl">
+            <p className="text-xl text-white/95 drop-shadow-md mb-6 max-w-3xl leading-relaxed">
               Alles was Sie über Taskilo wissen müssen - von ersten Schritten bis zu erweiterten
               Features. Sichere Zahlungen, geprüfte Dienstleister und transparente Preise.
             </p>
-            <div className="flex flex-wrap gap-4 text-sm text-white/80">
+            <div className="flex flex-wrap gap-6 text-base text-white/90">
               <span className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-300" />
+                <FiCheckCircle className="text-white w-5 h-5" />
                 Kostenlose Registrierung
               </span>
               <span className="flex items-center gap-2">
-                <FiShield className="text-green-300" />
+                <FiShield className="text-white w-5 h-5" />
                 100% sichere Zahlungen
               </span>
               <span className="flex items-center gap-2">
-                <FiStar className="text-green-300" />
+                <FiStar className="text-white w-5 h-5" />
                 Geprüfte Dienstleister
               </span>
             </div>
@@ -275,9 +275,9 @@ export default function BlogPage() {
 
         {/* Quick Navigation */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schnellnavigation</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="bg-white/98 backdrop-blur-sm rounded-xl shadow-2xl p-8 mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Schnellnavigation</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {faqSections.map(section => (
                 <a
                   key={section.id}
@@ -308,8 +308,8 @@ export default function BlogPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiHome className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Haushaltsservices</h3>
@@ -318,8 +318,8 @@ export default function BlogPage() {
                   </p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiTool className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Handwerk</h3>
@@ -328,8 +328,8 @@ export default function BlogPage() {
                   </p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiZap className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Digitale Services</h3>
@@ -338,8 +338,8 @@ export default function BlogPage() {
                   </p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
-                  <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiBriefcase className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Business Services</h3>
