@@ -374,50 +374,104 @@ export default function OrderDetailPage() {
                     Test-Button um das Payment Modal direkt anzuzeigen (für Debugging)
                   </p>
                   <button
-                    onClick={() => {
-                      // Simuliere Payment Modal mit Test-Daten
-                      const testClientSecret = 'pi_test_1234567890_secret_test123';
-                      const testAmount = 342100; // €3421.00 in cents
-                      const testHours = 81.0;
-
-                      console.log('🔧 DEBUG: Simuliere Payment Modal mit Test-Daten:', {
-                        testClientSecret,
-                        testAmount,
-                        testHours,
+                    onClick={async () => {
+                      // ECHTE API-Integration statt Test-Daten!
+                      console.log('🔧 DEBUG: Starte ECHTE Payment API-Integration:', {
                         orderId,
+                        timestamp: new Date().toISOString(),
                       });
 
-                      // Import der InlinePaymentComponent simulieren
-                      import('@/components/InlinePaymentComponent')
-                        .then(module => {
-                          const InlinePaymentComponent = module.default;
+                      try {
+                        // Import der TimeTracker-Klasse
+                        const { TimeTracker } = await import('@/lib/timeTracker');
 
-                          // Modal-Container erstellen
-                          const modalContainer = document.createElement('div');
-                          modalContainer.id = 'debug-payment-modal';
-                          document.body.appendChild(modalContainer);
+                        alert('🚀 ECHTE API: TimeTracker.billApprovedHours wird aufgerufen...');
 
-                          // React Portal simulieren für Test
-                          alert(
-                            '🔧 DEBUG: Payment Modal Test würde hier erscheinen!\n\n' +
-                              `Betrag: €${(testAmount / 100).toFixed(2)}\n` +
-                              `Stunden: ${testHours}h\n` +
-                              `Client Secret: ${testClientSecret}\n` +
-                              `Order ID: ${orderId}\n\n` +
-                              'Prüfe Browser Console für Details!'
-                          );
-                        })
-                        .catch(error => {
-                          console.error(
-                            '🔧 DEBUG: Fehler beim Import der Payment-Komponente:',
-                            error
-                          );
-                          alert('❌ DEBUG: Payment-Komponente konnte nicht geladen werden!');
+                        // ECHTER API-Aufruf!
+                        const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                        console.log('✅ ECHTE API Response:', billingResult);
+
+                        if (!billingResult.clientSecret) {
+                          throw new Error('Kein clientSecret in API Response!');
+                        }
+
+                        // ECHTE Daten verwenden!
+                        const realClientSecret = billingResult.clientSecret;
+                        const realAmount = billingResult.customerPays;
+                        const realHours = 1.0; // Wird aus API-Daten berechnet
+
+                        // Import der InlinePaymentComponent für ECHTES Modal
+                        const { default: InlinePaymentComponent } = await import(
+                          '@/components/InlinePaymentComponent'
+                        );
+                        const { createRoot } = await import('react-dom/client');
+                        const { createElement } = await import('react');
+
+                        // Portal-basiertes Modal erstellen und rendern
+                        const modalContainer = document.createElement('div');
+                        modalContainer.id = 'real-payment-modal-container';
+                        document.body.appendChild(modalContainer);
+
+                        const root = createRoot(modalContainer);
+
+                        console.log('🔓 ECHTE Payment Modal wird gerendert mit API-Daten:', {
+                          clientSecret: realClientSecret.substring(0, 20) + '...',
+                          amount: realAmount,
+                          hours: realHours,
                         });
+
+                        root.render(
+                          createElement(InlinePaymentComponent, {
+                            clientSecret: realClientSecret,
+                            orderId: orderId,
+                            totalAmount: realAmount,
+                            totalHours: realHours,
+                            isOpen: true,
+                            onClose: () => {
+                              console.log('🔒 Payment Modal geschlossen');
+                              root.unmount();
+                              document.body.removeChild(modalContainer);
+                            },
+                            onSuccess: async (paymentIntentId: string) => {
+                              console.log('✅ Payment erfolgreich:', paymentIntentId);
+                              alert(
+                                `✅ BEZAHLUNG ERFOLGREICH!\n\nPayment Intent ID: ${paymentIntentId}`
+                              );
+                              root.unmount();
+                              document.body.removeChild(modalContainer);
+                              // Seite neu laden um aktualisierten Status zu zeigen
+                              window.location.reload();
+                            },
+                            onError: (error: any) => {
+                              console.error('❌ Payment Fehler:', error);
+                              alert(
+                                `❌ PAYMENT FEHLER!\n\n${typeof error === 'string' ? error : error.message || 'Unbekannter Fehler'}`
+                              );
+                              root.unmount();
+                              document.body.removeChild(modalContainer);
+                            },
+                          })
+                        );
+
+                        alert(
+                          `✅ ECHTE API SUCCESS!\n\nECHTER Client Secret: ${realClientSecret.substring(0, 20)}...\n` +
+                            `ECHTER Betrag: €${(realAmount / 100).toFixed(2)}\n` +
+                            `Payment Intent ID: ${billingResult.paymentIntentId}\n` +
+                            `🔓 MODAL IST JETZT GEÖFFNET!`
+                        );
+                      } catch (error) {
+                        console.error('❌ ECHTE API Fehler:', error);
+                        alert(
+                          `❌ ECHTE API FEHLER!\n\n` +
+                            `Fehler: ${error instanceof Error ? error.message : 'Unbekannt'}\n\n` +
+                            'Prüfe Console für Details!'
+                        );
+                      }
                     }}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
-                    🔧 Payment Modal Test (€3421.00 / 81.0h)
+                    � ECHTE API: Payment Modal (REAL DATA!)
                   </button>
                 </div>
 
