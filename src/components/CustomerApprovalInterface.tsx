@@ -14,11 +14,13 @@ import InlinePaymentComponent from './InlinePaymentComponent';
 interface CustomerApprovalInterfaceProps {
   orderId: string;
   onApprovalProcessed?: () => void;
+  onPaymentRequest?: (clientSecret: string, amount: number, hours: number) => void;
 }
 
 export default function CustomerApprovalInterface({
   orderId,
   onApprovalProcessed,
+  onPaymentRequest,
 }: CustomerApprovalInterfaceProps) {
   const [user, setUser] = useState<User | null>(null);
   const [approvalRequests, setApprovalRequests] = useState<CustomerApprovalRequest[]>([]);
@@ -178,20 +180,28 @@ export default function CustomerApprovalInterface({
             clientSecret: billingResult.clientSecret,
           });
 
-          // Öffne Inline Payment Modal statt Alert
-          setPaymentClientSecret(billingResult.clientSecret);
-          setPaymentAmount(billingResult.customerPays);
-          setPaymentHours(
+          // Berechne Payment Hours
+          const paymentHours =
             orderDetails?.timeTracking?.timeEntries
               ?.filter((e: any) => e.category === 'additional' && e.status === 'customer_approved')
-              ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0
-          );
-          setShowInlinePayment(true);
+              ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
-          console.log('🔓 Inline Payment Modal geöffnet:', {
+          // Rufe Parent Payment Handler auf, wenn verfügbar
+          if (onPaymentRequest) {
+            onPaymentRequest(billingResult.clientSecret, billingResult.customerPays, paymentHours);
+          } else {
+            // Fallback: Eigenes Payment Modal (old behavior)
+            setPaymentClientSecret(billingResult.clientSecret);
+            setPaymentAmount(billingResult.customerPays);
+            setPaymentHours(paymentHours);
+            setShowInlinePayment(true);
+          }
+
+          console.log('🔓 Payment Modal geöffnet:', {
             clientSecret: billingResult.clientSecret,
             amount: billingResult.customerPays / 100,
             paymentIntentId: billingResult.paymentIntentId,
+            hours: paymentHours,
           });
         } catch (billingError) {
           console.error('❌ Fehler bei der automatischen Stripe-Abrechnung:', billingError);

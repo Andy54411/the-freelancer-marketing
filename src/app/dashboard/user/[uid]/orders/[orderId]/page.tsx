@@ -22,6 +22,8 @@ import UserInfoCard from '@/components/UserInfoCard'; // Importiere die neue, ge
 import CustomerApprovalInterface from '@/components/CustomerApprovalInterface';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
+// Payment-Komponente
+import InlinePaymentComponent from '@/components/InlinePaymentComponent';
 
 interface ParticipantDetails {
   id: string;
@@ -65,6 +67,12 @@ export default function OrderDetailPage() {
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false); // NEU: Ladezustand für Aktionen
+
+  // Payment Modal States
+  const [showInlinePayment, setShowInlinePayment] = useState(false);
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentHours, setPaymentHours] = useState(0);
 
   useEffect(() => {
     // Warten, bis der Auth-Status endgültig geklärt ist.
@@ -191,6 +199,51 @@ export default function OrderDetailPage() {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden
+  const handlePaymentRequest = (clientSecret: string, amount: number, hours: number) => {
+    console.log('🔄 Opening payment modal from CustomerApprovalInterface:', {
+      clientSecret,
+      amount,
+      hours,
+    });
+
+    setPaymentClientSecret(clientSecret);
+    setPaymentAmount(amount);
+    setPaymentHours(hours);
+    setShowInlinePayment(true);
+  };
+
+  // Payment Modal Handler
+  const handleOpenPayment = async () => {
+    if (!orderId) return;
+
+    try {
+      console.log('🔄 Opening payment modal for order:', orderId);
+
+      // Mock payment data für Test
+      setPaymentClientSecret('pi_test_1234567890_secret_12345'); // Test client secret
+      setPaymentAmount(5000); // 50.00 EUR
+      setPaymentHours(2.5);
+      setShowInlinePayment(true);
+
+      console.log('✅ Payment modal opened');
+    } catch (error) {
+      console.error('❌ Error opening payment modal:', error);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    console.log('✅ Payment successful!');
+    setShowInlinePayment(false);
+    // Reload order data
+    fetchOrder();
+  };
+
+  const handlePaymentCancel = () => {
+    console.log('❌ Payment cancelled');
+    setShowInlinePayment(false);
   };
 
   const overallLoading = loadingOrder || authLoading; // KORREKTUR: Gesamt-Ladezustand
@@ -372,7 +425,9 @@ export default function OrderDetailPage() {
                   onApprovalProcessed={() => {
                     // Optional: Reload order data or show success message
                     console.log('Approval processed');
+                    fetchOrder(); // Reload order data
                   }}
+                  onPaymentRequest={handlePaymentRequest}
                 />
               </div>
             )}
@@ -404,6 +459,26 @@ export default function OrderDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Payment Modal */}
+        {showInlinePayment && paymentClientSecret && (
+          <InlinePaymentComponent
+            clientSecret={paymentClientSecret}
+            orderId={orderId}
+            totalAmount={paymentAmount}
+            totalHours={paymentHours}
+            isOpen={showInlinePayment}
+            onClose={handlePaymentCancel}
+            onSuccess={(paymentIntentId: string) => {
+              console.log('Payment successful:', paymentIntentId);
+              handlePaymentSuccess();
+            }}
+            onError={(error: string) => {
+              console.error('Payment error:', error);
+              handlePaymentCancel();
+            }}
+          />
+        )}
       </main>
     </Suspense>
   );
