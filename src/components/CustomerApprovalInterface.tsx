@@ -590,10 +590,13 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                     </p>
                     <button
                       onClick={async e => {
-                        console.log('🚨 JETZT BEZAHLEN Button geklickt!', {
+                        console.log('🚨 JETZT BEZAHLEN Button geklickt! EXTENDED DEBUG:', {
                           totalBillingPendingHours,
                           totalApprovedAdditionalAmount,
                           orderId,
+                          timestamp: new Date().toISOString(),
+                          windowLocation: window.location.href,
+                          userAgent: navigator.userAgent,
                         });
 
                         // Event propagation stoppen
@@ -629,25 +632,72 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             );
                           });
 
+                          console.log(
+                            '🔍 DETAILED DEBUG: Vor TimeTracker.billApprovedHours Aufruf:',
+                            {
+                              orderId,
+                              timeBeforeCall: new Date().toISOString(),
+                            }
+                          );
+
                           // Direkt zur Stripe-Abrechnung für billing_pending Stunden mit Timeout
                           const billingResult = (await Promise.race([
                             TimeTracker.billApprovedHours(orderId),
                             timeoutPromise,
                           ])) as any;
 
-                          console.log('✅ Billing Result erhalten:', billingResult);
+                          console.log('✅ Billing Result erhalten - DETAILED:', {
+                            billingResult,
+                            hasClientSecret: !!billingResult?.clientSecret,
+                            clientSecretLength: billingResult?.clientSecret?.length || 0,
+                            customerPays: billingResult?.customerPays,
+                            timeAfterCall: new Date().toISOString(),
+                          });
+
+                          // Validierung der Billing Result Daten
+                          if (!billingResult) {
+                            throw new Error('❌ CRITICAL: billingResult ist null/undefined');
+                          }
+
+                          if (!billingResult.clientSecret) {
+                            console.error(
+                              '❌ CRITICAL: Kein clientSecret in billingResult:',
+                              billingResult
+                            );
+                            throw new Error(
+                              '❌ CRITICAL: Kein clientSecret erhalten - Payment Setup fehlgeschlagen'
+                            );
+                          }
+
+                          if (!billingResult.customerPays || billingResult.customerPays <= 0) {
+                            throw new Error('❌ CRITICAL: Ungültiger customerPays Betrag');
+                          }
 
                           // Setze Payment-Daten für Inline-Komponente
+                          console.log('🔧 Setting payment data:', {
+                            clientSecret: billingResult.clientSecret.substring(0, 20) + '...',
+                            amount: billingResult.customerPays,
+                            hours: totalBillingPendingHours,
+                          });
+
                           setPaymentClientSecret(billingResult.clientSecret);
                           setPaymentAmount(billingResult.customerPays);
                           setPaymentHours(totalBillingPendingHours);
+
+                          console.log('🔧 Vor setShowInlinePayment(true):', {
+                            paymentClientSecret: !!billingResult.clientSecret,
+                            paymentAmount: billingResult.customerPays,
+                            paymentHours: totalBillingPendingHours,
+                          });
+
                           setShowInlinePayment(true);
 
-                          console.log('🔓 BILLING_PENDING Payment Modal geöffnet:', {
-                            clientSecret: billingResult.clientSecret,
+                          console.log('🔓 BILLING_PENDING Payment Modal geöffnet - FINAL CHECK:', {
+                            clientSecret: !!billingResult.clientSecret,
                             amount: billingResult.customerPays / 100,
                             hours: totalBillingPendingHours,
                             showInlinePayment: true,
+                            modalShouldBeVisible: true,
                           });
 
                           // Button zurücksetzen
@@ -657,8 +707,14 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           // Keine Weiterleitung mehr - Payment wird inline angezeigt
                         } catch (error) {
                           console.error(
-                            '🚨 Error processing billing_pending hours payment:',
-                            error
+                            '🚨 Error processing billing_pending hours payment - DETAILED:',
+                            {
+                              error,
+                              errorMessage:
+                                error instanceof Error ? error.message : 'Unknown error',
+                              errorStack: error instanceof Error ? error.stack : 'No stack',
+                              timestamp: new Date().toISOString(),
+                            }
                           );
 
                           // Button zurücksetzen
@@ -695,7 +751,8 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             alert(
                               `💥 BEZAHLUNG FEHLGESCHLAGEN!\n\n` +
                                 `Fehler: ${errorMessage}\n\n` +
-                                `Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.`
+                                `Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.\n\n` +
+                                `DEBUG: Siehe Browser Console für Details.`
                             );
                           }
                         }

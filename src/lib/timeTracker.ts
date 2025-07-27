@@ -1172,6 +1172,13 @@ export class TimeTracker {
         customerStripeId,
         providerStripeAccountId,
         approvedEntriesCount: approvedEntries.length,
+        approvedEntryIds: approvedEntries.map(e => e.id),
+        requestBody: {
+          orderId,
+          approvedEntryIds: approvedEntries.map(e => e.id),
+          customerStripeId,
+          providerStripeAccountId,
+        },
       });
 
       // Erstelle PaymentIntent über unsere API
@@ -1188,9 +1195,33 @@ export class TimeTracker {
         }),
       });
 
+      console.log('[TimeTracker] API Response status:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[TimeTracker] API Error creating PaymentIntent:', errorData);
+        const errorText = await response.text();
+        console.error('[TimeTracker] API Error creating PaymentIntent - DETAILED:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText,
+          requestBody: {
+            orderId,
+            approvedEntryIds: approvedEntries.map(e => e.id),
+            customerStripeId,
+            providerStripeAccountId,
+          },
+        });
+
+        let errorData: any;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
 
         // Spezielle Behandlung für Stripe Connect Probleme
         if (errorData.error?.includes('Stripe Connect') || errorData.error?.includes('account')) {
@@ -1207,6 +1238,16 @@ export class TimeTracker {
       }
 
       const paymentData = await response.json();
+
+      console.log('[TimeTracker] Payment Data received - DETAILED:', {
+        paymentData,
+        hasClientSecret: !!paymentData.clientSecret,
+        clientSecretLength: paymentData.clientSecret?.length || 0,
+        paymentIntentId: paymentData.paymentIntentId,
+        customerPays: paymentData.customerPays,
+        companyReceives: paymentData.companyReceives,
+        platformFee: paymentData.platformFee,
+      });
 
       // Markiere NEUE Einträge als billing_pending, aktualisiere BEREITS billing_pending Einträge
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
