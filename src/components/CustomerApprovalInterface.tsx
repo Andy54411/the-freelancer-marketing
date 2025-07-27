@@ -758,7 +758,45 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           );
                           console.log('='.repeat(80));
 
+                          // State setzen
+                          setPaymentClientSecret(billingResult.clientSecret);
+                          setPaymentAmount(billingResult.customerPays);
+                          setPaymentHours(totalBillingPendingHours);
                           setShowInlinePayment(true);
+
+                          // Debugging: State nach Setzen prüfen (mit setTimeout da State async ist)
+                          setTimeout(() => {
+                            console.log('='.repeat(80));
+                            console.log('🔍 STATE VERIFICATION AFTER SET');
+                            console.log('='.repeat(80));
+                            console.log('showInlinePayment should be:', true);
+                            console.log('paymentClientSecret should be present:', !!billingResult.clientSecret);
+                            console.log('paymentAmount should be:', billingResult.customerPays);
+                            console.log('paymentHours should be:', totalBillingPendingHours);
+                            console.log('='.repeat(80));
+                            
+                            // DOM Check
+                            const modalElements = document.querySelectorAll('.fixed.inset-0.bg-black.bg-opacity-50');
+                            const zIndexElements = document.querySelectorAll('[style*="z-index: 9999"]');
+                            console.log('DOM ELEMENTS AFTER STATE SET:');
+                            console.log('  Modal overlays found:', modalElements.length);
+                            console.log('  Z-index 9999 elements:', zIndexElements.length);
+                            
+                            if (modalElements.length === 0 && zIndexElements.length === 0) {
+                              console.log('❌ PROBLEM: Modal not rendered despite state being set!');
+                              console.log('This indicates either:');
+                              console.log('1. State is not actually set (React state update issue)');
+                              console.log('2. Component render condition is not met');
+                              console.log('3. Component is rendering but with display:none or similar');
+                            } else {
+                              console.log('✅ Modal elements found in DOM');
+                              modalElements.forEach((el, i) => {
+                                const style = getComputedStyle(el);
+                                console.log(`  Modal ${i}: display=${style.display}, opacity=${style.opacity}, zIndex=${style.zIndex}`);
+                              });
+                            }
+                            console.log('='.repeat(80));
+                          }, 100);
 
                           // DOM-Element Sichtbarkeits-Check nach 500ms
                           setTimeout(() => {
@@ -1529,6 +1567,20 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       ))}
 
       {/* Inline Payment Component */}
+      {/* DEBUG: Render condition logged in useEffect */}
+      {(() => {
+        // Debug logging für render condition
+        console.log('🎭 RENDER CHECK:', {
+          showInlinePayment,
+          paymentClientSecret: !!paymentClientSecret,
+          paymentClientSecretLength: paymentClientSecret?.length || 0,
+          paymentAmount,
+          paymentHours,
+          shouldRender: showInlinePayment && paymentClientSecret
+        });
+        return null;
+      })()}
+      
       {showInlinePayment && paymentClientSecret && (
         <InlinePaymentComponent
           clientSecret={paymentClientSecret}

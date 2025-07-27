@@ -460,6 +460,179 @@ export default function BlogPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <a
+                  href="/blog/umzugscheckliste"
+                  className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiHome className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Checkliste für den Umzug</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Kompletter 8-Wochen-Leitfaden mit Zeitplan, Kostenübersicht und Profi-Tipps für einen stressfreien Umzug.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>8 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Umzug & Planung</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="/blog/renovierungsfehler"
+                  className="block bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiTool className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Die 5 häufigsten Fehler bei der Renovierung</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Vermeiden Sie teure Renovierungsfehler! Expertenratschläge für Planung, Budget und Umsetzung.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>6 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Renovierung & Tipps</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <a
+                  href="/blog/wann-elektriker"
+                  className="block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiZap className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Wann brauche ich einen professionellen Elektriker?</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Sicherheits-Leitfaden: Welche Elektroarbeiten Sie selbst machen dürfen und wann der Profi ran muss.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>7 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Elektro & Sicherheit</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+
+                <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                  <div className="flex items-start gap-4">
+                    <FiBookOpen className="text-2xl text-gray-500 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2 text-gray-700">Weitere Kunden-Ratgeber</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Mehr praktische Tipps und Anleitungen für Hausbesitzer sind in Vorbereitung.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <FiZap className="w-3 h-3" />
+                        <span>Bald verfügbar</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Neue Sektion für Anbieter */}
+          <section className="mb-12">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Leitfäden für Dienstleister</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a
+                  href="/blog/perfektes-angebot"
+                  className="block bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiBriefcase className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">So schreibst du das perfekte Angebot</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        7-Elemente-Framework für überzeugende Angebote: Von der Kostenaufstellung bis zum professionellen Abschluss.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>9 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Angebote & Verkauf</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="/blog/kundenkommunikation"
+                  className="block bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiMessageSquare className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Tipps zur Kundenkommunikation auf Taskilo</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        5-Phasen-Kommunikationsstrategie: Vom ersten Kontakt bis zur perfekten Bewertung.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>8 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Kommunikation & Service</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <a
+                  href="/blog/steuer-grundlagen"
+                  className="block bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  <div className="flex items-start gap-4">
+                    <FiDollarSign className="text-2xl mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Steuer-Grundlagen für Selbstständige</h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Kompletter Steuer-Leitfaden: Gewerbeanmeldung, Umsatzsteuer, Buchhaltung und Steuererklärung verständlich erklärt.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>12 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>Steuern & Finanzen</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+
+                <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                  <div className="flex items-start gap-4">
+                    <FiStar className="text-2xl text-gray-500 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2 text-gray-700">Weitere Anbieter-Guides</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Mehr Business-Tipps und Erfolgsstrategien für Dienstleister folgen bald.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <FiStar className="w-3 h-3" />
+                        <span>In Entwicklung</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
                   <div className="flex items-start gap-4">
                     <FiBookOpen className="text-2xl text-gray-500 mt-1" />
