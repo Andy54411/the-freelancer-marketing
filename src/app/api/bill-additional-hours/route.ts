@@ -153,12 +153,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Finde genehmigte zusätzliche Zeiteinträge
+    // Finde genehmigte zusätzliche Zeiteinträge (customer_approved ODER billing_pending)
     const approvedEntries = orderData.timeTracking.timeEntries.filter(
       (entry: any) =>
         approvedEntryIds.includes(entry.id) &&
         entry.category === 'additional' &&
-        entry.status === 'customer_approved'
+        (entry.status === 'customer_approved' || entry.status === 'billing_pending')
     );
 
     if (approvedEntries.length === 0) {
