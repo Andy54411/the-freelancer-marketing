@@ -548,6 +548,7 @@ export default function OrderDetailPage() {
             orderId={orderId}
             totalAmount={paymentAmount}
             totalHours={paymentHours}
+            customerId={order?.customerId}
             isOpen={showInlinePayment}
             onClose={handlePaymentCancel}
             onSuccess={(paymentIntentId: string) => {

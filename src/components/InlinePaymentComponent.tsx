@@ -12,6 +12,7 @@ interface InlinePaymentComponentProps {
   orderId: string;
   totalAmount: number; // in cents
   totalHours: number;
+  customerId?: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (paymentIntentId: string) => void;
@@ -22,6 +23,7 @@ interface CheckoutFormProps {
   clientSecret: string;
   totalAmount: number;
   totalHours: number;
+  customerId?: string;
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
   onProcessing: (isProcessing: boolean) => void;
@@ -31,6 +33,7 @@ function CheckoutForm({
   clientSecret,
   totalAmount,
   totalHours,
+  customerId,
   onSuccess,
   onError,
   onProcessing,
@@ -39,6 +42,57 @@ function CheckoutForm({
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [customerData, setCustomerData] = useState<{
+    name: string;
+    email: string;
+    phone?: string;
+    address?: {
+      line1: string;
+      city: string;
+      postal_code: string;
+      country: string;
+    };
+  } | null>(null);
+
+  // Load customer data from Firebase
+  useEffect(() => {
+    const loadCustomerData = async () => {
+      if (!customerId) return;
+
+      try {
+        const { getFirestore, doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+
+        const customerDoc = await getDoc(doc(db, 'users', customerId));
+
+        if (customerDoc.exists()) {
+          const data = customerDoc.data();
+          setCustomerData({
+            name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Taskilo Kunde',
+            email: data.email || '',
+            phone: data.phoneNumber || undefined,
+            address:
+              data.street && data.city && data.postalCode
+                ? {
+                    line1: data.street,
+                    city: data.city,
+                    postal_code: data.postalCode,
+                    country: data.country || 'DE',
+                  }
+                : undefined,
+          });
+        }
+      } catch (error) {
+        console.warn('Kunde konnte nicht geladen werden, verwende Fallback-Daten:', error);
+        setCustomerData({
+          name: 'Taskilo Kunde',
+          email: '',
+        });
+      }
+    };
+
+    loadCustomerData();
+  }, [customerId]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -64,13 +118,32 @@ function CheckoutForm({
         return;
       }
 
-      // Schritt 2: Payment bestätigen
+      // Schritt 2: Payment bestätigen mit echten Kundendaten
+      const confirmParams: any = {
+        return_url: `${window.location.origin}/dashboard`,
+        payment_method_data: {
+          billing_details: {
+            name: customerData?.name || 'Taskilo Kunde',
+            email: customerData?.email || undefined,
+            phone: customerData?.phone || undefined,
+            address: customerData?.address
+              ? {
+                  line1: customerData.address.line1,
+                  city: customerData.address.city,
+                  postal_code: customerData.address.postal_code,
+                  country: customerData.address.country,
+                }
+              : {
+                  country: 'DE',
+                },
+          },
+        },
+      };
+
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret,
-        confirmParams: {
-          return_url: `${window.location.origin}/dashboard`, // Fallback für 3D Secure
-        },
+        confirmParams,
         redirect: 'if_required', // Nur bei 3D Secure umleiten
       });
 
@@ -191,6 +264,7 @@ export default function InlinePaymentComponent({
   orderId,
   totalAmount,
   totalHours,
+  customerId,
   isOpen,
   onClose,
   onSuccess,
@@ -377,6 +451,7 @@ export default function InlinePaymentComponent({
                   clientSecret={clientSecret}
                   totalAmount={totalAmount}
                   totalHours={totalHours}
+                  customerId={customerId}
                   onSuccess={onSuccess}
                   onError={onError}
                   onProcessing={setIsProcessing}
