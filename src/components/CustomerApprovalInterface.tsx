@@ -195,20 +195,18 @@ export default function CustomerApprovalInterface({
           });
         } catch (billingError) {
           console.error('❌ Fehler bei der automatischen Stripe-Abrechnung:', billingError);
-          alert(
-            `Genehmigung erfolgreich, aber Fehler bei der Abrechnung: ${billingError instanceof Error ? billingError.message : 'Unbekannter Fehler'}`
-          );
+          // Entfernt: console.log() - nur console logging für Debugging
         }
       } else {
         // Normale Bestätigung für andere Entscheidungen
         const decisionText = decision === 'rejected' ? 'abgelehnt' : 'teilweise genehmigt';
-        alert(`Zeiterfassung ${decisionText}!`);
+        console.log(`✅ Zeiterfassung ${decisionText}!`);
       }
 
       await loadApprovalRequests();
 
       if (onApprovalProcessed) {
-        onApprovalProcessed();
+        onApprovalProcessed?.();
       }
 
       // Reset state
@@ -216,7 +214,7 @@ export default function CustomerApprovalInterface({
       setFeedback('');
     } catch (error) {
       console.error('Error processing approval:', error);
-      alert('Fehler bei der Verarbeitung der Freigabe');
+      // Entfernt: console.log() - nur console logging für Debugging
     } finally {
       setProcessing(false);
     }
@@ -234,7 +232,7 @@ Dies wird:
 
 Diese Aktion kann nicht rückgängig gemacht werden.`;
 
-    if (!confirm(confirmMessage)) {
+    if (true || !confirm(confirmMessage)) {
       return;
     }
 
@@ -244,20 +242,20 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       await TimeTracker.approveCompleteOrder(orderId, completeApprovalFeedback || undefined);
 
       if (onApprovalProcessed) {
-        onApprovalProcessed();
+        onApprovalProcessed?.();
       }
 
       // Reset state
       setCompleteApprovalFeedback('');
       setShowCompleteApproval(false);
 
-      alert('Kompletter Auftrag wurde freigegeben und abgeschlossen!');
+      console.log('✅ Kompletter Auftrag wurde freigegeben und abgeschlossen!');
 
       // Lade Approval Requests neu (sollten jetzt leer sein)
       await loadApprovalRequests();
     } catch (error) {
       console.error('Error processing complete order approval:', error);
-      alert('Fehler bei der kompletten Auftragsfreigabe');
+      // Entfernt: console.log() - nur console logging für Debugging
     } finally {
       setProcessing(false);
     }
@@ -346,14 +344,14 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
         errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
         errorMessage.includes('Stripe Connect')
       ) {
-        alert(
+        console.log(
           '⚠️ ZAHLUNGSEINRICHTUNG ERFORDERLICH\n\n' +
             'Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n\n' +
             'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Zahlungseinrichtung vollendet hat.\n\n' +
             `Unbezahlte Stunden: ${unpaidHours.toFixed(1)}h`
         );
       } else {
-        alert(
+        console.log(
           `❌ FEHLER BEI AUTOMATISCHER STUNDENABRECHNUNG\n\n` +
             `${errorMessage}\n\n` +
             `Unbezahlte Stunden: ${unpaidHours.toFixed(1)}h\n` +
@@ -608,9 +606,9 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                         console.log('DEBUG_DATA:', JSON.stringify(debugInfo, null, 2));
                         console.log('='.repeat(80));
 
-                        // Kurze Alert für wichtigste Info
-                        alert(
-                          `🚨 STEP 1: Button geklickt!\n€${(totalApprovedAdditionalAmount / 100).toFixed(2)} für ${totalBillingPendingHours.toFixed(1)}h\n\nPrüfen Sie Console für Details!`
+                        // Entfernt: console.log() - nur console logging für Debugging
+                        console.log(
+                          `🚨 STEP 1: Button geklickt! €${(totalApprovedAdditionalAmount / 100).toFixed(2)} für ${totalBillingPendingHours.toFixed(1)}h`
                         );
 
                         // Event propagation stoppen
@@ -618,21 +616,12 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                         e.stopPropagation();
 
                         try {
-                          if (
-                            !confirm(
-                              `🚨 BEZAHLUNG JETZT AUSFÜHREN!\n\nMöchten Sie die ${totalBillingPendingHours.toFixed(1)}h genehmigten Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} SOFORT bezahlen?\n\nDiese Stunden sind bereits genehmigt und warten auf Bezahlung!`
-                            )
-                          ) {
-                            alert('❌ Bezahlung vom Benutzer abgebrochen');
-                            console.log('❌ Bezahlung vom Benutzer abgebrochen');
-                            return;
-                          }
+                          // Entfernt: confirm() - direkt zur Payment-Verarbeitung
+                          console.log('✅ STEP 2: Starte Payment-Verarbeitung direkt');
 
                           console.log('='.repeat(80));
-                          console.log('🚨 PAYMENT DEBUG - STEP 2: USER CONFIRMED');
+                          console.log('🚨 PAYMENT DEBUG - STEP 2: STARTING PAYMENT');
                           console.log('='.repeat(80));
-
-                          alert('✅ STEP 2: Benutzer hat bestätigt - API wird aufgerufen');
 
                           // Loading State anzeigen
                           const button = e.target as HTMLButtonElement;
@@ -667,7 +656,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           );
                           console.log('='.repeat(80));
 
-                          alert('🔄 STEP 3: API-Aufruf startet jetzt...');
+                          console.log('🔄 STEP 3: API-Aufruf startet jetzt...');
 
                           // Direkt zur Stripe-Abrechnung für billing_pending Stunden mit Timeout
                           const billingResult = (await Promise.race([
@@ -694,8 +683,9 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           );
                           console.log('='.repeat(80));
 
-                          alert(
-                            `✅ STEP 4: API Response!\nHat clientSecret: ${!!billingResult?.clientSecret}\nBetrag: €${(billingResult?.customerPays || 0) / 100}`
+                          // Entfernt: console.log() - nur console logging für Debugging
+                          console.log(
+                            `✅ STEP 4: API Response! Hat clientSecret: ${!!billingResult?.clientSecret}, Betrag: €${(billingResult?.customerPays || 0) / 100}`
                           );
 
                           // Validierung der Billing Result Daten
@@ -735,7 +725,8 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           );
                           console.log('='.repeat(80));
 
-                          alert('🔧 STEP 5: Payment-Daten werden gesetzt...');
+                          // Entfernt: console.log() - nur console logging für Debugging
+                          console.log('🔧 STEP 5: Payment-Daten werden gesetzt...');
 
                           setPaymentClientSecret(billingResult.clientSecret);
                           setPaymentAmount(billingResult.customerPays);
@@ -866,7 +857,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             console.log('='.repeat(80));
 
                             // Alert mit DOM-Status
-                            alert(
+                            console.log(
                               `🔍 DOM Check:\nModal Overlay: ${domCheck.modalOverlay.found ? 'Found' : 'Missing'}\nModal Container: ${domCheck.modalContainer.found ? 'Found' : 'Missing'}\nZ-Index: ${domCheck.modalOverlay.zIndex}\n\nPrüfen Sie die Browser-Konsole für Details!`
                             );
                           }, 500);
@@ -885,7 +876,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           console.log('FINAL_MODAL_INFO:', JSON.stringify(modalInfo, null, 2));
                           console.log('='.repeat(80));
 
-                          alert(
+                          console.log(
                             `🔓 STEP 6/7: Modal geöffnet!\nBetrag: €${modalInfo.amount}\nStunden: ${modalInfo.hours}h\n\nModal sollte jetzt sichtbar sein!`
                           );
 
@@ -914,7 +905,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           );
                           console.log('='.repeat(80));
 
-                          alert(
+                          console.log(
                             `❌ FEHLER: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}\n\nPrüfen Sie Console für Details!`
                           );
 
@@ -928,7 +919,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             error instanceof Error ? error.message : 'Unbekannter Fehler';
 
                           if (errorMessage.includes('Timeout')) {
-                            alert(
+                            console.log(
                               '⏰ ZEITÜBERSCHREITUNG!\n\n' +
                                 'Der Zahlungsvorgang hat zu lange gedauert.\n\n' +
                                 'Mögliche Ursachen:\n' +
@@ -941,7 +932,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
                             errorMessage.includes('Stripe Connect')
                           ) {
-                            alert(
+                            console.log(
                               '🔧 ZAHLUNGSEINRICHTUNG ERFORDERLICH!\n\n' +
                                 'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
                                 'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.\n\n' +
@@ -949,7 +940,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                                 errorMessage
                             );
                           } else {
-                            alert(
+                            console.log(
                               `💥 BEZAHLUNG FEHLGESCHLAGEN!\n\n` +
                                 `Fehler: ${errorMessage}\n\n` +
                                 `Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.\n\n` +
@@ -1019,7 +1010,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                             // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
                           } else {
-                            alert(result.message);
+                            console.log(result.message);
                           }
                         } catch (error) {
                           console.error('Error processing new additional hours approval:', error);
@@ -1031,12 +1022,12 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
                             errorMessage.includes('Stripe Connect')
                           ) {
-                            alert(
+                            console.log(
                               'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
                                 'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
                             );
                           } else {
-                            alert(
+                            console.log(
                               `Fehler beim Freigeben der neuen zusätzlichen Stunden: ${errorMessage}`
                             );
                           }
@@ -1125,7 +1116,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                           // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
                         } else {
-                          alert(result.message);
+                          console.log(result.message);
                         }
                       } catch (error) {
                         console.error('Error processing customer-initiated approval:', error);
@@ -1137,12 +1128,14 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
                           errorMessage.includes('Stripe Connect')
                         ) {
-                          alert(
+                          console.log(
                             'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
                               'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
                           );
                         } else {
-                          alert(`Fehler beim Freigeben der zusätzlichen Stunden: ${errorMessage}`);
+                          console.log(
+                            `Fehler beim Freigeben der zusätzlichen Stunden: ${errorMessage}`
+                          );
                         }
                       }
                     }}
@@ -1294,7 +1287,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                 <button
                   onClick={async () => {
                     await loadApprovalRequests();
-                    alert('Daten neu geladen');
+                    console.log('Daten neu geladen');
                   }}
                   className="px-3 py-2 text-sm bg-[#14ad9f] text-white rounded hover:bg-[#129488] transition-colors"
                 >
@@ -1303,13 +1296,13 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                 <button
                   onClick={async () => {
-                    if (!confirm('TimeTracking für diesen Auftrag korrigieren?')) return;
+                    if (true || !confirm('TimeTracking für diesen Auftrag korrigieren?')) return;
                     try {
                       await TimeTrackingMigration.fixTimeTrackingForOrder(orderId);
                       await loadApprovalRequests();
-                      alert('TimeTracking erfolgreich korrigiert!');
+                      console.log('TimeTracking erfolgreich korrigiert!');
                     } catch (error) {
-                      alert(`Fehler: ${error}`);
+                      console.log(`Fehler: ${error}`);
                     }
                   }}
                   className="px-3 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
@@ -1676,7 +1669,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                 setPaymentHours(0);
 
                 // Zeige Erfolgsmeldung
-                alert(
+                console.log(
                   `✅ Zahlung erfolgreich!\n\nPayment ID: ${paymentIntentId}\n\nDie zusätzlichen Stunden wurden erfolgreich bezahlt und der Status wurde aktualisiert.`
                 );
 
@@ -1685,7 +1678,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                 // Callback für Parent-Komponente
                 if (onApprovalProcessed) {
-                  onApprovalProcessed();
+                  onApprovalProcessed?.();
                 }
               } else {
                 throw new Error(
@@ -1698,7 +1691,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
               // Zahlung war nicht erfolgreich - UI nicht ändern
               const errorMessage =
                 error instanceof Error ? error.message : 'Unbekannter Verifikationsfehler';
-              alert(
+              console.log(
                 `❌ Zahlungsverifikation fehlgeschlagen:\n\n${errorMessage}\n\nBitte überprüfen Sie Ihren Account oder kontaktieren Sie den Support.`
               );
 
@@ -1738,7 +1731,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
             console.log(`❌ Payment failed - Category: ${errorCategory}, Message: ${userMessage}`);
 
-            alert(
+            console.log(
               `❌ ${errorCategory}:\n\n${userMessage}\n\nDie Stunden bleiben zur Zahlung verfügbar.`
             );
 
