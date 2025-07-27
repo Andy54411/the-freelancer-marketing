@@ -408,44 +408,44 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
     const totalLoggedHours = orderDetails?.timeTracking?.totalLoggedHours || 0;
     const originalPlannedHours = orderDetails?.timeTracking?.originalPlannedHours || 0;
 
-    // Berechne die Stunden die bereits bezahlt wurden - ERWEITERTE SICHERHEITSLOGIK
+    // KORRIGIERTE LOGIK: Unterscheide zwischen GENEHMIGT und TATSÄCHLICH BEZAHLT
+    // billing_pending = genehmigt aber NOCH NICHT bezahlt!
     const totalPaidAdditionalHours = additionalEntries
       .filter((e: any) => {
-        // ALLE möglichen bezahlten Status-Arten erfassen:
+        // NUR WIRKLICH BEZAHLTE Status-Arten erfassen (OHNE billing_pending!):
         const isPaidStatus =
           e.status === 'billed' || // Legacy: Direkt abgerechnet
           e.status === 'platform_held' || // Platform Hold System: Geld gehalten
           e.status === 'platform_released' || // Platform Hold System: Geld freigegeben
           e.status === 'escrow_authorized' || // Legacy Escrow: Autorisiert
           e.status === 'escrow_released' || // Legacy Escrow: Freigegeben
-          e.status === 'billing_pending' || // Abrechnung läuft ← WICHTIG: Das sind die aktuellen!
           e.status === 'transferred' || // Übertragen
           e.platformHoldStatus === 'held' || // Platform Hold Status
           e.platformHoldStatus === 'transferred' || // Platform zu Provider übertragen
           e.escrowStatus === 'authorized' || // Legacy Escrow Status
-          e.escrowStatus === 'released' || // Legacy Escrow freigegeben
-          e.paymentIntentId || // Hat PaymentIntent ID
-          e.platformHoldPaymentIntentId || // Hat Platform Hold PaymentIntent
-          e.escrowPaymentIntentId; // Hat Escrow PaymentIntent
+          e.escrowStatus === 'released'; // Legacy Escrow freigegeben
+        // WICHTIG: billing_pending ist NICHT hier, weil das bedeutet "genehmigt aber noch nicht bezahlt"!
 
         // Debug: Logge für Transparenz
         if (isPaidStatus) {
-          console.log('🔍 [PAID HOUR DETECTED]:', {
+          console.log('🔍 [ACTUALLY PAID HOUR DETECTED]:', {
             entryId: e.id,
             hours: e.hours,
             status: e.status,
             platformHoldStatus: e.platformHoldStatus,
             escrowStatus: e.escrowStatus,
-            hasPaymentIntentId: !!e.paymentIntentId,
-            hasPlatformHoldPaymentIntentId: !!e.platformHoldPaymentIntentId,
-            hasEscrowPaymentIntentId: !!e.escrowPaymentIntentId,
             category: e.category,
-            reason: 'ALREADY_PAID_OR_PROCESSING',
+            reason: 'MONEY_ACTUALLY_TRANSFERRED',
           });
         }
 
         return isPaidStatus;
       })
+      .reduce((sum: number, e: any) => sum + (e.hours || 0), 0);
+
+    // Berechne Stunden die genehmigt sind aber noch bezahlt werden müssen
+    const totalBillingPendingHours = additionalEntries
+      .filter((e: any) => e.status === 'billing_pending')
       .reduce((sum: number, e: any) => sum + (e.hours || 0), 0);
 
     // Nur die Stunden zählen, die wirklich noch nicht bezahlt sind
@@ -467,25 +467,26 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       totalLoggedHours,
       totalAdditionalHours,
       totalPaidAdditionalHours,
+      totalBillingPendingHours,
       calculatedUnpaidHours,
       unpaidAdditionalHours,
-      paidEntriesCount: additionalEntries.filter((e: any) => {
+      actuallyPaidEntriesCount: additionalEntries.filter((e: any) => {
         return (
           e.status === 'billed' ||
           e.status === 'platform_held' ||
           e.status === 'platform_released' ||
           e.status === 'escrow_authorized' ||
           e.status === 'escrow_released' ||
-          e.status === 'billing_pending' ||
+          e.status === 'transferred' ||
           e.platformHoldStatus === 'held' ||
           e.platformHoldStatus === 'transferred' ||
           e.escrowStatus === 'authorized' ||
-          e.escrowStatus === 'released' ||
-          e.paymentIntentId ||
-          e.platformHoldPaymentIntentId ||
-          e.escrowPaymentIntentId
+          e.escrowStatus === 'released'
         );
       }).length,
+      billingPendingEntriesCount: additionalEntries.filter(
+        (e: any) => e.status === 'billing_pending'
+      ).length,
       additionalEntriesBreakdown: additionalEntries.map((e: any) => ({
         id: e.id,
         hours: e.hours,
@@ -525,14 +526,11 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
               <FiCheck className="text-green-600 mt-1 flex-shrink-0" size={20} />
               <div>
                 <h3 className="text-lg font-medium text-green-900 mb-2">
-                  Zusätzliche Stunden genehmigt
-                  {totalPaidAdditionalHours > 0
-                    ? ' - Bezahlung läuft'
-                    : ' - Bezahlung erforderlich'}
+                  Zusätzliche Stunden genehmigt - Bezahlung erforderlich!
                 </h3>
                 <p className="text-green-800 mb-3">
-                  {totalPaidAdditionalHours > 0
-                    ? `${totalPaidAdditionalHours}h zusätzliche Stunden sind bereits genehmigt und in Abrechnung.`
+                  {totalBillingPendingHours > 0
+                    ? `${totalBillingPendingHours}h zusätzliche Stunden sind genehmigt und müssen JETZT bezahlt werden!`
                     : 'Die zusätzlichen Arbeitsstunden wurden bereits genehmigt und müssen jetzt bezahlt werden.'}
                 </p>
                 <div className="bg-white rounded-lg p-4 border border-green-200">
@@ -542,15 +540,15 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       <span className="font-medium ml-2">{originalPlannedHours}h</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Zusätzlich:</span>
+                      <span className="text-gray-600">Genehmigt:</span>
                       <span className="font-medium ml-2 text-green-600">
                         {totalApprovedAdditionalHours}h
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Status:</span>
-                      <span className="font-medium ml-2 text-green-600">
-                        {totalPaidAdditionalHours > 0 ? 'In Abrechnung' : 'Genehmigt'}
+                      <span className="font-medium ml-2 text-red-600">
+                        {totalBillingPendingHours > 0 ? 'BEZAHLUNG ERFORDERLICH!' : 'Genehmigt'}
                       </span>
                     </div>
                   </div>
@@ -573,39 +571,51 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       <strong>Debug-Info:</strong>
                     </p>
                     <p>• Zusätzliche Einträge gesamt: {additionalEntries.length}</p>
-                    <p>• Davon genehmigt/bezahlt: {additionalApprovedEntries.length}</p>
-                    <p>• Bereits in Abrechnung: {totalPaidAdditionalHours}h</p>
-                    <p>• Unbezahlte Stunden: {unpaidAdditionalHours}h</p>
+                    <p>• Davon genehmigt: {additionalApprovedEntries.length}</p>
+                    <p>• Genehmigt aber unbezahlt (billing_pending): {totalBillingPendingHours}h</p>
+                    <p>• Tatsächlich bezahlt: {totalPaidAdditionalHours}h</p>
+                    <p>• Neue unbezahlte Stunden: {unpaidAdditionalHours}h</p>
                   </div>
                 </div>
 
-                {totalPaidAdditionalHours === 0 && totalApprovedAdditionalAmount > 0 && (
-                  <div className="mt-4 p-3 bg-green-100 rounded-lg">
-                    <p className="text-sm text-green-800 mb-3">
-                      <strong>Bereit zur Bezahlung der genehmigten zusätzlichen Stunden!</strong>
+                {/* BEZAHLUNG FÜR GENEHMIGE STUNDEN - IMMER ANZEIGEN WENN billing_pending > 0 */}
+                {totalBillingPendingHours > 0 && totalApprovedAdditionalAmount > 0 && (
+                  <div className="mt-4 p-3 bg-red-100 rounded-lg border border-red-300">
+                    <p className="text-sm text-red-800 mb-3">
+                      <strong>🚨 SOFORTIGE BEZAHLUNG ERFORDERLICH!</strong>
+                    </p>
+                    <p className="text-sm text-red-700 mb-3">
+                      {totalBillingPendingHours}h sind bereits genehmigt, aber die Bezahlung steht
+                      noch aus!
                     </p>
                     <button
                       onClick={async () => {
                         if (
                           !confirm(
-                            `Möchten Sie die ${totalApprovedAdditionalHours.toFixed(1)} genehmigten zusätzlichen Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} bezahlen?`
+                            `🚨 BEZAHLUNG JETZT AUSFÜHREN!\n\nMöchten Sie die ${totalBillingPendingHours.toFixed(1)}h genehmigten Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} SOFORT bezahlen?\n\nDiese Stunden sind bereits genehmigt und warten auf Bezahlung!`
                           )
                         )
                           return;
 
                         try {
-                          // Direkt zur Stripe-Abrechnung, da die Stunden bereits genehmigt sind
+                          // Direkt zur Stripe-Abrechnung für billing_pending Stunden
                           const billingResult = await TimeTracker.billApprovedHours(orderId);
 
                           // Setze Payment-Daten für Inline-Komponente
                           setPaymentClientSecret(billingResult.clientSecret);
                           setPaymentAmount(billingResult.customerPays);
-                          setPaymentHours(totalApprovedAdditionalHours);
+                          setPaymentHours(totalBillingPendingHours);
                           setShowInlinePayment(true);
+
+                          console.log('🔓 BILLING_PENDING Payment Modal geöffnet:', {
+                            clientSecret: billingResult.clientSecret,
+                            amount: billingResult.customerPays / 100,
+                            hours: totalBillingPendingHours,
+                          });
 
                           // Keine Weiterleitung mehr - Payment wird inline angezeigt
                         } catch (error) {
-                          console.error('Error processing approved hours billing:', error);
+                          console.error('Error processing billing_pending hours payment:', error);
 
                           // Bessere Fehlerbehandlung für Stripe Connect Probleme
                           const errorMessage =
@@ -623,9 +633,9 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           }
                         }
                       }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-lg"
                     >
-                      💳 {totalApprovedAdditionalHours.toFixed(1)}h bezahlen - €
+                      � JETZT BEZAHLEN: {totalBillingPendingHours.toFixed(1)}h - €
                       {(totalApprovedAdditionalAmount / 100).toFixed(2)}
                     </button>
                   </div>
