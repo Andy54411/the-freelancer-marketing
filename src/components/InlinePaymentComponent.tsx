@@ -179,7 +179,7 @@ function CheckoutForm({
             clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
           });
         }}
-        className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+        className="w-full flex items-center justify-center px-4 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {isLoading ? (
           <>
@@ -309,12 +309,12 @@ export default function InlinePaymentComponent({
     return (
       <div
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
-        style={{ zIndex: 9999 }}
+        style={{ zIndex: 999999 }}
         data-component="InlinePaymentComponent-Error"
       >
         <div
           className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-          style={{ zIndex: 10000 }}
+          style={{ zIndex: 999999 }}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-red-600">Payment Setup Fehler</h3>
@@ -349,13 +349,26 @@ export default function InlinePaymentComponent({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
-      style={{ zIndex: 9999 }}
+      style={{
+        zIndex: 999999,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
       data-component="InlinePaymentComponent-Main"
       data-testid="payment-modal-overlay"
     >
       <div
         className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-        style={{ zIndex: 10000 }}
+        style={{
+          zIndex: 999999,
+          position: 'relative',
+        }}
         data-testid="payment-modal-container"
       >
         {/* Header */}
