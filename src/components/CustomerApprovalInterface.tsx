@@ -770,29 +770,44 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             console.log('🔍 STATE VERIFICATION AFTER SET');
                             console.log('='.repeat(80));
                             console.log('showInlinePayment should be:', true);
-                            console.log('paymentClientSecret should be present:', !!billingResult.clientSecret);
+                            console.log(
+                              'paymentClientSecret should be present:',
+                              !!billingResult.clientSecret
+                            );
                             console.log('paymentAmount should be:', billingResult.customerPays);
                             console.log('paymentHours should be:', totalBillingPendingHours);
                             console.log('='.repeat(80));
-                            
+
                             // DOM Check
-                            const modalElements = document.querySelectorAll('.fixed.inset-0.bg-black.bg-opacity-50');
-                            const zIndexElements = document.querySelectorAll('[style*="z-index: 9999"]');
+                            const modalElements = document.querySelectorAll(
+                              '.fixed.inset-0.bg-black.bg-opacity-50'
+                            );
+                            const zIndexElements = document.querySelectorAll(
+                              '[style*="z-index: 9999"]'
+                            );
                             console.log('DOM ELEMENTS AFTER STATE SET:');
                             console.log('  Modal overlays found:', modalElements.length);
                             console.log('  Z-index 9999 elements:', zIndexElements.length);
-                            
+
                             if (modalElements.length === 0 && zIndexElements.length === 0) {
-                              console.log('❌ PROBLEM: Modal not rendered despite state being set!');
+                              console.log(
+                                '❌ PROBLEM: Modal not rendered despite state being set!'
+                              );
                               console.log('This indicates either:');
-                              console.log('1. State is not actually set (React state update issue)');
+                              console.log(
+                                '1. State is not actually set (React state update issue)'
+                              );
                               console.log('2. Component render condition is not met');
-                              console.log('3. Component is rendering but with display:none or similar');
+                              console.log(
+                                '3. Component is rendering but with display:none or similar'
+                              );
                             } else {
                               console.log('✅ Modal elements found in DOM');
                               modalElements.forEach((el, i) => {
                                 const style = getComputedStyle(el);
-                                console.log(`  Modal ${i}: display=${style.display}, opacity=${style.opacity}, zIndex=${style.zIndex}`);
+                                console.log(
+                                  `  Modal ${i}: display=${style.display}, opacity=${style.opacity}, zIndex=${style.zIndex}`
+                                );
                               });
                             }
                             console.log('='.repeat(80));
@@ -1576,11 +1591,11 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           paymentClientSecretLength: paymentClientSecret?.length || 0,
           paymentAmount,
           paymentHours,
-          shouldRender: showInlinePayment && paymentClientSecret
+          shouldRender: showInlinePayment && paymentClientSecret,
         });
         return null;
       })()}
-      
+
       {/* DEBUG: Payment Modal Render Conditions */}
       {(() => {
         console.log('🔍 PAYMENT MODAL RENDER CHECK:', {
@@ -1589,30 +1604,32 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           paymentAmount,
           paymentHours,
           orderId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         if (!showInlinePayment) {
           console.log('❌ Modal nicht gerendert: showInlinePayment =', showInlinePayment);
         } else if (!paymentClientSecret) {
           console.log('❌ Modal nicht gerendert: paymentClientSecret =', paymentClientSecret);
         } else {
           console.log('✅ Modal sollte gerendert werden!');
-          
+
           // DOM Check nach kleiner Verzögerung
           setTimeout(() => {
-            const modal = document.querySelector('[class*="modal"], [class*="payment"], [class*="stripe"]');
+            const modal = document.querySelector(
+              '[class*="modal"], [class*="payment"], [class*="stripe"]'
+            );
             console.log('🔍 DOM Modal Check nach Render:', {
               modalFound: !!modal,
               element: modal,
               className: modal?.className,
-              zIndex: modal ? window.getComputedStyle(modal).zIndex : 'N/A'
+              zIndex: modal ? window.getComputedStyle(modal).zIndex : 'N/A',
             });
           }, 100);
         }
         return null;
       })()}
-      
+
       {showInlinePayment && paymentClientSecret && (
         <InlinePaymentComponent
           clientSecret={paymentClientSecret}
@@ -1730,6 +1747,92 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           }}
         />
       )}
+
+      {/* 🔧 FORCE PAYMENT BUTTON - Immer sichtbar für Debug/Testing */}
+      <div className="mt-4 p-3 bg-yellow-100 rounded-lg border border-yellow-300">
+        <p className="text-sm text-yellow-800 mb-3">
+          <strong>🔧 DEBUG: Force Payment Modal</strong>
+        </p>
+        <p className="text-sm text-yellow-700 mb-3">
+          Test-Button um das Payment Modal mit echten API-Daten zu triggern (unabhängig von den
+          normalen Bedingungen)
+        </p>
+        <button
+          onClick={async e => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            try {
+              console.log('🔧 FORCE PAYMENT: Starting direct payment flow...');
+
+              if (
+                !confirm(
+                  '🔧 FORCE PAYMENT TEST\n\nSoll das Payment Modal mit echten API-Daten getestet werden?\n\n⚠️ ACHTUNG: Das erstellt einen echten Payment Intent!'
+                )
+              ) {
+                return;
+              }
+
+              const button = e.target as HTMLButtonElement;
+              button.disabled = true;
+              button.textContent = '⏳ Force Payment wird ausgeführt...';
+
+              console.log('🔧 FORCE PAYMENT: Calling TimeTracker.billApprovedHours...');
+
+              // Direkte API-Abrechnung ohne Bedingungen
+              const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+              console.log('🔧 FORCE PAYMENT: Billing result received:', {
+                paymentIntentId: billingResult.paymentIntentId,
+                customerPays: billingResult.customerPays,
+                clientSecret: billingResult.clientSecret ? 'PRESENT' : 'MISSING',
+                amount: (billingResult.customerPays / 100).toFixed(2),
+              });
+
+              alert(
+                `🔧 FORCE PAYMENT: Payment Intent erstellt!\n\nID: ${billingResult.paymentIntentId}\nBetrag: €${(billingResult.customerPays / 100).toFixed(2)}\nClient Secret: ${billingResult.clientSecret ? 'PRESENT' : 'MISSING'}`
+              );
+
+              // Payment Modal öffnen mit echten Daten
+              console.log('🔧 FORCE PAYMENT: Setting modal state...');
+              setPaymentClientSecret(billingResult.clientSecret);
+              setPaymentAmount(billingResult.customerPays);
+              setPaymentHours(81.0); // Force 81 Stunden für Test
+              setShowInlinePayment(true);
+
+              console.log('🔧 FORCE PAYMENT: Modal state updated:', {
+                showInlinePayment: true,
+                paymentClientSecret: billingResult.clientSecret ? 'SET' : 'MISSING',
+                paymentAmount: billingResult.customerPays,
+                paymentHours: 81.0,
+              });
+
+              alert(
+                `🔧 FORCE PAYMENT SUCCESS!\n\nModal wurde ausgelöst!\n\nState:\n• showInlinePayment: true\n• clientSecret: ${billingResult.clientSecret ? 'SET' : 'MISSING'}\n• amount: €${(billingResult.customerPays / 100).toFixed(2)}\n• hours: 81.0h\n\nPrüfen Sie jetzt das DOM!`
+              );
+
+              // Button zurücksetzen
+              button.disabled = false;
+              button.textContent = '🔧 Force Payment Modal';
+            } catch (error) {
+              console.error('🔧 FORCE PAYMENT ERROR:', error);
+
+              const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+
+              alert(
+                `🔧 FORCE PAYMENT FEHLER!\n\nFehler: ${errorMessage}\n\nMögliche Ursachen:\n• Stripe Connect nicht eingerichtet\n• Keine genehmigten Stunden vorhanden\n• API-Server Probleme\n\nPrüfen Sie Console für Details!`
+              );
+
+              const button = e.target as HTMLButtonElement;
+              button.disabled = false;
+              button.textContent = '🔧 Force Payment Modal';
+            }
+          }}
+          className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+        >
+          🔧 Force Payment Modal (€3421.00 Test)
+        </button>
+      </div>
     </div>
   );
 }
