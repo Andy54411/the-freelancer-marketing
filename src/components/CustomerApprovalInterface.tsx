@@ -589,17 +589,33 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       noch aus!
                     </p>
                     <button
-                      onClick={async () => {
-                        if (
-                          !confirm(
-                            `🚨 BEZAHLUNG JETZT AUSFÜHREN!\n\nMöchten Sie die ${totalBillingPendingHours.toFixed(1)}h genehmigten Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} SOFORT bezahlen?\n\nDiese Stunden sind bereits genehmigt und warten auf Bezahlung!`
-                          )
-                        )
-                          return;
+                      onClick={async e => {
+                        console.log('🚨 JETZT BEZAHLEN Button geklickt!', {
+                          totalBillingPendingHours,
+                          totalApprovedAdditionalAmount,
+                          orderId,
+                        });
+
+                        // Event propagation stoppen
+                        e.preventDefault();
+                        e.stopPropagation();
 
                         try {
+                          if (
+                            !confirm(
+                              `🚨 BEZAHLUNG JETZT AUSFÜHREN!\n\nMöchten Sie die ${totalBillingPendingHours.toFixed(1)}h genehmigten Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} SOFORT bezahlen?\n\nDiese Stunden sind bereits genehmigt und warten auf Bezahlung!`
+                            )
+                          ) {
+                            console.log('❌ Bezahlung vom Benutzer abgebrochen');
+                            return;
+                          }
+
+                          console.log('🔄 Starte Bezahlung für billing_pending Stunden...');
+
                           // Direkt zur Stripe-Abrechnung für billing_pending Stunden
                           const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                          console.log('✅ Billing Result erhalten:', billingResult);
 
                           // Setze Payment-Daten für Inline-Komponente
                           setPaymentClientSecret(billingResult.clientSecret);
@@ -611,11 +627,15 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             clientSecret: billingResult.clientSecret,
                             amount: billingResult.customerPays / 100,
                             hours: totalBillingPendingHours,
+                            showInlinePayment: true,
                           });
 
                           // Keine Weiterleitung mehr - Payment wird inline angezeigt
                         } catch (error) {
-                          console.error('Error processing billing_pending hours payment:', error);
+                          console.error(
+                            '🚨 Error processing billing_pending hours payment:',
+                            error
+                          );
 
                           // Bessere Fehlerbehandlung für Stripe Connect Probleme
                           const errorMessage =
