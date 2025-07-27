@@ -601,14 +601,16 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           currentUrl: window.location.href,
                         };
 
-                        // ALERT für sofortiges Debug-Feedback
-                        alert(
-                          `🚨 DEBUG: JETZT BEZAHLEN Button geklickt!\n\n${JSON.stringify(debugInfo, null, 2)}`
-                        );
+                        // STRUKTURIERTE Console-Logs für einfaches Kopieren
+                        console.log('='.repeat(80));
+                        console.log('🚨 PAYMENT DEBUG START - STEP 1: BUTTON CLICKED');
+                        console.log('='.repeat(80));
+                        console.log('DEBUG_DATA:', JSON.stringify(debugInfo, null, 2));
+                        console.log('='.repeat(80));
 
-                        console.log(
-                          '🚨 JETZT BEZAHLEN Button geklickt! EXTENDED DEBUG:',
-                          debugInfo
+                        // Kurze Alert für wichtigste Info
+                        alert(
+                          `🚨 STEP 1: Button geklickt!\n€${(totalApprovedAdditionalAmount / 100).toFixed(2)} für ${totalBillingPendingHours.toFixed(1)}h\n\nPrüfen Sie Console für Details!`
                         );
 
                         // Event propagation stoppen
@@ -626,8 +628,11 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             return;
                           }
 
-                          alert('🔄 Starte Bezahlung für billing_pending Stunden...');
-                          console.log('🔄 Starte Bezahlung für billing_pending Stunden...');
+                          console.log('='.repeat(80));
+                          console.log('🚨 PAYMENT DEBUG - STEP 2: USER CONFIRMED');
+                          console.log('='.repeat(80));
+
+                          alert('✅ STEP 2: Benutzer hat bestätigt - API wird aufgerufen');
 
                           // Loading State anzeigen
                           const button = e.target as HTMLButtonElement;
@@ -646,15 +651,23 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             );
                           });
 
+                          console.log('='.repeat(80));
+                          console.log('� PAYMENT DEBUG - STEP 3: API CALL STARTING');
+                          console.log('='.repeat(80));
                           console.log(
-                            '🔍 DETAILED DEBUG: Vor TimeTracker.billApprovedHours Aufruf:',
-                            {
-                              orderId,
-                              timeBeforeCall: new Date().toISOString(),
-                            }
+                            'API_CALL_DATA:',
+                            JSON.stringify(
+                              {
+                                orderId,
+                                timeBeforeCall: new Date().toISOString(),
+                              },
+                              null,
+                              2
+                            )
                           );
+                          console.log('='.repeat(80));
 
-                          alert('🔄 Rufe TimeTracker.billApprovedHours auf...');
+                          alert('🔄 STEP 3: API-Aufruf startet jetzt...');
 
                           // Direkt zur Stripe-Abrechnung für billing_pending Stunden mit Timeout
                           const billingResult = (await Promise.race([
@@ -662,16 +675,28 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             timeoutPromise,
                           ])) as any;
 
-                          alert(
-                            `✅ Billing Result erhalten: ${JSON.stringify(billingResult, null, 2)}`
+                          console.log('='.repeat(80));
+                          console.log('🚨 PAYMENT DEBUG - STEP 4: API RESPONSE RECEIVED');
+                          console.log('='.repeat(80));
+                          console.log('BILLING_RESULT:', JSON.stringify(billingResult, null, 2));
+                          console.log(
+                            'BILLING_ANALYSIS:',
+                            JSON.stringify(
+                              {
+                                hasClientSecret: !!billingResult?.clientSecret,
+                                clientSecretLength: billingResult?.clientSecret?.length || 0,
+                                customerPays: billingResult?.customerPays,
+                                timeAfterCall: new Date().toISOString(),
+                              },
+                              null,
+                              2
+                            )
                           );
-                          console.log('✅ Billing Result erhalten - DETAILED:', {
-                            billingResult,
-                            hasClientSecret: !!billingResult?.clientSecret,
-                            clientSecretLength: billingResult?.clientSecret?.length || 0,
-                            customerPays: billingResult?.customerPays,
-                            timeAfterCall: new Date().toISOString(),
-                          });
+                          console.log('='.repeat(80));
+
+                          alert(
+                            `✅ STEP 4: API Response!\nHat clientSecret: ${!!billingResult?.clientSecret}\nBetrag: €${(billingResult?.customerPays || 0) / 100}`
+                          );
 
                           // Validierung der Billing Result Daten
                           if (!billingResult) {
@@ -693,22 +718,45 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                           }
 
                           // Setze Payment-Daten für Inline-Komponente
-                          alert('🔧 Setting payment data...');
-                          console.log('🔧 Setting payment data:', {
-                            clientSecret: billingResult.clientSecret.substring(0, 20) + '...',
-                            amount: billingResult.customerPays,
-                            hours: totalBillingPendingHours,
-                          });
+                          console.log('='.repeat(80));
+                          console.log('� PAYMENT DEBUG - STEP 5: SETTING PAYMENT DATA');
+                          console.log('='.repeat(80));
+                          console.log(
+                            'PAYMENT_SETUP:',
+                            JSON.stringify(
+                              {
+                                clientSecret: billingResult.clientSecret.substring(0, 20) + '...',
+                                amount: billingResult.customerPays,
+                                hours: totalBillingPendingHours,
+                              },
+                              null,
+                              2
+                            )
+                          );
+                          console.log('='.repeat(80));
+
+                          alert('🔧 STEP 5: Payment-Daten werden gesetzt...');
 
                           setPaymentClientSecret(billingResult.clientSecret);
                           setPaymentAmount(billingResult.customerPays);
                           setPaymentHours(totalBillingPendingHours);
 
-                          console.log('🔧 Vor setShowInlinePayment(true):', {
-                            paymentClientSecret: !!billingResult.clientSecret,
-                            paymentAmount: billingResult.customerPays,
-                            paymentHours: totalBillingPendingHours,
-                          });
+                          console.log('='.repeat(80));
+                          console.log('🚨 PAYMENT DEBUG - STEP 6: OPENING MODAL');
+                          console.log('='.repeat(80));
+                          console.log(
+                            'MODAL_STATE_BEFORE:',
+                            JSON.stringify(
+                              {
+                                paymentClientSecret: !!billingResult.clientSecret,
+                                paymentAmount: billingResult.customerPays,
+                                paymentHours: totalBillingPendingHours,
+                              },
+                              null,
+                              2
+                            )
+                          );
+                          console.log('='.repeat(80));
 
                           setShowInlinePayment(true);
 
@@ -720,12 +768,14 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             modalShouldBeVisible: true,
                           };
 
+                          console.log('='.repeat(80));
+                          console.log('� PAYMENT DEBUG - STEP 7: MODAL OPENED');
+                          console.log('='.repeat(80));
+                          console.log('FINAL_MODAL_INFO:', JSON.stringify(modalInfo, null, 2));
+                          console.log('='.repeat(80));
+
                           alert(
-                            `🔓 BILLING_PENDING Payment Modal geöffnet: ${JSON.stringify(modalInfo, null, 2)}`
-                          );
-                          console.log(
-                            '🔓 BILLING_PENDING Payment Modal geöffnet - FINAL CHECK:',
-                            modalInfo
+                            `🔓 STEP 6/7: Modal geöffnet!\nBetrag: €${modalInfo.amount}\nStunden: ${modalInfo.hours}h\n\nModal sollte jetzt sichtbar sein!`
                           );
 
                           // Button zurücksetzen
@@ -734,15 +784,27 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
 
                           // Keine Weiterleitung mehr - Payment wird inline angezeigt
                         } catch (error) {
-                          console.error(
-                            '🚨 Error processing billing_pending hours payment - DETAILED:',
-                            {
-                              error,
-                              errorMessage:
-                                error instanceof Error ? error.message : 'Unknown error',
-                              errorStack: error instanceof Error ? error.stack : 'No stack',
-                              timestamp: new Date().toISOString(),
-                            }
+                          console.log('='.repeat(80));
+                          console.log('🚨 PAYMENT DEBUG - ERROR OCCURRED');
+                          console.log('='.repeat(80));
+                          console.log(
+                            'ERROR_DETAILS:',
+                            JSON.stringify(
+                              {
+                                error,
+                                errorMessage:
+                                  error instanceof Error ? error.message : 'Unknown error',
+                                errorStack: error instanceof Error ? error.stack : 'No stack',
+                                timestamp: new Date().toISOString(),
+                              },
+                              null,
+                              2
+                            )
+                          );
+                          console.log('='.repeat(80));
+
+                          alert(
+                            `❌ FEHLER: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}\n\nPrüfen Sie Console für Details!`
                           );
 
                           // Button zurücksetzen
