@@ -295,7 +295,7 @@ export default function InlinePaymentComponent({
     totalAmount,
     totalHours,
     orderId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   if (!isOpen) {
@@ -361,8 +361,8 @@ export default function InlinePaymentComponent({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center">
-            <FiCreditCard className="text-green-600 mr-2" size={20} />
-            <h3 className="text-lg font-semibold text-gray-900">Zusätzliche Stunden bezahlen</h3>
+            <FiCreditCard className="text-[#14ad9f] mr-2" size={20} />
+            <h3 className="text-lg font-semibold text-gray-900">💳 Zusätzliche Stunden bezahlen</h3>
           </div>
           <button
             onClick={onClose}
@@ -373,8 +373,27 @@ export default function InlinePaymentComponent({
           </button>
         </div>
 
+        {/* Critical Payment Notice */}
+        <div className="p-6 pb-3">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <FiAlertCircle className="text-red-600 mr-2" size={16} />
+              <span className="text-red-800 font-bold">🚨 SOFORTIGE BEZAHLUNG ERFORDERLICH!</span>
+            </div>
+            <p className="text-red-700 mt-2">
+              {totalHours}h sind bereits genehmigt, aber die Bezahlung steht noch aus!
+            </p>
+            <p className="text-red-800 font-bold mt-1">
+              💰 JETZT BEZAHLEN: {totalHours.toFixed(1)}h - €{(totalAmount / 100).toFixed(2)}
+            </p>
+            <p className="text-red-600 text-sm mt-2">
+              Es ist doch nicht so schwer das Payment einzubauen!
+            </p>
+          </div>
+        </div>
+
         {/* Content */}
-        <div className="p-6">
+        <div className="px-6 pb-6">
           <Elements
             stripe={stripePromise}
             options={{
@@ -382,7 +401,7 @@ export default function InlinePaymentComponent({
               appearance: {
                 theme: 'stripe',
                 variables: {
-                  colorPrimary: '#16a34a',
+                  colorPrimary: '#14ad9f',
                   colorBackground: '#ffffff',
                   colorText: '#1f2937',
                   colorDanger: '#dc2626',
