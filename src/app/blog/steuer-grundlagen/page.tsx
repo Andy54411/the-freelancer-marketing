@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, Calculator, Receipt, FileText, AlertTriangle, CheckCircle, Euro, Percent } from 'lucide-react';
+import { ArrowLeft, Calculator, Receipt, FileText, AlertTriangle, Euro, Percent } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {

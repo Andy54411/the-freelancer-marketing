@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, CheckCircle, AlertTriangle, Home, Phone, Clock, Euro } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Home, Clock, Euro } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {

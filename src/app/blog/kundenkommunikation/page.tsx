@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, MessageCircle, Heart, Phone, Star, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Star, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
