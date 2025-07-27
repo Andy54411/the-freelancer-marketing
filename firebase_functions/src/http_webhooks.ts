@@ -128,6 +128,108 @@ export const stripeWebhookHandler = onRequest(
                     const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
                     logger.info(`[stripeWebhookHandler] PaymentIntent ${paymentIntentSucceeded.id} was successful!`);
 
+                    const paymentType = paymentIntentSucceeded.metadata?.type;
+                    
+                    // Handle additional hours payments
+                    if (paymentType === 'additional_hours_platform_hold') {
+                        logger.info(`[stripeWebhookHandler] Processing additional hours payment: ${paymentIntentSucceeded.id}`);
+                        
+                        const orderId = paymentIntentSucceeded.metadata?.orderId;
+                        const entryIds = paymentIntentSucceeded.metadata?.entryIds;
+
+                        if (!orderId || !entryIds) {
+                            logger.error(`[stripeWebhookHandler] Fehlende Metadaten für zusätzliche Stunden im PI ${paymentIntentSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`);
+                            response.status(200).json({ received: true, message: 'Wichtige Metadaten (orderId oder entryIds) für zusätzliche Stunden fehlen.' });
+                            return;
+                        }
+
+                        try {
+                            const entryIdsList = entryIds.split(',');
+                            const orderRef = db.collection('auftraege').doc(orderId);
+
+                            await db.runTransaction(async (transaction) => {
+                                const orderSnapshot = await transaction.get(orderRef);
+
+                                if (!orderSnapshot.exists) {
+                                    throw new Error(`Auftrag ${orderId} nicht gefunden.`);
+                                }
+
+                                const orderData = orderSnapshot.data()!;
+                                
+                                // WICHTIG: TimeEntries sind im Array gespeichert, nicht als Subcollection!
+                                const timeEntries = orderData.timeEntries || [];
+                                let updatedCount = 0;
+                                
+                                const updatedTimeEntries = timeEntries.map((entry: any) => {
+                                    // Check if this entry is in the entryIds list and has billing_pending status
+                                    if (entryIdsList.includes(entry.id) && entry.status === 'billing_pending') {
+                                        updatedCount++;
+                                        logger.info(`[stripeWebhookHandler] TimeEntry ${entry.id} marked as platform_held`);
+                                        return {
+                                            ...entry,
+                                            status: 'platform_held',
+                                            paidAt: FieldValue.serverTimestamp(),
+                                            paymentIntentId: paymentIntentSucceeded.id,
+                                        };
+                                    }
+                                    return entry;
+                                });
+                                
+                                // Update the order document with the fixed time entries
+                                transaction.update(orderRef, {
+                                    timeEntries: updatedTimeEntries,
+                                    'timeTracking.status': 'completed',
+                                    'timeTracking.lastUpdated': FieldValue.serverTimestamp(),
+                                });
+                                
+                                logger.info(`[stripeWebhookHandler] Updated ${updatedCount} time entries to platform_held status`);
+
+                                // Update company balance
+                                const providerStripeAccountId = paymentIntentSucceeded.metadata?.providerStripeAccountId;
+                                const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
+
+                                if (providerStripeAccountId && companyReceives) {
+                                    const companyRef = db.collection('companies').where('stripeAccountId', '==', providerStripeAccountId).limit(1);
+                                    const companySnapshot = await companyRef.get();
+
+                                    if (!companySnapshot.empty) {
+                                        const companyDoc = companySnapshot.docs[0];
+                                        const currentBalance = companyDoc.data().platformHoldBalance || 0;
+                                        const additionalAmount = parseInt(companyReceives, 10);
+
+                                        transaction.update(companyDoc.ref, {
+                                            platformHoldBalance: currentBalance + additionalAmount,
+                                            lastUpdated: FieldValue.serverTimestamp(),
+                                        });
+
+                                        logger.info(`[stripeWebhookHandler] Company balance updated: +${additionalAmount} cents (Platform Hold)`);
+
+                                        // Create audit trail
+                                        const auditRef = companyDoc.ref.collection('balanceHistory').doc();
+                                        transaction.set(auditRef, {
+                                            type: 'additional_hours_payment',
+                                            amount: additionalAmount,
+                                            paymentIntentId: paymentIntentSucceeded.id,
+                                            orderId: orderId,
+                                            entryIds: entryIdsList,
+                                            createdAt: FieldValue.serverTimestamp(),
+                                            status: 'platform_held',
+                                        });
+                                    }
+                                }
+                            });
+
+                            logger.info(`[stripeWebhookHandler] Additional hours payment processed successfully for order ${orderId}`);
+                            response.status(200).json({ received: true, message: 'Additional hours payment processed successfully' });
+                            return;
+                        } catch (dbError: any) {
+                            logger.error(`[stripeWebhookHandler] Schwerwiegender Fehler bei der Verarbeitung zusätzlicher Stunden für PI ${paymentIntentSucceeded.id}:`, dbError);
+                            response.status(500).json({ received: true, message: `Additional hours payment failed: ${dbError.message}` });
+                            return;
+                        }
+                    }
+
+                    // Handle regular job payments
                     const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
                     const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
 
