@@ -178,28 +178,21 @@ export default function CustomerApprovalInterface({
             clientSecret: billingResult.clientSecret,
           });
 
-          // Zeige Erfolgsbestätigung mit Zahlungslink
-          const decisionText = decision === 'approved' ? 'genehmigt' : 'teilweise genehmigt';
+          // Öffne Inline Payment Modal statt Alert
+          setPaymentClientSecret(billingResult.clientSecret);
+          setPaymentAmount(billingResult.customerPays);
+          setPaymentHours(
+            orderDetails?.timeTracking?.timeEntries
+              ?.filter((e: any) => e.category === 'additional' && e.status === 'customer_approved')
+              ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0
+          );
+          setShowInlinePayment(true);
 
-          const message = `Zeiterfassung ${decisionText}!
-
-✅ Genehmigung erfolgreich verarbeitet
-💳 Stripe PaymentIntent erstellt: ${billingResult.paymentIntentId}
-💰 Kunde zahlt: €${(billingResult.customerPays / 100).toFixed(2)}
-🏢 Anbieter erhält: €${(billingResult.companyReceives / 100).toFixed(2)}
-📊 Plattformgebühr: €${(billingResult.platformFee / 100).toFixed(2)}
-
-Die zusätzlichen Stunden wurden zur automatischen Abrechnung freigegeben.`;
-
-          alert(message);
-
-          // Optional: Öffne Stripe Dashboard für Monitoring
-          if (confirm('Möchten Sie das Stripe Dashboard öffnen um die Zahlung zu überwachen?')) {
-            window.open(
-              `https://dashboard.stripe.com/payments/${billingResult.paymentIntentId}`,
-              '_blank'
-            );
-          }
+          console.log('🔓 Inline Payment Modal geöffnet:', {
+            clientSecret: billingResult.clientSecret,
+            amount: billingResult.customerPays / 100,
+            paymentIntentId: billingResult.paymentIntentId,
+          });
         } catch (billingError) {
           console.error('❌ Fehler bei der automatischen Stripe-Abrechnung:', billingError);
           alert(
@@ -466,14 +459,22 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             'Automatisch genehmigt durch Kunde-Initiative'
                           );
 
-                          // Schritt 3: Automatische Stripe-Abrechnung
+                          // Schritt 3: Öffne Inline Payment Modal
                           const billingResult = await TimeTracker.billApprovedHours(orderId);
 
-                          alert(
-                            `✅ Erfolgreich!\n\n${result.additionalHours.toFixed(1)} zusätzliche Stunden wurden freigegeben und zur Abrechnung eingereicht.\n\nKosten: €${(billingResult.customerPays / 100).toFixed(2)}`
-                          );
+                          // Setze Payment-Daten für Inline-Modal
+                          setPaymentClientSecret(billingResult.clientSecret);
+                          setPaymentAmount(billingResult.customerPays);
+                          setPaymentHours(result.additionalHours);
+                          setShowInlinePayment(true);
 
-                          await loadApprovalRequests();
+                          console.log('🔓 Customer-initiated Inline Payment Modal geöffnet:', {
+                            clientSecret: billingResult.clientSecret,
+                            amount: billingResult.customerPays / 100,
+                            hours: result.additionalHours,
+                          });
+
+                          // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
                         } else {
                           alert(result.message);
                         }
