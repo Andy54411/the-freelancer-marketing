@@ -386,9 +386,24 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
       [];
 
     const additionalLoggedEntries = additionalEntries.filter((e: any) => e.status === 'logged');
-    const additionalApprovedEntries = additionalEntries.filter(
-      (e: any) => e.status === 'customer_approved'
-    );
+
+    // KORRIGIERTE LOGIK: Erfasse ALLE genehmigten/bezahlten zusätzlichen Stunden
+    const additionalApprovedEntries = additionalEntries.filter((e: any) => {
+      // Alle Stunden die genehmigt oder bereits bezahlt sind
+      return (
+        e.status === 'customer_approved' ||
+        e.status === 'billing_pending' || // ← WICHTIG: Diese werden in DB als "billing_pending" gespeichert
+        e.status === 'billed' ||
+        e.status === 'platform_held' ||
+        e.status === 'platform_released' ||
+        e.status === 'escrow_authorized' ||
+        e.status === 'escrow_released' ||
+        e.status === 'transferred' ||
+        e.paymentIntentId || // Hat PaymentIntent = bereits abgerechnet
+        e.platformHoldPaymentIntentId ||
+        e.escrowPaymentIntentId
+      );
+    });
 
     const totalLoggedHours = orderDetails?.timeTracking?.totalLoggedHours || 0;
     const originalPlannedHours = orderDetails?.timeTracking?.originalPlannedHours || 0;
@@ -403,7 +418,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           e.status === 'platform_released' || // Platform Hold System: Geld freigegeben
           e.status === 'escrow_authorized' || // Legacy Escrow: Autorisiert
           e.status === 'escrow_released' || // Legacy Escrow: Freigegeben
-          e.status === 'billing_pending' || // Abrechnung läuft
+          e.status === 'billing_pending' || // Abrechnung läuft ← WICHTIG: Das sind die aktuellen!
           e.status === 'transferred' || // Übertragen
           e.platformHoldStatus === 'held' || // Platform Hold Status
           e.platformHoldStatus === 'transferred' || // Platform zu Provider übertragen
@@ -510,11 +525,15 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
               <FiCheck className="text-green-600 mt-1 flex-shrink-0" size={20} />
               <div>
                 <h3 className="text-lg font-medium text-green-900 mb-2">
-                  Zusätzliche Stunden genehmigt - Bezahlung erforderlich
+                  Zusätzliche Stunden genehmigt
+                  {totalPaidAdditionalHours > 0
+                    ? ' - Bezahlung läuft'
+                    : ' - Bezahlung erforderlich'}
                 </h3>
                 <p className="text-green-800 mb-3">
-                  Die zusätzlichen Arbeitsstunden wurden bereits genehmigt und müssen jetzt bezahlt
-                  werden.
+                  {totalPaidAdditionalHours > 0
+                    ? `${totalPaidAdditionalHours}h zusätzliche Stunden sind bereits genehmigt und in Abrechnung.`
+                    : 'Die zusätzlichen Arbeitsstunden wurden bereits genehmigt und müssen jetzt bezahlt werden.'}
                 </p>
                 <div className="bg-white rounded-lg p-4 border border-green-200">
                   <div className="grid grid-cols-3 gap-4 text-sm">
@@ -523,68 +542,94 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       <span className="font-medium ml-2">{originalPlannedHours}h</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Genehmigt:</span>
+                      <span className="text-gray-600">Zusätzlich:</span>
                       <span className="font-medium ml-2 text-green-600">
                         {totalApprovedAdditionalHours}h
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Kosten:</span>
+                      <span className="text-gray-600">Status:</span>
                       <span className="font-medium ml-2 text-green-600">
-                        €{(totalApprovedAdditionalAmount / 100).toFixed(2)}
+                        {totalPaidAdditionalHours > 0 ? 'In Abrechnung' : 'Genehmigt'}
                       </span>
                     </div>
                   </div>
+                  {totalApprovedAdditionalAmount > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="text-sm">
+                        <span className="text-gray-600">Gesamtkosten:</span>
+                        <span className="font-medium ml-2 text-green-600">
+                          €{(totalApprovedAdditionalAmount / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-4 p-3 bg-green-100 rounded-lg">
-                  <p className="text-sm text-green-800 mb-3">
-                    <strong>Bereit zur Bezahlung der genehmigten zusätzlichen Stunden!</strong>
-                  </p>
-                  <button
-                    onClick={async () => {
-                      if (
-                        !confirm(
-                          `Möchten Sie die ${totalApprovedAdditionalHours.toFixed(1)} genehmigten zusätzlichen Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} bezahlen?`
-                        )
-                      )
-                        return;
 
-                      try {
-                        // Direkt zur Stripe-Abrechnung, da die Stunden bereits genehmigt sind
-                        const billingResult = await TimeTracker.billApprovedHours(orderId);
+                {/* Debug-Informationen für bessere Transparenz */}
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs">
+                  <div className="text-blue-800">
+                    <p>
+                      <strong>Debug-Info:</strong>
+                    </p>
+                    <p>• Zusätzliche Einträge gesamt: {additionalEntries.length}</p>
+                    <p>• Davon genehmigt/bezahlt: {additionalApprovedEntries.length}</p>
+                    <p>• Bereits in Abrechnung: {totalPaidAdditionalHours}h</p>
+                    <p>• Unbezahlte Stunden: {unpaidAdditionalHours}h</p>
+                  </div>
+                </div>
 
-                        // Setze Payment-Daten für Inline-Komponente
-                        setPaymentClientSecret(billingResult.clientSecret);
-                        setPaymentAmount(billingResult.customerPays);
-                        setPaymentHours(totalApprovedAdditionalHours);
-                        setShowInlinePayment(true);
-
-                        // Keine Weiterleitung mehr - Payment wird inline angezeigt
-                      } catch (error) {
-                        console.error('Error processing approved hours billing:', error);
-
-                        // Bessere Fehlerbehandlung für Stripe Connect Probleme
-                        const errorMessage =
-                          error instanceof Error ? error.message : 'Unbekannter Fehler';
+                {totalPaidAdditionalHours === 0 && totalApprovedAdditionalAmount > 0 && (
+                  <div className="mt-4 p-3 bg-green-100 rounded-lg">
+                    <p className="text-sm text-green-800 mb-3">
+                      <strong>Bereit zur Bezahlung der genehmigten zusätzlichen Stunden!</strong>
+                    </p>
+                    <button
+                      onClick={async () => {
                         if (
-                          errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
-                          errorMessage.includes('Stripe Connect')
-                        ) {
-                          alert(
-                            'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
-                              'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
-                          );
-                        } else {
-                          alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
+                          !confirm(
+                            `Möchten Sie die ${totalApprovedAdditionalHours.toFixed(1)} genehmigten zusätzlichen Stunden für €${(totalApprovedAdditionalAmount / 100).toFixed(2)} bezahlen?`
+                          )
+                        )
+                          return;
+
+                        try {
+                          // Direkt zur Stripe-Abrechnung, da die Stunden bereits genehmigt sind
+                          const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+                          // Setze Payment-Daten für Inline-Komponente
+                          setPaymentClientSecret(billingResult.clientSecret);
+                          setPaymentAmount(billingResult.customerPays);
+                          setPaymentHours(totalApprovedAdditionalHours);
+                          setShowInlinePayment(true);
+
+                          // Keine Weiterleitung mehr - Payment wird inline angezeigt
+                        } catch (error) {
+                          console.error('Error processing approved hours billing:', error);
+
+                          // Bessere Fehlerbehandlung für Stripe Connect Probleme
+                          const errorMessage =
+                            error instanceof Error ? error.message : 'Unbekannter Fehler';
+                          if (
+                            errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+                            errorMessage.includes('Stripe Connect')
+                          ) {
+                            alert(
+                              'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\n' +
+                                'Bitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+                            );
+                          } else {
+                            alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
+                          }
                         }
-                      }
-                    }}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                  >
-                    💳 {totalApprovedAdditionalHours.toFixed(1)}h bezahlen - €
-                    {(totalApprovedAdditionalAmount / 100).toFixed(2)}
-                  </button>
-                </div>
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      💳 {totalApprovedAdditionalHours.toFixed(1)}h bezahlen - €
+                      {(totalApprovedAdditionalAmount / 100).toFixed(2)}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
