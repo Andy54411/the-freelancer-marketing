@@ -9,7 +9,6 @@ import { TimeTracker } from '@/lib/timeTracker';
 import { TimeTrackingMigration } from '@/lib/timeTrackingMigration';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import InlinePaymentComponent from './InlinePaymentComponent';
 
 interface CustomerApprovalInterfaceProps {
   orderId: string;
@@ -31,10 +30,6 @@ export default function CustomerApprovalInterface({
   const [feedback, setFeedback] = useState('');
   const [showCompleteApproval, setShowCompleteApproval] = useState(false);
   const [completeApprovalFeedback, setCompleteApprovalFeedback] = useState('');
-  const [showInlinePayment, setShowInlinePayment] = useState(false);
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentHours, setPaymentHours] = useState(0);
 
   const loadApprovalRequests = useCallback(async () => {
     try {
@@ -186,7 +181,7 @@ export default function CustomerApprovalInterface({
               ?.filter((e: any) => e.category === 'additional' && e.status === 'customer_approved')
               ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
-          // Rufe Parent Payment Handler auf, wenn verfügbar
+          // Rufe Parent Payment Handler auf
           if (onPaymentRequest) {
             console.log('🔓 CRITICAL: Calling onPaymentRequest with:', {
               clientSecret: billingResult.clientSecret,
@@ -196,12 +191,8 @@ export default function CustomerApprovalInterface({
             onPaymentRequest(billingResult.clientSecret, billingResult.customerPays, paymentHours);
             console.log('🔓 CRITICAL: onPaymentRequest called successfully');
           } else {
-            console.log('🔓 CRITICAL: No onPaymentRequest handler - using fallback');
-            // Fallback: Eigenes Payment Modal (old behavior)
-            setPaymentClientSecret(billingResult.clientSecret);
-            setPaymentAmount(billingResult.customerPays);
-            setPaymentHours(paymentHours);
-            setShowInlinePayment(true);
+            console.log('🔓 CRITICAL: No onPaymentRequest handler - redirect to page payment');
+            console.log('Payment data available but no handler provided');
           }
 
           console.log('🔓 Payment Modal geöffnet:', {
@@ -338,13 +329,17 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           amount: billingResult.customerPays / 100,
         });
 
-        // Schritt 4: Öffne Inline Payment Modal
-        setPaymentClientSecret(billingResult.clientSecret);
-        setPaymentAmount(billingResult.customerPays);
-        setPaymentHours(result.additionalHours);
-        setShowInlinePayment(true);
-
-        console.log('🔓 [PAYMENT SECURITY] Payment Modal opened for security payment');
+        // Schritt 4: Rufe Parent Payment Handler auf
+        if (onPaymentRequest) {
+          onPaymentRequest(
+            billingResult.clientSecret,
+            billingResult.customerPays,
+            result.additionalHours
+          );
+          console.log('🔓 [PAYMENT SECURITY] Parent payment handler called');
+        } else {
+          console.warn('🔓 [PAYMENT SECURITY] No payment handler provided');
+        }
 
         return true;
       } else {
@@ -579,20 +574,6 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                   )}
                 </div>
 
-                {/* Debug-Informationen für bessere Transparenz */}
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs">
-                  <div className="text-blue-800">
-                    <p>
-                      <strong>Debug-Info:</strong>
-                    </p>
-                    <p>• Zusätzliche Einträge gesamt: {additionalEntries.length}</p>
-                    <p>• Davon genehmigt: {additionalApprovedEntries.length}</p>
-                    <p>• Genehmigt aber unbezahlt (billing_pending): {totalBillingPendingHours}h</p>
-                    <p>• Tatsächlich bezahlt: {totalPaidAdditionalHours}h</p>
-                    <p>• Neue unbezahlte Stunden: {unpaidAdditionalHours}h</p>
-                  </div>
-                </div>
-
                 {/* BEZAHLUNG FÜR GENEHMIGE STUNDEN - IMMER ANZEIGEN WENN billing_pending > 0 */}
                 {totalBillingPendingHours > 0 && totalApprovedAdditionalAmount > 0 && (
                   <div className="mt-4 p-3 bg-red-100 rounded-lg border border-red-300">
@@ -603,75 +584,9 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                       {totalBillingPendingHours}h sind bereits genehmigt, aber die Bezahlung steht
                       noch aus!
                     </p>
-                    <button
-                      onClick={async e => {
-                        console.log('🚨 PAYMENT START - PRODUCTION BUTTON CLICKED');
-
-                        // Event propagation stoppen
-                        e.preventDefault();
-                        e.stopPropagation();
-
-                        try {
-                          console.log('✅ Starte Payment-Verarbeitung direkt');
-
-                          // Loading State anzeigen
-                          const button = e.target as HTMLButtonElement;
-                          const originalText = button.textContent;
-                          button.disabled = true;
-                          button.textContent = '⏳ Verarbeitung läuft...';
-
-                          console.log('🔄 API-Aufruf startet jetzt...');
-
-                          // Direkt zur Stripe-Abrechnung für billing_pending Stunden
-                          const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-                          console.log(
-                            '✅ API Response! Hat clientSecret:',
-                            !!billingResult?.clientSecret
-                          );
-
-                          // Validierung der Billing Result Daten
-                          if (!billingResult || !billingResult.clientSecret) {
-                            throw new Error(
-                              '❌ Kein clientSecret erhalten - Payment Setup fehlgeschlagen'
-                            );
-                          }
-
-                          console.log('🔧 Payment-Daten werden gesetzt...');
-
-                          // Setze Payment-Daten für Inline-Modal
-                          setPaymentClientSecret(billingResult.clientSecret);
-                          setPaymentAmount(billingResult.customerPays);
-                          setPaymentHours(totalBillingPendingHours);
-                          setShowInlinePayment(true);
-
-                          console.log(
-                            '� Modal geöffnet! Betrag:',
-                            billingResult.customerPays / 100,
-                            '€'
-                          );
-
-                          // Button zurücksetzen
-                          button.disabled = false;
-                          button.textContent = originalText;
-                        } catch (error) {
-                          console.error('Payment Error:', error);
-                          console.log(
-                            '❌ Fehler bei der Zahlungsverarbeitung:',
-                            error instanceof Error ? error.message : 'Unknown error'
-                          );
-
-                          // Button zurücksetzen
-                          const button = e.target as HTMLButtonElement;
-                          button.disabled = false;
-                          button.textContent = `💥 JETZT BEZAHLEN: ${totalBillingPendingHours.toFixed(1)}h - €${(totalApprovedAdditionalAmount / 100).toFixed(2)}`;
-                        }
-                      }}
-                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-lg"
-                    >
-                      💰 JETZT BEZAHLEN: {totalBillingPendingHours.toFixed(1)}h - €
-                      {(totalApprovedAdditionalAmount / 100).toFixed(2)}
-                    </button>
+                    <p className="text-sm text-red-700 mb-3">
+                      Verwenden Sie den Bezahlen-Button unten in der Stundenfreigabe-Sektion.
+                    </p>
                   </div>
                 )}
 
@@ -711,20 +626,20 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                               'Automatisch genehmigt durch Kunde-Initiative'
                             );
 
-                            // Schritt 3: Öffne Inline Payment Modal
+                            // Schritt 3: Rufe Parent Payment Handler auf
                             const billingResult = await TimeTracker.billApprovedHours(orderId);
 
-                            // Setze Payment-Daten für Inline-Modal
-                            setPaymentClientSecret(billingResult.clientSecret);
-                            setPaymentAmount(billingResult.customerPays);
-                            setPaymentHours(result.additionalHours);
-                            setShowInlinePayment(true);
-
-                            console.log('🔓 Neue Stunden - Inline Payment Modal geöffnet:', {
-                              clientSecret: billingResult.clientSecret,
-                              amount: billingResult.customerPays / 100,
-                              hours: result.additionalHours,
-                            });
+                            // Rufe Parent Payment Handler auf
+                            if (onPaymentRequest) {
+                              onPaymentRequest(
+                                billingResult.clientSecret,
+                                billingResult.customerPays,
+                                result.additionalHours
+                              );
+                              console.log('🔓 Neue Stunden - Parent payment handler called');
+                            } else {
+                              console.warn('🔓 Neue Stunden - No payment handler provided');
+                            }
 
                             // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
                           } else {
@@ -817,20 +732,20 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
                             'Automatisch genehmigt durch Kunde-Initiative'
                           );
 
-                          // Schritt 3: Öffne Inline Payment Modal
+                          // Schritt 3: Rufe Parent Payment Handler auf
                           const billingResult = await TimeTracker.billApprovedHours(orderId);
 
-                          // Setze Payment-Daten für Inline-Modal
-                          setPaymentClientSecret(billingResult.clientSecret);
-                          setPaymentAmount(billingResult.customerPays);
-                          setPaymentHours(result.additionalHours);
-                          setShowInlinePayment(true);
-
-                          console.log('🔓 Customer-initiated Inline Payment Modal geöffnet:', {
-                            clientSecret: billingResult.clientSecret,
-                            amount: billingResult.customerPays / 100,
-                            hours: result.additionalHours,
-                          });
+                          // Rufe Parent Payment Handler auf
+                          if (onPaymentRequest) {
+                            onPaymentRequest(
+                              billingResult.clientSecret,
+                              billingResult.customerPays,
+                              result.additionalHours
+                            );
+                            console.log('🔓 Customer-initiated parent payment handler called');
+                          } else {
+                            console.warn('🔓 Customer-initiated - No payment handler provided');
+                          }
 
                           // loadApprovalRequests wird nach erfolgreichem Payment aufgerufen
                         } else {
@@ -1291,125 +1206,6 @@ Diese Aktion kann nicht rückgängig gemacht werden.`;
           </div>
         </div>
       ))}
-
-      {/* Inline Payment Component */}
-      {showInlinePayment && paymentClientSecret && (
-        <InlinePaymentComponent
-          clientSecret={paymentClientSecret}
-          orderId={orderId}
-          totalAmount={paymentAmount}
-          totalHours={paymentHours}
-          isOpen={showInlinePayment}
-          onClose={() => {
-            setShowInlinePayment(false);
-            setPaymentClientSecret(null);
-            setPaymentAmount(0);
-            setPaymentHours(0);
-          }}
-          onSuccess={async paymentIntentId => {
-            console.log('Payment successful:', paymentIntentId);
-
-            try {
-              // Schritt 1: Verifikation der Zahlung über Backend API
-              console.log('🔍 Verifying payment status...');
-              const verifyResponse = await fetch('/api/verify-payment-status', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  paymentIntentId,
-                  orderId,
-                }),
-              });
-
-              if (!verifyResponse.ok) {
-                throw new Error('Fehler bei der Zahlungsverifikation');
-              }
-
-              const verifyData = await verifyResponse.json();
-              console.log('✅ Payment verification result:', verifyData);
-
-              // Schritt 2: Nur bei verifizierter Zahlung UI aktualisieren
-              if (verifyData.verified && verifyData.status === 'succeeded') {
-                // Schließe Payment Modal
-                setShowInlinePayment(false);
-                setPaymentClientSecret(null);
-                setPaymentAmount(0);
-                setPaymentHours(0);
-
-                // Zeige Erfolgsmeldung
-                console.log(
-                  `✅ Zahlung erfolgreich!\n\nPayment ID: ${paymentIntentId}\n\nDie zusätzlichen Stunden wurden erfolgreich bezahlt und der Status wurde aktualisiert.`
-                );
-
-                // Aktualisiere die Daten
-                await loadApprovalRequests();
-
-                // Callback für Parent-Komponente
-                if (onApprovalProcessed) {
-                  onApprovalProcessed?.();
-                }
-              } else {
-                throw new Error(
-                  `Zahlung wurde nicht korrekt verarbeitet. Status: ${verifyData.status || 'unbekannt'}`
-                );
-              }
-            } catch (error) {
-              console.error('Payment verification failed:', error);
-
-              // Zahlung war nicht erfolgreich - UI nicht ändern
-              const errorMessage =
-                error instanceof Error ? error.message : 'Unbekannter Verifikationsfehler';
-              console.log(
-                `❌ Zahlungsverifikation fehlgeschlagen:\n\n${errorMessage}\n\nBitte überprüfen Sie Ihren Account oder kontaktieren Sie den Support.`
-              );
-
-              // Modal schließen aber keine Daten aktualisieren
-              setShowInlinePayment(false);
-              setPaymentClientSecret(null);
-              setPaymentAmount(0);
-              setPaymentHours(0);
-            }
-          }}
-          onError={error => {
-            console.error('Payment error:', error);
-
-            // Bessere Kategorisierung von Zahlungsfehlern
-            let errorCategory = 'Unbekannter Fehler';
-            let userMessage = '';
-
-            if (error.includes('canceled') || error.includes('cancelled')) {
-              errorCategory = 'Zahlung abgebrochen';
-              userMessage =
-                'Die Zahlung wurde vom Benutzer abgebrochen. Sie können es jederzeit erneut versuchen.';
-            } else if (error.includes('insufficient_funds')) {
-              errorCategory = 'Unzureichende Mittel';
-              userMessage =
-                'Nicht genügend Guthaben auf der Karte. Bitte verwenden Sie eine andere Zahlungsmethode.';
-            } else if (error.includes('card_declined')) {
-              errorCategory = 'Karte abgelehnt';
-              userMessage =
-                'Die Karte wurde abgelehnt. Bitte überprüfen Sie Ihre Kartendetails oder verwenden Sie eine andere Karte.';
-            } else if (error.includes('authentication_required')) {
-              errorCategory = '3D Secure erforderlich';
-              userMessage =
-                'Zusätzliche Authentifizierung ist erforderlich. Bitte befolgen Sie die Anweisungen Ihrer Bank.';
-            } else {
-              userMessage = error;
-            }
-
-            console.log(`❌ Payment failed - Category: ${errorCategory}, Message: ${userMessage}`);
-
-            console.log(
-              `❌ ${errorCategory}:\n\n${userMessage}\n\nDie Stunden bleiben zur Zahlung verfügbar.`
-            );
-
-            // Bei Fehler: Modal schließen aber Zahlungsdaten behalten für erneuten Versuch
-            // Zahlung ist fehlgeschlagen - Stunden sind weiterhin unbezahlt
-          }}
-        />
-      )}
     </div>
   );
 }
