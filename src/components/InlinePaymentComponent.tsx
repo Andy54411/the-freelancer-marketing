@@ -21,6 +21,7 @@ interface InlinePaymentComponentProps {
 
 interface CheckoutFormProps {
   clientSecret: string;
+  orderId: string;
   totalAmount: number;
   totalHours: number;
   customerId?: string;
@@ -31,6 +32,7 @@ interface CheckoutFormProps {
 
 function CheckoutForm({
   clientSecret,
+  orderId,
   totalAmount,
   totalHours,
   customerId,
@@ -154,7 +156,9 @@ function CheckoutForm({
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        setMessage('Zahlung erfolgreich abgeschlossen!');
+        setMessage(
+          'Zahlung erfolgreich abgeschlossen! Die Stunden werden automatisch als bezahlt markiert.'
+        );
         onSuccess(paymentIntent.id);
       } else {
         const errorMessage = `Unerwarteter Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
@@ -425,6 +429,11 @@ export default function InlinePaymentComponent({
                 <p className="text-blue-800 font-medium mt-1">
                   Gesamtbetrag: €{(totalAmount / 100).toFixed(2)}
                 </p>
+                {process.env.NODE_ENV === 'development' && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Order ID: {orderId} | Client Secret: {clientSecret ? '✓ Valid' : '✗ Missing'}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -451,6 +460,7 @@ export default function InlinePaymentComponent({
               >
                 <CheckoutForm
                   clientSecret={clientSecret}
+                  orderId={orderId}
                   totalAmount={totalAmount}
                   totalHours={totalHours}
                   customerId={customerId}

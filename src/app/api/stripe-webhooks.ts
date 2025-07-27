@@ -23,8 +23,8 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-    apiVersion: '2024-06-20',
-  })
+      apiVersion: '2024-06-20',
+    })
   : null;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -56,6 +56,120 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
         console.log(`[WEBHOOK LOG] payment_intent.succeeded: ${paymentIntentSucceeded.id}`);
 
+        const paymentType = paymentIntentSucceeded.metadata?.type;
+
+        // Handle additional hours payments
+        if (paymentType === 'additional_hours_platform_hold') {
+          console.log(
+            `[WEBHOOK LOG] Processing additional hours payment: ${paymentIntentSucceeded.id}`
+          );
+
+          const orderId = paymentIntentSucceeded.metadata?.orderId;
+          const entryIds = paymentIntentSucceeded.metadata?.entryIds;
+
+          if (!orderId || !entryIds) {
+            console.error(
+              `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im PI ${paymentIntentSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
+            );
+            return res.status(200).json({
+              received: true,
+              message: 'Wichtige Metadaten (orderId oder entryIds) für zusätzliche Stunden fehlen.',
+            });
+          }
+
+          try {
+            const entryIdsList = entryIds.split(',');
+            const orderRef = db.collection('auftraege').doc(orderId);
+
+            await db.runTransaction(async transaction => {
+              const orderSnapshot = await transaction.get(orderRef);
+
+              if (!orderSnapshot.exists) {
+                throw new Error(`Auftrag ${orderId} nicht gefunden.`);
+              }
+
+              const orderData = orderSnapshot.data()!;
+
+              // Update time entries status to 'platform_held'
+              const timeEntriesRef = db
+                .collection('auftraege')
+                .doc(orderId)
+                .collection('timeEntries');
+
+              for (const entryId of entryIdsList) {
+                const entryRef = timeEntriesRef.doc(entryId);
+                const entrySnapshot = await transaction.get(entryRef);
+
+                if (entrySnapshot.exists) {
+                  transaction.update(entryRef, {
+                    status: 'platform_held',
+                    paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                    paymentIntentId: paymentIntentSucceeded.id,
+                  });
+                  console.log(`[WEBHOOK LOG] TimeEntry ${entryId} marked as platform_held`);
+                }
+              }
+
+              // Update company balance
+              const providerStripeAccountId =
+                paymentIntentSucceeded.metadata?.providerStripeAccountId;
+              const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
+
+              if (providerStripeAccountId && companyReceives) {
+                const companyRef = db
+                  .collection('companies')
+                  .where('stripeAccountId', '==', providerStripeAccountId)
+                  .limit(1);
+                const companySnapshot = await companyRef.get();
+
+                if (!companySnapshot.empty) {
+                  const companyDoc = companySnapshot.docs[0];
+                  const currentBalance = companyDoc.data().platformHoldBalance || 0;
+                  const additionalAmount = parseInt(companyReceives, 10);
+
+                  transaction.update(companyDoc.ref, {
+                    platformHoldBalance: currentBalance + additionalAmount,
+                    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                  });
+
+                  console.log(
+                    `[WEBHOOK LOG] Company balance updated: +${additionalAmount} cents (Platform Hold)`
+                  );
+
+                  // Create audit trail
+                  const auditRef = companyDoc.ref.collection('balanceHistory').doc();
+                  transaction.set(auditRef, {
+                    type: 'additional_hours_payment',
+                    amount: additionalAmount,
+                    paymentIntentId: paymentIntentSucceeded.id,
+                    orderId: orderId,
+                    entryIds: entryIdsList,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    status: 'platform_held',
+                  });
+                }
+              }
+            });
+
+            console.log(
+              `[WEBHOOK LOG] Additional hours payment processed successfully for order ${orderId}`
+            );
+          } catch (dbError: unknown) {
+            let dbErrorMessage =
+              'Unbekannter Datenbankfehler bei der Verarbeitung zusätzlicher Stunden.';
+            if (dbError instanceof Error) {
+              dbErrorMessage = dbError.message;
+            }
+            console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden:`, dbError);
+            return res.status(200).json({
+              received: true,
+              message: `Additional hours processing failed: ${dbErrorMessage}`,
+            });
+          }
+          break;
+        }
+
+        // Handle regular order payments
         const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
         const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
 
@@ -154,16 +268,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 typeof paymentIntentSucceeded.payment_method === 'string'
                   ? paymentIntentSucceeded.payment_method
                   : paymentIntentSucceeded.payment_method &&
-                    typeof paymentIntentSucceeded.payment_method === 'object' &&
-                    'id' in paymentIntentSucceeded.payment_method
+                      typeof paymentIntentSucceeded.payment_method === 'object' &&
+                      'id' in paymentIntentSucceeded.payment_method
                     ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id
                     : null,
               stripeCustomerId:
                 typeof paymentIntentSucceeded.customer === 'string'
                   ? paymentIntentSucceeded.customer
                   : paymentIntentSucceeded.customer &&
-                    typeof paymentIntentSucceeded.customer === 'object' &&
-                    'id' in paymentIntentSucceeded.customer
+                      typeof paymentIntentSucceeded.customer === 'object' &&
+                      'id' in paymentIntentSucceeded.customer
                     ? (paymentIntentSucceeded.customer as Stripe.Customer).id
                     : null,
               clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
