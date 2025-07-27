@@ -40,29 +40,11 @@ function CheckoutForm({
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Debug logging for Stripe initialization
-  useEffect(() => {
-    console.log('[CheckoutForm] Stripe and Elements status:', {
-      stripe: stripe ? 'LOADED' : 'LOADING',
-      elements: elements ? 'LOADED' : 'LOADING',
-      clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
-    });
-  }, [stripe, elements, clientSecret]);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    console.log('🔄 [InlinePaymentComponent] handleSubmit gestartet');
-    console.log('🔍 [InlinePaymentComponent] Stripe/Elements Status:', {
-      stripe: stripe ? 'READY' : 'NOT_READY',
-      elements: elements ? 'READY' : 'NOT_READY',
-      clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
-      isLoading,
-    });
-
     if (!stripe || !elements) {
       const errorMsg = 'Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
-      console.error('❌ [InlinePaymentComponent] Stripe oder Elements nicht bereit');
       setMessage(errorMsg);
       onError(errorMsg);
       return;
@@ -72,47 +54,17 @@ function CheckoutForm({
     onProcessing(true);
     setMessage(null);
 
-    console.log('✅ [InlinePaymentComponent] Zahlungsprozess gestartet...');
-
     try {
       // Schritt 1: Elements validieren und Daten sammeln
-      console.log('🔍 [InlinePaymentComponent] Schritt 1: elements.submit()...');
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-        console.error('❌ [InlinePaymentComponent] Stripe elements submit error:', submitError);
-
-        // ⚠️ SPEZIAL-BEHANDLUNG für test_mode_live_card Fehler
-        if (
-          submitError.message?.includes('test_mode_live_card') ||
-          (submitError as any).decline_code === 'test_mode_live_card'
-        ) {
-          const testCardMessage = `🧪 STRIPE TEST-MODUS FEHLER:
-
-Sie haben eine echte Kreditkarte in unserem Test-System verwendet.
-
-✅ BITTE VERWENDEN SIE STRIPE TEST-KARTEN:
-• Kartennummer: 4242 4242 4242 4242
-• Ablaufdatum: 12/25 (beliebiges zukünftiges Datum)
-• CVC: 123 (beliebige 3 Ziffern)
-• PLZ: 12345 (beliebige Postleitzahl)
-
-⚠️ Echte Kartendaten funktionieren nicht im Test-Modus!`;
-
-          setMessage(testCardMessage);
-          onError(testCardMessage);
-          return;
-        }
-
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
       }
 
-      console.log('✅ [InlinePaymentComponent] elements.submit() erfolgreich');
-
       // Schritt 2: Payment bestätigen
-      console.log('🔍 [InlinePaymentComponent] Schritt 2: stripe.confirmPayment()...');
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret,
@@ -122,51 +74,19 @@ Sie haben eine echte Kreditkarte in unserem Test-System verwendet.
         redirect: 'if_required', // Nur bei 3D Secure umleiten
       });
 
-      console.log('🔍 [InlinePaymentComponent] confirmPayment Result:', {
-        confirmError: confirmError ? confirmError.message : 'NO_ERROR',
-        paymentIntentStatus: paymentIntent?.status || 'NO_PAYMENT_INTENT',
-      });
-
       if (confirmError) {
-        console.error('❌ [InlinePaymentComponent] Stripe confirm payment error:', confirmError);
-
-        // ⚠️ SPEZIAL-BEHANDLUNG für test_mode_live_card Fehler
-        if (
-          confirmError.message?.includes('test_mode_live_card') ||
-          (confirmError as any).decline_code === 'test_mode_live_card'
-        ) {
-          const testCardMessage = `🧪 STRIPE TEST-MODUS FEHLER:
-
-Ihre Karte wurde abgelehnt, weil Sie eine echte Karte im Test-System verwendet haben.
-
-✅ LÖSUNG - VERWENDEN SIE STRIPE TEST-KARTEN:
-• Kartennummer: 4242 4242 4242 4242
-• Ablaufdatum: 12/25
-• CVC: 123
-• PLZ: 12345
-
-💡 TIPP: Leeren Sie Ihren Browser-Cache oder verwenden Sie einen privaten Browser-Tab.`;
-
-          setMessage(testCardMessage);
-          onError(testCardMessage);
-          return;
-        }
-
         const errorMessage = confirmError.message || 'Fehler bei der Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('🎉 [InlinePaymentComponent] Payment erfolgreich!', paymentIntent.id);
         setMessage('Zahlung erfolgreich abgeschlossen!');
         onSuccess(paymentIntent.id);
       } else {
         const errorMessage = `Unerwarteter Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
-        console.error('❌ [InlinePaymentComponent] Unerwarteter Status:', errorMessage);
         setMessage(errorMessage);
         onError(errorMessage);
       }
     } catch (error) {
-      console.error('💥 [InlinePaymentComponent] Payment processing error:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler bei der Zahlung';
       setMessage(errorMessage);
@@ -202,27 +122,6 @@ Ihre Karte wurde abgelehnt, weil Sie eine echte Karte im Test-System verwendet h
         </div>
       </div>
 
-      {/* DEBUG: Test-Karten Information */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-        <h5 className="font-medium text-blue-900 mb-2">
-          🧪 Test-Modus - Verwenden Sie Stripe Test-Karten:
-        </h5>
-        <div className="text-sm text-blue-800 space-y-1">
-          <p>
-            <strong>Erfolg:</strong> 4242 4242 4242 4242
-          </p>
-          <p>
-            <strong>Ablauf:</strong> Beliebiges zukünftiges Datum (z.B. 12/25)
-          </p>
-          <p>
-            <strong>CVC:</strong> Beliebige 3 Ziffern (z.B. 123)
-          </p>
-          <p>
-            <strong>PLZ:</strong> Beliebige Postleitzahl (z.B. 12345)
-          </p>
-        </div>
-      </div>
-
       {/* Stripe Payment Element */}
       <div className="border border-gray-200 rounded-lg p-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">Zahlungsmethode</label>
@@ -251,15 +150,6 @@ Ihre Karte wurde abgelehnt, weil Sie eine echte Karte im Test-System verwendet h
       <button
         type="submit"
         disabled={!stripe || !elements || isLoading}
-        onClick={e => {
-          console.log('🔘 [InlinePaymentComponent] Button geklickt!', {
-            disabled: !stripe || !elements || isLoading,
-            stripe: stripe ? 'READY' : 'NOT_READY',
-            elements: elements ? 'READY' : 'NOT_READY',
-            isLoading,
-            clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
-          });
-        }}
         className="w-full flex items-center justify-center px-4 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {isLoading ? (
@@ -315,26 +205,6 @@ export default function InlinePaymentComponent({
     return () => setMounted(false);
   }, []);
 
-  // Debug logging for client secret
-  useEffect(() => {
-    console.log('[InlinePaymentComponent] Component mounted with:', {
-      isOpen,
-      clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
-      orderId,
-      totalAmount,
-      totalHours,
-    });
-  }, [isOpen, clientSecret, orderId, totalAmount, totalHours]);
-
-  // Elements Loading Debug
-  useEffect(() => {
-    if (isOpen && clientSecret) {
-      console.log('🔧 [InlinePaymentComponent] Elements wird geladen...', {
-        clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
-      });
-    }
-  }, [isOpen, clientSecret]);
-
   // Ensure viewport meta tag is present for Stripe Elements
   useEffect(() => {
     // Check if viewport meta tag exists and has correct content
@@ -354,8 +224,6 @@ export default function InlinePaymentComponent({
       if (!existingViewport) {
         document.head.appendChild(viewport);
       }
-
-      console.log('[InlinePaymentComponent] Viewport meta tag ensured for Stripe Elements');
     }
   }, [isOpen]);
 
@@ -366,35 +234,20 @@ export default function InlinePaymentComponent({
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
 
-      console.log('🔒 [InlinePaymentComponent] Body scroll locked for modal');
-
       return () => {
         document.body.style.overflow = '';
         document.body.style.position = '';
         document.body.style.width = '';
-        console.log('🔓 [InlinePaymentComponent] Body scroll unlocked');
       };
     }
   }, [isOpen]);
 
-  console.log('🔍 [InlinePaymentComponent] Render check:', {
-    isOpen,
-    clientSecret: !!clientSecret,
-    totalAmount,
-    totalHours,
-    orderId,
-    mounted,
-    timestamp: new Date().toISOString(),
-  });
-
   // Nicht rendern wenn nicht gemountet (SSR)
   if (!mounted) {
-    console.log('❌ [InlinePaymentComponent] Not rendering: not mounted (SSR)');
     return null;
   }
 
   if (!isOpen) {
-    console.log('❌ [InlinePaymentComponent] Not rendering: isOpen =', isOpen);
     return null;
   }
 
@@ -419,7 +272,6 @@ export default function InlinePaymentComponent({
       onClick={e => {
         // Close modal when clicking backdrop
         if (e.target === e.currentTarget) {
-          console.log('🔘 [InlinePaymentComponent] Backdrop geklickt - Modal schließen');
           onClose();
         }
       }}
@@ -470,7 +322,7 @@ export default function InlinePaymentComponent({
               <div className="flex items-center">
                 <FiCreditCard className="text-[#14ad9f] mr-2" size={20} />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  💳 Zusätzliche Stunden bezahlen
+                  Zusätzliche Stunden bezahlen
                 </h3>
               </div>
               <button
@@ -482,23 +334,20 @@ export default function InlinePaymentComponent({
               </button>
             </div>
 
-            {/* Critical Payment Notice */}
+            {/* Payment Notice */}
             <div className="p-6 pb-3">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center">
-                  <FiAlertCircle className="text-red-600 mr-2" size={16} />
-                  <span className="text-red-800 font-bold">
-                    🚨 SOFORTIGE BEZAHLUNG ERFORDERLICH!
+                  <FiAlertCircle className="text-blue-600 mr-2" size={16} />
+                  <span className="text-blue-800 font-medium">
+                    Zahlung für zusätzliche Arbeitszeit
                   </span>
                 </div>
-                <p className="text-red-700 mt-2">
-                  {totalHours}h sind bereits genehmigt, aber die Bezahlung steht noch aus!
+                <p className="text-blue-700 mt-2">
+                  {totalHours.toFixed(1)} Stunden sind zur Bezahlung freigegeben.
                 </p>
-                <p className="text-red-800 font-bold mt-1">
-                  💰 JETZT BEZAHLEN: {totalHours.toFixed(1)}h - €{(totalAmount / 100).toFixed(2)}
-                </p>
-                <p className="text-red-600 text-sm mt-2">
-                  💻 DOM PORTAL LÖSUNG: Modal direkt in document.body!
+                <p className="text-blue-800 font-medium mt-1">
+                  Gesamtbetrag: €{(totalAmount / 100).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -549,6 +398,5 @@ export default function InlinePaymentComponent({
   );
 
   // Portal: Modal direkt in document.body rendern für maximale DOM-Sichtbarkeit
-  console.log('🚀 [InlinePaymentComponent] Rendering via Portal in document.body');
   return createPortal(modalContent, document.body);
 }
