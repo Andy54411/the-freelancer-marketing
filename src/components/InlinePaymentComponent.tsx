@@ -51,8 +51,17 @@ function CheckoutForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
+    console.log('🔄 [InlinePaymentComponent] handleSubmit gestartet');
+    console.log('🔍 [InlinePaymentComponent] Stripe/Elements Status:', {
+      stripe: stripe ? 'READY' : 'NOT_READY',
+      elements: elements ? 'READY' : 'NOT_READY',
+      clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
+      isLoading,
+    });
+
     if (!stripe || !elements) {
       const errorMsg = 'Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
+      console.error('❌ [InlinePaymentComponent] Stripe oder Elements nicht bereit');
       setMessage(errorMsg);
       onError(errorMsg);
       return;
@@ -62,18 +71,24 @@ function CheckoutForm({
     onProcessing(true);
     setMessage(null);
 
+    console.log('✅ [InlinePaymentComponent] Zahlungsprozess gestartet...');
+
     try {
       // Schritt 1: Elements validieren und Daten sammeln
+      console.log('🔍 [InlinePaymentComponent] Schritt 1: elements.submit()...');
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-        console.error('Stripe elements submit error:', submitError);
+        console.error('❌ [InlinePaymentComponent] Stripe elements submit error:', submitError);
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
       }
 
+      console.log('✅ [InlinePaymentComponent] elements.submit() erfolgreich');
+
       // Schritt 2: Payment bestätigen
+      console.log('🔍 [InlinePaymentComponent] Schritt 2: stripe.confirmPayment()...');
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret,
@@ -83,21 +98,28 @@ function CheckoutForm({
         redirect: 'if_required', // Nur bei 3D Secure umleiten
       });
 
+      console.log('🔍 [InlinePaymentComponent] confirmPayment Result:', {
+        confirmError: confirmError ? confirmError.message : 'NO_ERROR',
+        paymentIntentStatus: paymentIntent?.status || 'NO_PAYMENT_INTENT',
+      });
+
       if (confirmError) {
-        console.error('Stripe confirm payment error:', confirmError);
+        console.error('❌ [InlinePaymentComponent] Stripe confirm payment error:', confirmError);
         const errorMessage = confirmError.message || 'Fehler bei der Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        console.log('🎉 [InlinePaymentComponent] Payment erfolgreich!', paymentIntent.id);
         setMessage('Zahlung erfolgreich abgeschlossen!');
         onSuccess(paymentIntent.id);
       } else {
         const errorMessage = `Unerwarteter Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
+        console.error('❌ [InlinePaymentComponent] Unerwarteter Status:', errorMessage);
         setMessage(errorMessage);
         onError(errorMessage);
       }
     } catch (error) {
-      console.error('Payment processing error:', error);
+      console.error('💥 [InlinePaymentComponent] Payment processing error:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler bei der Zahlung';
       setMessage(errorMessage);
@@ -148,6 +170,15 @@ function CheckoutForm({
       <button
         type="submit"
         disabled={!stripe || !elements || isLoading}
+        onClick={e => {
+          console.log('🔘 [InlinePaymentComponent] Button geklickt!', {
+            disabled: !stripe || !elements || isLoading,
+            stripe: stripe ? 'READY' : 'NOT_READY',
+            elements: elements ? 'READY' : 'NOT_READY',
+            isLoading,
+            clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
+          });
+        }}
         className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {isLoading ? (
@@ -206,6 +237,15 @@ export default function InlinePaymentComponent({
       totalHours,
     });
   }, [isOpen, clientSecret, orderId, totalAmount, totalHours]);
+
+  // Elements Loading Debug
+  useEffect(() => {
+    if (isOpen && clientSecret) {
+      console.log('🔧 [InlinePaymentComponent] Elements wird geladen...', {
+        clientSecret: clientSecret ? 'PRESENT' : 'MISSING',
+      });
+    }
+  }, [isOpen, clientSecret]);
 
   // Ensure viewport meta tag is present for Stripe Elements
   useEffect(() => {
