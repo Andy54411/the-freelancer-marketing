@@ -131,10 +131,12 @@ function CheckoutForm({
                   line1: customerData.address.line1,
                   city: customerData.address.city,
                   postal_code: customerData.address.postal_code,
+                  state: '', // Erforderlich für Stripe, leer da nicht in DE verwendet
                   country: customerData.address.country,
                 }
               : {
                   country: 'DE',
+                  state: '', // Erforderlich für Stripe
                 },
           },
         },
