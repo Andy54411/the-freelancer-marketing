@@ -233,30 +233,57 @@ export default function OrderDetailPage() {
     });
   };
 
-  // Direct Payment Modal Handler - Direct Test
-  const handleOpenPayment = () => {
+  // Direct Payment Modal Handler - Echte Billing-Daten verwenden
+  const handleOpenPayment = async () => {
     if (!orderId) return;
 
-    console.log('🔄 DIRECT: Opening payment modal for order:', orderId);
+    try {
+      console.log('🔄 DIRECT: Starting payment process for order:', orderId);
 
-    // Mock payment data für Test - KORREKTE STRIPE CLIENT SECRET FORMAT
-    const testClientSecret = 'pi_1234567890abcdef_secret_1234567890abcdef';
-    const testAmount = 5000; // 50.00 EUR
-    const testHours = 2.5;
+      // Import TimeTracker dynamisch
+      const { TimeTracker } = await import('@/lib/timeTracker');
 
-    console.log('🔄 DIRECT: Setting payment state...', {
-      clientSecret: testClientSecret,
-      amount: testAmount,
-      hours: testHours,
-    });
+      // Stelle echte Stripe-Abrechnung für genehmigte Stunden
+      const billingResult = await TimeTracker.billApprovedHours(orderId);
 
-    // Alle States gleichzeitig setzen für bessere Synchronisation
-    setPaymentClientSecret(testClientSecret);
-    setPaymentAmount(testAmount);
-    setPaymentHours(testHours);
-    setShowInlinePayment(true);
+      console.log('✅ DIRECT: Real billing data received:', {
+        paymentIntentId: billingResult.paymentIntentId,
+        customerPays: billingResult.customerPays,
+        clientSecret: billingResult.clientSecret,
+      });
 
-    console.log('✅ DIRECT: Payment modal state updated - Modal should now be visible!');
+      // Berechne echte Payment Hours aus OrderDetails
+      const orderDetails = await TimeTracker.getOrderDetails(orderId);
+      const paymentHours =
+        orderDetails?.timeTracking?.timeEntries
+          ?.filter((e: any) => e.category === 'additional' && e.status === 'customer_approved')
+          ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
+
+      // Setze echte Daten
+      setPaymentClientSecret(billingResult.clientSecret);
+      setPaymentAmount(billingResult.customerPays);
+      setPaymentHours(paymentHours);
+      setShowInlinePayment(true);
+
+      console.log('✅ DIRECT: Real payment modal opened with:', {
+        amount: billingResult.customerPays / 100,
+        hours: paymentHours,
+      });
+    } catch (error) {
+      console.error('❌ DIRECT: Error creating payment:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+
+      if (
+        errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+        errorMessage.includes('Stripe Connect')
+      ) {
+        alert(
+          'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\nBitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+        );
+      } else {
+        alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
+      }
+    }
   };
 
   const handlePaymentSuccess = () => {
@@ -452,6 +479,7 @@ export default function OrderDetailPage() {
                     console.log('Approval processed');
                     fetchOrder(); // Reload order data
                   }}
+                  onPaymentRequest={handlePaymentRequest}
                 />
 
                 {/* Direct Payment Button */}
