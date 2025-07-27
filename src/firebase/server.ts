@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { AppOptions } from 'firebase-admin/app';
@@ -24,18 +24,6 @@ if (!admin.apps.length) {
         throw new Error('Server-Konfigurationsfehler: Firebase-Credentials fehlen.');
       }
       try {
-        // Debug-Logs für JSON Parsing bei Position 162
-        console.log('[Firebase Server] 🔍 FIREBASE_SERVICE_ACCOUNT_KEY Debug:');
-        console.log('[Firebase Server] Key Länge:', serviceAccountKey.length);
-        console.log(
-          '[Firebase Server] Position 160-165:',
-          JSON.stringify(serviceAccountKey.substring(160, 165))
-        );
-        console.log(
-          '[Firebase Server] Zeichen bei Position 162:',
-          serviceAccountKey.charCodeAt(162)
-        );
-
         const serviceAccount = JSON.parse(serviceAccountKey);
         // Wichtiger Workaround für Vercel: Zeilenumbrüche im Private Key korrigieren.
         // Vercel ersetzt `\n` oft mit `\\n`.

@@ -14,7 +14,8 @@ try {
     let projectId = process.env.FIREBASE_PROJECT_ID;
 
     if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-      const serviceAccount = JSON.parse(serviceAccountKey);
+      const cleanedServiceAccountKey = serviceAccountKey.replace(/[\x00-\x1F\x7F]/g, '').trim();
+      const serviceAccount = JSON.parse(cleanedServiceAccountKey);
 
       // Extract project ID from service account if not set in environment
       if (!projectId && serviceAccount.project_id) {
