@@ -255,6 +255,23 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               isLoading={loadingOrders}
               onRowClick={handleRowClick}
             />
+            {/* SUPER DEBUG INFO - DIREKT VOR DATATABLE */}
+            <div className="mt-4 p-4 bg-red-100 rounded text-xs border-2 border-red-500">
+              <div className="font-bold mb-2">🚨 DATATABLE DIRECT DEBUG:</div>
+              <div>📊 Orders type: {typeof orders}</div>
+              <div>📊 Orders is Array: {Array.isArray(orders) ? 'Yes' : 'No'}</div>
+              <div>📊 Orders length: {orders?.length || 'undefined'}</div>
+              <div>📊 Orders JSON: {JSON.stringify(orders, null, 2)}</div>
+              <div>📊 Loading state: {loadingOrders ? 'LOADING' : 'NOT LOADING'}</div>
+              <div className="mt-2 p-2 bg-yellow-100 rounded">
+                <div>🔧 MANUAL CHECK:</div>
+                {orders && orders.length > 0 ? (
+                  <div>✅ ORDERS EXIST - DataTable should show data!</div>
+                ) : (
+                  <div>❌ NO ORDERS - This is why DataTable shows &quot;Keine Daten&quot;</div>
+                )}
+              </div>
+            </div>
             {/* Debug Info */}
             <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
               <div className="font-bold mb-2">🐛 ERWEITERTE DEBUG INFORMATIONEN:</div>
