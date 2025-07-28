@@ -395,15 +395,7 @@ export function SectionCards() {
           <CardTitle className="text-lg font-bold tabular-nums text-blue-800 dark:text-blue-200 break-words">
             {formatCurrency(stats.monthlyRevenue)}
           </CardTitle>
-          <CardAction className="mt-auto">
-            <Badge
-              variant="outline"
-              className="text-xs font-medium border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300"
-            >
-              <IconTrendingUp size={10} className="mr-1 flex-shrink-0" />
-              <span>Gesamt</span>
-            </Badge>
-          </CardAction>
+          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Gesamt</div>
         </CardHeader>
       </Card>
 
