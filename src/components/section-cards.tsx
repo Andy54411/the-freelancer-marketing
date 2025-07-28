@@ -83,33 +83,51 @@ export function SectionCards() {
           // VOLLSTÄNDIGE UMSATZBERECHNUNG - berücksichtige alle Einnahmen
           let orderTotalRevenue = 0;
 
-          // 1. Basis-Auftragswert
+          // 1. Basis-Auftragswert - NUR wenn Zahlung erhalten wurde
           if (order.jobCalculatedPriceInCents && order.jobCalculatedPriceInCents > 0) {
             if (
-              order.status !== 'STORNIERT' &&
-              order.status !== 'ABGELEHNT' &&
-              order.status !== 'CANCELLED'
+              order.status === 'zahlung_erhalten_clearing' ||
+              order.status === 'ABGESCHLOSSEN' ||
+              order.status === 'COMPLETED' ||
+              order.status === 'BEZAHLT' ||
+              order.status === 'PAID' ||
+              order.status === 'geld_freigegeben'
             ) {
               orderTotalRevenue += order.jobCalculatedPriceInCents;
-              console.log('Added base order value:', order.jobCalculatedPriceInCents);
+              console.log('Added PAID base order value:', order.jobCalculatedPriceInCents);
+            } else {
+              console.log(
+                'SKIPPED unpaid base order:',
+                order.jobCalculatedPriceInCents,
+                'Status:',
+                order.status
+              );
             }
           }
 
           // 2. ZUSÄTZLICHE BEZAHLTE STUNDEN aus TimeTracking
           if (order.timeTracking?.timeEntries) {
             order.timeTracking.timeEntries.forEach((entry: any) => {
-              // Berücksichtige alle bezahlten zusätzlichen Zeiteinträge
+              // NUR WIRKLICH BEZAHLTE UND ÜBERTRAGENE BETRÄGE berücksichtigen
               if (
-                entry.category === 'additional' &&
                 entry.billableAmount &&
                 entry.billableAmount > 0 &&
                 (entry.status === 'transferred' ||
-                  entry.status === 'approved' ||
-                  entry.billingStatus === 'transferred')
+                  entry.status === 'paid' ||
+                  entry.platformHoldStatus === 'transferred' ||
+                  entry.billingStatus === 'transferred' ||
+                  entry.paymentStatus === 'paid')
               ) {
                 orderTotalRevenue += entry.billableAmount;
                 console.log(
-                  'Added timetracking entry:',
+                  'Added PAID timetracking entry:',
+                  entry.billableAmount,
+                  'Status:',
+                  entry.status
+                );
+              } else {
+                console.log(
+                  'SKIPPED unpaid timetracking entry:',
                   entry.billableAmount,
                   'Status:',
                   entry.status
@@ -118,13 +136,8 @@ export function SectionCards() {
             });
           }
 
-          // 3. DIREKTEN BILLING-BETRAG berücksichtigen (falls vorhanden)
-          if (order.timeTracking?.billingData?.customerPays) {
-            orderTotalRevenue += order.timeTracking.billingData.customerPays * 100; // Convert to cents
-            console.log('Added billing data:', order.timeTracking.billingData.customerPays * 100);
-          }
-
-          console.log('Total order revenue:', orderTotalRevenue);
+          // Debug: Finaler Auftragsumsatz
+          console.log('Final order revenue:', orderTotalRevenue, 'Order ID:', doc.id);
           monthlyRevenue += orderTotalRevenue;
 
           // Neue Aufträge (die auf Clearing warten)
