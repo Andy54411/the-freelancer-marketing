@@ -249,12 +249,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           <div className="flex flex-col gap-4 md:gap-6">
             <SectionCards />
             {uid && <ChartAreaInteractive companyUid={uid} />}
-            <DataTable
-              columns={columns}
-              data={orders}
-              isLoading={loadingOrders}
-              onRowClick={handleRowClick}
-            />
+
             {/* SUPER DEBUG INFO - DIREKT VOR DATATABLE */}
             <div className="mt-4 p-4 bg-red-100 rounded text-xs border-2 border-red-500">
               <div className="font-bold mb-2">🚨 DATATABLE DIRECT DEBUG:</div>
@@ -271,6 +266,17 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                   <div>❌ NO ORDERS - This is why DataTable shows &quot;Keine Daten&quot;</div>
                 )}
               </div>
+            </div>
+
+            {/* DATATABLE MIT ORDERS DATEN */}
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">📊 Aufträge Übersicht</h3>
+              <DataTable
+                columns={columns}
+                data={orders || []}
+                isLoading={loadingOrders}
+                onRowClick={handleRowClick}
+              />
             </div>
             {/* Debug Info */}
             <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
