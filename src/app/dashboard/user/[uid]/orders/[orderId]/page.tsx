@@ -24,6 +24,8 @@ import CustomerApprovalInterface from '@/components/CustomerApprovalInterface';
 import ChatComponent from '@/components/ChatComponent';
 // Payment-Komponente
 import InlinePaymentComponent from '@/components/InlinePaymentComponent';
+// Stunden-Übersicht Komponente
+import HoursBillingOverview from '@/components/HoursBillingOverview';
 
 interface ParticipantDetails {
   id: string;
@@ -476,6 +478,11 @@ export default function OrderDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Stunden-Abrechnungsübersicht für Kunden */}
+          {currentUser.uid === order.customerId && (
+            <HoursBillingOverview orderId={orderId} className="mb-8" />
+          )}
 
           {/* Customer Approval Interface für aktive und ausstehende Aufträge */}
           {['AKTIV', 'bezahlt', 'zahlung_erhalten_clearing', 'in_progress', 'pending'].includes(
