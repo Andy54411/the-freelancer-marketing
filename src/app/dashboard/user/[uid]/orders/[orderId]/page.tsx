@@ -464,12 +464,9 @@ export default function OrderDetailPage() {
                     </button>
                   </div>
                 )}
-              {/* Container for the FreelancerInfoCard, ensuring it's centered */}
-              <div className="md:col-span-2 mt-4 flex justify-center">
-                {' '}
-                {/* Added flex justify-center */}
+              {/* Container for the UserInfoCard */}
+              <div className="md:col-span-2 mt-6">
                 <UserInfoCard
-                  className="max-w-sm mx-auto" // Apply max-width and auto-margins directly to the card
                   userId={cardUser.id}
                   userName={cardUser.name}
                   userAvatarUrl={cardUser.avatarUrl}
@@ -481,7 +478,11 @@ export default function OrderDetailPage() {
 
           {/* Stunden-Abrechnungsübersicht für Kunden */}
           {currentUser.uid === order.customerId && (
-            <HoursBillingOverview orderId={orderId} className="mb-8" />
+            <HoursBillingOverview
+              orderId={orderId}
+              className="mb-8"
+              onPaymentRequest={handleOpenPayment}
+            />
           )}
 
           {/* Chat-Bereich */}

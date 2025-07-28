@@ -31,11 +31,13 @@ interface HoursOverviewData {
 interface HoursBillingOverviewProps {
   orderId: string;
   className?: string;
+  onPaymentRequest?: () => void; // NEU: Callback für Bezahlung
 }
 
 export default function HoursBillingOverview({
   orderId,
   className = '',
+  onPaymentRequest,
 }: HoursBillingOverviewProps) {
   const [data, setData] = useState<HoursOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -408,7 +410,7 @@ export default function HoursBillingOverview({
             <strong>{pendingAdditionalHours}h</strong> zusätzliche Stunden sind genehmigt und müssen
             JETZT bezahlt werden!
           </p>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
               <p>
                 <strong>Geplant:</strong> {data.originalPlannedHours}h
@@ -432,6 +434,24 @@ export default function HoursBillingOverview({
                 </span>
               </p>
             </div>
+          </div>
+
+          {/* Bezahl-Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={onPaymentRequest}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-8 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              <span className="text-xl">💳</span>
+              <div className="text-left">
+                <div className="text-lg font-bold">
+                  {formatCurrency(pendingAdditionalAmount)} JETZT BEZAHLEN
+                </div>
+                <div className="text-sm opacity-90">
+                  {pendingAdditionalHours}h zusätzliche Stunden
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { orderBy, limit } from 'firebase/firestore'; // NEU: orderBy und limit importieren
 import { auth, db } from '@/firebase/clients';
+import { userPresence } from '@/lib/userPresence'; // NEU: User Presence importieren
 
 /**
  * Definiert ein einheitliches Benutzerprofil, das Daten aus Firebase Auth
@@ -118,6 +119,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
             });
+
+            // NEU: Initialisiere User Presence nach erfolgreicher Authentifizierung
+            userPresence.initializePresence(fbUser.uid).catch(console.error);
           } else {
             console.warn(
               `AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`
@@ -142,10 +146,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               email: fbUser.email,
               role: roleFromClaim,
             });
+
+            // NEU: Initialisiere User Presence auch für Fallback-Fall
+            userPresence.initializePresence(fbUser.uid).catch(console.error);
           }
         } else {
           setUser(null);
           setFirebaseUser(null);
+
+          // NEU: Cleanup Presence wenn User sich abmeldet
+          userPresence.cleanupPresence();
         }
       } catch (error) {
         console.error(

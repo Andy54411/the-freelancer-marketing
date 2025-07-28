@@ -5,6 +5,7 @@ import { getAuth, connectAuthEmulator, onAuthStateChanged, signOut } from 'fireb
 import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator, Functions } from 'firebase/functions';
+import { getDatabase, connectDatabaseEmulator, Database } from 'firebase/database'; // NEU: Realtime Database
 
 // Import error handler
 import { setupFirestoreErrorHandler } from '@/lib/firestoreErrorHandler';
@@ -20,6 +21,7 @@ type User = NonNullable<Auth['currentUser']>;
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL, // NEU: Realtime Database URL
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -50,6 +52,7 @@ const getClientApp = (): FirebaseApp => {
 const app = getClientApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
+const realtimeDb = getDatabase(app); // NEU: Realtime Database
 const storage = getStorage(app);
 const functions = getFunctions(app, functionsRegion);
 
@@ -90,10 +93,19 @@ if (process.env.NODE_ENV === 'development') {
       console.log(`[Firebase Client] (Dev) Functions Emulator connected to ${host}:${portStr}.`);
     }
 
+    // Realtime Database Emulator
+    if (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST) {
+      const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST.split(':');
+      connectDatabaseEmulator(realtimeDb, host, parseInt(portStr, 10));
+      console.log(
+        `[Firebase Client] (Dev) Realtime Database Emulator connected to ${host}:${portStr}.`
+      );
+    }
+
     (global as any)._firebaseEmulatorsConnected = true;
   }
 }
 
 // --- Exporte ---
 // Exportiere die Instanzen mit Aliasen für eine saubere Verwendung in der App.
-export { app, auth, db, storage, functions, onAuthStateChanged, signOut, type User };
+export { app, auth, db, realtimeDb, storage, functions, onAuthStateChanged, signOut, type User };
