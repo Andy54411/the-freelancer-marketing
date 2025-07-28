@@ -17,7 +17,7 @@ interface TimeEntry {
   hours: number;
   description: string;
   category: 'original' | 'additional';
-  status: 'logged' | 'submitted' | 'approved' | 'rejected';
+  status: 'logged' | 'submitted' | 'approved' | 'rejected' | 'paid';
   billableAmount?: number;
   travelCost?: number;
   travelTime?: boolean;
@@ -84,6 +84,37 @@ export default function TimeTrackingManager({
         // Lade TimeTracking-Einträge aus dem Auftrag
         if (orderData.timeTracking?.timeEntries) {
           orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
+            // Debug: Log the raw status from database
+            console.log('Raw entry status from DB:', entry.status, 'Entry:', entry);
+
+            // Erweiterte Status-Mapping-Logik
+            let mappedStatus: 'logged' | 'submitted' | 'approved' | 'rejected' | 'paid' = 'logged';
+
+            // Status mapping priority: paid > approved > rejected > submitted > logged
+            if (
+              entry.status === 'paid' ||
+              entry.status === 'platform_released' ||
+              entry.status === 'transferred' ||
+              entry.platformHoldStatus === 'transferred' ||
+              entry.paymentStatus === 'paid' ||
+              entry.paymentStatus === 'transferred'
+            ) {
+              mappedStatus = 'paid';
+            } else if (entry.status === 'customer_approved' || entry.status === 'approved') {
+            } else if (entry.status === 'customer_approved' || entry.status === 'approved') {
+              mappedStatus = 'approved';
+            } else if (entry.status === 'customer_rejected' || entry.status === 'rejected') {
+              mappedStatus = 'rejected';
+            } else if (entry.status === 'submitted' || entry.status === 'pending_approval') {
+              mappedStatus = 'submitted';
+            } else {
+              // Default to 'logged' for any other status (including 'draft', 'logged', etc.)
+              mappedStatus = 'logged';
+            }
+
+            // Debug: Log the mapped status
+            console.log('Mapped status:', mappedStatus, 'for raw status:', entry.status);
+
             entries.push({
               id: entry.id || `entry-${index}`,
               date: entry.date || '',
@@ -92,14 +123,7 @@ export default function TimeTrackingManager({
               hours: entry.hours || 0,
               description: entry.description || '',
               category: entry.category || 'original',
-              status:
-                entry.status === 'customer_approved'
-                  ? 'approved'
-                  : entry.status === 'customer_rejected'
-                    ? 'rejected'
-                    : entry.status === 'submitted'
-                      ? 'submitted'
-                      : 'logged',
+              status: mappedStatus,
               billableAmount: entry.billableAmount || 0,
               travelCost: entry.travelCost || 0,
               travelTime: entry.travelTime || false,
@@ -209,11 +233,17 @@ export default function TimeTrackingManager({
       .filter(entry => entry.category === 'additional')
       .reduce((sum, entry) => sum + entry.hours, 0),
     approvedHours: timeEntries
-      .filter(entry => entry.status === 'approved')
+      .filter(entry => entry.status === 'approved' || entry.status === 'paid')
       .reduce((sum, entry) => sum + entry.hours, 0),
     totalRevenue: timeEntries
-      .filter(entry => entry.status === 'approved')
-      .reduce((sum, entry) => sum + entry.hours * hourlyRate, 0),
+      .filter(entry => entry.status === 'approved' || entry.status === 'paid')
+      .reduce((sum, entry) => {
+        // Verwende billableAmount aus der Datenbank (in Cents), fallback auf Stunden * Rate
+        if (entry.billableAmount && entry.billableAmount > 0) {
+          return sum + entry.billableAmount / 100; // Convert from cents to euros
+        }
+        return sum + entry.hours * hourlyRate;
+      }, 0),
   };
 
   if (loading) {
@@ -324,15 +354,17 @@ export default function TimeTrackingManager({
                 <div
                   key={entry.id}
                   className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${
-                    entry.status === 'approved'
-                      ? 'border-green-200 bg-green-50'
-                      : entry.status === 'submitted'
-                        ? 'border-yellow-200 bg-yellow-50'
-                        : entry.status === 'rejected'
-                          ? 'border-red-200 bg-red-50'
-                          : entry.category === 'additional'
-                            ? 'border-orange-200 bg-orange-50'
-                            : 'border-gray-200 bg-white'
+                    entry.status === 'paid'
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : entry.status === 'approved'
+                        ? 'border-green-200 bg-green-50'
+                        : entry.status === 'submitted'
+                          ? 'border-yellow-200 bg-yellow-50'
+                          : entry.status === 'rejected'
+                            ? 'border-red-200 bg-red-50'
+                            : entry.category === 'additional'
+                              ? 'border-orange-200 bg-orange-50'
+                              : 'border-gray-200 bg-white'
                   }`}
                 >
                   <div className="flex items-start justify-between">
