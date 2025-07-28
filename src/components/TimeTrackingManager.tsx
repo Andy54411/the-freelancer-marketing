@@ -243,15 +243,18 @@ export default function TimeTrackingManager({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-[#14ad9f]/5 to-teal-50">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FiClock className="text-[#14ad9f]" />
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-[#14ad9f] rounded-lg">
+                <FiClock className="text-white" size={20} />
+              </div>
               Zeiterfassung - {customerName}
             </h3>
-            <p className="text-sm text-gray-600">
-              Geplant: {originalPlannedHours}h • Stundensatz: {hourlyRate}€/h
+            <p className="text-sm text-gray-600 mt-1 ml-11">
+              Geplant: <span className="font-semibold text-blue-600">{originalPlannedHours}h</span>{' '}
+              • Stundensatz: <span className="font-semibold text-green-600">{hourlyRate}€/h</span>
             </p>
           </div>
 
@@ -260,82 +263,157 @@ export default function TimeTrackingManager({
               setShowAddForm(true);
               setEditingEntry(null);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors shadow-md hover:shadow-lg font-medium"
           >
-            <FiPlus size={16} />
+            <FiPlus size={18} />
             Zeit hinzufügen
           </button>
         </div>
       </div>
 
-      {/* Zusammenfassung */}
+      {/* Statistik Cards */}
       <div className="p-6 bg-gray-50 border-b border-gray-200">
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{summary.totalHours.toFixed(1)}</div>
-            <div className="text-sm text-gray-600">Gesamt Stunden</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {summary.originalHours.toFixed(1)}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {/* Gesamt Stunden */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
+                {summary.totalHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                Gesamt Stunden
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Geplante Stunden</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {summary.additionalHours.toFixed(1)}
+
+          {/* Geplante Stunden */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-700 mb-1">
+                {summary.originalHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">
+                Geplante Stunden
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Zusätzliche Stunden</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {summary.pendingApproval.toFixed(1)}
+
+          {/* Zusätzliche Stunden */}
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-700 mb-1">
+                {summary.additionalHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">
+                Zusätzliche Stunden
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Warten auf Freigabe</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {summary.approvedHours.toFixed(1)}
+
+          {/* Warten auf Freigabe */}
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-700 mb-1">
+                {summary.pendingApproval.toFixed(1)}
+              </div>
+              <div className="text-xs text-yellow-600 font-medium uppercase tracking-wide">
+                Warten auf Freigabe
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Freigegeben</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {summary.escrowAuthorizedHours.toFixed(1)}
+
+          {/* Freigegeben */}
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-700 mb-1">
+                {summary.approvedHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-green-600 font-medium uppercase tracking-wide">
+                Freigegeben
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Platform Hold</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{summary.paidHours.toFixed(1)}</div>
-            <div className="text-sm text-gray-600">💰 Bezahlt</div>
+
+          {/* Platform Hold */}
+          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indigo-700 mb-1">
+                {summary.escrowAuthorizedHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-indigo-600 font-medium uppercase tracking-wide">
+                Platform Hold
+              </div>
+            </div>
+          </div>
+
+          {/* Bezahlt */}
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-700 mb-1">
+                {summary.paidHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-purple-600 font-medium uppercase tracking-wide flex items-center justify-center gap-1">
+                <span>💰</span> Bezahlt
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Anfahrtskosten-Übersicht */}
-        {summary.totalTravelCosts > 0 && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <div className="text-sm text-amber-800">
-              <strong>🚗 Anfahrtskosten:</strong> Gesamt:{' '}
-              {(summary.totalTravelCosts / 100).toFixed(2)}€
-              {summary.approvedTravelCosts > 0 && (
-                <span> • Genehmigt: {(summary.approvedTravelCosts / 100).toFixed(2)}€</span>
-              )}
-              {summary.paidTravelCosts > 0 && (
-                <span className="text-purple-700">
-                  {' '}
-                  • ✅ Bezahlt: {(summary.paidTravelCosts / 100).toFixed(2)}€
-                </span>
-              )}
+        {/* Info Cards */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Anfahrtskosten-Übersicht */}
+          {summary.totalTravelCosts > 0 && (
+            <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <span className="text-amber-600 text-lg">🚗</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-amber-800 mb-1">Anfahrtskosten</h4>
+                  <div className="text-sm text-amber-700 space-y-1">
+                    <div>
+                      Gesamt:{' '}
+                      <span className="font-semibold">
+                        {(summary.totalTravelCosts / 100).toFixed(2)}€
+                      </span>
+                    </div>
+                    {summary.approvedTravelCosts > 0 && (
+                      <div>
+                        Genehmigt:{' '}
+                        <span className="font-semibold">
+                          {(summary.approvedTravelCosts / 100).toFixed(2)}€
+                        </span>
+                      </div>
+                    )}
+                    {summary.paidTravelCosts > 0 && (
+                      <div className="text-purple-700">
+                        ✅ Bezahlt:{' '}
+                        <span className="font-semibold">
+                          {(summary.paidTravelCosts / 100).toFixed(2)}€
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Platform Hold System Erklärung */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="text-sm text-blue-800">
-            <strong>💰 Platform Hold System:</strong> Zusätzliche Stunden werden zuerst vom Kunden
-            bezahlt und sicher auf unserem Platform Account gehalten. Das Geld wird erst nach
-            beidseitiger Projektabnahme automatisch an die Firma übertragen.
+          {/* Platform Hold System Erklärung */}
+          <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <span className="text-blue-600 text-lg">💰</span>
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-800 mb-1">Platform Hold System</h4>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  Zusätzliche Stunden werden zuerst vom Kunden bezahlt und sicher auf unserem
+                  Platform Account gehalten. Das Geld wird erst nach beidseitiger Projektabnahme
+                  automatisch an die Firma übertragen.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -343,11 +421,27 @@ export default function TimeTrackingManager({
       {/* Zeiteinträge */}
       <div className="p-6">
         {timeEntries.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">
-            Noch keine Zeiteinträge vorhanden. Fügen Sie die erste Zeiteintragung hinzu.
-          </p>
+          <div className="text-center py-12">
+            <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <FiClock className="text-gray-400" size={24} />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Noch keine Zeiteinträge</h3>
+            <p className="text-gray-500 mb-6">
+              Fügen Sie die erste Zeiteintragung hinzu, um zu beginnen.
+            </p>
+            <button
+              onClick={() => {
+                setShowAddForm(true);
+                setEditingEntry(null);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors font-medium"
+            >
+              <FiPlus size={16} />
+              Erste Zeiteintragung erstellen
+            </button>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {timeEntries
               .sort((a, b) => {
                 // Sortiere nach Datum (neueste zuerst), dann nach Erstellungszeit
@@ -366,126 +460,216 @@ export default function TimeTrackingManager({
               .map(entry => (
                 <div
                   key={entry.id}
-                  className={`p-4 rounded-lg border-2 transition-all ${
+                  className={`bg-white rounded-xl border-2 shadow-sm hover:shadow-md transition-all overflow-hidden ${
                     // Priorisiere bezahlte/übertragene Status
                     entry.platformHoldStatus === 'transferred'
-                      ? 'border-purple-300 bg-purple-50 shadow-md ring-2 ring-purple-200'
+                      ? 'border-purple-300 shadow-purple-100'
                       : entry.status === 'platform_released'
-                        ? 'border-green-300 bg-green-50 shadow-md ring-2 ring-green-200'
+                        ? 'border-green-300 shadow-green-100'
                         : entry.status === 'customer_approved'
-                          ? 'border-green-200 bg-green-50'
+                          ? 'border-green-200'
                           : entry.status === 'submitted'
-                            ? 'border-yellow-200 bg-yellow-50'
+                            ? 'border-yellow-200'
                             : entry.status === 'customer_rejected'
-                              ? 'border-red-200 bg-red-50'
+                              ? 'border-red-200'
                               : entry.category === 'additional'
-                                ? 'border-orange-200 bg-orange-50'
-                                : 'border-gray-200 bg-white'
+                                ? 'border-orange-200'
+                                : 'border-gray-200'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">{entry.date}</span>
-                        <span className="text-gray-500">
-                          {entry.startTime} - {entry.endTime}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            entry.category === 'additional'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {entry.category === 'additional' ? 'Zusätzlich' : 'Geplant'}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            entry.platformHoldStatus === 'transferred'
-                              ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                              : entry.status === 'customer_approved'
-                                ? 'bg-green-100 text-green-800'
-                                : entry.status === 'submitted'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : entry.status === 'customer_rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : entry.status === 'platform_held'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : entry.status === 'platform_released'
-                                        ? 'bg-purple-100 text-purple-800'
-                                        : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {entry.platformHoldStatus === 'transferred'
-                            ? '💰 Bezahlt & Übertragen'
-                            : entry.status === 'customer_approved'
-                              ? 'Freigegeben'
-                              : entry.status === 'submitted'
-                                ? 'Eingereicht'
-                                : entry.status === 'customer_rejected'
-                                  ? 'Abgelehnt'
-                                  : entry.status === 'platform_held'
-                                    ? 'Platform Hold (Gehalten)'
-                                    : entry.status === 'platform_released'
-                                      ? 'Platform Hold Freigegeben'
-                                      : 'Erfasst'}
-                        </span>
-                      </div>
-                      <p className="text-gray-700 mb-1">{entry.description}</p>
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">{entry.hours}h</span>
-                        {entry.isBreakTime && <span> (inkl. {entry.breakMinutes}min Pause)</span>}
-                        {entry.travelTime && entry.travelCost && entry.travelCost > 0 && (
-                          <span> + {(entry.travelCost / 100).toFixed(2)}€ Anfahrt</span>
-                        )}
-                        {entry.billableAmount && (
+                  {/* Status Bar */}
+                  <div
+                    className={`h-1 w-full ${
+                      entry.platformHoldStatus === 'transferred'
+                        ? 'bg-gradient-to-r from-purple-400 to-purple-600'
+                        : entry.status === 'customer_approved'
+                          ? 'bg-gradient-to-r from-green-400 to-green-600'
+                          : entry.status === 'submitted'
+                            ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+                            : entry.status === 'customer_rejected'
+                              ? 'bg-gradient-to-r from-red-400 to-red-600'
+                              : entry.category === 'additional'
+                                ? 'bg-gradient-to-r from-orange-400 to-orange-600'
+                                : 'bg-gradient-to-r from-blue-400 to-blue-600'
+                    }`}
+                  />
+
+                  <div className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        {/* Header mit Datum und Zeit */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="font-semibold text-gray-900 text-lg">
+                            {new Date(entry.date).toLocaleDateString('de-DE', {
+                              weekday: 'short',
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            })}
+                          </div>
+                          <div className="text-gray-500 font-medium">
+                            {entry.startTime} - {entry.endTime}
+                          </div>
+
+                          {/* Kategorie Badge */}
                           <span
-                            className={`ml-2 font-medium ${
-                              entry.platformHoldStatus === 'transferred'
-                                ? 'text-purple-700 bg-purple-100 px-2 py-1 rounded-md border border-purple-200'
-                                : 'text-green-600'
+                            className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                              entry.category === 'additional'
+                                ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                                : 'bg-blue-100 text-blue-800 border border-blue-200'
                             }`}
                           >
-                            {entry.platformHoldStatus === 'transferred' ? '✅ Bezahlt: ' : '+'}
-                            {(entry.billableAmount / 100).toFixed(2)}€
-                            {entry.platformHoldStatus === 'held' && (
-                              <span className="ml-1 text-blue-600 text-xs">(Platform Hold)</span>
-                            )}
-                            {entry.platformHoldStatus === 'transferred' && (
-                              <span className="ml-1 text-purple-600 text-xs">
-                                (Übertragen am{' '}
-                                {entry.transferredAt
-                                  ? typeof entry.transferredAt === 'string'
-                                    ? new Date(entry.transferredAt).toLocaleDateString('de-DE')
-                                    : new Date(
-                                        entry.transferredAt.seconds * 1000
-                                      ).toLocaleDateString('de-DE')
-                                  : 'N/A'}
-                                )
-                              </span>
-                            )}
+                            {entry.category === 'additional' ? 'Zusätzlich' : 'Geplant'}
                           </span>
+
+                          {/* Status Badge */}
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              entry.platformHoldStatus === 'transferred'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                : entry.status === 'customer_approved'
+                                  ? 'bg-green-100 text-green-800 border border-green-200'
+                                  : entry.status === 'submitted'
+                                    ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                    : entry.status === 'customer_rejected'
+                                      ? 'bg-red-100 text-red-800 border border-red-200'
+                                      : entry.status === 'platform_held'
+                                        ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                        : entry.status === 'platform_released'
+                                          ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                          : 'bg-gray-100 text-gray-800 border border-gray-200'
+                            }`}
+                          >
+                            {entry.platformHoldStatus === 'transferred'
+                              ? '💰 Bezahlt & Übertragen'
+                              : entry.status === 'customer_approved'
+                                ? 'Freigegeben'
+                                : entry.status === 'submitted'
+                                  ? 'Eingereicht'
+                                  : entry.status === 'customer_rejected'
+                                    ? 'Abgelehnt'
+                                    : entry.status === 'platform_held'
+                                      ? 'Platform Hold (Gehalten)'
+                                      : entry.status === 'platform_released'
+                                        ? 'Platform Hold Freigegeben'
+                                        : 'Erfasst'}
+                          </span>
+                        </div>
+
+                        {/* Beschreibung */}
+                        <p className="text-gray-700 mb-3 font-medium">{entry.description}</p>
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                          {/* Arbeitszeit */}
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-100 rounded-lg">
+                              <FiClock className="text-blue-600" size={14} />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{entry.hours}h</div>
+                              {entry.isBreakTime && (
+                                <div className="text-gray-500 text-xs">
+                                  inkl. {entry.breakMinutes}min Pause
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Anfahrtskosten */}
+                          {entry.travelTime && entry.travelCost && entry.travelCost > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-amber-100 rounded-lg">
+                                <span className="text-amber-600 text-sm">🚗</span>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {(entry.travelCost / 100).toFixed(2)}€ Anfahrt
+                                </div>
+                                <div className="text-gray-500 text-xs">Zusätzliche Kosten</div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bezahlung */}
+                          {entry.billableAmount && (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`p-1.5 rounded-lg ${
+                                  entry.platformHoldStatus === 'transferred'
+                                    ? 'bg-purple-100'
+                                    : 'bg-green-100'
+                                }`}
+                              >
+                                <span
+                                  className={
+                                    entry.platformHoldStatus === 'transferred'
+                                      ? 'text-purple-600'
+                                      : 'text-green-600'
+                                  }
+                                >
+                                  💰
+                                </span>
+                              </div>
+                              <div>
+                                <div
+                                  className={`font-semibold ${
+                                    entry.platformHoldStatus === 'transferred'
+                                      ? 'text-purple-700'
+                                      : 'text-green-700'
+                                  }`}
+                                >
+                                  {entry.platformHoldStatus === 'transferred' ? '✅ ' : '+'}
+                                  {(entry.billableAmount / 100).toFixed(2)}€
+                                </div>
+                                <div className="text-gray-500 text-xs">
+                                  {entry.platformHoldStatus === 'held' && 'Platform Hold'}
+                                  {entry.platformHoldStatus === 'transferred' &&
+                                    `Übertragen am ${
+                                      entry.transferredAt
+                                        ? typeof entry.transferredAt === 'string'
+                                          ? new Date(entry.transferredAt).toLocaleDateString(
+                                              'de-DE'
+                                            )
+                                          : new Date(
+                                              entry.transferredAt.seconds * 1000
+                                            ).toLocaleDateString('de-DE')
+                                        : 'N/A'
+                                    }`}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Notizen */}
+                        {entry.notes && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-600">{entry.notes}</p>
+                          </div>
                         )}
                       </div>
-                      {entry.notes && <p className="text-sm text-gray-500 mt-1">{entry.notes}</p>}
-                    </div>
 
-                    {entry.status === 'logged' && (
-                      <div className="flex items-center gap-1 ml-4">
-                        <button
-                          onClick={() => handleEditEntry(entry)}
-                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          <FiEdit3 size={16} />
-                        </button>
-                        <button
-                          onClick={() => entry.id && handleDeleteEntry(entry.id)}
-                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
-                      </div>
-                    )}
+                      {/* Action Buttons */}
+                      {entry.status === 'logged' && (
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditEntry(entry)}
+                            className="p-2 text-gray-400 hover:text-[#14ad9f] hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Bearbeiten"
+                          >
+                            <FiEdit3 size={16} />
+                          </button>
+                          <button
+                            onClick={() => entry.id && handleDeleteEntry(entry.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Löschen"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
