@@ -30,6 +30,8 @@ interface DashboardStats {
   activeOrders: number;
   availableBalance: number;
   pendingBalance: number;
+  hasActiveOrders?: boolean;
+  pendingApprovals?: number;
 }
 
 export function SectionCards() {
@@ -40,6 +42,8 @@ export function SectionCards() {
     activeOrders: 0,
     availableBalance: 0,
     pendingBalance: 0,
+    hasActiveOrders: false,
+    pendingApprovals: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -80,6 +84,26 @@ export function SectionCards() {
         // 2. Stripe-Guthaben abrufen
         let availableBalance = 0;
         let pendingBalance = 0;
+        let hasActiveOrders = false;
+        let pendingApprovals = 0;
+
+        // Prüfe ob es aktive Aufträge gibt, die noch nicht vom Kunden abgeschlossen wurden
+        querySnapshot.forEach(doc => {
+          const order = doc.data();
+          if (order.status === 'AKTIV' || order.status === 'IN BEARBEITUNG') {
+            hasActiveOrders = true;
+          }
+          // Prüfe TimeTracking mit pending approvals
+          if (order.timeTracking?.timeEntries) {
+            const pendingEntries = order.timeTracking.timeEntries.filter(
+              (entry: any) =>
+                entry.status === 'submitted' ||
+                entry.status === 'platform_held' ||
+                entry.platformHoldStatus === 'held'
+            );
+            pendingApprovals += pendingEntries.length;
+          }
+        });
 
         try {
           const balanceResponse = await fetch(
@@ -111,6 +135,8 @@ export function SectionCards() {
           activeOrders,
           availableBalance,
           pendingBalance,
+          hasActiveOrders,
+          pendingApprovals,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -120,6 +146,8 @@ export function SectionCards() {
           activeOrders: 0,
           availableBalance: 0,
           pendingBalance: 0,
+          hasActiveOrders: false,
+          pendingApprovals: 0,
         });
       }
     };
@@ -136,11 +164,34 @@ export function SectionCards() {
   const handleWithdraw = async () => {
     if (!currentUser || stats.availableBalance <= 0) return;
 
+    // ⚠️ SICHERHEITSPRÜFUNG: Auszahlung nur möglich wenn alle Aufträge abgeschlossen sind
+    if (stats.hasActiveOrders) {
+      alert(
+        '🚫 Auszahlung nicht möglich\n\n' +
+          'Sie haben noch aktive Aufträge, die nicht abgeschlossen sind.\n' +
+          'Bitte schließen Sie alle Aufträge ab und warten Sie auf die Kundenbestätigung, bevor Sie eine Auszahlung beantragen können.\n\n' +
+          'Grund: Platform Hold System - Das Geld wird erst nach Projektabnahme freigegeben.'
+      );
+      return;
+    }
+
+    if (stats.pendingApprovals && stats.pendingApprovals > 0) {
+      alert(
+        '⏳ Auszahlung nicht möglich\n\n' +
+          `Sie haben noch ${stats.pendingApprovals} Zeiteinträge, die auf Kundenfreigabe warten.\n` +
+          'Bitte warten Sie, bis alle zusätzlichen Stunden vom Kunden genehmigt wurden.\n\n' +
+          'Grund: Sicherheit - Ungeklärte Beträge können nicht ausgezahlt werden.'
+      );
+      return;
+    }
+
     const confirmWithdraw = confirm(
-      `Auszahlung bestätigen\n\n` +
+      `✅ Auszahlung bestätigen\n\n` +
         `Verfügbar: ${formatCurrency(stats.availableBalance)}\n` +
         `Gebühr: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
         `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
+        `✓ Alle Aufträge sind abgeschlossen\n` +
+        `✓ Keine ausstehenden Kundenfreigaben\n\n` +
         `Möchten Sie fortfahren?`
     );
 
@@ -205,20 +256,50 @@ export function SectionCards() {
           <div className="flex flex-col gap-0.5">
             <Badge
               variant="outline"
-              className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight"
+              className={`border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight ${
+                stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
+                  ? 'border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-300'
+                  : ''
+              }`}
             >
-              {stats.pendingBalance > 0
-                ? `+${formatCurrency(stats.pendingBalance)} pending`
-                : 'Verfügbar'}
+              {stats.hasActiveOrders
+                ? '⏳ Aufträge aktiv'
+                : stats.pendingApprovals && stats.pendingApprovals > 0
+                  ? `⏳ ${stats.pendingApprovals} pending`
+                  : stats.pendingBalance > 0
+                    ? `+${formatCurrency(stats.pendingBalance)} pending`
+                    : 'Verfügbar'}
             </Badge>
             <Button
               size="sm"
               onClick={handleWithdraw}
-              disabled={isWithdrawing || stats.availableBalance <= 0}
-              className="bg-green-600 hover:bg-green-700 text-white w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight"
+              disabled={
+                isWithdrawing ||
+                stats.availableBalance <= 0 ||
+                stats.hasActiveOrders ||
+                (stats.pendingApprovals && stats.pendingApprovals > 0)
+              }
+              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight ${
+                stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
+                  ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700'
+              } text-white`}
+              title={
+                stats.hasActiveOrders
+                  ? 'Auszahlung blockiert: Aktive Aufträge müssen abgeschlossen werden'
+                  : stats.pendingApprovals && stats.pendingApprovals > 0
+                    ? 'Auszahlung blockiert: Warten auf Kundenfreigaben'
+                    : 'Guthaben auszahlen'
+              }
             >
               {isWithdrawing ? (
                 <span>...</span>
+              ) : stats.hasActiveOrders ||
+                (stats.pendingApprovals && stats.pendingApprovals > 0) ? (
+                <>
+                  <span>🔒</span>
+                  <span>Gesperrt</span>
+                </>
               ) : (
                 <>
                   <IconDownload size={8} className="mr-0.5 flex-shrink-0" />
