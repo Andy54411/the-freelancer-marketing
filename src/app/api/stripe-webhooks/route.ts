@@ -142,35 +142,22 @@ export async function POST(req: NextRequest) {
                   return entry;
                 });
 
-                // Update billingData status to completed
+                // Update billingData to 'payment_received' instead of 'completed'
+                // The transfer to provider still needs to succeed before marking as 'completed'
                 const updatedBillingData = {
                   ...timeTracking.billingData,
-                  status: 'completed', // CRITICAL: Mark billing as completed
-                  completedAt: admin.firestore.FieldValue.serverTimestamp(),
+                  status: 'payment_received', // IMPORTANT: Payment received but transfer pending
+                  paymentReceivedAt: admin.firestore.FieldValue.serverTimestamp(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 };
 
-                // AUTO-CHECK: If all additional entries are now transferred, mark main timeTracking as completed
-                const allAdditionalEntries = updatedTimeEntries.filter(
-                  (entry: any) => entry.category === 'additional'
-                );
-                const allAdditionalTransferred =
-                  allAdditionalEntries.length === 0 ||
-                  allAdditionalEntries.every((entry: any) => entry.status === 'transferred');
+                // DO NOT AUTO-UPDATE timeTracking.status from charge.succeeded - wait for transfer
+                // Only individual entries are marked as 'transferred' but still need transfer completion
 
-                let timeTrackingStatus = timeTracking.status;
-                if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
-                  timeTrackingStatus = 'completed';
-                  console.log(
-                    `[WEBHOOK LOG] All additional hours transferred (charge) - setting timeTracking.status to 'completed' for order ${orderId}`
-                  );
-                }
-
-                // Update the entire timeTracking object
+                // Update the entire timeTracking object WITHOUT changing main status
                 transaction.update(orderRef, {
                   'timeTracking.timeEntries': updatedTimeEntries,
                   'timeTracking.billingData': updatedBillingData,
-                  'timeTracking.status': timeTrackingStatus, // AUTO-UPDATE: Main status when all paid
                   'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 });
