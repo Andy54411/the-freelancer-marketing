@@ -6,7 +6,24 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 if (!getApps().length) {
-  initializeApp();
+  try {
+    // Vercel Environment: Use FIREBASE_SERVICE_ACCOUNT_KEY if available
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      console.log('[WEBHOOK LOG] Firebase initialized with service account from env');
+    } else {
+      // Fallback: Use default credentials (works in Google Cloud environments)
+      initializeApp();
+      console.log('[WEBHOOK LOG] Firebase initialized with default credentials');
+    }
+  } catch (error) {
+    console.error('[WEBHOOK ERROR] Firebase initialization failed:', error);
+    // Fallback to default initialization
+    initializeApp();
+  }
 }
 const db = getFirestore();
 

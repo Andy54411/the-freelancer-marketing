@@ -19,24 +19,40 @@ if (!admin.apps.length) {
       );
       if (!serviceAccountKey) {
         console.error(
-          '[Firebase Server] KRITISCH: Die App läuft auf Vercel, aber die Umgebungsvariable FIREBASE_SERVICE_ACCOUNT_KEY ist nicht gesetzt.'
+          '[Firebase Server] WARNUNG: FIREBASE_SERVICE_ACCOUNT_KEY nicht gesetzt. Versuche Default Credentials...'
         );
-        throw new Error('Server-Konfigurationsfehler: Firebase-Credentials fehlen.');
-      }
-      try {
-        const serviceAccount = JSON.parse(serviceAccountKey);
-        // Wichtiger Workaround für Vercel: Zeilenumbrüche im Private Key korrigieren.
-        // Vercel ersetzt `\n` oft mit `\\n`.
-        if (serviceAccount.private_key) {
-          serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        // Fallback zu Default Credentials
+        options.credential = admin.credential.applicationDefault();
+      } else {
+        try {
+          // Prüfe, ob es ein JSON-String oder ein Dateipfad ist
+          let serviceAccount;
+          if (serviceAccountKey.startsWith('{')) {
+            // Es ist ein JSON-String
+            serviceAccount = JSON.parse(serviceAccountKey);
+            console.log('[Firebase Server] Service Account als JSON-String erkannt.');
+
+            // Wichtiger Workaround für Vercel: Zeilenumbrüche im Private Key korrigieren.
+            // Vercel ersetzt `\n` oft mit `\\n`.
+            if (serviceAccount.private_key) {
+              serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+            }
+            options.credential = admin.credential.cert(serviceAccount);
+          } else {
+            // Es ist wahrscheinlich ein Dateipfad - nutze Default Credentials
+            console.log(
+              '[Firebase Server] Service Account Pfad erkannt, nutze Default Credentials.'
+            );
+            options.credential = admin.credential.applicationDefault();
+          }
+        } catch (e: any) {
+          console.error(
+            '[Firebase Server] WARNUNG: Parsen von FIREBASE_SERVICE_ACCOUNT_KEY fehlgeschlagen. Nutze Default Credentials als Fallback...',
+            e.message
+          );
+          // Fallback zu Default Credentials
+          options.credential = admin.credential.applicationDefault();
         }
-        options.credential = admin.credential.cert(serviceAccount);
-      } catch (e: any) {
-        console.error(
-          '[Firebase Server] KRITISCH: Parsen von FIREBASE_SERVICE_ACCOUNT_KEY fehlgeschlagen. Ist die Variable korrekt als JSON formatiert?',
-          e
-        );
-        throw new Error('Fehlerhafte FIREBASE_SERVICE_ACCOUNT_KEY Umgebungsvariable.');
       }
     } else {
       // Logik für lokale Entwicklung
