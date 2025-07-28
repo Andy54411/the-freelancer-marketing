@@ -233,7 +233,26 @@ function CheckoutForm({
             layout: 'tabs',
             paymentMethodOrder: ['card'],
             fields: {
-              billingDetails: 'auto', // Ändere von 'never' zu 'auto' für bessere Stripe-Kompatibilität
+              billingDetails: {
+                name: 'auto',
+                email: 'auto',
+                phone: 'never',
+                address: {
+                  country: 'never',
+                  line1: 'never',
+                  line2: 'never',
+                  city: 'never',
+                  state: 'never',
+                  postalCode: 'never',
+                },
+              },
+            },
+            terms: {
+              card: 'never',
+            },
+            wallets: {
+              applePay: 'never',
+              googlePay: 'never',
             },
           }}
         />
