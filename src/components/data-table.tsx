@@ -153,9 +153,14 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [data, setData] = React.useState(() => initialData);
 
+  console.log('🏗️ DataTable render - initialData:', initialData);
+  console.log('🏗️ DataTable render - data state:', data);
+  console.log('🏗️ DataTable render - isLoading:', isLoading);
+
   // KORREKTUR: Dieser Effekt synchronisiert den internen Zustand der Tabelle mit den Daten, die als Prop übergeben werden.
   // Dies ist entscheidend, da die Daten von der übergeordneten Komponente asynchron geladen werden.
   React.useEffect(() => {
+    console.log('🔄 DataTable useEffect - setting data:', initialData);
     setData(initialData);
   }, [initialData]);
 
@@ -203,6 +208,9 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
+
+  console.log('📊 Table rows:', table.getRowModel().rows);
+  console.log('📊 Table rows length:', table.getRowModel().rows?.length || 0);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;

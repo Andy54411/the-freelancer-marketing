@@ -156,10 +156,22 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
+          console.log('🔄 Fetching orders for provider:', uid);
           const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
+          console.log('📊 API Response:', result);
+          console.log('📋 Orders array:', result.orders);
+          console.log('📏 Orders length:', result.orders?.length || 0);
+
+          if (result.orders && result.orders.length > 0) {
+            console.log('📄 First order structure:', result.orders[0]);
+            console.log('🆔 First order ID:', result.orders[0]?.id);
+            console.log('💰 First order revenue:', result.orders[0]?.totalAmountPaidByBuyer);
+          }
+
           setOrders(result.orders || []);
+          console.log('✅ Orders state updated');
         } catch (error) {
-          console.error('Fehler beim Laden der Aufträge für die Tabelle:', error);
+          console.error('❌ Fehler beim Laden der Aufträge für die Tabelle:', error);
         } finally {
           setLoadingOrders(false);
         }
@@ -210,6 +222,14 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               isLoading={loadingOrders}
               onRowClick={handleRowClick}
             />
+            {/* Debug Info */}
+            <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
+              <div>🐛 Debug Info:</div>
+              <div>📊 Orders count: {orders.length}</div>
+              <div>⏳ Loading: {loadingOrders ? 'Yes' : 'No'}</div>
+              <div>🆔 UID: {uid}</div>
+              {orders.length > 0 && <div>📄 First order: {JSON.stringify(orders[0], null, 2)}</div>}
+            </div>
             <div className="mt-8 text-center">
               <Link
                 href={`/dashboard/company/${uid}/orders/overview`}
