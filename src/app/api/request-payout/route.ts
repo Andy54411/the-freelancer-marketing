@@ -1,53 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { db } from '@/firebase/server';
 import { calculatePlatformFee } from '@/lib/platform-config';
-
-// Initialize Firebase Admin only if environment variables are available
-let db: any = null;
-
-try {
-  if (!getApps().length) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
-
-    console.log('[API /request-payout] Firebase init check:', {
-      hasServiceAccountKey: !!serviceAccountKey,
-      hasProjectId: !!projectId,
-      serviceAccountKeyLength: serviceAccountKey?.length || 0,
-    });
-
-    if (serviceAccountKey) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-
-      // Extract project ID from service account if not set in environment
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-        console.log('[API /request-payout] Using project ID from service account:', projectId);
-      }
-
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-        console.log('[API /request-payout] Firebase Admin initialized successfully');
-      } else {
-        console.error('[API /request-payout] Invalid service account or missing project ID');
-      }
-    } else {
-      console.error('[API /request-payout] Missing Firebase service account key');
-    }
-  } else {
-    db = getFirestore();
-    console.log('[API /request-payout] Using existing Firebase Admin instance');
-  }
-} catch (error) {
-  console.error('[API /request-payout] Firebase Admin initialization failed:', error);
-  db = null;
-}
 
 // Stripe initialization moved to runtime to avoid build-time errors
 function getStripeInstance() {
@@ -75,14 +29,6 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json(
       { error: 'Stripe-Konfiguration auf dem Server fehlt.' },
-      { status: 500 }
-    );
-  }
-
-  if (!db) {
-    console.error('[API /request-payout] Firebase wurde nicht initialisiert.');
-    return NextResponse.json(
-      { error: 'Firebase-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
     );
   }

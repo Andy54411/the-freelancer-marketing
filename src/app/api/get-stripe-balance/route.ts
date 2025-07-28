@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { db } from '@/firebase/server';
 
 // Fast cache for balance data
 const balanceCache = new Map<string, { data: any; timestamp: number }>();
@@ -9,7 +8,6 @@ const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 // Connection pools
 let stripeInstance: Stripe | null = null;
-let db: any = null;
 
 // Pre-initialize Stripe
 function getStripeInstance() {
@@ -25,50 +23,6 @@ function getStripeInstance() {
     });
   }
   return stripeInstance;
-}
-
-function initializeFirebaseAdmin() {
-  if (getApps().length > 0) {
-    return getFirestore();
-  }
-
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-    if (!serviceAccountKey) {
-      console.error('[Firebase Init] Missing service account key');
-      return null;
-    }
-
-    const serviceAccount = JSON.parse(serviceAccountKey);
-    // Extract project_id from service account instead of requiring separate env var
-    const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID;
-
-    if (!projectId) {
-      console.error(
-        '[Firebase Init] No project_id found in service account or FIREBASE_PROJECT_ID env var'
-      );
-      return null;
-    }
-
-    const app = initializeApp({
-      credential: cert(serviceAccount),
-      projectId: projectId,
-    });
-
-    console.log('[Firebase Init] Successfully initialized with project:', projectId);
-    return getFirestore(app);
-  } catch (error) {
-    console.error('[Firebase Init] Error:', error);
-    return null;
-  }
-}
-
-// Initialize on module load
-try {
-  db = initializeFirebaseAdmin();
-} catch (error) {
-  console.warn('Firebase initialization failed:', error);
 }
 
 async function handleBalanceRequest(firebaseUserId: string) {
@@ -114,10 +68,6 @@ async function handleBalanceRequest(firebaseUserId: string) {
 }
 
 async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
-  if (!db) {
-    throw new Error('Firebase not initialized');
-  }
-
   // Fast Firebase lookup with timeout
   const firebaseTimeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('Firebase timeout')), 6000);
