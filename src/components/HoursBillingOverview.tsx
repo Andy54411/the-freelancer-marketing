@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiCalendar, FiInfo } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiCalendar, FiInfo, FiCheck } from 'react-icons/fi';
+import { TimeTracker } from '@/lib/timeTracker';
 
 interface TimeEntry {
   id: string;
@@ -42,9 +43,10 @@ export default function HoursBillingOverview({
   const [data, setData] = useState<HoursOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<'paid' | 'pending' | 'original' | null>(
-    null
-  );
+  const [expandedSection, setExpandedSection] = useState<
+    'paid' | 'pending' | 'logged' | 'original' | null
+  >(null);
+  const [approving, setApproving] = useState(false);
 
   const fetchHoursData = useCallback(async () => {
     try {
@@ -79,6 +81,29 @@ export default function HoursBillingOverview({
       setLoading(false);
     }
   }, [orderId]);
+
+  // Funktion zur Freigabe von geloggten zusätzlichen Stunden
+  const handleApproveLoggedHours = async () => {
+    if (!data) return;
+
+    setApproving(true);
+    try {
+      const result = await TimeTracker.approveLoggedAdditionalHours(orderId);
+
+      if (result.success) {
+        // Daten neu laden
+        await fetchHoursData();
+        // Success message wird automatisch durch UI-Update gezeigt
+      } else {
+        setError(result.message);
+      }
+    } catch (error) {
+      console.error('Error approving logged hours:', error);
+      setError('Fehler bei der Freigabe der Stunden');
+    } finally {
+      setApproving(false);
+    }
+  };
 
   useEffect(() => {
     fetchHoursData();
@@ -120,9 +145,12 @@ export default function HoursBillingOverview({
   const pendingAdditionalEntries = data.timeEntries.filter(
     entry =>
       entry.category === 'additional' &&
-      (entry.status === 'billing_pending' ||
-        entry.status === 'logged' ||
-        entry.status === 'customer_approved')
+      (entry.status === 'billing_pending' || entry.status === 'customer_approved')
+  );
+
+  // Separate Behandlung für "logged" Status - diese sind NICHT zur Bezahlung bereit, können aber freigegeben werden
+  const loggedAdditionalEntries = data.timeEntries.filter(
+    entry => entry.category === 'additional' && entry.status === 'logged'
   );
 
   // Berechne Summen
@@ -131,6 +159,8 @@ export default function HoursBillingOverview({
     (sum, entry) => sum + (entry.billableAmount || 0),
     0
   );
+
+  // NUR genehmigte Stunden sind zur Bezahlung bereit
   const pendingAdditionalHours = pendingAdditionalEntries.reduce(
     (sum, entry) => sum + entry.hours,
     0
@@ -147,8 +177,50 @@ export default function HoursBillingOverview({
     }
   }, 0);
 
+  // Nur zur Information: Noch nicht genehmigte Stunden
+  const loggedAdditionalHours = loggedAdditionalEntries.reduce(
+    (sum, entry) => sum + entry.hours,
+    0
+  );
+  const loggedAdditionalAmount = loggedAdditionalEntries.reduce((sum, entry) => {
+    if (entry.billableAmount) {
+      return sum + entry.billableAmount;
+    } else {
+      const baseAmount = entry.hours * data.hourlyRate;
+      const travelCost = entry.travelCost || 0;
+      return sum + baseAmount + travelCost;
+    }
+  }, 0);
+
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('de-DE');
+
+  const formatDate = (dateInput: string | Date | { toDate?: () => Date; seconds?: number }) => {
+    try {
+      let date: Date;
+
+      if (typeof dateInput === 'string') {
+        date = new Date(dateInput);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (dateInput && typeof dateInput === 'object') {
+        // Firebase Timestamp
+        if (typeof dateInput.toDate === 'function') {
+          date = dateInput.toDate();
+        } else if (typeof dateInput.seconds === 'number') {
+          date = new Date(dateInput.seconds * 1000);
+        } else {
+          date = new Date();
+        }
+      } else {
+        date = new Date();
+      }
+
+      return date.toLocaleDateString('de-DE');
+    } catch (error) {
+      console.warn('Error formatting date:', dateInput, error);
+      return 'Unbekanntes Datum';
+    }
+  };
 
   return (
     <div className={`bg-white shadow rounded-lg p-6 ${className}`}>
@@ -158,7 +230,7 @@ export default function HoursBillingOverview({
       </h2>
 
       {/* Übersicht-Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Original-Auftrag */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
           <div className="flex items-center justify-between mb-2">
@@ -189,7 +261,7 @@ export default function HoursBillingOverview({
           </p>
         </div>
 
-        {/* Offene Zahlungen */}
+        {/* Offene Zahlungen (genehmigte Stunden) */}
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
           <div className="flex items-center justify-between mb-2">
             <FiAlertCircle className="text-orange-600 text-xl" />
@@ -203,6 +275,23 @@ export default function HoursBillingOverview({
             {formatCurrency(pendingAdditionalAmount)} ⏳ offen
           </p>
         </div>
+
+        {/* Geloggte Stunden (zur Freigabe) */}
+        {loggedAdditionalHours > 0 && (
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+            <div className="flex items-center justify-between mb-2">
+              <FiClock className="text-purple-600 text-xl" />
+              <span className="text-xs font-medium text-purple-600 bg-purple-200 px-2 py-1 rounded">
+                FREIGABE
+              </span>
+            </div>
+            <h3 className="font-semibold text-purple-900">Zur Freigabe</h3>
+            <p className="text-2xl font-bold text-purple-800">{loggedAdditionalHours}h</p>
+            <p className="text-sm text-purple-600">
+              {formatCurrency(loggedAdditionalAmount)} 🔄 freigeben
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Gesamtübersicht */}
@@ -226,7 +315,10 @@ export default function HoursBillingOverview({
             <p className="text-sm opacity-90">Gesamtkosten</p>
             <p className="text-2xl font-bold">
               {formatCurrency(
-                data.originalJobPrice + paidAdditionalAmount + pendingAdditionalAmount
+                data.originalJobPrice +
+                  paidAdditionalAmount +
+                  pendingAdditionalAmount +
+                  loggedAdditionalAmount
               )}
             </p>
           </div>
@@ -288,6 +380,90 @@ export default function HoursBillingOverview({
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Geloggte zusätzliche Stunden (zur Freigabe) */}
+        {loggedAdditionalEntries.length > 0 && (
+          <div className="border border-purple-200 rounded-lg">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'logged' ? null : 'logged')}
+              className="w-full p-4 text-left bg-purple-50 hover:bg-purple-100 rounded-lg flex items-center justify-between"
+            >
+              <div className="flex items-center">
+                <FiClock className="mr-3 text-purple-600" />
+                <div>
+                  <h3 className="font-semibold text-purple-900">
+                    Stunden zur Freigabe ({loggedAdditionalHours}h)
+                  </h3>
+                  <p className="text-sm text-purple-600">
+                    {formatCurrency(loggedAdditionalAmount)} freigeben nötig
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <span className="text-sm bg-purple-200 text-purple-800 px-3 py-1 rounded-full mr-2">
+                  FREIGABE ERFORDERLICH
+                </span>
+                <FiInfo className="text-purple-600" />
+              </div>
+            </button>
+            {expandedSection === 'logged' && (
+              <div className="p-4 space-y-3">
+                {loggedAdditionalEntries.map(entry => (
+                  <div key={entry.id} className="bg-white p-3 rounded border border-purple-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium">{entry.description}</p>
+                        <p className="text-sm text-gray-600 flex items-center">
+                          <FiCalendar className="mr-1" />
+                          {formatDate(entry.date)} • {entry.hours}h
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-purple-700">
+                          {formatCurrency(entry.billableAmount || 0)}
+                        </p>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                          🔄 Zur Freigabe
+                        </span>
+                      </div>
+                    </div>
+                    {entry.travelCost && entry.travelCost > 0 && (
+                      <p className="text-xs text-gray-500">
+                        inkl. Anfahrt: {formatCurrency(entry.travelCost)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+                <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
+                  <p className="text-sm text-purple-800 font-medium mb-2">
+                    ✋ Diese Stunden wurden geloggt und benötigen Ihre Freigabe
+                  </p>
+                  <p className="text-xs text-purple-600 mb-3">
+                    Nach der Freigabe können Sie diese Stunden bezahlen.
+                  </p>
+                  <button
+                    onClick={handleApproveLoggedHours}
+                    disabled={approving}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {approving ? (
+                      <>
+                        <FiClock className="animate-spin mr-2" />
+                        Freigabe läuft...
+                      </>
+                    ) : (
+                      <>
+                        <FiCheck className="mr-2" />
+                        {loggedAdditionalHours}h für {formatCurrency(loggedAdditionalAmount)}{' '}
+                        freigeben
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -399,49 +575,105 @@ export default function HoursBillingOverview({
         </div>
       </div>
 
-      {/* Zahlung erforderlich Hinweis */}
-      {pendingAdditionalEntries.length > 0 && pendingAdditionalHours > 0 && (
+      {/* Zahlung/Freigabe erforderlich Hinweis */}
+      {(pendingAdditionalEntries.length > 0 || loggedAdditionalEntries.length > 0) && (
         <div className="mt-6 p-4 bg-gradient-to-r from-orange-100 to-red-100 border border-orange-300 rounded-lg">
           <div className="flex items-center mb-2">
             <FiAlertCircle className="mr-2 text-orange-600 text-xl" />
-            <h3 className="font-semibold text-orange-900">Sofortige Zahlung erforderlich!</h3>
+            <h3 className="font-semibold text-orange-900">
+              {pendingAdditionalHours > 0 && loggedAdditionalHours > 0
+                ? 'Freigabe und Zahlung erforderlich!'
+                : pendingAdditionalHours > 0
+                  ? 'Sofortige Zahlung erforderlich!'
+                  : 'Freigabe erforderlich!'}
+            </h3>
           </div>
-          <p className="text-orange-800 mb-3">
-            <strong>{pendingAdditionalHours}h</strong> zusätzliche Stunden sind genehmigt und müssen
-            JETZT bezahlt werden!
-          </p>
+
+          {loggedAdditionalHours > 0 && (
+            <p className="text-orange-800 mb-2">
+              <strong>{loggedAdditionalHours}h</strong> zusätzliche Stunden sind geloggt und
+              benötigen Ihre Freigabe!
+            </p>
+          )}
+
+          {pendingAdditionalHours > 0 && (
+            <p className="text-orange-800 mb-3">
+              <strong>{pendingAdditionalHours}h</strong> zusätzliche Stunden sind genehmigt und
+              müssen JETZT bezahlt werden!
+            </p>
+          )}
+
           <div className="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
               <p>
                 <strong>Geplant:</strong> {data.originalPlannedHours}h
               </p>
               <p>
-                <strong>Genehmigt:</strong>{' '}
-                {data.originalPlannedHours + paidAdditionalHours + pendingAdditionalHours}h
+                <strong>Gesamt geloggt:</strong> {data.totalLoggedHours}h
               </p>
             </div>
             <div>
               <p>
                 <strong>Status:</strong>{' '}
-                <span className="text-red-600 font-semibold">BEZAHLUNG ERFORDERLICH!</span>
+                <span className="text-red-600 font-semibold">
+                  {loggedAdditionalHours > 0 && pendingAdditionalHours > 0
+                    ? 'FREIGABE & BEZAHLUNG'
+                    : pendingAdditionalHours > 0
+                      ? 'BEZAHLUNG ERFORDERLICH'
+                      : 'FREIGABE ERFORDERLICH'}
+                  !
+                </span>
               </p>
               <p>
                 <strong>Gesamtkosten:</strong>{' '}
                 <span className="text-red-600 font-bold">
                   {formatCurrency(
-                    data.originalJobPrice + paidAdditionalAmount + pendingAdditionalAmount
+                    data.originalJobPrice +
+                      paidAdditionalAmount +
+                      pendingAdditionalAmount +
+                      loggedAdditionalAmount
                   )}
                 </span>
               </p>
             </div>
           </div>
 
-          {/* Bezahl-Button */}
-          {onPaymentRequest && pendingAdditionalHours > 0 && (
-            <div className="flex justify-center">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {/* Freigabe-Button für geloggte Stunden */}
+            {loggedAdditionalHours > 0 && (
+              <button
+                onClick={handleApproveLoggedHours}
+                disabled={approving}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {approving ? (
+                  <>
+                    <FiClock className="animate-spin text-xl" />
+                    <div className="text-left">
+                      <div className="text-lg font-bold">FREIGABE LÄUFT...</div>
+                      <div className="text-sm opacity-90">Bitte warten</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl">🔄</span>
+                    <div className="text-left">
+                      <div className="text-lg font-bold">{loggedAdditionalHours}h FREIGEBEN</div>
+                      <div className="text-sm opacity-90">
+                        {formatCurrency(loggedAdditionalAmount)} zur Freigabe
+                      </div>
+                    </div>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Bezahl-Button für genehmigte Stunden */}
+            {onPaymentRequest && pendingAdditionalHours > 0 && (
               <button
                 onClick={onPaymentRequest}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-8 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <span className="text-xl">💳</span>
                 <div className="text-left">
@@ -453,8 +685,8 @@ export default function HoursBillingOverview({
                   </div>
                 </div>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

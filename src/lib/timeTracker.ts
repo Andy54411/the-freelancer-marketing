@@ -2018,6 +2018,93 @@ export class TimeTracker {
   }
 
   /**
+   * Kunde genehmigt direkt geloggte zusätzliche Stunden (vereinfachter Workflow)
+   */
+  static async approveLoggedAdditionalHours(orderId: string): Promise<{
+    success: boolean;
+    message: string;
+    approvedHours: number;
+    totalAmount: number;
+  }> {
+    try {
+      // Hole den Auftrag
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Order not found');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('Time tracking not found');
+      }
+
+      // Finde alle geloggte zusätzliche Stunden die noch nicht genehmigt sind
+      const loggedAdditionalEntries = orderData.timeTracking.timeEntries.filter(
+        entry => entry.category === 'additional' && entry.status === 'logged'
+      );
+
+      if (loggedAdditionalEntries.length === 0) {
+        throw new Error('No logged additional hours found to approve');
+      }
+
+      // Aktualisiere alle geloggte zusätzliche Stunden auf "customer_approved"
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if (entry.category === 'additional' && entry.status === 'logged') {
+          return {
+            ...entry,
+            status: 'customer_approved' as const,
+            customerResponseAt: Timestamp.now(),
+          };
+        }
+        return entry;
+      });
+
+      // Berechne neue Statistiken
+      const totalApprovedHours = updatedTimeEntries
+        .filter(entry => entry.status === 'customer_approved' || entry.status === 'billed')
+        .reduce((sum, entry) => sum + entry.hours, 0);
+
+      const approvedHours = loggedAdditionalEntries.reduce((sum, entry) => sum + entry.hours, 0);
+      const totalAmount = loggedAdditionalEntries.reduce(
+        (sum, entry) => sum + (entry.billableAmount || 0),
+        0
+      );
+
+      // Update den Auftrag
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.totalApprovedHours': totalApprovedHours,
+        'timeTracking.status': 'fully_approved',
+        'timeTracking.lastUpdated': serverTimestamp(),
+      });
+
+      console.log('[TimeTracker] Direct approval of logged additional hours:', {
+        orderId,
+        approvedHours,
+        totalAmount,
+      });
+
+      return {
+        success: true,
+        message: `✅ ${approvedHours.toFixed(1)} zusätzliche Stunden wurden erfolgreich freigegeben und sind jetzt zur Bezahlung bereit!`,
+        approvedHours,
+        totalAmount,
+      };
+    } catch (error) {
+      console.error('[TimeTracker] Error approving logged additional hours:', error);
+      return {
+        success: false,
+        message: `Fehler bei der Freigabe: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        approvedHours: 0,
+        totalAmount: 0,
+      };
+    }
+  }
+
+  /**
    * Berechnet Stunden aus Start- und Endzeit
    */
   static calculateHoursFromTime(
