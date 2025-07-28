@@ -400,7 +400,7 @@ export default function HoursBillingOverview({
       </div>
 
       {/* Zahlung erforderlich Hinweis */}
-      {pendingAdditionalEntries.length > 0 && (
+      {pendingAdditionalEntries.length > 0 && pendingAdditionalHours > 0 && (
         <div className="mt-6 p-4 bg-gradient-to-r from-orange-100 to-red-100 border border-orange-300 rounded-lg">
           <div className="flex items-center mb-2">
             <FiAlertCircle className="mr-2 text-orange-600 text-xl" />
@@ -437,22 +437,24 @@ export default function HoursBillingOverview({
           </div>
 
           {/* Bezahl-Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={onPaymentRequest}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-8 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              <span className="text-xl">💳</span>
-              <div className="text-left">
-                <div className="text-lg font-bold">
-                  {formatCurrency(pendingAdditionalAmount)} JETZT BEZAHLEN
+          {onPaymentRequest && pendingAdditionalHours > 0 && (
+            <div className="flex justify-center">
+              <button
+                onClick={onPaymentRequest}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-8 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <span className="text-xl">💳</span>
+                <div className="text-left">
+                  <div className="text-lg font-bold">
+                    {formatCurrency(pendingAdditionalAmount)} JETZT BEZAHLEN
+                  </div>
+                  <div className="text-sm opacity-90">
+                    {pendingAdditionalHours}h zusätzliche Stunden
+                  </div>
                 </div>
-                <div className="text-sm opacity-90">
-                  {pendingAdditionalHours}h zusätzliche Stunden
-                </div>
-              </div>
-            </button>
-          </div>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
