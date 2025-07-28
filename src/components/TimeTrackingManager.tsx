@@ -44,6 +44,7 @@ export default function TimeTrackingManager({
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [showAllEntries, setShowAllEntries] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -318,7 +319,8 @@ export default function TimeTrackingManager({
             </div>
           ) : (
             <div className="space-y-4">
-              {timeEntries.map(entry => (
+              {/* Zeige nur die ersten 5 Einträge oder alle, je nach showAllEntries */}
+              {(showAllEntries ? timeEntries : timeEntries.slice(0, 5)).map(entry => (
                 <div
                   key={entry.id}
                   className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${
@@ -415,6 +417,52 @@ export default function TimeTrackingManager({
                   </div>
                 </div>
               ))}
+
+              {/* "Mehr anzeigen" / "Weniger anzeigen" Button */}
+              {timeEntries.length > 5 && (
+                <div className="text-center pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => setShowAllEntries(!showAllEntries)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[#14ad9f] hover:text-[#129488] hover:bg-[#14ad9f]/5 rounded-lg transition-colors font-medium"
+                  >
+                    {showAllEntries ? (
+                      <>
+                        Weniger anzeigen
+                        <svg
+                          className="w-4 h-4 rotate-180"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        Alle {timeEntries.length} Einträge anzeigen
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
