@@ -181,9 +181,23 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             console.log('📄 First order structure:', result.orders[0]);
             console.log('🆔 First order ID:', result.orders[0]?.id);
             console.log('💰 First order revenue:', result.orders[0]?.totalAmountPaidByBuyer);
-          }
 
-          setOrders(result.orders || []);
+            // KORREKTUR: Transformiere die Daten für die DataTable
+            const transformedOrders = result.orders.map((order: any) => ({
+              ...order,
+              // Stelle sicher, dass jeder Auftrag eine gültige ID hat
+              id: order.id || `order-${Date.now()}`,
+              // Transformiere orderDate zu einem konsistenten Format
+              orderDate: order.orderDate?._seconds
+                ? { _seconds: order.orderDate._seconds, _nanoseconds: order.orderDate._nanoseconds }
+                : order.orderDate,
+            }));
+
+            console.log('🔄 Transformed orders for DataTable:', transformedOrders);
+            setOrders(transformedOrders);
+          } else {
+            setOrders([]);
+          }
           console.log('✅ Orders state updated');
         } catch (error) {
           console.error('❌ Fehler beim Laden der Aufträge für die Tabelle:', error);
