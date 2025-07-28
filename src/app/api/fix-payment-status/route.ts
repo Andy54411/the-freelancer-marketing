@@ -1,13 +1,6 @@
 // src/app/api/fix-payment-status/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-
-if (!getApps().length) {
-  initializeApp();
-}
-const db = getFirestore();
+import { db, admin } from '@/firebase/server';
 
 export async function POST(req: NextRequest) {
   try {

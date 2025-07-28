@@ -1,40 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Initialize Firebase Admin
-let db: any = null;
-
-try {
-  if (!getApps().length) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
-
-    if (serviceAccountKey) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-      }
-
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-        console.log('[API /update-order-payment-status] Firebase Admin initialized successfully');
-      }
-    }
-  } else {
-    db = getFirestore();
-    console.log('[API /update-order-payment-status] Using existing Firebase Admin instance');
-  }
-} catch (error) {
-  console.error('[API /update-order-payment-status] Firebase Admin initialization failed:', error);
-  db = null;
-}
+import { db } from '@/firebase/server';
 
 // Stripe initialization
 function getStripeInstance() {
@@ -58,10 +24,6 @@ export async function POST(request: NextRequest) {
   const stripe = getStripeInstance();
   if (!stripe) {
     return NextResponse.json({ error: 'Stripe-Konfiguration nicht verfügbar' }, { status: 503 });
-  }
-
-  if (!db) {
-    return NextResponse.json({ error: 'Datenbank-Konfiguration nicht verfügbar' }, { status: 503 });
   }
 
   try {
@@ -117,7 +79,7 @@ export async function POST(request: NextRequest) {
     await db.runTransaction(async (transaction: any) => {
       // Update Auftragsstatus - markiere TimeEntries als "platform_held"
       const updatedTimeEntries =
-        orderData.timeTracking?.timeEntries?.map((entry: any) => {
+        orderData?.timeTracking?.timeEntries?.map((entry: any) => {
           if (
             entry.category === 'additional' &&
             entry.status === 'billing_pending' &&
@@ -150,7 +112,7 @@ export async function POST(request: NextRequest) {
         'timeTracking.status': 'platform_held',
         'timeTracking.lastUpdated': new Date(),
         'timeTracking.billingData': {
-          ...orderData.timeTracking?.billingData,
+          ...orderData?.timeTracking?.billingData,
           status: 'platform_held',
           paidAt: new Date(),
           paymentIntentId: paymentIntentId,
@@ -158,7 +120,7 @@ export async function POST(request: NextRequest) {
       });
 
       // 5. Update Company-Guthaben (Platform Hold)
-      const companyRef = db.collection('companies').doc(orderData.selectedAnbieterId);
+      const companyRef = db.collection('companies').doc(orderData?.selectedAnbieterId);
       const companyDoc = await transaction.get(companyRef);
 
       if (companyDoc.exists) {
@@ -177,13 +139,13 @@ export async function POST(request: NextRequest) {
         });
 
         console.log('[API /update-order-payment-status] Company balance updated:', {
-          companyId: orderData.selectedAnbieterId,
+          companyId: orderData?.selectedAnbieterId,
           newPlatformHoldBalance: currentBalance + companyReceives,
           paymentAmount: companyReceives,
         });
       } else {
         // Fallback: Update User-Dokument wenn Company nicht existiert
-        const userRef = db.collection('users').doc(orderData.selectedAnbieterId);
+        const userRef = db.collection('users').doc(orderData?.selectedAnbieterId);
         const userDoc = await transaction.get(userRef);
 
         if (userDoc.exists) {
@@ -202,7 +164,7 @@ export async function POST(request: NextRequest) {
           });
 
           console.log('[API /update-order-payment-status] User balance updated (fallback):', {
-            userId: orderData.selectedAnbieterId,
+            userId: orderData?.selectedAnbieterId,
             newPlatformHoldBalance: currentBalance + companyReceives,
             paymentAmount: companyReceives,
           });
@@ -214,8 +176,8 @@ export async function POST(request: NextRequest) {
       transaction.set(transactionLogRef, {
         orderId,
         paymentIntentId,
-        providerId: orderData.selectedAnbieterId,
-        customerId: orderData.customerFirebaseUid,
+        providerId: orderData?.selectedAnbieterId,
+        customerId: orderData?.customerFirebaseUid,
         type: 'additional_hours_platform_hold',
         totalAmount,
         companyReceives,

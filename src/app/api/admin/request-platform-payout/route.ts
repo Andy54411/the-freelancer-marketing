@@ -1,49 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { db } from '@/firebase/server';
 import Stripe from 'stripe';
 
 // Force dynamic rendering - verhindert static generation
 export const dynamic = 'force-dynamic';
-
-// Firebase Admin Setup
-let db: any;
-
-// Build-Zeit-Erkennung
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
-
-if (!isBuildTime) {
-  try {
-    if (getApps().length === 0) {
-      const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-      let projectId = process.env.FIREBASE_PROJECT_ID;
-
-      if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-        const serviceAccount = JSON.parse(serviceAccountKey);
-
-        // Extract project ID from service account if not set in environment
-        if (!projectId && serviceAccount.project_id) {
-          projectId = serviceAccount.project_id;
-        }
-
-        if (serviceAccount.project_id && projectId) {
-          initializeApp({
-            credential: cert(serviceAccount),
-            projectId: projectId,
-          });
-          db = getFirestore();
-        }
-      } else {
-        console.warn('Firebase service account key not available in request-platform-payout');
-      }
-    } else {
-      db = getFirestore();
-    }
-  } catch (error) {
-    console.error('Firebase Admin initialization error in request-platform-payout:', error);
-    db = null;
-  }
-}
 
 // Stripe Setup
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -91,20 +51,18 @@ export async function POST(req: NextRequest) {
     });
 
     // Protokolliere in Firestore
-    if (db) {
-      await db.collection('platform_payouts').add({
-        stripePayoutId: payout.id,
-        amount: amount,
-        currency: 'eur',
-        status: payout.status,
-        requestedBy: adminUserId,
-        requestedAt: Math.floor(Date.now() / 1000),
-        metadata: {
-          arrival_date: payout.arrival_date,
-          description: payout.description,
-        },
-      });
-    }
+    await db.collection('platform_payouts').add({
+      stripePayoutId: payout.id,
+      amount: amount,
+      currency: 'eur',
+      status: payout.status,
+      requestedBy: adminUserId,
+      requestedAt: Math.floor(Date.now() / 1000),
+      metadata: {
+        arrival_date: payout.arrival_date,
+        description: payout.description,
+      },
+    });
 
     console.log(
       `Platform payout requested: ${payout.id} for €${amount / 100} by admin ${adminUserId}`

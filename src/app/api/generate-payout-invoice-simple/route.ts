@@ -1,45 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { db } from '@/firebase/server';
 import { getCurrentPlatformFeeRate } from '@/lib/platform-config';
 
 // Stripe Setup
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
 });
-
-// Firebase Admin Setup
-let db: any = null;
-
-try {
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-  if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-    if (!getApps().length) {
-      let projectId = process.env.FIREBASE_PROJECT_ID;
-
-      const serviceAccount = JSON.parse(serviceAccountKey);
-
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-      }
-
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-        console.log('[Invoice API] Firebase initialized successfully');
-      }
-    } else {
-      db = getFirestore();
-    }
-  }
-} catch (error) {
-  console.log('[Invoice API] Firebase initialization failed:', error);
-}
 
 // Hilfsfunktionen
 async function getStripeAccountId(firebaseUserId: string): Promise<string | null> {
@@ -48,15 +15,13 @@ async function getStripeAccountId(firebaseUserId: string): Promise<string | null
     return 'acct_1RkMxsD7xuklQu0n'; // Andy's echte Stripe Account ID
   }
 
-  if (!db) return null;
-
   try {
     // Lade User-Dokument direkt mit Firebase UID
     const userDoc = await db.collection('users').doc(firebaseUserId).get();
     if (userDoc.exists) {
       const data = userDoc.data();
       // Verwende die echte Datenbank-Struktur
-      return data.step4?.stripeAccountId || data.stripeAccountId || null;
+      return data?.step4?.stripeAccountId || data?.stripeAccountId || null;
     }
 
     return null;
@@ -103,13 +68,13 @@ export async function POST(request: NextRequest) {
         taxId: 'DE123456789',
       };
       console.log('[Invoice API] ✅ Using hardcoded data for Andy:', companyData.name);
-    } else if (db) {
+    } else {
       try {
         console.log('[Invoice API] Loading user data for Firebase UID:', firebaseUserId);
 
         // Versuche zuerst users Collection
         const userDoc = await db.collection('users').doc(firebaseUserId).get();
-        let data = null;
+        let data: any = null;
         let foundIn: string | null = null;
 
         if (userDoc.exists) {
@@ -204,17 +169,15 @@ export async function POST(request: NextRequest) {
         let originalAmount = null;
         let calculatedPlatformFee = null;
 
-        if (db) {
-          try {
-            const payoutDoc = await db.collection('payouts').doc(payoutId).get();
-            if (payoutDoc.exists) {
-              const payoutData = payoutDoc.data();
-              originalAmount = payoutData.originalAmount;
-              calculatedPlatformFee = payoutData.platformFee;
-            }
-          } catch (error) {
-            console.warn('[Invoice API] Error loading payout metadata:', error);
+        try {
+          const payoutDoc = await db.collection('payouts').doc(payoutId).get();
+          if (payoutDoc.exists) {
+            const payoutData = payoutDoc.data();
+            originalAmount = payoutData?.originalAmount;
+            calculatedPlatformFee = payoutData?.platformFee;
           }
+        } catch (error) {
+          console.warn('[Invoice API] Error loading payout metadata:', error);
         }
 
         // Verwende Stripe-Metadaten oder Firestore-Daten

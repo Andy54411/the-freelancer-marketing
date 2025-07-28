@@ -1,39 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { db } from '@/firebase/server';
 import PDFDocument from 'pdfkit';
 import { getCurrentPlatformFeeRate } from '@/lib/platform-config';
-
-// Initialize Firebase Admin
-let db: any = null;
-
-try {
-  if (!getApps().length) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
-
-    if (serviceAccountKey) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-      }
-
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-      }
-    }
-  } else {
-    db = getFirestore();
-  }
-} catch (error) {
-  console.error('[API /generate-payout-invoice] Firebase initialization failed:', error);
-}
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret
@@ -71,34 +40,32 @@ export async function POST(request: NextRequest) {
       taxId: string;
     } | null = null;
 
-    if (db) {
-      try {
-        const userDoc = await db.collection('users').doc(firebaseUserId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data() as any;
-          stripeAccountId = userData?.stripeAccountId;
+    try {
+      const userDoc = await db.collection('users').doc(firebaseUserId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data() as any;
+        stripeAccountId = userData?.stripeAccountId;
+        companyData = {
+          name: userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen',
+          address: userData?.address || 'Keine Adresse hinterlegt',
+          taxId: userData?.taxId || 'Keine Steuernummer hinterlegt',
+        };
+      }
+
+      if (!stripeAccountId) {
+        const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
+        if (companyDoc.exists) {
+          const companyDocData = companyDoc.data() as any;
+          stripeAccountId = companyDocData?.stripeAccountId;
           companyData = {
-            name: userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen',
-            address: userData?.address || 'Keine Adresse hinterlegt',
-            taxId: userData?.taxId || 'Keine Steuernummer hinterlegt',
+            name: companyDocData?.companyName || 'Unbekanntes Unternehmen',
+            address: companyDocData?.address || 'Keine Adresse hinterlegt',
+            taxId: companyDocData?.taxId || 'Keine Steuernummer hinterlegt',
           };
         }
-
-        if (!stripeAccountId) {
-          const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
-          if (companyDoc.exists) {
-            const companyDocData = companyDoc.data() as any;
-            stripeAccountId = companyDocData?.stripeAccountId;
-            companyData = {
-              name: companyDocData?.companyName || 'Unbekanntes Unternehmen',
-              address: companyDocData?.address || 'Keine Adresse hinterlegt',
-              taxId: companyDocData?.taxId || 'Keine Steuernummer hinterlegt',
-            };
-          }
-        }
-      } catch (dbError) {
-        console.error('[API /generate-payout-invoice] Database error:', dbError);
       }
+    } catch (dbError) {
+      console.error('[API /generate-payout-invoice] Database error:', dbError);
     }
 
     if (!stripeAccountId) {

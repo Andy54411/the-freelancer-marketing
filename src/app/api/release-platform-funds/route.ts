@@ -1,8 +1,7 @@
 // /Users/andystaudinger/Tasko/src/app/api/release-platform-funds/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { db } from '@/firebase/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -17,29 +16,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     console.log('[API /release-platform-funds] Starting platform funds release...');
-
-    // Initialize Firebase Admin
-    let db: any;
-    try {
-      if (getApps().length === 0) {
-        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-        if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-          const serviceAccount = JSON.parse(serviceAccountKey);
-          const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID;
-
-          if (projectId) {
-            initializeApp({
-              credential: cert(serviceAccount),
-              projectId: projectId,
-            });
-          }
-        }
-      }
-      db = getFirestore();
-    } catch (error) {
-      console.error('[API /release-platform-funds] Firebase init error:', error);
-      return NextResponse.json({ error: 'Firebase initialization failed' }, { status: 500 });
-    }
 
     const body = await request.json();
     const { orderId, paymentIntentIds } = body;

@@ -1,32 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Initialize Firebase Admin only if environment variables are available
-let db: any = null;
-
-if (!getApps().length) {
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-
-    if (serviceAccountKey && projectId) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-      if (serviceAccount.project_id) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-      }
-    }
-  } catch (error) {
-    console.warn('Firebase Admin initialization skipped during build:', error);
-  }
-} else {
-  db = getFirestore();
-}
+import { db } from '@/firebase/server';
 
 // Stripe initialization moved to runtime to avoid build-time errors
 function getStripeInstance() {

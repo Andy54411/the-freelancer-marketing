@@ -1,38 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Initialize Firebase Admin
-let db: any = null;
-
-try {
-  if (!getApps().length) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    let projectId = process.env.FIREBASE_PROJECT_ID;
-
-    if (serviceAccountKey) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-      }
-
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-        console.log('[API /get-payout-history] Firebase Admin initialized successfully');
-      }
-    }
-  } else {
-    db = getFirestore();
-  }
-} catch (error) {
-  console.error('[API /get-payout-history] Firebase Admin initialization failed:', error);
-}
+import { db } from '@/firebase/server';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret
@@ -47,11 +15,6 @@ export async function POST(request: NextRequest) {
   if (!stripe) {
     console.error('[API /get-payout-history] Stripe not initialized');
     return NextResponse.json({ error: 'Stripe-Konfiguration fehlt.' }, { status: 500 });
-  }
-
-  if (!db) {
-    console.error('[API /get-payout-history] Firebase not initialized');
-    return NextResponse.json({ error: 'Firebase-Konfiguration fehlt.' }, { status: 500 });
   }
 
   try {
