@@ -15,7 +15,7 @@ interface UserInfoCardProps {
 
 interface UserPresence {
   isOnline: boolean;
-  lastSeen: Date | null;
+  lastSeen: any; // Can be Firebase Timestamp, Date, string, or number
   status: string;
 }
 
@@ -27,7 +27,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   className,
 }) => {
   const [isOnline, setIsOnline] = useState<boolean>(false);
-  const [lastSeen, setLastSeen] = useState<Date | null>(null);
+  const [lastSeen, setLastSeen] = useState<any>(null);
   const [status, setStatus] = useState<string>('offline');
 
   // A company/provider might have a public-facing profile, a customer usually does not.
@@ -55,22 +55,52 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
     return unsubscribe;
   }, [userId]);
 
-  // Helper-Funktion für "Zuletzt gesehen" Text
-  const getLastSeenText = (lastSeen: Date | null, isOnline: boolean) => {
+  // Helper-Funktion für "Zuletzt gesehen" Text mit robuster Date-Behandlung
+  const getLastSeenText = (lastSeen: any, isOnline: boolean) => {
     if (isOnline) return 'Online';
     if (!lastSeen) return 'Offline';
 
-    const now = new Date();
-    const diffMs = now.getTime() - lastSeen.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
+    try {
+      const now = new Date();
+      let lastSeenDate: Date;
 
-    if (diffMinutes < 5) return 'Gerade online gewesen';
-    if (diffMinutes < 60) return `vor ${diffMinutes} Min. online`;
-    if (diffHours < 24) return `vor ${diffHours}h online`;
-    if (diffDays < 7) return `vor ${diffDays} Tag${diffDays > 1 ? 'en' : ''} online`;
-    return 'Lange nicht online';
+      // Firebase Timestamp Objekt erkennen und konvertieren
+      if (lastSeen && typeof lastSeen === 'object' && lastSeen.toDate) {
+        lastSeenDate = lastSeen.toDate();
+      } else if (lastSeen && typeof lastSeen === 'object' && typeof lastSeen.seconds === 'number') {
+        // Firebase server timestamp format
+        lastSeenDate = new Date(lastSeen.seconds * 1000);
+      } else if (typeof lastSeen === 'string') {
+        lastSeenDate = new Date(lastSeen);
+      } else if (lastSeen instanceof Date) {
+        lastSeenDate = lastSeen;
+      } else if (typeof lastSeen === 'number') {
+        lastSeenDate = new Date(lastSeen);
+      } else {
+        console.warn('Unknown lastSeen format:', lastSeen);
+        return 'Offline';
+      }
+
+      // Validiere das resultierende Date-Objekt
+      if (isNaN(lastSeenDate.getTime())) {
+        console.warn('Invalid date created from lastSeen:', lastSeen);
+        return 'Offline';
+      }
+
+      const diffMs = now.getTime() - lastSeenDate.getTime();
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMinutes / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMinutes < 5) return 'Gerade online gewesen';
+      if (diffMinutes < 60) return `vor ${diffMinutes} Min. online`;
+      if (diffHours < 24) return `vor ${diffHours}h online`;
+      if (diffDays < 7) return `vor ${diffDays} Tag${diffDays > 1 ? 'en' : ''} online`;
+      return 'Lange nicht online';
+    } catch (error) {
+      console.error('Error in getLastSeenText:', error, 'lastSeen:', lastSeen);
+      return 'Offline';
+    }
   };
 
   return (

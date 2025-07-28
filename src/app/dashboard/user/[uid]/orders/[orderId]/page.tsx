@@ -384,7 +384,7 @@ export default function OrderDetailPage() {
       }
     >
       <main className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto">
           <button
             onClick={() => router.back()}
             className="text-[#14ad9f] hover:underline flex items-center gap-2 mb-4"
@@ -394,78 +394,125 @@ export default function OrderDetailPage() {
 
           <h1 className="text-3xl font-semibold text-gray-800 mb-6">Auftrag #{orderId}</h1>
 
-          {/* Auftragsdetails anzeigen */}
-          <div className="bg-white shadow rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-              <p>
-                <strong>Status:</strong>{' '}
-                <span
-                  className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
-                >
-                  {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                    order.status?.replace(/_/g, ' ').slice(1)}
-                </span>
-              </p>
-              <p>
-                <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
-                {order.selectedSubcategory || 'N/A'}
-              </p>
-              <p>
-                <strong>Dauer:</strong>{' '}
-                {(() => {
-                  // Berechne korrekte Stunden basierend auf Datum
-                  if (
-                    order.jobDateFrom &&
-                    order.jobDateTo &&
-                    order.jobDateFrom !== order.jobDateTo
-                  ) {
-                    const startDate = new Date(order.jobDateFrom);
-                    const endDate = new Date(order.jobDateTo);
-                    const totalDays =
-                      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
-                      1;
-                    const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                    const totalHours = totalDays * hoursPerDay;
-                    return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
-                  } else {
-                    const hours = order.jobTotalCalculatedHours || order.jobDurationString || 'N/A';
-                    return `${hours} Stunden`;
-                  }
-                })()}
-              </p>
-              <p>
-                <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
-              </p>
-              <p>
-                <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
-                {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
-                  ? `- ${order.jobDateTo}`
-                  : ''}
-              </p>
-              <p>
-                <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
-              </p>
-              <p className="col-span-full">
-                <strong>Beschreibung:</strong>{' '}
-                {order.beschreibung || 'Keine Beschreibung vorhanden.'}
-              </p>
-
-              {/* NEU: Beispiel für den "Annehmen"-Button (anzuwenden auf der Company-Seite) */}
-              {currentUser.uid === order.providerId &&
-                order.status === 'zahlung_erhalten_clearing' && (
-                  <div className="md:col-span-2 mt-4">
-                    <button
-                      onClick={handleAcceptOrder}
-                      disabled={isUpdating}
-                      className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400"
+          {/* Layout mit Sidebar */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Hauptinhalt - Links */}
+            <div className="flex-1 space-y-6">
+              {/* Auftragsdetails anzeigen */}
+              <div className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                  <p>
+                    <strong>Status:</strong>{' '}
+                    <span
+                      className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
                     >
-                      {isUpdating ? 'Wird angenommen...' : 'Auftrag annehmen'}
-                    </button>
+                      {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
+                        order.status?.replace(/_/g, ' ').slice(1)}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
+                    {order.selectedSubcategory || 'N/A'}
+                  </p>
+                  <p>
+                    <strong>Dauer:</strong>{' '}
+                    {(() => {
+                      // Berechne korrekte Stunden basierend auf Datum
+                      if (
+                        order.jobDateFrom &&
+                        order.jobDateTo &&
+                        order.jobDateFrom !== order.jobDateTo
+                      ) {
+                        const startDate = new Date(order.jobDateFrom);
+                        const endDate = new Date(order.jobDateTo);
+                        const totalDays =
+                          Math.ceil(
+                            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+                          ) + 1;
+                        const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                        const totalHours = totalDays * hoursPerDay;
+                        return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
+                      } else {
+                        const hours =
+                          order.jobTotalCalculatedHours || order.jobDurationString || 'N/A';
+                        return `${hours} Stunden`;
+                      }
+                    })()}
+                  </p>
+                  <p>
+                    <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
+                  </p>
+                  <p>
+                    <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
+                    {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
+                      ? `- ${order.jobDateTo}`
+                      : ''}
+                  </p>
+                  <p>
+                    <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
+                  </p>
+                  <p className="col-span-full">
+                    <strong>Beschreibung:</strong>{' '}
+                    {order.beschreibung || 'Keine Beschreibung vorhanden.'}
+                  </p>
+
+                  {/* NEU: Beispiel für den "Annehmen"-Button (anzuwenden auf der Company-Seite) */}
+                  {currentUser.uid === order.providerId &&
+                    order.status === 'zahlung_erhalten_clearing' && (
+                      <div className="md:col-span-2 mt-4">
+                        <button
+                          onClick={handleAcceptOrder}
+                          disabled={isUpdating}
+                          className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400"
+                        >
+                          {isUpdating ? 'Wird angenommen...' : 'Auftrag annehmen'}
+                        </button>
+                      </div>
+                    )}
+                </div>
+              </div>
+
+              {/* Stunden-Abrechnungsübersicht für Kunden */}
+              {currentUser.uid === order.customerId && (
+                <HoursBillingOverview
+                  orderId={orderId}
+                  className=""
+                  onPaymentRequest={handleOpenPayment}
+                />
+              )}
+
+              {/* Chat-Bereich */}
+              <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                  <FiMessageSquare className="mr-2" /> Chat zum Auftrag
+                </h2>
+                {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
+                  order.status
+                ) ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
+                    <FiSlash className="text-4xl text-gray-400 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
+                    <p className="text-gray-500 text-sm">
+                      {order.status === 'zahlung_erhalten_clearing'
+                        ? 'Der Chat wird aktiviert, sobald der Anbieter den Auftrag angenommen hat.'
+                        : 'Für diesen Auftrag ist der Chat nicht mehr verfügbar.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex-1 min-h-0">
+                    <ChatComponent
+                      orderId={orderId}
+                      participants={{ customerId: order.customerId, providerId: order.providerId }}
+                    />
                   </div>
                 )}
-              {/* Container for the UserInfoCard */}
-              <div className="md:col-span-2 mt-6">
+              </div>
+            </div>
+
+            {/* Rechte Sidebar - UserInfoCard */}
+            <div className="w-full lg:w-80 lg:flex-shrink-0">
+              <div className="lg:sticky lg:top-6">
                 <UserInfoCard
                   userId={cardUser.id}
                   userName={cardUser.name}
@@ -474,42 +521,6 @@ export default function OrderDetailPage() {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Stunden-Abrechnungsübersicht für Kunden */}
-          {currentUser.uid === order.customerId && (
-            <HoursBillingOverview
-              orderId={orderId}
-              className="mb-8"
-              onPaymentRequest={handleOpenPayment}
-            />
-          )}
-
-          {/* Chat-Bereich */}
-          <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-              <FiMessageSquare className="mr-2" /> Chat zum Auftrag
-            </h2>
-            {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
-              order.status
-            ) ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
-                <FiSlash className="text-4xl text-gray-400 mb-3" />
-                <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
-                <p className="text-gray-500 text-sm">
-                  {order.status === 'zahlung_erhalten_clearing'
-                    ? 'Der Chat wird aktiviert, sobald der Anbieter den Auftrag angenommen hat.'
-                    : 'Für diesen Auftrag ist der Chat nicht mehr verfügbar.'}
-                </p>
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0">
-                <ChatComponent
-                  orderId={orderId}
-                  participants={{ customerId: order.customerId, providerId: order.providerId }}
-                />
-              </div>
-            )}
           </div>
         </div>
 
