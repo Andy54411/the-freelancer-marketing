@@ -243,15 +243,31 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             />
             {/* Debug Info */}
             <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-              <div>🐛 Debug Info:</div>
+              <div className="font-bold mb-2">🐛 ERWEITERTE DEBUG INFORMATIONEN:</div>
               <div>📊 Orders count: {orders.length}</div>
-              <div>⏳ Loading: {loadingOrders ? 'Yes' : 'No'}</div>
+              <div>⏳ Loading Orders: {loadingOrders ? 'Yes' : 'No'}</div>
+              <div>🔄 IsChecking: {isChecking ? 'Yes' : 'No'}</div>
               <div>🆔 URL UID: {uid}</div>
               <div>👤 Auth User UID: {authUser?.uid}</div>
               <div>🔥 Firebase User UID: {firebaseUser?.uid}</div>
               <div>🔑 Is Authorized: {isAuthorized ? 'Yes' : 'No'}</div>
               <div>🎯 UID Match: {authUser?.uid === uid ? 'Yes' : 'No'}</div>
-              {orders.length > 0 && <div>📄 First order: {JSON.stringify(orders[0], null, 2)}</div>}
+              <div>📧 User Email: {authUser?.email || firebaseUser?.email}</div>
+              <div>✅ User Verified: {firebaseUser?.emailVerified ? 'Yes' : 'No'}</div>
+              <div className="mt-2 p-2 bg-yellow-100 rounded">
+                <div>🔍 WARUM KEINE DATEN?</div>
+                {!uid && <div>❌ Keine UID vorhanden</div>}
+                {!isAuthorized && <div>❌ Nicht autorisiert</div>}
+                {uid && isAuthorized && orders.length === 0 && !loadingOrders && (
+                  <div>❌ API Call erfolgreich aber leeres Array zurückgegeben</div>
+                )}
+                {uid && isAuthorized && loadingOrders && <div>⏳ Lädt noch...</div>}
+              </div>
+              {orders.length > 0 && (
+                <div className="mt-2 p-2 bg-green-100 rounded">
+                  📄 First order: {JSON.stringify(orders[0], null, 2)}
+                </div>
+              )}
             </div>
             <div className="mt-8 text-center">
               <Link
