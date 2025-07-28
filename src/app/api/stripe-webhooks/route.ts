@@ -127,24 +127,28 @@ export async function POST(req: NextRequest) {
 
               const orderData = orderSnapshot.data()!;
 
-              // Update time entries status to 'platform_held'
-              const timeEntriesRef = db
-                .collection('auftraege')
-                .doc(orderId)
-                .collection('timeEntries');
+              // Update time entries status to 'platform_held' in the timeTracking.timeEntries ARRAY
+              const timeTracking = orderData.timeTracking;
+              if (timeTracking && timeTracking.timeEntries) {
+                const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
+                  if (entryIdsList.includes(entry.id)) {
+                    console.log(`[WEBHOOK LOG] TimeEntry ${entry.id} marked as platform_held`);
+                    return {
+                      ...entry,
+                      billingStatus: 'platform_held',
+                      paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                      paymentIntentId: paymentIntentSucceeded.id,
+                      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                    };
+                  }
+                  return entry;
+                });
 
-              for (const entryId of entryIdsList) {
-                const entryRef = timeEntriesRef.doc(entryId);
-                const entrySnapshot = await transaction.get(entryRef);
-
-                if (entrySnapshot.exists) {
-                  transaction.update(entryRef, {
-                    status: 'platform_held',
-                    paidAt: admin.firestore.FieldValue.serverTimestamp(),
-                    paymentIntentId: paymentIntentSucceeded.id,
-                  });
-                  console.log(`[WEBHOOK LOG] TimeEntry ${entryId} marked as platform_held`);
-                }
+                // Update the entire timeTracking.timeEntries array
+                transaction.update(orderRef, {
+                  'timeTracking.timeEntries': updatedTimeEntries,
+                  lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                });
               }
 
               // Update company balance
@@ -155,7 +159,7 @@ export async function POST(req: NextRequest) {
               if (providerStripeAccountId && companyReceives) {
                 const companyRef = db
                   .collection('companies')
-                  .where('stripeAccountId', '==', providerStripeAccountId)
+                  .where('anbieterStripeAccountId', '==', providerStripeAccountId)
                   .limit(1);
                 const companySnapshot = await companyRef.get();
 
@@ -221,7 +225,7 @@ export async function POST(req: NextRequest) {
                 // Update company document with transfer info
                 const companyRef = db
                   .collection('companies')
-                  .where('stripeAccountId', '==', providerStripeAccountId)
+                  .where('anbieterStripeAccountId', '==', providerStripeAccountId)
                   .limit(1);
                 const companySnapshot = await companyRef.get();
 
