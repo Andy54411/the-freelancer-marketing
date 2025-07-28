@@ -10,9 +10,82 @@ if (!admin.apps.length) {
       storageBucket: 'tilvo-f142f.firebasestorage.app',
     };
 
-    // Für Vercel: Immer Default Credentials verwenden (sicherer und einfacher)
-    console.log('[Firebase Server] Initialisiere mit Application Default Credentials.');
-    options.credential = admin.credential.applicationDefault();
+    // ROBUST CREDENTIAL HANDLING für Vercel und lokale Entwicklung
+    let credentialSet = false;
+
+    // 1. Versuche zuerst FIREBASE_SERVICE_ACCOUNT_KEY (für Vercel optimiert)
+    const firebaseServiceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (firebaseServiceAccountKey && !credentialSet) {
+      try {
+        console.log('[Firebase Server] Versuche FIREBASE_SERVICE_ACCOUNT_KEY...');
+        const serviceAccount = JSON.parse(firebaseServiceAccountKey);
+        options.credential = admin.credential.cert(serviceAccount);
+        credentialSet = true;
+        console.log('[Firebase Server] ✅ FIREBASE_SERVICE_ACCOUNT_KEY erfolgreich geladen.');
+      } catch (jsonError: any) {
+        console.warn(
+          '[Firebase Server] ⚠️ FIREBASE_SERVICE_ACCOUNT_KEY JSON-Parse fehlgeschlagen:',
+          jsonError.message
+        );
+      }
+    }
+
+    // 2. Fallback: GOOGLE_APPLICATION_CREDENTIALS als JSON-String (für Vercel)
+    const googleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (googleAppCredentials && !credentialSet) {
+      // Prüfe ob es ein JSON-String ist (beginnt mit '{') oder ein Dateipfad
+      if (googleAppCredentials.trim().startsWith('{')) {
+        try {
+          console.log(
+            '[Firebase Server] GOOGLE_APPLICATION_CREDENTIALS als JSON-String erkannt...'
+          );
+          // Bereinige escaped newlines
+          const cleanedJson = googleAppCredentials.replace(/\\n/g, '\n');
+          const serviceAccount = JSON.parse(cleanedJson);
+          options.credential = admin.credential.cert(serviceAccount);
+          credentialSet = true;
+          console.log(
+            '[Firebase Server] ✅ GOOGLE_APPLICATION_CREDENTIALS als JSON erfolgreich geladen.'
+          );
+        } catch (jsonError: any) {
+          console.warn(
+            '[Firebase Server] ⚠️ GOOGLE_APPLICATION_CREDENTIALS JSON-Parse fehlgeschlagen:',
+            jsonError.message
+          );
+        }
+      } else {
+        // Es ist ein Dateipfad - verwende Application Default Credentials
+        try {
+          console.log('[Firebase Server] GOOGLE_APPLICATION_CREDENTIALS als Dateipfad erkannt...');
+          options.credential = admin.credential.applicationDefault();
+          credentialSet = true;
+          console.log('[Firebase Server] ✅ Application Default Credentials erfolgreich geladen.');
+        } catch (credentialError: any) {
+          console.warn(
+            '[Firebase Server] ⚠️ Application Default Credentials fehlgeschlagen:',
+            credentialError.message
+          );
+        }
+      }
+    }
+
+    // 3. Letzter Fallback: Versuche Application Default (für lokale Entwicklung)
+    if (!credentialSet) {
+      try {
+        console.log('[Firebase Server] Letzter Fallback: Application Default Credentials...');
+        options.credential = admin.credential.applicationDefault();
+        credentialSet = true;
+        console.log(
+          '[Firebase Server] ✅ Application Default Credentials (Fallback) erfolgreich geladen.'
+        );
+      } catch (credentialError: any) {
+        console.error(
+          '[Firebase Server] ❌ Alle Credential-Strategien fehlgeschlagen:',
+          credentialError.message
+        );
+        throw new Error('Firebase Credentials nicht verfügbar - alle Strategien fehlgeschlagen.');
+      }
+    }
 
     admin.initializeApp(options);
     console.log('[Firebase Server] Admin SDK erfolgreich initialisiert.');
