@@ -188,6 +188,66 @@ export async function POST(req: NextRequest) {
               }
             });
 
+            // NEU: Transfer money to Connect account (AFTER the transaction)
+            const providerStripeAccountId =
+              paymentIntentSucceeded.metadata?.providerStripeAccountId;
+            const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
+
+            if (providerStripeAccountId && companyReceives) {
+              const transferAmount = parseInt(companyReceives, 10);
+
+              console.log(
+                `[WEBHOOK LOG] Creating transfer to Connect account ${providerStripeAccountId}: ${transferAmount} cents`
+              );
+
+              try {
+                const transfer = await stripe.transfers.create({
+                  amount: transferAmount,
+                  currency: 'eur',
+                  destination: providerStripeAccountId,
+                  description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId}`,
+                  metadata: {
+                    type: 'additional_hours_platform_hold',
+                    orderId: orderId,
+                    paymentIntentId: paymentIntentSucceeded.id,
+                    entryIds: entryIds,
+                  },
+                });
+
+                console.log(
+                  `[WEBHOOK LOG] Transfer successful: ${transfer.id} - ${transferAmount} cents to ${providerStripeAccountId}`
+                );
+
+                // Update company document with transfer info
+                const companyRef = db
+                  .collection('companies')
+                  .where('stripeAccountId', '==', providerStripeAccountId)
+                  .limit(1);
+                const companySnapshot = await companyRef.get();
+
+                if (!companySnapshot.empty) {
+                  const companyDoc = companySnapshot.docs[0];
+                  await companyDoc.ref.update({
+                    lastTransferId: transfer.id,
+                    lastTransferAt: admin.firestore.FieldValue.serverTimestamp(),
+                  });
+                }
+              } catch (transferError: unknown) {
+                let transferErrorMessage = 'Unbekannter Transfer-Fehler';
+                if (transferError instanceof Error) {
+                  transferErrorMessage = transferError.message;
+                }
+                const errorKey = `transfer_error_${orderId}`;
+                if (shouldLogError(errorKey)) {
+                  console.error(
+                    `[WEBHOOK ERROR] Transfer failed for order ${orderId}:`,
+                    transferError
+                  );
+                }
+                // Continue processing even if transfer fails - important for webhook reliability
+              }
+            }
+
             console.log(
               `[WEBHOOK LOG] Additional hours payment processed successfully for order ${orderId}`
             );
