@@ -3,12 +3,29 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { suppressStripeAnalyticsErrors, handleApplePayDomainWarning } from './stripeErrorHandler';
 import { setupStripeNetworkInterception, setupStripeErrorHandler } from './stripeNetworkHandler';
 
-// Unterdrücke Stripe Analytics-Fehler in Development
+// Setup umfassender Stripe Sentry/Analytics-Fehler Unterdrückung
 suppressStripeAnalyticsErrors();
-
-// Setup Network-Interception für Stripe
 setupStripeNetworkInterception();
 setupStripeErrorHandler();
+
+// Zusätzlicher globaler Sentry-Blocker für Stripe
+if (typeof window !== 'undefined') {
+  // Blockiere alle Stripe Sentry-Requests auf DNS-Ebene
+  const originalFetch = window.fetch;
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    const url = input.toString();
+    if (url.includes('errors.stripe.com') || url.includes('sentry_key=')) {
+      console.log('🚫 Stripe Sentry request blocked completely:', url.slice(0, 100));
+      return Promise.resolve(
+        new Response('{"status":"blocked"}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+    }
+    return originalFetch.call(this, input, init);
+  };
+}
 
 const initializeStripe = () => {
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -17,7 +34,7 @@ const initializeStripe = () => {
     throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ist nicht konfiguriert.');
   }
 
-  // Stripe mit White-Label-Konfiguration - keine Redirects oder Branding
+  // Stripe mit maximaler Sentry-Unterdrückung und White-Label-Konfiguration
   const stripePromise = loadStripe(publishableKey, {
     // Verhindere automatische Analytics-Aufrufe
     stripeAccount: undefined,

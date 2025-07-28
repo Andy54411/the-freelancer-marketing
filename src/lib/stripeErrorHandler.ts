@@ -8,17 +8,36 @@
  * Diese Fehler entstehen durch Stripe's interne Analytics-Aufrufe und sind meist harmlos
  */
 export function suppressStripeAnalyticsErrors() {
-  if (process.env.NODE_ENV === 'development') {
-    // Unterdrücke bekannte Stripe Network-Fehler
+  if (typeof window !== 'undefined') {
+    // Globaler Fetch Interceptor für alle Stripe Sentry-Fehler
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       try {
-        return await originalFetch.apply(window, args);
+        const response = await originalFetch.apply(window, args);
+        const url = args[0]?.toString() || '';
+
+        // Abfangen von Stripe Sentry-Requests und Rate-Limiting-Fehlern
+        if (url.includes('errors.stripe.com')) {
+          // Erstelle eine erfolgreiche Mock-Response für Sentry-Requests
+          if (response.status === 429 || response.status === 400) {
+            console.log(`🔇 Stripe Sentry Error suppressed: ${response.status} ${url}`);
+            return new Response('{"status": "ok"}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+        }
+
+        return response;
       } catch (error) {
         const url = args[0]?.toString() || '';
         if (url.includes('stripe.com') || url.includes('errors.stripe.com')) {
           // Stripe Analytics/Sentry-Fehler still unterdrücken
-          return new Response('{}', { status: 200 });
+          console.log(`🔇 Stripe Network Error suppressed: ${url}`);
+          return new Response('{"status": "ok"}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
         }
         throw error;
       }
@@ -29,21 +48,48 @@ export function suppressStripeAnalyticsErrors() {
     console.error = (...args: any[]) => {
       const message = args[0];
 
-      // Unterdrücke bekannte Stripe Analytics-Fehler
+      // Erweiterte Stripe Sentry-Fehler Unterdrückung
       if (
         typeof message === 'string' &&
         (message.includes('FetchError: Error fetching https://r.stripe.com/b') ||
+          message.includes('POST https://errors.stripe.com/api/') ||
+          message.includes('429 (Too Many Requests)') ||
+          message.includes('400 (Bad Request)') ||
           (message.includes('Failed to load resource') && message.includes('errors.stripe.com')) ||
           (message.includes('429') && message.includes('stripe.com')) ||
-          (message.includes('Failed to fetch') && message.includes('stripe.com')))
+          (message.includes('400') && message.includes('stripe.com')) ||
+          (message.includes('Failed to fetch') && message.includes('stripe.com')) ||
+          message.includes('sentry_key=') ||
+          message.includes('sentry_version='))
       ) {
         // Diese Fehler nicht ausgeben, da sie harmlos sind
+        console.log(`🔇 Stripe Console Error suppressed: ${message.slice(0, 100)}...`);
         return;
       }
 
       // Alle anderen Fehler normal ausgeben
       originalError.apply(console, args);
     };
+
+    // Globaler Error Handler für unbehandelte Promise Rejections
+    window.addEventListener('unhandledrejection', event => {
+      const error = event.reason;
+      const errorMessage = error?.message || error?.toString() || '';
+
+      if (
+        errorMessage.includes('errors.stripe.com') ||
+        errorMessage.includes('sentry_key=') ||
+        errorMessage.includes('POST https://errors.stripe.com') ||
+        (errorMessage.includes('429') && errorMessage.includes('stripe')) ||
+        (errorMessage.includes('400') && errorMessage.includes('stripe'))
+      ) {
+        console.log(
+          '🔇 Stripe Unhandled Promise Rejection suppressed:',
+          errorMessage.slice(0, 100)
+        );
+        event.preventDefault();
+      }
+    });
   }
 }
 

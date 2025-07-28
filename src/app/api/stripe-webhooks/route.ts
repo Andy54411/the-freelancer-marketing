@@ -150,10 +150,28 @@ export async function POST(req: NextRequest) {
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 };
 
+                // AUTO-CHECK: If all additional entries are now transferred, mark main timeTracking as completed
+                const allAdditionalEntries = updatedTimeEntries.filter(
+                  (entry: any) => entry.category === 'additional'
+                );
+                const allAdditionalTransferred =
+                  allAdditionalEntries.length === 0 ||
+                  allAdditionalEntries.every((entry: any) => entry.status === 'transferred');
+
+                let timeTrackingStatus = timeTracking.status;
+                if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
+                  timeTrackingStatus = 'completed';
+                  console.log(
+                    `[WEBHOOK LOG] All additional hours transferred (charge) - setting timeTracking.status to 'completed' for order ${orderId}`
+                  );
+                }
+
                 // Update the entire timeTracking object
                 transaction.update(orderRef, {
                   'timeTracking.timeEntries': updatedTimeEntries,
                   'timeTracking.billingData': updatedBillingData,
+                  'timeTracking.status': timeTrackingStatus, // AUTO-UPDATE: Main status when all paid
+                  'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 });
               }
@@ -251,10 +269,28 @@ export async function POST(req: NextRequest) {
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 };
 
+                // AUTO-CHECK: If all additional entries are now transferred, mark main timeTracking as completed
+                const allAdditionalEntries = updatedTimeEntries.filter(
+                  (entry: any) => entry.category === 'additional'
+                );
+                const allAdditionalTransferred =
+                  allAdditionalEntries.length === 0 ||
+                  allAdditionalEntries.every((entry: any) => entry.status === 'transferred');
+
+                let timeTrackingStatus = timeTracking.status;
+                if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
+                  timeTrackingStatus = 'completed';
+                  console.log(
+                    `[WEBHOOK LOG] All additional hours transferred (payment_intent) - setting timeTracking.status to 'completed' for order ${orderId}`
+                  );
+                }
+
                 // Update the entire timeTracking object
                 transaction.update(orderRef, {
                   'timeTracking.timeEntries': updatedTimeEntries,
                   'timeTracking.billingData': updatedBillingData,
+                  'timeTracking.status': timeTrackingStatus, // AUTO-UPDATE: Main status when all paid
+                  'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 });
               }
