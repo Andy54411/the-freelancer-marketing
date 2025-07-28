@@ -261,35 +261,22 @@ export async function POST(req: NextRequest) {
                   return entry;
                 });
 
-                // Update billingData status to completed
+                // Update billingData to 'payment_received' instead of 'completed'
+                // The transfer to provider still needs to succeed before marking as 'completed'
                 const updatedBillingData = {
                   ...timeTracking.billingData,
-                  status: 'completed', // CRITICAL: Mark billing as completed
-                  completedAt: admin.firestore.FieldValue.serverTimestamp(),
+                  status: 'payment_received', // IMPORTANT: Payment received but transfer pending
+                  paymentReceivedAt: admin.firestore.FieldValue.serverTimestamp(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 };
 
-                // AUTO-CHECK: If all additional entries are now transferred, mark main timeTracking as completed
-                const allAdditionalEntries = updatedTimeEntries.filter(
-                  (entry: any) => entry.category === 'additional'
-                );
-                const allAdditionalTransferred =
-                  allAdditionalEntries.length === 0 ||
-                  allAdditionalEntries.every((entry: any) => entry.status === 'transferred');
+                // DO NOT AUTO-UPDATE timeTracking.status - wait for successful transfer
+                // Only individual entries are marked as 'paid' but still need transfer completion
 
-                let timeTrackingStatus = timeTracking.status;
-                if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
-                  timeTrackingStatus = 'completed';
-                  console.log(
-                    `[WEBHOOK LOG] All additional hours transferred (payment_intent) - setting timeTracking.status to 'completed' for order ${orderId}`
-                  );
-                }
-
-                // Update the entire timeTracking object
+                // Update the entire timeTracking object WITHOUT changing main status
                 transaction.update(orderRef, {
                   'timeTracking.timeEntries': updatedTimeEntries,
                   'timeTracking.billingData': updatedBillingData,
-                  'timeTracking.status': timeTrackingStatus, // AUTO-UPDATE: Main status when all paid
                   'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 });
@@ -563,9 +550,103 @@ export async function POST(req: NextRequest) {
         }
         break;
       }
-      // ... andere cases ...
-      // Z.B. setup_intent.succeeded für das Speichern von Zahlungsmethoden
-      // case 'setup_intent.succeeded': { ... }
+
+      case 'transfer.created': {
+        const transfer = event.data.object as Stripe.Transfer;
+        console.log(`[WEBHOOK LOG] transfer.created: ${transfer.id}`);
+
+        const transferType = transfer.metadata?.type;
+
+        // Handle additional hours transfers
+        if (transferType === 'additional_hours_platform_hold') {
+          console.log(`[WEBHOOK LOG] Transfer successful for additional hours: ${transfer.id}`);
+
+          const orderId = transfer.metadata?.orderId;
+          const entryIds = transfer.metadata?.entryIds;
+
+          if (!orderId || !entryIds) {
+            const errorKey = `missing_transfer_metadata_${transfer.id}`;
+            if (shouldLogError(errorKey)) {
+              console.error(
+                `[WEBHOOK ERROR] Fehlende Transfer-Metadaten für ${transfer.id}. orderId: ${orderId}, entryIds: ${entryIds}`
+              );
+            }
+            return NextResponse.json({ received: true });
+          }
+
+          try {
+            const entryIdsList = entryIds.split(',');
+            const orderRef = db.collection('auftraege').doc(orderId);
+
+            await db.runTransaction(async transaction => {
+              const orderSnapshot = await transaction.get(orderRef);
+
+              if (!orderSnapshot.exists) {
+                throw new Error(`Auftrag ${orderId} nicht gefunden.`);
+              }
+
+              const orderData = orderSnapshot.data()!;
+              const timeTracking = orderData.timeTracking;
+
+              if (timeTracking && timeTracking.timeEntries) {
+                // NOW mark timeTracking.status as 'completed' - transfer successful!
+                const allAdditionalEntries = timeTracking.timeEntries.filter(
+                  (entry: any) => entry.category === 'additional'
+                );
+                const allAdditionalTransferred = allAdditionalEntries.every((entry: any) =>
+                  entryIdsList.includes(entry.id)
+                );
+
+                if (allAdditionalTransferred) {
+                  console.log(
+                    `[WEBHOOK LOG] Transfer successful - marking timeTracking.status as 'completed' for order ${orderId}`
+                  );
+
+                  // Update billingData to completed NOW
+                  const updatedBillingData = {
+                    ...timeTracking.billingData,
+                    status: 'completed', // NOW it's truly completed
+                    transferId: transfer.id,
+                    transferCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                  };
+
+                  // Update main timeTracking status to completed
+                  transaction.update(orderRef, {
+                    'timeTracking.status': 'completed', // CRITICAL: Only set completed when transfer succeeds
+                    'timeTracking.billingData': updatedBillingData,
+                    'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
+                    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                  });
+
+                  console.log(
+                    `[WEBHOOK LOG] TimeTracking marked as 'completed' after successful transfer ${transfer.id}`
+                  );
+                }
+              }
+            });
+
+            console.log(
+              `[WEBHOOK LOG] Transfer completion processed successfully for order ${orderId}`
+            );
+          } catch (dbError: unknown) {
+            let dbErrorMessage = 'Unbekannter Datenbankfehler bei Transfer-Verarbeitung.';
+            if (dbError instanceof Error) {
+              dbErrorMessage = dbError.message;
+            }
+            const errorKey = `db_transfer_completion_${orderId}`;
+            if (shouldLogError(errorKey)) {
+              console.error(`[WEBHOOK ERROR] Fehler bei Transfer-Completion:`, dbError);
+            }
+            return NextResponse.json({
+              received: true,
+              message: `Transfer completion failed: ${dbErrorMessage}`,
+            });
+          }
+        }
+        break;
+      }
+
       default:
         // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
         // damit Stripe nicht versucht, sie erneut zu senden.
