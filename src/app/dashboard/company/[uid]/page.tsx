@@ -126,6 +126,9 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   const { isChecking, isAuthorized, uid, view, setView, missingFields, userData } =
     useCompanyDashboard();
 
+  // NEU: Direkter Zugriff auf Auth-Context für Debugging
+  const { user: authUser, firebaseUser } = useAuth();
+
   // Get the company name from the already fetched user data to pass to the drawer.
   const companyName = userData?.companyName || userData?.step2?.companyName || 'Ihre Firma';
 
@@ -153,6 +156,15 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
   // Effekt zum Laden der Auftragsdaten
   useEffect(() => {
+    // KRITISCHE DEBUG-INFORMATION
+    console.log('🔍 AUTHORIZATION DEBUG:');
+    console.log('🆔 URL UID:', uid);
+    console.log('👤 AuthUser UID:', authUser?.uid);
+    console.log('🔥 FirebaseUser UID:', firebaseUser?.uid);
+    console.log('🔑 isAuthorized:', isAuthorized);
+    console.log('⏳ isChecking:', isChecking);
+    console.log('🎯 UID Match:', authUser?.uid === uid);
+
     if (uid && isAuthorized) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
@@ -182,8 +194,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       fetchOrders();
     } else {
       console.log('⚠️ Not fetching orders - uid:', uid, 'isAuthorized:', isAuthorized);
+      console.log('📋 Auth Debug - authUser?.uid:', authUser?.uid, 'URL uid:', uid);
+      setLoadingOrders(false);
     }
-  }, [uid, isAuthorized]);
+  }, [uid, isAuthorized, authUser?.uid]);
 
   // Effekt zum Berechnen der Company Metriken
   useEffect(() => {
@@ -232,7 +246,11 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               <div>🐛 Debug Info:</div>
               <div>📊 Orders count: {orders.length}</div>
               <div>⏳ Loading: {loadingOrders ? 'Yes' : 'No'}</div>
-              <div>🆔 UID: {uid}</div>
+              <div>🆔 URL UID: {uid}</div>
+              <div>👤 Auth User UID: {authUser?.uid}</div>
+              <div>🔥 Firebase User UID: {firebaseUser?.uid}</div>
+              <div>🔑 Is Authorized: {isAuthorized ? 'Yes' : 'No'}</div>
+              <div>🎯 UID Match: {authUser?.uid === uid ? 'Yes' : 'No'}</div>
               {orders.length > 0 && <div>📄 First order: {JSON.stringify(orders[0], null, 2)}</div>}
             </div>
             <div className="mt-8 text-center">
