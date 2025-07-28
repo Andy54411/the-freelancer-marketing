@@ -214,8 +214,8 @@ export default function TimeTrackingManager({
     escrowAuthorizedHours: timeEntries
       .filter(entry => entry.status === 'platform_held')
       .reduce((sum, entry) => sum + entry.hours, 0),
-    escrowReleasedHours: timeEntries
-      .filter(entry => entry.status === 'platform_released')
+    paidHours: timeEntries
+      .filter(entry => entry.platformHoldStatus === 'transferred')
       .reduce((sum, entry) => sum + entry.hours, 0),
     // Anfahrtskosten-Tracking
     totalTravelCosts: timeEntries
@@ -223,6 +223,11 @@ export default function TimeTrackingManager({
       .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
     approvedTravelCosts: timeEntries
       .filter(entry => entry.status === 'customer_approved' && entry.travelTime && entry.travelCost)
+      .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
+    paidTravelCosts: timeEntries
+      .filter(
+        entry => entry.platformHoldStatus === 'transferred' && entry.travelTime && entry.travelCost
+      )
       .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
   };
 
@@ -301,10 +306,8 @@ export default function TimeTrackingManager({
             <div className="text-sm text-gray-600">Platform Hold</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {summary.escrowReleasedHours.toFixed(1)}
-            </div>
-            <div className="text-sm text-gray-600">Ausgezahlt</div>
+            <div className="text-2xl font-bold text-purple-600">{summary.paidHours.toFixed(1)}</div>
+            <div className="text-sm text-gray-600">💰 Bezahlt</div>
           </div>
         </div>
 
@@ -316,6 +319,12 @@ export default function TimeTrackingManager({
               {(summary.totalTravelCosts / 100).toFixed(2)}€
               {summary.approvedTravelCosts > 0 && (
                 <span> • Genehmigt: {(summary.approvedTravelCosts / 100).toFixed(2)}€</span>
+              )}
+              {summary.paidTravelCosts > 0 && (
+                <span className="text-purple-700">
+                  {' '}
+                  • ✅ Bezahlt: {(summary.paidTravelCosts / 100).toFixed(2)}€
+                </span>
               )}
             </div>
           </div>
@@ -339,106 +348,147 @@ export default function TimeTrackingManager({
           </p>
         ) : (
           <div className="space-y-3">
-            {timeEntries.map(entry => (
-              <div
-                key={entry.id}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  entry.status === 'customer_approved'
-                    ? 'border-green-200 bg-green-50'
-                    : entry.status === 'submitted'
-                      ? 'border-yellow-200 bg-yellow-50'
-                      : entry.status === 'customer_rejected'
-                        ? 'border-red-200 bg-red-50'
-                        : entry.category === 'additional'
-                          ? 'border-orange-200 bg-orange-50'
-                          : 'border-gray-200 bg-white'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900">{entry.date}</span>
-                      <span className="text-gray-500">
-                        {entry.startTime} - {entry.endTime}
-                      </span>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          entry.category === 'additional'
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {entry.category === 'additional' ? 'Zusätzlich' : 'Geplant'}
-                      </span>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          entry.status === 'customer_approved'
-                            ? 'bg-green-100 text-green-800'
-                            : entry.status === 'submitted'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : entry.status === 'customer_rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : entry.status === 'platform_held'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : entry.status === 'platform_released'
-                                    ? 'bg-purple-100 text-purple-800'
-                                    : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {entry.status === 'customer_approved'
-                          ? 'Freigegeben'
-                          : entry.status === 'submitted'
-                            ? 'Eingereicht'
-                            : entry.status === 'customer_rejected'
-                              ? 'Abgelehnt'
-                              : entry.status === 'platform_held'
-                                ? 'Platform Hold (Gehalten)'
-                                : entry.status === 'platform_released'
-                                  ? 'Platform Hold Freigegeben'
-                                  : 'Erfasst'}
-                      </span>
-                    </div>
-                    <p className="text-gray-700 mb-1">{entry.description}</p>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">{entry.hours}h</span>
-                      {entry.isBreakTime && <span> (inkl. {entry.breakMinutes}min Pause)</span>}
-                      {entry.travelTime && entry.travelCost && entry.travelCost > 0 && (
-                        <span> + {(entry.travelCost / 100).toFixed(2)}€ Anfahrt</span>
-                      )}
-                      {entry.billableAmount && (
-                        <span className="ml-2 text-green-600 font-medium">
-                          +{(entry.billableAmount / 100).toFixed(2)}€
-                          {entry.platformHoldStatus === 'held' && (
-                            <span className="ml-1 text-blue-600 text-xs">(Platform Hold)</span>
-                          )}
-                          {entry.platformHoldStatus === 'transferred' && (
-                            <span className="ml-1 text-purple-600 text-xs">(Übertragen)</span>
-                          )}
-                        </span>
-                      )}
-                    </div>
-                    {entry.notes && <p className="text-sm text-gray-500 mt-1">{entry.notes}</p>}
-                  </div>
+            {timeEntries
+              .sort((a, b) => {
+                // Sortiere nach Datum (neueste zuerst), dann nach Erstellungszeit
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
 
-                  {entry.status === 'logged' && (
-                    <div className="flex items-center gap-1 ml-4">
-                      <button
-                        onClick={() => handleEditEntry(entry)}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        <FiEdit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => entry.id && handleDeleteEntry(entry.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <FiTrash2 size={16} />
-                      </button>
+                if (dateA.getTime() !== dateB.getTime()) {
+                  return dateB.getTime() - dateA.getTime(); // Neueste zuerst
+                }
+
+                // Bei gleichem Datum: nach Erstellungszeit sortieren (neueste zuerst)
+                const createdA = a.createdAt.seconds * 1000;
+                const createdB = b.createdAt.seconds * 1000;
+                return createdB - createdA;
+              })
+              .map(entry => (
+                <div
+                  key={entry.id}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    // Priorisiere bezahlte/übertragene Status
+                    entry.platformHoldStatus === 'transferred'
+                      ? 'border-purple-300 bg-purple-50 shadow-md ring-2 ring-purple-200'
+                      : entry.status === 'platform_released'
+                        ? 'border-green-300 bg-green-50 shadow-md ring-2 ring-green-200'
+                        : entry.status === 'customer_approved'
+                          ? 'border-green-200 bg-green-50'
+                          : entry.status === 'submitted'
+                            ? 'border-yellow-200 bg-yellow-50'
+                            : entry.status === 'customer_rejected'
+                              ? 'border-red-200 bg-red-50'
+                              : entry.category === 'additional'
+                                ? 'border-orange-200 bg-orange-50'
+                                : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">{entry.date}</span>
+                        <span className="text-gray-500">
+                          {entry.startTime} - {entry.endTime}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            entry.category === 'additional'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          {entry.category === 'additional' ? 'Zusätzlich' : 'Geplant'}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            entry.platformHoldStatus === 'transferred'
+                              ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                              : entry.status === 'customer_approved'
+                                ? 'bg-green-100 text-green-800'
+                                : entry.status === 'submitted'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : entry.status === 'customer_rejected'
+                                    ? 'bg-red-100 text-red-800'
+                                    : entry.status === 'platform_held'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : entry.status === 'platform_released'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {entry.platformHoldStatus === 'transferred'
+                            ? '💰 Bezahlt & Übertragen'
+                            : entry.status === 'customer_approved'
+                              ? 'Freigegeben'
+                              : entry.status === 'submitted'
+                                ? 'Eingereicht'
+                                : entry.status === 'customer_rejected'
+                                  ? 'Abgelehnt'
+                                  : entry.status === 'platform_held'
+                                    ? 'Platform Hold (Gehalten)'
+                                    : entry.status === 'platform_released'
+                                      ? 'Platform Hold Freigegeben'
+                                      : 'Erfasst'}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 mb-1">{entry.description}</p>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{entry.hours}h</span>
+                        {entry.isBreakTime && <span> (inkl. {entry.breakMinutes}min Pause)</span>}
+                        {entry.travelTime && entry.travelCost && entry.travelCost > 0 && (
+                          <span> + {(entry.travelCost / 100).toFixed(2)}€ Anfahrt</span>
+                        )}
+                        {entry.billableAmount && (
+                          <span
+                            className={`ml-2 font-medium ${
+                              entry.platformHoldStatus === 'transferred'
+                                ? 'text-purple-700 bg-purple-100 px-2 py-1 rounded-md border border-purple-200'
+                                : 'text-green-600'
+                            }`}
+                          >
+                            {entry.platformHoldStatus === 'transferred' ? '✅ Bezahlt: ' : '+'}
+                            {(entry.billableAmount / 100).toFixed(2)}€
+                            {entry.platformHoldStatus === 'held' && (
+                              <span className="ml-1 text-blue-600 text-xs">(Platform Hold)</span>
+                            )}
+                            {entry.platformHoldStatus === 'transferred' && (
+                              <span className="ml-1 text-purple-600 text-xs">
+                                (Übertragen am{' '}
+                                {entry.transferredAt
+                                  ? typeof entry.transferredAt === 'string'
+                                    ? new Date(entry.transferredAt).toLocaleDateString('de-DE')
+                                    : new Date(
+                                        entry.transferredAt.seconds * 1000
+                                      ).toLocaleDateString('de-DE')
+                                  : 'N/A'}
+                                )
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      {entry.notes && <p className="text-sm text-gray-500 mt-1">{entry.notes}</p>}
                     </div>
-                  )}
+
+                    {entry.status === 'logged' && (
+                      <div className="flex items-center gap-1 ml-4">
+                        <button
+                          onClick={() => handleEditEntry(entry)}
+                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <FiEdit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => entry.id && handleDeleteEntry(entry.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>
