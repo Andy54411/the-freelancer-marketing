@@ -214,8 +214,8 @@ export default function TimeTrackingManager({
     escrowAuthorizedHours: timeEntries
       .filter(entry => entry.status === 'platform_held')
       .reduce((sum, entry) => sum + entry.hours, 0),
-    escrowReleasedHours: timeEntries
-      .filter(entry => entry.status === 'platform_released')
+    paidHours: timeEntries
+      .filter(entry => entry.platformHoldStatus === 'transferred')
       .reduce((sum, entry) => sum + entry.hours, 0),
     // Anfahrtskosten-Tracking
     totalTravelCosts: timeEntries
@@ -223,6 +223,11 @@ export default function TimeTrackingManager({
       .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
     approvedTravelCosts: timeEntries
       .filter(entry => entry.status === 'customer_approved' && entry.travelTime && entry.travelCost)
+      .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
+    paidTravelCosts: timeEntries
+      .filter(
+        entry => entry.platformHoldStatus === 'transferred' && entry.travelTime && entry.travelCost
+      )
       .reduce((sum, entry) => sum + (entry.travelCost || 0), 0),
   };
 
@@ -238,15 +243,18 @@ export default function TimeTrackingManager({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-[#14ad9f]/5 to-teal-50">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FiClock className="text-[#14ad9f]" />
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-[#14ad9f] rounded-lg">
+                <FiClock className="text-white" size={20} />
+              </div>
               Zeiterfassung - {customerName}
             </h3>
-            <p className="text-sm text-gray-600">
-              Geplant: {originalPlannedHours}h • Stundensatz: {hourlyRate}€/h
+            <p className="text-sm text-gray-600 mt-1 ml-11">
+              Geplant: <span className="font-semibold text-blue-600">{originalPlannedHours}h</span>{' '}
+              • Stundensatz: <span className="font-semibold text-green-600">{hourlyRate}€/h</span>
             </p>
           </div>
 
@@ -255,78 +263,157 @@ export default function TimeTrackingManager({
               setShowAddForm(true);
               setEditingEntry(null);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors shadow-md hover:shadow-lg font-medium"
           >
-            <FiPlus size={16} />
+            <FiPlus size={18} />
             Zeit hinzufügen
           </button>
         </div>
       </div>
 
-      {/* Zusammenfassung */}
+      {/* Statistik Cards */}
       <div className="p-6 bg-gray-50 border-b border-gray-200">
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{summary.totalHours.toFixed(1)}</div>
-            <div className="text-sm text-gray-600">Gesamt Stunden</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {summary.originalHours.toFixed(1)}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {/* Gesamt Stunden */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
+                {summary.totalHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                Gesamt Stunden
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Geplante Stunden</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {summary.additionalHours.toFixed(1)}
+
+          {/* Geplante Stunden */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-700 mb-1">
+                {summary.originalHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">
+                Geplante Stunden
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Zusätzliche Stunden</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {summary.pendingApproval.toFixed(1)}
+
+          {/* Zusätzliche Stunden */}
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-700 mb-1">
+                {summary.additionalHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">
+                Zusätzliche Stunden
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Warten auf Freigabe</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {summary.approvedHours.toFixed(1)}
+
+          {/* Warten auf Freigabe */}
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-700 mb-1">
+                {summary.pendingApproval.toFixed(1)}
+              </div>
+              <div className="text-xs text-yellow-600 font-medium uppercase tracking-wide">
+                Warten auf Freigabe
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Freigegeben</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {summary.escrowAuthorizedHours.toFixed(1)}
+
+          {/* Freigegeben */}
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-700 mb-1">
+                {summary.approvedHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-green-600 font-medium uppercase tracking-wide">
+                Freigegeben
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Platform Hold</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {summary.escrowReleasedHours.toFixed(1)}
+
+          {/* Platform Hold */}
+          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indigo-700 mb-1">
+                {summary.escrowAuthorizedHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-indigo-600 font-medium uppercase tracking-wide">
+                Platform Hold
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Ausgezahlt</div>
+          </div>
+
+          {/* Bezahlt */}
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-700 mb-1">
+                {summary.paidHours.toFixed(1)}
+              </div>
+              <div className="text-xs text-purple-600 font-medium uppercase tracking-wide flex items-center justify-center gap-1">
+                <span>💰</span> Bezahlt
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Anfahrtskosten-Übersicht */}
-        {summary.totalTravelCosts > 0 && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <div className="text-sm text-amber-800">
-              <strong>🚗 Anfahrtskosten:</strong> Gesamt:{' '}
-              {(summary.totalTravelCosts / 100).toFixed(2)}€
-              {summary.approvedTravelCosts > 0 && (
-                <span> • Genehmigt: {(summary.approvedTravelCosts / 100).toFixed(2)}€</span>
-              )}
+        {/* Info Cards */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Anfahrtskosten-Übersicht */}
+          {summary.totalTravelCosts > 0 && (
+            <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <span className="text-amber-600 text-lg">🚗</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-amber-800 mb-1">Anfahrtskosten</h4>
+                  <div className="text-sm text-amber-700 space-y-1">
+                    <div>
+                      Gesamt:{' '}
+                      <span className="font-semibold">
+                        {(summary.totalTravelCosts / 100).toFixed(2)}€
+                      </span>
+                    </div>
+                    {summary.approvedTravelCosts > 0 && (
+                      <div>
+                        Genehmigt:{' '}
+                        <span className="font-semibold">
+                          {(summary.approvedTravelCosts / 100).toFixed(2)}€
+                        </span>
+                      </div>
+                    )}
+                    {summary.paidTravelCosts > 0 && (
+                      <div className="text-purple-700">
+                        ✅ Bezahlt:{' '}
+                        <span className="font-semibold">
+                          {(summary.paidTravelCosts / 100).toFixed(2)}€
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Platform Hold System Erklärung */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="text-sm text-blue-800">
-            <strong>💰 Platform Hold System:</strong> Zusätzliche Stunden werden zuerst vom Kunden
-            bezahlt und sicher auf unserem Platform Account gehalten. Das Geld wird erst nach
-            beidseitiger Projektabnahme automatisch an die Firma übertragen.
+          {/* Platform Hold System Erklärung */}
+          <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <span className="text-blue-600 text-lg">💰</span>
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-800 mb-1">Platform Hold System</h4>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  Zusätzliche Stunden werden zuerst vom Kunden bezahlt und sicher auf unserem
+                  Platform Account gehalten. Das Geld wird erst nach beidseitiger Projektabnahme
+                  automatisch an die Firma übertragen.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

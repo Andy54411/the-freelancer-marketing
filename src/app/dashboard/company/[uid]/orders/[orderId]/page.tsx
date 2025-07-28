@@ -324,17 +324,17 @@ export default function CompanyOrderDetailPage() {
   const isViewerProvider = currentUser.uid === order.providerId;
   const cardUser = isViewerProvider
     ? {
-      id: order.customerId,
-      name: order.customerName,
-      avatarUrl: order.customerAvatarUrl,
-      role: 'customer' as const,
-    }
+        id: order.customerId,
+        name: order.customerName,
+        avatarUrl: order.customerAvatarUrl,
+        role: 'customer' as const,
+      }
     : {
-      id: order.providerId,
-      name: order.providerName,
-      avatarUrl: order.providerAvatarUrl,
-      role: 'provider' as const,
-    };
+        id: order.providerId,
+        name: order.providerName,
+        avatarUrl: order.providerAvatarUrl,
+        role: 'provider' as const,
+      };
 
   return (
     <Suspense
@@ -346,7 +346,7 @@ export default function CompanyOrderDetailPage() {
       }
     >
       <main className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto">
           <button
             onClick={() => router.back()}
             className="text-[#14ad9f] hover:underline flex items-center gap-2 mb-4"
@@ -356,65 +356,196 @@ export default function CompanyOrderDetailPage() {
 
           <h1 className="text-3xl font-semibold text-gray-800 mb-6">Auftrag #{orderId}</h1>
 
-          <div className="bg-white shadow rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-              <p>
-                <strong>Status:</strong>{' '}
-                <span
-                  className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
-                >
-                  {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                    order.status?.replace(/_/g, ' ').slice(1)}
-                </span>
-              </p>
-              <p>
-                <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
-                {order.selectedSubcategory || 'N/A'}
-              </p>
-              <p>
-                <strong>Dauer:</strong>{' '}
-                {(() => {
-                  // Berechne korrekte Stunden basierend auf Datum
-                  if (
-                    order.jobDateFrom &&
-                    order.jobDateTo &&
-                    order.jobDateFrom !== order.jobDateTo
-                  ) {
-                    const startDate = new Date(order.jobDateFrom);
-                    const endDate = new Date(order.jobDateTo);
-                    const totalDays =
-                      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
-                      1;
-                    const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                    const totalHours = totalDays * hoursPerDay;
-                    return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
-                  } else {
-                    const hours = order.jobTotalCalculatedHours || 'N/A';
-                    return `${hours} Stunden`;
-                  }
-                })()}
-              </p>
-              <p>
-                <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
-              </p>
-              <p>
-                <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
-                {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
-                  ? `- ${order.jobDateTo}`
-                  : ''}
-              </p>
-              <p>
-                <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
-              </p>
-              <p className="col-span-full">
-                <strong>Beschreibung:</strong>{' '}
-                {order.beschreibung || 'Keine Beschreibung vorhanden.'}
-              </p>
+          {/* Layout mit Sidebar */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Hauptinhalt - Links */}
+            <div className="flex-1 space-y-6">
+              {/* Auftragsdetails */}
+              <div className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                  <p>
+                    <strong>Status:</strong>{' '}
+                    <span
+                      className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
+                    >
+                      {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
+                        order.status?.replace(/_/g, ' ').slice(1)}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
+                    {order.selectedSubcategory || 'N/A'}
+                  </p>
+                  <p>
+                    <strong>Dauer:</strong>{' '}
+                    {(() => {
+                      // Berechne korrekte Stunden basierend auf Datum
+                      if (
+                        order.jobDateFrom &&
+                        order.jobDateTo &&
+                        order.jobDateFrom !== order.jobDateTo
+                      ) {
+                        const startDate = new Date(order.jobDateFrom);
+                        const endDate = new Date(order.jobDateTo);
+                        const totalDays =
+                          Math.ceil(
+                            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+                          ) + 1;
+                        const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                        const totalHours = totalDays * hoursPerDay;
+                        return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
+                      } else {
+                        const hours = order.jobTotalCalculatedHours || 'N/A';
+                        return `${hours} Stunden`;
+                      }
+                    })()}
+                  </p>
+                  <p>
+                    <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
+                  </p>
+                  <p>
+                    <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
+                    {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
+                      ? `- ${order.jobDateTo}`
+                      : ''}
+                  </p>
+                  <p>
+                    <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
+                  </p>
+                  <p className="col-span-full">
+                    <strong>Beschreibung:</strong>{' '}
+                    {order.beschreibung || 'Keine Beschreibung vorhanden.'}
+                  </p>
+                </div>
+              </div>
 
-              <div className="md:col-span-2 mt-4 flex justify-center">
+              {/* Time Tracking für aktive Aufträge */}
+              {order.status === 'AKTIV' && isViewerProvider && (
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <FiClock className="mr-2" /> Zeiterfassung
+                  </h2>
+                  <TimeTrackingManager
+                    orderId={orderId}
+                    customerName={order.customerName}
+                    originalPlannedHours={(() => {
+                      // Berechne korrekte Stunden basierend auf Datum
+                      if (
+                        order.jobDateFrom &&
+                        order.jobDateTo &&
+                        order.jobDateFrom !== order.jobDateTo
+                      ) {
+                        const startDate = new Date(order.jobDateFrom);
+                        const endDate = new Date(order.jobDateTo);
+                        const totalDays =
+                          Math.ceil(
+                            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+                          ) + 1;
+                        const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                        return totalDays * hoursPerDay;
+                      } else {
+                        return order.jobTotalCalculatedHours || 8;
+                      }
+                    })()}
+                    hourlyRate={(() => {
+                      // Berechne korrekten Stundensatz
+                      const totalHours = (() => {
+                        if (
+                          order.jobDateFrom &&
+                          order.jobDateTo &&
+                          order.jobDateFrom !== order.jobDateTo
+                        ) {
+                          const startDate = new Date(order.jobDateFrom);
+                          const endDate = new Date(order.jobDateTo);
+                          const totalDays =
+                            Math.ceil(
+                              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+                            ) + 1;
+                          const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                          return totalDays * hoursPerDay;
+                        } else {
+                          return order.jobTotalCalculatedHours || 8;
+                        }
+                      })();
+                      return totalHours > 0 ? order.priceInCents / 100 / totalHours : 50;
+                    })()}
+                    onTimeSubmitted={() => {
+                      // Optional: Reload order data or show success message
+                      console.log('Time tracking updated');
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Aktions-Box für den Anbieter */}
+              {order.status === 'zahlung_erhalten_clearing' && isViewerProvider && (
+                <div className="bg-white shadow rounded-lg p-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FiAlertTriangle className="h-6 w-6 text-[#14ad9f]" aria-hidden="true" />
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Aktion erforderlich</h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Dieser Auftrag wurde vom Kunden bezahlt. Bitte nehmen Sie den Auftrag an, um
+                        zu beginnen, oder lehnen Sie ihn ab, falls Sie ihn nicht ausführen können.
+                        Bei Ablehnung wird dem Kunden der Betrag vollständig zurückerstattet.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-4">
+                    <button
+                      onClick={handleAcceptOrder}
+                      disabled={isActionLoading}
+                      className="inline-flex items-center justify-center rounded-md border border-transparent bg-[#14ad9f] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#129a8f] focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isActionLoading ? 'Wird angenommen...' : 'Auftrag annehmen'}
+                    </button>
+                    <button
+                      onClick={handleRejectOrder}
+                      disabled={isActionLoading}
+                      className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isActionLoading ? '...' : 'Auftrag ablehnen'}
+                    </button>
+                  </div>
+                  {actionError && <p className="text-red-600 mt-2 text-sm">{actionError}</p>}
+                </div>
+              )}
+
+              {/* Chat-Bereich */}
+              <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                  <FiMessageSquare className="mr-2" /> Chat zum Auftrag
+                </h2>
+                {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
+                  order.status
+                ) ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
+                    <FiSlash className="text-4xl text-gray-400 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
+                    <p className="text-gray-500 text-sm">
+                      {order.status === 'zahlung_erhalten_clearing'
+                        ? 'Bitte nehmen Sie den Auftrag zuerst an, um den Chat zu aktivieren.'
+                        : 'Für diesen Auftrag ist der Chat nicht verfügbar.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex-1 min-h-0">
+                    <ChatComponent
+                      orderId={orderId}
+                      participants={{ customerId: order.customerId, providerId: order.providerId }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Rechte Sidebar - UserInfoCard */}
+            <div className="w-full lg:w-80 lg:flex-shrink-0">
+              <div className="lg:sticky lg:top-6">
                 <UserInfoCard
-                  className="max-w-sm mx-auto"
                   userId={cardUser.id}
                   userName={cardUser.name}
                   userAvatarUrl={cardUser.avatarUrl}
@@ -422,125 +553,6 @@ export default function CompanyOrderDetailPage() {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Time Tracking für aktive Aufträge */}
-          {order.status === 'AKTIV' && isViewerProvider && (
-            <div className="bg-white shadow rounded-lg p-6 mb-8">
-              <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                <FiClock className="mr-2" /> Zeiterfassung
-              </h2>
-              <TimeTrackingManager
-                orderId={orderId}
-                customerName={order.customerName}
-                originalPlannedHours={(() => {
-                  // Berechne korrekte Stunden basierend auf Datum
-                  if (
-                    order.jobDateFrom &&
-                    order.jobDateTo &&
-                    order.jobDateFrom !== order.jobDateTo
-                  ) {
-                    const startDate = new Date(order.jobDateFrom);
-                    const endDate = new Date(order.jobDateTo);
-                    const totalDays =
-                      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
-                      1;
-                    const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                    return totalDays * hoursPerDay;
-                  } else {
-                    return order.jobTotalCalculatedHours || 8;
-                  }
-                })()}
-                hourlyRate={(() => {
-                  // Berechne korrekten Stundensatz
-                  const totalHours = (() => {
-                    if (
-                      order.jobDateFrom &&
-                      order.jobDateTo &&
-                      order.jobDateFrom !== order.jobDateTo
-                    ) {
-                      const startDate = new Date(order.jobDateFrom);
-                      const endDate = new Date(order.jobDateTo);
-                      const totalDays =
-                        Math.ceil(
-                          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-                        ) + 1;
-                      const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                      return totalDays * hoursPerDay;
-                    } else {
-                      return order.jobTotalCalculatedHours || 8;
-                    }
-                  })();
-                  return totalHours > 0 ? order.priceInCents / 100 / totalHours : 50;
-                })()}
-                onTimeSubmitted={() => {
-                  // Optional: Reload order data or show success message
-                  console.log('Time tracking updated');
-                }}
-              />
-            </div>
-          )}
-
-          {/* Aktions-Box für den Anbieter */}
-          {order.status === 'zahlung_erhalten_clearing' && isViewerProvider && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <FiAlertTriangle className="h-6 w-6 text-[#14ad9f]" aria-hidden="true" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Aktion erforderlich</h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Dieser Auftrag wurde vom Kunden bezahlt. Bitte nehmen Sie den Auftrag an, um zu
-                    beginnen, oder lehnen Sie ihn ab, falls Sie ihn nicht ausführen können. Bei
-                    Ablehnung wird dem Kunden der Betrag vollständig zurückerstattet.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 flex gap-4">
-                <button
-                  onClick={handleAcceptOrder}
-                  disabled={isActionLoading}
-                  className="inline-flex items-center justify-center rounded-md border border-transparent bg-[#14ad9f] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#129a8f] focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isActionLoading ? 'Wird angenommen...' : 'Auftrag annehmen'}
-                </button>
-                <button
-                  onClick={handleRejectOrder}
-                  disabled={isActionLoading}
-                  className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isActionLoading ? '...' : 'Auftrag ablehnen'}
-                </button>
-              </div>
-              {actionError && <p className="text-red-600 mt-2 text-sm">{actionError}</p>}
-            </div>
-          )}
-
-          <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-              <FiMessageSquare className="mr-2" /> Chat zum Auftrag
-            </h2>
-            {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
-              order.status
-            ) ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
-                <FiSlash className="text-4xl text-gray-400 mb-3" />
-                <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
-                <p className="text-gray-500 text-sm">
-                  {order.status === 'zahlung_erhalten_clearing'
-                    ? 'Bitte nehmen Sie den Auftrag zuerst an, um den Chat zu aktivieren.'
-                    : 'Für diesen Auftrag ist der Chat nicht verfügbar.'}
-                </p>
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0">
-                <ChatComponent
-                  orderId={orderId}
-                  participants={{ customerId: order.customerId, providerId: order.providerId }}
-                />
-              </div>
-            )}
           </div>
         </div>
       </main>
