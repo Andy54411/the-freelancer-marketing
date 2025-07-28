@@ -16,6 +16,7 @@ import {
   FiArrowLeft,
   FiUser,
   FiSlash,
+  FiCheckCircle,
 } from 'react-icons/fi'; // FiUser hinzugefügt
 
 import UserInfoCard from '@/components/UserInfoCard'; // Importiere die neue, generische Komponente
@@ -69,6 +70,7 @@ export default function OrderDetailPage() {
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false); // NEU: Ladezustand für Aktionen
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // NEU: Success feedback
 
   // Payment Modal States
   const [showInlinePayment, setShowInlinePayment] = useState(false);
@@ -114,60 +116,75 @@ export default function OrderDetailPage() {
 
   // NEU: Die Logik zum Laden des Auftrags in eine useCallback-Funktion extrahiert,
   // damit wir sie nach einer Aktion erneut aufrufen können.
-  const fetchOrder = useCallback(async () => {
-    if (!currentUser || !orderId) return;
+  const fetchOrder = useCallback(
+    async (retryCount = 0) => {
+      if (!currentUser || !orderId) return;
 
-    setLoadingOrder(true);
-    setError(null);
-    try {
-      const orderDocRef = doc(db, 'auftraege', orderId);
-      const orderDocSnap = await getDoc(orderDocRef);
+      setLoadingOrder(true);
+      setError(null);
+      try {
+        const orderDocRef = doc(db, 'auftraege', orderId);
+        const orderDocSnap = await getDoc(orderDocRef);
 
-      if (!orderDocSnap.exists()) {
-        throw new Error('Auftrag nicht gefunden.');
+        if (!orderDocSnap.exists()) {
+          throw new Error('Auftrag nicht gefunden.');
+        }
+
+        const data = orderDocSnap.data();
+        if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
+          throw new Error('Keine Berechtigung für diesen Auftrag.');
+        }
+
+        const getOrderParticipantDetails = httpsCallable<
+          { orderId: string },
+          { provider: ParticipantDetails; customer: ParticipantDetails }
+        >(functions, 'getOrderParticipantDetails');
+
+        const result = await getOrderParticipantDetails({ orderId });
+        const { provider: providerDetails, customer: customerDetails } = result.data;
+
+        const orderData: OrderData = {
+          id: orderDocSnap.id,
+          serviceTitle: data.selectedSubcategory || 'Dienstleistung',
+          providerId: data.selectedAnbieterId,
+          providerName: providerDetails.name,
+          providerAvatarUrl: providerDetails.avatarUrl,
+          customerId: data.kundeId,
+          customerName: customerDetails.name,
+          customerAvatarUrl: customerDetails.avatarUrl,
+          orderDate: data.paidAt || data.createdAt,
+          priceInCents: data.jobCalculatedPriceInCents || 0,
+          status: data.status || 'unbekannt',
+          selectedCategory: data.selectedCategory,
+          selectedSubcategory: data.selectedSubcategory,
+          jobTotalCalculatedHours: data.jobTotalCalculatedHours,
+          beschreibung: data.description,
+          jobDateFrom: data.jobDateFrom,
+          jobDateTo: data.jobDateTo,
+          jobTimePreference: data.jobTimePreference,
+        };
+        setOrder(orderData);
+        console.log('✅ Order data loaded successfully');
+      } catch (err: any) {
+        console.error('❌ Fehler beim Laden des Auftrags:', err);
+
+        // Retry-Logik für transiente Fehler nach Bezahlung
+        if (
+          retryCount < 3 &&
+          (err.message?.includes('network') || err.message?.includes('timeout'))
+        ) {
+          console.log(`🔄 Retrying fetchOrder (attempt ${retryCount + 1}/3)...`);
+          setTimeout(() => fetchOrder(retryCount + 1), 1000 * (retryCount + 1));
+          return;
+        }
+
+        setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+      } finally {
+        setLoadingOrder(false);
       }
-
-      const data = orderDocSnap.data();
-      if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
-        throw new Error('Keine Berechtigung für diesen Auftrag.');
-      }
-
-      const getOrderParticipantDetails = httpsCallable<
-        { orderId: string },
-        { provider: ParticipantDetails; customer: ParticipantDetails }
-      >(functions, 'getOrderParticipantDetails');
-
-      const result = await getOrderParticipantDetails({ orderId });
-      const { provider: providerDetails, customer: customerDetails } = result.data;
-
-      const orderData: OrderData = {
-        id: orderDocSnap.id,
-        serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-        providerId: data.selectedAnbieterId,
-        providerName: providerDetails.name,
-        providerAvatarUrl: providerDetails.avatarUrl,
-        customerId: data.kundeId,
-        customerName: customerDetails.name,
-        customerAvatarUrl: customerDetails.avatarUrl,
-        orderDate: data.paidAt || data.createdAt,
-        priceInCents: data.jobCalculatedPriceInCents || 0,
-        status: data.status || 'unbekannt',
-        selectedCategory: data.selectedCategory,
-        selectedSubcategory: data.selectedSubcategory,
-        jobTotalCalculatedHours: data.jobTotalCalculatedHours,
-        beschreibung: data.description,
-        jobDateFrom: data.jobDateFrom,
-        jobDateTo: data.jobDateTo,
-        jobTimePreference: data.jobTimePreference,
-      };
-      setOrder(orderData);
-    } catch (err: any) {
-      console.error('Fehler beim Laden des Auftrags:', err);
-      setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
-    } finally {
-      setLoadingOrder(false);
-    }
-  }, [currentUser, orderId]);
+    },
+    [currentUser, orderId]
+  );
 
   // NEU: Beispiel-Handler für den "Auftrag annehmen"-Button
   const handleAcceptOrder = async () => {
@@ -307,11 +324,35 @@ export default function OrderDetailPage() {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     console.log('✅ Payment successful!');
     setShowInlinePayment(false);
-    // Reload order data
-    fetchOrder();
+
+    // Success-Nachricht anzeigen
+    setSuccessMessage('Zahlung erfolgreich! Die Daten werden aktualisiert...');
+
+    // Warte kurz, damit Webhooks Zeit haben die Datenbank zu aktualisieren
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    try {
+      // Reload order data mit Retry-Logik
+      await fetchOrder();
+      console.log('✅ Order data reloaded after payment success');
+      setSuccessMessage('Zahlung erfolgreich abgeschlossen! ✅');
+
+      // Success-Nachricht nach 5 Sekunden ausblenden
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      console.error('❌ Error reloading order data after payment:', error);
+      setSuccessMessage(
+        'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
+      );
+
+      // Fallback: Seite nach 3 Sekunden neu laden
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    }
   };
 
   const handlePaymentCancel = () => {
@@ -393,6 +434,16 @@ export default function OrderDetailPage() {
           </button>
 
           <h1 className="text-3xl font-semibold text-gray-800 mb-6">Auftrag #{orderId}</h1>
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+              <div className="flex items-center">
+                <FiCheckCircle className="mr-2" />
+                {successMessage}
+              </div>
+            </div>
+          )}
 
           {/* Layout mit Sidebar */}
           <div className="flex flex-col lg:flex-row gap-6">
