@@ -79,6 +79,108 @@ export async function POST(req: NextRequest) {
     }
 
     switch (event.type) {
+      case 'charge.succeeded': {
+        const chargeSucceeded = event.data.object as Stripe.Charge;
+        console.log(`[WEBHOOK LOG] charge.succeeded: ${chargeSucceeded.id}`);
+
+        const paymentType = chargeSucceeded.metadata?.type;
+
+        // Handle additional hours payments
+        if (paymentType === 'additional_hours_platform_hold') {
+          console.log(
+            `[WEBHOOK LOG] Processing additional hours payment (charge): ${chargeSucceeded.id}`
+          );
+
+          const orderId = chargeSucceeded.metadata?.orderId;
+          const entryIds = chargeSucceeded.metadata?.entryIds;
+
+          if (!orderId || !entryIds) {
+            const errorKey = `missing_metadata_charge_${chargeSucceeded.id}`;
+            if (shouldLogError(errorKey)) {
+              console.error(
+                `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im Charge ${chargeSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
+              );
+            }
+            return NextResponse.json({
+              received: true,
+              message: 'Wichtige Metadaten (orderId oder entryIds) für zusätzliche Stunden fehlen.',
+            });
+          }
+
+          try {
+            const entryIdsList = entryIds.split(',');
+            const orderRef = db.collection('auftraege').doc(orderId);
+
+            await db.runTransaction(async transaction => {
+              const orderSnapshot = await transaction.get(orderRef);
+
+              if (!orderSnapshot.exists) {
+                throw new Error(`Auftrag ${orderId} nicht gefunden.`);
+              }
+
+              const orderData = orderSnapshot.data()!;
+
+              // Update time entries status to 'transferred' in the timeTracking.timeEntries ARRAY
+              const timeTracking = orderData.timeTracking;
+              if (timeTracking && timeTracking.timeEntries) {
+                const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
+                  if (entryIdsList.includes(entry.id)) {
+                    console.log(
+                      `[WEBHOOK LOG] TimeEntry ${entry.id} marked as transferred (paid) via charge.succeeded`
+                    );
+                    return {
+                      ...entry,
+                      status: 'transferred', // CRITICAL: Change status to transferred
+                      billingStatus: 'transferred', // Also update billingStatus
+                      paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                      paymentIntentId: chargeSucceeded.payment_intent,
+                      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                      transferredAt: admin.firestore.FieldValue.serverTimestamp(),
+                    };
+                  }
+                  return entry;
+                });
+
+                // Update billingData status to completed
+                const updatedBillingData = {
+                  ...timeTracking.billingData,
+                  status: 'completed', // CRITICAL: Mark billing as completed
+                  completedAt: admin.firestore.FieldValue.serverTimestamp(),
+                  lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                };
+
+                // Update the entire timeTracking object
+                transaction.update(orderRef, {
+                  'timeTracking.timeEntries': updatedTimeEntries,
+                  'timeTracking.billingData': updatedBillingData,
+                  lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                });
+              }
+            });
+
+            console.log(
+              `[WEBHOOK LOG] Additional hours payment (charge) processed successfully for order ${orderId}`
+            );
+          } catch (dbError: unknown) {
+            let dbErrorMessage =
+              'Unbekannter Datenbankfehler bei der Verarbeitung zusätzlicher Stunden (charge).';
+            if (dbError instanceof Error) {
+              dbErrorMessage = dbError.message;
+            }
+            const errorKey = `db_additional_hours_charge_${orderId}`;
+            if (shouldLogError(errorKey)) {
+              console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden (charge):`, dbError);
+            }
+            return NextResponse.json({
+              received: true,
+              message: `Additional hours processing (charge) failed: ${dbErrorMessage}`,
+            });
+          }
+          break;
+        }
+        break;
+      }
+
       case 'payment_intent.succeeded': {
         const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
         console.log(`[WEBHOOK LOG] payment_intent.succeeded: ${paymentIntentSucceeded.id}`);

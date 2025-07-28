@@ -48,16 +48,17 @@ export async function POST(req: NextRequest) {
       entryIds.push(doc.id);
 
       batch.update(entryRef, {
-        status: 'platform_held',
+        status: 'transferred',
+        billingStatus: 'transferred',
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
         fixedAt: admin.firestore.FieldValue.serverTimestamp(),
-        fixedBy: 'manual_correction',
+        fixedBy: 'automatic_correction',
       });
 
       updates.push({
         id: doc.id,
         oldStatus: doc.data().status,
-        newStatus: 'platform_held',
+        newStatus: 'transferred',
       });
     });
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const timeTrackingData = orderData.timeTracking || {};
     if (timeTrackingData.status === 'billing_pending') {
       batch.update(orderRef, {
-        'timeTracking.status': 'platform_held',
+        'timeTracking.status': 'transferred',
         'timeTracking.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
         'timeTracking.fixedAt': admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
     // Execute batch
     await batch.commit();
 
-    console.log(`[FIX PAYMENT] Updated ${updates.length} time entries to platform_held`);
+    console.log(`[FIX PAYMENT] Updated ${updates.length} time entries to transferred`);
 
     return NextResponse.json({
       success: true,

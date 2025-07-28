@@ -332,12 +332,54 @@ export default function OrderDetailPage() {
     setSuccessMessage('Zahlung erfolgreich! Die Daten werden aktualisiert...');
 
     // Warte kurz, damit Webhooks Zeit haben die Datenbank zu aktualisieren
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
       // Reload order data mit Retry-Logik
       await fetchOrder();
       console.log('✅ Order data reloaded after payment success');
+
+      // Prüfe, ob die Zahlung korrekt verarbeitet wurde
+      const { TimeTracker } = await import('@/lib/timeTracker');
+      const orderDetails = await TimeTracker.getOrderDetails(orderId);
+
+      const billingPendingEntries =
+        orderDetails?.timeTracking?.timeEntries?.filter(
+          (e: any) => e.status === 'billing_pending' && e.paymentIntentId
+        ) || [];
+
+      if (billingPendingEntries.length > 0) {
+        console.log(
+          '🔧 Auto-fixing: Found billing_pending entries after successful payment, triggering automatic fix...'
+        );
+
+        // Automatische Reparatur für billing_pending Einträge
+        const entryIds = billingPendingEntries.map((e: any) => e.id);
+        const paymentIntentId = billingPendingEntries[0].paymentIntentId;
+
+        try {
+          const fixResponse = await fetch('/api/fix-payment-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId,
+              paymentIntentId,
+            }),
+          });
+
+          if (fixResponse.ok) {
+            console.log('✅ Auto-fix successful! Reloading data...');
+            setSuccessMessage('Zahlung erfolgreich! Daten werden automatisch korrigiert...');
+
+            // Warte noch 2 Sekunden und lade dann erneut
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await fetchOrder();
+          }
+        } catch (fixError) {
+          console.error('❌ Auto-fix failed:', fixError);
+        }
+      }
+
       setSuccessMessage('Zahlung erfolgreich abgeschlossen! ✅');
 
       // Success-Nachricht nach 5 Sekunden ausblenden
