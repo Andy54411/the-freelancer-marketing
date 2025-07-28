@@ -10,6 +10,10 @@ export async function callHttpsFunction(
     throw new Error('User not authenticated');
   }
 
+  console.log('🔐 callHttpsFunction - User UID:', user.uid);
+  console.log('📡 callHttpsFunction - Function:', functionName);
+  console.log('📊 callHttpsFunction - Data:', data);
+
   const token = await user.getIdToken();
   const baseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';
 

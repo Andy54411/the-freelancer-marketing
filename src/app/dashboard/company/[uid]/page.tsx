@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -152,11 +153,13 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
   // Effekt zum Laden der Auftragsdaten
   useEffect(() => {
-    if (uid) {
+    if (uid && isAuthorized) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
           console.log('🔄 Fetching orders for provider:', uid);
+          console.log('🔑 Current user authorized:', isAuthorized);
+          console.log('🆔 Current user UID vs URL UID:', { uid });
           const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
           console.log('📊 API Response:', result);
           console.log('📋 Orders array:', result.orders);
@@ -177,8 +180,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
         }
       };
       fetchOrders();
+    } else {
+      console.log('⚠️ Not fetching orders - uid:', uid, 'isAuthorized:', isAuthorized);
     }
-  }, [uid]);
+  }, [uid, isAuthorized]);
 
   // Effekt zum Berechnen der Company Metriken
   useEffect(() => {
