@@ -116,7 +116,11 @@ export default function HoursBillingOverview({
     entry => entry.category === 'additional' && entry.status === 'transferred'
   );
   const pendingAdditionalEntries = data.timeEntries.filter(
-    entry => entry.category === 'additional' && entry.status === 'billing_pending'
+    entry =>
+      entry.category === 'additional' &&
+      (entry.status === 'billing_pending' ||
+        entry.status === 'logged' ||
+        entry.status === 'customer_approved')
   );
 
   // Berechne Summen
@@ -129,10 +133,17 @@ export default function HoursBillingOverview({
     (sum, entry) => sum + entry.hours,
     0
   );
-  const pendingAdditionalAmount = pendingAdditionalEntries.reduce(
-    (sum, entry) => sum + (entry.billableAmount || 0),
-    0
-  );
+  const pendingAdditionalAmount = pendingAdditionalEntries.reduce((sum, entry) => {
+    // Verwende billableAmount falls vorhanden, sonst berechne aus Stundensatz
+    if (entry.billableAmount) {
+      return sum + entry.billableAmount;
+    } else {
+      // Berechne Betrag aus Stunden * Stundensatz + Reisekosten
+      const baseAmount = entry.hours * data.hourlyRate;
+      const travelCost = entry.travelCost || 0;
+      return sum + baseAmount + travelCost;
+    }
+  }, 0);
 
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('de-DE');

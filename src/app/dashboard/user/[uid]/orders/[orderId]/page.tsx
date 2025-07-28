@@ -484,32 +484,6 @@ export default function OrderDetailPage() {
             <HoursBillingOverview orderId={orderId} className="mb-8" />
           )}
 
-          {/* Customer Approval Interface für aktive und ausstehende Aufträge */}
-          {['AKTIV', 'bezahlt', 'zahlung_erhalten_clearing', 'in_progress', 'pending'].includes(
-            order.status
-          ) &&
-            currentUser.uid === order.customerId && (
-              <div className="bg-white shadow rounded-lg p-6 mb-8">
-                <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                  <FiAlertCircle className="mr-2" /> Stundenfreigabe
-                </h2>
-                <p className="text-gray-600 mb-4">
-                  Der Anbieter kann zusätzliche Arbeitsstunden zur Freigabe einreichen. Sie können
-                  diese überprüfen und genehmigen oder ablehnen.
-                </p>
-
-                {/* Direct Payment Button */}
-                <div className="mt-6">
-                  <button
-                    onClick={handleOpenPayment}
-                    className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    � Zusätzliche Stunden bezahlen
-                  </button>
-                </div>
-              </div>
-            )}
-
           {/* Chat-Bereich */}
           <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
             <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
