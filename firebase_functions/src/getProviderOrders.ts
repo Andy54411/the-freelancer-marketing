@@ -17,7 +17,8 @@ interface AuftraegeDocumentData {
     paidAt?: Timestamp;
     createdAt: Timestamp;
     jobCalculatedPriceInCents: number;
-    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing' | 'abgelehnt_vom_anbieter';
+    totalAmountPaidByBuyer?: number; // Echter bezahlter Betrag in Cents
+    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing' | 'abgelehnt_vom_anbieter' | 'COMPLETED' | 'BEZAHLT';
     description?: string;
     jobPostalCode?: string;
     jobTotalCalculatedHours?: number;
@@ -161,7 +162,7 @@ export const getProviderOrders = onRequest(
                 return;
             }
 
-            // 5. Process Data & Batch Fetch Customer Details
+            // 5. Process Data & Batch Fetch Customer Details + TimeTracking Data
             const ordersFromDb = ordersSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
@@ -169,6 +170,7 @@ export const getProviderOrders = onRequest(
 
             const customerIds = [...new Set(ordersFromDb.map(order => order.customerFirebaseUid).filter(Boolean))];
 
+            // Fetch customer details
             const customersMap = new Map<string, { name: string, avatarUrl?: string }>();
             if (customerIds.length > 0) {
                 const customerDocRefs = customerIds.map(id => db.collection(FIRESTORE_COLLECTIONS.USERS).doc(id));
@@ -182,9 +184,65 @@ export const getProviderOrders = onRequest(
                 }
             }
 
-            // 6. Map to final OrderData structure
+            // Fetch TimeTracking data for all orders
+            const timeTrackingMap = new Map<string, any>();
+            if (ordersFromDb.length > 0) {
+                try {
+                    const timeTrackingQueries = ordersFromDb.map(order => 
+                        db.collection('auftraege').doc(order.id).get()
+                    );
+                    const timeTrackingDocs = await Promise.all(timeTrackingQueries);
+                    
+                    timeTrackingDocs.forEach((doc, index) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            if (data?.timeTracking) {
+                                timeTrackingMap.set(ordersFromDb[index].id, data.timeTracking);
+                            }
+                        }
+                    });
+                } catch (error) {
+                    logger.warn(`[getProviderOrders] Failed to fetch timeTracking data:`, error);
+                }
+            }
+
+            // 6. Map to final OrderData structure with calculated total revenue
             const orders: ProviderOrderData[] = ordersFromDb.map(data => {
                 const customerDetails = customersMap.get(data.customerFirebaseUid) || { name: UNKNOWN_CUSTOMER_NAME, avatarUrl: undefined };
+                const timeTracking = timeTrackingMap.get(data.id);
+
+                // Calculate total revenue including timeTracking entries
+                let totalRevenue = 0;
+
+                // 1. Base order amount - only if payment was received
+                if (data.totalAmountPaidByBuyer && data.totalAmountPaidByBuyer > 0) {
+                    if (
+                        data.status === 'zahlung_erhalten_clearing' ||
+                        data.status === 'ABGESCHLOSSEN' ||
+                        data.status === 'COMPLETED' ||
+                        data.status === 'BEZAHLT'
+                    ) {
+                        totalRevenue += data.totalAmountPaidByBuyer;
+                    }
+                }
+
+                // 2. Additional paid hours from TimeTracking
+                if (timeTracking?.timeEntries) {
+                    timeTracking.timeEntries.forEach((entry: any) => {
+                        // Only count really paid and transferred amounts
+                        if (
+                            entry.billableAmount &&
+                            entry.billableAmount > 0 &&
+                            (entry.status === 'transferred' ||
+                             entry.status === 'paid' ||
+                             entry.platformHoldStatus === 'transferred' ||
+                             entry.billingStatus === 'transferred' ||
+                             entry.paymentStatus === 'paid')
+                        ) {
+                            totalRevenue += entry.billableAmount;
+                        }
+                    });
+                }
 
                 return {
                     id: data.id,
@@ -193,7 +251,7 @@ export const getProviderOrders = onRequest(
                     customerAvatarUrl: customerDetails.avatarUrl,
                     status: data.status,
                     orderDate: data.paidAt || data.createdAt,
-                    totalAmountPaidByBuyer: data.jobCalculatedPriceInCents || 0,
+                    totalAmountPaidByBuyer: totalRevenue, // Now includes base amount + paid timeTracking
                     uid: data.selectedAnbieterId,
                     orderedBy: data.customerFirebaseUid,
                     projectId: data.projectId,
