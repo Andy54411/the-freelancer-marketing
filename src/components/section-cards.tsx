@@ -71,14 +71,75 @@ export function SectionCards() {
 
         querySnapshot.forEach(doc => {
           const order = doc.data();
-          if ((order.status === 'ABGESCHLOSSEN' || order.status === 'BEZAHLT') && order.paidAt) {
-            const orderDate = order.paidAt.toDate();
-            if (orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear) {
-              monthlyRevenue += order.jobCalculatedPriceInCents || 0;
+
+          // Debug: Zeige alle Status-Werte in der Konsole
+          console.log(
+            'Order Status:',
+            order.status,
+            'Original Price:',
+            order.jobCalculatedPriceInCents
+          );
+
+          // VOLLSTÄNDIGE UMSATZBERECHNUNG - berücksichtige alle Einnahmen
+          let orderTotalRevenue = 0;
+
+          // 1. Basis-Auftragswert
+          if (order.jobCalculatedPriceInCents && order.jobCalculatedPriceInCents > 0) {
+            if (
+              order.status !== 'STORNIERT' &&
+              order.status !== 'ABGELEHNT' &&
+              order.status !== 'CANCELLED'
+            ) {
+              orderTotalRevenue += order.jobCalculatedPriceInCents;
+              console.log('Added base order value:', order.jobCalculatedPriceInCents);
             }
           }
+
+          // 2. ZUSÄTZLICHE BEZAHLTE STUNDEN aus TimeTracking
+          if (order.timeTracking?.timeEntries) {
+            order.timeTracking.timeEntries.forEach((entry: any) => {
+              // Berücksichtige alle bezahlten zusätzlichen Zeiteinträge
+              if (
+                entry.category === 'additional' &&
+                entry.billableAmount &&
+                entry.billableAmount > 0 &&
+                (entry.status === 'transferred' ||
+                  entry.status === 'approved' ||
+                  entry.billingStatus === 'transferred')
+              ) {
+                orderTotalRevenue += entry.billableAmount;
+                console.log(
+                  'Added timetracking entry:',
+                  entry.billableAmount,
+                  'Status:',
+                  entry.status
+                );
+              }
+            });
+          }
+
+          // 3. DIREKTEN BILLING-BETRAG berücksichtigen (falls vorhanden)
+          if (order.timeTracking?.billingData?.customerPays) {
+            orderTotalRevenue += order.timeTracking.billingData.customerPays * 100; // Convert to cents
+            console.log('Added billing data:', order.timeTracking.billingData.customerPays * 100);
+          }
+
+          console.log('Total order revenue:', orderTotalRevenue);
+          monthlyRevenue += orderTotalRevenue;
+
+          // Neue Aufträge (die auf Clearing warten)
           if (order.status === 'zahlung_erhalten_clearing') newOrders++;
-          if (order.status === 'AKTIV' || order.status === 'IN BEARBEITUNG') activeOrders++;
+
+          // Aktive Aufträge in Bearbeitung - erweiterte Status-Liste
+          if (
+            order.status === 'AKTIV' ||
+            order.status === 'IN BEARBEITUNG' ||
+            order.status === 'ANGENOMMEN' ||
+            order.status === 'ACCEPTED' ||
+            order.status === 'ACTIVE'
+          ) {
+            activeOrders++;
+          }
         });
 
         // 2. Stripe-Guthaben abrufen
@@ -327,7 +388,7 @@ export function SectionCards() {
               className="text-xs font-medium border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300"
             >
               <IconTrendingUp size={10} className="mr-1 flex-shrink-0" />
-              <span>Monat</span>
+              <span>Gesamt</span>
             </Badge>
           </CardAction>
         </CardHeader>
