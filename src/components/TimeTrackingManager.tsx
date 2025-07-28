@@ -101,7 +101,6 @@ export default function TimeTrackingManager({
             ) {
               mappedStatus = 'paid';
             } else if (entry.status === 'customer_approved' || entry.status === 'approved') {
-            } else if (entry.status === 'customer_approved' || entry.status === 'approved') {
               mappedStatus = 'approved';
             } else if (entry.status === 'customer_rejected' || entry.status === 'rejected') {
               mappedStatus = 'rejected';
@@ -235,15 +234,24 @@ export default function TimeTrackingManager({
     approvedHours: timeEntries
       .filter(entry => entry.status === 'approved' || entry.status === 'paid')
       .reduce((sum, entry) => sum + entry.hours, 0),
-    totalRevenue: timeEntries
-      .filter(entry => entry.status === 'approved' || entry.status === 'paid')
-      .reduce((sum, entry) => {
-        // Verwende billableAmount aus der Datenbank (in Cents), fallback auf Stunden * Rate
-        if (entry.billableAmount && entry.billableAmount > 0) {
-          return sum + entry.billableAmount / 100; // Convert from cents to euros
-        }
+    totalRevenue: timeEntries.reduce((sum, entry) => {
+      // Debug: Log entry for revenue calculation
+      console.log('Revenue calc for entry:', entry.status, 'billableAmount:', entry.billableAmount);
+
+      // Berechne Revenue für alle Einträge mit billableAmount, unabhängig vom Status
+      if (entry.billableAmount && entry.billableAmount > 0) {
+        console.log('Adding billableAmount to revenue:', entry.billableAmount / 100);
+        return sum + entry.billableAmount / 100; // Convert from cents to euros
+      }
+
+      // Fallback: Für approved/paid ohne billableAmount verwende Stunden * Rate
+      if ((entry.status === 'approved' || entry.status === 'paid') && entry.hours > 0) {
+        console.log('Adding hours * rate to revenue:', entry.hours * hourlyRate);
         return sum + entry.hours * hourlyRate;
-      }, 0),
+      }
+
+      return sum;
+    }, 0),
   };
 
   if (loading) {
@@ -385,22 +393,26 @@ export default function TimeTrackingManager({
                         </span>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            entry.status === 'approved'
-                              ? 'bg-green-100 text-green-800'
-                              : entry.status === 'submitted'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : entry.status === 'rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-gray-100 text-gray-800'
+                            entry.status === 'paid'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : entry.status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : entry.status === 'submitted'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : entry.status === 'rejected'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {entry.status === 'approved'
-                            ? 'Freigegeben'
-                            : entry.status === 'submitted'
-                              ? 'Eingereicht'
-                              : entry.status === 'rejected'
-                                ? 'Abgelehnt'
-                                : 'Erfasst'}
+                          {entry.status === 'paid'
+                            ? 'Bezahlt'
+                            : entry.status === 'approved'
+                              ? 'Freigegeben'
+                              : entry.status === 'submitted'
+                                ? 'Eingereicht'
+                                : entry.status === 'rejected'
+                                  ? 'Abgelehnt'
+                                  : 'Erfasst'}
                         </span>
                       </div>
 
