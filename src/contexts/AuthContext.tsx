@@ -59,6 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // NEU: Logout-Funktion implementieren
   const logout = async () => {
     try {
+      // NEU: Cleanup Presence VOR dem Logout
+      await userPresence.cleanupPresence();
+
       await signOut(auth);
       setUser(null);
       setFirebaseUser(null);

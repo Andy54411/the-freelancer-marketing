@@ -89,12 +89,31 @@ export class UserPresenceService {
       }
     };
 
+    // NEU: Behandle auch Browser-Tab-Schließungen
+    const handleBeforeUnload = async () => {
+      if (this.userId) {
+        const userPresenceRef = ref(realtimeDb, `presence/${this.userId}`);
+        // Synchroner call für beforeunload
+        navigator.sendBeacon('/api/user-offline', JSON.stringify({ userId: this.userId }));
+
+        // Auch sofortiger offline-Status
+        await set(userPresenceRef, {
+          isOnline: false,
+          lastSeen: serverTimestamp(),
+          status: 'offline',
+        });
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
   }
 
   // Beendet die Presence-Überwachung
   async cleanupPresence(): Promise<void> {
     if (!this.userId) return;
+
+    console.log(`[UserPresence] Cleaning up presence for user: ${this.userId}`);
 
     // Stoppe den Aktivitäts-Timer
     if (this.intervalId) {
@@ -102,13 +121,18 @@ export class UserPresenceService {
       this.intervalId = null;
     }
 
-    // Setze den Benutzer als offline
+    // Setze den Benutzer SOFORT als offline
     const userPresenceRef = ref(realtimeDb, `presence/${this.userId}`);
-    await set(userPresenceRef, {
-      isOnline: false,
-      lastSeen: serverTimestamp(),
-      status: 'offline',
-    });
+    try {
+      await set(userPresenceRef, {
+        isOnline: false,
+        lastSeen: serverTimestamp(),
+        status: 'offline',
+      });
+      console.log(`[UserPresence] Successfully set user ${this.userId} offline`);
+    } catch (error) {
+      console.error('[UserPresence] Error setting user offline:', error);
+    }
 
     this.isInitialized = false;
     this.userId = null;

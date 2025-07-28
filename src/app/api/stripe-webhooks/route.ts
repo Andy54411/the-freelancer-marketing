@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
               // Update time entries status to 'transferred' in the timeTracking.timeEntries ARRAY
               const timeTracking = orderData.timeTracking;
               if (timeTracking && timeTracking.timeEntries) {
+                const now = new Date();
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
                     console.log(
@@ -132,10 +133,10 @@ export async function POST(req: NextRequest) {
                       ...entry,
                       status: 'transferred', // CRITICAL: Change status to transferred
                       billingStatus: 'transferred', // Also update billingStatus
-                      paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                      paidAt: now,
                       paymentIntentId: chargeSucceeded.payment_intent,
-                      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-                      transferredAt: admin.firestore.FieldValue.serverTimestamp(),
+                      lastUpdated: now.toISOString(),
+                      transferredAt: now.toISOString(),
                     };
                   }
                   return entry;
@@ -225,6 +226,7 @@ export async function POST(req: NextRequest) {
               // Update time entries status to 'transferred' in the timeTracking.timeEntries ARRAY
               const timeTracking = orderData.timeTracking;
               if (timeTracking && timeTracking.timeEntries) {
+                const now = new Date();
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
                     console.log(`[WEBHOOK LOG] TimeEntry ${entry.id} marked as transferred (paid)`);
@@ -232,10 +234,10 @@ export async function POST(req: NextRequest) {
                       ...entry,
                       status: 'transferred', // CRITICAL: Change status to transferred
                       billingStatus: 'transferred', // Also update billingStatus
-                      paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                      paidAt: now,
                       paymentIntentId: paymentIntentSucceeded.id,
-                      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-                      transferredAt: admin.firestore.FieldValue.serverTimestamp(),
+                      lastUpdated: now.toISOString(),
+                      transferredAt: now.toISOString(),
                     };
                   }
                   return entry;
