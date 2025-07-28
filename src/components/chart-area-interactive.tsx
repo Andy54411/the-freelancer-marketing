@@ -114,7 +114,13 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
     let currentTotalRevenue = 0;
 
     orders.forEach(order => {
-      if (!order.orderDate || !['ABGESCHLOSSEN', 'BEZAHLT'].includes(order.status)) {
+      if (!order.orderDate) {
+        return;
+      }
+
+      // Zeige alle Aufträge mit Umsatz an (nicht nur ABGESCHLOSSEN/BEZAHLT)
+      // da auch AKTIVE Aufträge bereits Umsatz generiert haben können
+      if (!order.totalAmountPaidByBuyer || order.totalAmountPaidByBuyer <= 0) {
         return;
       }
 

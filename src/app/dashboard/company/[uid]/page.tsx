@@ -250,24 +250,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             <SectionCards />
             {uid && <ChartAreaInteractive companyUid={uid} />}
 
-            {/* SUPER DEBUG INFO - DIREKT VOR DATATABLE */}
-            <div className="mt-4 p-4 bg-red-100 rounded text-xs border-2 border-red-500">
-              <div className="font-bold mb-2">🚨 DATATABLE DIRECT DEBUG:</div>
-              <div>📊 Orders type: {typeof orders}</div>
-              <div>📊 Orders is Array: {Array.isArray(orders) ? 'Yes' : 'No'}</div>
-              <div>📊 Orders length: {orders?.length || 'undefined'}</div>
-              <div>📊 Orders JSON: {JSON.stringify(orders, null, 2)}</div>
-              <div>📊 Loading state: {loadingOrders ? 'LOADING' : 'NOT LOADING'}</div>
-              <div className="mt-2 p-2 bg-yellow-100 rounded">
-                <div>🔧 MANUAL CHECK:</div>
-                {orders && orders.length > 0 ? (
-                  <div>✅ ORDERS EXIST - DataTable should show data!</div>
-                ) : (
-                  <div>❌ NO ORDERS - This is why DataTable shows &quot;Keine Daten&quot;</div>
-                )}
-              </div>
-            </div>
-
             {/* DATATABLE MIT ORDERS DATEN */}
             <div className="mt-4">
               <h3 className="text-lg font-semibold mb-2">📊 Aufträge Übersicht</h3>
@@ -277,34 +259,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 isLoading={loadingOrders}
                 onRowClick={handleRowClick}
               />
-            </div>
-            {/* Debug Info */}
-            <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-              <div className="font-bold mb-2">🐛 ERWEITERTE DEBUG INFORMATIONEN:</div>
-              <div>📊 Orders count: {orders.length}</div>
-              <div>⏳ Loading Orders: {loadingOrders ? 'Yes' : 'No'}</div>
-              <div>🔄 IsChecking: {isChecking ? 'Yes' : 'No'}</div>
-              <div>🆔 URL UID: {uid}</div>
-              <div>👤 Auth User UID: {authUser?.uid}</div>
-              <div>🔥 Firebase User UID: {firebaseUser?.uid}</div>
-              <div>🔑 Is Authorized: {isAuthorized ? 'Yes' : 'No'}</div>
-              <div>🎯 UID Match: {authUser?.uid === uid ? 'Yes' : 'No'}</div>
-              <div>📧 User Email: {authUser?.email || firebaseUser?.email}</div>
-              <div>✅ User Verified: {firebaseUser?.emailVerified ? 'Yes' : 'No'}</div>
-              <div className="mt-2 p-2 bg-yellow-100 rounded">
-                <div>🔍 WARUM KEINE DATEN?</div>
-                {!uid && <div>❌ Keine UID vorhanden</div>}
-                {!isAuthorized && <div>❌ Nicht autorisiert</div>}
-                {uid && isAuthorized && orders.length === 0 && !loadingOrders && (
-                  <div>❌ API Call erfolgreich aber leeres Array zurückgegeben</div>
-                )}
-                {uid && isAuthorized && loadingOrders && <div>⏳ Lädt noch...</div>}
-              </div>
-              {orders.length > 0 && (
-                <div className="mt-2 p-2 bg-green-100 rounded">
-                  📄 First order: {JSON.stringify(orders[0], null, 2)}
-                </div>
-              )}
             </div>
             <div className="mt-8 text-center">
               <Link

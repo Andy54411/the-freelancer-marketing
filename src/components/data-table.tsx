@@ -303,16 +303,7 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                      <div className="text-center">
-                        <div className="text-lg mb-2">Keine Daten</div>
-                        <div className="text-xs text-gray-500">
-                          🔍 DEBUG: data.length={data.length}, rows.length=
-                          {table.getRowModel().rows?.length || 0}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Erste Zeile: {JSON.stringify(data[0] || null, null, 2)}
-                        </div>
-                      </div>
+                      Keine Daten verfügbar
                     </TableCell>
                   </TableRow>
                 )}
