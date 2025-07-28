@@ -276,11 +276,11 @@ export function SectionCards() {
               disabled={
                 isWithdrawing ||
                 stats.availableBalance <= 0 ||
-                stats.hasActiveOrders ||
-                (stats.pendingApprovals && stats.pendingApprovals > 0)
+                !!stats.hasActiveOrders ||
+                !!(stats.pendingApprovals && stats.pendingApprovals > 0)
               }
               className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight ${
-                stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
+                !!stats.hasActiveOrders || !!(stats.pendingApprovals && stats.pendingApprovals > 0)
                   ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700'
               } text-white`}
@@ -294,8 +294,8 @@ export function SectionCards() {
             >
               {isWithdrawing ? (
                 <span>...</span>
-              ) : stats.hasActiveOrders ||
-                (stats.pendingApprovals && stats.pendingApprovals > 0) ? (
+              ) : !!stats.hasActiveOrders ||
+                !!(stats.pendingApprovals && stats.pendingApprovals > 0) ? (
                 <>
                   <span>🔒</span>
                   <span>Gesperrt</span>

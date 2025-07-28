@@ -26,10 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No timeTracking found' }, { status: 404 });
     }
 
-    // Check if billingData.status is completed OR payment_received (for old payments without transfer events)
-    const billingCompleted =
-      timeTracking.billingData?.status === 'completed' ||
-      timeTracking.billingData?.status === 'payment_received';
+    // Check if billingData.status is completed
+    const billingCompleted = timeTracking.billingData?.status === 'completed';
 
     // Check if all additional timeEntries are transferred
     const timeEntries = timeTracking.timeEntries || [];
@@ -40,29 +38,19 @@ export async function POST(req: NextRequest) {
 
     console.log(`[FIX-TIME-TRACKING] Order ${orderId} analysis:`, {
       currentStatus: timeTracking.status,
-      billingDataStatus: timeTracking.billingData?.status,
       billingCompleted,
       totalEntries: timeEntries.length,
       additionalEntries: additionalEntries.length,
       allAdditionalTransferred,
-      billingData: timeTracking.billingData,
     });
 
-    // If billing is completed/payment_received and all additional entries are transferred, update main status
+    // If billing is completed and all additional entries are transferred, update main status
     if (billingCompleted && allAdditionalTransferred && timeTracking.status !== 'completed') {
-      // Also update billingData to completed if it was payment_received
-      const updateData: any = {
+      await orderRef.update({
         'timeTracking.status': 'completed',
         'timeTracking.lastUpdated': new Date(),
         lastUpdated: new Date(),
-      };
-
-      if (timeTracking.billingData?.status === 'payment_received') {
-        updateData['timeTracking.billingData.status'] = 'completed';
-        updateData['timeTracking.billingData.completedAt'] = new Date();
-      }
-
-      await orderRef.update(updateData);
+      });
 
       console.log(
         `[FIX-TIME-TRACKING] Successfully updated status to 'completed' for order ${orderId}`
@@ -75,7 +63,6 @@ export async function POST(req: NextRequest) {
         newStatus: 'completed',
         billingCompleted,
         allAdditionalTransferred,
-        billingUpdated: timeTracking.billingData?.status === 'payment_received',
       });
     }
 
@@ -86,7 +73,7 @@ export async function POST(req: NextRequest) {
       billingCompleted,
       allAdditionalTransferred,
       reason: !billingCompleted
-        ? 'Billing not completed and not payment_received'
+        ? 'Billing not completed'
         : !allAdditionalTransferred
           ? 'Not all additional entries transferred'
           : 'Status already correct',
