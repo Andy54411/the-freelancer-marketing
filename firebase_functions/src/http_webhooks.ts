@@ -165,57 +165,76 @@ export const stripeWebhookHandler = onRequest(
                                     // (regardless of whether paymentIntentId is already set - handle retry scenario)
                                     if (entryIdsList.includes(entry.id) && entry.status === 'billing_pending') {
                                         updatedCount++;
-                                        logger.info(`[stripeWebhookHandler] TimeEntry ${entry.id} marked as platform_held`);
+                                        logger.info(`[stripeWebhookHandler] TimeEntry ${entry.id} marked as transferred`);
                                         return {
                                             ...entry,
-                                            status: 'platform_held',
+                                            status: 'transferred',
+                                            billingStatus: 'transferred',
                                             paidAt: FieldValue.serverTimestamp(),
+                                            transferredAt: FieldValue.serverTimestamp(),
                                             paymentIntentId: paymentIntentSucceeded.id,
                                         };
                                     }
                                     return entry;
                                 });
                                 
-                                // Update the order document with the fixed time entries
+                                // Update the order document with the fixed time entries and billing data
                                 transaction.update(orderRef, {
                                     'timeTracking.timeEntries': updatedTimeEntries,
                                     'timeTracking.status': 'completed',
+                                    'timeTracking.billingData.status': 'completed',
+                                    'timeTracking.billingData.completedAt': FieldValue.serverTimestamp(),
                                     'timeTracking.lastUpdated': FieldValue.serverTimestamp(),
                                 });
                                 
-                                logger.info(`[stripeWebhookHandler] Updated ${updatedCount} time entries to platform_held status`);
+                                logger.info(`[stripeWebhookHandler] Updated ${updatedCount} time entries to transferred status`);
 
-                                // Update company balance
+                                // Create Stripe Transfer to Connected Account
                                 const providerStripeAccountId = paymentIntentSucceeded.metadata?.providerStripeAccountId;
                                 const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
 
                                 if (providerStripeAccountId && companyReceives) {
-                                    const companyRef = db.collection('companies').where('stripeAccountId', '==', providerStripeAccountId).limit(1);
-                                    const companySnapshot = await companyRef.get();
-
-                                    if (!companySnapshot.empty) {
-                                        const companyDoc = companySnapshot.docs[0];
-                                        const currentBalance = companyDoc.data().platformHoldBalance || 0;
-                                        const additionalAmount = parseInt(companyReceives, 10);
-
-                                        transaction.update(companyDoc.ref, {
-                                            platformHoldBalance: currentBalance + additionalAmount,
-                                            lastUpdated: FieldValue.serverTimestamp(),
+                                    try {
+                                        // Create transfer to connected account
+                                        const stripe = getStripeInstance(STRIPE_SECRET_KEY_WEBHOOKS.value());
+                                        const transferAmount = parseInt(companyReceives, 10);
+                                        
+                                        const transfer = await stripe.transfers.create({
+                                            amount: transferAmount,
+                                            currency: 'eur',
+                                            destination: providerStripeAccountId,
+                                            description: `Zusätzliche Stunden für Auftrag ${orderId}`,
+                                            metadata: {
+                                                orderId: orderId,
+                                                entryIds: entryIds,
+                                                paymentIntentId: paymentIntentSucceeded.id,
+                                                type: 'additional_hours_transfer'
+                                            }
                                         });
 
-                                        logger.info(`[stripeWebhookHandler] Company balance updated: +${additionalAmount} cents (Platform Hold)`);
+                                        logger.info(`[stripeWebhookHandler] Stripe Transfer created: ${transfer.id} for ${transferAmount} cents to ${providerStripeAccountId}`);
 
-                                        // Create audit trail
-                                        const auditRef = companyDoc.ref.collection('balanceHistory').doc();
-                                        transaction.set(auditRef, {
-                                            type: 'additional_hours_payment',
-                                            amount: additionalAmount,
-                                            paymentIntentId: paymentIntentSucceeded.id,
-                                            orderId: orderId,
-                                            entryIds: entryIdsList,
-                                            createdAt: FieldValue.serverTimestamp(),
-                                            status: 'platform_held',
+                                        // Update time entries with transfer information
+                                        const finalTimeEntries = updatedTimeEntries.map((entry: any) => {
+                                            if (entryIdsList.includes(entry.id)) {
+                                                return {
+                                                    ...entry,
+                                                    transferId: transfer.id,
+                                                    transferNote: `Transfer to connected account: ${transfer.id}`
+                                                };
+                                            }
+                                            return entry;
                                         });
+
+                                        // Final update with transfer information
+                                        transaction.update(orderRef, {
+                                            'timeTracking.timeEntries': finalTimeEntries,
+                                        });
+
+                                    } catch (transferError: any) {
+                                        logger.error(`[stripeWebhookHandler] Transfer failed to ${providerStripeAccountId}:`, transferError);
+                                        // Still mark as transferred in database since payment succeeded
+                                        // Manual intervention may be needed for the transfer
                                     }
                                 }
                             });

@@ -38,6 +38,7 @@ import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
 import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
 import * as financeApiModule from './finance/api/finance-api';
+import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 
 // Stripe Callables
 export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
@@ -115,3 +116,6 @@ export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
 
 // Finance Module APIs
 export const financeApi = financeApiModule.financeApi;
+
+// Manual Fix Functions
+export const fixInconsistentPayment = fixInconsistentPaymentModule.fixInconsistentPayment;

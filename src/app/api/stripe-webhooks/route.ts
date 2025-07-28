@@ -120,26 +120,37 @@ export async function POST(req: NextRequest) {
 
               const orderData = orderSnapshot.data()!;
 
-              // Update time entries status to 'platform_held' in the timeTracking.timeEntries ARRAY
+              // Update time entries status to 'transferred' in the timeTracking.timeEntries ARRAY
               const timeTracking = orderData.timeTracking;
               if (timeTracking && timeTracking.timeEntries) {
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
-                    console.log(`[WEBHOOK LOG] TimeEntry ${entry.id} marked as platform_held`);
+                    console.log(`[WEBHOOK LOG] TimeEntry ${entry.id} marked as transferred (paid)`);
                     return {
                       ...entry,
-                      billingStatus: 'platform_held',
+                      status: 'transferred', // CRITICAL: Change status to transferred
+                      billingStatus: 'transferred', // Also update billingStatus
                       paidAt: admin.firestore.FieldValue.serverTimestamp(),
                       paymentIntentId: paymentIntentSucceeded.id,
                       lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                      transferredAt: admin.firestore.FieldValue.serverTimestamp(),
                     };
                   }
                   return entry;
                 });
 
-                // Update the entire timeTracking.timeEntries array
+                // Update billingData status to completed
+                const updatedBillingData = {
+                  ...timeTracking.billingData,
+                  status: 'completed', // CRITICAL: Mark billing as completed
+                  completedAt: admin.firestore.FieldValue.serverTimestamp(),
+                  lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                };
+
+                // Update the entire timeTracking object
                 transaction.update(orderRef, {
                   'timeTracking.timeEntries': updatedTimeEntries,
+                  'timeTracking.billingData': updatedBillingData,
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 });
               }
