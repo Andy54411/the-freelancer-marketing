@@ -4,6 +4,8 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import UserHeader from '@/components/UserHeader';
+import CompanySidebar from '@/components/dashboard/CompanySidebar';
+import CompanyMobileSidebar from '@/components/dashboard/CompanyMobileSidebar';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
 import { Loader2 as FiLoader } from 'lucide-react';
@@ -14,124 +16,12 @@ import {
   Settings as FiSettings,
   MessageSquare as FiMessageSquare,
   DollarSign as FiDollarSign,
-  Menu as FiMenu,
-  X as FiX,
-  ChevronDown as FiChevronDown,
-  ChevronRight as FiChevronRight,
   Mail as FiMail,
   ClipboardList as FiClipboardList,
-  CreditCard as FiCreditCard,
-  FileText as FiFileText,
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
 
 const isNonEmptyString = (val: unknown): val is string =>
   typeof val === 'string' && val.trim() !== '';
-
-interface NavigationItem {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  value: string;
-  href?: string;
-  subItems?: NavigationSubItem[];
-}
-
-interface NavigationSubItem {
-  label: string;
-  value: string;
-  href: string;
-}
-
-const navigationItems: NavigationItem[] = [
-  {
-    label: 'Übersicht',
-    icon: FiGrid,
-    value: 'dashboard',
-  },
-  {
-    label: 'Aufträge',
-    icon: FiClipboardList,
-    value: 'orders',
-    subItems: [
-      {
-        label: 'Übersicht',
-        value: 'orders-overview',
-        href: 'orders/overview',
-      },
-    ],
-  },
-  {
-    label: 'Posteingang',
-    icon: FiMail,
-    value: 'inbox',
-    href: 'inbox',
-  },
-  {
-    label: 'Kalender',
-    icon: FiCalendar,
-    value: 'calendar',
-    href: 'calendar',
-  },
-  {
-    label: 'Finanzen',
-    icon: FiDollarSign,
-    value: 'finance',
-    subItems: [
-      {
-        label: 'Übersicht',
-        value: 'finance-overview',
-        href: 'finance',
-      },
-      {
-        label: 'Rechnungen',
-        value: 'finance-invoices',
-        href: 'finance/invoices',
-      },
-      {
-        label: 'Kunden',
-        value: 'finance-customers',
-        href: 'finance/customers',
-      },
-      {
-        label: 'Ausgaben',
-        value: 'finance-expenses',
-        href: 'finance/expenses',
-      },
-      {
-        label: 'Zahlungen',
-        value: 'finance-payments',
-        href: 'finance/payments',
-      },
-      {
-        label: 'Banking',
-        value: 'finance-banking',
-        href: 'finance/banking',
-      },
-      {
-        label: 'Steuern',
-        value: 'finance-taxes',
-        href: 'finance/taxes',
-      },
-    ],
-  },
-  {
-    label: 'Bewertungen',
-    icon: FiMessageSquare,
-    value: 'reviews',
-  },
-  {
-    label: 'Profil',
-    icon: FiUser,
-    value: 'profile',
-    href: 'profile',
-  },
-  {
-    label: 'Einstellungen',
-    icon: FiSettings,
-    value: 'settings',
-  },
-];
 
 export default function CompanyDashboardLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -215,8 +105,52 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     );
   }
 
-  const currentNavItem =
-    navigationItems.find(item => item.value === getCurrentView()) || navigationItems[0];
+  // Navigation Items für den aktuellen Header
+  const getHeaderIcon = () => {
+    const currentView = getCurrentView();
+    switch (currentView) {
+      case 'orders':
+        return FiClipboardList;
+      case 'inbox':
+        return FiMail;
+      case 'calendar':
+        return FiCalendar;
+      case 'finance':
+        return FiDollarSign;
+      case 'reviews':
+        return FiMessageSquare;
+      case 'profile':
+        return FiUser;
+      case 'settings':
+        return FiSettings;
+      default:
+        return FiGrid;
+    }
+  };
+
+  const getHeaderLabel = () => {
+    const currentView = getCurrentView();
+    switch (currentView) {
+      case 'orders':
+        return 'Aufträge';
+      case 'inbox':
+        return 'Posteingang';
+      case 'calendar':
+        return 'Kalender';
+      case 'finance':
+        return 'Finanzen';
+      case 'reviews':
+        return 'Bewertungen';
+      case 'profile':
+        return 'Profil';
+      case 'settings':
+        return 'Einstellungen';
+      default:
+        return 'Übersicht';
+    }
+  };
+
+  const HeaderIcon = getHeaderIcon();
 
   return (
     <SidebarVisibilityProvider>
@@ -229,185 +163,25 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         <div className="flex flex-1 pt-[var(--global-header-height)]">
           {/* Desktop Sidebar */}
           <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-[var(--global-header-height)]">
-            <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200">
-              <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-                <div className="flex items-center flex-shrink-0 px-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
-                  <span className="ml-2 text-sm text-gray-500">
-                    {companyDataForHeader?.companyName}
-                  </span>
-                </div>
-                <nav className="mt-5 flex-1 px-2 space-y-1">
-                  {navigationItems.map(item => {
-                    const currentView = getCurrentView();
-                    const isMainActive =
-                      currentView === item.value ||
-                      (currentView === 'dashboard' && item.value === 'dashboard') ||
-                      (pathname?.includes('/finance') && item.value === 'finance') ||
-                      (pathname?.includes('/orders') && item.value === 'orders') ||
-                      (pathname?.includes('/payouts') && item.value === 'finance');
-
-                    const hasSubItems = item.subItems && item.subItems.length > 0;
-                    const isItemExpanded = isExpanded(item.value);
-
-                    return (
-                      <div key={item.value}>
-                        <button
-                          onClick={() => {
-                            if (hasSubItems) {
-                              toggleExpanded(item.value);
-                            } else {
-                              handleNavigation(item.value, item.href);
-                            }
-                          }}
-                          className={`${
-                            isMainActive
-                              ? 'bg-[#14ad9f] text-white'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
-                        >
-                          <div className="flex items-center">
-                            <item.icon
-                              className={`${
-                                isMainActive
-                                  ? 'text-white'
-                                  : 'text-gray-400 group-hover:text-gray-500'
-                              } mr-3 flex-shrink-0 h-6 w-6`}
-                            />
-                            {item.label}
-                          </div>
-                          {hasSubItems && (
-                            <FiChevronDown
-                              className={`h-4 w-4 transition-transform ${
-                                isItemExpanded ? 'rotate-180' : ''
-                              } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
-                            />
-                          )}
-                        </button>
-
-                        {/* Sub-Items */}
-                        {hasSubItems && isItemExpanded && (
-                          <div className="ml-6 mt-1 space-y-1">
-                            {item.subItems?.map(subItem => {
-                              const isSubActive = pathname?.includes(`/${subItem.href}`);
-                              return (
-                                <button
-                                  key={subItem.value}
-                                  onClick={() => handleNavigation(subItem.value, subItem.href)}
-                                  className={`${
-                                    isSubActive
-                                      ? 'bg-[#14ad9f] text-white'
-                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                                  } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
-                                >
-                                  <FiChevronRight className="mr-2 h-4 w-4" />
-                                  {subItem.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </nav>
-              </div>
-            </div>
+            <CompanySidebar
+              companyName={companyDataForHeader?.companyName}
+              uid={uid}
+              expandedItems={expandedItems}
+              onToggleExpanded={toggleExpanded}
+              onNavigate={handleNavigation}
+              getCurrentView={getCurrentView}
+            />
           </aside>
 
           {/* Mobile Sidebar */}
-          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden fixed top-[calc(var(--global-header-height)+1rem)] left-4 z-40"
-              >
-                <FiMenu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <div className="flex flex-col h-full bg-white">
-                <div className="flex items-center justify-between p-4 border-b">
-                  <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
-                </div>
-                <nav className="flex-1 px-2 py-4 space-y-1">
-                  {navigationItems.map(item => {
-                    const currentView = getCurrentView();
-                    const isMainActive =
-                      currentView === item.value ||
-                      (currentView === 'dashboard' && item.value === 'dashboard') ||
-                      (pathname?.includes('/finance') && item.value === 'finance') ||
-                      (pathname?.includes('/orders') && item.value === 'orders') ||
-                      (pathname?.includes('/payouts') && item.value === 'finance');
-
-                    const hasSubItems = item.subItems && item.subItems.length > 0;
-                    const isItemExpanded = isExpanded(item.value);
-
-                    return (
-                      <div key={item.value}>
-                        <button
-                          onClick={() => {
-                            if (hasSubItems) {
-                              toggleExpanded(item.value);
-                            } else {
-                              handleNavigation(item.value, item.href);
-                            }
-                          }}
-                          className={`${
-                            isMainActive
-                              ? 'bg-[#14ad9f] text-white'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
-                        >
-                          <div className="flex items-center">
-                            <item.icon
-                              className={`${
-                                isMainActive
-                                  ? 'text-white'
-                                  : 'text-gray-400 group-hover:text-gray-500'
-                              } mr-3 flex-shrink-0 h-6 w-6`}
-                            />
-                            {item.label}
-                          </div>
-                          {hasSubItems && (
-                            <FiChevronDown
-                              className={`h-4 w-4 transition-transform ${
-                                isItemExpanded ? 'rotate-180' : ''
-                              } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
-                            />
-                          )}
-                        </button>
-
-                        {/* Sub-Items */}
-                        {hasSubItems && isItemExpanded && (
-                          <div className="ml-6 mt-1 space-y-1">
-                            {item.subItems?.map(subItem => {
-                              const isSubActive = pathname?.includes(`/${subItem.href}`);
-                              return (
-                                <button
-                                  key={subItem.value}
-                                  onClick={() => handleNavigation(subItem.value, subItem.href)}
-                                  className={`${
-                                    isSubActive
-                                      ? 'bg-[#14ad9f] text-white'
-                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                                  } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
-                                >
-                                  <FiChevronRight className="mr-2 h-4 w-4" />
-                                  {subItem.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <CompanyMobileSidebar
+            isOpen={isSidebarOpen}
+            onOpenChange={setIsSidebarOpen}
+            expandedItems={expandedItems}
+            onToggleExpanded={toggleExpanded}
+            onNavigate={handleNavigation}
+            getCurrentView={getCurrentView}
+          />
 
           {/* Main Content */}
           <main className="flex-1 md:pl-64">
@@ -415,8 +189,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
               <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
                 <div className="mb-8">
                   <div className="flex items-center space-x-2">
-                    <currentNavItem.icon className="h-6 w-6 text-gray-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">{currentNavItem.label}</h1>
+                    <HeaderIcon className="h-6 w-6 text-gray-600" />
+                    <h1 className="text-2xl font-bold text-gray-900">{getHeaderLabel()}</h1>
                     <span className="text-sm text-gray-500">
                       {companyDataForHeader?.companyName}
                     </span>
