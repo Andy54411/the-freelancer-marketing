@@ -114,6 +114,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Bewertungen',
     icon: FiMessageSquare,
     value: 'reviews',
+    href: 'reviews',
   },
   {
     label: 'Profil',

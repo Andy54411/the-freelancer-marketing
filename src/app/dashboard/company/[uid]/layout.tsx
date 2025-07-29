@@ -50,6 +50,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     if (pathname?.includes('/inbox')) return 'inbox';
     if (pathname?.includes('/profile')) return 'profile';
     if (pathname?.includes('/calendar')) return 'calendar';
+    if (pathname?.includes('/reviews')) return 'reviews';
     return view;
   }, [pathname, view]);
 
