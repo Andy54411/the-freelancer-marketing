@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock, X } from 'lucide-react';
+import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import Link from 'next/link';
@@ -501,128 +501,149 @@ export default function SubcategoryPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {providers.map(provider => (
               <div
                 key={provider.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group border border-gray-200 overflow-hidden"
               >
-                <div className="flex items-start gap-6">
+                {/* Provider Image & Rating */}
+                <div className="relative">
                   <img
                     src={getProfileImage(provider)}
                     alt={getProviderName(provider)}
-                    className="w-20 h-20 rounded-full object-cover"
+                    className="w-full h-48 object-cover"
                     onError={e => {
                       (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                     }}
                   />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                          {getProviderName(provider)}
-                          {provider.isCompany && (
-                            <span className="ml-3 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                              Firma
-                            </span>
-                          )}
-                        </h3>
-
-                        <div className="flex items-center gap-4 mt-2">
-                          {provider.location && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                              <MapPin className="w-4 h-4" />
-                              {provider.location}
-                            </div>
-                          )}
-
-                          {(provider.rating ?? 0) > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {(provider.rating ?? 0).toFixed(1)}
-                              </span>
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                ({provider.reviewCount} Bewertungen)
-                              </span>
-                            </div>
-                          )}
-
-                          {provider.completedJobs && provider.completedJobs > 0 && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                              <Briefcase className="w-4 h-4" />
-                              {provider.completedJobs} Aufträge
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        {provider.priceRange && (
-                          <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {provider.priceRange}
-                          </div>
-                        )}
-                        {provider.responseTime && (
-                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <Clock className="w-4 h-4" />
-                            {provider.responseTime}
-                          </div>
-                        )}
+                  {/* Rating Badge */}
+                  {(provider.rating ?? 0) > 0 && (
+                    <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-sm">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-sm font-semibold text-gray-900">
+                          {(provider.rating ?? 0).toFixed(1)}
+                        </span>
                       </div>
                     </div>
+                  )}
 
-                    {provider.bio && (
-                      <p className="text-gray-600 dark:text-gray-400 mt-3 line-clamp-2">
-                        {provider.bio}
-                      </p>
-                    )}
+                  {/* Company Badge */}
+                  {provider.isCompany && (
+                    <div className="absolute top-3 left-3 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      PRO
+                    </div>
+                  )}
+                </div>
 
-                    {provider.skills && provider.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {provider.skills.slice(0, 6).map((skill, index) => (
-                          <span
-                            key={index}
-                            className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {provider.skills.length > 6 && (
-                          <span className="text-sm text-gray-500 dark:text-gray-400 px-3 py-1">
-                            +{provider.skills.length - 6} weitere
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3 mt-4">
-                      <button
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('JETZT BUCHEN CLICKED for provider:', provider.id);
-                          handleBookNow(provider);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                        type="button"
-                      >
-                        Jetzt buchen
-                      </button>
-                      <button
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          router.push(`/profile/${provider.id}`);
-                        }}
-                        className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-2 rounded-lg font-medium transition-colors"
-                        type="button"
-                      >
-                        Profil anzeigen
-                      </button>
+                {/* Card Content */}
+                <div className="p-5">
+                  {/* Provider Info */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <img
+                      src={getProfileImage(provider)}
+                      alt={getProviderName(provider)}
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-[#14ad9f] transition-colors">
+                        {getProviderName(provider)}
+                      </h3>
+                      {provider.location && (
+                        <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate">{provider.location}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Service Title */}
+                  <h4 className="text-gray-900 font-medium text-sm mb-3 line-clamp-2 leading-5">
+                    {provider.bio
+                      ? provider.bio.length > 60
+                        ? `${provider.bio.substring(0, 60)}...`
+                        : provider.bio
+                      : `Professionelle ${subcategoryName} Services`}
+                  </h4>
+
+                  {/* Skills/Tags */}
+                  {provider.skills && provider.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {provider.skills.slice(0, 3).map((skill, index) => (
+                        <span
+                          key={index}
+                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {provider.skills.length > 3 && (
+                        <span className="text-xs text-gray-400">+{provider.skills.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Stats Row */}
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    <div className="flex items-center gap-3">
+                      {provider.reviewCount && provider.reviewCount > 0 && (
+                        <span>({provider.reviewCount})</span>
+                      )}
+                      {provider.completedJobs && provider.completedJobs > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="w-3 h-3" />
+                          <span>{provider.completedJobs}</span>
+                        </div>
+                      )}
+                    </div>
+                    {provider.responseTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-xs">{provider.responseTime}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Price & Action */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="text-right">
+                      <span className="text-sm text-gray-500">Ab</span>
+                      <div className="text-lg font-bold text-gray-900">
+                        {provider.priceRange || '€25/h'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleBookNow(provider);
+                      }}
+                      className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                      type="button"
+                    >
+                      Jetzt buchen
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hover Overlay for Profile View */}
+                <div
+                  className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    router.push(`/profile/${provider.id}`);
+                  }}
+                >
+                  <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                    Profil anzeigen
+                  </button>
                 </div>
               </div>
             ))}
@@ -630,41 +651,14 @@ export default function SubcategoryPage() {
         )}
       </div>
 
-      {/* Booking Modal */}
+      {/* Professional Booking Modal */}
       {isBookingModalOpen && selectedProvider && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Buchen: {getProviderName(selectedProvider)}</h2>
-              <button
-                onClick={handleCloseBookingModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <p>Möchten Sie {getProviderName(selectedProvider)} buchen?</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    alert('Buchung würde hier verarbeitet werden');
-                    handleCloseBookingModal();
-                  }}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  Ja, buchen
-                </button>
-                <button
-                  onClick={handleCloseBookingModal}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
-                >
-                  Abbrechen
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProviderBookingModal
+          isOpen={isBookingModalOpen}
+          onClose={handleCloseBookingModal}
+          provider={selectedProvider}
+          onConfirm={handleBookingConfirm}
+        />
       )}
 
       {/* Debug Info - können Sie später entfernen */}
