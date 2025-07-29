@@ -191,7 +191,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           // Prüfe, ob ein Profilbild in Firestore verfügbar ist
           if (userData.profilePictureURL || userData.profilePictureFirebaseUrl) {
             const profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl;
-            setProfilePictureURLFromStorage(profileUrl);
+            if (profileUrl) {
+              setProfilePictureURLFromStorage(profileUrl);
+            } else {
+              // Fallback auf Storage, wenn URL leer ist
+              loadProfilePictureFromStorage(uid);
+            }
           } else {
             // Fallback auf Storage, wenn kein Bild in Firestore
             loadProfilePictureFromStorage(uid);
