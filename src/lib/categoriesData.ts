@@ -32,7 +32,7 @@ export const categories: Category[] = [
     ],
   },
   {
-    title: 'Haushalt & Reinigung',
+    title: 'Haushalt',
     subcategories: [
       'Reinigungskraft',
       'Haushaltshilfe',
@@ -43,7 +43,7 @@ export const categories: Category[] = [
     ],
   },
   {
-    title: 'Transport & Logistik',
+    title: 'Transport',
     subcategories: [
       'Fahrer',
       'Kurierdienst',
@@ -51,6 +51,44 @@ export const categories: Category[] = [
       'Lagerlogistik',
       'Logistik',
       'MöbelTransportieren',
+    ],
+  },
+  {
+    title: 'IT & Digital',
+    subcategories: [
+      'Webentwicklung',
+      'App-Entwicklung',
+      'IT-Support',
+      'Systemadministration',
+      'Cybersecurity',
+      'Softwareentwicklung',
+      'Datenanalyse',
+      'Cloud Services',
+      'Netzwerktechnik',
+    ],
+  },
+  {
+    title: 'Garten',
+    subcategories: [
+      'Gartenpflege',
+      'Landschaftsgärtner',
+      'Rasenpflege',
+      'Heckenschnitt',
+      'Baumpflege',
+      'Gartenplanung',
+      'Bewässerungsanlagen',
+    ],
+  },
+  {
+    title: 'Wellness',
+    subcategories: [
+      'Massage',
+      'Physiotherapie',
+      'Ernährungsberatung',
+      'Kosmetik',
+      'Friseur',
+      'FitnessTraining',
+      'Seniorenbetreuung',
     ],
   },
   {
@@ -93,26 +131,7 @@ export const categories: Category[] = [
   },
   {
     title: 'Tiere & Pflanzen',
-    subcategories: [
-      'Tierbetreuung',
-      'Gartenpflege',
-      'Landschaftsgärtner',
-      'Hundetrainer',
-      'TierarztAssistenz',
-      'Tierpflege',
-    ],
-  },
-  {
-    title: 'Gesundheit & Wellness',
-    subcategories: [
-      'Massage',
-      'Physiotherapie',
-      'Ernährungsberatung',
-      'Kosmetik',
-      'Friseur',
-      'FitnessTraining',
-      'Seniorenbetreuung',
-    ],
+    subcategories: ['Tierbetreuung', 'Hundetrainer', 'TierarztAssistenz', 'Tierpflege'],
   },
   {
     title: 'Kreativ & Kunst',
