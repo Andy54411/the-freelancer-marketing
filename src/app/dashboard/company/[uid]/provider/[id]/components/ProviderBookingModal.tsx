@@ -301,24 +301,51 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                           const hourlyRate = provider.hourlyRate || 0;
                           const durationStr = selectedDateTime.duration;
 
-                          // Prüfe ob es eine mehrtägige Buchung ist (z.B. "3 Tage à 8 Stunden")
-                          const multiDayMatch = durationStr.match(
+                          console.log('Duration string received:', durationStr);
+                          console.log('Checking duration patterns...');
+
+                          // Prüfe ob es eine mehrtägige Buchung ist (verschiedene Varianten)
+                          const multiDayMatch1 = durationStr.match(
                             /(\d+)\s*Tage?\s*[àa]\s*(\d+)\s*Stunden?/i
                           );
-                          if (multiDayMatch) {
-                            const days = parseInt(multiDayMatch[1]);
-                            const hoursPerDay = parseInt(multiDayMatch[2]);
-                            return (hourlyRate * days * hoursPerDay).toFixed(2);
+                          const multiDayMatch2 = durationStr.match(
+                            /(\d+)\s*[Tt]age?\s*[àaA]\s*(\d+)\s*[Ss]tunden?/i
+                          );
+                          const multiDayMatch3 = durationStr.match(
+                            /(\d+)\s*[Dd]ays?\s*[àaA@]\s*(\d+)\s*[Hh]ours?/i
+                          );
+
+                          console.log('Multi-day matches:', {
+                            multiDayMatch1,
+                            multiDayMatch2,
+                            multiDayMatch3,
+                          });
+
+                          if (multiDayMatch1 || multiDayMatch2 || multiDayMatch3) {
+                            const match = multiDayMatch1 || multiDayMatch2 || multiDayMatch3;
+                            if (match && match[1] && match[2]) {
+                              const days = parseInt(match[1]);
+                              const hoursPerDay = parseInt(match[2]);
+                              const totalHours = days * hoursPerDay;
+                              console.log(
+                                `Multi-day booking: ${days} days × ${hoursPerDay} hours = ${totalHours} hours`
+                              );
+                              return (hourlyRate * totalHours).toFixed(2);
+                            }
                           }
 
                           // Normale Stundenberechnung (z.B. "8 Stunden")
                           const hoursMatch = durationStr.match(/(\d+(?:\.\d+)?)\s*Stunden?/i);
                           if (hoursMatch) {
-                            return (hourlyRate * parseFloat(hoursMatch[1])).toFixed(2);
+                            const hours = parseFloat(hoursMatch[1]);
+                            console.log(`Single hour booking: ${hours} hours`);
+                            return (hourlyRate * hours).toFixed(2);
                           }
 
                           // Fallback: versuche direkt zu parsen
-                          return (hourlyRate * (parseFloat(durationStr) || 1)).toFixed(2);
+                          const directHours = parseFloat(durationStr) || 1;
+                          console.log(`Fallback parsing: ${directHours} hours`);
+                          return (hourlyRate * directHours).toFixed(2);
                         })()}
                       </span>
                     </div>
