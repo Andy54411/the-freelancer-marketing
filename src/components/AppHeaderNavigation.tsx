@@ -244,83 +244,20 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 Bildung
               </Link>
-
-              {/* Alle Services Button mit Mega-Menü - Modernes Design */}
-              <div
-                className="relative mega-menu-container"
-                onMouseEnter={handleMegaMenuEnter}
-                onMouseLeave={handleMegaMenuLeave}
+              <Link
+                href={getServiceUrl('Hotel & Gastronomie')}
+                className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
               >
-                <button className="flex items-center text-white bg-[#14ad9f] hover:bg-[#129488] px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg border border-[#14ad9f]">
-                  Alle Services
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </button>
+                Hotel & Gastronomie
+              </Link>
 
-                {/* Mega Menu Dropdown - Breiteres 4-Spalten Layout */}
-                {isMegaMenuOpen && (
-                  <div
-                    className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-screen max-w-7xl bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                    onMouseEnter={handleMegaMenuEnter}
-                    onMouseLeave={handleMegaMenuLeave}
-                  >
-                    <div className="p-6">
-                      <div className="grid grid-cols-4 gap-6">
-                        {megaMenuColumns.map((columnCategories, columnIndex) => (
-                          <div key={columnIndex} className="space-y-4">
-                            {columnCategories.map((category: Category) => (
-                              <div key={category.title} className="group">
-                                <Link
-                                  href={getServiceUrl(category.title)}
-                                  className="font-semibold text-gray-900 hover:text-[#14ad9f] transition-colors block mb-2 text-sm border-b border-gray-100 pb-1"
-                                  onClick={() => setIsMegaMenuOpen(false)}
-                                >
-                                  {category.title}
-                                </Link>
-                                <ul className="space-y-1">
-                                  {(expandedCategories.has(category.title)
-                                    ? category.subcategories
-                                    : category.subcategories.slice(0, 4)
-                                  ).map((subcategory, index) => (
-                                    <li key={subcategory}>
-                                      <Link
-                                        href={getServiceUrl(category.title, subcategory)}
-                                        className={`text-xs text-gray-600 hover:text-[#14ad9f] hover:bg-gray-50 transition-all duration-200 block px-2 py-1 rounded ${
-                                          expandedCategories.has(category.title) && index >= 4
-                                            ? 'pl-4 border-l-2 border-[#14ad9f] ml-2'
-                                            : ''
-                                        }`}
-                                        onClick={() => setIsMegaMenuOpen(false)}
-                                      >
-                                        {subcategory}
-                                      </Link>
-                                    </li>
-                                  ))}
-                                  {category.subcategories.length > 4 && (
-                                    <li className="pt-1">
-                                      <button
-                                        onClick={e => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          toggleCategoryExpansion(category.title);
-                                        }}
-                                        className="text-xs text-[#14ad9f] hover:text-[#129488] hover:underline font-medium cursor-pointer focus:outline-none transition-colors px-2 py-1 rounded hover:bg-gray-50"
-                                      >
-                                        {expandedCategories.has(category.title)
-                                          ? '▲ weniger anzeigen'
-                                          : `▼ ${category.subcategories.length - 4} weitere`}
-                                      </button>
-                                    </li>
-                                  )}
-                                </ul>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Alle Services Button - Direkter Link zu Services-Seite */}
+              <Link
+                href="/services"
+                className="flex items-center text-white bg-[#14ad9f] hover:bg-[#129488] px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg border border-[#14ad9f]"
+              >
+                Alle Services
+              </Link>
             </div>
           </div>
         </div>
