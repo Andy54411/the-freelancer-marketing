@@ -175,25 +175,42 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     }
   }, []);
 
-  const loadFirestoreUserData = useCallback(async (uid: string) => {
-    if (!uid) {
-      setFirestoreUserData(null);
-      return;
-    }
-    try {
-      const userDocRef = doc(db, 'users', uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        setFirestoreUserData(userDocSnap.data() as FirestoreUserData);
-      } else {
-        console.warn('UserHeader: Firestore-Benutzerdokument nicht gefunden für UID:', uid);
+  const loadFirestoreUserData = useCallback(
+    async (uid: string) => {
+      if (!uid) {
         setFirestoreUserData(null);
+        return;
       }
-    } catch (error) {
-      console.error('UserHeader: Fehler beim Laden der Firestore-Benutzerdaten:', error);
-      setFirestoreUserData(null);
-    }
-  }, []);
+      try {
+        const userDocRef = doc(db, 'users', uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data() as FirestoreUserData;
+          setFirestoreUserData(userData);
+
+          // Prüfe, ob ein Profilbild in Firestore verfügbar ist
+          if (userData.profilePictureURL || userData.profilePictureFirebaseUrl) {
+            const profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl;
+            setProfilePictureURLFromStorage(profileUrl);
+          } else {
+            // Fallback auf Storage, wenn kein Bild in Firestore
+            loadProfilePictureFromStorage(uid);
+          }
+        } else {
+          console.warn('UserHeader: Firestore-Benutzerdokument nicht gefunden für UID:', uid);
+          setFirestoreUserData(null);
+          // Fallback auf Storage
+          loadProfilePictureFromStorage(uid);
+        }
+      } catch (error) {
+        console.error('UserHeader: Fehler beim Laden der Firestore-Benutzerdaten:', error);
+        setFirestoreUserData(null);
+        // Fallback auf Storage bei Fehler
+        loadProfilePictureFromStorage(uid);
+      }
+    },
+    [loadProfilePictureFromStorage]
+  );
 
   useEffect(() => {
     // Effekt zur Überwachung des Authentifizierungsstatus und zum Laden der initialen Daten
@@ -206,7 +223,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           router.replace(`/dashboard/user/${user.uid}`); // Redirect to correct user dashboard
           return;
         }
-        loadProfilePictureFromStorage(user.uid);
         loadFirestoreUserData(user.uid);
       } else {
         setProfilePictureURLFromStorage(null);
@@ -220,7 +236,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentUid, router, loadProfilePictureFromStorage, loadFirestoreUserData]);
+  }, [currentUid, router, loadFirestoreUserData]);
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {
@@ -726,4 +742,5 @@ interface FirestoreUserData {
   lastName?: string;
   user_type?: 'kunde' | 'firma' | 'admin';
   profilePictureURL?: string; // Firebase Storage URL
+  profilePictureFirebaseUrl?: string; // Alternative field name
 }
