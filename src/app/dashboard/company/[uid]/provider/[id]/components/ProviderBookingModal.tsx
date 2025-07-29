@@ -26,9 +26,9 @@ interface ProviderBookingModalProps {
   onClose: () => void;
   provider: Provider;
   onConfirm: (
-    selection: any,
+    dateSelection: any,
     time: string,
-    durationString: string,
+    duration: string,
     description: string
   ) => Promise<void>;
 }
@@ -45,9 +45,9 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   const [description, setDescription] = useState('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState<{
-    selection: any;
+    dateSelection: any;
     time: string;
-    durationString: string;
+    duration: string;
   } | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
@@ -61,13 +61,13 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   };
 
   const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = async (
-    selection,
+    dateSelection,
     time,
-    durationString
+    duration
   ) => {
     setIsDatePickerOpen(false);
-    if (time && durationString) {
-      setSelectedDateTime({ selection, time, durationString });
+    if (time && duration) {
+      setSelectedDateTime({ dateSelection, time, duration });
       setCurrentStep('payment');
     }
   };
@@ -78,9 +78,9 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     setIsProcessingPayment(true);
     try {
       await onConfirm(
-        selectedDateTime.selection,
+        selectedDateTime.dateSelection,
         selectedDateTime.time,
-        selectedDateTime.durationString,
+        selectedDateTime.duration,
         description
       );
       handleClose();
@@ -244,13 +244,42 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Datum & Zeit:</span>
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {selectedDateTime.time}
+                      {(() => {
+                        // Prüfe ob dateSelection ein DateRange-Objekt ist
+                        if (
+                          selectedDateTime.dateSelection &&
+                          typeof selectedDateTime.dateSelection === 'object'
+                        ) {
+                          if (
+                            selectedDateTime.dateSelection.from &&
+                            selectedDateTime.dateSelection.to
+                          ) {
+                            // DateRange: von X bis Y
+                            const startDate = new Date(
+                              selectedDateTime.dateSelection.from
+                            ).toLocaleDateString('de-DE');
+                            const endDate = new Date(
+                              selectedDateTime.dateSelection.to
+                            ).toLocaleDateString('de-DE');
+                            return `${startDate} - ${endDate}, ${selectedDateTime.time}`;
+                          } else if (selectedDateTime.dateSelection.from) {
+                            // Einzeltag aus DateRange
+                            const singleDate = new Date(
+                              selectedDateTime.dateSelection.from
+                            ).toLocaleDateString('de-DE');
+                            return `${singleDate}, ${selectedDateTime.time}`;
+                          }
+                        }
+
+                        // Fallback: verwende time string direkt
+                        return selectedDateTime.time;
+                      })()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Dauer:</span>
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {selectedDateTime.durationString}
+                      {selectedDateTime.duration}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -268,10 +297,29 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                       </span>
                       <span className="text-[#14ad9f]">
                         €
-                        {(
-                          (provider.hourlyRate || 0) *
-                          (parseFloat(selectedDateTime.durationString) || 1)
-                        ).toFixed(2)}
+                        {(() => {
+                          const hourlyRate = provider.hourlyRate || 0;
+                          const durationStr = selectedDateTime.duration;
+
+                          // Prüfe ob es eine mehrtägige Buchung ist (z.B. "3 Tage à 8 Stunden")
+                          const multiDayMatch = durationStr.match(
+                            /(\d+)\s*Tage?\s*[àa]\s*(\d+)\s*Stunden?/i
+                          );
+                          if (multiDayMatch) {
+                            const days = parseInt(multiDayMatch[1]);
+                            const hoursPerDay = parseInt(multiDayMatch[2]);
+                            return (hourlyRate * days * hoursPerDay).toFixed(2);
+                          }
+
+                          // Normale Stundenberechnung (z.B. "8 Stunden")
+                          const hoursMatch = durationStr.match(/(\d+(?:\.\d+)?)\s*Stunden?/i);
+                          if (hoursMatch) {
+                            return (hourlyRate * parseFloat(hoursMatch[1])).toFixed(2);
+                          }
+
+                          // Fallback: versuche direkt zu parsen
+                          return (hourlyRate * (parseFloat(durationStr) || 1)).toFixed(2);
+                        })()}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

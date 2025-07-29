@@ -113,6 +113,7 @@ export default function SubcategoryPage() {
             photoURL: data.photoURL,
             bio: data.description || data.bio,
             location: data.location,
+            hourlyRate: data.hourlyRate || data.pricePerHour || data.baseRate,
             skills:
               data.services ||
               data.skills ||
@@ -154,6 +155,7 @@ export default function SubcategoryPage() {
           photoURL: data.photoURL,
           bio: data.bio,
           location: data.location,
+          hourlyRate: data.hourlyRate || data.pricePerHour || data.baseRate,
           skills:
             data.skills ||
             data.services ||
