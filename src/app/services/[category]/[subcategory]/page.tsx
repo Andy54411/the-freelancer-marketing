@@ -26,6 +26,7 @@ interface Provider {
   completedJobs?: number;
   isCompany?: boolean;
   priceRange?: string;
+  hourlyRate?: number;
   responseTime?: string;
 }
 
@@ -530,13 +531,6 @@ export default function SubcategoryPage() {
                     </div>
                   )}
 
-                  {/* Company Badge */}
-                  {provider.isCompany && (
-                    <div className="absolute top-3 left-3 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      PRO
-                    </div>
-                  )}
-
                   {/* Hover Overlay for Profile View - only on image hover */}
                   <div
                     className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover/image:opacity-100 cursor-pointer"
@@ -629,7 +623,9 @@ export default function SubcategoryPage() {
                     <div className="text-right">
                       <span className="text-sm text-gray-500">Ab</span>
                       <div className="text-lg font-bold text-gray-900">
-                        {provider.priceRange || '€25/h'}
+                        {provider.hourlyRate
+                          ? `€${provider.hourlyRate}/h`
+                          : provider.priceRange || 'Preis auf Anfrage'}
                       </div>
                     </div>
                     <button
