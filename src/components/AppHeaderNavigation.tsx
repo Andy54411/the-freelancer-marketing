@@ -189,52 +189,6 @@ const AppHeaderNavigation: React.FC = () => {
     return category.subcategories.filter(sub => availableSubcategories.includes(sub));
   };
 
-  // Render horizontales Mega-Menü
-  const renderHorizontalMegaMenu = (categoryTitle: string) => {
-    if (hoveredCategory !== categoryTitle) return null;
-
-    const subcategories = getSubcategoriesForCategory(categoryTitle);
-    const gridCols =
-      subcategories.length <= 6
-        ? 'grid-cols-3'
-        : subcategories.length <= 12
-          ? 'grid-cols-4'
-          : 'grid-cols-5';
-
-    return (
-      <div
-        className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-8 z-50 w-[900px] max-w-6xl"
-        onMouseEnter={() => handleCategoryEnter(categoryTitle)}
-        onMouseLeave={handleCategoryLeave}
-      >
-        <h4 className="text-xl font-bold text-gray-900 mb-6 text-center border-b border-gray-100 pb-3">
-          {categoryTitle} Services
-        </h4>
-        <div className={`grid ${gridCols} gap-4`}>
-          {subcategories.map((subcategory, index) => (
-            <Link
-              key={index}
-              href={getServiceUrl(categoryTitle, subcategory)}
-              className="block px-4 py-3 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200 text-center border border-gray-100 hover:border-[#14ad9f] hover:shadow-md"
-              onClick={() => setHoveredCategory(null)}
-            >
-              {subcategory}
-            </Link>
-          ))}
-        </div>
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <Link
-            href={getServiceUrl(categoryTitle)}
-            className="inline-block bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200 shadow-md hover:shadow-lg"
-            onClick={() => setHoveredCategory(null)}
-          >
-            Alle {categoryTitle} Services anzeigen
-          </Link>
-        </div>
-      </div>
-    );
-  };
-
   // Organize categories into columns for mega menu - mehr Spalten für breiteres Layout
   const filteredCategories = getFilteredCategories();
   const megaMenuColumns = Array.isArray(filteredCategories)
@@ -262,7 +216,6 @@ const AppHeaderNavigation: React.FC = () => {
             <div className="flex items-center gap-1 text-sm relative">
               {/* Handwerk */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Handwerk')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -272,14 +225,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Handwerk
                 </Link>
-
-                {/* Horizontales Mega-Menü für Handwerk */}
-                {renderHorizontalMegaMenu('Handwerk')}
               </div>
 
               {/* Haushalt */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Haushalt')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -289,14 +238,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Haushalt
                 </Link>
-
-                {/* Horizontales Mega-Menü für Haushalt */}
-                {renderHorizontalMegaMenu('Haushalt')}
               </div>
 
               {/* IT & Digital */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('IT & Digital')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -306,14 +251,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   IT & Digital
                 </Link>
-
-                {/* Horizontales Mega-Menü für IT & Digital */}
-                {renderHorizontalMegaMenu('IT & Digital')}
               </div>
 
               {/* Transport */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Transport')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -323,14 +264,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Transport
                 </Link>
-
-                {/* Horizontales Mega-Menü für Transport */}
-                {renderHorizontalMegaMenu('Transport')}
               </div>
 
               {/* Garten */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Garten')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -340,14 +277,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Garten
                 </Link>
-
-                {/* Horizontales Mega-Menü für Garten */}
-                {renderHorizontalMegaMenu('Garten')}
               </div>
 
               {/* Wellness */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Wellness')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -357,14 +290,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Wellness
                 </Link>
-
-                {/* Horizontales Mega-Menü für Wellness */}
-                {renderHorizontalMegaMenu('Wellness')}
               </div>
 
               {/* Marketing & Vertrieb */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Marketing & Vertrieb')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -374,14 +303,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Marketing
                 </Link>
-
-                {/* Horizontales Mega-Menü für Marketing & Vertrieb */}
-                {renderHorizontalMegaMenu('Marketing & Vertrieb')}
               </div>
 
               {/* Finanzen & Recht */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Finanzen & Recht')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -391,14 +316,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Finanzen
                 </Link>
-
-                {/* Horizontales Mega-Menü für Finanzen & Recht */}
-                {renderHorizontalMegaMenu('Finanzen & Recht')}
               </div>
 
               {/* Bildung & Unterstützung */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Bildung & Unterstützung')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -408,14 +329,10 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Bildung
                 </Link>
-
-                {/* Horizontales Mega-Menü für Bildung & Unterstützung */}
-                {renderHorizontalMegaMenu('Bildung & Unterstützung')}
               </div>
 
               {/* Hotel & Gastronomie */}
               <div
-                className="relative"
                 onMouseEnter={() => handleCategoryEnter('Hotel & Gastronomie')}
                 onMouseLeave={handleCategoryLeave}
               >
@@ -425,9 +342,6 @@ const AppHeaderNavigation: React.FC = () => {
                 >
                   Hotel & Gastronomie
                 </Link>
-
-                {/* Horizontales Mega-Menü für Hotel & Gastronomie */}
-                {renderHorizontalMegaMenu('Hotel & Gastronomie')}
               </div>
 
               {/* Alle Services Button - Direkter Link zu Services-Seite */}
@@ -440,6 +354,54 @@ const AppHeaderNavigation: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Zentrales Mega-Menü - immer in der Mitte */}
+        {hoveredCategory && (
+          <div
+            className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-8 z-50 w-[900px] max-w-6xl"
+            onMouseEnter={() => handleCategoryEnter(hoveredCategory)}
+            onMouseLeave={handleCategoryLeave}
+          >
+            {(() => {
+              const subcategories = getSubcategoriesForCategory(hoveredCategory);
+              const gridCols =
+                subcategories.length <= 6
+                  ? 'grid-cols-3'
+                  : subcategories.length <= 12
+                    ? 'grid-cols-4'
+                    : 'grid-cols-5';
+
+              return (
+                <>
+                  <h4 className="text-xl font-bold text-gray-900 mb-6 text-center border-b border-gray-100 pb-3">
+                    {hoveredCategory} Services
+                  </h4>
+                  <div className={`grid ${gridCols} gap-4`}>
+                    {subcategories.map((subcategory, index) => (
+                      <Link
+                        key={index}
+                        href={getServiceUrl(hoveredCategory, subcategory)}
+                        className="block px-4 py-3 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200 text-center border border-gray-100 hover:border-[#14ad9f] hover:shadow-md"
+                        onClick={() => setHoveredCategory(null)}
+                      >
+                        {subcategory}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+                    <Link
+                      href={getServiceUrl(hoveredCategory)}
+                      className="inline-block bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200 shadow-md hover:shadow-lg"
+                      onClick={() => setHoveredCategory(null)}
+                    >
+                      Alle {hoveredCategory} Services anzeigen
+                    </Link>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Mobile Navigation - Verbessertes Design */}

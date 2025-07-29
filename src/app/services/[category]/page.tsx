@@ -6,11 +6,23 @@ import { ArrowLeft, Search, Star, Briefcase } from 'lucide-react';
 import { categories } from '@/lib/categoriesData';
 import Header from '@/components/Header';
 import Link from 'next/link';
+import { db } from '@/firebase/clients';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+
+interface SubcategoryStats {
+  averagePrice: number;
+  providerCount: number;
+  averageRating: number;
+}
 
 export default function CategoryPage() {
   const params = useParams();
   const router = useRouter();
   const category = (params?.category as string) || '';
+
+  // States für Subcategory-Statistiken
+  const [subcategoryStats, setSubcategoryStats] = useState<Record<string, SubcategoryStats>>({});
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // URL-Parameter dekodieren - handle both %26 and & cases
   const decodedCategory = decodeURIComponent(category);
@@ -26,6 +38,105 @@ export default function CategoryPage() {
     const urlSlug = category.includes('%26') ? category : normalizeToSlug(cat.title);
     return expectedSlug === decodedCategory || expectedSlug === category || urlSlug === category;
   });
+
+  // Funktion zum Laden der Subcategory-Statistiken
+  const loadSubcategoryStats = async () => {
+    if (!categoryInfo) return;
+
+    setIsLoadingStats(true);
+    const stats: Record<string, SubcategoryStats> = {};
+
+    try {
+      // Lade Daten für jede Subcategory
+      for (const subcategory of categoryInfo.subcategories) {
+        // Query für Firmen in dieser Subcategory
+        const companiesQuery = query(
+          collection(db, 'companies'),
+          where('selectedSubcategory', '==', subcategory),
+          limit(100)
+        );
+
+        // Query für Freelancer/Users in dieser Subcategory
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('selectedSubcategory', '==', subcategory),
+          where('isFreelancer', '==', true),
+          limit(100)
+        );
+
+        const [companiesSnapshot, usersSnapshot] = await Promise.all([
+          getDocs(companiesQuery),
+          getDocs(usersQuery),
+        ]);
+
+        let totalPrice = 0;
+        let priceCount = 0;
+        let totalRating = 0;
+        let ratingCount = 0;
+        const totalProviders = companiesSnapshot.docs.length + usersSnapshot.docs.length;
+
+        // Sammle Preise und Bewertungen von Firmen
+        companiesSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.hourlyRate && typeof data.hourlyRate === 'number') {
+            totalPrice += data.hourlyRate;
+            priceCount++;
+          }
+          if (data.rating && typeof data.rating === 'number') {
+            totalRating += data.rating;
+            ratingCount++;
+          }
+        });
+
+        // Sammle Preise und Bewertungen von Freelancern
+        usersSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.hourlyRate && typeof data.hourlyRate === 'number') {
+            totalPrice += data.hourlyRate;
+            priceCount++;
+          }
+          if (data.rating && typeof data.rating === 'number') {
+            totalRating += data.rating;
+            ratingCount++;
+          }
+        });
+
+        // Berechne Durchschnittswerte
+        const averagePrice = priceCount > 0 ? Math.round(totalPrice / priceCount) : 25; // Fallback auf 25€
+        const averageRating =
+          ratingCount > 0 ? Number((totalRating / ratingCount).toFixed(1)) : 4.8; // Fallback auf 4.8
+
+        stats[subcategory] = {
+          averagePrice,
+          providerCount: totalProviders,
+          averageRating,
+        };
+      }
+
+      setSubcategoryStats(stats);
+    } catch (error) {
+      console.error('Fehler beim Laden der Subcategory-Statistiken:', error);
+      // Fallback-Werte bei Fehler
+      const fallbackStats: Record<string, SubcategoryStats> = {};
+      categoryInfo.subcategories.forEach(subcategory => {
+        fallbackStats[subcategory] = {
+          averagePrice: 25,
+          providerCount: 50,
+          averageRating: 4.8,
+        };
+      });
+      setSubcategoryStats(fallbackStats);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
+  // Lade Statistiken beim Mount und wenn sich die Kategorie ändert
+  useEffect(() => {
+    if (categoryInfo) {
+      loadSubcategoryStats();
+    }
+  }, [categoryInfo]);
 
   if (!categoryInfo) {
     return (
@@ -114,56 +225,77 @@ export default function CategoryPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {categoryInfo.subcategories.map((subcategory, index) => (
-              <Link
-                key={index}
-                href={`/services/${decodedCategory}/${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
-                className="group block"
-              >
-                <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group-hover:border-[#14ad9f]/20">
-                  {/* Card Header */}
-                  <div className="p-6 pb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <span className="text-white font-bold text-lg">
-                          {subcategory.charAt(0).toUpperCase()}
+            {categoryInfo.subcategories.map((subcategory, index) => {
+              const stats = subcategoryStats[subcategory];
+              const isLoading = isLoadingStats || !stats;
+
+              return (
+                <Link
+                  key={index}
+                  href={`/services/${decodedCategory}/${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="group block"
+                >
+                  <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group-hover:border-[#14ad9f]/20">
+                    {/* Card Header */}
+                    <div className="p-6 pb-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <span className="text-white font-bold text-lg">
+                            {subcategory.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500 mb-1">ab</div>
+                          <div className="text-sm font-bold text-gray-900">
+                            {isLoading ? (
+                              <div className="animate-pulse bg-gray-200 h-4 w-12 rounded"></div>
+                            ) : (
+                              `€${stats.averagePrice}/h`
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#14ad9f] transition-colors">
+                        {subcategory}
+                      </h3>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        Professionelle {subcategory} Services von verifizierten Experten
+                      </p>
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          {isLoading ? (
+                            <div className="animate-pulse bg-gray-200 h-3 w-6 rounded"></div>
+                          ) : (
+                            <span>{stats.averageRating}</span>
+                          )}
+                        </div>
+                        <div>
+                          {isLoading ? (
+                            <div className="animate-pulse bg-gray-200 h-3 w-16 rounded"></div>
+                          ) : (
+                            `${stats.providerCount}+ Anbieter`
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="px-6 py-4 bg-gray-50 group-hover:bg-[#14ad9f]/5 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#14ad9f] text-sm font-medium group-hover:text-[#129488] transition-colors">
+                          Services durchstöbern
                         </span>
+                        <ArrowLeft className="w-4 h-4 text-[#14ad9f] rotate-180 group-hover:translate-x-1 transition-transform" />
                       </div>
-                      <div className="text-right">
-                        <div className="text-xs text-gray-500 mb-1">ab</div>
-                        <div className="text-sm font-bold text-gray-900">€25/h</div>
-                      </div>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#14ad9f] transition-colors">
-                      {subcategory}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      Professionelle {subcategory} Services von verifizierten Experten
-                    </p>
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span>4.8</span>
-                      </div>
-                      <div>50+ Anbieter</div>
                     </div>
                   </div>
-
-                  {/* Card Footer */}
-                  <div className="px-6 py-4 bg-gray-50 group-hover:bg-[#14ad9f]/5 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#14ad9f] text-sm font-medium group-hover:text-[#129488] transition-colors">
-                        Services durchstöbern
-                      </span>
-                      <ArrowLeft className="w-4 h-4 text-[#14ad9f] rotate-180 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
 
           {/* CTA Section */}
