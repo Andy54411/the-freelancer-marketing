@@ -141,25 +141,21 @@ const AppHeaderNavigation: React.FC = () => {
     'Übersetzer',
   ];
 
-  // Helper function to get the correct service URL - Direkt zu Subcategory-Forms
+  // Helper function to get the correct service URL - Zu Services-Seiten mit korrekter URL-Kodierung
   const getServiceUrl = (category: string, subcategory?: string) => {
     if (!user?.uid) return '/login';
 
     if (subcategory) {
-      // Prüfen ob die Subcategory tatsächlich verfügbar ist
-      if (availableSubcategories.includes(subcategory)) {
-        const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '-');
-        return `/auftrag/get-started/${subcategorySlug}`;
-      }
-      // Fallback zur Services-Seite wenn Form nicht existiert
-      return `/services`;
+      // Für Subcategorien führen wir zu den Services-Seiten mit Anbietern
+      const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+      const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+      return `/services/${categorySlug}/${subcategorySlug}`;
     }
 
-    // Für Kategorien zeigen wir die Services-Übersichtsseite
-    return `/services`;
-  };
-
-  // Filtere Kategorien und zeige nur Subcategories mit verfügbaren Forms
+    // Für Kategorien führen wir zu den Category-Services-Seiten
+    const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+    return `/services/${categorySlug}`;
+  }; // Filtere Kategorien und zeige nur Subcategories mit verfügbaren Forms
   const getFilteredCategories = () => {
     return categories
       .map(category => ({
