@@ -55,15 +55,14 @@ export default function CategoryPage() {
         const companiesQuery = query(
           collection(db, 'companies'),
           where('selectedSubcategory', '==', subcategory),
-          limit(100)
+          limit(50)
         );
 
         // Query für Freelancer/Users in dieser Subcategory
         const usersQuery = query(
           collection(db, 'users'),
           where('selectedSubcategory', '==', subcategory),
-          where('isFreelancer', '==', true),
-          limit(100)
+          limit(50)
         );
 
         const [companiesSnapshot, usersSnapshot] = await Promise.all([
@@ -320,7 +319,7 @@ export default function CategoryPage() {
               Professionelle Tools, faire Provisionen, transparente Abrechnung.
             </p>
             <Link
-              href="/dashboard/provider/register"
+              href="/register/company"
               className="inline-flex items-center gap-2 bg-white text-[#14ad9f] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
             >
               <Briefcase className="w-5 h-5" />
