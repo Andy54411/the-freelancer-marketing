@@ -29,14 +29,13 @@ export default function CategoryPage() {
 
   // Normalisierungsfunktion
   const normalizeToSlug = (str: string) =>
-    str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+    str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
 
   // Finde die Kategorie durch Vergleich der normalisierten Namen
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    // Auch prüfen ob die URL bereits %26 enthält (von der Navigation)
-    const urlSlug = category.includes('%26') ? category : normalizeToSlug(cat.title);
-    return expectedSlug === decodedCategory || expectedSlug === category || urlSlug === category;
+    // Prüfe sowohl den URL-Slug als auch mögliche andere Varianten
+    return expectedSlug === category || expectedSlug === decodedCategory;
   });
 
   // Funktion zum Laden der Subcategory-Statistiken
@@ -232,7 +231,7 @@ export default function CategoryPage() {
               return (
                 <Link
                   key={index}
-                  href={`/services/${decodedCategory}/${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+                  href={`/services/${categoryInfo.title.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und')}/${subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und')}`}
                   className="group block"
                 >
                   <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group-hover:border-[#14ad9f]/20">

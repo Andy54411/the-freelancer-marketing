@@ -48,7 +48,7 @@ export default function SubcategoryPage() {
 
   // Normalisierungsfunktion
   const normalizeToSlug = (str: string) =>
-    str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+    str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
 
   // Finde die Kategorie durch Vergleich der normalisierten Namen - handle both %26 and & cases
   const categoryInfo = categories.find(cat => {

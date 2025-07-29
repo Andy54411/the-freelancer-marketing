@@ -164,13 +164,13 @@ const AppHeaderNavigation: React.FC = () => {
 
     if (subcategory) {
       // Für Subcategorien führen wir zu den Services-Seiten mit Anbietern
-      const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
-      const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+      const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
+      const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
       return `/services/${categorySlug}/${subcategorySlug}`;
     }
 
     // Für Kategorien führen wir zu den Category-Services-Seiten
-    const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
+    const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
     return `/services/${categorySlug}`;
   }; // Filtere Kategorien und zeige nur Subcategories mit verfügbaren Forms
   const getFilteredCategories = () => {
