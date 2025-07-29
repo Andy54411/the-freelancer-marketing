@@ -385,7 +385,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             {/* Logo */}
             <Link href="/" className="text-4xl font-bold text-[#14ad9f] flex items-center">
               <div className="h-10 w-auto">
-                <Logo />
+                <Logo variant="default" />
               </div>
             </Link>
 
