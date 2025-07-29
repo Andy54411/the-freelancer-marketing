@@ -3,19 +3,9 @@
 import React from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FinanceOverview } from '@/components/finance/FinanceOverview';
+import { BankingComponent } from '@/components/finance/BankingComponent';
 
-// Types
-interface FinanceStats {
-  totalRevenue: number;
-  totalExpenses: number;
-  netProfit: number;
-  outstandingInvoices: number;
-  outstandingAmount: number;
-  thisMonthRevenue: number;
-}
-
-export default function FinancePage() {
+export default function BankingPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
@@ -32,26 +22,34 @@ export default function FinancePage() {
     );
   }
 
-  // Mock data für Demo-Zwecke
-  const mockStats: FinanceStats = {
-    totalRevenue: 15750,
-    totalExpenses: 3250,
-    netProfit: 12500,
-    outstandingInvoices: 2,
-    outstandingAmount: 2380,
-    thisMonthRevenue: 4725,
-  };
+  // Mock bank accounts für Demo-Zwecke
+  const mockBankAccounts = [
+    {
+      id: 'bank_001',
+      bankName: 'Deutsche Bank',
+      accountNumber: '0532013000',
+      iban: 'DE89 3704 0044 0532 0130 00',
+      balance: 25750.5,
+      currency: 'EUR',
+    },
+    {
+      id: 'bank_002',
+      bankName: 'Sparkasse',
+      accountNumber: '0000004711',
+      iban: 'DE89 3705 0198 0000 0047 11',
+      balance: 15000.0,
+      currency: 'EUR',
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Finanzen - Übersicht</h1>
-        <p className="text-gray-600 mt-1">
-          Überblick über Ihre finanzielle Situation und wichtigste Kennzahlen
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">Banking</h1>
+        <p className="text-gray-600 mt-1">Verwalten Sie Ihre Bankverbindungen und Kontostände</p>
       </div>
 
-      <FinanceOverview stats={mockStats} />
+      <BankingComponent bankAccounts={mockBankAccounts} />
     </div>
   );
 }

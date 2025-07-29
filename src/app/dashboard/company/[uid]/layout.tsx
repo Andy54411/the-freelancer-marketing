@@ -84,9 +84,34 @@ const navigationItems: NavigationItem[] = [
         href: 'finance',
       },
       {
-        label: 'Auszahlungen',
-        value: 'finance-payouts',
-        href: 'payouts',
+        label: 'Rechnungen',
+        value: 'finance-invoices',
+        href: 'finance/invoices',
+      },
+      {
+        label: 'Kunden',
+        value: 'finance-customers',
+        href: 'finance/customers',
+      },
+      {
+        label: 'Ausgaben',
+        value: 'finance-expenses',
+        href: 'finance/expenses',
+      },
+      {
+        label: 'Zahlungen',
+        value: 'finance-payments',
+        href: 'finance/payments',
+      },
+      {
+        label: 'Banking',
+        value: 'finance-banking',
+        href: 'finance/banking',
+      },
+      {
+        label: 'Steuern',
+        value: 'finance-taxes',
+        href: 'finance/taxes',
       },
     ],
   },
@@ -263,7 +288,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                         {/* Sub-Items */}
                         {hasSubItems && isItemExpanded && (
                           <div className="ml-6 mt-1 space-y-1">
-                            {item.subItems.map(subItem => {
+                            {item.subItems?.map(subItem => {
                               const isSubActive = pathname?.includes(`/${subItem.href}`);
                               return (
                                 <button
@@ -357,7 +382,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                         {/* Sub-Items */}
                         {hasSubItems && isItemExpanded && (
                           <div className="ml-6 mt-1 space-y-1">
-                            {item.subItems.map(subItem => {
+                            {item.subItems?.map(subItem => {
                               const isSubActive = pathname?.includes(`/${subItem.href}`);
                               return (
                                 <button
