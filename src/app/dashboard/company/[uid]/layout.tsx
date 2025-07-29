@@ -16,6 +16,12 @@ import {
   DollarSign as FiDollarSign,
   Menu as FiMenu,
   X as FiX,
+  ChevronDown as FiChevronDown,
+  ChevronRight as FiChevronRight,
+  Mail as FiMail,
+  ClipboardList as FiClipboardList,
+  CreditCard as FiCreditCard,
+  FileText as FiFileText,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -28,6 +34,13 @@ interface NavigationItem {
   icon: React.ComponentType<{ className?: string }>;
   value: string;
   href?: string;
+  subItems?: NavigationSubItem[];
+}
+
+interface NavigationSubItem {
+  label: string;
+  value: string;
+  href: string;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -35,6 +48,24 @@ const navigationItems: NavigationItem[] = [
     label: 'Übersicht',
     icon: FiGrid,
     value: 'dashboard',
+  },
+  {
+    label: 'Aufträge',
+    icon: FiClipboardList,
+    value: 'orders',
+    subItems: [
+      {
+        label: 'Übersicht',
+        value: 'orders-overview',
+        href: 'orders/overview',
+      },
+    ],
+  },
+  {
+    label: 'Posteingang',
+    icon: FiMail,
+    value: 'inbox',
+    href: 'inbox',
   },
   {
     label: 'Kalender',
@@ -46,7 +77,18 @@ const navigationItems: NavigationItem[] = [
     label: 'Finanzen',
     icon: FiDollarSign,
     value: 'finance',
-    href: 'finance',
+    subItems: [
+      {
+        label: 'Übersicht',
+        value: 'finance-overview',
+        href: 'finance',
+      },
+      {
+        label: 'Auszahlungen',
+        value: 'finance-payouts',
+        href: 'payouts',
+      },
+    ],
   },
   {
     label: 'Bewertungen',
@@ -72,6 +114,15 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const pathname = usePathname();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  const toggleExpanded = (itemValue: string) => {
+    setExpandedItems(prev =>
+      prev.includes(itemValue) ? prev.filter(v => v !== itemValue) : [...prev, itemValue]
+    );
+  };
+
+  const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
 
   // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
   const { isChecking, isAuthorized, userData, view, setView } = useCompanyDashboard();
@@ -79,6 +130,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Bestimme den aktuellen Pfad für die Navigation
   const getCurrentView = useCallback(() => {
     if (pathname?.includes('/finance')) return 'finance';
+    if (pathname?.includes('/payouts')) return 'finance';
+    if (pathname?.includes('/orders')) return 'orders';
+    if (pathname?.includes('/inbox')) return 'inbox';
     if (pathname?.includes('/profile')) return 'profile';
     if (pathname?.includes('/calendar')) return 'calendar';
     return view;
@@ -100,35 +154,28 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // Navigation handler
   const handleNavigation = useCallback(
-    (value: string) => {
+    (value: string, href?: string) => {
       setIsSidebarOpen(false);
 
-      // Für Finanzen, Profil und Kalender - verwende echte Navigation
-      if (value === 'finance') {
-        router.push(`/dashboard/company/${uid}/finance`);
+      // Wenn href definiert ist, verwende echte Navigation
+      if (href) {
+        router.push(`/dashboard/company/${uid}/${href}`);
         return;
       }
 
-      if (value === 'profile') {
-        router.push(`/dashboard/company/${uid}/profile`);
+      // Für View-basierte Navigation
+      if (value === 'settings' || value === 'reviews') {
+        router.push(`/dashboard/company/${uid}?view=${value}`);
+        setView(value);
         return;
       }
 
-      if (value === 'calendar') {
-        router.push(`/dashboard/company/${uid}/calendar`);
+      // Standard Dashboard
+      if (value === 'dashboard') {
+        router.push(`/dashboard/company/${uid}`);
+        setView('dashboard');
         return;
       }
-
-      // Für Einstellungen - verwende View-State mit Query Parameter
-      if (value === 'settings') {
-        router.push(`/dashboard/company/${uid}?view=settings`);
-        setView('settings');
-        return;
-      }
-
-      // Für andere Views - verwende View-State ohne Query Parameter
-      router.push(`/dashboard/company/${uid}`);
-      setView(value as 'dashboard' | 'calendar' | 'finance' | 'reviews' | 'profile' | 'settings');
     },
     [router, uid, setView]
   );
@@ -168,26 +215,74 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                 <nav className="mt-5 flex-1 px-2 space-y-1">
                   {navigationItems.map(item => {
                     const currentView = getCurrentView();
-                    const isActive =
+                    const isMainActive =
                       currentView === item.value ||
-                      (currentView === 'dashboard' && item.value === 'dashboard');
+                      (currentView === 'dashboard' && item.value === 'dashboard') ||
+                      (pathname?.includes('/finance') && item.value === 'finance') ||
+                      (pathname?.includes('/orders') && item.value === 'orders') ||
+                      (pathname?.includes('/payouts') && item.value === 'finance');
+
+                    const hasSubItems = item.subItems && item.subItems.length > 0;
+                    const isItemExpanded = isExpanded(item.value);
+
                     return (
-                      <button
-                        key={item.value}
-                        onClick={() => handleNavigation(item.value)}
-                        className={`${
-                          isActive
-                            ? 'bg-[#14ad9f] text-white'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
-                      >
-                        <item.icon
+                      <div key={item.value}>
+                        <button
+                          onClick={() => {
+                            if (hasSubItems) {
+                              toggleExpanded(item.value);
+                            } else {
+                              handleNavigation(item.value, item.href);
+                            }
+                          }}
                           className={`${
-                            isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                          } mr-3 flex-shrink-0 h-6 w-6`}
-                        />
-                        {item.label}
-                      </button>
+                            isMainActive
+                              ? 'bg-[#14ad9f] text-white'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
+                        >
+                          <div className="flex items-center">
+                            <item.icon
+                              className={`${
+                                isMainActive
+                                  ? 'text-white'
+                                  : 'text-gray-400 group-hover:text-gray-500'
+                              } mr-3 flex-shrink-0 h-6 w-6`}
+                            />
+                            {item.label}
+                          </div>
+                          {hasSubItems && (
+                            <FiChevronDown
+                              className={`h-4 w-4 transition-transform ${
+                                isItemExpanded ? 'rotate-180' : ''
+                              } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
+                            />
+                          )}
+                        </button>
+
+                        {/* Sub-Items */}
+                        {hasSubItems && isItemExpanded && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {item.subItems.map(subItem => {
+                              const isSubActive = pathname?.includes(`/${subItem.href}`);
+                              return (
+                                <button
+                                  key={subItem.value}
+                                  onClick={() => handleNavigation(subItem.value, subItem.href)}
+                                  className={`${
+                                    isSubActive
+                                      ? 'bg-[#14ad9f] text-white'
+                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                  } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                                >
+                                  <FiChevronRight className="mr-2 h-4 w-4" />
+                                  {subItem.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </nav>
@@ -214,26 +309,74 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                 <nav className="flex-1 px-2 py-4 space-y-1">
                   {navigationItems.map(item => {
                     const currentView = getCurrentView();
-                    const isActive =
+                    const isMainActive =
                       currentView === item.value ||
-                      (currentView === 'dashboard' && item.value === 'dashboard');
+                      (currentView === 'dashboard' && item.value === 'dashboard') ||
+                      (pathname?.includes('/finance') && item.value === 'finance') ||
+                      (pathname?.includes('/orders') && item.value === 'orders') ||
+                      (pathname?.includes('/payouts') && item.value === 'finance');
+
+                    const hasSubItems = item.subItems && item.subItems.length > 0;
+                    const isItemExpanded = isExpanded(item.value);
+
                     return (
-                      <button
-                        key={item.value}
-                        onClick={() => handleNavigation(item.value)}
-                        className={`${
-                          isActive
-                            ? 'bg-[#14ad9f] text-white'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
-                      >
-                        <item.icon
+                      <div key={item.value}>
+                        <button
+                          onClick={() => {
+                            if (hasSubItems) {
+                              toggleExpanded(item.value);
+                            } else {
+                              handleNavigation(item.value, item.href);
+                            }
+                          }}
                           className={`${
-                            isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                          } mr-3 flex-shrink-0 h-6 w-6`}
-                        />
-                        {item.label}
-                      </button>
+                            isMainActive
+                              ? 'bg-[#14ad9f] text-white'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
+                        >
+                          <div className="flex items-center">
+                            <item.icon
+                              className={`${
+                                isMainActive
+                                  ? 'text-white'
+                                  : 'text-gray-400 group-hover:text-gray-500'
+                              } mr-3 flex-shrink-0 h-6 w-6`}
+                            />
+                            {item.label}
+                          </div>
+                          {hasSubItems && (
+                            <FiChevronDown
+                              className={`h-4 w-4 transition-transform ${
+                                isItemExpanded ? 'rotate-180' : ''
+                              } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
+                            />
+                          )}
+                        </button>
+
+                        {/* Sub-Items */}
+                        {hasSubItems && isItemExpanded && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {item.subItems.map(subItem => {
+                              const isSubActive = pathname?.includes(`/${subItem.href}`);
+                              return (
+                                <button
+                                  key={subItem.value}
+                                  onClick={() => handleNavigation(subItem.value, subItem.href)}
+                                  className={`${
+                                    isSubActive
+                                      ? 'bg-[#14ad9f] text-white'
+                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                  } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                                >
+                                  <FiChevronRight className="mr-2 h-4 w-4" />
+                                  {subItem.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </nav>
