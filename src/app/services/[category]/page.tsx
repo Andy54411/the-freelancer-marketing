@@ -42,6 +42,9 @@ export default function CategoryPage() {
   const loadSubcategoryStats = async () => {
     if (!categoryInfo) return;
 
+    console.log('Loading stats for category:', categoryInfo.title);
+    console.log('Subcategories:', categoryInfo.subcategories);
+
     setIsLoadingStats(true);
     const stats: Record<string, SubcategoryStats> = {};
 
@@ -105,6 +108,17 @@ export default function CategoryPage() {
         const averageRating =
           ratingCount > 0 ? Number((totalRating / ratingCount).toFixed(1)) : 4.8; // Fallback auf 4.8
 
+        // Debug-Ausgabe
+        console.log(`Subcategory: ${subcategory}`, {
+          companiesCount: companiesSnapshot.docs.length,
+          usersCount: usersSnapshot.docs.length,
+          totalProviders,
+          priceCount,
+          averagePrice,
+          ratingCount,
+          averageRating,
+        });
+
         stats[subcategory] = {
           averagePrice,
           providerCount: totalProviders,
@@ -113,6 +127,7 @@ export default function CategoryPage() {
       }
 
       setSubcategoryStats(stats);
+      console.log('Final stats:', stats);
     } catch (error) {
       console.error('Fehler beim Laden der Subcategory-Statistiken:', error);
       // Fallback-Werte bei Fehler
