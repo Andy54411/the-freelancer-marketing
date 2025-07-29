@@ -3,7 +3,7 @@
 
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
-import Header from '@/components/Header';
+import UserHeader from '@/components/UserHeader';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
 import { Loader2 as FiLoader } from 'lucide-react';
@@ -133,15 +133,6 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     [router, uid, setView]
   );
 
-  // Callbacks für die Header-Komponente
-  const handleSettingsClick = useCallback(() => {
-    handleNavigation('settings');
-  }, [handleNavigation]);
-
-  const handleDashboardClick = useCallback(() => {
-    handleNavigation('dashboard');
-  }, [handleNavigation]);
-
   // Lade- und Autorisierungszustand auf Layout-Ebene behandeln
   if (isChecking) {
     return (
@@ -161,11 +152,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         className="flex flex-col min-h-screen"
         style={{ '--global-header-height': '64px' } as React.CSSProperties}
       >
-        <Header
-          company={companyDataForHeader}
-          onSettingsClick={handleSettingsClick}
-          onDashboardClick={handleDashboardClick}
-        />
+        <UserHeader currentUid={uid} />
 
         <div className="flex flex-1 pt-[var(--global-header-height)]">
           {/* Desktop Sidebar */}
