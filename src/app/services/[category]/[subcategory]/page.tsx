@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock, X } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
+import Link from 'next/link';
 
 interface Provider {
   id: string;
@@ -366,58 +367,92 @@ export default function SubcategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-4 mb-6">
+          {/* Breadcrumb Navigation */}
+          <nav className="text-sm text-gray-500 mb-6">
+            <Link href="/" className="hover:text-[#14ad9f] transition-colors">
+              Startseite
+            </Link>
+            <span className="mx-2">/</span>
+            <Link href="/services" className="hover:text-[#14ad9f] transition-colors">
+              Services
+            </Link>
+            <span className="mx-2">/</span>
+            <Link
+              href={`/services/${decodedCategory}`}
+              className="hover:text-[#14ad9f] transition-colors"
+            >
+              {categoryInfo.title}
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-gray-900 font-medium">{subcategoryName}</span>
+          </nav>
+
+          <div className="flex items-center gap-4 mb-8">
             <button
               onClick={() => router.push(`/services/${decodedCategory}`)}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="text-gray-600 hover:text-[#14ad9f] p-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
-                <span>{categoryInfo.title}</span>
-                <span>/</span>
-                <span>{subcategoryName}</span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {subcategoryName}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {providers.length} {providers.length === 1 ? 'Anbieter' : 'Anbieter'} für{' '}
-                {subcategoryName}
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">{subcategoryName}</h1>
+              <p className="text-xl text-gray-600 mb-4">
+                {providers.length}{' '}
+                {providers.length === 1 ? 'professioneller Anbieter' : 'professionelle Anbieter'}{' '}
+                für {subcategoryName}
               </p>
+
+              {/* Stats Pills */}
+              <div className="flex flex-wrap gap-3">
+                <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-200">
+                  ✓ Sofort verfügbar
+                </div>
+                <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
+                  ✓ Ab €25/Stunde
+                </div>
+                <div className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm font-medium border border-purple-200">
+                  ✓ Verifizierte Profile
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Filter und Suche */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Suchfeld */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Anbieter suchen..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          {/* Filters Section */}
+          <div className="bg-gray-50 rounded-xl p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Anbieter durchsuchen..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] bg-white"
+                />
+              </div>
 
-            {/* Sortierung */}
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as 'rating' | 'reviews' | 'price' | 'newest')}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="rating">Beste Bewertung</option>
-              <option value="reviews">Meiste Bewertungen</option>
-              <option value="price">Preis</option>
-              <option value="newest">Neueste</option>
-            </select>
+              {/* Sort Dropdown */}
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as any)}
+                className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] bg-white"
+              >
+                <option value="rating">Beste Bewertung</option>
+                <option value="reviews">Meiste Bewertungen</option>
+                <option value="price">Preis</option>
+                <option value="newest">Neueste</option>
+              </select>
+
+              {/* Filter Button */}
+              <button className="bg-[#14ad9f] text-white px-6 py-3 rounded-lg hover:bg-[#129488] transition-colors font-medium">
+                Filter anwenden
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -50,29 +50,139 @@ const AppHeaderNavigation: React.FC = () => {
     });
   };
 
-  // Helper function to get the correct service URL
+  // Liste der tatsächlich verfügbaren Subcategory-Forms
+  const availableSubcategories = [
+    'Autoreparatur',
+    'Bodenleger',
+    'Bodenreinigung',
+    'Buchhaltung',
+    'Catering',
+    'Content Marketing',
+    'DJ Service',
+    'Dachdecker',
+    'Dekoration',
+    'Elektriker',
+    'Ernährungsberatung',
+    'Eventplanung',
+    'Fahrer',
+    'Fenster & Türenbau',
+    'Fensterputzer',
+    'Finanzberatung',
+    'Fitness Training',
+    'Fliesenleger',
+    'Fotograf',
+    'Friseur',
+    'Gartenbau',
+    'Gartenpflege',
+    'Gebäudereiniger',
+    'Glaser',
+    'Grafiker',
+    'Handwerker',
+    'Haushaltshilfe',
+    'Hausmeister',
+    'Hausreinigung',
+    'Heizung',
+    'Heizung & Sanitär',
+    'Hundetrainer',
+    'Inventur',
+    'Kinderbetreuung',
+    'Klempner',
+    'Kosmetik',
+    'Kurierdienst',
+    'Lagerlogistik',
+    'Landschaftsgärtner',
+    'Logistik',
+    'Maler',
+    'Marketingberater',
+    'Marktforschung',
+    'Massage',
+    'Maurer',
+    'Metallbauer',
+    'Mietkellner',
+    'Mietkoch',
+    'Montageservice',
+    'Musiker',
+    'Musikunterricht',
+    'Möbel Transportieren',
+    'Nachhilfe',
+    'Nachhilfelehrer',
+    'Online Marketing',
+    'Physiotherapie',
+    'Recherche',
+    'Rechnungswesen',
+    'Rechtsberatung',
+    'Reinigungskraft',
+    'Schlosser',
+    'Schreiner',
+    'Seniorenbetreuung',
+    'Sicherheitsdienst',
+    'Social Media Marketing',
+    'Spediteur',
+    'Sprachlehrer',
+    'Sprachunterricht',
+    'Steuerberatung',
+    'Steuerfachangestellter',
+    'Schwimmtrainer',
+    'Telefonservice',
+    'Teppichreinigung',
+    'Texter',
+    'Tierarzt Assistenz',
+    'Tierbetreuung',
+    'Tierpflege',
+    'Tischler',
+    'Transportdienstleistungen',
+    'Trockenbauer',
+    'Umzugshelfer',
+    'Unternehmensberatung',
+    'Versicherungsberatung',
+    'Verwaltung',
+    'Videograf',
+    'Zimmerer',
+    'Übersetzer',
+  ];
+
+  // Helper function to get the correct service URL - Direkt zu Subcategory-Forms
   const getServiceUrl = (category: string, subcategory?: string) => {
     if (!user?.uid) return '/login';
 
-    const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
-
     if (subcategory) {
-      const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
-      return `/services/${encodeURIComponent(categorySlug)}/${encodeURIComponent(subcategorySlug)}`;
+      // Prüfen ob die Subcategory tatsächlich verfügbar ist
+      if (availableSubcategories.includes(subcategory)) {
+        const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '-');
+        return `/auftrag/get-started/${subcategorySlug}`;
+      }
+      // Fallback zur Services-Seite wenn Form nicht existiert
+      return `/services`;
     }
-    return `/services/${encodeURIComponent(categorySlug)}`;
+
+    // Für Kategorien zeigen wir die Services-Übersichtsseite
+    return `/services`;
+  };
+
+  // Filtere Kategorien und zeige nur Subcategories mit verfügbaren Forms
+  const getFilteredCategories = () => {
+    return categories
+      .map(category => ({
+        ...category,
+        subcategories: category.subcategories.filter(sub => availableSubcategories.includes(sub)),
+      }))
+      .filter(category => category.subcategories.length > 0);
   };
 
   // Organize categories into columns for mega menu - mehr Spalten für breiteres Layout
-  const megaMenuColumns = Array.isArray(categories)
+  const filteredCategories = getFilteredCategories();
+  const megaMenuColumns = Array.isArray(filteredCategories)
     ? [
-        categories.slice(0, Math.ceil(categories.length / 4)),
-        categories.slice(Math.ceil(categories.length / 4), Math.ceil((categories.length * 2) / 4)),
-        categories.slice(
-          Math.ceil((categories.length * 2) / 4),
-          Math.ceil((categories.length * 3) / 4)
+        filteredCategories.slice(0, Math.ceil(filteredCategories.length / 4)),
+        filteredCategories.slice(
+          Math.ceil(filteredCategories.length / 4),
+          Math.ceil((filteredCategories.length * 2) / 4)
         ),
-        categories.slice(Math.ceil((categories.length * 3) / 4)),
+        filteredCategories.slice(
+          Math.ceil((filteredCategories.length * 2) / 4),
+          Math.ceil((filteredCategories.length * 3) / 4)
+        ),
+        filteredCategories.slice(Math.ceil((filteredCategories.length * 3) / 4)),
       ]
     : [[], [], [], []];
 
@@ -238,7 +348,7 @@ const AppHeaderNavigation: React.FC = () => {
           {isMobileMenuOpen && (
             <div className="mt-3 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
               <div className="py-2 max-h-96 overflow-y-auto">
-                {categories.map((category: Category) => (
+                {getFilteredCategories().map((category: Category) => (
                   <div key={category.title} className="border-b border-gray-100 last:border-b-0">
                     <Link
                       href={getServiceUrl(category.title)}
