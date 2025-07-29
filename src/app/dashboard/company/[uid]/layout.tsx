@@ -155,15 +155,12 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   return (
     <SidebarVisibilityProvider>
-      <div
-        className="flex flex-col min-h-screen"
-        style={{ '--global-header-height': '64px' } as React.CSSProperties}
-      >
+      <div className="flex flex-col min-h-screen">
         <UserHeader currentUid={uid} />
 
-        <div className="flex flex-1 pt-[var(--global-header-height)]">
+        <div className="flex flex-1">
           {/* Desktop Sidebar */}
-          <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-[var(--global-header-height)] z-40">
+          <aside className="hidden md:flex md:w-64 md:flex-col md:bg-white md:border-r md:border-gray-200">
             <CompanySidebar
               companyName={companyDataForHeader?.companyName}
               uid={uid}
@@ -185,7 +182,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
           />
 
           {/* Main Content */}
-          <main className="flex-1 md:pl-64">
+          <main className="flex-1">
             <div className="py-6">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
                 <div className="mb-8">

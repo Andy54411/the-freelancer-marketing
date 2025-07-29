@@ -358,12 +358,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   return (
     <>
-      <header className="bg-white shadow-sm sticky top-0 z-50 md:relative">
+      <header className="bg-white shadow-sm relative">
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <Link href="/" className="text-3xl font-bold text-[#14ad9f]">
-              <Logo />
+            <Link href="/" className="text-4xl font-bold text-[#14ad9f] flex items-center">
+              <div className="h-10 w-auto">
+                <Logo />
+              </div>
             </Link>
 
             {/* Suchleiste */}
@@ -372,12 +374,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 ref={searchInputRef}
                 type="search"
                 placeholder="Dienstleistung auswählen oder suchen..."
-                className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
+                className="w-full p-3 pl-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-base"
                 onFocus={() => setIsSearchDropdownOpen(true)}
                 onChange={e => setSearchTerm(e.target.value)}
                 value={searchTerm}
               />
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               {isSearchDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-30 ring-1 ring-black ring-opacity-5">
                   {filteredCategories.map((category: Category) => (
@@ -417,8 +419,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 onMouseEnter={handleNotificationEnter}
                 onMouseLeave={handleNotificationLeave}
               >
-                <button className="text-gray-600 hover:text-[#14ad9f] block">
-                  <FiBell size={22} />
+                <button className="text-gray-600 hover:text-[#14ad9f] block p-2 rounded-md hover:bg-gray-100">
+                  <FiBell size={24} />
                 </button>
                 {unreadNotificationsCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
@@ -483,9 +485,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
               >
                 <Link
                   href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'}
-                  className="text-gray-600 hover:text-[#14ad9f] block" // block, damit der Badge richtig positioniert wird
+                  className="text-gray-600 hover:text-[#14ad9f] block p-2 rounded-md hover:bg-gray-100" // block, damit der Badge richtig positioniert wird
                 >
-                  <FiMail size={22} />
+                  <FiMail size={24} />
                 </Link>
                 {unreadMessagesCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
@@ -552,10 +554,10 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
               </div>
               <button
                 onClick={handleHelpClick}
-                className="text-gray-600 hover:text-[#14ad9f]"
+                className="text-gray-600 hover:text-[#14ad9f] p-2 rounded-md hover:bg-gray-100"
                 aria-label="Hilfe & Support Chatbot öffnen"
               >
-                <FiHelpCircle size={22} />
+                <FiHelpCircle size={24} />
               </button>
 
               {currentUser ? (
@@ -568,11 +570,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       <img
                         src={profilePictureURLFromStorage || currentUser.photoURL || ''}
                         alt="Avatar"
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        <FiUser className="text-gray-500" />
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
+                        <FiUser className="text-gray-500 w-5 h-5" />
                       </div>
                     )}
                     <FiChevronDown
