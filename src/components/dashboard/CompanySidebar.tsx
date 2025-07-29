@@ -142,7 +142,7 @@ export default function CompanySidebar({
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200">
+    <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200 relative z-30">
       <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
         {/* Sidebar Header */}
         <div className="flex items-center flex-shrink-0 px-4">

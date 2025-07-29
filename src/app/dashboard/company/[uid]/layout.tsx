@@ -163,7 +163,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
         <div className="flex flex-1 pt-[var(--global-header-height)]">
           {/* Desktop Sidebar */}
-          <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-[var(--global-header-height)]">
+          <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-[var(--global-header-height)] z-40">
             <CompanySidebar
               companyName={companyDataForHeader?.companyName}
               uid={uid}
