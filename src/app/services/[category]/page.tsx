@@ -12,7 +12,7 @@ export default function CategoryPage() {
   const router = useRouter();
   const category = (params?.category as string) || '';
 
-  // URL-Parameter dekodieren
+  // URL-Parameter dekodieren - handle both %26 and & cases
   const decodedCategory = decodeURIComponent(category);
 
   // Normalisierungsfunktion
@@ -22,7 +22,9 @@ export default function CategoryPage() {
   // Finde die Kategorie durch Vergleich der normalisierten Namen
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    return expectedSlug === decodedCategory;
+    // Auch prüfen ob die URL bereits %26 enthält (von der Navigation)
+    const urlSlug = category.includes('%26') ? category : normalizeToSlug(cat.title);
+    return expectedSlug === decodedCategory || expectedSlug === category || urlSlug === category;
   });
 
   if (!categoryInfo) {

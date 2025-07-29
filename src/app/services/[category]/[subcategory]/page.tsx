@@ -50,16 +50,22 @@ export default function SubcategoryPage() {
   const normalizeToSlug = (str: string) =>
     str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
 
-  // Finde die Kategorie durch Vergleich der normalisierten Namen
+  // Finde die Kategorie durch Vergleich der normalisierten Namen - handle both %26 and & cases
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    return expectedSlug === decodedCategory;
+    // Auch prüfen ob die URL bereits %26 enthält (von der Navigation)
+    const urlSlug = category.includes('%26') ? category : normalizeToSlug(cat.title);
+    return expectedSlug === decodedCategory || expectedSlug === category || urlSlug === category;
   });
 
   // Finde die Unterkategorie durch Vergleich der normalisierten Namen
   const subcategoryName = categoryInfo?.subcategories.find(sub => {
     const expectedSlug = normalizeToSlug(sub);
-    return expectedSlug === decodedSubcategory;
+    // Auch prüfen ob die URL bereits %26 enthält (von der Navigation)
+    const urlSlug = subcategory.includes('%26') ? subcategory : normalizeToSlug(sub);
+    return (
+      expectedSlug === decodedSubcategory || expectedSlug === subcategory || urlSlug === subcategory
+    );
   });
 
   useEffect(() => {

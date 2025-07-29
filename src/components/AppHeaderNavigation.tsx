@@ -189,6 +189,52 @@ const AppHeaderNavigation: React.FC = () => {
     return category.subcategories.filter(sub => availableSubcategories.includes(sub));
   };
 
+  // Render horizontales Mega-Menü
+  const renderHorizontalMegaMenu = (categoryTitle: string) => {
+    if (hoveredCategory !== categoryTitle) return null;
+
+    const subcategories = getSubcategoriesForCategory(categoryTitle);
+    const gridCols =
+      subcategories.length <= 6
+        ? 'grid-cols-3'
+        : subcategories.length <= 12
+          ? 'grid-cols-4'
+          : 'grid-cols-5';
+
+    return (
+      <div
+        className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-8 z-50 w-[900px] max-w-6xl"
+        onMouseEnter={() => handleCategoryEnter(categoryTitle)}
+        onMouseLeave={handleCategoryLeave}
+      >
+        <h4 className="text-xl font-bold text-gray-900 mb-6 text-center border-b border-gray-100 pb-3">
+          {categoryTitle} Services
+        </h4>
+        <div className={`grid ${gridCols} gap-4`}>
+          {subcategories.map((subcategory, index) => (
+            <Link
+              key={index}
+              href={getServiceUrl(categoryTitle, subcategory)}
+              className="block px-4 py-3 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200 text-center border border-gray-100 hover:border-[#14ad9f] hover:shadow-md"
+              onClick={() => setHoveredCategory(null)}
+            >
+              {subcategory}
+            </Link>
+          ))}
+        </div>
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <Link
+            href={getServiceUrl(categoryTitle)}
+            className="inline-block bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200 shadow-md hover:shadow-lg"
+            onClick={() => setHoveredCategory(null)}
+          >
+            Alle {categoryTitle} Services anzeigen
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
   // Organize categories into columns for mega menu - mehr Spalten für breiteres Layout
   const filteredCategories = getFilteredCategories();
   const megaMenuColumns = Array.isArray(filteredCategories)
@@ -227,39 +273,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Handwerk
                 </Link>
 
-                {/* Mega-Menü für Handwerk */}
-                {hoveredCategory === 'Handwerk' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Handwerk')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Handwerk Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Handwerk').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('Handwerk', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Handwerk')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Handwerk Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Handwerk */}
+                {renderHorizontalMegaMenu('Handwerk')}
               </div>
 
               {/* Haushalt */}
@@ -275,39 +290,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Haushalt
                 </Link>
 
-                {/* Mega-Menü für Haushalt */}
-                {hoveredCategory === 'Haushalt' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Haushalt')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Haushalt Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Haushalt').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('Haushalt', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Haushalt')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Haushalt Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Haushalt */}
+                {renderHorizontalMegaMenu('Haushalt')}
               </div>
 
               {/* IT & Digital */}
@@ -323,39 +307,8 @@ const AppHeaderNavigation: React.FC = () => {
                   IT & Digital
                 </Link>
 
-                {/* Mega-Menü für IT & Digital */}
-                {hoveredCategory === 'IT & Digital' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('IT & Digital')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      IT & Digital Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('IT & Digital').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('IT & Digital', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('IT & Digital')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle IT & Digital Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für IT & Digital */}
+                {renderHorizontalMegaMenu('IT & Digital')}
               </div>
 
               {/* Transport */}
@@ -371,39 +324,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Transport
                 </Link>
 
-                {/* Mega-Menü für Transport */}
-                {hoveredCategory === 'Transport' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Transport')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Transport Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Transport').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('Transport', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Transport')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Transport Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Transport */}
+                {renderHorizontalMegaMenu('Transport')}
               </div>
 
               {/* Garten */}
@@ -419,39 +341,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Garten
                 </Link>
 
-                {/* Mega-Menü für Garten */}
-                {hoveredCategory === 'Garten' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Garten')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Garten Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Garten').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('Garten', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Garten')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Garten Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Garten */}
+                {renderHorizontalMegaMenu('Garten')}
               </div>
 
               {/* Wellness */}
@@ -467,39 +358,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Wellness
                 </Link>
 
-                {/* Mega-Menü für Wellness */}
-                {hoveredCategory === 'Wellness' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Wellness')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Wellness Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Wellness').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('Wellness', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Wellness')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Wellness Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Wellness */}
+                {renderHorizontalMegaMenu('Wellness')}
               </div>
 
               {/* Marketing & Vertrieb */}
@@ -515,41 +375,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Marketing
                 </Link>
 
-                {/* Mega-Menü für Marketing & Vertrieb */}
-                {hoveredCategory === 'Marketing & Vertrieb' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Marketing & Vertrieb')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Marketing & Vertrieb Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Marketing & Vertrieb').map(
-                        (subcategory, index) => (
-                          <Link
-                            key={index}
-                            href={getServiceUrl('Marketing & Vertrieb', subcategory)}
-                            className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                            onClick={() => setHoveredCategory(null)}
-                          >
-                            {subcategory}
-                          </Link>
-                        )
-                      )}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Marketing & Vertrieb')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Marketing & Vertrieb Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Marketing & Vertrieb */}
+                {renderHorizontalMegaMenu('Marketing & Vertrieb')}
               </div>
 
               {/* Finanzen & Recht */}
@@ -565,39 +392,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Finanzen
                 </Link>
 
-                {/* Mega-Menü für Finanzen & Recht */}
-                {hoveredCategory === 'Finanzen & Recht' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Finanzen & Recht')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Finanzen & Recht Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Finanzen & Recht').map((subcategory, index) => (
-                        <Link
-                          key={index}
-                          href={getServiceUrl('Finanzen & Recht', subcategory)}
-                          className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                          onClick={() => setHoveredCategory(null)}
-                        >
-                          {subcategory}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Finanzen & Recht')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Finanzen & Recht Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Finanzen & Recht */}
+                {renderHorizontalMegaMenu('Finanzen & Recht')}
               </div>
 
               {/* Bildung & Unterstützung */}
@@ -613,41 +409,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Bildung
                 </Link>
 
-                {/* Mega-Menü für Bildung & Unterstützung */}
-                {hoveredCategory === 'Bildung & Unterstützung' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Bildung & Unterstützung')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Bildung & Unterstützung Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Bildung & Unterstützung').map(
-                        (subcategory, index) => (
-                          <Link
-                            key={index}
-                            href={getServiceUrl('Bildung & Unterstützung', subcategory)}
-                            className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                            onClick={() => setHoveredCategory(null)}
-                          >
-                            {subcategory}
-                          </Link>
-                        )
-                      )}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Bildung & Unterstützung')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Bildung & Unterstützung Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Bildung & Unterstützung */}
+                {renderHorizontalMegaMenu('Bildung & Unterstützung')}
               </div>
 
               {/* Hotel & Gastronomie */}
@@ -663,41 +426,8 @@ const AppHeaderNavigation: React.FC = () => {
                   Hotel & Gastronomie
                 </Link>
 
-                {/* Mega-Menü für Hotel & Gastronomie */}
-                {hoveredCategory === 'Hotel & Gastronomie' && (
-                  <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-80 max-h-96 overflow-y-auto"
-                    onMouseEnter={() => handleCategoryEnter('Hotel & Gastronomie')}
-                    onMouseLeave={handleCategoryLeave}
-                  >
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
-                      Hotel & Gastronomie Services
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {getSubcategoriesForCategory('Hotel & Gastronomie').map(
-                        (subcategory, index) => (
-                          <Link
-                            key={index}
-                            href={getServiceUrl('Hotel & Gastronomie', subcategory)}
-                            className="block px-3 py-2 text-sm text-gray-700 hover:text-[#14ad9f] hover:bg-gray-50 rounded-lg transition-colors duration-200"
-                            onClick={() => setHoveredCategory(null)}
-                          >
-                            {subcategory}
-                          </Link>
-                        )
-                      )}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link
-                        href={getServiceUrl('Hotel & Gastronomie')}
-                        className="block text-center bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200"
-                        onClick={() => setHoveredCategory(null)}
-                      >
-                        Alle Hotel & Gastronomie Services anzeigen
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                {/* Horizontales Mega-Menü für Hotel & Gastronomie */}
+                {renderHorizontalMegaMenu('Hotel & Gastronomie')}
               </div>
 
               {/* Alle Services Button - Direkter Link zu Services-Seite */}
