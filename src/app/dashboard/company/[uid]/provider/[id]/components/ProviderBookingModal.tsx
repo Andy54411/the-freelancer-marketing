@@ -279,7 +279,31 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Dauer:</span>
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {selectedDateTime.duration}
+                      {(() => {
+                        // Prüfe ob wir eine DateRange haben (mehrtägige Buchung)
+                        if (
+                          selectedDateTime.dateSelection &&
+                          selectedDateTime.dateSelection.from &&
+                          selectedDateTime.dateSelection.to
+                        ) {
+                          const startDate = new Date(selectedDateTime.dateSelection.from);
+                          const endDate = new Date(selectedDateTime.dateSelection.to);
+
+                          // Berechne die Anzahl der Tage
+                          const timeDiff = endDate.getTime() - startDate.getTime();
+                          const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+                          // Extrahiere Stunden pro Tag
+                          const hoursPerDay = parseFloat(selectedDateTime.duration) || 8;
+
+                          if (daysDiff > 1) {
+                            return `${daysDiff} Tage à ${hoursPerDay} Stunden`;
+                          }
+                        }
+
+                        // Fallback auf ursprünglichen duration string
+                        return selectedDateTime.duration;
+                      })()}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -302,33 +326,47 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                           const durationStr = selectedDateTime.duration;
 
                           console.log('Duration string received:', durationStr);
-                          console.log('Checking duration patterns...');
+                          console.log('DateSelection object:', selectedDateTime.dateSelection);
 
-                          // Prüfe ob es eine mehrtägige Buchung ist (verschiedene Varianten)
+                          // Prüfe ob wir eine DateRange haben (mehrtägige Buchung)
+                          if (
+                            selectedDateTime.dateSelection &&
+                            selectedDateTime.dateSelection.from &&
+                            selectedDateTime.dateSelection.to
+                          ) {
+                            const startDate = new Date(selectedDateTime.dateSelection.from);
+                            const endDate = new Date(selectedDateTime.dateSelection.to);
+
+                            // Berechne die Anzahl der Tage
+                            const timeDiff = endDate.getTime() - startDate.getTime();
+                            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 weil Start- und Endtag beide inkludiert sind
+
+                            // Extrahiere Stunden pro Tag aus durationStr
+                            const hoursPerDay = parseFloat(durationStr) || 8; // Fallback auf 8 Stunden
+
+                            const totalHours = daysDiff * hoursPerDay;
+                            console.log(
+                              `Multi-day booking detected: ${daysDiff} days × ${hoursPerDay} hours/day = ${totalHours} total hours`
+                            );
+                            return (hourlyRate * totalHours).toFixed(2);
+                          }
+
+                          // Prüfe ob es eine mehrtägige Buchung ist (Text-Format)
                           const multiDayMatch1 = durationStr.match(
                             /(\d+)\s*Tage?\s*[àa]\s*(\d+)\s*Stunden?/i
                           );
                           const multiDayMatch2 = durationStr.match(
                             /(\d+)\s*[Tt]age?\s*[àaA]\s*(\d+)\s*[Ss]tunden?/i
                           );
-                          const multiDayMatch3 = durationStr.match(
-                            /(\d+)\s*[Dd]ays?\s*[àaA@]\s*(\d+)\s*[Hh]ours?/i
-                          );
 
-                          console.log('Multi-day matches:', {
-                            multiDayMatch1,
-                            multiDayMatch2,
-                            multiDayMatch3,
-                          });
-
-                          if (multiDayMatch1 || multiDayMatch2 || multiDayMatch3) {
-                            const match = multiDayMatch1 || multiDayMatch2 || multiDayMatch3;
+                          if (multiDayMatch1 || multiDayMatch2) {
+                            const match = multiDayMatch1 || multiDayMatch2;
                             if (match && match[1] && match[2]) {
                               const days = parseInt(match[1]);
                               const hoursPerDay = parseInt(match[2]);
                               const totalHours = days * hoursPerDay;
                               console.log(
-                                `Multi-day booking: ${days} days × ${hoursPerDay} hours = ${totalHours} hours`
+                                `Multi-day text format: ${days} days × ${hoursPerDay} hours = ${totalHours} hours`
                               );
                               return (hourlyRate * totalHours).toFixed(2);
                             }
