@@ -6,6 +6,7 @@ import {
   DateTimeSelectionPopup,
   DateTimeSelectionPopupProps,
 } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
+import InlinePaymentComponent from '@/components/InlinePaymentComponent';
 
 interface Provider {
   id: string;
@@ -19,6 +20,7 @@ interface Provider {
   selectedSubcategory?: string;
   bio?: string;
   description?: string;
+  stripeAccountId?: string; // Für B2B Payment
 }
 
 interface ProviderBookingModalProps {
@@ -39,9 +41,9 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   provider,
   onConfirm,
 }) => {
-  const [currentStep, setCurrentStep] = useState<'description' | 'datetime' | 'payment'>(
-    'description'
-  );
+  const [currentStep, setCurrentStep] = useState<
+    'description' | 'datetime' | 'payment' | 'stripe-payment'
+  >('description');
   const [description, setDescription] = useState('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState<{
@@ -50,6 +52,12 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     duration: string;
   } | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [stripePaymentData, setStripePaymentData] = useState<{
+    clientSecret: string;
+    paymentIntentId: string;
+    totalAmountCents: number;
+    totalHours: number;
+  } | null>(null);
 
   const handleDescriptionNext = () => {
     if (!description.trim()) {
@@ -77,25 +85,122 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
 
     setIsProcessingPayment(true);
     try {
-      await onConfirm(
-        selectedDateTime.dateSelection,
-        selectedDateTime.time,
-        selectedDateTime.duration,
-        description
-      );
-      handleClose();
+      // Berechne den Gesamtbetrag
+      const hourlyRate = provider.hourlyRate || 0;
+      const durationStr = selectedDateTime.duration;
+
+      let totalHours = 0;
+
+      // Prüfe ob wir eine DateRange haben (mehrtägige Buchung)
+      if (
+        selectedDateTime.dateSelection &&
+        selectedDateTime.dateSelection.from &&
+        selectedDateTime.dateSelection.to
+      ) {
+        const startDate = new Date(selectedDateTime.dateSelection.from);
+        const endDate = new Date(selectedDateTime.dateSelection.to);
+        const daysDiff =
+          Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+        const hoursPerDay = parseFloat(durationStr) || 8;
+        totalHours = daysDiff * hoursPerDay;
+      } else {
+        // Fallback: normale Stundenberechnung
+        const hoursMatch = durationStr.match(/(\d+(?:\.\d+)?)\s*Stunden?/i);
+        totalHours = hoursMatch ? parseFloat(hoursMatch[1]) : parseFloat(durationStr) || 1;
+      }
+
+      const totalAmountCents = Math.round(hourlyRate * totalHours * 100); // In Cents
+
+      console.log('🚀 Starting B2B Stripe payment process:', {
+        provider: provider.companyName || provider.userName,
+        totalHours,
+        hourlyRate,
+        totalAmountCents,
+        dateSelection: selectedDateTime.dateSelection,
+      });
+
+      // Erstelle Payment Intent über die bestehende API
+      const response = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: totalAmountCents,
+          jobPriceInCents: totalAmountCents,
+          currency: 'eur',
+          connectedAccountId: provider.stripeAccountId, // Provider's Stripe Account ID
+          taskId: `b2b-booking-${Date.now()}`, // Unique booking ID
+          firebaseUserId: 'current-user-id', // TODO: Get from auth context
+          stripeCustomerId: 'customer-stripe-id', // TODO: Get from auth context
+          billingDetails: {
+            name: 'Company Customer', // TODO: Get from company profile
+            email: 'company@example.com', // TODO: Get from company profile
+            address: {
+              line1: 'Company Address',
+              city: 'City',
+              postal_code: '12345',
+              country: 'DE',
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Payment Intent creation failed');
+      }
+
+      const { clientSecret, paymentIntentId } = await response.json();
+
+      console.log('✅ Payment Intent created:', paymentIntentId);
+
+      // Öffne Stripe Payment Modal mit dem clientSecret
+      setStripePaymentData({ clientSecret, paymentIntentId, totalAmountCents, totalHours });
+      setCurrentStep('stripe-payment');
     } catch (error) {
-      console.error('Payment failed:', error);
-      alert('Zahlung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+      console.error('❌ Payment setup failed:', error);
+      alert(
+        `Zahlung fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setIsProcessingPayment(false);
     }
+  };
+
+  const handleStripePaymentSuccess = async (paymentIntentId: string) => {
+    console.log('✅ Stripe payment successful:', paymentIntentId);
+
+    try {
+      // Hier würde normalerweise die Buchung in Firebase gespeichert werden
+      await onConfirm(
+        selectedDateTime!.dateSelection,
+        selectedDateTime!.time,
+        selectedDateTime!.duration,
+        description
+      );
+
+      alert('Buchung erfolgreich abgeschlossen! Sie erhalten eine Bestätigung per E-Mail.');
+      handleClose();
+    } catch (error) {
+      console.error('❌ Error saving booking after payment:', error);
+      alert(
+        'Zahlung war erfolgreich, aber es gab einen Fehler beim Speichern der Buchung. Bitte kontaktieren Sie den Support.'
+      );
+    }
+  };
+
+  const handleStripePaymentError = (errorMessage: string) => {
+    console.error('❌ Stripe payment failed:', errorMessage);
+    alert(`Zahlung fehlgeschlagen: ${errorMessage}`);
+    setCurrentStep('payment'); // Zurück zum Payment Step
   };
 
   const handleClose = () => {
     setCurrentStep('description');
     setDescription('');
     setSelectedDateTime(null);
+    setStripePaymentData(null);
     setIsDatePickerOpen(false);
     onClose();
   };
@@ -448,6 +553,79 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                   )}
                 </button>
               </div>
+            </div>
+          )}
+
+          {currentStep === 'stripe-payment' && stripePaymentData && (
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Sichere Zahlung
+                </h2>
+                <button
+                  onClick={() => setCurrentStep('payment')}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Buchungsübersicht */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Buchungsübersicht
+                </h3>
+                <div className="flex items-center gap-3 mb-3">
+                  <img
+                    src={getProfileImage()}
+                    alt={getProviderName()}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {getProviderName()}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {provider.selectedSubcategory}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Gesamtstunden:</span>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      {stripePaymentData.totalHours}h
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Stundensatz:</span>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      €{provider.hourlyRate}/h
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span className="text-gray-900 dark:text-white">Gesamtbetrag:</span>
+                      <span className="text-[#14ad9f]">
+                        €{(stripePaymentData.totalAmountCents / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stripe Payment Component */}
+              <InlinePaymentComponent
+                clientSecret={stripePaymentData.clientSecret}
+                orderId={stripePaymentData.paymentIntentId}
+                totalAmount={stripePaymentData.totalAmountCents}
+                totalHours={stripePaymentData.totalHours}
+                isOpen={true}
+                onClose={() => setCurrentStep('payment')}
+                onSuccess={handleStripePaymentSuccess}
+                onError={handleStripePaymentError}
+              />
             </div>
           )}
         </div>
