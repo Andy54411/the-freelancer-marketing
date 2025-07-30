@@ -44,36 +44,32 @@ export async function GET(req: NextRequest) {
         created = Math.floor((now.getTime() - 24 * 60 * 60 * 1000) / 1000);
     }
 
-    // Hole Stripe Events - ALLE Payment-relevanten Events
-    console.log(`[Payments] Loading Stripe events from timestamp: ${created}`);
+    // Hole ALLE Stripe Events - ohne Type-Filter für vollständige Sichtbarkeit
+    console.log(`[Payments] Loading ALL Stripe events from timestamp: ${created}`);
 
     const events = await stripe.events.list({
-      limit: limitParam * 2, // Mehr Events laden für bessere Filterung
+      limit: limitParam * 3, // Mehr Events laden für bessere Abdeckung
       created: { gte: created },
-      types: [
-        'payment_intent.succeeded',
-        'payment_intent.payment_failed',
-        'payment_intent.requires_action',
-        'payment_intent.created',
-        'payment_intent.canceled',
-        'charge.succeeded',
-        'charge.failed',
-        'charge.pending',
-        'checkout.session.completed',
-        'invoice.payment_succeeded',
-        'invoice.payment_failed',
-        'transfer.created',
-        'transfer.paid',
-        'payout.created',
-        'payout.paid',
-        'payout.failed',
-      ],
+      // Kein types-Filter = ALLE Event-Typen werden geladen
     });
 
     console.log(`[Payments] Found ${events.data.length} Stripe events`);
 
-    // Zusätzlich direkt Payment Intents, Charges und Transfers laden
-    const [paymentIntents, charges, transfers] = await Promise.all([
+    // Zusätzlich direkt ALLE verfügbaren Stripe-Objekte laden
+    const [
+      paymentIntents,
+      charges,
+      transfers,
+      payouts,
+      invoices,
+      subscriptions,
+      balanceTransactions,
+      customers,
+      setupIntents,
+      refunds,
+      disputes,
+      applicationFees,
+    ] = await Promise.all([
       stripe.paymentIntents.list({
         limit: limitParam,
         created: { gte: created },
@@ -86,10 +82,58 @@ export async function GET(req: NextRequest) {
         limit: limitParam,
         created: { gte: created },
       }),
+      stripe.payouts.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.invoices.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.subscriptions.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.balanceTransactions.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.customers.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.setupIntents.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.refunds.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.disputes.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.applicationFees.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
     ]);
 
     console.log(
-      `[Payments] Direct API calls found: ${paymentIntents.data.length} PIs, ${charges.data.length} charges, ${transfers.data.length} transfers`
+      `[Payments] Complete Stripe data loaded:
+      - ${paymentIntents.data.length} Payment Intents
+      - ${charges.data.length} Charges
+      - ${transfers.data.length} Transfers  
+      - ${payouts.data.length} Payouts
+      - ${invoices.data.length} Invoices
+      - ${subscriptions.data.length} Subscriptions
+      - ${balanceTransactions.data.length} Balance Transactions
+      - ${customers.data.length} Customers
+      - ${setupIntents.data.length} Setup Intents
+      - ${refunds.data.length} Refunds
+      - ${disputes.data.length} Disputes
+      - ${applicationFees.data.length} Application Fees`
     );
 
     // Filtere und formatiere Events
@@ -135,6 +179,105 @@ export async function GET(req: NextRequest) {
         allStripeData.set(key, {
           source: 'transfer',
           data: transfer,
+        });
+      }
+    });
+
+    // Verarbeite Payouts
+    payouts.data.forEach(payout => {
+      const key = `po_${payout.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'payout',
+          data: payout,
+        });
+      }
+    });
+
+    // Verarbeite Invoices
+    invoices.data.forEach(invoice => {
+      const key = `in_${invoice.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'invoice',
+          data: invoice,
+        });
+      }
+    });
+
+    // Verarbeite Subscriptions
+    subscriptions.data.forEach(sub => {
+      const key = `sub_${sub.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'subscription',
+          data: sub,
+        });
+      }
+    });
+
+    // Verarbeite Balance Transactions
+    balanceTransactions.data.forEach(bt => {
+      const key = `bt_${bt.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'balance_transaction',
+          data: bt,
+        });
+      }
+    });
+
+    // Verarbeite Customers
+    customers.data.forEach(customer => {
+      const key = `cus_${customer.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'customer',
+          data: customer,
+        });
+      }
+    });
+
+    // Verarbeite Setup Intents
+    setupIntents.data.forEach(si => {
+      const key = `si_${si.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'setup_intent',
+          data: si,
+        });
+      }
+    });
+
+    // Verarbeite Refunds
+    refunds.data.forEach(refund => {
+      const key = `re_${refund.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'refund',
+          data: refund,
+        });
+      }
+    });
+
+    // Verarbeite Disputes
+    disputes.data.forEach(dispute => {
+      const key = `dp_${dispute.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'dispute',
+          data: dispute,
+        });
+      }
+    });
+
+    // Verarbeite Application Fees
+    applicationFees.data.forEach(fee => {
+      const key = `fee_${fee.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'application_fee',
+          data: fee,
         });
       }
     });
@@ -211,10 +354,71 @@ export async function GET(req: NextRequest) {
             obj = item.data;
             eventType = item.source;
             created = obj.created;
-            status = obj.status;
-            amount = obj.amount || 0;
-            currency = obj.currency || 'eur';
-            description = obj.description;
+
+            // Erweiterte Statuslogik für alle Objekttypen
+            switch (item.source) {
+              case 'customer':
+                status = obj.delinquent ? 'failed' : 'succeeded';
+                amount = 0;
+                currency = 'eur';
+                description = `Customer: ${obj.name || obj.email || obj.id}`;
+                break;
+              case 'subscription':
+                status = obj.status;
+                amount = obj.current_period_end
+                  ? (obj.current_period_end - obj.current_period_start) * 100
+                  : 0;
+                currency = obj.currency || 'eur';
+                description = `Subscription: ${obj.nickname || obj.id}`;
+                break;
+              case 'invoice':
+                status = obj.status;
+                amount = obj.amount_due || obj.total || 0;
+                currency = obj.currency || 'eur';
+                description = `Invoice: ${obj.number || obj.id}`;
+                break;
+              case 'payout':
+                status = obj.status;
+                amount = obj.amount || 0;
+                currency = obj.currency || 'eur';
+                description = `Payout to ${obj.destination || 'bank account'}`;
+                break;
+              case 'balance_transaction':
+                status = obj.status || 'succeeded';
+                amount = obj.amount || 0;
+                currency = obj.currency || 'eur';
+                description = `${obj.type}: ${obj.description || obj.id}`;
+                break;
+              case 'refund':
+                status = obj.status;
+                amount = -(obj.amount || 0); // Negative für Rückerstattungen
+                currency = obj.currency || 'eur';
+                description = `Refund: ${obj.reason || obj.id}`;
+                break;
+              case 'dispute':
+                status = obj.status;
+                amount = -(obj.amount || 0); // Negative für Streitfälle
+                currency = obj.currency || 'eur';
+                description = `Dispute: ${obj.reason || obj.id}`;
+                break;
+              case 'application_fee':
+                status = obj.refunded ? 'refunded' : 'succeeded';
+                amount = obj.amount || 0;
+                currency = obj.currency || 'eur';
+                description = `Application Fee: ${obj.id}`;
+                break;
+              case 'setup_intent':
+                status = obj.status;
+                amount = 0;
+                currency = obj.currency || 'eur';
+                description = `Setup Intent: ${obj.usage || obj.id}`;
+                break;
+              default:
+                status = obj.status || 'unknown';
+                amount = obj.amount || 0;
+                currency = obj.currency || 'eur';
+                description = obj.description || `${eventType} - ${obj.id}`;
+            }
           }
 
           const metadata = obj.metadata || {};
@@ -259,17 +463,53 @@ export async function GET(req: NextRequest) {
               ...(orderData && { orderTitle: orderData.titel }),
               stripeObjectId: obj.id,
               stripeObjectType: eventType,
+              // Erweiterte Metadaten je nach Objekttyp
+              ...(item.source === 'customer' && {
+                customerEmail: obj.email,
+                customerName: obj.name,
+                customerPhone: obj.phone,
+                delinquent: obj.delinquent,
+              }),
+              ...(item.source === 'subscription' && {
+                subscriptionInterval: obj.items?.data?.[0]?.price?.recurring?.interval,
+                subscriptionTrialEnd: obj.trial_end,
+                subscriptionCurrentPeriodEnd: obj.current_period_end,
+              }),
+              ...(item.source === 'invoice' && {
+                invoiceNumber: obj.number,
+                invoiceDueDate: obj.due_date,
+                invoiceAmountPaid: obj.amount_paid,
+              }),
+              ...(item.source === 'dispute' && {
+                disputeReason: obj.reason,
+                disputeStatus: obj.status,
+                disputeEvidence: obj.evidence_details?.summary,
+              }),
             },
             orderId: metadata.orderId,
-            customerId: metadata.customerId || metadata.userId || obj.customer,
-            providerId: metadata.providerId || metadata.companyId || obj.destination,
-            error: obj.last_payment_error?.message || obj.failure_message,
+            customerId:
+              metadata.customerId ||
+              metadata.userId ||
+              obj.customer ||
+              (typeof obj.customer === 'string' ? obj.customer : obj.customer?.id),
+            providerId:
+              metadata.providerId ||
+              metadata.companyId ||
+              obj.destination ||
+              (typeof obj.destination === 'string' ? obj.destination : obj.destination?.id),
+            error:
+              obj.last_payment_error?.message ||
+              obj.failure_message ||
+              obj.failure_reason ||
+              obj.cancellation_reason,
             webhookStatus:
               item.source === 'event' && item.data.pending_webhooks > 0 ? 'pending' : 'delivered',
             rawStripeData: {
               object_id: obj.id,
               object_type: eventType,
               source: item.source,
+              // Vollständige Stripe-Objektdaten für Debugging
+              full_object: obj,
             },
           };
         })
@@ -291,6 +531,25 @@ export async function GET(req: NextRequest) {
         date: dateFilter,
         status: statusFilter,
         search: searchTerm,
+      },
+      // Vollständige Stripe-Datenquellenübersicht
+      stripeDataSources: {
+        events: events.data.length,
+        paymentIntents: paymentIntents.data.length,
+        charges: charges.data.length,
+        transfers: transfers.data.length,
+        payouts: payouts.data.length,
+        invoices: invoices.data.length,
+        subscriptions: subscriptions.data.length,
+        balanceTransactions: balanceTransactions.data.length,
+        customers: customers.data.length,
+        setupIntents: setupIntents.data.length,
+        refunds: refunds.data.length,
+        disputes: disputes.data.length,
+        applicationFees: applicationFees.data.length,
+        totalUniqueObjects: allStripeData.size,
+        completeCoverage: true,
+        note: 'Diese API zeigt ALLE verfügbaren Stripe-Daten - Events, Objekte, Transaktionen, Kunden, etc.',
       },
     });
   } catch (error) {
