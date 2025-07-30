@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { httpsCallable, getFunctions } from 'firebase/functions';
 import { app } from '@/firebase/clients';
+import { useAlertHelpers } from '@/components/ui/AlertProvider';
 
 // Funktionen-Instanz initialisieren
 const functionsInstance = getFunctions(app, 'europe-west1');
@@ -39,6 +40,7 @@ export default function ReviewForm({
   kategorie,
   unterkategorie,
 }: ReviewFormProps) {
+  const { showError } = useAlertHelpers();
   const [sterne, setSterne] = useState(5);
   const [kommentar, setKommentar] = useState('');
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,7 @@ export default function ReviewForm({
 
     const user = getAuth().currentUser;
     if (!user) {
-      alert('Bitte zuerst einloggen.');
+      showError('Anmeldung erforderlich', 'Bitte zuerst einloggen.');
       setLoading(false);
       return;
     }
@@ -122,7 +124,7 @@ export default function ReviewForm({
         errorMessage = (err as any).message;
       }
       setError(errorMessage);
-      alert(errorMessage);
+      showError('Bewertungsfehler', errorMessage);
     } finally {
       setLoading(false);
     }

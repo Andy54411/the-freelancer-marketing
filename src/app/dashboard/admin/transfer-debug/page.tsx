@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAlertHelpers } from '@/components/ui/AlertProvider';
 import {
   FiSearch,
   FiRefreshCw,
@@ -45,6 +46,7 @@ interface FailedTransfer {
 }
 
 export default function TransferDebugPage() {
+  const { showSuccess, showError } = useAlertHelpers();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'orderId' | 'paymentIntentId' | 'connectAccountId'>(
     'orderId'
@@ -68,11 +70,11 @@ export default function TransferDebugPage() {
       if (data.success) {
         setDebugResult(data.debug);
       } else {
-        alert(`Fehler beim Suchen: ${data.error}`);
+        showError('Fehler beim Suchen', data.error);
       }
     } catch (error) {
       console.error('Search error:', error);
-      alert('Fehler beim Suchen der Debug-Informationen');
+      showError('Suchfehler', 'Fehler beim Suchen der Debug-Informationen');
     } finally {
       setLoading(false);
     }
@@ -87,11 +89,11 @@ export default function TransferDebugPage() {
       if (data.success) {
         setFailedTransfers(data.failedTransfers);
       } else {
-        alert(`Fehler beim Laden: ${data.error}`);
+        showError('Ladefehler', data.error);
       }
     } catch (error) {
       console.error('Failed transfers loading error:', error);
-      alert('Fehler beim Laden der fehlgeschlagenen Transfers');
+      showError('Ladefehler', 'Fehler beim Laden der fehlgeschlagenen Transfers');
     } finally {
       setLoading(false);
     }
@@ -109,14 +111,17 @@ export default function TransferDebugPage() {
       const data = await response.json();
 
       if (data.success && data.results[0]?.success) {
-        alert(`Transfer erfolgreich wiederholt: ${data.results[0].newTransferId}`);
+        showSuccess(
+          'Transfer erfolgreich wiederholt',
+          `Neue Transfer-ID: ${data.results[0].newTransferId}`
+        );
         loadFailedTransfers(); // Reload list
       } else {
-        alert(`Retry fehlgeschlagen: ${data.results[0]?.error || data.error}`);
+        showError('Retry fehlgeschlagen', data.results[0]?.error || data.error);
       }
     } catch (error) {
       console.error('Retry error:', error);
-      alert('Fehler beim Wiederholen des Transfers');
+      showError('Retry-Fehler', 'Fehler beim Wiederholen des Transfers');
     } finally {
       setRetryLoading(null);
     }

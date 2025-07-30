@@ -8,6 +8,7 @@ import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { useAlertHelpers } from '@/components/ui/AlertProvider';
 
 interface TimeEntry {
   id: string;
@@ -45,6 +46,7 @@ export default function TimeTrackingManager({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [showAllEntries, setShowAllEntries] = useState(false);
+  const { showSuccess, showError, showWarning } = useAlertHelpers();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -246,8 +248,9 @@ export default function TimeTrackingManager({
         const result2 = await TimeTracker.logTimeEntry(orderId, additionalEntry);
 
         if (result1 && result2) {
-          alert(
-            `Zeit erfolgreich gespeichert: ${originalHours}h geplant + ${additionalHours}h zusätzlich`
+          showSuccess(
+            'Zeit erfolgreich gespeichert',
+            `${originalHours}h geplant + ${additionalHours}h zusätzlich`
           );
         } else {
           throw new Error('Fehler beim Speichern der Zeiteinträge');
@@ -257,8 +260,9 @@ export default function TimeTrackingManager({
         const result = await TimeTracker.logTimeEntry(orderId, timeEntry);
 
         if (result) {
-          alert(
-            `Zeit erfolgreich gespeichert: ${formData.hours}h ${category === 'original' ? 'geplant' : 'zusätzlich'}`
+          showSuccess(
+            'Zeit erfolgreich gespeichert',
+            `${formData.hours}h ${category === 'original' ? 'geplant' : 'zusätzlich'}`
           );
         } else {
           throw new Error('Fehler beim Speichern der Zeiteintragung');
@@ -290,8 +294,9 @@ export default function TimeTrackingManager({
       }, 500);
     } catch (error) {
       console.error('Error submitting time entry:', error);
-      alert(
-        `Fehler beim Speichern der Zeiteintragung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      showError(
+        'Fehler beim Speichern',
+        error instanceof Error ? error.message : 'Unbekannter Fehler'
       );
     }
   };
@@ -317,11 +322,14 @@ export default function TimeTrackingManager({
     if (!confirm('Zeiteintragung wirklich löschen?')) return;
 
     try {
-      alert('Zeiteintragung würde gelöscht werden');
+      showWarning(
+        'Zeiteintragung würde gelöscht werden',
+        'Diese Funktion ist noch nicht implementiert'
+      );
       await loadTimeTracking();
     } catch (error) {
       console.error('Error deleting time entry:', error);
-      alert('Fehler beim Löschen der Zeiteintragung');
+      showError('Fehler beim Löschen der Zeiteintragung');
     }
   };
 

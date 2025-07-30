@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAlertHelpers } from '@/components/ui/AlertProvider';
 import {
   Card,
   CardAction,
@@ -35,6 +36,7 @@ interface DashboardStats {
 }
 
 export function SectionCards() {
+  const { showSuccess, showError, showWarning } = useAlertHelpers();
   const { user: currentUser, unreadMessagesCount } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     monthlyRevenue: 0,
@@ -240,21 +242,17 @@ export function SectionCards() {
 
     // ⚠️ SICHERHEITSPRÜFUNG: Auszahlung nur möglich wenn alle Aufträge abgeschlossen sind
     if (stats.hasActiveOrders) {
-      alert(
-        '🚫 Auszahlung nicht möglich\n\n' +
-          'Sie haben noch aktive Aufträge, die nicht abgeschlossen sind.\n' +
-          'Bitte schließen Sie alle Aufträge ab und warten Sie auf die Kundenbestätigung, bevor Sie eine Auszahlung beantragen können.\n\n' +
-          'Grund: Platform Hold System - Das Geld wird erst nach Projektabnahme freigegeben.'
+      showWarning(
+        'Auszahlung nicht möglich',
+        'Sie haben noch aktive Aufträge, die nicht abgeschlossen sind. Bitte schließen Sie alle Aufträge ab und warten Sie auf die Kundenbestätigung, bevor Sie eine Auszahlung beantragen können. Grund: Platform Hold System - Das Geld wird erst nach Projektabnahme freigegeben.'
       );
       return;
     }
 
     if (stats.pendingApprovals && stats.pendingApprovals > 0) {
-      alert(
-        '⏳ Auszahlung nicht möglich\n\n' +
-          `Sie haben noch ${stats.pendingApprovals} Zeiteinträge, die auf Kundenfreigabe warten.\n` +
-          'Bitte warten Sie, bis alle zusätzlichen Stunden vom Kunden genehmigt wurden.\n\n' +
-          'Grund: Sicherheit - Ungeklärte Beträge können nicht ausgezahlt werden.'
+      showWarning(
+        'Auszahlung nicht möglich',
+        `Sie haben noch ${stats.pendingApprovals} Zeiteinträge, die auf Kundenfreigabe warten. Bitte warten Sie, bis alle zusätzlichen Stunden vom Kunden genehmigt wurden. Grund: Sicherheit - Ungeklärte Beträge können nicht ausgezahlt werden.`
       );
       return;
     }
@@ -285,8 +283,9 @@ export function SectionCards() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(
-          `Auszahlung erfolgreich beantragt!\n\nPayout ID: ${result.payoutId}\nBetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\nDas Geld wird in 1-2 Werktagen auf Ihr Konto überwiesen.`
+        showSuccess(
+          'Auszahlung erfolgreich beantragt!',
+          `Payout ID: ${result.payoutId}\nBetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\nDas Geld wird in 1-2 Werktagen auf Ihr Konto überwiesen.`
         );
         window.location.reload();
       } else {
@@ -295,7 +294,8 @@ export function SectionCards() {
       }
     } catch (error) {
       console.error('Payout error:', error);
-      alert(
+      showError(
+        'Auszahlungsfehler',
         `Fehler bei Auszahlung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
     } finally {
