@@ -127,83 +127,120 @@ export async function GET(req: NextRequest) {
           console.log('Object not found on main account, trying connect accounts...');
         }
 
-        // Falls nicht auf Haupt-Account gefunden, durchsuche Connect Accounts (limitiert)
+        // Falls nicht auf Haupt-Account gefunden, durchsuche Connect Accounts (intelligente Suche)
         if (!stripeObjectFound) {
-          // Lade nur die ersten 20 Connect Accounts (Timeout-Vermeidung)
-          const connectAccounts = await stripe.accounts.list({ limit: 20 });
-
           console.log(
-            `Searching ${connectAccounts.data.length} connect accounts for ${paymentIntentId}`
+            `Object ${paymentIntentId} not found on main account, searching connect accounts...`
           );
 
-          for (const account of connectAccounts.data) {
-            try {
-              if (paymentIntentId.startsWith('pi_')) {
-                // PaymentIntent auf Connect Account
-                const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-                  stripeAccount: account.id,
-                });
-                debugInfo.results.paymentIntent = {
-                  id: paymentIntent.id,
-                  type: 'PaymentIntent',
-                  status: paymentIntent.status,
-                  amount: paymentIntent.amount,
-                  currency: paymentIntent.currency,
-                  metadata: paymentIntent.metadata,
-                  created: new Date(paymentIntent.created * 1000).toISOString(),
-                  account: account.id,
-                  account_email: account.email,
-                };
-                stripeObjectFound = true;
-                break;
-              } else if (paymentIntentId.startsWith('py_')) {
-                // PaymentMethod auf Connect Account
-                const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntentId, {
-                  stripeAccount: account.id,
-                });
-                debugInfo.results.paymentIntent = {
-                  id: paymentMethod.id,
-                  type: 'PaymentMethod',
-                  type_detail: paymentMethod.type,
-                  created: new Date(paymentMethod.created * 1000).toISOString(),
-                  metadata: paymentMethod.metadata,
-                  customer: paymentMethod.customer,
-                  account: account.id,
-                  account_email: account.email,
-                };
-                stripeObjectFound = true;
-                break;
-              } else if (paymentIntentId.startsWith('ch_')) {
-                // Charge auf Connect Account
-                const charge = await stripe.charges.retrieve(paymentIntentId, {
-                  stripeAccount: account.id,
-                });
-                debugInfo.results.paymentIntent = {
-                  id: charge.id,
-                  type: 'Charge',
-                  status: charge.status,
-                  amount: charge.amount,
-                  currency: charge.currency,
-                  metadata: charge.metadata,
-                  created: new Date(charge.created * 1000).toISOString(),
-                  payment_intent: charge.payment_intent,
-                  account: account.id,
-                  account_email: account.email,
-                };
-                stripeObjectFound = true;
-                break;
+          // Strategie 1: Durchsuche alle Connect Accounts in Batches
+          let searchedAccounts = 0;
+          let hasMore = true;
+          let startingAfter: string | undefined;
+
+          while (!stripeObjectFound && hasMore && searchedAccounts < 100) {
+            const connectAccountsParams: any = { limit: 20 };
+            if (startingAfter) {
+              connectAccountsParams.starting_after = startingAfter;
+            }
+
+            const connectAccounts = await stripe.accounts.list(connectAccountsParams);
+            console.log(
+              `Batch: Found ${connectAccounts.data.length} connect accounts (searched: ${searchedAccounts})`
+            );
+
+            for (const account of connectAccounts.data) {
+              searchedAccounts++;
+              try {
+                if (paymentIntentId.startsWith('pi_')) {
+                  // PaymentIntent auf Connect Account
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+                    stripeAccount: account.id,
+                  });
+                  debugInfo.results.paymentIntent = {
+                    id: paymentIntent.id,
+                    type: 'PaymentIntent',
+                    status: paymentIntent.status,
+                    amount: paymentIntent.amount,
+                    currency: paymentIntent.currency,
+                    metadata: paymentIntent.metadata,
+                    created: new Date(paymentIntent.created * 1000).toISOString(),
+                    account: account.id,
+                    account_email: account.email,
+                    searchedAccounts: searchedAccounts,
+                  };
+                  stripeObjectFound = true;
+                  console.log(
+                    `✅ Found PaymentIntent on account ${account.id} after searching ${searchedAccounts} accounts`
+                  );
+                  break;
+                } else if (paymentIntentId.startsWith('py_')) {
+                  // PaymentMethod auf Connect Account
+                  const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntentId, {
+                    stripeAccount: account.id,
+                  });
+                  debugInfo.results.paymentIntent = {
+                    id: paymentMethod.id,
+                    type: 'PaymentMethod',
+                    type_detail: paymentMethod.type,
+                    created: new Date(paymentMethod.created * 1000).toISOString(),
+                    metadata: paymentMethod.metadata,
+                    customer: paymentMethod.customer,
+                    account: account.id,
+                    account_email: account.email,
+                    searchedAccounts: searchedAccounts,
+                  };
+                  stripeObjectFound = true;
+                  console.log(
+                    `✅ Found PaymentMethod on account ${account.id} after searching ${searchedAccounts} accounts`
+                  );
+                  break;
+                } else if (paymentIntentId.startsWith('ch_')) {
+                  // Charge auf Connect Account
+                  const charge = await stripe.charges.retrieve(paymentIntentId, {
+                    stripeAccount: account.id,
+                  });
+                  debugInfo.results.paymentIntent = {
+                    id: charge.id,
+                    type: 'Charge',
+                    status: charge.status,
+                    amount: charge.amount,
+                    currency: charge.currency,
+                    metadata: charge.metadata,
+                    created: new Date(charge.created * 1000).toISOString(),
+                    payment_intent: charge.payment_intent,
+                    account: account.id,
+                    account_email: account.email,
+                    searchedAccounts: searchedAccounts,
+                  };
+                  stripeObjectFound = true;
+                  console.log(
+                    `✅ Found Charge on account ${account.id} after searching ${searchedAccounts} accounts`
+                  );
+                  break;
+                }
+              } catch (connectError) {
+                // Objekt nicht auf diesem Connect Account gefunden, weiter probieren
+                continue;
               }
-            } catch (connectError) {
-              // Objekt nicht auf diesem Connect Account gefunden, weiter probieren
-              continue;
+            }
+
+            // Prüfe ob es weitere Accounts gibt
+            hasMore = connectAccounts.has_more;
+            if (hasMore && connectAccounts.data.length > 0) {
+              startingAfter = connectAccounts.data[connectAccounts.data.length - 1].id;
             }
           }
+
+          console.log(
+            `Search completed. Total accounts searched: ${searchedAccounts}, Found: ${stripeObjectFound}`
+          );
         }
 
         // Falls immer noch nicht gefunden
         if (!stripeObjectFound) {
           debugInfo.results.paymentIntent = {
-            error: 'Object not found on main account or any connect accounts',
+            error: 'Object not found on main account or connect accounts',
             searchedId: paymentIntentId,
             detectedType: paymentIntentId.startsWith('pi_')
               ? 'PaymentIntent'
@@ -214,7 +251,8 @@ export async function GET(req: NextRequest) {
                   : paymentIntentId.startsWith('in_')
                     ? 'Invoice'
                     : 'Unknown',
-            searchedAccounts: 'main + all connect accounts',
+            searchStrategy: 'main account + up to 100 connect accounts',
+            searchedAccounts: 'main + batched connect account search',
           };
         }
       } catch (error) {
