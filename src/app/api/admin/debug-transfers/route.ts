@@ -79,16 +79,36 @@ export async function GET(req: NextRequest) {
         console.log(`🔍 PATTERN SEARCH für: ${paymentIntentId}`);
         console.log(`📋 Verfügbare Patterns:`, Object.keys(knownTargetAccounts));
 
+        // Debug Info für API Response
+        const patternDebug: any = {
+          searchedId: paymentIntentId,
+          availablePatterns: Object.keys(knownTargetAccounts),
+          testResults: [],
+        };
+
         // Prüfe ob PaymentMethod einem bekannten Pattern entspricht
         let targetAccounts: string[] = [];
+        let matchedPattern: string | null = null;
+
         for (const [pattern, accounts] of Object.entries(knownTargetAccounts)) {
           console.log(`🧪 Testing Pattern "${pattern}" gegen "${paymentIntentId}"`);
-          if (paymentIntentId.startsWith(pattern)) {
+          const matches = paymentIntentId.startsWith(pattern);
+          patternDebug.testResults.push({
+            pattern,
+            matches,
+            accounts,
+          });
+
+          if (matches) {
             targetAccounts = accounts;
+            matchedPattern = pattern;
             console.log(`🎯 PATTERN MATCH: ${paymentIntentId} entspricht Pattern ${pattern}`);
             break;
           }
         }
+
+        // Pattern Debug in debugInfo hinzufügen
+        debugInfo.results.patternMatching = patternDebug;
 
         // Durchsuche bekannte Target Accounts falls Pattern gefunden
         if (targetAccounts.length > 0) {
