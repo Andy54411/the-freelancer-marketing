@@ -127,10 +127,14 @@ export async function GET(req: NextRequest) {
           console.log('Object not found on main account, trying connect accounts...');
         }
 
-        // Falls nicht auf Haupt-Account gefunden, durchsuche Connect Accounts
+        // Falls nicht auf Haupt-Account gefunden, durchsuche Connect Accounts (limitiert)
         if (!stripeObjectFound) {
-          // Lade alle Connect Accounts
-          const connectAccounts = await stripe.accounts.list({ limit: 100 });
+          // Lade nur die ersten 20 Connect Accounts (Timeout-Vermeidung)
+          const connectAccounts = await stripe.accounts.list({ limit: 20 });
+
+          console.log(
+            `Searching ${connectAccounts.data.length} connect accounts for ${paymentIntentId}`
+          );
 
           for (const account of connectAccounts.data) {
             try {
@@ -242,9 +246,9 @@ export async function GET(req: NextRequest) {
         });
         allTransfers = transfersToAccount.data;
       } else if (paymentIntentId) {
-        // Erweiterte Suche: Haupt-Account und alle Connect Accounts
+        // Erweiterte Suche: Haupt-Account und alle Connect Accounts (limitiert für Performance)
         const recentTransfers = await stripe.transfers.list({
-          limit: 100,
+          limit: 50, // Reduziert von 100 auf 50
         });
 
         // Basis-Filter für Haupt-Account-Transfers
@@ -284,7 +288,7 @@ export async function GET(req: NextRequest) {
         allTransfers = filteredTransfers;
 
         // Falls wir das PaymentMethod/PaymentIntent auf einem Connect Account gefunden haben,
-        // suche auch nach Transfers von diesem Account
+        // suche auch nach Transfers von diesem Account (aber nur begrenzt)
         if (
           debugInfo.results.paymentIntent?.account &&
           debugInfo.results.paymentIntent.account !== 'main'
@@ -292,7 +296,7 @@ export async function GET(req: NextRequest) {
           try {
             const connectAccountTransfers = await stripe.transfers.list(
               {
-                limit: 100,
+                limit: 20, // Reduziert von 100 auf 20
               },
               {
                 stripeAccount: debugInfo.results.paymentIntent.account,
@@ -331,6 +335,7 @@ export async function GET(req: NextRequest) {
         const recentTransfers = await stripe.transfers.list({
           limit: 20,
         });
+        allTransfers = recentTransfers.data;
       }
 
       debugInfo.results.transfers = {
