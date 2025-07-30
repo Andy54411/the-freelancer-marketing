@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/firebase/server';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 
@@ -45,49 +44,130 @@ export async function GET(req: NextRequest) {
         created = Math.floor((now.getTime() - 24 * 60 * 60 * 1000) / 1000);
     }
 
-    // Hole Stripe Events
+    // Hole Stripe Events - ALLE Payment-relevanten Events
+    console.log(`[Payments] Loading Stripe events from timestamp: ${created}`);
+
     const events = await stripe.events.list({
-      limit: limitParam,
+      limit: limitParam * 2, // Mehr Events laden für bessere Filterung
       created: { gte: created },
-      ...(statusFilter !== 'all' && {
-        types: [
-          'payment_intent.succeeded',
-          'payment_intent.payment_failed',
-          'payment_intent.requires_action',
-          'payment_intent.created',
-        ],
-      }),
+      types: [
+        'payment_intent.succeeded',
+        'payment_intent.payment_failed',
+        'payment_intent.requires_action',
+        'payment_intent.created',
+        'payment_intent.canceled',
+        'charge.succeeded',
+        'charge.failed',
+        'charge.pending',
+        'checkout.session.completed',
+        'invoice.payment_succeeded',
+        'invoice.payment_failed',
+        'transfer.created',
+        'transfer.paid',
+        'payout.created',
+        'payout.paid',
+        'payout.failed',
+      ],
     });
 
-    // Filtere und formatiere Events
-    const paymentEvents = await Promise.all(
-      events.data
-        .filter(event => {
-          // Filter nach Event-Typ
-          const isPaymentEvent = [
-            'payment_intent.succeeded',
-            'payment_intent.payment_failed',
-            'payment_intent.requires_action',
-            'payment_intent.created',
-            'checkout.session.completed',
-            'invoice.payment_succeeded',
-            'invoice.payment_failed',
-          ].includes(event.type);
+    console.log(`[Payments] Found ${events.data.length} Stripe events`);
 
-          if (!isPaymentEvent) return false;
+    // Zusätzlich direkt Payment Intents, Charges und Transfers laden
+    const [paymentIntents, charges, transfers] = await Promise.all([
+      stripe.paymentIntents.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.charges.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+      stripe.transfers.list({
+        limit: limitParam,
+        created: { gte: created },
+      }),
+    ]);
+
+    console.log(
+      `[Payments] Direct API calls found: ${paymentIntents.data.length} PIs, ${charges.data.length} charges, ${transfers.data.length} transfers`
+    );
+
+    // Filtere und formatiere Events
+    const allStripeData = new Map();
+
+    // Verarbeite Events
+    events.data.forEach(event => {
+      const key = `event_${event.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'event',
+          data: event,
+        });
+      }
+    });
+
+    // Verarbeite Payment Intents
+    paymentIntents.data.forEach(pi => {
+      const key = `pi_${pi.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'payment_intent',
+          data: pi,
+        });
+      }
+    });
+
+    // Verarbeite Charges
+    charges.data.forEach(charge => {
+      const key = `ch_${charge.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'charge',
+          data: charge,
+        });
+      }
+    });
+
+    // Verarbeite Transfers
+    transfers.data.forEach(transfer => {
+      const key = `tr_${transfer.id}`;
+      if (!allStripeData.has(key)) {
+        allStripeData.set(key, {
+          source: 'transfer',
+          data: transfer,
+        });
+      }
+    });
+
+    console.log(`[Payments] Total unique Stripe objects: ${allStripeData.size}`);
+
+    const paymentEvents = await Promise.all(
+      Array.from(allStripeData.values())
+        .filter(item => {
+          // Anwenden von Status- und Suchfiltern
+          let obj, eventType, status;
+
+          if (item.source === 'event') {
+            obj = item.data.data.object;
+            eventType = item.data.type;
+            status = obj.status;
+          } else {
+            obj = item.data;
+            eventType = item.source;
+            status = obj.status;
+          }
 
           // Status-Filter
           if (statusFilter !== 'all') {
-            const paymentIntent = event.data.object as Stripe.PaymentIntent;
-            if (statusFilter === 'succeeded' && event.type !== 'payment_intent.succeeded') {
+            if (statusFilter === 'succeeded' && !['succeeded', 'paid'].includes(status)) {
               return false;
             }
-            if (statusFilter === 'failed' && event.type !== 'payment_intent.payment_failed') {
+            if (statusFilter === 'failed' && status !== 'failed') {
               return false;
             }
             if (
               statusFilter === 'pending' &&
-              !['payment_intent.requires_action', 'payment_intent.created'].includes(event.type)
+              !['pending', 'requires_action', 'processing'].includes(status)
             ) {
               return false;
             }
@@ -95,15 +175,15 @@ export async function GET(req: NextRequest) {
 
           // Such-Filter
           if (searchTerm) {
-            const paymentIntent = event.data.object as Stripe.PaymentIntent;
-            const metadata = paymentIntent.metadata || {};
+            const metadata = obj.metadata || {};
             const searchableText = [
-              event.id,
-              paymentIntent.id,
+              item.data.id,
+              obj.id,
               metadata.orderId,
               metadata.customerId,
               metadata.providerId,
-              paymentIntent.description,
+              obj.description,
+              eventType,
             ]
               .join(' ')
               .toLowerCase();
@@ -115,14 +195,32 @@ export async function GET(req: NextRequest) {
 
           return true;
         })
-        .map(async event => {
-          const paymentIntent = event.data.object as Stripe.PaymentIntent;
-          const metadata = paymentIntent.metadata || {};
+        .map(async item => {
+          let obj, eventType, status, created, amount, currency, description;
+
+          if (item.source === 'event') {
+            const event = item.data;
+            obj = event.data.object;
+            eventType = event.type;
+            created = event.created;
+            status = obj.status;
+            amount = obj.amount || obj.amount_total || 0;
+            currency = obj.currency || 'eur';
+            description = obj.description;
+          } else {
+            obj = item.data;
+            eventType = item.source;
+            created = obj.created;
+            status = obj.status;
+            amount = obj.amount || 0;
+            currency = obj.currency || 'eur';
+            description = obj.description;
+          }
+
+          const metadata = obj.metadata || {};
 
           // Zusätzliche Daten aus Firebase laden falls vorhanden
-          let orderData: any = null;
-          const customerData: any = null;
-          const providerData: any = null;
+          let orderData: Record<string, unknown> | null = null;
 
           if (metadata.orderId) {
             try {
@@ -136,45 +234,42 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          // Status mapping
-          let status: 'succeeded' | 'failed' | 'pending' | 'requires_action' = 'pending';
-          switch (event.type) {
-            case 'payment_intent.succeeded':
-              status = 'succeeded';
-              break;
-            case 'payment_intent.payment_failed':
-              status = 'failed';
-              break;
-            case 'payment_intent.requires_action':
-              status = 'requires_action';
-              break;
-            default:
-              status = 'pending';
+          // Status mapping für einheitliche Anzeige
+          let normalizedStatus: 'succeeded' | 'failed' | 'pending' | 'requires_action' = 'pending';
+          if (['succeeded', 'paid', 'completed'].includes(status)) {
+            normalizedStatus = 'succeeded';
+          } else if (['failed', 'canceled', 'cancelled'].includes(status)) {
+            normalizedStatus = 'failed';
+          } else if (['requires_action', 'requires_payment_method'].includes(status)) {
+            normalizedStatus = 'requires_action';
+          } else {
+            normalizedStatus = 'pending';
           }
 
           return {
-            id: event.id,
-            type: event.type,
-            created: new Date(event.created * 1000).toISOString(),
-            status,
-            amount: paymentIntent.amount || 0,
-            currency: paymentIntent.currency || 'eur',
-            description: paymentIntent.description || metadata.description,
+            id: item.data.id,
+            type: eventType,
+            created: new Date(created * 1000).toISOString(),
+            status: normalizedStatus,
+            amount: amount || 0,
+            currency: currency.toUpperCase(),
+            description: description || metadata.description || `${eventType} - ${obj.id}`,
             metadata: {
               ...metadata,
               ...(orderData && { orderTitle: orderData.titel }),
-              stripePaymentIntentId: paymentIntent.id,
+              stripeObjectId: obj.id,
+              stripeObjectType: eventType,
             },
             orderId: metadata.orderId,
-            customerId: metadata.customerId || metadata.userId,
-            providerId: metadata.providerId || metadata.companyId,
-            error: paymentIntent.last_payment_error?.message,
-            webhookStatus: event.pending_webhooks > 0 ? 'pending' : 'delivered',
+            customerId: metadata.customerId || metadata.userId || obj.customer,
+            providerId: metadata.providerId || metadata.companyId || obj.destination,
+            error: obj.last_payment_error?.message || obj.failure_message,
+            webhookStatus:
+              item.source === 'event' && item.data.pending_webhooks > 0 ? 'pending' : 'delivered',
             rawStripeData: {
-              payment_intent_id: paymentIntent.id,
-              client_secret: paymentIntent.client_secret,
-              confirmation_method: paymentIntent.confirmation_method,
-              payment_method_types: paymentIntent.payment_method_types,
+              object_id: obj.id,
+              object_type: eventType,
+              source: item.source,
             },
           };
         })

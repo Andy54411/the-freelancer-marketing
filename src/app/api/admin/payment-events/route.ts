@@ -1,12 +1,40 @@
 // src/app/api/admin/payment-events/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import Stripe from 'stripe';
+
+interface PaymentEvent {
+  id: string;
+  timestamp: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string;
+  stripeId?: string;
+  orderId?: string;
+  customerId?: string;
+  providerId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// Initialize Stripe
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: '2024-06-20',
+    })
+  : null;
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const dateFilter = searchParams.get('date') || '24h';
     const limitParam = parseInt(searchParams.get('limit') || '100');
+
+    console.log(
+      `[PaymentEvents] Loading payment events with filter: ${dateFilter}, limit: ${limitParam}`
+    );
 
     // Berechne Zeitraum
     const now = new Date();
@@ -29,68 +57,178 @@ export async function GET(req: NextRequest) {
         startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    const paymentEvents: any[] = [];
+    const stripeStartTimestamp = Math.floor(startTime.getTime() / 1000);
+    const paymentEvents: PaymentEvent[] = [];
 
-    // 1. Lade Stripe Events aus der stripe_events Collection
-    try {
-      const stripeEventsQuery = db
-        .collection('stripe_events')
-        .where('created', '>=', startTime)
-        .orderBy('created', 'desc')
-        .limit(limitParam);
+    // 1. Lade ALLE Stripe Payment Events
+    if (stripe) {
+      try {
+        console.log(`[PaymentEvents] Loading Stripe events from ${startTime.toISOString()}`);
 
-      const stripeEventsSnapshot = await stripeEventsQuery.get();
-      stripeEventsSnapshot.forEach(doc => {
-        const data = doc.data();
+        // Payment Intents
+        const paymentIntents = await stripe.paymentIntents.list({
+          limit: limitParam,
+          created: { gte: stripeStartTimestamp },
+        });
 
-        // Extrahiere Payment-relevante Events
-        if (
-          (data.type && data.type.includes('payment_intent')) ||
-          data.type.includes('charge') ||
-          data.type.includes('invoice') ||
-          data.type.includes('transfer')
-        ) {
-          let amount = 0;
-          let currency = 'EUR';
-          let status = 'unknown';
-          let description = '';
+        console.log(`[PaymentEvents] Found ${paymentIntents.data.length} payment intents`);
 
-          // Extrahiere relevante Daten basierend auf Event-Typ
-          if (data.data?.object) {
-            const obj = data.data.object;
-            amount = obj.amount || obj.amount_total || 0;
-            currency = (obj.currency || 'EUR').toUpperCase();
-            status = obj.status || 'unknown';
-            description = obj.description || obj.metadata?.description || '';
-          }
-
+        paymentIntents.data.forEach(pi => {
           paymentEvents.push({
-            id: doc.id,
-            timestamp: data.created.toDate().toISOString(),
-            type: data.type,
-            amount: amount,
-            currency: currency,
-            status: status,
-            description: description,
-            stripeEventId: data.id,
-            orderId: data.data?.object?.metadata?.orderId,
-            customerId: data.data?.object?.customer,
-            metadata: data.data?.object?.metadata,
+            id: `pi_${pi.id}`,
+            timestamp: new Date(pi.created * 1000).toISOString(),
+            type: 'payment_intent',
+            amount: pi.amount,
+            currency: pi.currency.toUpperCase(),
+            status: pi.status,
+            description: pi.description || 'Payment Intent',
+            stripeId: pi.id,
+            orderId: pi.metadata?.orderId,
+            customerId: typeof pi.customer === 'string' ? pi.customer : pi.metadata?.customerId,
+            metadata: {
+              ...pi.metadata,
+              stripePaymentIntentId: pi.id,
+              confirmation_method: pi.confirmation_method,
+              payment_method_types: pi.payment_method_types,
+            },
           });
-        }
-      });
-    } catch (error) {
-      console.log('No stripe_events collection found, checking orders...');
+        });
+
+        // Charges
+        const charges = await stripe.charges.list({
+          limit: limitParam,
+          created: { gte: stripeStartTimestamp },
+        });
+
+        console.log(`[PaymentEvents] Found ${charges.data.length} charges`);
+
+        charges.data.forEach(charge => {
+          paymentEvents.push({
+            id: `ch_${charge.id}`,
+            timestamp: new Date(charge.created * 1000).toISOString(),
+            type: 'charge',
+            amount: charge.amount,
+            currency: charge.currency.toUpperCase(),
+            status: charge.status,
+            description: charge.description || 'Charge',
+            stripeId: charge.id,
+            orderId: charge.metadata?.orderId,
+            customerId:
+              typeof charge.customer === 'string' ? charge.customer : charge.metadata?.customerId,
+            metadata: {
+              ...charge.metadata,
+              stripeChargeId: charge.id,
+              payment_method: charge.payment_method,
+              receipt_url: charge.receipt_url,
+            },
+          });
+        });
+
+        // Transfers (Platform Payouts)
+        const transfers = await stripe.transfers.list({
+          limit: limitParam,
+          created: { gte: stripeStartTimestamp },
+        });
+
+        console.log(`[PaymentEvents] Found ${transfers.data.length} transfers`);
+
+        transfers.data.forEach(transfer => {
+          paymentEvents.push({
+            id: `tr_${transfer.id}`,
+            timestamp: new Date(transfer.created * 1000).toISOString(),
+            type: 'transfer',
+            amount: transfer.amount,
+            currency: transfer.currency.toUpperCase(),
+            status: 'succeeded', // Transfers are always succeeded when listed
+            description: transfer.description || 'Platform Transfer',
+            stripeId: transfer.id,
+            providerId: typeof transfer.destination === 'string' ? transfer.destination : undefined,
+            orderId: transfer.metadata?.orderId,
+            metadata: {
+              ...transfer.metadata,
+              stripeTransferId: transfer.id,
+              destination: transfer.destination,
+              source_transaction: transfer.source_transaction,
+            },
+          });
+        });
+
+        // Invoices
+        const invoices = await stripe.invoices.list({
+          limit: limitParam,
+          created: { gte: stripeStartTimestamp },
+        });
+
+        console.log(`[PaymentEvents] Found ${invoices.data.length} invoices`);
+
+        invoices.data.forEach(invoice => {
+          paymentEvents.push({
+            id: `in_${invoice.id}`,
+            timestamp: new Date(invoice.created * 1000).toISOString(),
+            type: 'invoice',
+            amount: invoice.amount_paid,
+            currency: invoice.currency.toUpperCase(),
+            status: invoice.status,
+            description: invoice.description || `Invoice #${invoice.number}`,
+            stripeId: invoice.id,
+            customerId: typeof invoice.customer === 'string' ? invoice.customer : undefined,
+            orderId: invoice.metadata?.orderId,
+            metadata: {
+              ...invoice.metadata,
+              stripeInvoiceId: invoice.id,
+              invoice_number: invoice.number,
+              hosted_invoice_url: invoice.hosted_invoice_url,
+            },
+          });
+        });
+
+        // Balance Transactions (für detaillierte Fee-Informationen)
+        const balanceTransactions = await stripe.balanceTransactions.list({
+          limit: limitParam,
+          created: { gte: stripeStartTimestamp },
+        });
+
+        console.log(
+          `[PaymentEvents] Found ${balanceTransactions.data.length} balance transactions`
+        );
+
+        balanceTransactions.data.forEach(bt => {
+          paymentEvents.push({
+            id: `txn_${bt.id}`,
+            timestamp: new Date(bt.created * 1000).toISOString(),
+            type: 'balance_transaction',
+            amount: bt.amount,
+            currency: bt.currency.toUpperCase(),
+            status: bt.status,
+            description: bt.description || `${bt.type} - ${bt.source}`,
+            stripeId: bt.id,
+            metadata: {
+              stripeBalanceTransactionId: bt.id,
+              type: bt.type,
+              source: bt.source,
+              fee: bt.fee,
+              fee_details: bt.fee_details,
+              net: bt.net,
+            },
+          });
+        });
+      } catch (stripeError) {
+        console.error('[PaymentEvents] Stripe API error:', stripeError);
+      }
     }
 
-    // 2. Lade Payment-Daten aus Aufträgen
+    // 2. Lade Payment-Daten aus Firebase Aufträgen (zusätzlich zu Stripe)
     try {
+      console.log('[PaymentEvents] Loading Firebase order data...');
+
       const ordersQuery = db
         .collection('auftraege')
         .where('lastUpdated', '>=', startTime)
         .limit(limitParam);
 
       const ordersSnapshot = await ordersQuery.get();
+      console.log(`[PaymentEvents] Found ${ordersSnapshot.size} recent orders`);
+
       ordersSnapshot.forEach(doc => {
         const orderData = doc.data();
 
@@ -118,40 +256,42 @@ export async function GET(req: NextRequest) {
 
         // Additional Hours Payments
         if (orderData.additionalHoursPayments && orderData.additionalHoursPayments.length > 0) {
-          orderData.additionalHoursPayments.forEach((payment: any, index: number) => {
-            paymentEvents.push({
-              id: `additional_${doc.id}_${index}`,
-              timestamp:
-                payment.timestamp?.toDate()?.toISOString() ||
-                orderData.lastUpdated.toDate().toISOString(),
-              type: 'additional_hours_payment',
-              amount: (payment.amount || 0) * 100, // Convert to cents
-              currency: 'EUR',
-              status: payment.status || 'completed',
-              description: `Zusätzliche Stunden: ${payment.hours || 0}h`,
-              orderId: doc.id,
-              customerId: orderData.kundenId,
-              metadata: {
-                hours: payment.hours,
-                hourlyRate: payment.hourlyRate,
-                originalAmount: payment.amount,
-              },
-            });
-          });
+          orderData.additionalHoursPayments.forEach(
+            (payment: Record<string, unknown>, index: number) => {
+              paymentEvents.push({
+                id: `additional_${doc.id}_${index}`,
+                timestamp:
+                  (payment.timestamp as any)?.toDate()?.toISOString() ||
+                  orderData.lastUpdated.toDate().toISOString(),
+                type: 'additional_hours_payment',
+                amount: ((payment.amount as number) || 0) * 100, // Convert to cents
+                currency: 'EUR',
+                status: (payment.status as string) || 'completed',
+                description: `Zusätzliche Stunden: ${(payment.hours as number) || 0}h`,
+                orderId: doc.id,
+                customerId: orderData.kundenId,
+                metadata: {
+                  hours: payment.hours,
+                  hourlyRate: payment.hourlyRate,
+                  originalAmount: payment.amount,
+                },
+              });
+            }
+          );
         }
 
         // Platform Payouts
         if (orderData.platformPayouts && orderData.platformPayouts.length > 0) {
-          orderData.platformPayouts.forEach((payout: any, index: number) => {
+          orderData.platformPayouts.forEach((payout: Record<string, unknown>, index: number) => {
             paymentEvents.push({
               id: `payout_${doc.id}_${index}`,
               timestamp:
-                payout.timestamp?.toDate()?.toISOString() ||
+                (payout.timestamp as any)?.toDate()?.toISOString() ||
                 orderData.lastUpdated.toDate().toISOString(),
               type: 'platform_payout',
-              amount: (payout.amount || 0) * 100, // Convert to cents
+              amount: ((payout.amount as number) || 0) * 100, // Convert to cents
               currency: 'EUR',
-              status: payout.status || 'completed',
+              status: (payout.status as string) || 'completed',
               description: `Platform Auszahlung an Provider`,
               orderId: doc.id,
               providerId: orderData.anbieterId,
@@ -165,57 +305,15 @@ export async function GET(req: NextRequest) {
         }
       });
     } catch (error) {
-      console.log('Error fetching order payments:', error);
-    }
-
-    // 3. Erstelle Sample-Daten falls keine echten Payments vorhanden sind
-    if (paymentEvents.length === 0) {
-      const samplePayments = [
-        {
-          id: 'sample_payment_1',
-          timestamp: new Date().toISOString(),
-          type: 'payment_intent.succeeded',
-          amount: 25000, // 250 EUR in cents
-          currency: 'EUR',
-          status: 'succeeded',
-          description: 'Handwerker Service - Beispiel',
-          orderId: 'sample_order_1',
-          customerId: 'sample_customer_1',
-          metadata: { orderTotal: 250 },
-        },
-        {
-          id: 'sample_payment_2',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          type: 'additional_hours_payment',
-          amount: 8000, // 80 EUR in cents
-          currency: 'EUR',
-          status: 'succeeded',
-          description: 'Zusätzliche Stunden: 2h',
-          orderId: 'sample_order_2',
-          customerId: 'sample_customer_2',
-          metadata: { hours: 2, hourlyRate: 40 },
-        },
-        {
-          id: 'sample_payment_3',
-          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          type: 'platform_payout',
-          amount: 21250, // 212.50 EUR in cents
-          currency: 'EUR',
-          status: 'paid',
-          description: 'Platform Auszahlung an Provider',
-          orderId: 'sample_order_1',
-          providerId: 'sample_provider_1',
-          metadata: { payoutAmount: 212.5, platformFee: 37.5 },
-        },
-      ];
-
-      paymentEvents.push(...samplePayments);
+      console.log('[PaymentEvents] Error fetching order payments:', error);
     }
 
     // Sortiere nach Timestamp (neueste zuerst)
     const sortedEvents = paymentEvents.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+
+    console.log(`[PaymentEvents] Total events loaded: ${sortedEvents.length}`);
 
     // Berechne Zusammenfassung
     const summary = {

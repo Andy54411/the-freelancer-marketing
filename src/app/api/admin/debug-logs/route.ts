@@ -2,6 +2,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
+interface DebugLog {
+  id: string;
+  timestamp: string;
+  level: 'info' | 'warning' | 'error' | 'debug';
+  source: string;
+  message: string;
+  data?: Record<string, unknown>;
+  orderId?: string;
+  stripeEventId?: string;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -31,7 +42,18 @@ export async function GET(req: NextRequest) {
     }
 
     // System-Debug-Logs aus verschiedenen Quellen sammeln
-    const debugLogs: any[] = [];
+    const debugLogs: DebugLog[] = [];
+
+    interface DebugLog {
+      id: string;
+      timestamp: string;
+      level: 'info' | 'warning' | 'error' | 'debug';
+      source: string;
+      message: string;
+      data?: Record<string, unknown>;
+      orderId?: string;
+      stripeEventId?: string;
+    }
 
     // 1. Firebase Logs (wenn vorhanden)
     try {
@@ -52,12 +74,19 @@ export async function GET(req: NextRequest) {
 
       const logsSnapshot = await logsQuery.get();
       logsSnapshot.forEach(doc => {
+        const data = doc.data();
         debugLogs.push({
           id: doc.id,
-          ...doc.data(),
+          timestamp: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+          level: data.level || 'info',
+          source: data.source || 'unknown',
+          message: data.message || 'No message',
+          data: data.data,
+          orderId: data.orderId,
+          stripeEventId: data.stripeEventId,
         });
       });
-    } catch (error) {
+    } catch (_error) {
       console.log('No system_logs collection found, creating sample logs');
     }
 
@@ -82,7 +111,7 @@ export async function GET(req: NextRequest) {
           stripeEventId: data.stripe_event_id,
         });
       });
-    } catch (error) {
+    } catch (_webhookError) {
       console.log('No webhook_errors collection found');
     }
 
@@ -99,32 +128,33 @@ export async function GET(req: NextRequest) {
 
         // Prüfe auf Payment-Fehler
         if (orderData.paymentErrors && orderData.paymentErrors.length > 0) {
-          orderData.paymentErrors.forEach((error: any, index: number) => {
-            debugLogs.push({
-              id: `${doc.id}_payment_error_${index}`,
-              timestamp: error.timestamp || orderData.lastUpdated.toDate().toISOString(),
+          orderData.paymentErrors.forEach((errorItem: Record<string, unknown>, index: number) => {
+            const debugLog: DebugLog = {
+              id: `error-${doc.id}-payment-${index}`,
+              timestamp:
+                (errorItem.timestamp as string) || orderData.lastUpdated.toDate().toISOString(),
               level: 'error',
-              source: 'payment-processing',
-              message: `Payment error in order: ${error.message || 'Unknown payment error'}`,
+              source: 'payment',
+              message: `Payment error in order: ${(errorItem.message as string) || 'Unknown payment error'}`,
               orderId: doc.id,
               data: {
-                error: error,
-                orderStatus: orderData.status,
-                orderTotal: orderData.gesamtpreis,
+                error: errorItem,
               },
-            });
+            };
+            debugLogs.push(debugLog);
           });
         }
 
         // Prüfe auf Time-Tracking-Probleme
         if (orderData.timeTracking?.errors) {
-          orderData.timeTracking.errors.forEach((error: any, index: number) => {
+          orderData.timeTracking.errors.forEach((error: Record<string, unknown>, index: number) => {
             debugLogs.push({
               id: `${doc.id}_timetracking_error_${index}`,
-              timestamp: error.timestamp || orderData.lastUpdated.toDate().toISOString(),
+              timestamp:
+                (error.timestamp as string) || orderData.lastUpdated.toDate().toISOString(),
               level: 'warning',
               source: 'time-tracking',
-              message: `Time tracking issue: ${error.message || 'Unknown time tracking error'}`,
+              message: `Time tracking issue: ${(error.message as string) || 'Unknown time tracking error'}`,
               orderId: doc.id,
               data: {
                 error: error,
@@ -138,42 +168,12 @@ export async function GET(req: NextRequest) {
       console.log('Error fetching order-related errors:', error);
     }
 
-    // 4. Erstelle Sample-Logs falls keine echten Logs vorhanden sind
-    if (debugLogs.length === 0) {
-      const sampleLogs = [
-        {
-          id: 'sample_1',
-          timestamp: new Date().toISOString(),
-          level: 'info',
-          source: 'system-monitor',
-          message: 'Payment monitoring system initialized successfully',
-          data: { version: '1.0.0', status: 'active' },
-        },
-        {
-          id: 'sample_2',
-          timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-          level: 'debug',
-          source: 'stripe-integration',
-          message: 'Webhook endpoint verified and responding correctly',
-          data: { endpoint: '/api/stripe-webhooks', response_time: '150ms' },
-        },
-        {
-          id: 'sample_3',
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          level: 'warning',
-          source: 'payment-validation',
-          message: 'Payment amount validation: unusual amount detected',
-          data: { amount: 50000, currency: 'EUR', threshold: 10000 },
-        },
-      ];
-
-      debugLogs.push(...sampleLogs);
-    }
-
     // Sortiere nach Timestamp (neueste zuerst)
     const sortedLogs = debugLogs.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+
+    console.log(`[DebugLogs] Total logs loaded: ${sortedLogs.length}`);
 
     // Level-Filter anwenden falls nicht bereits in der Query
     const filteredLogs =
