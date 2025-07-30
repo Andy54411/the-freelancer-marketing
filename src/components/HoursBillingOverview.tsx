@@ -233,15 +233,27 @@ export default function HoursBillingOverview({
         ? backupLoggedAdditionalHours * data.hourlyRate
         : 0;
 
-  console.log('[HoursBillingOverview] KORRIGIERTE BACKUP DEBUG:', {
-    totalAdditionalHours, // 133-24=109
-    paidAdditionalHours, // 109h bereits bezahlt
-    pendingAdditionalHours, // 0h offen
-    alreadyProcessedAdditionalHours, // 109+0=109
-    backupLoggedAdditionalHours, // 109-109=0
-    finalLoggedAdditionalHours, // Sollte 0 sein
-    finalLoggedAdditionalAmount, // Sollte 0 sein
-    shouldShowApprovalButton: finalLoggedAdditionalHours > 0, // Sollte false sein
+  console.log('[HoursBillingOverview] 🔍 DATENBANK-VERIFIKATION:', {
+    totalTimeEntries: data.timeEntries.length, // 17 Einträge
+    totalLoggedHours: data.totalLoggedHours, // 133h
+    originalPlannedHours: data.originalPlannedHours, // 24h
+    totalAdditionalHours, // 133-24=109h
+    paidAdditionalHours, // Alle 109h haben Status "transferred"
+    pendingAdditionalHours, // 0h mit Status "billing_pending"/"customer_approved"
+    loggedAdditionalHours, // 0h mit anderen Status
+    finalLoggedAdditionalHours, // Ergebnis: 0h
+    shouldShowApprovalButton: finalLoggedAdditionalHours > 0, // false = KORREKT!
+    statusBreakdown: {
+      original_logged: data.timeEntries.filter(
+        e => e.category === 'original' && e.status === 'logged'
+      ).length,
+      additional_transferred: data.timeEntries.filter(
+        e => e.category === 'additional' && e.status === 'transferred'
+      ).length,
+      additional_other: data.timeEntries.filter(
+        e => e.category === 'additional' && e.status !== 'transferred'
+      ).length,
+    },
   });
 
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;
