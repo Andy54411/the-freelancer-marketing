@@ -79,24 +79,40 @@ export async function GET(req: NextRequest) {
 
     // 3. Suche nach Transfers für diesen PaymentIntent oder Account
     try {
-      const transfersQuery: any = {};
-
-      if (paymentIntentId) {
-        transfersQuery['metadata.paymentIntentId'] = paymentIntentId;
-      }
+      let allTransfers: any[] = [];
 
       if (connectAccountId) {
-        transfersQuery.destination = connectAccountId;
+        // Suche nach Transfers zu diesem Connect Account
+        const transfersToAccount = await stripe.transfers.list({
+          limit: 100,
+          destination: connectAccountId,
+        });
+        allTransfers = transfersToAccount.data;
+      } else if (paymentIntentId) {
+        // Da wir nicht direkt nach PaymentIntent filtern können,
+        // laden wir alle letzten Transfers und filtern clientseitig
+        const recentTransfers = await stripe.transfers.list({
+          limit: 100,
+        });
+
+        allTransfers = recentTransfers.data.filter(
+          transfer =>
+            transfer.metadata?.paymentIntentId === paymentIntentId ||
+            transfer.metadata?.payment_intent_id === paymentIntentId ||
+            transfer.description?.includes(paymentIntentId) ||
+            transfer.source_transaction === paymentIntentId
+        );
+      } else {
+        // Fallback: Lade letzte Transfers
+        const recentTransfers = await stripe.transfers.list({
+          limit: 20,
+        });
+        allTransfers = recentTransfers.data;
       }
 
-      const transfers = await stripe.transfers.list({
-        limit: 100,
-        ...transfersQuery,
-      });
-
       debugInfo.results.transfers = {
-        found: transfers.data.length,
-        transfers: transfers.data.map(transfer => ({
+        found: allTransfers.length,
+        transfers: allTransfers.map(transfer => ({
           id: transfer.id,
           amount: transfer.amount,
           currency: transfer.currency,
