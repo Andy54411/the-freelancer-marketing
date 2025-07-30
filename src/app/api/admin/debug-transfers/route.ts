@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
         // SMART TARGET: Bekannte Connect Accounts für bestimmte PaymentMethod-Patterns zuerst durchsuchen
         const knownTargetAccounts: { [key: string]: string[] } = {
           // PaymentMethods die typischerweise auf bestimmten Connect Accounts sind
-          py_1Rqa49: ['acct_1RXvRUD5Lvjon30a'], // Bekannte Andy Staudinger PaymentMethods
+          py_1Rqa4: ['acct_1RXvRUD5Lvjon30a'], // Bekannte Andy Staudinger PaymentMethods (verkürzt für besseren Match)
           py_1RqZ: ['acct_1RXvRUD5Lvjon30a'], // Weitere aus demselben Zeitraum
           py_1RqY: ['acct_1RXvRUD5Lvjon30a'], // Pattern-basierte Zuordnung
           py_1RqW: ['acct_1RXvRUD5Lvjon30a'],
@@ -75,9 +75,14 @@ export async function GET(req: NextRequest) {
           py_1RqT: ['acct_1RXvRUD5Lvjon30a'],
         };
 
+        // DEBUGGING: Zeige alle verfügbaren Patterns und die gesuchte ID
+        console.log(`🔍 PATTERN SEARCH für: ${paymentIntentId}`);
+        console.log(`📋 Verfügbare Patterns:`, Object.keys(knownTargetAccounts));
+
         // Prüfe ob PaymentMethod einem bekannten Pattern entspricht
         let targetAccounts: string[] = [];
         for (const [pattern, accounts] of Object.entries(knownTargetAccounts)) {
+          console.log(`🧪 Testing Pattern "${pattern}" gegen "${paymentIntentId}"`);
           if (paymentIntentId.startsWith(pattern)) {
             targetAccounts = accounts;
             console.log(`🎯 PATTERN MATCH: ${paymentIntentId} entspricht Pattern ${pattern}`);
