@@ -63,28 +63,59 @@ export async function GET(req: NextRequest) {
       try {
         let stripeObjectFound = false;
 
-        // SMART TARGET: Bekannter Connect Account zuerst durchsuchen!
-        if (paymentIntentId === 'py_1Rqa49DQHCYn2bzRViL4QRX0') {
-          console.log('🎯 TARGET SEARCH für py_1Rqa49DQHCYn2bzRViL4QRX0 auf acct_1RXvRUD5Lvjon30a');
+        // SMART TARGET: Bekannte Connect Accounts für bestimmte PaymentMethod-Patterns zuerst durchsuchen
+        const knownTargetAccounts: { [key: string]: string[] } = {
+          // PaymentMethods die typischerweise auf bestimmten Connect Accounts sind
+          py_1Rqa49: ['acct_1RXvRUD5Lvjon30a'], // Bekannte Andy Staudinger PaymentMethods
+          py_1RqZ: ['acct_1RXvRUD5Lvjon30a'], // Weitere aus demselben Zeitraum
+          py_1RqY: ['acct_1RXvRUD5Lvjon30a'], // Pattern-basierte Zuordnung
+          py_1RqW: ['acct_1RXvRUD5Lvjon30a'],
+          py_1RqV: ['acct_1RXvRUD5Lvjon30a'],
+          py_1RqU: ['acct_1RXvRUD5Lvjon30a'],
+          py_1RqT: ['acct_1RXvRUD5Lvjon30a'],
+        };
 
-          try {
-            const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntentId, {
-              stripeAccount: 'acct_1RXvRUD5Lvjon30a',
-            });
-            debugInfo.results.paymentIntent = {
-              id: paymentMethod.id,
-              type: 'PaymentMethod',
-              type_detail: paymentMethod.type,
-              created: new Date(paymentMethod.created * 1000).toISOString(),
-              metadata: paymentMethod.metadata,
-              customer: paymentMethod.customer,
-              account: 'acct_1RXvRUD5Lvjon30a',
-              searchStrategy: 'DIRECT_TARGET_HIT',
-            };
-            stripeObjectFound = true;
-            console.log('✅ DIRECT TARGET HIT: PaymentMethod gefunden auf acct_1RXvRUD5Lvjon30a!');
-          } catch (targetError) {
-            console.log('Target account search failed, falling back to general search');
+        // Prüfe ob PaymentMethod einem bekannten Pattern entspricht
+        let targetAccounts: string[] = [];
+        for (const [pattern, accounts] of Object.entries(knownTargetAccounts)) {
+          if (paymentIntentId.startsWith(pattern)) {
+            targetAccounts = accounts;
+            console.log(`🎯 PATTERN MATCH: ${paymentIntentId} entspricht Pattern ${pattern}`);
+            break;
+          }
+        }
+
+        // Durchsuche bekannte Target Accounts falls Pattern gefunden
+        if (targetAccounts.length > 0) {
+          console.log(`🎯 TARGET SEARCH für ${paymentIntentId} auf ${targetAccounts.join(', ')}`);
+
+          for (const targetAccount of targetAccounts) {
+            if (stripeObjectFound) break;
+
+            try {
+              const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntentId, {
+                stripeAccount: targetAccount,
+              });
+              debugInfo.results.paymentIntent = {
+                id: paymentMethod.id,
+                type: 'PaymentMethod',
+                type_detail: paymentMethod.type,
+                created: new Date(paymentMethod.created * 1000).toISOString(),
+                metadata: paymentMethod.metadata,
+                customer: paymentMethod.customer,
+                account: targetAccount,
+                searchStrategy: 'PATTERN_TARGET_HIT',
+                matchedPattern: Object.keys(knownTargetAccounts).find(p =>
+                  paymentIntentId.startsWith(p)
+                ),
+              };
+              stripeObjectFound = true;
+              console.log(`✅ PATTERN TARGET HIT: PaymentMethod gefunden auf ${targetAccount}!`);
+              break;
+            } catch (targetError) {
+              console.log(`Pattern target ${targetAccount} failed, trying next...`);
+              continue;
+            }
           }
         }
 
