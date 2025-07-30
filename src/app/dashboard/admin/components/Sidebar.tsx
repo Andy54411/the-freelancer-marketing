@@ -14,6 +14,8 @@ import {
   UserCheck,
   Mail,
   Send,
+  Activity,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +26,7 @@ export default function Sidebar() {
     { href: '/dashboard/admin', label: 'Übersicht', icon: Home },
     { href: '/dashboard/admin/companies', label: 'Unternehmen', icon: Users },
     { href: '/dashboard/admin/invites', label: 'Einladungen', icon: ShieldCheck },
+    { href: '/dashboard/admin/payment-monitoring', label: 'Payment Monitoring', icon: Activity },
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
     { href: '/dashboard/admin/orders', label: 'Aufträge', icon: Briefcase },
     { href: '/dashboard/admin/chats', label: 'Nachrichten', icon: Bot },

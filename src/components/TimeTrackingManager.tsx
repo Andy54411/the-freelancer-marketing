@@ -74,6 +74,7 @@ export default function TimeTrackingManager({
   const loadTimeTracking = async () => {
     try {
       setLoading(true);
+      console.log('[TimeTrackingManager] Loading time tracking for order:', orderId);
 
       // Lade Auftragsdaten direkt aus Firebase
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
@@ -81,8 +82,18 @@ export default function TimeTrackingManager({
         const orderData = orderDoc.data();
         const entries: TimeEntry[] = [];
 
+        console.log(
+          '[TimeTrackingManager] Order data loaded, timeTracking:',
+          orderData.timeTracking
+        );
+
         // Lade TimeTracking-Einträge aus dem Auftrag
         if (orderData.timeTracking?.timeEntries) {
+          console.log(
+            '[TimeTrackingManager] Found timeEntries:',
+            orderData.timeTracking.timeEntries.length
+          );
+
           orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
             // Debug: Log the raw status from database
             console.log('Raw entry status from DB:', entry.status, 'Entry:', entry);
@@ -129,9 +140,14 @@ export default function TimeTrackingManager({
               notes: entry.notes || '',
             });
           });
+        } else {
+          console.log('[TimeTrackingManager] No timeEntries found in order data');
         }
 
+        console.log('[TimeTrackingManager] Processed entries:', entries.length);
         setTimeEntries(entries);
+      } else {
+        console.error('[TimeTrackingManager] Order not found:', orderId);
       }
     } catch (error) {
       console.error('Error loading time tracking:', error);
@@ -265,12 +281,13 @@ export default function TimeTrackingManager({
       setShowAddForm(false);
       setEditingEntry(null);
 
-      // Reload data
-      await loadTimeTracking();
-
-      if (onTimeSubmitted) {
-        onTimeSubmitted();
-      }
+      // Force reload data nach kurzer Verzögerung
+      setTimeout(async () => {
+        await loadTimeTracking();
+        if (onTimeSubmitted) {
+          onTimeSubmitted();
+        }
+      }, 500);
     } catch (error) {
       console.error('Error submitting time entry:', error);
       alert(
