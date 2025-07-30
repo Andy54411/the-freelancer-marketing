@@ -16,6 +16,10 @@ import {
   Send,
   Activity,
   DollarSign,
+  CreditCard,
+  Webhook,
+  Bug,
+  BarChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,10 +30,17 @@ export default function Sidebar() {
     { href: '/dashboard/admin', label: 'Übersicht', icon: Home },
     { href: '/dashboard/admin/companies', label: 'Unternehmen', icon: Users },
     { href: '/dashboard/admin/invites', label: 'Einladungen', icon: ShieldCheck },
-    { href: '/dashboard/admin/payment-monitoring', label: 'Payment Monitoring', icon: Activity },
+
+    // Monitoring & Analytics Section
+    { href: '/dashboard/admin/payments', label: 'Real-Time Payment Monitor', icon: CreditCard },
+    { href: '/dashboard/admin/payment-monitoring', label: 'Payment Analytics', icon: BarChart },
+
+    // Support & Communication
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
     { href: '/dashboard/admin/orders', label: 'Aufträge', icon: Briefcase },
     { href: '/dashboard/admin/chats', label: 'Nachrichten', icon: Bot },
+
+    // Administration
     { href: '/dashboard/admin/staff-management', label: 'Mitarbeiter-Verwaltung', icon: UserCheck },
     { href: '/dashboard/admin/email-management', label: 'E-Mail-Verwaltung', icon: Mail },
     { href: '/dashboard/admin/newsletter', label: 'Newsletter', icon: Send },

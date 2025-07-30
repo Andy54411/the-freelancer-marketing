@@ -14,6 +14,9 @@ import {
   FiMail,
   FiUserCheck,
   FiLoader,
+  FiCreditCard,
+  FiActivity,
+  FiBarChart,
 } from 'react-icons/fi';
 
 // Helper-Komponente für Dashboard-Karten
@@ -191,6 +194,37 @@ export default function DashboardPage() {
 
       {/* Zusätzliche Admin-Funktionen */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        {/* Monitoring & Analytics Sektion */}
+        <Link href="/dashboard/admin/payments">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-[#14ad9f] bg-gradient-to-r from-[#14ad9f]/5 to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-[#14ad9f]">
+                🎯 Real-Time Payment Monitor
+              </CardTitle>
+              <FiCreditCard className="h-4 w-4 text-[#14ad9f]" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-gray-600">
+                Live Stripe Connect Monitoring mit Webhooks
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/admin/payment-monitoring">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                📊 Payment Analytics
+              </CardTitle>
+              <FiBarChart className="h-4 w-4 text-gray-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-gray-600">Detaillierte Zahlungsanalysen</div>
+            </CardContent>
+          </Card>
+        </Link>
+
         <Link href="/dashboard/admin/ai-config">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
