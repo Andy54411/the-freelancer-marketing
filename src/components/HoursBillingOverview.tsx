@@ -254,6 +254,28 @@ export default function HoursBillingOverview({
         e => e.category === 'additional' && e.status !== 'transferred'
       ).length,
     },
+    allAdditionalStatuses: data.timeEntries
+      .filter(e => e.category === 'additional')
+      .map(e => ({
+        id: e.id.slice(-8),
+        status: e.status,
+        hours: e.hours,
+        description: e.description?.slice(0, 20),
+      })),
+    newEntriesFound: data.timeEntries
+      .filter(
+        e =>
+          e.category === 'additional' &&
+          e.status !== 'transferred' &&
+          e.status !== 'billing_pending' &&
+          e.status !== 'customer_approved'
+      )
+      .map(e => ({
+        id: e.id.slice(-8),
+        status: e.status,
+        hours: e.hours,
+        description: e.description?.slice(0, 20),
+      })),
   });
 
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;

@@ -162,8 +162,92 @@ export default function TimeTrackingManager({
     if (!user) return;
 
     try {
-      // Einfache Zeiteintragung - nur Demo für jetzt
-      alert('Zeiteintragung würde gespeichert werden');
+      // Dynamischer Import des TimeTracker
+      const { TimeTracker } = await import('@/lib/timeTracker');
+
+      // Berechne Kategorie basierend auf bereits erfassten Stunden
+      const currentOriginalHours = timeEntries
+        .filter(entry => entry.category === 'original')
+        .reduce((sum, entry) => sum + entry.hours, 0);
+
+      const remainingOriginalHours = Math.max(0, originalPlannedHours - currentOriginalHours);
+
+      let category: 'original' | 'additional' = 'original';
+      let originalHours = 0;
+      let additionalHours = 0;
+
+      if (remainingOriginalHours >= formData.hours) {
+        // Alle Stunden sind noch als "original" verfügbar
+        category = 'original';
+        originalHours = formData.hours;
+      } else if (remainingOriginalHours > 0) {
+        // Split zwischen original und additional
+        originalHours = remainingOriginalHours;
+        additionalHours = formData.hours - remainingOriginalHours;
+      } else {
+        // Alle Stunden sind additional
+        category = 'additional';
+        additionalHours = formData.hours;
+      }
+
+      // Erstelle Zeiteintrag-Objekt
+      const timeEntry = {
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        hours: formData.hours,
+        description: formData.description,
+        notes: formData.notes,
+        travelTime: formData.travelTime,
+        travelCost: formData.travelCost,
+        isBreakTime: formData.isBreakTime,
+        breakMinutes: formData.breakMinutes,
+        category: category,
+      };
+
+      console.log('Submitting time entry:', timeEntry);
+
+      // Falls wir split benötigen, erstelle zwei Einträge
+      if (originalHours > 0 && additionalHours > 0) {
+        // Erstelle original-Eintrag
+        const originalEntry = {
+          ...timeEntry,
+          hours: originalHours,
+          category: 'original' as const,
+          description: `${formData.description} (Geplante Stunden)`,
+        };
+
+        // Erstelle additional-Eintrag
+        const additionalEntry = {
+          ...timeEntry,
+          hours: additionalHours,
+          category: 'additional' as const,
+          description: `${formData.description} (Zusätzliche Stunden)`,
+        };
+
+        // Beide Einträge speichern
+        const result1 = await TimeTracker.logTimeEntry(orderId, originalEntry);
+        const result2 = await TimeTracker.logTimeEntry(orderId, additionalEntry);
+
+        if (result1 && result2) {
+          alert(
+            `Zeit erfolgreich gespeichert: ${originalHours}h geplant + ${additionalHours}h zusätzlich`
+          );
+        } else {
+          throw new Error('Fehler beim Speichern der Zeiteinträge');
+        }
+      } else {
+        // Einzelner Eintrag
+        const result = await TimeTracker.logTimeEntry(orderId, timeEntry);
+
+        if (result) {
+          alert(
+            `Zeit erfolgreich gespeichert: ${formData.hours}h ${category === 'original' ? 'geplant' : 'zusätzlich'}`
+          );
+        } else {
+          throw new Error('Fehler beim Speichern der Zeiteintragung');
+        }
+      }
 
       // Reset form
       setFormData({
@@ -189,7 +273,9 @@ export default function TimeTrackingManager({
       }
     } catch (error) {
       console.error('Error submitting time entry:', error);
-      alert('Fehler beim Speichern der Zeiteintragung');
+      alert(
+        `Fehler beim Speichern der Zeiteintragung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     }
   };
 
