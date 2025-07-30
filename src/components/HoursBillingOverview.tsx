@@ -148,9 +148,11 @@ export default function HoursBillingOverview({
       (entry.status === 'billing_pending' || entry.status === 'customer_approved')
   );
 
-  // Separate Behandlung für "logged" Status - diese sind NICHT zur Bezahlung bereit, können aber freigegeben werden
+  // Separate Behandlung für "logged" Status UND andere Status die zur Freigabe bereit sind
   const loggedAdditionalEntries = data.timeEntries.filter(
-    entry => entry.category === 'additional' && entry.status === 'logged'
+    entry =>
+      entry.category === 'additional' &&
+      (entry.status === 'logged' || entry.status === 'submitted' || entry.status === 'pending')
   );
 
   // DEBUG: Console-Log für Debugging der Zeit-Einträge
