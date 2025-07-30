@@ -338,17 +338,33 @@ async function searchWithDatabaseMapping(
   try {
     console.log('🔍 Database Mapping: Searching Firestore...');
 
-    // Suche in Aufträgen nach PaymentIntent-Referenzen
+    // Suche in Aufträgen nach PaymentIntent-Referenzen UND PaymentMethod-Referenzen
     const ordersQuery = await db
       .collection('auftraege')
       .where('paymentIntentId', '==', paymentId)
       .limit(5)
       .get();
 
-    if (!ordersQuery.empty) {
-      for (const orderDoc of ordersQuery.docs) {
+    // Zusätzliche Suche nach PaymentMethod ID
+    const ordersQueryByPaymentMethod = await db
+      .collection('auftraege')
+      .where('paymentMethodId', '==', paymentId)
+      .limit(5)
+      .get();
+
+    // Kombiniere beide Suchergebnisse
+    const allOrderDocs = [...ordersQuery.docs, ...ordersQueryByPaymentMethod.docs];
+    console.log(
+      `🔍 Database Mapping: Found ${allOrderDocs.length} orders with matching payment references`
+    );
+
+    if (allOrderDocs.length > 0) {
+      for (const orderDoc of allOrderDocs) {
         const orderData = orderDoc.data();
-        const providerAccountId = orderData.providerStripeAccountId;
+        const providerAccountId =
+          orderData.anbieterStripeAccountId || orderData.providerStripeAccountId;
+
+        console.log(`🔍 Checking order ${orderDoc.id} with provider account: ${providerAccountId}`);
 
         if (providerAccountId) {
           try {
@@ -371,13 +387,18 @@ async function searchWithDatabaseMapping(
                   account: providerAccountId,
                   searchStrategy: 'DATABASE_MAPPING_ORDER_MATCH',
                   orderId: orderDoc.id,
+                  foundVia: 'paymentIntentId_field',
                 },
               };
             } else if (paymentId.startsWith('py_')) {
+              console.log(
+                `🔍 Attempting to retrieve PaymentMethod ${paymentId} on account ${providerAccountId}`
+              );
               const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
                 stripeAccount: providerAccountId,
               });
 
+              console.log(`✅ SUCCESS! Found PaymentMethod on account ${providerAccountId}`);
               return {
                 found: true,
                 data: {
@@ -390,14 +411,80 @@ async function searchWithDatabaseMapping(
                   account: providerAccountId,
                   searchStrategy: 'DATABASE_MAPPING_ORDER_MATCH',
                   orderId: orderDoc.id,
+                  foundVia:
+                    orderData.paymentMethodId === paymentId
+                      ? 'paymentMethodId_field'
+                      : 'paymentIntentId_field',
                 },
               };
             }
-          } catch (accountError) {
+          } catch (accountError: any) {
+            console.log(`❌ Account ${providerAccountId}: ${accountError.message}`);
             // Nicht auf diesem Account gefunden, weitermachen
             continue;
           }
         }
+      }
+    }
+
+    // 🎯 DIREKTE SUCHE auf bekannten Provider Accounts (basierend auf häufigen Patterns)
+    const knownProviderAccounts = [
+      'acct_1RoSL4DlTKEWRrRh', // Gefunden in Auftrag 4bMTQQzVWsHyKhkbkRRu
+      'acct_1RXvRUD5Lvjon30a', // B2B Account
+      'acct_1RqDkqDQHCYn2bzR', // Weiterer bekannter Account
+    ];
+
+    console.log(`🎯 Direct search on ${knownProviderAccounts.length} known provider accounts...`);
+
+    for (const accountId of knownProviderAccounts) {
+      try {
+        console.log(`🔍 Direct search on known account: ${accountId}`);
+
+        if (paymentId.startsWith('py_')) {
+          const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
+            stripeAccount: accountId,
+          });
+
+          console.log(`✅ DIRECT HIT! Found PaymentMethod on known account ${accountId}`);
+          return {
+            found: true,
+            data: {
+              id: paymentMethod.id,
+              type: 'PaymentMethod',
+              type_detail: paymentMethod.type,
+              created: new Date(paymentMethod.created * 1000).toISOString(),
+              metadata: paymentMethod.metadata,
+              customer: paymentMethod.customer,
+              account: accountId,
+              searchStrategy: 'DATABASE_MAPPING_KNOWN_ACCOUNT',
+              foundVia: 'known_provider_account_pattern',
+            },
+          };
+        } else if (paymentId.startsWith('pi_')) {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentId, {
+            stripeAccount: accountId,
+          });
+
+          console.log(`✅ DIRECT HIT! Found PaymentIntent on known account ${accountId}`);
+          return {
+            found: true,
+            data: {
+              id: paymentIntent.id,
+              type: 'PaymentIntent',
+              status: paymentIntent.status,
+              amount: paymentIntent.amount,
+              currency: paymentIntent.currency,
+              metadata: paymentIntent.metadata,
+              created: new Date(paymentIntent.created * 1000).toISOString(),
+              account: accountId,
+              searchStrategy: 'DATABASE_MAPPING_KNOWN_ACCOUNT',
+              foundVia: 'known_provider_account_pattern',
+            },
+          };
+        }
+      } catch (knownAccountError: any) {
+        console.log(`❌ Known account ${accountId}: ${knownAccountError.message}`);
+        continue;
       }
     }
 
