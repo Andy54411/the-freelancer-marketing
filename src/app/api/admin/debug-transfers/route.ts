@@ -58,21 +58,84 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2. Suche in Stripe nach PaymentIntent
+    // 2. Suche in Stripe nach PaymentIntent oder anderen Objekten
     if (paymentIntentId) {
       try {
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        debugInfo.results.paymentIntent = {
-          id: paymentIntent.id,
-          status: paymentIntent.status,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          metadata: paymentIntent.metadata,
-          created: new Date(paymentIntent.created * 1000).toISOString(),
-        };
+        // Erkenne verschiedene Stripe-Objekt-Typen basierend auf Präfix
+        if (paymentIntentId.startsWith('pi_')) {
+          // PaymentIntent
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          debugInfo.results.paymentIntent = {
+            id: paymentIntent.id,
+            type: 'PaymentIntent',
+            status: paymentIntent.status,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            metadata: paymentIntent.metadata,
+            created: new Date(paymentIntent.created * 1000).toISOString(),
+          };
+        } else if (paymentIntentId.startsWith('py_')) {
+          // PaymentMethod
+          const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntentId);
+          debugInfo.results.paymentIntent = {
+            id: paymentMethod.id,
+            type: 'PaymentMethod',
+            type_detail: paymentMethod.type,
+            created: new Date(paymentMethod.created * 1000).toISOString(),
+            metadata: paymentMethod.metadata,
+            customer: paymentMethod.customer,
+          };
+        } else if (paymentIntentId.startsWith('ch_')) {
+          // Charge
+          const charge = await stripe.charges.retrieve(paymentIntentId);
+          debugInfo.results.paymentIntent = {
+            id: charge.id,
+            type: 'Charge',
+            status: charge.status,
+            amount: charge.amount,
+            currency: charge.currency,
+            metadata: charge.metadata,
+            created: new Date(charge.created * 1000).toISOString(),
+            payment_intent: charge.payment_intent,
+          };
+        } else if (paymentIntentId.startsWith('in_')) {
+          // Invoice
+          const invoice = await stripe.invoices.retrieve(paymentIntentId);
+          debugInfo.results.paymentIntent = {
+            id: invoice.id,
+            type: 'Invoice',
+            status: invoice.status,
+            amount_due: invoice.amount_due,
+            currency: invoice.currency,
+            metadata: invoice.metadata,
+            created: new Date(invoice.created * 1000).toISOString(),
+          };
+        } else {
+          // Fallback: Versuche als PaymentIntent
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          debugInfo.results.paymentIntent = {
+            id: paymentIntent.id,
+            type: 'PaymentIntent (fallback)',
+            status: paymentIntent.status,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            metadata: paymentIntent.metadata,
+            created: new Date(paymentIntent.created * 1000).toISOString(),
+          };
+        }
       } catch (error) {
         debugInfo.results.paymentIntent = {
-          error: error instanceof Error ? error.message : 'PaymentIntent not found',
+          error: error instanceof Error ? error.message : 'Stripe object not found',
+          searchedId: paymentIntentId,
+          detectedType: paymentIntentId.startsWith('pi_')
+            ? 'PaymentIntent'
+            : paymentIntentId.startsWith('py_')
+              ? 'PaymentMethod'
+              : paymentIntentId.startsWith('ch_')
+                ? 'Charge'
+                : paymentIntentId.startsWith('in_')
+                  ? 'Invoice'
+                  : 'Unknown',
         };
       }
     }
@@ -95,13 +158,39 @@ export async function GET(req: NextRequest) {
           limit: 100,
         });
 
-        allTransfers = recentTransfers.data.filter(
-          transfer =>
+        // Erweiterte Filterlogik für verschiedene Stripe-Objekt-Typen
+        allTransfers = recentTransfers.data.filter(transfer => {
+          // Direkte ID-Übereinstimmung
+          if (
             transfer.metadata?.paymentIntentId === paymentIntentId ||
             transfer.metadata?.payment_intent_id === paymentIntentId ||
-            transfer.description?.includes(paymentIntentId) ||
-            transfer.source_transaction === paymentIntentId
-        );
+            transfer.metadata?.paymentMethod === paymentIntentId ||
+            transfer.metadata?.chargeId === paymentIntentId ||
+            transfer.metadata?.invoiceId === paymentIntentId
+          ) {
+            return true;
+          }
+
+          // Beschreibung enthält die ID
+          if (transfer.description?.includes(paymentIntentId)) {
+            return true;
+          }
+
+          // Source Transaction Übereinstimmung
+          if (transfer.source_transaction === paymentIntentId) {
+            return true;
+          }
+
+          // Für PaymentMethod (py_): Suche nach entsprechenden PaymentIntents
+          if (paymentIntentId.startsWith('py_')) {
+            // Könnte in anderen Metadaten-Feldern gespeichert sein
+            return Object.values(transfer.metadata || {}).some(
+              value => typeof value === 'string' && value.includes(paymentIntentId)
+            );
+          }
+
+          return false;
+        });
       } else {
         // Fallback: Lade letzte Transfers
         const recentTransfers = await stripe.transfers.list({
@@ -150,26 +239,55 @@ export async function GET(req: NextRequest) {
 
     // 5. Suche nach failed transfers
     try {
-      let failedTransfersQuery;
+      let failedTransfersSnapshot;
+      let searchStrategy = '';
 
       if (orderId) {
-        failedTransfersQuery = db.collection('failedTransfers').where('orderId', '==', orderId);
+        failedTransfersSnapshot = await db
+          .collection('failedTransfers')
+          .where('orderId', '==', orderId)
+          .get();
+        searchStrategy = 'orderId';
       } else if (paymentIntentId) {
-        failedTransfersQuery = db
+        // Primäre Suche nach paymentIntentId
+        failedTransfersSnapshot = await db
           .collection('failedTransfers')
-          .where('paymentIntentId', '==', paymentIntentId);
+          .where('paymentIntentId', '==', paymentIntentId)
+          .get();
+        searchStrategy = 'paymentIntentId';
+
+        // Falls keine Ergebnisse und es ist ein PaymentMethod (py_), erweiterte Suche
+        if (failedTransfersSnapshot.empty && paymentIntentId.startsWith('py_')) {
+          // Suche in allen Failed Transfers nach diesem PaymentMethod in anderen Feldern
+          const allFailedTransfers = await db.collection('failedTransfers').limit(100).get();
+
+          const matchingDocs = allFailedTransfers.docs.filter(doc => {
+            const data = doc.data();
+            return JSON.stringify(data).includes(paymentIntentId);
+          });
+
+          failedTransfersSnapshot = {
+            docs: matchingDocs,
+            size: matchingDocs.length,
+            empty: matchingDocs.length === 0,
+          } as any;
+          searchStrategy = 'paymentMethod (extended search)';
+        }
       } else if (connectAccountId) {
-        failedTransfersQuery = db
+        failedTransfersSnapshot = await db
           .collection('failedTransfers')
-          .where('providerStripeAccountId', '==', connectAccountId);
+          .where('providerStripeAccountId', '==', connectAccountId)
+          .get();
+        searchStrategy = 'connectAccountId';
       } else {
-        failedTransfersQuery = db.collection('failedTransfers').limit(10);
+        failedTransfersSnapshot = await db.collection('failedTransfers').limit(10).get();
+        searchStrategy = 'recent (limit 10)';
       }
 
-      const failedTransfersSnapshot = await failedTransfersQuery.get();
       debugInfo.results.failedTransfers = {
         found: failedTransfersSnapshot.size,
-        transfers: failedTransfersSnapshot.docs.map(doc => ({
+        searchStrategy: searchStrategy,
+        transfers: failedTransfersSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate?.()?.toISOString(),
