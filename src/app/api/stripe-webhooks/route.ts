@@ -341,14 +341,31 @@ export async function POST(req: NextRequest) {
               paymentIntentSucceeded.metadata?.providerStripeAccountId;
             const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
 
+            console.log(
+              `[WEBHOOK DEBUG] Transfer data check: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
+            );
+
             if (providerStripeAccountId && companyReceives) {
               const transferAmount = parseInt(companyReceives, 10);
 
               console.log(
-                `[WEBHOOK LOG] Creating transfer to Connect account ${providerStripeAccountId}: ${transferAmount} cents`
+                `[WEBHOOK LOG] Creating transfer to Connect account ${providerStripeAccountId}: ${transferAmount} cents for order ${orderId}`
               );
 
               try {
+                // Prüfe erst, ob das Connect-Konto existiert und empfangsfähig ist
+                const connectAccount = await stripe.accounts.retrieve(providerStripeAccountId);
+                console.log(
+                  `[WEBHOOK DEBUG] Connect account status: ${connectAccount.charges_enabled}, payouts_enabled: ${connectAccount.payouts_enabled}`
+                );
+
+                if (!connectAccount.charges_enabled) {
+                  console.error(
+                    `[WEBHOOK ERROR] Connect account ${providerStripeAccountId} is not charges_enabled`
+                  );
+                  // Trotzdem weitermachen, aber warnen
+                }
+
                 const transfer = await stripe.transfers.create({
                   amount: transferAmount,
                   currency: 'eur',
@@ -359,11 +376,12 @@ export async function POST(req: NextRequest) {
                     orderId: orderId,
                     paymentIntentId: paymentIntentSucceeded.id,
                     entryIds: entryIds,
+                    originalEventId: event.id,
                   },
                 });
 
                 console.log(
-                  `[WEBHOOK LOG] Transfer successful: ${transfer.id} - ${transferAmount} cents to ${providerStripeAccountId}`
+                  `[WEBHOOK SUCCESS] Transfer created successfully: ${transfer.id} - ${transferAmount} cents to ${providerStripeAccountId} for order ${orderId}`
                 );
 
                 // Update company document with transfer info
@@ -378,22 +396,57 @@ export async function POST(req: NextRequest) {
                   await companyDoc.ref.update({
                     lastTransferId: transfer.id,
                     lastTransferAt: admin.firestore.FieldValue.serverTimestamp(),
+                    lastTransferAmount: transferAmount,
+                    lastTransferOrderId: orderId,
                   });
+                  console.log(
+                    `[WEBHOOK LOG] Company document updated with transfer info: ${transfer.id}`
+                  );
+                } else {
+                  console.error(
+                    `[WEBHOOK ERROR] No company found with anbieterStripeAccountId: ${providerStripeAccountId}`
+                  );
                 }
               } catch (transferError: unknown) {
                 let transferErrorMessage = 'Unbekannter Transfer-Fehler';
                 if (transferError instanceof Error) {
                   transferErrorMessage = transferError.message;
                 }
-                const errorKey = `transfer_error_${orderId}`;
+                const errorKey = `transfer_error_${orderId}_${Date.now()}`;
                 if (shouldLogError(errorKey)) {
                   console.error(
-                    `[WEBHOOK ERROR] Transfer failed for order ${orderId}:`,
+                    `[WEBHOOK ERROR] Transfer failed for order ${orderId} to account ${providerStripeAccountId}:`,
                     transferError
+                  );
+                  console.error(
+                    `[WEBHOOK ERROR] Transfer details: amount=${transferAmount}, currency=eur, destination=${providerStripeAccountId}`
                   );
                 }
                 // Continue processing even if transfer fails - important for webhook reliability
+                // Aber versuche einen Retry-Mechanismus zu implementieren
+                try {
+                  // Speichere failed transfer für später retry
+                  await db.collection('failedTransfers').add({
+                    orderId: orderId,
+                    paymentIntentId: paymentIntentSucceeded.id,
+                    providerStripeAccountId: providerStripeAccountId,
+                    amount: transferAmount,
+                    error: transferErrorMessage,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    retryCount: 0,
+                    status: 'pending_retry',
+                  });
+                  console.log(
+                    `[WEBHOOK LOG] Failed transfer saved for retry: order ${orderId}, amount ${transferAmount}`
+                  );
+                } catch (saveError) {
+                  console.error(`[WEBHOOK ERROR] Failed to save failed transfer:`, saveError);
+                }
               }
+            } else {
+              console.error(
+                `[WEBHOOK ERROR] Missing transfer data for additional hours payment ${paymentIntentSucceeded.id}: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
+              );
             }
 
             console.log(

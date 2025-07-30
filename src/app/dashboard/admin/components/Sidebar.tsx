@@ -34,6 +34,7 @@ export default function Sidebar() {
     // Monitoring & Analytics Section
     { href: '/dashboard/admin/payments', label: 'Real-Time Payment Monitor', icon: CreditCard },
     { href: '/dashboard/admin/payment-monitoring', label: 'Payment Analytics', icon: BarChart },
+    { href: '/dashboard/admin/transfer-debug', label: 'Transfer Debug & Retry', icon: Bug },
 
     // Support & Communication
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
