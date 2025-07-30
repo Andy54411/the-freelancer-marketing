@@ -153,6 +153,19 @@ export default function HoursBillingOverview({
     entry => entry.category === 'additional' && entry.status === 'logged'
   );
 
+  // DEBUG: Console-Log für Debugging der Zeit-Einträge
+  console.log('[HoursBillingOverview] DEBUG Zeit-Einträge:', {
+    totalEntries: data.timeEntries.length,
+    allStatuses: data.timeEntries.map(e => ({
+      id: e.id,
+      category: e.category,
+      status: e.status,
+      hours: e.hours,
+    })),
+    loggedAdditionalEntries: loggedAdditionalEntries.length,
+    loggedAdditionalHours: loggedAdditionalEntries.reduce((sum, entry) => sum + entry.hours, 0),
+  });
+
   // Berechne Summen
   const paidAdditionalHours = paidAdditionalEntries.reduce((sum, entry) => sum + entry.hours, 0);
   const paidAdditionalAmount = paidAdditionalEntries.reduce(
