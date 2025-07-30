@@ -160,6 +160,8 @@ export default function HoursBillingOverview({
   // DEBUG: Console-Log für Debugging der Zeit-Einträge
   console.log('[HoursBillingOverview] DEBUG Zeit-Einträge:', {
     totalEntries: data.timeEntries.length,
+    totalLoggedHours: data.totalLoggedHours,
+    originalPlannedHours: data.originalPlannedHours,
     allStatuses: data.timeEntries.map(e => ({
       id: e.id,
       category: e.category,
@@ -208,6 +210,28 @@ export default function HoursBillingOverview({
       return sum + baseAmount + travelCost;
     }
   }, 0);
+
+  // BACKUP BERECHNUNG: Falls keine loggedAdditionalEntries gefunden werden, aber mathematisch zusätzliche Stunden existieren
+  const totalAdditionalHours = data.totalLoggedHours - data.originalPlannedHours;
+  const backupLoggedAdditionalHours = Math.max(
+    0,
+    totalAdditionalHours - paidAdditionalHours - pendingAdditionalHours
+  );
+
+  // Verwende Backup falls keine direkte Einträge gefunden
+  const finalLoggedAdditionalHours =
+    loggedAdditionalHours > 0 ? loggedAdditionalHours : backupLoggedAdditionalHours;
+  const finalLoggedAdditionalAmount =
+    loggedAdditionalHours > 0
+      ? loggedAdditionalAmount
+      : backupLoggedAdditionalHours * data.hourlyRate;
+
+  console.log('[HoursBillingOverview] BACKUP DEBUG:', {
+    totalAdditionalHours,
+    backupLoggedAdditionalHours,
+    finalLoggedAdditionalHours,
+    finalLoggedAdditionalAmount,
+  });
 
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
@@ -294,7 +318,7 @@ export default function HoursBillingOverview({
         </div>
 
         {/* Geloggte Stunden (zur Freigabe) */}
-        {loggedAdditionalHours > 0 && (
+        {finalLoggedAdditionalHours > 0 && (
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <FiClock className="text-purple-600 text-xl" />
@@ -303,9 +327,9 @@ export default function HoursBillingOverview({
               </span>
             </div>
             <h3 className="font-semibold text-purple-900">Zur Freigabe</h3>
-            <p className="text-2xl font-bold text-purple-800">{loggedAdditionalHours}h</p>
+            <p className="text-2xl font-bold text-purple-800">{finalLoggedAdditionalHours}h</p>
             <p className="text-sm text-purple-600">
-              {formatCurrency(loggedAdditionalAmount)} 🔄 freigeben
+              {formatCurrency(finalLoggedAdditionalAmount)} 🔄 freigeben
             </p>
           </div>
         )}
@@ -335,7 +359,7 @@ export default function HoursBillingOverview({
                 data.originalJobPrice +
                   paidAdditionalAmount +
                   pendingAdditionalAmount +
-                  loggedAdditionalAmount
+                  finalLoggedAdditionalAmount
               )}
             </p>
           </div>
@@ -413,10 +437,10 @@ export default function HoursBillingOverview({
                 <FiClock className="mr-3 text-purple-600" />
                 <div>
                   <h3 className="font-semibold text-purple-900">
-                    Stunden zur Freigabe ({loggedAdditionalHours}h)
+                    Stunden zur Freigabe ({finalLoggedAdditionalHours}h)
                   </h3>
                   <p className="text-sm text-purple-600">
-                    {formatCurrency(loggedAdditionalAmount)} freigeben nötig
+                    {formatCurrency(finalLoggedAdditionalAmount)} freigeben nötig
                   </p>
                 </div>
               </div>
@@ -475,8 +499,8 @@ export default function HoursBillingOverview({
                     ) : (
                       <>
                         <FiCheck className="mr-2" />
-                        {loggedAdditionalHours}h für {formatCurrency(loggedAdditionalAmount)}{' '}
-                        freigeben
+                        {finalLoggedAdditionalHours}h für{' '}
+                        {formatCurrency(finalLoggedAdditionalAmount)} freigeben
                       </>
                     )}
                   </button>
@@ -593,12 +617,12 @@ export default function HoursBillingOverview({
       </div>
 
       {/* Zahlung/Freigabe erforderlich Hinweis */}
-      {(pendingAdditionalEntries.length > 0 || loggedAdditionalEntries.length > 0) && (
+      {(pendingAdditionalEntries.length > 0 || finalLoggedAdditionalHours > 0) && (
         <div className="mt-6 p-4 bg-gradient-to-r from-orange-100 to-red-100 border border-orange-300 rounded-lg">
           <div className="flex items-center mb-2">
             <FiAlertCircle className="mr-2 text-orange-600 text-xl" />
             <h3 className="font-semibold text-orange-900">
-              {pendingAdditionalHours > 0 && loggedAdditionalHours > 0
+              {pendingAdditionalHours > 0 && finalLoggedAdditionalHours > 0
                 ? 'Freigabe und Zahlung erforderlich!'
                 : pendingAdditionalHours > 0
                   ? 'Sofortige Zahlung erforderlich!'
@@ -606,9 +630,9 @@ export default function HoursBillingOverview({
             </h3>
           </div>
 
-          {loggedAdditionalHours > 0 && (
+          {finalLoggedAdditionalHours > 0 && (
             <p className="text-orange-800 mb-2">
-              <strong>{loggedAdditionalHours}h</strong> zusätzliche Stunden sind geloggt und
+              <strong>{finalLoggedAdditionalHours}h</strong> zusätzliche Stunden sind geloggt und
               benötigen Ihre Freigabe!
             </p>
           )}
@@ -633,7 +657,7 @@ export default function HoursBillingOverview({
               <p>
                 <strong>Status:</strong>{' '}
                 <span className="text-red-600 font-semibold">
-                  {loggedAdditionalHours > 0 && pendingAdditionalHours > 0
+                  {finalLoggedAdditionalHours > 0 && pendingAdditionalHours > 0
                     ? 'FREIGABE & BEZAHLUNG'
                     : pendingAdditionalHours > 0
                       ? 'BEZAHLUNG ERFORDERLICH'
@@ -648,7 +672,7 @@ export default function HoursBillingOverview({
                     data.originalJobPrice +
                       paidAdditionalAmount +
                       pendingAdditionalAmount +
-                      loggedAdditionalAmount
+                      finalLoggedAdditionalAmount
                   )}
                 </span>
               </p>
@@ -658,7 +682,7 @@ export default function HoursBillingOverview({
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {/* Freigabe-Button für geloggte Stunden */}
-            {loggedAdditionalHours > 0 && (
+            {finalLoggedAdditionalHours > 0 && (
               <button
                 onClick={handleApproveLoggedHours}
                 disabled={approving}
@@ -676,9 +700,11 @@ export default function HoursBillingOverview({
                   <>
                     <span className="text-xl">🔄</span>
                     <div className="text-left">
-                      <div className="text-lg font-bold">{loggedAdditionalHours}h FREIGEBEN</div>
+                      <div className="text-lg font-bold">
+                        {finalLoggedAdditionalHours}h FREIGEBEN
+                      </div>
                       <div className="text-sm opacity-90">
-                        {formatCurrency(loggedAdditionalAmount)} zur Freigabe
+                        {formatCurrency(finalLoggedAdditionalAmount)} zur Freigabe
                       </div>
                     </div>
                   </>
