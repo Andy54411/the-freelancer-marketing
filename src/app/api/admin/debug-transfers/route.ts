@@ -154,66 +154,13 @@ export async function GET(req: NextRequest) {
                   ? 'PaymentIntent'
                   : 'Unknown',
               searchStrategy: 'ALL_STRATEGIES_FAILED',
-            };
-          }
-
-          searchResults.push(...dynamicResults.searchResults);
-        }
-
-        // 🔥 STRATEGIE 2: DATABASE MAPPING - Backup Lösung
-        if (!stripeObjectFound) {
-          console.log('� STRATEGIE 2: Database Mapping Search...');
-          try {
-            const dbResults = await searchWithDatabaseMapping(paymentIntentId, db, stripe);
-            if (dbResults.found) {
-              debugInfo.results.paymentIntent = dbResults.data;
-              searchStrategy = 'DATABASE_MAPPING_SUCCESS';
-              stripeObjectFound = true;
-              searchResults.push({
-                strategy: 'database_mapping',
-                success: true,
-                found: true,
-                account: dbResults.data.account,
-              });
-              console.log(
-                `✅ DATABASE MAPPING SUCCESS! Found on account: ${dbResults.data.account}`
-              );
-            } else {
-              searchResults.push({
-                strategy: 'database_mapping',
-                success: false,
-                reason: 'not_found_in_database',
-              });
-            }
-          } catch (dbError: any) {
-            searchResults.push({
-              strategy: 'database_mapping',
-              success: false,
-              error: dbError.message,
-            });
-            console.log('Database Mapping failed, trying Dynamic Search...');
-          }
-        }
-
-        // 🔥 STRATEGIE 3: DYNAMIC SEARCH - Fallback für Edge Cases
-        if (!stripeObjectFound) {
-          console.log('🔥 STRATEGIE 3: Dynamic Search (Fallback)...');
-          const dynamicResults = await searchWithDynamicIteration(paymentIntentId, stripe);
-
-          if (dynamicResults.found) {
-            debugInfo.results.paymentIntent = dynamicResults.data;
-            searchStrategy = 'DYNAMIC_SEARCH_SUCCESS';
-            stripeObjectFound = true;
-          } else {
-            debugInfo.results.paymentIntent = {
-              error: 'Object not found with any strategy',
-              searchedId: paymentIntentId,
-              detectedType: paymentIntentId.startsWith('py_')
-                ? 'PaymentMethod'
-                : paymentIntentId.startsWith('pi_')
-                  ? 'PaymentIntent'
-                  : 'Unknown',
-              searchStrategy: 'ALL_STRATEGIES_FAILED',
+              detailedDebug: {
+                strategiesAttempted: searchResults.length,
+                searchResults: searchResults,
+                timestamp: new Date().toISOString(),
+                paymentIdPrefix: paymentIntentId.substring(0, 4),
+                note: 'Comprehensive search across Events API, Database Mapping, and Dynamic iteration failed',
+              },
             };
           }
 
@@ -271,10 +218,17 @@ async function searchWithStripeEvents(paymentId: string, stripe: Stripe): Promis
       types: [
         'payment_intent.created',
         'payment_intent.succeeded',
+        'payment_intent.payment_failed',
         'payment_method.attached',
+        'payment_method.detached',
         'setup_intent.succeeded',
+        'setup_intent.created',
+        'customer.created',
+        'invoice.payment_succeeded',
       ],
     });
+
+    console.log(`🔍 Events API: Found ${events.data.length} events to search through`);
 
     for (const event of events.data) {
       const eventObject = event.data.object as any;
@@ -282,6 +236,7 @@ async function searchWithStripeEvents(paymentId: string, stripe: Stripe): Promis
       // PaymentIntent gefunden
       if (eventObject.id === paymentId && event.type.includes('payment_intent')) {
         const account = event.account || 'main';
+        console.log(`✅ Found PaymentIntent in ${event.type} event on account: ${account}`);
 
         // Vollständige Daten abrufen
         let fullObject;
@@ -305,13 +260,21 @@ async function searchWithStripeEvents(paymentId: string, stripe: Stripe): Promis
             created: new Date(fullObject.created * 1000).toISOString(),
             account: account,
             searchStrategy: 'EVENTS_API_PAYMENT_INTENT',
+            foundViaEvent: event.type,
           },
         };
       }
 
-      // PaymentMethod gefunden
-      if (eventObject.payment_method === paymentId || eventObject.id === paymentId) {
+      // PaymentMethod gefunden - verschiedene Wege
+      if (
+        eventObject.payment_method === paymentId ||
+        eventObject.id === paymentId ||
+        (eventObject.payment_method && eventObject.payment_method.id === paymentId)
+      ) {
         const account = event.account || 'main';
+        console.log(
+          `✅ Found PaymentMethod reference in ${event.type} event on account: ${account}`
+        );
 
         // Vollständige PaymentMethod-Daten abrufen
         try {
@@ -335,9 +298,13 @@ async function searchWithStripeEvents(paymentId: string, stripe: Stripe): Promis
               customer: paymentMethod.customer,
               account: account,
               searchStrategy: 'EVENTS_API_PAYMENT_METHOD',
+              foundViaEvent: event.type,
             },
           };
         } catch (pmError) {
+          console.log(
+            `⚠️ PaymentMethod referenced in event but could not retrieve: ${pmError.message}`
+          );
           // PaymentMethod nicht direkt abrufbar, aber Event gefunden
           return {
             found: true,
@@ -346,7 +313,9 @@ async function searchWithStripeEvents(paymentId: string, stripe: Stripe): Promis
               type: 'PaymentMethod',
               account: account,
               searchStrategy: 'EVENTS_API_REFERENCED',
+              foundViaEvent: event.type,
               note: 'Found via event reference but could not retrieve full object',
+              error: pmError.message,
             },
           };
         }
@@ -541,19 +510,25 @@ async function searchWithDynamicIteration(
       });
     }
 
-    // 2. Connect Accounts (begrenzt auf 20 für Performance)
+    // 2. Connect Accounts (ALLE für ultimative Suche, da letzte Option)
     if (!stripeObjectFound) {
       try {
-        const connectAccounts = await stripe.accounts.list({ limit: 20 });
+        console.log('🔍 Searching ALL Connect Accounts (last resort)...');
+        const connectAccounts = await stripe.accounts.list({ limit: 100 }); // Alle Accounts
+
+        console.log(`📋 Found ${connectAccounts.data.length} Connect Accounts to search`);
 
         for (const account of connectAccounts.data) {
           if (stripeObjectFound) break;
 
           try {
+            console.log(`🔍 Searching account: ${account.id} (${account.email || 'no email'})`);
+
             if (paymentId.startsWith('py_')) {
               const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
                 stripeAccount: account.id,
               });
+              console.log(`✅ FOUND! PaymentMethod on account: ${account.id}`);
               foundData = {
                 id: paymentMethod.id,
                 type: 'PaymentMethod',
@@ -569,6 +544,7 @@ async function searchWithDynamicIteration(
               searchResults.push({
                 strategy: 'connect_account',
                 account: account.id,
+                accountEmail: account.email,
                 success: true,
                 found: true,
               });
@@ -577,6 +553,7 @@ async function searchWithDynamicIteration(
               const paymentIntent = await stripe.paymentIntents.retrieve(paymentId, {
                 stripeAccount: account.id,
               });
+              console.log(`✅ FOUND! PaymentIntent on account: ${account.id}`);
               foundData = {
                 id: paymentIntent.id,
                 type: 'PaymentIntent',
@@ -593,22 +570,29 @@ async function searchWithDynamicIteration(
               searchResults.push({
                 strategy: 'connect_account',
                 account: account.id,
+                accountEmail: account.email,
                 success: true,
                 found: true,
               });
               break;
             }
           } catch (connectError: any) {
+            // Detailliertes Logging für jeden Fehler
+            console.log(`❌ Account ${account.id}: ${connectError.message}`);
             searchResults.push({
               strategy: 'connect_account',
               account: account.id,
+              accountEmail: account.email,
               success: false,
               error: connectError.message,
+              errorCode: connectError.code,
+              errorType: connectError.type,
             });
             continue;
           }
         }
       } catch (accountsError: any) {
+        console.error('Error listing connect accounts:', accountsError);
         searchResults.push({
           strategy: 'connect_accounts_list',
           success: false,
