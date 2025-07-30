@@ -47,29 +47,22 @@ export async function GET(req: NextRequest) {
     // Hole ALLE Stripe Events - ohne Type-Filter für vollständige Sichtbarkeit
     console.log(`[Payments] Loading ALL Stripe events from timestamp: ${created}`);
 
-    const events = await stripe.events.list({
-      limit: limitParam * 3, // Mehr Events laden für bessere Abdeckung
-      created: { gte: created },
-      // Kein types-Filter = ALLE Event-Typen werden geladen
+    // 1. Lade erst alle verbundenen Konten (Stripe Connect)
+    console.log(`[Payments] Loading connected accounts...`);
+    const connectedAccounts = await stripe.accounts.list({
+      limit: 100, // Alle verbundenen Konten laden
     });
 
-    console.log(`[Payments] Found ${events.data.length} Stripe events`);
+    console.log(`[Payments] Found ${connectedAccounts.data.length} connected accounts`);
 
-    // Zusätzlich direkt ALLE verfügbaren Stripe-Objekte laden
-    const [
-      paymentIntents,
-      charges,
-      transfers,
-      payouts,
-      invoices,
-      subscriptions,
-      balanceTransactions,
-      customers,
-      setupIntents,
-      refunds,
-      disputes,
-      applicationFees,
-    ] = await Promise.all([
+    // 2. Lade Daten vom Hauptkonto
+    const mainAccountData = await Promise.all([
+      // Events vom Hauptkonto
+      stripe.events.list({
+        limit: limitParam * 2,
+        created: { gte: created },
+      }),
+      // Alle anderen Objekte vom Hauptkonto
       stripe.paymentIntents.list({
         limit: limitParam,
         created: { gte: created },
@@ -120,8 +113,112 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // 3. Lade Daten von ALLEN verbundenen Konten
+    const connectedAccountsData = await Promise.all(
+      connectedAccounts.data.map(async account => {
+        try {
+          console.log(`[Payments] Loading data from connected account: ${account.id}`);
+
+          const accountData = await Promise.all([
+            // Events für verbundenes Konto
+            stripe.events.list(
+              {
+                limit: Math.floor(limitParam / Math.max(connectedAccounts.data.length, 1)),
+                created: { gte: created },
+              },
+              {
+                stripeAccount: account.id,
+              }
+            ),
+            // Payment Intents für verbundenes Konto
+            stripe.paymentIntents.list(
+              {
+                limit: Math.floor(limitParam / Math.max(connectedAccounts.data.length, 1)),
+                created: { gte: created },
+              },
+              {
+                stripeAccount: account.id,
+              }
+            ),
+            // Charges für verbundenes Konto
+            stripe.charges.list(
+              {
+                limit: Math.floor(limitParam / Math.max(connectedAccounts.data.length, 1)),
+                created: { gte: created },
+              },
+              {
+                stripeAccount: account.id,
+              }
+            ),
+            // Transfers für verbundenes Konto
+            stripe.transfers.list(
+              {
+                limit: Math.floor(limitParam / Math.max(connectedAccounts.data.length, 1)),
+                created: { gte: created },
+              },
+              {
+                stripeAccount: account.id,
+              }
+            ),
+            // Payouts für verbundenes Konto
+            stripe.payouts.list(
+              {
+                limit: Math.floor(limitParam / Math.max(connectedAccounts.data.length, 1)),
+                created: { gte: created },
+              },
+              {
+                stripeAccount: account.id,
+              }
+            ),
+            // Balance Transactions für verbundenes Konto
+            stripe.balanceTransactions.list(
+              {
+                limit: Math.floor(limitParam / Math.max(connectedAccounts.data.length, 1)),
+                created: { gte: created },
+              },
+              {
+                stripeAccount: account.id,
+              }
+            ),
+          ]);
+
+          return {
+            accountId: account.id,
+            accountInfo: account,
+            data: accountData,
+          };
+        } catch (error) {
+          console.error(`Error loading data from account ${account.id}:`, error);
+          return {
+            accountId: account.id,
+            accountInfo: account,
+            data: null,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
+        }
+      })
+    );
+
+    // Extrahiere die Daten vom Hauptkonto
+    const [
+      events,
+      paymentIntents,
+      charges,
+      transfers,
+      payouts,
+      invoices,
+      subscriptions,
+      balanceTransactions,
+      customers,
+      setupIntents,
+      refunds,
+      disputes,
+      applicationFees,
+    ] = mainAccountData;
+
     console.log(
-      `[Payments] Complete Stripe data loaded:
+      `[Payments] Main account data loaded:
+      - ${events.data.length} Events
       - ${paymentIntents.data.length} Payment Intents
       - ${charges.data.length} Charges
       - ${transfers.data.length} Transfers  
@@ -136,148 +233,239 @@ export async function GET(req: NextRequest) {
       - ${applicationFees.data.length} Application Fees`
     );
 
-    // Filtere und formatiere Events
+    // Kombiniere alle Daten (Hauptkonto + verbundene Konten)
+    const allAccountsData = {
+      events: [events],
+      paymentIntents: [paymentIntents],
+      charges: [charges],
+      transfers: [transfers],
+      payouts: [payouts],
+      balanceTransactions: [balanceTransactions],
+    };
+
+    // Füge Daten aller verbundenen Konten hinzu
+    connectedAccountsData.forEach(accountData => {
+      if (accountData.data) {
+        const [
+          accountEvents,
+          accountPaymentIntents,
+          accountCharges,
+          accountTransfers,
+          accountPayouts,
+          accountBalanceTransactions,
+        ] = accountData.data;
+
+        allAccountsData.events.push(accountEvents);
+        allAccountsData.paymentIntents.push(accountPaymentIntents);
+        allAccountsData.charges.push(accountCharges);
+        allAccountsData.transfers.push(accountTransfers);
+        allAccountsData.payouts.push(accountPayouts);
+        allAccountsData.balanceTransactions.push(accountBalanceTransactions);
+
+        console.log(
+          `[Payments] Connected account ${accountData.accountId} data:
+          - ${accountEvents.data.length} Events
+          - ${accountPaymentIntents.data.length} Payment Intents
+          - ${accountCharges.data.length} Charges
+          - ${accountTransfers.data.length} Transfers
+          - ${accountPayouts.data.length} Payouts
+          - ${accountBalanceTransactions.data.length} Balance Transactions`
+        );
+      }
+    });
+
+    // Filtere und formatiere Events aus ALLEN Konten
     const allStripeData = new Map();
 
-    // Verarbeite Events
-    events.data.forEach(event => {
-      const key = `event_${event.id}`;
-      if (!allStripeData.has(key)) {
-        allStripeData.set(key, {
-          source: 'event',
-          data: event,
-        });
-      }
+    // Verarbeite Events von allen Konten
+    allAccountsData.events.forEach((eventsList, accountIndex) => {
+      const accountId =
+        accountIndex === 0 ? 'main' : connectedAccountsData[accountIndex - 1]?.accountId;
+
+      eventsList.data.forEach(event => {
+        const key = `event_${event.id}_${accountId}`;
+        if (!allStripeData.has(key)) {
+          allStripeData.set(key, {
+            source: 'event',
+            data: event,
+            accountId: accountId,
+            accountType: accountIndex === 0 ? 'main' : 'connected',
+          });
+        }
+      });
     });
 
-    // Verarbeite Payment Intents
-    paymentIntents.data.forEach(pi => {
-      const key = `pi_${pi.id}`;
-      if (!allStripeData.has(key)) {
-        allStripeData.set(key, {
-          source: 'payment_intent',
-          data: pi,
-        });
-      }
+    // Verarbeite Payment Intents von allen Konten
+    allAccountsData.paymentIntents.forEach((piList, accountIndex) => {
+      const accountId =
+        accountIndex === 0 ? 'main' : connectedAccountsData[accountIndex - 1]?.accountId;
+
+      piList.data.forEach(pi => {
+        const key = `pi_${pi.id}_${accountId}`;
+        if (!allStripeData.has(key)) {
+          allStripeData.set(key, {
+            source: 'payment_intent',
+            data: pi,
+            accountId: accountId,
+            accountType: accountIndex === 0 ? 'main' : 'connected',
+          });
+        }
+      });
     });
 
-    // Verarbeite Charges
-    charges.data.forEach(charge => {
-      const key = `ch_${charge.id}`;
-      if (!allStripeData.has(key)) {
-        allStripeData.set(key, {
-          source: 'charge',
-          data: charge,
-        });
-      }
+    // Verarbeite Charges von allen Konten
+    allAccountsData.charges.forEach((chargesList, accountIndex) => {
+      const accountId =
+        accountIndex === 0 ? 'main' : connectedAccountsData[accountIndex - 1]?.accountId;
+
+      chargesList.data.forEach(charge => {
+        const key = `ch_${charge.id}_${accountId}`;
+        if (!allStripeData.has(key)) {
+          allStripeData.set(key, {
+            source: 'charge',
+            data: charge,
+            accountId: accountId,
+            accountType: accountIndex === 0 ? 'main' : 'connected',
+          });
+        }
+      });
     });
 
-    // Verarbeite Transfers
-    transfers.data.forEach(transfer => {
-      const key = `tr_${transfer.id}`;
-      if (!allStripeData.has(key)) {
-        allStripeData.set(key, {
-          source: 'transfer',
-          data: transfer,
-        });
-      }
+    // Verarbeite Transfers von allen Konten
+    allAccountsData.transfers.forEach((transfersList, accountIndex) => {
+      const accountId =
+        accountIndex === 0 ? 'main' : connectedAccountsData[accountIndex - 1]?.accountId;
+
+      transfersList.data.forEach(transfer => {
+        const key = `tr_${transfer.id}_${accountId}`;
+        if (!allStripeData.has(key)) {
+          allStripeData.set(key, {
+            source: 'transfer',
+            data: transfer,
+            accountId: accountId,
+            accountType: accountIndex === 0 ? 'main' : 'connected',
+          });
+        }
+      });
     });
 
-    // Verarbeite Payouts
-    payouts.data.forEach(payout => {
-      const key = `po_${payout.id}`;
-      if (!allStripeData.has(key)) {
-        allStripeData.set(key, {
-          source: 'payout',
-          data: payout,
-        });
-      }
+    // Verarbeite Payouts von allen Konten
+    allAccountsData.payouts.forEach((payoutsList, accountIndex) => {
+      const accountId =
+        accountIndex === 0 ? 'main' : connectedAccountsData[accountIndex - 1]?.accountId;
+
+      payoutsList.data.forEach(payout => {
+        const key = `po_${payout.id}_${accountId}`;
+        if (!allStripeData.has(key)) {
+          allStripeData.set(key, {
+            source: 'payout',
+            data: payout,
+            accountId: accountId,
+            accountType: accountIndex === 0 ? 'main' : 'connected',
+          });
+        }
+      });
     });
 
-    // Verarbeite Invoices
+    // Verarbeite Balance Transactions von allen Konten
+    allAccountsData.balanceTransactions.forEach((btList, accountIndex) => {
+      const accountId =
+        accountIndex === 0 ? 'main' : connectedAccountsData[accountIndex - 1]?.accountId;
+
+      btList.data.forEach(bt => {
+        const key = `bt_${bt.id}_${accountId}`;
+        if (!allStripeData.has(key)) {
+          allStripeData.set(key, {
+            source: 'balance_transaction',
+            data: bt,
+            accountId: accountId,
+            accountType: accountIndex === 0 ? 'main' : 'connected',
+          });
+        }
+      });
+    });
+
+    // Verarbeite Hauptkonto-spezifische Objekte (nur vom Hauptkonto verfügbar)
     invoices.data.forEach(invoice => {
-      const key = `in_${invoice.id}`;
+      const key = `in_${invoice.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'invoice',
           data: invoice,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
 
-    // Verarbeite Subscriptions
     subscriptions.data.forEach(sub => {
-      const key = `sub_${sub.id}`;
+      const key = `sub_${sub.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'subscription',
           data: sub,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
 
-    // Verarbeite Balance Transactions
-    balanceTransactions.data.forEach(bt => {
-      const key = `bt_${bt.id}`;
-      if (!allStripeData.has(key)) {
-        allStripeData.set(key, {
-          source: 'balance_transaction',
-          data: bt,
-        });
-      }
-    });
-
-    // Verarbeite Customers
     customers.data.forEach(customer => {
-      const key = `cus_${customer.id}`;
+      const key = `cus_${customer.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'customer',
           data: customer,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
 
-    // Verarbeite Setup Intents
     setupIntents.data.forEach(si => {
-      const key = `si_${si.id}`;
+      const key = `si_${si.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'setup_intent',
           data: si,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
 
-    // Verarbeite Refunds
     refunds.data.forEach(refund => {
-      const key = `re_${refund.id}`;
+      const key = `re_${refund.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'refund',
           data: refund,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
 
-    // Verarbeite Disputes
     disputes.data.forEach(dispute => {
-      const key = `dp_${dispute.id}`;
+      const key = `dp_${dispute.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'dispute',
           data: dispute,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
 
-    // Verarbeite Application Fees
     applicationFees.data.forEach(fee => {
-      const key = `fee_${fee.id}`;
+      const key = `fee_${fee.id}_main`;
       if (!allStripeData.has(key)) {
         allStripeData.set(key, {
           source: 'application_fee',
           data: fee,
+          accountId: 'main',
+          accountType: 'main',
         });
       }
     });
@@ -431,7 +619,7 @@ export async function GET(req: NextRequest) {
               const orderRef = db.collection('auftraege').doc(metadata.orderId);
               const orderSnap = await orderRef.get();
               if (orderSnap.exists) {
-                orderData = orderSnap.data();
+                orderData = (orderSnap.data() as Record<string, unknown>) || null;
               }
             } catch (error) {
               console.error('Error loading order data:', error);
@@ -504,10 +692,18 @@ export async function GET(req: NextRequest) {
               obj.cancellation_reason,
             webhookStatus:
               item.source === 'event' && item.data.pending_webhooks > 0 ? 'pending' : 'delivered',
+            // Stripe Connect Account Information
+            stripeAccount: {
+              id: item.accountId,
+              type: item.accountType,
+              isConnectedAccount: item.accountType === 'connected',
+            },
             rawStripeData: {
               object_id: obj.id,
               object_type: eventType,
               source: item.source,
+              account_id: item.accountId,
+              account_type: item.accountType,
               // Vollständige Stripe-Objektdaten für Debugging
               full_object: obj,
             },
@@ -532,24 +728,50 @@ export async function GET(req: NextRequest) {
         status: statusFilter,
         search: searchTerm,
       },
-      // Vollständige Stripe-Datenquellenübersicht
+      // Vollständige Stripe-Datenquellenübersicht mit Connect-Support
       stripeDataSources: {
-        events: events.data.length,
-        paymentIntents: paymentIntents.data.length,
-        charges: charges.data.length,
-        transfers: transfers.data.length,
-        payouts: payouts.data.length,
-        invoices: invoices.data.length,
-        subscriptions: subscriptions.data.length,
-        balanceTransactions: balanceTransactions.data.length,
-        customers: customers.data.length,
-        setupIntents: setupIntents.data.length,
-        refunds: refunds.data.length,
-        disputes: disputes.data.length,
-        applicationFees: applicationFees.data.length,
+        mainAccount: {
+          events: events.data.length,
+          paymentIntents: paymentIntents.data.length,
+          charges: charges.data.length,
+          transfers: transfers.data.length,
+          payouts: payouts.data.length,
+          invoices: invoices.data.length,
+          subscriptions: subscriptions.data.length,
+          balanceTransactions: balanceTransactions.data.length,
+          customers: customers.data.length,
+          setupIntents: setupIntents.data.length,
+          refunds: refunds.data.length,
+          disputes: disputes.data.length,
+          applicationFees: applicationFees.data.length,
+        },
+        connectedAccounts: {
+          total: connectedAccounts.data.length,
+          accounts: connectedAccountsData.map(account => ({
+            id: account.accountId,
+            type: account.accountInfo.type,
+            country: account.accountInfo.country,
+            business_type: account.accountInfo.business_type,
+            charges_enabled: account.accountInfo.charges_enabled,
+            payouts_enabled: account.accountInfo.payouts_enabled,
+            hasData: !!account.data,
+            error: account.error,
+            dataLoaded: account.data
+              ? {
+                  events: account.data[0]?.data?.length || 0,
+                  paymentIntents: account.data[1]?.data?.length || 0,
+                  charges: account.data[2]?.data?.length || 0,
+                  transfers: account.data[3]?.data?.length || 0,
+                  payouts: account.data[4]?.data?.length || 0,
+                  balanceTransactions: account.data[5]?.data?.length || 0,
+                }
+              : null,
+          })),
+        },
         totalUniqueObjects: allStripeData.size,
         completeCoverage: true,
-        note: 'Diese API zeigt ALLE verfügbaren Stripe-Daten - Events, Objekte, Transaktionen, Kunden, etc.',
+        connectEnabled: true,
+        note: 'Diese API zeigt ALLE verfügbaren Stripe-Daten - Hauptkonto + ALLE verbundenen Konten (Stripe Connect)',
       },
     });
   } catch (error) {

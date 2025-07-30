@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
             type: 'invoice',
             amount: invoice.amount_paid,
             currency: invoice.currency.toUpperCase(),
-            status: invoice.status,
+            status: invoice.status || 'unknown',
             description: invoice.description || `Invoice #${invoice.number}`,
             stripeId: invoice.id,
             customerId: typeof invoice.customer === 'string' ? invoice.customer : undefined,
