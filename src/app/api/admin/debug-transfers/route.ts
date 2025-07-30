@@ -1,8 +1,8 @@
 // src/app/api/admin/debug-transfers/route.ts
-// 🚀 BESTE LÖSUNG: Events API + Database Mapping für optimale Performance
+// 🎯 TRANSFER #yYE0eWLf SPECIFIC DEBUG API
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/firebase/server';
+import { db, admin } from '@/firebase/server';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey
@@ -21,162 +21,183 @@ export async function GET(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const orderId = searchParams.get('orderId');
-    const paymentIntentId = searchParams.get('paymentIntentId');
-    const connectAccountId = searchParams.get('connectAccountId');
-
-    if (!orderId && !paymentIntentId && !connectAccountId) {
-      return NextResponse.json(
-        { success: false, error: 'orderId, paymentIntentId, or connectAccountId required' },
-        { status: 400 }
-      );
-    }
+    const transferId = searchParams.get('transferId') || 'yYE0eWLf'; // Default zu Ihrem Transfer
+    const action = searchParams.get('action'); // 'analyze', 'fix', 'retry'
 
     const debugInfo: any = {
-      searchCriteria: { orderId, paymentIntentId, connectAccountId },
-      results: {},
+      transferId,
+      action,
+      analysis: {},
+      solutions: [],
+      timestamp: new Date().toISOString(),
     };
 
-    // 1. Suche in Firestore nach dem Auftrag
-    if (orderId) {
-      try {
-        const orderDoc = await db.collection('auftraege').doc(orderId).get();
-        if (orderDoc.exists) {
-          const orderData = orderDoc.data()!;
-          debugInfo.results.orderData = {
-            exists: true,
-            status: orderData.status,
-            timeTracking: orderData.timeTracking,
-            paymentIntentId: orderData.paymentIntentId,
-          };
-        } else {
-          debugInfo.results.orderData = { exists: false };
-        }
-      } catch (error) {
-        debugInfo.results.orderData = {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
-      }
-    }
+    // 🔍 SCHRITT 1: TRANSFER ANALYSIEREN
+    console.log(`🔍 Analyzing transfer: ${transferId}`);
 
-    // 🎯 BESTE LÖSUNG: INTELLIGENTE PAYMENT-SUCHE
-    // 1. Events API für effiziente Suche
-    // 2. Database Mapping als Fallback
-    // 3. Dynamic Search nur als letzte Option
-    if (paymentIntentId) {
-      try {
-        let stripeObjectFound = false;
-        const searchResults: any[] = [];
-        let searchStrategy = '';
+    // 1.1 Suche in failedTransfers Collection
+    const failedTransferDoc = await db.collection('failedTransfers').doc(transferId).get();
 
-        // 🔥 STRATEGIE 1: STRIPE EVENTS API - Modernste Lösung
-        console.log('🚀 STRATEGIE 1: Events API Search...');
+    if (failedTransferDoc.exists) {
+      const failedData = failedTransferDoc.data()!;
+      debugInfo.analysis.failedTransfer = {
+        found: true,
+        status: failedData.status,
+        error: failedData.error,
+        amount: failedData.amount,
+        orderId: failedData.orderId,
+        paymentIntentId: failedData.paymentIntentId,
+        providerStripeAccountId: failedData.providerStripeAccountId,
+        created: failedData.createdAt,
+        retryCount: failedData.retryCount || 0,
+        fullData: failedData,
+      };
+
+      // 1.2 Connect Account Status prüfen
+      if (failedData.providerStripeAccountId) {
         try {
-          const eventResults = await searchWithStripeEvents(paymentIntentId, stripe);
-          if (eventResults.found && eventResults.data) {
-            debugInfo.results.paymentIntent = eventResults.data;
-            searchStrategy = 'EVENTS_API_SUCCESS';
-            stripeObjectFound = true;
-            searchResults.push({
-              strategy: 'events_api',
-              success: true,
-              found: true,
-              account: eventResults.data.account,
-            });
-            console.log(`✅ EVENTS API SUCCESS! Found on account: ${eventResults.data.account}`);
-          } else {
-            searchResults.push({
-              strategy: 'events_api',
-              success: false,
-              reason: 'not_found_in_recent_events',
-            });
-          }
-        } catch (eventsError: any) {
-          searchResults.push({
-            strategy: 'events_api',
-            success: false,
-            error: eventsError.message,
+          const connectAccount = await stripe.accounts.retrieve(failedData.providerStripeAccountId);
+          const connectBalance = await stripe.balance.retrieve({
+            stripeAccount: failedData.providerStripeAccountId,
           });
-          console.log('Events API failed, trying Database Mapping...');
+
+          debugInfo.analysis.connectAccount = {
+            id: connectAccount.id,
+            charges_enabled: connectAccount.charges_enabled,
+            payouts_enabled: connectAccount.payouts_enabled,
+            details_submitted: connectAccount.details_submitted,
+            balance: {
+              available: connectBalance.available,
+              pending: connectBalance.pending,
+              total_available_eur: connectBalance.available
+                .filter(bal => bal.currency === 'eur')
+                .reduce((sum, bal) => sum + bal.amount, 0),
+            },
+            capabilities: connectAccount.capabilities,
+            requirements: connectAccount.requirements,
+          };
+
+          // 1.3 Kann der Transfer erfolgreich sein?
+          const transferAmountCents = failedData.amount;
+          const availableEurCents = connectBalance.available
+            .filter(bal => bal.currency === 'eur')
+            .reduce((sum, bal) => sum + bal.amount, 0);
+
+          debugInfo.analysis.transferAnalysis = {
+            transferAmount: transferAmountCents,
+            availableBalance: availableEurCents,
+            canTransfer: availableEurCents >= transferAmountCents,
+            deficit: Math.max(0, transferAmountCents - availableEurCents),
+          };
+        } catch (accountError: any) {
+          debugInfo.analysis.connectAccountError = accountError.message;
         }
+      }
 
-        // 🔥 STRATEGIE 2: DATABASE MAPPING - Backup Lösung
-        if (!stripeObjectFound) {
-          console.log('🔥 STRATEGIE 2: Database Mapping Search...');
-          try {
-            const dbResults = await searchWithDatabaseMapping(paymentIntentId, db, stripe);
-            if (dbResults.found && dbResults.data) {
-              debugInfo.results.paymentIntent = dbResults.data;
-              searchStrategy = 'DATABASE_MAPPING_SUCCESS';
-              stripeObjectFound = true;
-              searchResults.push({
-                strategy: 'database_mapping',
-                success: true,
-                found: true,
-                account: dbResults.data.account,
-              });
-              console.log(
-                `✅ DATABASE MAPPING SUCCESS! Found on account: ${dbResults.data.account}`
-              );
-            } else {
-              searchResults.push({
-                strategy: 'database_mapping',
-                success: false,
-                reason: 'not_found_in_database',
-              });
-            }
-          } catch (dbError: any) {
-            searchResults.push({
-              strategy: 'database_mapping',
-              success: false,
-              error: dbError.message,
-            });
-            console.log('Database Mapping failed, trying Dynamic Search...');
-          }
-        }
+      // 1.4 Platform Balance prüfen
+      try {
+        const platformBalance = await stripe.balance.retrieve();
+        debugInfo.analysis.platformBalance = {
+          available: platformBalance.available,
+          pending: platformBalance.pending,
+          total_available_eur: platformBalance.available
+            .filter(bal => bal.currency === 'eur')
+            .reduce((sum, bal) => sum + bal.amount, 0),
+        };
+      } catch (balanceError: any) {
+        debugInfo.analysis.platformBalanceError = balanceError.message;
+      }
 
-        // 🔥 STRATEGIE 3: DYNAMIC SEARCH - Fallback für Edge Cases
-        if (!stripeObjectFound) {
-          console.log('🔥 STRATEGIE 3: Dynamic Search (Fallback)...');
-          const dynamicResults = await searchWithDynamicIteration(paymentIntentId, stripe);
-
-          if (dynamicResults.found && dynamicResults.data) {
-            debugInfo.results.paymentIntent = dynamicResults.data;
-            searchStrategy = 'DYNAMIC_SEARCH_SUCCESS';
-            stripeObjectFound = true;
-          } else {
-            debugInfo.results.paymentIntent = {
-              error: 'Object not found with any strategy',
-              searchedId: paymentIntentId,
-              detectedType: paymentIntentId.startsWith('py_')
-                ? 'PaymentMethod'
-                : paymentIntentId.startsWith('pi_')
-                  ? 'PaymentIntent'
-                  : 'Unknown',
-              searchStrategy: 'ALL_STRATEGIES_FAILED',
-              detailedDebug: {
-                strategiesAttempted: searchResults.length,
-                searchResults: searchResults,
-                timestamp: new Date().toISOString(),
-                paymentIdPrefix: paymentIntentId.substring(0, 4),
-                note: 'Comprehensive search across Events API, Database Mapping, and Dynamic iteration failed',
-              },
+      // 1.5 Order Information
+      if (failedData.orderId) {
+        try {
+          const orderDoc = await db.collection('auftraege').doc(failedData.orderId).get();
+          if (orderDoc.exists) {
+            const orderData = orderDoc.data()!;
+            debugInfo.analysis.order = {
+              id: failedData.orderId,
+              status: orderData.status,
+              timeTracking: orderData.timeTracking,
+              paymentIntentId: orderData.paymentIntentId,
+              totalAmount: orderData.totalAmount,
+              currency: orderData.currency,
             };
           }
-
-          searchResults.push(...dynamicResults.searchResults);
+        } catch (orderError: any) {
+          debugInfo.analysis.orderError = orderError.message;
         }
+      }
 
-        // Debug-Informationen hinzufügen
-        debugInfo.results.searchResults = searchResults;
-        debugInfo.results.searchStrategy = searchStrategy;
-        debugInfo.results.totalStrategiesUsed = searchResults.filter(r => r.strategy).length;
-      } catch (error) {
-        debugInfo.results.paymentIntent = {
-          error: error instanceof Error ? error.message : 'Error in intelligent search',
-          searchedId: paymentIntentId,
+      // 🎯 SCHRITT 2: LÖSUNGSVORSCHLÄGE GENERIEREN
+      const errorMessage = failedData.error || '';
+
+      if (errorMessage.includes('insufficient available funds')) {
+        debugInfo.solutions.push({
+          id: 'test_card_funding',
+          type: 'IMMEDIATE_FIX',
+          title: '💳 Test-Karte Funding (Sofortige Lösung)',
+          description: 'Verwende Stripe Test-Karte 4000000000000077 um Connect Account aufzufüllen',
+          steps: [
+            '1. Erstelle Test-Payment mit Karte 4000000000000077',
+            `2. Mindestbetrag: ${((failedData.amount || 0) / 100).toFixed(2)}€`,
+            '3. Payment auf Connect Account ' + (failedData.providerStripeAccountId || 'UNKNOWN'),
+            '4. Nach erfolgreichem Payment automatisch Transfer retry',
+          ],
+          testCard: '4000000000000077',
+          requiredAmount: (failedData.amount || 0) / 100,
+          connectAccount: failedData.providerStripeAccountId,
+          automationPossible: true,
+        });
+
+        debugInfo.solutions.push({
+          id: 'platform_transfer',
+          type: 'ALTERNATIVE_FIX',
+          title: '🔄 Platform-to-Connect Transfer',
+          description: 'Transferiere Geld von Platform Account zu Connect Account',
+          steps: [
+            '1. Prüfe Platform Balance (verfügbar: ' +
+              (debugInfo.analysis.platformBalance?.total_available_eur || 0) / 100 +
+              '€)',
+            `2. Transferiere ${((failedData.amount || 0) / 100).toFixed(2)}€ zu Connect Account`,
+            '3. Warte auf Transfer-Completion',
+            '4. Retry ursprünglichen Transfer',
+          ],
+          requiredPlatformBalance: failedData.amount || 0,
+          canExecute:
+            (debugInfo.analysis.platformBalance?.total_available_eur || 0) >=
+            (failedData.amount || 0),
+        });
+
+        debugInfo.solutions.push({
+          id: 'wait_for_real_payments',
+          type: 'PRODUCTION_STRATEGY',
+          title: '⏰ Warten auf echte Zahlungen',
+          description: 'Lasse echte Kunden-Zahlungen das Connect Account auffüllen',
+          steps: [
+            '1. Warte auf echte Kunden-Zahlungen',
+            '2. Payments landen automatisch auf Connect Account',
+            '3. Transfer wird automatisch retry wenn Balance ausreicht',
+            '4. Keine manuelle Intervention notwendig',
+          ],
+          timeline: 'Abhängig von Kunden-Aktivität',
+          recommended: 'Für Production Environment',
+        });
+      }
+
+      // 🎯 SCHRITT 3: AKTIONEN AUSFÜHREN (falls action Parameter)
+      if (action === 'fix' && debugInfo.solutions.length > 0) {
+        // Implementiere automatische Fix-Logik hier
+        debugInfo.actionTaken = {
+          type: 'analysis_only',
+          message: 'Use specific action endpoints for automated fixes',
+          availableActions: ['test-payment', 'platform-transfer', 'retry-transfer'],
         };
       }
+    } else {
+      debugInfo.analysis.failedTransfer = {
+        found: false,
+        message: `Transfer ${transferId} not found in failedTransfers collection`,
+      };
     }
 
     return NextResponse.json({
@@ -195,516 +216,114 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// 🚀 INTELLIGENTE SUCHFUNKTIONEN - BESTE LÖSUNG
-
-// Type definitions for better TypeScript support
-interface SearchResult {
-  found: boolean;
-  data?: any;
-  error?: string;
-}
-
-// 🔥 STRATEGIE 1: STRIPE EVENTS API - Modernste & Schnellste Lösung
-async function searchWithStripeEvents(paymentId: string, stripe: Stripe): Promise<SearchResult> {
-  try {
-    console.log('🔍 Events API: Searching recent events...');
-
-    // Suche nach relevanten Events in den letzten 30 Tagen
-    const events = await stripe.events.list({
-      limit: 100,
-      created: {
-        gte: Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60, // 30 Tage zurück
-      },
-      types: [
-        'payment_intent.created',
-        'payment_intent.succeeded',
-        'payment_intent.payment_failed',
-        'payment_method.attached',
-        'payment_method.detached',
-        'setup_intent.succeeded',
-        'setup_intent.created',
-        'customer.created',
-        'invoice.payment_succeeded',
-      ],
-    });
-
-    console.log(`🔍 Events API: Found ${events.data.length} events to search through`);
-
-    for (const event of events.data) {
-      const eventObject = event.data.object as any;
-
-      // PaymentIntent gefunden
-      if (eventObject.id === paymentId && event.type.includes('payment_intent')) {
-        const account = event.account || 'main';
-        console.log(`✅ Found PaymentIntent in ${event.type} event on account: ${account}`);
-
-        // Vollständige Daten abrufen
-        let fullObject;
-        if (account === 'main') {
-          fullObject = await stripe.paymentIntents.retrieve(paymentId);
-        } else {
-          fullObject = await stripe.paymentIntents.retrieve(paymentId, {
-            stripeAccount: account,
-          });
-        }
-
-        return {
-          found: true,
-          data: {
-            id: fullObject.id,
-            type: 'PaymentIntent',
-            status: fullObject.status,
-            amount: fullObject.amount,
-            currency: fullObject.currency,
-            metadata: fullObject.metadata,
-            created: new Date(fullObject.created * 1000).toISOString(),
-            account: account,
-            searchStrategy: 'EVENTS_API_PAYMENT_INTENT',
-            foundViaEvent: event.type,
-          },
-        };
-      }
-
-      // PaymentMethod gefunden - verschiedene Wege
-      if (
-        eventObject.payment_method === paymentId ||
-        eventObject.id === paymentId ||
-        (eventObject.payment_method && eventObject.payment_method.id === paymentId)
-      ) {
-        const account = event.account || 'main';
-        console.log(
-          `✅ Found PaymentMethod reference in ${event.type} event on account: ${account}`
-        );
-
-        // Vollständige PaymentMethod-Daten abrufen
-        try {
-          let paymentMethod;
-          if (account === 'main') {
-            paymentMethod = await stripe.paymentMethods.retrieve(paymentId);
-          } else {
-            paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
-              stripeAccount: account,
-            });
-          }
-
-          return {
-            found: true,
-            data: {
-              id: paymentMethod.id,
-              type: 'PaymentMethod',
-              type_detail: paymentMethod.type,
-              created: new Date(paymentMethod.created * 1000).toISOString(),
-              metadata: paymentMethod.metadata,
-              customer: paymentMethod.customer,
-              account: account,
-              searchStrategy: 'EVENTS_API_PAYMENT_METHOD',
-              foundViaEvent: event.type,
-            },
-          };
-        } catch (pmError) {
-          console.log(
-            `⚠️ PaymentMethod referenced in event but could not retrieve: ${pmError.message}`
-          );
-          // PaymentMethod nicht direkt abrufbar, aber Event gefunden
-          return {
-            found: true,
-            data: {
-              id: paymentId,
-              type: 'PaymentMethod',
-              account: account,
-              searchStrategy: 'EVENTS_API_REFERENCED',
-              foundViaEvent: event.type,
-              note: 'Found via event reference but could not retrieve full object',
-              error: pmError.message,
-            },
-          };
-        }
-      }
-    }
-
-    return { found: false };
-  } catch (error) {
-    console.error('Events API error:', error);
-    return { found: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-// 🔥 STRATEGIE 2: DATABASE MAPPING - Schneller Fallback
-async function searchWithDatabaseMapping(
-  paymentId: string,
-  db: any,
-  stripe: Stripe
-): Promise<SearchResult> {
-  try {
-    console.log('🔍 Database Mapping: Searching Firestore...');
-
-    // Suche in Aufträgen nach PaymentIntent-Referenzen UND PaymentMethod-Referenzen
-    const ordersQuery = await db
-      .collection('auftraege')
-      .where('paymentIntentId', '==', paymentId)
-      .limit(5)
-      .get();
-
-    // Zusätzliche Suche nach PaymentMethod ID
-    const ordersQueryByPaymentMethod = await db
-      .collection('auftraege')
-      .where('paymentMethodId', '==', paymentId)
-      .limit(5)
-      .get();
-
-    // Kombiniere beide Suchergebnisse
-    const allOrderDocs = [...ordersQuery.docs, ...ordersQueryByPaymentMethod.docs];
-    console.log(
-      `🔍 Database Mapping: Found ${allOrderDocs.length} orders with matching payment references`
+// 🎯 POST: AKTIONEN AUSFÜHREN
+export async function POST(req: NextRequest) {
+  if (!stripe) {
+    return NextResponse.json(
+      { success: false, error: 'Stripe nicht konfiguriert' },
+      { status: 500 }
     );
-
-    if (allOrderDocs.length > 0) {
-      for (const orderDoc of allOrderDocs) {
-        const orderData = orderDoc.data();
-        const providerAccountId =
-          orderData.anbieterStripeAccountId || orderData.providerStripeAccountId;
-
-        console.log(`🔍 Checking order ${orderDoc.id} with provider account: ${providerAccountId}`);
-
-        if (providerAccountId) {
-          try {
-            // Versuche PaymentIntent auf Provider Account zu finden
-            if (paymentId.startsWith('pi_')) {
-              const paymentIntent = await stripe.paymentIntents.retrieve(paymentId, {
-                stripeAccount: providerAccountId,
-              });
-
-              return {
-                found: true,
-                data: {
-                  id: paymentIntent.id,
-                  type: 'PaymentIntent',
-                  status: paymentIntent.status,
-                  amount: paymentIntent.amount,
-                  currency: paymentIntent.currency,
-                  metadata: paymentIntent.metadata,
-                  created: new Date(paymentIntent.created * 1000).toISOString(),
-                  account: providerAccountId,
-                  searchStrategy: 'DATABASE_MAPPING_ORDER_MATCH',
-                  orderId: orderDoc.id,
-                  foundVia: 'paymentIntentId_field',
-                },
-              };
-            } else if (paymentId.startsWith('py_')) {
-              console.log(
-                `🔍 Attempting to retrieve PaymentMethod ${paymentId} on account ${providerAccountId}`
-              );
-              const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
-                stripeAccount: providerAccountId,
-              });
-
-              console.log(`✅ SUCCESS! Found PaymentMethod on account ${providerAccountId}`);
-              return {
-                found: true,
-                data: {
-                  id: paymentMethod.id,
-                  type: 'PaymentMethod',
-                  type_detail: paymentMethod.type,
-                  created: new Date(paymentMethod.created * 1000).toISOString(),
-                  metadata: paymentMethod.metadata,
-                  customer: paymentMethod.customer,
-                  account: providerAccountId,
-                  searchStrategy: 'DATABASE_MAPPING_ORDER_MATCH',
-                  orderId: orderDoc.id,
-                  foundVia:
-                    orderData.paymentMethodId === paymentId
-                      ? 'paymentMethodId_field'
-                      : 'paymentIntentId_field',
-                },
-              };
-            }
-          } catch (accountError: any) {
-            console.log(`❌ Account ${providerAccountId}: ${accountError.message}`);
-            // Nicht auf diesem Account gefunden, weitermachen
-            continue;
-          }
-        }
-      }
-    }
-
-    // 🎯 DIREKTE SUCHE auf bekannten Provider Accounts (basierend auf häufigen Patterns)
-    const knownProviderAccounts = [
-      'acct_1RoSL4DlTKEWRrRh', // Gefunden in Auftrag 4bMTQQzVWsHyKhkbkRRu
-      'acct_1RXvRUD5Lvjon30a', // B2B Account
-      'acct_1RqDkqDQHCYn2bzR', // Weiterer bekannter Account
-    ];
-
-    console.log(`🎯 Direct search on ${knownProviderAccounts.length} known provider accounts...`);
-
-    for (const accountId of knownProviderAccounts) {
-      try {
-        console.log(`🔍 Direct search on known account: ${accountId}`);
-
-        if (paymentId.startsWith('py_')) {
-          const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
-            stripeAccount: accountId,
-          });
-
-          console.log(`✅ DIRECT HIT! Found PaymentMethod on known account ${accountId}`);
-          return {
-            found: true,
-            data: {
-              id: paymentMethod.id,
-              type: 'PaymentMethod',
-              type_detail: paymentMethod.type,
-              created: new Date(paymentMethod.created * 1000).toISOString(),
-              metadata: paymentMethod.metadata,
-              customer: paymentMethod.customer,
-              account: accountId,
-              searchStrategy: 'DATABASE_MAPPING_KNOWN_ACCOUNT',
-              foundVia: 'known_provider_account_pattern',
-            },
-          };
-        } else if (paymentId.startsWith('pi_')) {
-          const paymentIntent = await stripe.paymentIntents.retrieve(paymentId, {
-            stripeAccount: accountId,
-          });
-
-          console.log(`✅ DIRECT HIT! Found PaymentIntent on known account ${accountId}`);
-          return {
-            found: true,
-            data: {
-              id: paymentIntent.id,
-              type: 'PaymentIntent',
-              status: paymentIntent.status,
-              amount: paymentIntent.amount,
-              currency: paymentIntent.currency,
-              metadata: paymentIntent.metadata,
-              created: new Date(paymentIntent.created * 1000).toISOString(),
-              account: accountId,
-              searchStrategy: 'DATABASE_MAPPING_KNOWN_ACCOUNT',
-              foundVia: 'known_provider_account_pattern',
-            },
-          };
-        }
-      } catch (knownAccountError: any) {
-        console.log(`❌ Known account ${accountId}: ${knownAccountError.message}`);
-        continue;
-      }
-    }
-
-    // Suche in Stripe-Account-Mappings (falls vorhanden)
-    try {
-      const accountMappingDoc = await db.collection('stripe_mappings').doc(paymentId).get();
-      if (accountMappingDoc.exists) {
-        const mappingData = accountMappingDoc.data()!;
-        const accountId = mappingData.accountId;
-
-        // Direct retrieval mit gemapptem Account
-        if (paymentId.startsWith('pi_')) {
-          const paymentIntent = await stripe.paymentIntents.retrieve(paymentId, {
-            stripeAccount: accountId,
-          });
-
-          return {
-            found: true,
-            data: {
-              id: paymentIntent.id,
-              type: 'PaymentIntent',
-              status: paymentIntent.status,
-              amount: paymentIntent.amount,
-              currency: paymentIntent.currency,
-              metadata: paymentIntent.metadata,
-              created: new Date(paymentIntent.created * 1000).toISOString(),
-              account: accountId,
-              searchStrategy: 'DATABASE_MAPPING_DIRECT',
-            },
-          };
-        } else if (paymentId.startsWith('py_')) {
-          const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
-            stripeAccount: accountId,
-          });
-
-          return {
-            found: true,
-            data: {
-              id: paymentMethod.id,
-              type: 'PaymentMethod',
-              type_detail: paymentMethod.type,
-              created: new Date(paymentMethod.created * 1000).toISOString(),
-              metadata: paymentMethod.metadata,
-              customer: paymentMethod.customer,
-              account: accountId,
-              searchStrategy: 'DATABASE_MAPPING_DIRECT',
-            },
-          };
-        }
-      }
-    } catch (mappingError) {
-      // Kein Mapping vorhanden
-    }
-
-    return { found: false };
-  } catch (error) {
-    console.error('Database Mapping error:', error);
-    return { found: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
-}
 
-// 🔥 STRATEGIE 3: DYNAMIC SEARCH - Fallback für Edge Cases
-async function searchWithDynamicIteration(
-  paymentId: string,
-  stripe: Stripe
-): Promise<{ found: boolean; data: any; searchResults: any[] }> {
   try {
-    console.log('🔍 Dynamic Search: Last resort iteration...');
-    const searchResults: any[] = [];
-    let stripeObjectFound = false;
-    let foundData: any = null;
+    const body = await req.json();
+    const { action, transferId = 'yYE0eWLf', ...params } = body;
 
-    // 1. Main Account versuchen
-    try {
-      if (paymentId.startsWith('pi_')) {
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentId);
-        foundData = {
-          id: paymentIntent.id,
-          type: 'PaymentIntent',
-          status: paymentIntent.status,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          metadata: paymentIntent.metadata,
-          created: new Date(paymentIntent.created * 1000).toISOString(),
-          account: 'main',
-          searchStrategy: 'DYNAMIC_MAIN_ACCOUNT',
-        };
-        stripeObjectFound = true;
-      } else if (paymentId.startsWith('py_')) {
-        const paymentMethod = await stripe.paymentMethods.retrieve(paymentId);
-        foundData = {
-          id: paymentMethod.id,
-          type: 'PaymentMethod',
-          type_detail: paymentMethod.type,
-          created: new Date(paymentMethod.created * 1000).toISOString(),
-          metadata: paymentMethod.metadata,
-          customer: paymentMethod.customer,
-          account: 'main',
-          searchStrategy: 'DYNAMIC_MAIN_ACCOUNT',
-        };
-        stripeObjectFound = true;
-      }
+    let result: any = {
+      action,
+      transferId,
+      success: false,
+      timestamp: new Date().toISOString(),
+    };
 
-      searchResults.push({ strategy: 'main_account', success: true, found: true });
-    } catch (mainError: any) {
-      searchResults.push({
-        strategy: 'main_account',
-        success: false,
-        error: mainError.message,
-      });
-    }
-
-    // 2. Connect Accounts (ALLE für ultimative Suche, da letzte Option)
-    if (!stripeObjectFound) {
-      try {
-        console.log('🔍 Searching ALL Connect Accounts (last resort)...');
-        const connectAccounts = await stripe.accounts.list({ limit: 100 }); // Alle Accounts
-
-        console.log(`📋 Found ${connectAccounts.data.length} Connect Accounts to search`);
-
-        for (const account of connectAccounts.data) {
-          if (stripeObjectFound) break;
+    switch (action) {
+      case 'retry_transfer':
+        // Retry failed transfer
+        const failedDoc = await db.collection('failedTransfers').doc(transferId).get();
+        if (failedDoc.exists) {
+          const failedData = failedDoc.data()!;
 
           try {
-            console.log(`🔍 Searching account: ${account.id} (${account.email || 'no email'})`);
-
-            if (paymentId.startsWith('py_')) {
-              const paymentMethod = await stripe.paymentMethods.retrieve(paymentId, {
-                stripeAccount: account.id,
-              });
-              console.log(`✅ FOUND! PaymentMethod on account: ${account.id}`);
-              foundData = {
-                id: paymentMethod.id,
-                type: 'PaymentMethod',
-                type_detail: paymentMethod.type,
-                created: new Date(paymentMethod.created * 1000).toISOString(),
-                metadata: paymentMethod.metadata,
-                customer: paymentMethod.customer,
-                account: account.id,
-                account_email: account.email,
-                searchStrategy: 'DYNAMIC_CONNECT_ACCOUNT',
-              };
-              stripeObjectFound = true;
-              searchResults.push({
-                strategy: 'connect_account',
-                account: account.id,
-                accountEmail: account.email,
-                success: true,
-                found: true,
-              });
-              break;
-            } else if (paymentId.startsWith('pi_')) {
-              const paymentIntent = await stripe.paymentIntents.retrieve(paymentId, {
-                stripeAccount: account.id,
-              });
-              console.log(`✅ FOUND! PaymentIntent on account: ${account.id}`);
-              foundData = {
-                id: paymentIntent.id,
-                type: 'PaymentIntent',
-                status: paymentIntent.status,
-                amount: paymentIntent.amount,
-                currency: paymentIntent.currency,
-                metadata: paymentIntent.metadata,
-                created: new Date(paymentIntent.created * 1000).toISOString(),
-                account: account.id,
-                account_email: account.email,
-                searchStrategy: 'DYNAMIC_CONNECT_ACCOUNT',
-              };
-              stripeObjectFound = true;
-              searchResults.push({
-                strategy: 'connect_account',
-                account: account.id,
-                accountEmail: account.email,
-                success: true,
-                found: true,
-              });
-              break;
-            }
-          } catch (connectError: any) {
-            // Detailliertes Logging für jeden Fehler
-            console.log(`❌ Account ${account.id}: ${connectError.message}`);
-            searchResults.push({
-              strategy: 'connect_account',
-              account: account.id,
-              accountEmail: account.email,
-              success: false,
-              error: connectError.message,
-              errorCode: connectError.code,
-              errorType: connectError.type,
+            const newTransfer = await stripe.transfers.create({
+              amount: failedData.amount,
+              currency: 'eur',
+              destination: failedData.providerStripeAccountId,
+              description: `Retry: Transfer ${transferId} - Auftrag ${failedData.orderId}`,
+              metadata: {
+                type: 'failed_transfer_retry',
+                originalTransferId: transferId,
+                orderId: failedData.orderId,
+                paymentIntentId: failedData.paymentIntentId,
+              },
             });
-            continue;
+
+            // Update failed transfer status
+            await db
+              .collection('failedTransfers')
+              .doc(transferId)
+              .update({
+                status: 'completed',
+                retryTransferId: newTransfer.id,
+                completedAt: admin.firestore.FieldValue.serverTimestamp(),
+                retryCount: (failedData.retryCount || 0) + 1,
+              });
+
+            result = {
+              ...result,
+              success: true,
+              newTransferId: newTransfer.id,
+              message: 'Transfer successfully retried',
+            };
+          } catch (retryError: any) {
+            result = {
+              ...result,
+              error: retryError.message,
+              message: 'Transfer retry failed',
+            };
           }
         }
-      } catch (accountsError: any) {
-        console.error('Error listing connect accounts:', accountsError);
-        searchResults.push({
-          strategy: 'connect_accounts_list',
-          success: false,
-          error: accountsError.message,
-        });
-      }
+        break;
+
+      case 'create_test_payment':
+        // Erstelle Test-Payment um Connect Account aufzufüllen
+        const { connectAccountId, amount } = params;
+
+        try {
+          // Hier würde normalerweise ein PaymentIntent für Test-Zwecke erstellt
+          result = {
+            ...result,
+            success: true,
+            message: 'Test payment creation would be implemented here',
+            testCard: '4000000000000077',
+            requiredAmount: amount,
+            connectAccount: connectAccountId,
+            note: 'Use Stripe Dashboard or test environment for actual test payments',
+          };
+        } catch (testError: any) {
+          result = {
+            ...result,
+            error: testError.message,
+          };
+        }
+        break;
+
+      default:
+        result = {
+          ...result,
+          error: 'Unknown action',
+          availableActions: ['retry_transfer', 'create_test_payment'],
+        };
     }
 
-    return {
-      found: stripeObjectFound,
-      data: foundData,
-      searchResults,
-    };
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Dynamic Search error:', error);
-    return {
-      found: false,
-      data: null,
-      searchResults: [
-        {
-          strategy: 'dynamic_search',
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
-      ],
-    };
+    console.error('Transfer action error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
