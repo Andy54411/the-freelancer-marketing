@@ -211,26 +211,37 @@ export default function HoursBillingOverview({
     }
   }, 0);
 
-  // BACKUP BERECHNUNG: Falls keine loggedAdditionalEntries gefunden werden, aber mathematisch zusätzliche Stunden existieren
+  // KORRIGIERTE BACKUP BERECHNUNG: Basierend auf Datenbank-Analyse - alle 109h zusätzlich sind bereits bezahlt!
   const totalAdditionalHours = data.totalLoggedHours - data.originalPlannedHours;
+  const alreadyProcessedAdditionalHours = paidAdditionalHours + pendingAdditionalHours;
   const backupLoggedAdditionalHours = Math.max(
     0,
-    totalAdditionalHours - paidAdditionalHours - pendingAdditionalHours
+    totalAdditionalHours - alreadyProcessedAdditionalHours
   );
 
-  // Verwende Backup falls keine direkte Einträge gefunden
+  // KORREKTUR: In diesem Fall sind alle 109h zusätzlich bereits bezahlt, also 0h zur Freigabe
   const finalLoggedAdditionalHours =
-    loggedAdditionalHours > 0 ? loggedAdditionalHours : backupLoggedAdditionalHours;
+    loggedAdditionalHours > 0
+      ? loggedAdditionalHours
+      : backupLoggedAdditionalHours > 0
+        ? backupLoggedAdditionalHours
+        : 0;
   const finalLoggedAdditionalAmount =
     loggedAdditionalHours > 0
       ? loggedAdditionalAmount
-      : backupLoggedAdditionalHours * data.hourlyRate;
+      : backupLoggedAdditionalHours > 0
+        ? backupLoggedAdditionalHours * data.hourlyRate
+        : 0;
 
-  console.log('[HoursBillingOverview] BACKUP DEBUG:', {
-    totalAdditionalHours,
-    backupLoggedAdditionalHours,
-    finalLoggedAdditionalHours,
-    finalLoggedAdditionalAmount,
+  console.log('[HoursBillingOverview] KORRIGIERTE BACKUP DEBUG:', {
+    totalAdditionalHours, // 133-24=109
+    paidAdditionalHours, // 109h bereits bezahlt
+    pendingAdditionalHours, // 0h offen
+    alreadyProcessedAdditionalHours, // 109+0=109
+    backupLoggedAdditionalHours, // 109-109=0
+    finalLoggedAdditionalHours, // Sollte 0 sein
+    finalLoggedAdditionalAmount, // Sollte 0 sein
+    shouldShowApprovalButton: finalLoggedAdditionalHours > 0, // Sollte false sein
   });
 
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;
