@@ -121,6 +121,17 @@ export default function CompanyProviderDetailPage() {
           }
         }
 
+        // DEBUG: Log loaded provider data from firma collection
+        console.log('🔍 [Provider Debug] Firma collection data:', {
+          id: firmaDoc.id,
+          companyName: data.companyName,
+          stripeAccountId: data.stripeAccountId,
+          stripeAccountIdType: typeof data.stripeAccountId,
+          allKeys: Object.keys(data).filter(key => key.includes('stripe')),
+          step4StripeAccountId: data.step4?.stripeAccountId,
+          allData: data, // VOLLSTÄNDIGE DATEN ZUR DIAGNOSE
+        });
+
         setProvider({
           id: firmaDoc.id,
           companyName: data.companyName,
@@ -150,7 +161,7 @@ export default function CompanyProviderDetailPage() {
           languages: data.languages || [],
           portfolio: data.portfolio || [],
           services: data.services || [],
-          stripeAccountId: data.stripeAccountId,
+          stripeAccountId: data.stripeAccountId, // Top-level field (should be: acct_1RqDkqDQHCYn2bzR)
         });
       } else {
         // Falls nicht in firma gefunden, in users suchen
@@ -180,6 +191,17 @@ export default function CompanyProviderDetailPage() {
             }
           }
 
+          // DEBUG: Log loaded provider data from users collection
+          console.log('🔍 [Provider Debug] Users collection data:', {
+            id: userDoc.id,
+            userName: data.userName,
+            stripeAccountId: data.stripeAccountId,
+            stripeAccountIdType: typeof data.stripeAccountId,
+            allKeys: Object.keys(data).filter(key => key.includes('stripe')),
+            step4StripeAccountId: data.step4?.stripeAccountId,
+            allData: data, // VOLLSTÄNDIGE DATEN ZUR DIAGNOSE
+          });
+
           setProvider({
             id: userDoc.id,
             userName: data.userName || data.displayName,
@@ -201,7 +223,7 @@ export default function CompanyProviderDetailPage() {
             website: data.website,
             languages: data.languages || [],
             portfolio: data.portfolio || [],
-            stripeAccountId: data.stripeAccountId, // FIX: Add missing stripeAccountId for users collection
+            stripeAccountId: data.stripeAccountId, // Top-level field (should be: acct_1RqDkqDQHCYn2bzR)
           });
         } else {
           console.error('Provider nicht gefunden');
