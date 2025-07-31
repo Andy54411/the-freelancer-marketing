@@ -11,16 +11,16 @@ export interface TimeEntry {
   description: string;
   category: 'original' | 'additional'; // Original geplant oder zusätzlich
   status:
-    | 'logged'
-    | 'submitted'
-    | 'customer_approved'
-    | 'customer_rejected'
-    | 'billing_pending'
-    | 'escrow_authorized'
-    | 'escrow_released'
-    | 'platform_held'
-    | 'platform_released'
-    | 'billed';
+  | 'logged'
+  | 'submitted'
+  | 'customer_approved'
+  | 'customer_rejected'
+  | 'billing_pending'
+  | 'escrow_authorized'
+  | 'escrow_released'
+  | 'platform_held'
+  | 'platform_released'
+  | 'billed';
   isBreakTime?: boolean; // Pausenzeit abziehen
   breakMinutes?: number;
   travelTime?: boolean; // Anfahrt hinzufügen
@@ -55,13 +55,13 @@ export interface OrderTimeTracking {
   hourlyRate: number; // In Cents (aus Auftrag übernommen)
   timeEntries: TimeEntry[]; // Array von Zeiteinträgen
   status:
-    | 'inactive'
-    | 'active'
-    | 'submitted_for_approval'
-    | 'partially_approved'
-    | 'fully_approved'
-    | 'escrow_pending' // Geld ist autorisiert/gehalten
-    | 'completed'; // Geld ist freigegeben
+  | 'inactive'
+  | 'active'
+  | 'submitted_for_approval'
+  | 'partially_approved'
+  | 'fully_approved'
+  | 'escrow_pending' // Geld ist autorisiert/gehalten
+  | 'completed'; // Geld ist freigegeben
   customerFeedback?: string | null;
   lastUpdated: Timestamp;
   inititalizedAt?: Timestamp; // Wann TimeTracking gestartet wurde

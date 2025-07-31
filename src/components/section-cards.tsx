@@ -259,12 +259,12 @@ export function SectionCards() {
 
     const confirmWithdraw = confirm(
       `✅ Auszahlung bestätigen\n\n` +
-        `Verfügbar: ${formatCurrency(stats.availableBalance)}\n` +
-        `Gebühr: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
-        `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
-        `✓ Alle Aufträge sind abgeschlossen\n` +
-        `✓ Keine ausstehenden Kundenfreigaben\n\n` +
-        `Möchten Sie fortfahren?`
+      `Verfügbar: ${formatCurrency(stats.availableBalance)}\n` +
+      `Gebühr: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
+      `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
+      `✓ Alle Aufträge sind abgeschlossen\n` +
+      `✓ Keine ausstehenden Kundenfreigaben\n\n` +
+      `Möchten Sie fortfahren?`
     );
 
     if (!confirmWithdraw) return;
@@ -330,11 +330,10 @@ export function SectionCards() {
           <div className="flex flex-col gap-0.5">
             <Badge
               variant="outline"
-              className={`border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight ${
-                stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
+              className={`border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight ${stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
                   ? 'border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-300'
                   : ''
-              }`}
+                }`}
             >
               {stats.hasActiveOrders
                 ? '⏳ Aufträge aktiv'
@@ -353,11 +352,10 @@ export function SectionCards() {
                 !!stats.hasActiveOrders ||
                 !!(stats.pendingApprovals && stats.pendingApprovals > 0)
               }
-              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight ${
-                !!stats.hasActiveOrders || !!(stats.pendingApprovals && stats.pendingApprovals > 0)
+              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight ${!!stats.hasActiveOrders || !!(stats.pendingApprovals && stats.pendingApprovals > 0)
                   ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700'
-              } text-white`}
+                } text-white`}
               title={
                 stats.hasActiveOrders
                   ? 'Auszahlung blockiert: Aktive Aufträge müssen abgeschlossen werden'

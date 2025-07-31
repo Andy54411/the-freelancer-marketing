@@ -15,7 +15,7 @@ class RealTimeMonitor {
     }
 
     console.log(`[RealTimeMonitor] Starting monitoring for ${endpoint} every ${intervalMs}ms`);
-    
+
     this.callbacks.set(endpoint, callback);
     this.retryAttempts.set(endpoint, 0);
 
@@ -49,7 +49,7 @@ class RealTimeMonitor {
       clearInterval(intervalId);
       console.log(`[RealTimeMonitor] Stopped monitoring for ${endpoint}`);
     });
-    
+
     this.intervals.clear();
     this.callbacks.clear();
     this.retryAttempts.clear();
@@ -60,13 +60,13 @@ class RealTimeMonitor {
   async fetchData(endpoint) {
     try {
       const response = await fetch(endpoint);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       // Reset retry counter bei erfolgreichem Request
       this.retryAttempts.set(endpoint, 0);
 
@@ -86,7 +86,7 @@ class RealTimeMonitor {
 
     } catch (error) {
       console.error(`[RealTimeMonitor] Error fetching ${endpoint}:`, error);
-      
+
       const retries = this.retryAttempts.get(endpoint) || 0;
       this.retryAttempts.set(endpoint, retries + 1);
 
@@ -109,7 +109,7 @@ class RealTimeMonitor {
       if (retries >= this.maxRetries) {
         console.warn(`[RealTimeMonitor] Max retries reached for ${endpoint}, stopping monitoring`);
         this.stopMonitoring(endpoint);
-        
+
         this.dispatchCustomEvent('realtime-stopped', {
           endpoint,
           reason: 'max_retries_reached',
@@ -139,13 +139,13 @@ class RealTimeMonitor {
   // Health Check für alle überwachten Endpunkte
   async healthCheck() {
     const results = {};
-    
+
     for (const endpoint of this.intervals.keys()) {
       try {
         const startTime = Date.now();
         const response = await fetch(endpoint + '?health=true');
         const responseTime = Date.now() - startTime;
-        
+
         results[endpoint] = {
           status: response.ok ? 'healthy' : 'unhealthy',
           responseTime,

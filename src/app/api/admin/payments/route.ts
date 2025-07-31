@@ -7,8 +7,8 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-06-20',
-    })
+    apiVersion: '2024-06-20',
+  })
   : null;
 
 export async function GET(req: NextRequest) {
@@ -758,13 +758,13 @@ export async function GET(req: NextRequest) {
             error: account.error,
             dataLoaded: account.data
               ? {
-                  events: account.data[0]?.data?.length || 0,
-                  paymentIntents: account.data[1]?.data?.length || 0,
-                  charges: account.data[2]?.data?.length || 0,
-                  transfers: account.data[3]?.data?.length || 0,
-                  payouts: account.data[4]?.data?.length || 0,
-                  balanceTransactions: account.data[5]?.data?.length || 0,
-                }
+                events: account.data[0]?.data?.length || 0,
+                paymentIntents: account.data[1]?.data?.length || 0,
+                charges: account.data[2]?.data?.length || 0,
+                transfers: account.data[3]?.data?.length || 0,
+                payouts: account.data[4]?.data?.length || 0,
+                balanceTransactions: account.data[5]?.data?.length || 0,
+              }
               : null,
           })),
         },

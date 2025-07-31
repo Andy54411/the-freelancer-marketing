@@ -6,8 +6,8 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-06-20',
-    })
+    apiVersion: '2024-06-20',
+  })
   : null;
 
 export async function GET(req: NextRequest) {
@@ -81,9 +81,9 @@ export async function GET(req: NextRequest) {
         },
         request: event.request
           ? {
-              id: event.request.id,
-              idempotency_key: event.request.idempotency_key,
-            }
+            id: event.request.id,
+            idempotency_key: event.request.idempotency_key,
+          }
           : null,
       })),
       summary: {
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
           e =>
             e.type === 'payment_intent.succeeded' &&
             (e.data.object as Stripe.PaymentIntent).metadata?.type ===
-              'additional_hours_platform_hold'
+            'additional_hours_platform_hold'
         ).length,
         recent_webhook_attempts: recentWebhookAttempts.length,
         webhook_endpoints_count: webhookEndpoints.data.length,

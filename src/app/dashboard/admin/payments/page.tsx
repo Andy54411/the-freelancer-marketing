@@ -365,19 +365,19 @@ export default function PaymentsAdminPage() {
     const csvContent =
       type === 'payments'
         ? 'ID,Type,Created,Status,Amount,Currency,Order ID,Customer ID,Provider ID\n' +
-          paymentEvents
-            .map(
-              p =>
-                `${p.id},${p.type},${p.created},${p.status},${p.amount},${p.currency},${p.orderId || ''},${p.customerId || ''},${p.providerId || ''}`
-            )
-            .join('\n')
+        paymentEvents
+          .map(
+            p =>
+              `${p.id},${p.type},${p.created},${p.status},${p.amount},${p.currency},${p.orderId || ''},${p.customerId || ''},${p.providerId || ''}`
+          )
+          .join('\n')
         : 'ID,Timestamp,Level,Source,Message,User ID,Order ID\n' +
-          debugLogs
-            .map(
-              l =>
-                `${l.id},${l.timestamp},${l.level},${l.source},"${l.message}",${l.userId || ''},${l.orderId || ''}`
-            )
-            .join('\n');
+        debugLogs
+          .map(
+            l =>
+              `${l.id},${l.timestamp},${l.level},${l.source},"${l.message}",${l.userId || ''},${l.orderId || ''}`
+          )
+          .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -437,11 +437,10 @@ export default function PaymentsAdminPage() {
           {/* Real-Time Toggle */}
           <button
             onClick={toggleRealTime}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              realTimeEnabled
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${realTimeEnabled
                 ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             <FiActivity className={realTimeEnabled ? 'animate-pulse' : ''} size={16} />
             {realTimeEnabled ? 'Live Monitoring' : 'Real-Time Off'}
@@ -461,15 +460,14 @@ export default function PaymentsAdminPage() {
           {realTimeEnabled && (
             <div className="flex items-center gap-2 text-sm text-gray-600 bg-green-50 px-3 py-1 rounded-full">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  realTimeStatus === 'Live'
+                className={`w-2 h-2 rounded-full ${realTimeStatus === 'Live'
                     ? 'bg-green-500 animate-pulse'
                     : realTimeStatus === 'Connecting...' || realTimeStatus === 'Initializing...'
                       ? 'bg-yellow-500 animate-pulse'
                       : realTimeStatus.includes('Error') || realTimeStatus === 'Connection Issues'
                         ? 'bg-red-500 animate-pulse'
                         : 'bg-gray-500'
-                }`}
+                  }`}
               ></div>
               {realTimeStatus} {realTimeStatus === 'Live' && '(30s)'}
             </div>
@@ -490,11 +488,10 @@ export default function PaymentsAdminPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key as any)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === key
+              className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${activeTab === key
                   ? 'text-[#14ad9f] border-b-2 border-[#14ad9f] bg-[#14ad9f]/5'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Icon size={16} />
               {label}
@@ -781,11 +778,10 @@ export default function PaymentsAdminPage() {
                             <span className="text-sm text-gray-500">#{payment.id}</span>
                             {payment.stripeAccount && (
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  !payment.stripeAccount.isConnectedAccount
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${!payment.stripeAccount.isConnectedAccount
                                     ? 'bg-[#14ad9f] text-white'
                                     : 'bg-blue-100 text-blue-800'
-                                }`}
+                                  }`}
                               >
                                 {!payment.stripeAccount.isConnectedAccount
                                   ? 'Haupt-Account'
@@ -862,13 +858,12 @@ export default function PaymentsAdminPage() {
                         <div className="flex items-center gap-2 ml-4">
                           {payment.webhookStatus && (
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                payment.webhookStatus === 'delivered'
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${payment.webhookStatus === 'delivered'
                                   ? 'bg-green-100 text-green-800'
                                   : payment.webhookStatus === 'failed'
                                     ? 'bg-red-100 text-red-800'
                                     : 'bg-yellow-100 text-yellow-800'
-                              }`}
+                                }`}
                             >
                               Webhook {payment.webhookStatus}
                             </span>
@@ -983,20 +978,18 @@ export default function PaymentsAdminPage() {
                               </h4>
                               <div className="flex gap-2">
                                 <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    account.charges_enabled
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${account.charges_enabled
                                       ? 'bg-green-100 text-green-800'
                                       : 'bg-red-100 text-red-800'
-                                  }`}
+                                    }`}
                                 >
                                   Charges {account.charges_enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                                 <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    account.payouts_enabled
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${account.payouts_enabled
                                       ? 'bg-green-100 text-green-800'
                                       : 'bg-red-100 text-red-800'
-                                  }`}
+                                    }`}
                                 >
                                   Payouts {account.payouts_enabled ? 'Enabled' : 'Disabled'}
                                 </span>
@@ -1205,15 +1198,14 @@ export default function PaymentsAdminPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  webhook.status === 'delivered'
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${webhook.status === 'delivered'
                                     ? 'bg-green-100 text-green-800'
                                     : webhook.status === 'failed'
                                       ? 'bg-red-100 text-red-800'
                                       : webhook.status === 'pending'
                                         ? 'bg-yellow-100 text-yellow-800'
                                         : 'bg-blue-100 text-blue-800'
-                                }`}
+                                  }`}
                               >
                                 {webhook.status}
                               </span>

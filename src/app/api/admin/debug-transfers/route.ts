@@ -7,8 +7,8 @@ import { db, admin } from '@/firebase/server';
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-06-20',
-    })
+    apiVersion: '2024-06-20',
+  })
   : null;
 
 export async function GET(req: NextRequest) {
@@ -156,8 +156,8 @@ export async function GET(req: NextRequest) {
           description: 'Transferiere Geld von Platform Account zu Connect Account',
           steps: [
             '1. Prüfe Platform Balance (verfügbar: ' +
-              (debugInfo.analysis.platformBalance?.total_available_eur || 0) / 100 +
-              '€)',
+            (debugInfo.analysis.platformBalance?.total_available_eur || 0) / 100 +
+            '€)',
             `2. Transferiere ${((failedData.amount || 0) / 100).toFixed(2)}€ zu Connect Account`,
             '3. Warte auf Transfer-Completion',
             '4. Retry ursprünglichen Transfer',

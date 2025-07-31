@@ -129,11 +129,11 @@ export const stripeWebhookHandler = onRequest(
                     logger.info(`[stripeWebhookHandler] PaymentIntent ${paymentIntentSucceeded.id} was successful!`);
 
                     const paymentType = paymentIntentSucceeded.metadata?.type;
-                    
+
                     // Handle additional hours payments
                     if (paymentType === 'additional_hours_platform_hold') {
                         logger.info(`[stripeWebhookHandler] Processing additional hours payment: ${paymentIntentSucceeded.id}`);
-                        
+
                         const orderId = paymentIntentSucceeded.metadata?.orderId;
                         const entryIds = paymentIntentSucceeded.metadata?.entryIds;
 
@@ -155,11 +155,11 @@ export const stripeWebhookHandler = onRequest(
                                 }
 
                                 const orderData = orderSnapshot.data()!;
-                                
+
                                 // WICHTIG: TimeEntries sind im timeTracking.timeEntries Array gespeichert!
                                 const timeEntries = orderData.timeTracking?.timeEntries || [];
                                 let updatedCount = 0;
-                                
+
                                 const updatedTimeEntries = timeEntries.map((entry: any) => {
                                     // Check if this entry is in the entryIds list and has billing_pending status
                                     // (regardless of whether paymentIntentId is already set - handle retry scenario)
@@ -177,7 +177,7 @@ export const stripeWebhookHandler = onRequest(
                                     }
                                     return entry;
                                 });
-                                
+
                                 // Update the order document with the fixed time entries and billing data
                                 transaction.update(orderRef, {
                                     'timeTracking.timeEntries': updatedTimeEntries,
@@ -186,7 +186,7 @@ export const stripeWebhookHandler = onRequest(
                                     'timeTracking.billingData.completedAt': FieldValue.serverTimestamp(),
                                     'timeTracking.lastUpdated': FieldValue.serverTimestamp(),
                                 });
-                                
+
                                 logger.info(`[stripeWebhookHandler] Updated ${updatedCount} time entries to transferred status`);
 
                                 // Create Stripe Transfer to Connected Account
@@ -198,7 +198,7 @@ export const stripeWebhookHandler = onRequest(
                                         // Create transfer to connected account
                                         const stripe = getStripeInstance(STRIPE_SECRET_KEY_WEBHOOKS.value());
                                         const transferAmount = parseInt(companyReceives, 10);
-                                        
+
                                         const transfer = await stripe.transfers.create({
                                             amount: transferAmount,
                                             currency: 'eur',

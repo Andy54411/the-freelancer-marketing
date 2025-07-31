@@ -131,9 +131,9 @@ export class TimeTracker {
 
         const userInput = prompt(
           `⚠️ STUNDENSATZ ERFORDERLICH\n\n` +
-            `Für diesen Anbieter wurde kein Stundensatz gefunden.\n` +
-            `Bitte geben Sie den Stundensatz ein (in €/h):\n\n` +
-            `Beispiel: 41 (für 41€/h)`,
+          `Für diesen Anbieter wurde kein Stundensatz gefunden.\n` +
+          `Bitte geben Sie den Stundensatz ein (in €/h):\n\n` +
+          `Beispiel: 41 (für 41€/h)`,
           '41'
         );
 
@@ -1021,18 +1021,18 @@ export class TimeTracker {
             providerId: orderData.selectedAnbieterId,
             companiesDoc: providerDoc.exists()
               ? {
-                  companyName: providerData?.companyName,
-                  hasStripeConnectAccountId: !!providerData?.stripeConnectAccountId,
-                  stripeConnectAccountId: providerData?.stripeConnectAccountId,
-                  stripeConnectStatus: providerData?.stripeConnectStatus || 'not_started',
-                }
+                companyName: providerData?.companyName,
+                hasStripeConnectAccountId: !!providerData?.stripeConnectAccountId,
+                stripeConnectAccountId: providerData?.stripeConnectAccountId,
+                stripeConnectStatus: providerData?.stripeConnectStatus || 'not_started',
+              }
               : 'NO_COMPANIES_DOC',
             usersDoc: providerUserDoc.exists()
               ? {
-                  userType: providerUserData?.user_type,
-                  hasStripeAccountId: !!providerUserData?.stripeAccountId,
-                  stripeAccountId: providerUserData?.stripeAccountId,
-                }
+                userType: providerUserData?.user_type,
+                hasStripeAccountId: !!providerUserData?.stripeAccountId,
+                stripeAccountId: providerUserData?.stripeAccountId,
+              }
               : 'NO_USERS_DOC',
             fallbackAccountId: fallbackStripeAccountId,
           }
@@ -1086,9 +1086,9 @@ export class TimeTracker {
               console.error('[TimeTracker] Stripe Connect Setup Problem detected');
               throw new Error(
                 `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
-                  `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
-                  `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
-                  `Technische Details: ${errorData.error}`
+                `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
+                `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
+                `Technische Details: ${errorData.error}`
               );
             }
 
@@ -1156,13 +1156,13 @@ export class TimeTracker {
 
         throw new Error(
           `❌ STRIPE CONNECT SETUP ERFORDERLICH\n\n` +
-            `Problem: Kein Stripe Connect Account für Provider gefunden.\n` +
-            `Provider ID: ${orderData.selectedAnbieterId}\n\n` +
-            `Lösungsschritte:\n` +
-            `1. Provider muss Stripe Connect Onboarding abschließen\n` +
-            `2. In companies/${orderData.selectedAnbieterId} sollte 'stripeConnectAccountId' vorhanden sein\n` +
-            `3. Account muss Status 'active' haben\n\n` +
-            `Für Details siehe Browser Console.`
+          `Problem: Kein Stripe Connect Account für Provider gefunden.\n` +
+          `Provider ID: ${orderData.selectedAnbieterId}\n\n` +
+          `Lösungsschritte:\n` +
+          `1. Provider muss Stripe Connect Onboarding abschließen\n` +
+          `2. In companies/${orderData.selectedAnbieterId} sollte 'stripeConnectAccountId' vorhanden sein\n` +
+          `3. Account muss Status 'active' haben\n\n` +
+          `Für Details siehe Browser Console.`
         );
       }
 
@@ -1228,9 +1228,9 @@ export class TimeTracker {
           console.error('[TimeTracker] Stripe Connect Setup Problem detected');
           throw new Error(
             `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
-              `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
-              `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
-              `Technische Details: ${errorData.error}`
+            `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
+            `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
+            `Technische Details: ${errorData.error}`
           );
         }
 

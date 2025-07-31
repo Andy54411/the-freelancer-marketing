@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
     const entries = timeEntriesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-    })) as Array<{ id: string; status?: string; paymentIntentId?: string; [key: string]: any }>;
+    })) as Array<{ id: string; status?: string; paymentIntentId?: string;[key: string]: any }>;
 
     const pendingEntries = entries.filter(
       e =>

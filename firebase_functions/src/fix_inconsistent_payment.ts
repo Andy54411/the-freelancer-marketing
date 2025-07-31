@@ -29,7 +29,7 @@ export const fixInconsistentPayment = onCall({
 
         // First, verify the Stripe payment intent
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        
+
         if (paymentIntent.status !== 'succeeded') {
             throw new Error(`Payment Intent ${paymentIntentId} is not succeeded. Status: ${paymentIntent.status}`);
         }
@@ -80,7 +80,7 @@ export const fixInconsistentPayment = onCall({
             if (providerStripeAccountId && companyReceives) {
                 try {
                     const transferAmount = parseInt(companyReceives, 10);
-                    
+
                     const transfer = await stripe.transfers.create({
                         amount: transferAmount,
                         currency: 'eur',

@@ -86,7 +86,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     if (!uid) {
       setUnreadNotificationsCount(0);
       setNotifications([]);
-      return () => {};
+      return () => { };
     }
 
     // KORREKTUR: Prüfe Auth-Status bevor Query ausgeführt wird
@@ -94,7 +94,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       console.log(`[UserHeader] User not authenticated, skipping notifications subscription`);
       setUnreadNotificationsCount(0);
       setNotifications([]);
-      return () => {};
+      return () => { };
     }
 
     // KORREKTUR: Stelle sicher, dass der aktuelle User dem UID entspricht
@@ -104,7 +104,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       );
       setUnreadNotificationsCount(0);
       setNotifications([]);
-      return () => {};
+      return () => { };
     }
 
     console.log(`[UserHeader] Subscribing to notifications for user: ${uid}`);
@@ -472,8 +472,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                   )}
                                   {(notification.type === 'system' ||
                                     notification.type === 'update') && (
-                                    <FiInfo className="text-gray-600" />
-                                  )}
+                                      <FiInfo className="text-gray-600" />
+                                    )}
                                 </div>
                                 <div className="flex-1 overflow-hidden">
                                   <p
@@ -613,7 +613,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                         <p className="text-xs text-gray-500">
                           {firestoreUserData?.user_type
                             ? firestoreUserData.user_type.charAt(0).toUpperCase() +
-                              firestoreUserData.user_type.slice(1)
+                            firestoreUserData.user_type.slice(1)
                             : 'Benutzer'}
                         </p>
                       </div>

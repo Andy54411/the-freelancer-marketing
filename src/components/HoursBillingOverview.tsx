@@ -402,9 +402,9 @@ export default function HoursBillingOverview({
             <p className="text-2xl font-bold">
               {formatCurrency(
                 data.originalJobPrice +
-                  paidAdditionalAmount +
-                  pendingAdditionalAmount +
-                  finalLoggedAdditionalAmount
+                paidAdditionalAmount +
+                pendingAdditionalAmount +
+                finalLoggedAdditionalAmount
               )}
             </p>
           </div>
@@ -715,9 +715,9 @@ export default function HoursBillingOverview({
                 <span className="text-red-600 font-bold">
                   {formatCurrency(
                     data.originalJobPrice +
-                      paidAdditionalAmount +
-                      pendingAdditionalAmount +
-                      finalLoggedAdditionalAmount
+                    paidAdditionalAmount +
+                    pendingAdditionalAmount +
+                    finalLoggedAdditionalAmount
                   )}
                 </span>
               </p>

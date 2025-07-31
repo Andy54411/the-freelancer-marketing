@@ -124,9 +124,9 @@ export default function DashboardPage() {
           const supportData = await supportRes.value.json();
           newStats.supportTickets = supportData.success
             ? supportData.supportChats?.length ||
-              supportData.summary?.totalChats ||
-              supportData.count ||
-              0
+            supportData.summary?.totalChats ||
+            supportData.count ||
+            0
             : Array.isArray(supportData)
               ? supportData.length
               : 0;

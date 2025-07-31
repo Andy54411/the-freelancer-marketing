@@ -445,17 +445,17 @@ export default function OrderDetailPage() {
   const isViewerCustomer = currentUser.uid === order.customerId;
   const cardUser = isViewerCustomer
     ? {
-        id: order.providerId,
-        name: order.providerName,
-        avatarUrl: order.providerAvatarUrl,
-        role: 'provider' as const,
-      }
+      id: order.providerId,
+      name: order.providerName,
+      avatarUrl: order.providerAvatarUrl,
+      role: 'provider' as const,
+    }
     : {
-        id: order.customerId,
-        name: order.customerName,
-        avatarUrl: order.customerAvatarUrl,
-        role: 'customer' as const,
-      };
+      id: order.customerId,
+      name: order.customerName,
+      avatarUrl: order.customerAvatarUrl,
+      role: 'customer' as const,
+    };
 
   return (
     <Suspense

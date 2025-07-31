@@ -47,13 +47,55 @@ applyTo: '**'
 - **Multi-User-Accounts**: Persönliche + Firmen-Profile
 - **Angepasste Workflows**: Je nach Kundentyp & Projektumfang
 
-### �🏗️ Kernfunktionen:
+### 🏗️ Kernfunktionen:
 - Service-Buchung & Projektmanagement
 - Zeiterfassung & Stundenabrechnung  
 - Stripe-basierte Zahlungsabwicklung
 - Bewertungssystem & Qualitätssicherung
-- Dashboard für Kunden & Anbieter
+- Dashboard für Kunden & Anbieter / Admin 
 - Admin-Panel für Platform-Management
+
+### 📊 TASKILO DASHBOARD & PAYMENT SYSTEM ARCHITEKTUR
+
+#### 🎯 3 DASHBOARD TYPEN:
+1. **👤 KUNDEN-DASHBOARD** (`/dashboard/use`)
+   - Service-Buchungen verwalten
+   - Aufträge verfolgen & bewerten
+   - Zahlungshistorie & Rechnungen
+   - Favoriten & wiederholte Buchungen
+
+2. **🔧 ANBIETER-DASHBOARD** (`/dashboard/company`) 
+   - Aufträge annehmen & verwalten
+   - Zeiterfassung für Projekte
+   - Einnahmen & Auszahlungen
+   - Bewertungen & Portfolio
+
+3. **🛠️ ADMIN-DASHBOARD** (`/dashboard/admin`)
+   - Platform-Management & Überwachung
+   - Nutzer- & Transaktionsverwaltung
+   - Analytics & Reporting
+   - System-Administration & Support
+
+#### 💳 3 PAYMENT SYSTEME:
+
+1. **🛍️ B2C FESTPREIS-PAYMENTS**
+   - **Typ**: Sofortige Einmalzahlungen
+   - **Verwendung**: Handwerker, Reinigung, lokale Services
+   - **Flow**: Direktbuchung → Sofortzahlung → Service-Ausführung
+   - **Stripe**: Standard PaymentIntents mit Connect
+
+2. **🏭 B2B PROJEKT-PAYMENTS** 
+   - **Typ**: Meilenstein-basierte Zahlungen
+   - **Verwendung**: Consulting, Agenturen, größere Projekte
+   - **Flow**: Projektvereinbarung → Meilenstein-Zahlungen → Abschlussrechnung
+   - **Stripe**: Setup_Intents + recurring PaymentIntents
+
+3. **⏱️ STUNDEN-ABRECHNUNG SYSTEM**
+   - **Typ**: Zeitbasierte, separate Abrechnung
+   - **Verwendung**: Langzeit-Projekte, flexible Arbeitszeiten
+   - **Flow**: Zeiterfassung → Periodische Abrechnung → Rechnungsstellung
+   - **Integration**: sevdesk/lexoffice kompatible Rechnungen
+   - **Stripe**: Batch-Payments + automatische Rechnungserstellung
 
 ---
 
@@ -65,7 +107,15 @@ applyTo: '**'
 - **NIEMALS** auf Browser-Preview oder externe Ansichten verlassen
 - **IMMER** Dateien direkt mit `read_file` Tool überprüfen
 
-## 📁 REGEL 2: KEINE NEUEN DATEIEN OHNE PRÜFUNG
+## 📁 REGEL 2: OBLIGATORISCHE SRC-ORDNER ÜBERPRÜFUNG
+- **IMMER** zuerst den `src/` Ordner analysieren bevor neue Dateien erstellt werden
+- **PFLICHT**: Verwende `file_search` oder `list_dir` um existierende Dateien im src/ zu prüfen
+- **BEISPIEL**: `file_search` mit "src/**/*.ts" oder "src/app/dashboard/**" patterns
+- **VERSTEHE** die vorhandene Struktur: Komponenten, API-Routes, Dashboards, Payment-Logic
+- **IDENTIFIZIERE** ähnliche Dateien die erweitert werden können statt neue zu erstellen
+- **NIEMALS** neue Dateien ohne vorherige src/-Analyse erstellen
+
+## 📂 REGEL 3: KEINE NEUEN DATEIEN OHNE EXISTENZPRÜFUNG
 - **NIEMALS** erstelle neue Dateien ohne vorherige Existenzprüfung
 - Verwende `file_search` oder `read_file` um zu prüfen ob die Datei bereits existiert
 - Falls die Datei existiert: Repariere/verbessere sie statt sie neu zu erstellen
@@ -73,13 +123,13 @@ applyTo: '**'
 - **IMMER** aktuelle Dateiinhalte mit Tools überprüfen, niemals Browser verwenden
 - **NIEMALS** auf externe Previews oder Attachments verlassen ohne Tool-Verifikation
 
-## 🔧 REGEL 3: REPARIERE FEHLER IN EXISTIERENDEN DATEIEN
+## 🔧 REGEL 4: REPARIERE FEHLER IN EXISTIERENDEN DATEIEN
 - Sind Fehler in einer Datei vorhanden: **REPARIERE** sie
 - Verwende `replace_string_in_file` für präzise Korrekturen
 - Behalte die bestehende Struktur und Logik bei
 - Füge nur fehlende/defekte Teile hinzu oder korrigiere sie
 
-## 📋 REGEL 4: DATEI-VERIFIKATION VOR JEDER ÄNDERUNG
+## 📋 REGEL 5: DATEI-VERIFIKATION VOR JEDER ÄNDERUNG
 - **NIEMALS** Änderungen basierend auf Browser-Ansicht oder Attachments machen
 - **IMMER** `read_file` verwenden um aktuellen Dateiinhalt zu überprüfen
 - **PFLICHT:** Datei-Tools verwenden vor `replace_string_in_file` oder `create_file`
@@ -87,7 +137,7 @@ applyTo: '**'
 - **IMMER** mit `file_search` oder `grep_search` relevante Dateien finden
 - **Browser kann lügen** - nur Tools zeigen die Wahrheit!
 
-## 🌐 REGEL 5: NUR LIVE TESTING - KEINE LOKALEN TESTS
+## 🌐 REGEL 6: NUR LIVE TESTING - KEINE LOKALEN TESTS
 - **IMMER** teste direkt live auf der Production Website: https://taskilo.de
 - **NIEMALS** lokale Tests, Entwicklungsserver oder Emulatoren verwenden
 - **SOFORT** nach jedem Git Push die live Website testen
@@ -136,12 +186,14 @@ applyTo: '**'
 - ✅ **IMMER `read_file`, `file_search`, `grep_search` Tools verwenden**
 - ✅ **Dateien direkt vom Dateisystem überprüfen, nie vom Browser**
 - ✅ **Tool-basierte Datei-Verifikation vor jeder Änderung**
+- ✅ **SRC-ORDNER OBLIGATORISCH vor jeder neuen Datei analysieren**
 
 ## 🎯 ZIEL:
 - **STABILITÄT**: Erhalte funktionierende Teile des Projekts
 - **KONSISTENZ**: Behalte bestehende Strukturen und Patterns bei
 - **EFFIZIENZ**: Repariere und verbessere statt neu zu erstellen
 - **QUALITÄT**: Verstehe bevor du handelst
+- **ARCHITEKTUR**: Respektiere 3-Dashboard und 3-Payment-System Struktur
 
 ## 🎨 DESIGN & ENTWICKLUNGS-RICHTLINIEN
 
@@ -183,7 +235,7 @@ applyTo: '**'
 
 ## 🎨 AUTOMATISCHE DESIGN-ANWENDUNG
 
-### 🔥 REGEL 6: TASKILO FARBEN AUTOMATISCH VERWENDEN
+### 🔥 REGEL 7: TASKILO FARBEN AUTOMATISCH VERWENDEN
 - **IMMER** verwende `#14ad9f` als Hauptfarbe für neue Komponenten
 - **AUTOMATISCH** wähle passende Hover-Variante: `#129488`, `#0f8a7e`, `#129a8f` oder `#0f9d84`
 - **KONSISTENT** mit bestehenden Komponenten im Projekt bleiben

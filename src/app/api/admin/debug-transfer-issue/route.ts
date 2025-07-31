@@ -7,8 +7,8 @@ import { db, admin } from '@/firebase/server';
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-06-20',
-    })
+    apiVersion: '2024-06-20',
+  })
   : null;
 
 export async function GET(req: NextRequest) {
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
                 id: connectAccount.id,
                 charges_enabled: connectAccount.charges_enabled,
                 payouts_enabled: connectAccount.payouts_enabled,
-                created: new Date(connectAccount.created * 1000).toISOString(),
+                created: connectAccount.created ? new Date(connectAccount.created * 1000).toISOString() : null,
                 country: connectAccount.country,
                 email: connectAccount.email,
                 type: connectAccount.type,
@@ -218,14 +218,14 @@ export async function GET(req: NextRequest) {
             paymentIntentId: orderData.paymentIntentId,
             timeTracking: orderData.timeTracking
               ? {
-                  status: orderData.timeTracking.status,
-                  billingData: orderData.timeTracking.billingData,
-                  entryCount: orderData.timeTracking.timeEntries?.length || 0,
-                  transferredEntries:
-                    orderData.timeTracking.timeEntries?.filter(
-                      (entry: any) => entry.status === 'transferred'
-                    )?.length || 0,
-                }
+                status: orderData.timeTracking.status,
+                billingData: orderData.timeTracking.billingData,
+                entryCount: orderData.timeTracking.timeEntries?.length || 0,
+                transferredEntries:
+                  orderData.timeTracking.timeEntries?.filter(
+                    (entry: any) => entry.status === 'transferred'
+                  )?.length || 0,
+              }
               : null,
           };
 

@@ -23,8 +23,8 @@ function shouldLogError(errorKey: string): boolean {
 
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-06-20',
-    })
+    apiVersion: '2024-06-20',
+  })
   : null;
 
 export async function POST(req: NextRequest) {
@@ -572,16 +572,16 @@ export async function POST(req: NextRequest) {
                 typeof paymentIntentSucceeded.payment_method === 'string'
                   ? paymentIntentSucceeded.payment_method
                   : paymentIntentSucceeded.payment_method &&
-                      typeof paymentIntentSucceeded.payment_method === 'object' &&
-                      'id' in paymentIntentSucceeded.payment_method
+                    typeof paymentIntentSucceeded.payment_method === 'object' &&
+                    'id' in paymentIntentSucceeded.payment_method
                     ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id
                     : null,
               stripeCustomerId:
                 typeof paymentIntentSucceeded.customer === 'string'
                   ? paymentIntentSucceeded.customer
                   : paymentIntentSucceeded.customer &&
-                      typeof paymentIntentSucceeded.customer === 'object' &&
-                      'id' in paymentIntentSucceeded.customer
+                    typeof paymentIntentSucceeded.customer === 'object' &&
+                    'id' in paymentIntentSucceeded.customer
                     ? (paymentIntentSucceeded.customer as Stripe.Customer).id
                     : null,
               clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
