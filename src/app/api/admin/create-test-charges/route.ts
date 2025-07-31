@@ -13,6 +13,7 @@ const TEST_CARDS = {
   SUCCESS: 'pm_card_visa', // Standard erfolgreiche Karte
   SUCCESS_DEBIT: 'pm_card_visa_debit', // Debit-Karte
   AVAILABLE_BALANCE: 'pm_card_visa', // Standard Visa für available balance
+  CLASSIC_4242: 'create_4242_card', // Spezielle 4242 4242 4242 4242 Karte
   DECLINE_GENERIC: 'pm_card_chargeDeclined',
   INSUFFICIENT_FUNDS: 'pm_card_chargeDeclinedInsufficientFunds',
 };
@@ -49,13 +50,13 @@ interface ChargeError {
 export async function POST(req: NextRequest) {
   try {
     const body: TestChargeRequest = await req.json();
-    
+
     const {
       amount = 10000, // Default: €100.00
       connectAccountId,
       count = 1,
       cardType = 'AVAILABLE_BALANCE',
-      description = 'Test charge for balance generation'
+      description = 'Test charge for balance generation',
     } = body;
 
     console.log('[TEST-CHARGES] Creating test charges:', {
@@ -73,8 +74,25 @@ export async function POST(req: NextRequest) {
       try {
         console.log(`[TEST-CHARGES] Creating charge ${i + 1}/${count}`);
 
-        // Verwende Test PaymentMethod
-        const paymentMethod = { id: TEST_CARDS[cardType] };
+        // Verwende Test PaymentMethod oder erstelle 4242-Karte
+        let paymentMethod: any;
+
+        if (cardType === 'CLASSIC_4242') {
+          // Erstelle PaymentMethod mit der klassischen 4242 4242 4242 4242 Karte
+          const createdPaymentMethod = await stripe.paymentMethods.create({
+            type: 'card',
+            card: {
+              number: '4242424242424242',
+              exp_month: 12,
+              exp_year: 2030,
+              cvc: '123',
+            },
+          });
+          paymentMethod = { id: createdPaymentMethod.id };
+          console.log(`[TEST-CHARGES] Created 4242 PaymentMethod: ${createdPaymentMethod.id}`);
+        } else {
+          paymentMethod = { id: TEST_CARDS[cardType] };
+        }
 
         // Erstelle PaymentIntent
         const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
@@ -116,11 +134,11 @@ export async function POST(req: NextRequest) {
         if (i < count - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-
       } catch (chargeError) {
-        const errorMessage = chargeError instanceof Error ? chargeError.message : String(chargeError);
+        const errorMessage =
+          chargeError instanceof Error ? chargeError.message : String(chargeError);
         console.error(`[TEST-CHARGES] Error creating charge ${i + 1}:`, errorMessage);
-        
+
         errors.push({
           chargeNumber: i + 1,
           error: errorMessage,
@@ -161,7 +179,7 @@ export async function POST(req: NextRequest) {
         successfulCharges: results.length,
         failedCharges: errors.length,
         totalAmount: results.length * amount,
-        totalAmountFormatted: `€${(results.length * amount / 100).toFixed(2)}`,
+        totalAmountFormatted: `€${((results.length * amount) / 100).toFixed(2)}`,
       },
       results,
       errors: errors.length > 0 ? errors : undefined,
@@ -172,7 +190,6 @@ export async function POST(req: NextRequest) {
         'Retry failed transfers using /api/admin/retry-failed-transfers',
       ],
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('[TEST-CHARGES] API Error:', errorMessage);
@@ -239,7 +256,6 @@ export async function GET(req: NextRequest) {
         },
       },
     });
-
   } catch (error) {
     return NextResponse.json(
       {

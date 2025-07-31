@@ -188,18 +188,19 @@ export default function TransferDebugPage() {
               {debugResult.results.orderData && (
                 <div className="p-4 bg-white rounded-lg border">
                   <h4 className="font-medium text-gray-900 mb-2">📋 Auftragsdaten</h4>
-                  {debugResult.results.orderData.exists ? (
+                  {debugResult.results.orderData?.exists ? (
                     <div className="space-y-1 text-sm">
                       <p>
-                        <strong>Status:</strong> {debugResult.results.orderData.status}
+                        <strong>Status:</strong>{' '}
+                        {debugResult.results.orderData?.status || 'Unbekannt'}
                       </p>
                       <p>
                         <strong>Payment Intent:</strong>{' '}
-                        {debugResult.results.orderData.paymentIntentId || 'Nicht vorhanden'}
+                        {debugResult.results.orderData?.paymentIntentId || 'Nicht vorhanden'}
                       </p>
                       <p>
                         <strong>TimeTracking Status:</strong>{' '}
-                        {debugResult.results.orderData.timeTracking?.status || 'Nicht vorhanden'}
+                        {debugResult.results.orderData?.timeTracking?.status || 'Nicht vorhanden'}
                       </p>
                     </div>
                   ) : (
@@ -212,27 +213,31 @@ export default function TransferDebugPage() {
               {debugResult.results.paymentIntent && (
                 <div className="p-4 bg-white rounded-lg border">
                   <h4 className="font-medium text-gray-900 mb-2">💳 Payment Intent</h4>
-                  {debugResult.results.paymentIntent.error ? (
+                  {debugResult.results.paymentIntent?.error ? (
                     <p className="text-red-600">❌ {debugResult.results.paymentIntent.error}</p>
                   ) : (
                     <div className="space-y-1 text-sm">
                       <p>
-                        <strong>ID:</strong> {debugResult.results.paymentIntent.id}
+                        <strong>ID:</strong> {debugResult.results.paymentIntent?.id || 'Unbekannt'}
                       </p>
                       <p>
-                        <strong>Status:</strong> {debugResult.results.paymentIntent.status}
+                        <strong>Status:</strong>{' '}
+                        {debugResult.results.paymentIntent?.status || 'Unbekannt'}
                       </p>
                       <p>
                         <strong>Betrag:</strong>{' '}
-                        {(debugResult.results.paymentIntent.amount / 100).toFixed(2)}€
+                        {debugResult.results.paymentIntent?.amount
+                          ? (debugResult.results.paymentIntent.amount / 100).toFixed(2)
+                          : '0.00'}
+                        €
                       </p>
                       <p>
                         <strong>Typ:</strong>{' '}
-                        {debugResult.results.paymentIntent.metadata?.type || 'Nicht definiert'}
+                        {debugResult.results.paymentIntent?.metadata?.type || 'Nicht definiert'}
                       </p>
                       <p>
                         <strong>Provider Account:</strong>{' '}
-                        {debugResult.results.paymentIntent.metadata?.providerStripeAccountId ||
+                        {debugResult.results.paymentIntent?.metadata?.providerStripeAccountId ||
                           'Nicht vorhanden'}
                       </p>
                     </div>
@@ -244,26 +249,28 @@ export default function TransferDebugPage() {
               {debugResult.results.transfers && (
                 <div className="p-4 bg-white rounded-lg border">
                   <h4 className="font-medium text-gray-900 mb-2">
-                    🔄 Transfers ({debugResult.results.transfers.found})
+                    🔄 Transfers ({debugResult.results.transfers?.found || 0})
                   </h4>
-                  {debugResult.results.transfers.error ? (
+                  {debugResult.results.transfers?.error ? (
                     <p className="text-red-600">❌ {debugResult.results.transfers.error}</p>
-                  ) : debugResult.results.transfers.found === 0 ? (
+                  ) : (debugResult.results.transfers?.found || 0) === 0 ? (
                     <p className="text-yellow-600">⚠️ Keine Transfers gefunden</p>
                   ) : (
                     <div className="space-y-2">
-                      {debugResult.results.transfers.transfers.map(
+                      {(debugResult.results.transfers?.transfers || []).map(
                         (transfer: any, index: number) => (
                           <div key={index} className="p-2 bg-gray-50 rounded border">
                             <div className="flex items-center justify-between">
-                              <span className="font-medium">{transfer.id}</span>
+                              <span className="font-medium">{transfer?.id || 'Unbekannt'}</span>
                               <span className="text-green-600">
-                                {(transfer.amount / 100).toFixed(2)}€
+                                {transfer?.amount ? (transfer.amount / 100).toFixed(2) : '0.00'}€
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600">{transfer.description}</p>
+                            <p className="text-sm text-gray-600">
+                              {transfer?.description || 'Keine Beschreibung'}
+                            </p>
                             <p className="text-xs text-gray-500">
-                              Destination: {transfer.destination}
+                              Destination: {transfer?.destination || 'Unbekannt'}
                             </p>
                           </div>
                         )
@@ -277,27 +284,28 @@ export default function TransferDebugPage() {
               {debugResult.results.connectAccount && (
                 <div className="p-4 bg-white rounded-lg border">
                   <h4 className="font-medium text-gray-900 mb-2">🏢 Connect Account</h4>
-                  {debugResult.results.connectAccount.error ? (
+                  {debugResult.results.connectAccount?.error ? (
                     <p className="text-red-600">❌ {debugResult.results.connectAccount.error}</p>
                   ) : (
                     <div className="space-y-1 text-sm">
                       <p>
-                        <strong>ID:</strong> {debugResult.results.connectAccount.id}
+                        <strong>ID:</strong> {debugResult.results.connectAccount?.id || 'Unbekannt'}
                       </p>
                       <p>
                         <strong>Charges Enabled:</strong>{' '}
-                        {debugResult.results.connectAccount.charges_enabled ? '✅' : '❌'}
+                        {debugResult.results.connectAccount?.charges_enabled ? '✅' : '❌'}
                       </p>
                       <p>
                         <strong>Payouts Enabled:</strong>{' '}
-                        {debugResult.results.connectAccount.payouts_enabled ? '✅' : '❌'}
+                        {debugResult.results.connectAccount?.payouts_enabled ? '✅' : '❌'}
                       </p>
                       <p>
                         <strong>Details Submitted:</strong>{' '}
-                        {debugResult.results.connectAccount.details_submitted ? '✅' : '❌'}
+                        {debugResult.results.connectAccount?.details_submitted ? '✅' : '❌'}
                       </p>
                       <p>
-                        <strong>Type:</strong> {debugResult.results.connectAccount.type}
+                        <strong>Type:</strong>{' '}
+                        {debugResult.results.connectAccount?.type || 'Unbekannt'}
                       </p>
                     </div>
                   )}
@@ -308,26 +316,31 @@ export default function TransferDebugPage() {
               {debugResult.results.failedTransfers && (
                 <div className="p-4 bg-white rounded-lg border">
                   <h4 className="font-medium text-gray-900 mb-2">
-                    🚫 Fehlgeschlagene Transfers ({debugResult.results.failedTransfers.found})
+                    🚫 Fehlgeschlagene Transfers ({debugResult.results.failedTransfers?.found || 0})
                   </h4>
-                  {debugResult.results.failedTransfers.error ? (
+                  {debugResult.results.failedTransfers?.error ? (
                     <p className="text-red-600">❌ {debugResult.results.failedTransfers.error}</p>
-                  ) : debugResult.results.failedTransfers.found === 0 ? (
+                  ) : (debugResult.results.failedTransfers?.found || 0) === 0 ? (
                     <p className="text-green-600">✅ Keine fehlgeschlagenen Transfers</p>
                   ) : (
                     <div className="space-y-2">
-                      {debugResult.results.failedTransfers.transfers.map(
+                      {(debugResult.results.failedTransfers?.transfers || []).map(
                         (transfer: any, index: number) => (
                           <div key={index} className="p-2 bg-red-50 rounded border border-red-200">
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-red-800">{transfer.id}</span>
+                              <span className="font-medium text-red-800">
+                                {transfer?.id || 'Unbekannt'}
+                              </span>
                               <span className="text-red-600">
-                                {(transfer.amount / 100).toFixed(2)}€
+                                {transfer?.amount ? (transfer.amount / 100).toFixed(2) : '0.00'}€
                               </span>
                             </div>
-                            <p className="text-sm text-red-700">Fehler: {transfer.error}</p>
+                            <p className="text-sm text-red-700">
+                              Fehler: {transfer?.error || 'Unbekannter Fehler'}
+                            </p>
                             <p className="text-xs text-red-600">
-                              Status: {transfer.status} | Versuche: {transfer.retryCount}
+                              Status: {transfer?.status || 'Unbekannt'} | Versuche:{' '}
+                              {transfer?.retryCount || 0}
                             </p>
                           </div>
                         )
