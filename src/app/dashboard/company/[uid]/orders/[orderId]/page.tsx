@@ -412,7 +412,33 @@ export default function CompanyOrderDetailPage() {
                     <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
                   </p>
                   <p>
-                    <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
+                    <strong>Erstellt am:</strong>{' '}
+                    {(() => {
+                      if (order.orderDate) {
+                        // Handle Firebase Timestamp object or ISO string
+                        let date;
+                        if (typeof order.orderDate === 'object' && '_seconds' in order.orderDate) {
+                          // Firebase Timestamp
+                          date = new Date(order.orderDate._seconds * 1000);
+                        } else if (typeof order.orderDate === 'string') {
+                          // ISO string
+                          date = new Date(order.orderDate);
+                        } else {
+                          return 'Unbekanntes Datum';
+                        }
+                        return date.toLocaleDateString('de-DE', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                      }
+                      return 'Unbekanntes Datum';
+                    })()}
+                  </p>
+                  <p>
+                    <strong>Ausführungsdatum:</strong> {order.jobDateFrom || 'N/A'}{' '}
                     {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
                       ? `- ${order.jobDateTo}`
                       : ''}
