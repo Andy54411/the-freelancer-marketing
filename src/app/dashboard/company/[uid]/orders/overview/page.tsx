@@ -26,6 +26,8 @@ interface Order {
   customerName: string; // Name des Kunden
   customerAvatarUrl?: string; // Profilbild des Kunden
   projectName?: string; // Falls vorhanden
+  projectTitle?: string; // B2B Project Title
+  providerName?: string; // Name des Anbieters (für erstellte Aufträge)
   orderedBy: string; // customerFirebaseUid
   orderDate?: { _seconds: number; _nanoseconds: number } | string;
   totalAmountPaidByBuyer: number;
@@ -37,41 +39,41 @@ interface Order {
     | 'IN BEARBEITUNG'
     | 'BEZAHLT'
     | 'ZAHLUNG_ERHALTEN_CLEARING'
+    | 'zahlung_erhalten_clearing'
     | 'abgelehnt_vom_anbieter';
   uid: string; // Die UID des Anbieters (dieses Unternehmens)
   projectId?: string;
   currency?: string;
+  paymentType?: string; // B2B payment type
+  customerType?: string; // 'firma' for B2B
 }
 
 type OrderStatusFilter = 'ALLE' | 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT';
+type OrderTypeFilter = 'EINGEGANGEN' | 'ERSTELLT';
 
 const CompanyOrdersOverviewPage = () => {
   const params = useParams();
   const router = useRouter();
-  const authContext = useAuth();
-  const uidFromParams = (params?.uid as string) || ''; // UID des Anbieters (dieses Unternehmens)
+  const { user } = useAuth();
+  const uidFromParams = params.uid as string;
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [createdOrders, setCreatedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<OrderStatusFilter>('ALLE');
+  const [orderType, setOrderType] = useState<OrderTypeFilter>('EINGEGANGEN');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (authContext.loading) {
-      setIsLoading(true);
-      return;
-    }
-
-    const currentUser = authContext.user;
-
-    if (!currentUser) {
+    if (!user) {
       setError('Bitte melden Sie sich an, um Ihre Aufträge anzuzeigen.');
       setIsLoading(false);
       return;
     }
 
     // Sicherheitsüberprüfung: Nur der Inhaber des Dashboards darf seine Aufträge sehen
-    if (uidFromParams && currentUser.uid !== uidFromParams) {
+    if (uidFromParams && user.uid !== uidFromParams) {
       setError('Zugriff verweigert. Sie sind nicht berechtigt, diese Aufträge einzusehen.');
       setIsLoading(false);
       return;
@@ -81,21 +83,37 @@ const CompanyOrdersOverviewPage = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Verwende die neue HTTP-Funktion
-        const result = await callHttpsFunction(
+        // Lade eingegangene Aufträge (wo Company der Anbieter ist)
+        const incomingResult = await callHttpsFunction(
           'getProviderOrders',
           { providerId: uidFromParams },
           'GET'
         );
 
-        if (result && Array.isArray(result.orders)) {
-          // Filtere Aufträge mit dem Status 'abgelehnt_vom_anbieter' heraus, da diese nicht in der Übersicht erscheinen sollen.
-          const visibleOrders = result.orders.filter(
+        if (incomingResult && Array.isArray(incomingResult.orders)) {
+          const visibleIncomingOrders = incomingResult.orders.filter(
             (order: any) => order.status !== 'abgelehnt_vom_anbieter'
           );
-          setOrders(visibleOrders);
+          setOrders(visibleIncomingOrders);
         } else {
           setOrders([]);
+        }
+
+        // Lade erstellte Aufträge (wo Company der Kunde ist)
+        const createdResult = await callHttpsFunction(
+          'getUserOrders',
+          { customerId: uidFromParams },
+          'GET'
+        );
+
+        if (createdResult && Array.isArray(createdResult.orders)) {
+          // Filtere B2B-Aufträge (customerType === 'firma')
+          const b2bOrders = createdResult.orders.filter(
+            (order: any) => order.customerType === 'firma' || order.paymentType === 'b2b_project'
+          );
+          setCreatedOrders(b2bOrders);
+        } else {
+          setCreatedOrders([]);
         }
       } catch (err: any) {
         const errorMessage = err.message || 'Ein unbekannter Fehler ist aufgetreten.';
@@ -105,22 +123,24 @@ const CompanyOrdersOverviewPage = () => {
       }
     };
     fetchOrders();
-  }, [authContext, uidFromParams, router]);
+  }, [user, uidFromParams, router]);
 
   const filteredOrders = useMemo(() => {
-    if (activeTab === 'ALLE') return orders;
-    return orders.filter(order => {
+    const currentOrders = orderType === 'EINGEGANGEN' ? orders : createdOrders;
+    if (activeTab === 'ALLE') return currentOrders;
+    return currentOrders.filter(order => {
       if (activeTab === 'AKTIV')
         return (
           order.status === 'AKTIV' ||
           order.status === 'IN BEARBEITUNG' ||
           order.status === 'FEHLENDE DETAILS' ||
           order.status === 'BEZAHLT' ||
-          order.status === 'ZAHLUNG_ERHALTEN_CLEARING'
+          order.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
+          order.status === 'zahlung_erhalten_clearing'
         );
       return order.status === activeTab;
     });
-  }, [orders, activeTab]);
+  }, [orders, createdOrders, activeTab, orderType]);
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
@@ -130,6 +150,7 @@ const CompanyOrdersOverviewPage = () => {
       case 'IN BEARBEITUNG':
       case 'BEZAHLT':
       case 'ZAHLUNG_ERHALTEN_CLEARING':
+      case 'zahlung_erhalten_clearing':
         return 'text-blue-600 bg-blue-100';
       case 'STORNIERT':
         return 'text-red-600 bg-red-100';
@@ -182,8 +203,36 @@ const CompanyOrdersOverviewPage = () => {
     <div className="container mx-auto px-4 py-8 pt-[var(--global-header-height)]">
       {' '}
       {/* Füge Padding für den sticky Header hinzu */}
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Eingegangene Aufträge</h1>
-      {/* Tabs */}
+      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Aufträge</h1>
+      {/* Order Type Tabs - Eingegangene vs Erstellte Aufträge */}
+      <div className="mb-4 border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Order Types">
+          {(['EINGEGANGEN', 'ERSTELLT'] as OrderTypeFilter[]).map(type => (
+            <button
+              key={type}
+              onClick={() => setOrderType(type)}
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
+                ${
+                  orderType === type
+                    ? 'border-[#14ad9f] text-[#14ad9f]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              {type === 'EINGEGANGEN' ? 'Eingegangene Aufträge' : 'Erstellte Aufträge'}
+              <span
+                className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
+                  orderType === type
+                    ? 'bg-[#14ad9f]/10 text-[#14ad9f]'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {type === 'EINGEGANGEN' ? orders.length : createdOrders.length}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </div>
+      {/* Status Tabs */}
       <div className="mb-6 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {(['ALLE', 'AKTIV', 'ABGESCHLOSSEN', 'STORNIERT'] as OrderStatusFilter[]).map(tab => (
@@ -193,24 +242,29 @@ const CompanyOrdersOverviewPage = () => {
               className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
                 ${
                   activeTab === tab
-                    ? 'border-teal-500 text-teal-600'
+                    ? 'border-[#14ad9f] text-[#14ad9f]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
               {tab.charAt(0) + tab.slice(1).toLowerCase()}
               <span
-                className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${activeTab === tab ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-600'}`}
+                className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
+                  activeTab === tab ? 'bg-[#14ad9f]/10 text-[#14ad9f]' : 'bg-gray-100 text-gray-600'
+                }`}
               >
                 {tab === 'ALLE'
-                  ? orders.length
-                  : orders.filter(o => {
+                  ? orderType === 'EINGEGANGEN'
+                    ? orders.length
+                    : createdOrders.length
+                  : (orderType === 'EINGEGANGEN' ? orders : createdOrders).filter(o => {
                       if (tab === 'AKTIV')
                         return (
                           o.status === 'AKTIV' ||
                           o.status === 'IN BEARBEITUNG' ||
                           o.status === 'FEHLENDE DETAILS' ||
                           o.status === 'BEZAHLT' ||
-                          o.status === 'ZAHLUNG_ERHALTEN_CLEARING'
+                          o.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
+                          o.status === 'zahlung_erhalten_clearing'
                         );
                       return o.status === tab;
                     }).length}
@@ -225,7 +279,9 @@ const CompanyOrdersOverviewPage = () => {
           <input
             type="search"
             placeholder="Aufträge durchsuchen..."
-            className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
           />
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         </div>
@@ -238,7 +294,9 @@ const CompanyOrdersOverviewPage = () => {
       {filteredOrders.length === 0 ? (
         <div className="text-center py-10 text-gray-500">
           <FiInbox size={48} className="mx-auto mb-4 text-gray-400" />
-          Keine Aufträge in dieser Ansicht gefunden.
+          {orderType === 'EINGEGANGEN'
+            ? 'Keine eingegangenen Aufträge in dieser Ansicht gefunden.'
+            : 'Keine erstellten Aufträge in dieser Ansicht gefunden.'}
         </div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
@@ -251,8 +309,11 @@ const CompanyOrdersOverviewPage = () => {
                 >
                   <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-teal-600 truncate w-2/3">
+                      <p className="text-sm font-medium text-[#14ad9f] truncate w-2/3">
                         {order.selectedSubcategory}
+                        {order.projectTitle && (
+                          <span className="ml-2 text-gray-600">- {order.projectTitle}</span>
+                        )}
                       </p>
                       <div className="ml-2 flex-shrink-0 flex">
                         <p
@@ -267,7 +328,9 @@ const CompanyOrdersOverviewPage = () => {
                       <div className="sm:flex">
                         <p className="flex items-center text-sm text-gray-500">
                           <FiUser className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                          {order.customerName}
+                          {orderType === 'EINGEGANGEN'
+                            ? order.customerName
+                            : 'Anbieter: ' + (order.providerName || 'Unbekannt')}
                         </p>
                         {order.projectName && (
                           <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
@@ -275,11 +338,17 @@ const CompanyOrdersOverviewPage = () => {
                             Projekt: {order.projectName}
                           </p>
                         )}
+                        {order.paymentType === 'b2b_project' && (
+                          <p className="mt-2 flex items-center text-sm text-blue-600 sm:mt-0 sm:ml-6">
+                            <FiPackage className="flex-shrink-0 mr-1.5 h-5 w-5 text-blue-400" />
+                            B2B-Projekt
+                          </p>
+                        )}
                       </div>
                       <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                         <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                         <p>
-                          Bestellt am{' '}
+                          {orderType === 'EINGEGANGEN' ? 'Bestellt' : 'Erstellt'} am{' '}
                           <time
                             dateTime={
                               order.orderDate
@@ -355,7 +424,7 @@ const CompanyOrdersOverviewPage = () => {
   );
 };
 
-// Hilfs-Button-Komponente (könnte auch aus einer UI-Bibliothek kommen)
+// Hilfs-Button-Komponente
 const Button: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: 'outline' | 'default';

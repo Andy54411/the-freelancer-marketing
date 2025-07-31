@@ -57,6 +57,26 @@ const navigationItems: NavigationItem[] = [
         value: 'orders-overview',
         href: 'orders/overview',
       },
+      {
+        label: 'Eingegangene Aufträge',
+        value: 'orders-incoming',
+        href: 'orders/incoming',
+      },
+      {
+        label: 'Erstellte Aufträge',
+        value: 'orders-created',
+        href: 'orders/created',
+      },
+      {
+        label: 'Abgeschlossene Aufträge',
+        value: 'orders-completed',
+        href: 'orders/completed',
+      },
+      {
+        label: 'Stornierte Aufträge',
+        value: 'orders-cancelled',
+        href: 'orders/cancelled',
+      },
     ],
   },
   {
@@ -187,22 +207,25 @@ export default function CompanyMobileSidebar({
                         onNavigate(item.value, item.href);
                       }
                     }}
-                    className={`${isMainActive
+                    className={`${
+                      isMainActive
                         ? 'bg-[#14ad9f] text-white'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
+                    } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
                   >
                     <div className="flex items-center">
                       <item.icon
-                        className={`${isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                          } mr-3 flex-shrink-0 h-6 w-6`}
+                        className={`${
+                          isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+                        } mr-3 flex-shrink-0 h-6 w-6`}
                       />
                       {item.label}
                     </div>
                     {hasSubItems && (
                       <FiChevronDown
-                        className={`h-4 w-4 transition-transform ${isItemExpanded ? 'rotate-180' : ''
-                          } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
+                        className={`h-4 w-4 transition-transform ${
+                          isItemExpanded ? 'rotate-180' : ''
+                        } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
                       />
                     )}
                   </button>
@@ -216,10 +239,11 @@ export default function CompanyMobileSidebar({
                           <button
                             key={subItem.value}
                             onClick={() => onNavigate(subItem.value, subItem.href)}
-                            className={`${isSubActive
+                            className={`${
+                              isSubActive
                                 ? 'bg-[#14ad9f] text-white'
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                              } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                            } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
                           >
                             <FiChevronRight className="mr-2 h-4 w-4" />
                             {subItem.label}
