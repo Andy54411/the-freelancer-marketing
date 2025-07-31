@@ -99,6 +99,44 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
         fullProvider: provider, // VOLLSTÄNDIGE PROVIDER-DATEN ZUR DIAGNOSE
       });
 
+      // FALLBACK: Falls stripeAccountId undefined ist, versuche direkten DB-Zugriff
+      if (!provider.stripeAccountId) {
+        console.warn(
+          '⚠️ [B2B Payment] stripeAccountId ist undefined, versuche direkten DB-Zugriff...'
+        );
+
+        try {
+          // Direkter Firestore-Zugriff um stripeAccountId zu holen
+          const { doc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('@/firebase/clients');
+
+          const userDoc = await getDoc(doc(db, 'users', provider.id));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            console.log('🔍 [B2B Payment Fallback] Direkte DB-Daten:', {
+              stripeAccountId: userData.stripeAccountId,
+              email: userData.email,
+              companyName: userData.companyName,
+            });
+
+            // Verwende die direkt geladene stripeAccountId
+            if (userData.stripeAccountId?.startsWith('acct_')) {
+              console.log(
+                '✅ [B2B Payment Fallback] Gültige stripeAccountId gefunden:',
+                userData.stripeAccountId
+              );
+              // Überschreibe die provider stripeAccountId für diese Session
+              provider.stripeAccountId = userData.stripeAccountId;
+            }
+          }
+        } catch (fallbackError) {
+          console.error(
+            '❌ [B2B Payment Fallback] Direkter DB-Zugriff fehlgeschlagen:',
+            fallbackError
+          );
+        }
+      }
+
       // Prüfe ob Provider Stripe Account vorhanden und gültig ist
       if (!provider.stripeAccountId || !provider.stripeAccountId.startsWith('acct_')) {
         console.error('❌ [B2B Payment] Provider hat keine gültige Stripe Account ID:', {
