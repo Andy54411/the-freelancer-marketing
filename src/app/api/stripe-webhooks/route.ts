@@ -83,7 +83,8 @@ export async function POST(req: NextRequest) {
         const chargeSucceeded = event.data.object as Stripe.Charge;
         console.log(`[WEBHOOK LOG] charge.succeeded: ${chargeSucceeded.id}`);
 
-        const paymentType = chargeSucceeded.metadata?.type;
+        // DUAL SUPPORT: Check both 'type' (for additional_hours) and 'paymentType' (for B2B)
+        const paymentType = chargeSucceeded.metadata?.type || chargeSucceeded.metadata?.paymentType;
 
         // Handle additional hours payments
         if (paymentType === 'additional_hours_platform_hold') {
@@ -204,7 +205,9 @@ export async function POST(req: NextRequest) {
         const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
         console.log(`[WEBHOOK LOG] payment_intent.succeeded: ${paymentIntentSucceeded.id}`);
 
-        const paymentType = paymentIntentSucceeded.metadata?.type;
+        // DUAL SUPPORT: Check both 'type' (for additional_hours) and 'paymentType' (for B2B)
+        const paymentType =
+          paymentIntentSucceeded.metadata?.type || paymentIntentSucceeded.metadata?.paymentType;
 
         // Handle additional hours payments
         if (paymentType === 'additional_hours_platform_hold') {
