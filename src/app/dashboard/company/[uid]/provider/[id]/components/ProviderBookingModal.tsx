@@ -7,7 +7,7 @@ import {
   DateTimeSelectionPopup,
   DateTimeSelectionPopupProps,
 } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
-import InlinePaymentComponent from '@/components/InlinePaymentComponent';
+import B2BPaymentComponent from '@/components/B2BPaymentComponent';
 
 interface Provider {
   id: string;
@@ -54,11 +54,16 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     duration: string;
   } | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [stripePaymentData, setStripePaymentData] = useState<{
-    clientSecret: string;
-    paymentIntentId: string;
-    totalAmountCents: number;
-    totalHours: number;
+  const [isB2BPaymentOpen, setIsB2BPaymentOpen] = useState(false);
+  const [b2bProjectData, setB2bProjectData] = useState<{
+    projectId: string;
+    projectTitle: string;
+    projectDescription: string;
+    amount: number;
+    currency: string;
+    paymentType: 'milestone' | 'project_deposit' | 'final_payment';
+    providerId: string;
+    providerStripeAccountId: string;
   } | null>(null);
 
   const handleDescriptionNext = () => {
@@ -184,57 +189,21 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
         dateSelection: selectedDateTime.dateSelection,
       });
 
-      // **KORREKTUR:** Verwende die neue B2B Payment API
-      const response = await fetch('/api/b2b/create-project-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // Project Details
-          projectId: `b2b-booking-${Date.now()}`,
-          projectTitle: `Service-Buchung: ${provider.companyName || provider.userName}`,
-          projectDescription: `${totalHours}h Service von ${provider.companyName || provider.userName}`,
+      // Erstelle B2B Project Data für die neue B2BPaymentComponent
+      const projectData = {
+        projectId: `b2b-booking-${Date.now()}`,
+        projectTitle: `Service-Buchung: ${provider.companyName || provider.userName}`,
+        projectDescription: `${description}\n\nStunden: ${totalHours}h\nStundensatz: €${hourlyRate}/h`,
+        amount: totalAmountCents,
+        currency: 'eur',
+        paymentType: 'project_deposit' as const,
+        providerId: provider.id,
+        providerStripeAccountId: provider.stripeAccountId,
+      };
 
-          // Payment Details
-          amount: totalAmountCents,
-          currency: 'eur',
-          paymentType: 'project_deposit', // B2B: Anzahlung für Projekt
-
-          // Provider & Customer - FIXED: Use real user ID from auth
-          providerStripeAccountId: provider.stripeAccountId,
-          customerFirebaseId: user?.uid || 'anonymous', // Real user ID from auth
-          providerFirebaseId: provider.id,
-
-          // B2B Specific
-          paymentTermsDays: 30,
-
-          // Billing Details für B2B
-          billingDetails: {
-            companyName: 'Beispiel Unternehmen', // TODO: Get from company profile
-            email: 'firma@beispiel.de', // B2B API erwartet email
-            address: {
-              line1: 'Firmenadresse 123',
-              city: 'Hamburg',
-              postal_code: '20095',
-              country: 'DE',
-            },
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Payment Intent creation failed');
-      }
-
-      const { clientSecret, paymentIntentId } = await response.json();
-
-      console.log('✅ Payment Intent created:', paymentIntentId);
-
-      // Öffne Stripe Payment Modal mit dem clientSecret
-      setStripePaymentData({ clientSecret, paymentIntentId, totalAmountCents, totalHours });
+      setB2bProjectData(projectData);
       setCurrentStep('stripe-payment');
+      setIsB2BPaymentOpen(true);
     } catch (error) {
       console.error('❌ Payment setup failed:', error);
       alert(
@@ -277,7 +246,8 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     setCurrentStep('description');
     setDescription('');
     setSelectedDateTime(null);
-    setStripePaymentData(null);
+    setB2bProjectData(null);
+    setIsB2BPaymentOpen(false);
     setIsDatePickerOpen(false);
     onClose();
   };
@@ -633,80 +603,31 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
             </div>
           )}
 
-          {currentStep === 'stripe-payment' && stripePaymentData && (
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Sichere Zahlung
-                </h2>
-                <button
-                  onClick={() => setCurrentStep('payment')}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Buchungsübersicht */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                  Buchungsübersicht
-                </h3>
-                <div className="flex items-center gap-3 mb-3">
-                  <img
-                    src={getProfileImage()}
-                    alt={getProviderName()}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {getProviderName()}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {provider.selectedSubcategory}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Gesamtstunden:</span>
-                    <span className="text-gray-900 dark:text-white font-medium">
-                      {stripePaymentData.totalHours}h
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Stundensatz:</span>
-                    <span className="text-gray-900 dark:text-white font-medium">
-                      €{provider.hourlyRate}/h
-                    </span>
-                  </div>
-                  <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
-                    <div className="flex justify-between text-lg font-semibold">
-                      <span className="text-gray-900 dark:text-white">Gesamtbetrag:</span>
-                      <span className="text-[#14ad9f]">
-                        €{(stripePaymentData.totalAmountCents / 100).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stripe Payment Component */}
-              <InlinePaymentComponent
-                clientSecret={stripePaymentData.clientSecret}
-                orderId={stripePaymentData.paymentIntentId}
-                totalAmount={stripePaymentData.totalAmountCents}
-                totalHours={stripePaymentData.totalHours}
-                isOpen={true}
-                onClose={() => setCurrentStep('payment')}
-                onSuccess={handleStripePaymentSuccess}
-                onError={handleStripePaymentError}
-              />
-            </div>
-          )}
+          {/* B2B Payment wird als separates Modal gerendert */}
         </div>
       </div>
+
+      {/* B2B Payment Component */}
+      {b2bProjectData && (
+        <B2BPaymentComponent
+          projectData={b2bProjectData}
+          customerData={{
+            customerId: user?.uid || 'anonymous',
+            companyName: '', // Wird aus Firebase geladen
+            name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Taskilo Kunde',
+            email: user?.email || '',
+            phone: '', // Wird aus Firebase geladen
+            address: undefined, // Wird aus Firebase geladen
+          }}
+          isOpen={isB2BPaymentOpen}
+          onClose={() => {
+            setIsB2BPaymentOpen(false);
+            setCurrentStep('payment');
+          }}
+          onSuccess={handleStripePaymentSuccess}
+          onError={handleStripePaymentError}
+        />
+      )}
 
       {/* DateTimeSelectionPopup */}
       {isDatePickerOpen && (
