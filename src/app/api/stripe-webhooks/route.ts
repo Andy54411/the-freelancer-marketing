@@ -476,6 +476,16 @@ export async function POST(req: NextRequest) {
             `[WEBHOOK LOG] Processing B2B Provider Booking payment: ${paymentIntentSucceeded.id} (type: ${paymentType})`
           );
 
+          // DEBUG: Log alle Metadaten für B2B Payments
+          console.log(`[WEBHOOK DEBUG] B2B Payment Metadaten:`, {
+            paymentType,
+            customerFirebaseId: paymentIntentSucceeded.metadata?.customerFirebaseId,
+            providerFirebaseId: paymentIntentSucceeded.metadata?.providerFirebaseId,
+            projectId: paymentIntentSucceeded.metadata?.projectId,
+            projectTitle: paymentIntentSucceeded.metadata?.projectTitle,
+            allMetadata: paymentIntentSucceeded.metadata,
+          });
+
           const customerFirebaseId = paymentIntentSucceeded.metadata?.customerFirebaseId;
           const providerFirebaseId = paymentIntentSucceeded.metadata?.providerFirebaseId;
           const projectId = paymentIntentSucceeded.metadata?.projectId;
