@@ -237,13 +237,8 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     console.log('✅ Stripe payment successful:', paymentIntentId);
 
     try {
-      // Hier würde normalerweise die Buchung in Firebase gespeichert werden
-      await onConfirm(
-        selectedDateTime!.dateSelection,
-        selectedDateTime!.time,
-        selectedDateTime!.duration,
-        description
-      );
+      // Nach erfolgreichem B2B Payment: Echten Auftrag in auftraege Collection erstellen
+      await createOrderInAuftraege(paymentIntentId);
 
       alert('Buchung erfolgreich abgeschlossen! Sie erhalten eine Bestätigung per E-Mail.');
       handleClose();
@@ -253,6 +248,118 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
         'Zahlung war erfolgreich, aber es gab einen Fehler beim Speichern der Buchung. Bitte kontaktieren Sie den Support.'
       );
     }
+  };
+
+  const createOrderInAuftraege = async (paymentIntentId: string) => {
+    if (!selectedDateTime || !user) {
+      throw new Error('Fehlende Daten für Auftragserstellung');
+    }
+
+    const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+    const { db } = await import('@/firebase/clients');
+
+    // Generiere eine eindeutige Auftrags-ID
+    const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Berechne Datum und Preise
+    const { dateSelection, time, duration } = selectedDateTime;
+    let startDate: string;
+    let endDate: string;
+
+    if (
+      'from' in dateSelection &&
+      'to' in dateSelection &&
+      dateSelection.from &&
+      dateSelection.to
+    ) {
+      // DateRange
+      startDate = dateSelection.from.toISOString().split('T')[0];
+      endDate = dateSelection.to.toISOString().split('T')[0];
+    } else if (dateSelection instanceof Date) {
+      // Single Date
+      startDate = dateSelection.toISOString().split('T')[0];
+      endDate = startDate;
+    } else {
+      throw new Error('Ungültiges Datum');
+    }
+
+    const durationHours = parseFloat(duration) || 8;
+    const hourlyRate = provider.hourlyRate || 50;
+    const totalPrice = Math.round(durationHours * hourlyRate * 100); // in Cents
+
+    // Erstelle Auftrag in auftraege Collection
+    const orderData = {
+      // IDs
+      id: orderId,
+      customerFirebaseUid: user.uid,
+      kundeId: user.uid,
+      selectedAnbieterId: provider.id,
+
+      // Firmen-Daten
+      customerType: 'firma',
+      customerFirstName: user.firstName || '',
+      customerLastName: user.lastName || '',
+      customerEmail: user.email || '',
+
+      // Provider-Daten
+      providerName: provider.companyName || provider.userName || 'Unbekannter Anbieter',
+
+      // Service-Details
+      selectedCategory: provider.selectedCategory || 'Dienstleistung',
+      selectedSubcategory: provider.selectedSubcategory || 'Service',
+      description: description,
+
+      // Datum & Zeit
+      jobDateFrom: startDate,
+      jobDateTo: endDate,
+      jobTimePreference: time,
+      jobDurationString: duration,
+      jobTotalCalculatedHours: durationHours,
+
+      // Preise (in Cents)
+      jobCalculatedPriceInCents: totalPrice,
+      originalJobPriceInCents: totalPrice,
+      totalAmountPaidByBuyer: totalPrice,
+
+      // Plattform-Gebühren (4.5% für B2B)
+      sellerCommissionInCents: Math.round(totalPrice * 0.045),
+      totalPlatformFeeInCents: Math.round(totalPrice * 0.045),
+
+      // Payment-Details
+      paymentIntentId: paymentIntentId,
+      paidAt: serverTimestamp(),
+
+      // Status & Zeiten
+      status: 'zahlung_erhalten_clearing',
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp(),
+
+      // Clearing (7 Tage nach Zahlung)
+      clearingPeriodEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+
+      // Lokation (falls vorhanden)
+      jobCountry: 'DE',
+      jobPostalCode: null,
+      jobCity: null,
+      jobStreet: null,
+
+      // B2B spezifische Felder
+      buyerServiceFeeInCents: 0,
+      buyerApprovedAt: null,
+    };
+
+    console.log('🔥 Creating order in auftraege collection:', {
+      orderId,
+      paymentIntentId,
+      customerUid: user.uid,
+      providerUid: provider.id,
+      totalPrice: totalPrice / 100,
+    });
+
+    await setDoc(doc(db, 'auftraege', orderId), orderData);
+
+    console.log('✅ Order successfully created in auftraege collection');
   };
 
   const handleStripePaymentError = (errorMessage: string) => {

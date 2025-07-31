@@ -23,8 +23,8 @@ function shouldLogError(errorKey: string): boolean {
 
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-    apiVersion: '2024-06-20',
-  })
+      apiVersion: '2024-06-20',
+    })
   : null;
 
 export async function POST(req: NextRequest) {
@@ -470,6 +470,60 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        // Handle B2B Provider Booking payments (from ProviderBookingModal)
+        if (paymentType === 'b2b_payment') {
+          console.log(
+            `[WEBHOOK LOG] Processing B2B Provider Booking payment: ${paymentIntentSucceeded.id}`
+          );
+
+          const customerFirebaseId = paymentIntentSucceeded.metadata?.customerFirebaseId;
+          const providerFirebaseId = paymentIntentSucceeded.metadata?.providerFirebaseId;
+          const projectId = paymentIntentSucceeded.metadata?.projectId;
+
+          if (!customerFirebaseId || !providerFirebaseId) {
+            const errorKey = `missing_b2b_metadata_${paymentIntentSucceeded.id}`;
+            if (shouldLogError(errorKey)) {
+              console.error(
+                `[WEBHOOK ERROR] Fehlende B2B-Metadaten im PI ${paymentIntentSucceeded.id}. customerFirebaseId: ${customerFirebaseId}, providerFirebaseId: ${providerFirebaseId}`
+              );
+            }
+            return NextResponse.json({
+              received: true,
+              message:
+                'Wichtige B2B-Metadaten (customerFirebaseId oder providerFirebaseId) fehlen.',
+            });
+          }
+
+          try {
+            // B2B Payment bereits erfolgreich - Order wird NICHT vom Webhook erstellt
+            // weil die ProviderBookingModal bereits die Order in createOrderInAuftraege erstellt hat
+            console.log(
+              `[WEBHOOK LOG] B2B Payment ${paymentIntentSucceeded.id} erfolgreich verarbeitet. Order wird von ProviderBookingModal erstellt.`
+            );
+
+            // Optional: Zusätzliche B2B-spezifische Verarbeitung hier möglich
+            // z.B. Benachrichtigungen, Analytics, etc.
+
+            return NextResponse.json({
+              received: true,
+              message: 'B2B payment processed successfully',
+            });
+          } catch (b2bError: unknown) {
+            let b2bErrorMessage = 'Unbekannter Fehler bei B2B-Zahlungsverarbeitung.';
+            if (b2bError instanceof Error) {
+              b2bErrorMessage = b2bError.message;
+            }
+            const errorKey = `b2b_processing_${paymentIntentSucceeded.id}`;
+            if (shouldLogError(errorKey)) {
+              console.error(`[WEBHOOK ERROR] B2B Payment Fehler:`, b2bError);
+            }
+            return NextResponse.json({
+              received: true,
+              message: `B2B payment processing failed: ${b2bErrorMessage}`,
+            });
+          }
+        }
+
         // Handle regular order payments
         const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
         const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
@@ -572,16 +626,16 @@ export async function POST(req: NextRequest) {
                 typeof paymentIntentSucceeded.payment_method === 'string'
                   ? paymentIntentSucceeded.payment_method
                   : paymentIntentSucceeded.payment_method &&
-                    typeof paymentIntentSucceeded.payment_method === 'object' &&
-                    'id' in paymentIntentSucceeded.payment_method
+                      typeof paymentIntentSucceeded.payment_method === 'object' &&
+                      'id' in paymentIntentSucceeded.payment_method
                     ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id
                     : null,
               stripeCustomerId:
                 typeof paymentIntentSucceeded.customer === 'string'
                   ? paymentIntentSucceeded.customer
                   : paymentIntentSucceeded.customer &&
-                    typeof paymentIntentSucceeded.customer === 'object' &&
-                    'id' in paymentIntentSucceeded.customer
+                      typeof paymentIntentSucceeded.customer === 'object' &&
+                      'id' in paymentIntentSucceeded.customer
                     ? (paymentIntentSucceeded.customer as Stripe.Customer).id
                     : null,
               clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
