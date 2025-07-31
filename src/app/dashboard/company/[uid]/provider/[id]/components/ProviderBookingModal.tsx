@@ -95,6 +95,8 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
         stripeAccountId: provider.stripeAccountId,
         stripeAccountIdType: typeof provider.stripeAccountId,
         stripeAccountIdValid: provider.stripeAccountId?.startsWith('acct_'),
+        providerKeys: Object.keys(provider),
+        fullProvider: provider, // VOLLSTÄNDIGE PROVIDER-DATEN ZUR DIAGNOSE
       });
 
       // Prüfe ob Provider Stripe Account vorhanden und gültig ist
