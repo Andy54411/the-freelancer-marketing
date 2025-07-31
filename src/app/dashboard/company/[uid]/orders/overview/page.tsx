@@ -102,7 +102,7 @@ const CompanyOrdersOverviewPage = () => {
         // Lade erstellte Aufträge (wo Company der Kunde ist)
         const createdResult = await callHttpsFunction(
           'getUserOrders',
-          { customerId: uidFromParams },
+          { userId: uidFromParams },
           'GET'
         );
 
