@@ -191,11 +191,25 @@ export default function CompanyOrderDetailPage() {
           customerName: customerDetails.name, // Name aus der Cloud Function
           customerAvatarUrl: customerDetails.avatarUrl,
           orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
-          priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
+          priceInCents:
+            orderDataFromDb.jobCalculatedPriceInCents ||
+            orderDataFromDb.totalAmountPaidByBuyer ||
+            0,
           status: orderDataFromDb.status || 'unbekannt',
           selectedCategory: orderDataFromDb.selectedCategory,
           selectedSubcategory: orderDataFromDb.selectedSubcategory,
-          jobTotalCalculatedHours: orderDataFromDb.jobTotalCalculatedHours,
+          jobTotalCalculatedHours:
+            orderDataFromDb.jobTotalCalculatedHours ||
+            (() => {
+              // Fallback: Berechne Stunden basierend auf Preis (Standard B2B Rate 42€/h)
+              const priceInEur =
+                (orderDataFromDb.jobCalculatedPriceInCents ||
+                  orderDataFromDb.totalAmountPaidByBuyer ||
+                  0) / 100;
+              const standardHourlyRate = 42; // B2B Standard Rate
+              return Math.round(priceInEur / standardHourlyRate);
+            })(),
+          jobDurationString: orderDataFromDb.jobDurationString,
           beschreibung: orderDataFromDb.description,
           jobDateFrom: orderDataFromDb.jobDateFrom,
           jobDateTo: orderDataFromDb.jobDateTo,
