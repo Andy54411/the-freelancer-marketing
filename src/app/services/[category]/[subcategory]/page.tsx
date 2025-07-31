@@ -315,6 +315,18 @@ export default function SubcategoryPage() {
     return provider.companyName || provider.userName || 'Unbekannter Anbieter';
   };
 
+  // Debug logging für troubleshooting
+  console.log('[ServicePage] Debug Info:', {
+    category,
+    subcategory,
+    decodedCategory,
+    decodedSubcategory,
+    categoryInfo: categoryInfo?.title,
+    subcategoryName,
+    hasValidData: !!(categoryInfo && subcategoryName),
+    availableCategories: categories.map(c => ({ title: c.title, slug: normalizeToSlug(c.title) })),
+  });
+
   const handleBookNow = (provider: Provider) => {
     console.log('handleBookNow called with provider:', provider);
     setSelectedProvider(provider);
@@ -358,18 +370,60 @@ export default function SubcategoryPage() {
 
   if (!categoryInfo || !subcategoryName) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Seite nicht gefunden
-          </h1>
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Zurück
-          </button>
+      <div className="min-h-screen bg-gray-50">
+        {/* Debug Header - Zeige immer einen Header */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Breadcrumb Navigation */}
+            <nav className="text-sm text-gray-500 mb-6">
+              <Link href="/" className="hover:text-[#14ad9f] transition-colors">
+                Startseite
+              </Link>
+              <span className="mx-2">/</span>
+              <Link href="/services" className="hover:text-[#14ad9f] transition-colors">
+                Services
+              </Link>
+              <span className="mx-2">/</span>
+              <span className="text-gray-900 font-medium">{decodedCategory}</span>
+              <span className="mx-2">/</span>
+              <span className="text-gray-900 font-medium">{decodedSubcategory}</span>
+            </nav>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/services')}
+                className="text-gray-600 hover:text-[#14ad9f] transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{decodedSubcategory}</h1>
+                <p className="text-gray-600 mt-1">Service-Kategorie nicht gefunden</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Kategorie nicht gefunden</h2>
+            <p className="text-gray-600 mb-4">
+              Die angeforderte Kategorie &quot;{decodedCategory}&quot; oder Unterkategorie &quot;
+              {decodedSubcategory}&quot; konnte nicht gefunden werden.
+            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">Verfügbare Kategorien:</p>
+              <div className="text-sm text-gray-400">
+                {categories.map(c => normalizeToSlug(c.title)).join(', ')}
+              </div>
+            </div>
+            <button
+              onClick={() => router.push('/services')}
+              className="mt-6 bg-[#14ad9f] hover:bg-[#129488] text-white py-2 px-4 rounded-lg font-medium transition-colors"
+            >
+              Zu allen Services
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -418,18 +418,62 @@ export default function CompanyServiceSubcategoryPage() {
     return provider.companyName || provider.userName || t.provider.unavailable;
   };
 
+  // Debug logging für troubleshooting
+  console.log('[ServicePage] Header Debug:', {
+    categoryInfo: categoryInfo?.title,
+    subcategoryName,
+    hasValidData: !!(categoryInfo && subcategoryName),
+    decodedCategory,
+    decodedSubcategory,
+    availableCategories: categories.map(c => ({ title: c.title, slug: normalizeToSlug(c.title) })),
+  });
+
   if (!categoryInfo || !subcategoryName) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.noResults}</h1>
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Zurück
-          </button>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Debug Header - Zeige immer einen Header */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => router.push(`/dashboard/company/${uid}`)}
+                className="text-gray-600 dark:text-gray-400 hover:text-[#14ad9f] transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <div className="flex items-center gap-2 text-sm text-[#14ad9f] mb-1">
+                  <span>{decodedCategory}</span>
+                  <span>/</span>
+                  <span className="font-medium">{decodedSubcategory}</span>
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {decodedSubcategory}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Service-Kategorie nicht gefunden
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Kategorie nicht gefunden
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Die angeforderte Kategorie &quot;{decodedCategory}&quot; oder Unterkategorie &quot;
+              {decodedSubcategory}&quot; konnte nicht gefunden werden.
+            </p>
+            <button
+              onClick={() => router.push(`/dashboard/company/${uid}`)}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white py-2 px-4 rounded-lg font-medium transition-colors"
+            >
+              Zurück zum Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -461,8 +505,7 @@ export default function CompanyServiceSubcategoryPage() {
                 {subcategoryName}
               </p>
             </div>
-          </div>
-
+          </div>{' '}
           {/* Modern Filter Bar */}
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
