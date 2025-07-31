@@ -1,9 +1,9 @@
 // /firebase_functions/src/getUserOrders.ts
 
-import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 import { Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
-import { getDb } from './helpers'; // Use shared helper for DB instance
+import { getDb, getAuthInstance } from './helpers'; // Use shared helper for DB instance
 
 interface OrderData {
     id: string;
@@ -62,11 +62,11 @@ interface OrderData {
 
 // Change back to onCall, which is the correct type for client-side SDK calls.
 // It handles CORS, auth, and data parsing automatically.
-export const getUserOrders = onCall(
-    { 
+export const getUserOrders = onRequest(
+    {
         cors: [
-            "http://localhost:3000", 
-            "http://localhost:3001", 
+            "http://localhost:3000",
+            "http://localhost:3001",
             "http://localhost:3002",
             "https://tilvo-f142f.web.app", 
             "http://localhost:5002",
@@ -78,25 +78,31 @@ export const getUserOrders = onCall(
         ],
         region: "europe-west1"
     },
-    async (request: CallableRequest<{ userId: string }>): Promise<{ orders: OrderData[] }> => {
-        logger.info(`[getUserOrders] Called for user: ${request.data.userId}`, { structuredData: true });
+    async (req, res) => {
+        // Extract userId from query parameters or request body
+        const userId = req.body?.userId || req.query?.userId;
+        logger.info(`[getUserOrders] Called for user: ${userId}`, { structuredData: true });
 
-        // 1. Authentication Check (handled automatically by onCall)
-        if (!request.auth) {
-            logger.error("[getUserOrders] Unauthenticated call.", { userId: request.data.userId });
-            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
-        }
-
-        const requestingUid = request.auth.uid;
-        const targetUid = request.data.userId;
-
-        // 2. Authorization Check
-        if (requestingUid !== targetUid) {
-            logger.error(`[getUserOrders] Forbidden: User ${requestingUid} attempted to access orders for ${targetUid}.`);
-            throw new HttpsError('permission-denied', 'You are not authorized to view these orders.');
+        // 1. Authentication Check
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            logger.error("[getUserOrders] Missing or invalid authorization header");
+            res.status(401).json({ error: 'Unauthorized: Missing auth token' });
+            return;
         }
 
         try {
+            const authInstance = getAuthInstance();
+            const idToken = authHeader.split('Bearer ')[1];
+            const decodedToken = await authInstance.verifyIdToken(idToken);
+            const requestingUid = decodedToken.uid;
+            const targetUid = userId;            // 2. Authorization Check
+            if (requestingUid !== targetUid) {
+                logger.error(`[getUserOrders] Forbidden: User ${requestingUid} attempted to access orders for ${targetUid}.`);
+                res.status(403).json({ error: 'Forbidden: You are not authorized to view these orders.' });
+                return;
+            }
+
             const db = getDb(); // Get DB instance from shared helper
 
             // 3. Fetch Data
@@ -108,7 +114,8 @@ export const getUserOrders = onCall(
 
             if (snapshot.empty) {
                 logger.info(`[getUserOrders] No orders found for user: ${targetUid}`);
-                return { orders: [] };
+                res.status(200).json({ orders: [] });
+                return;
             }
 
             // 4. Process and Return Data
@@ -165,17 +172,16 @@ export const getUserOrders = onCall(
             });
 
             logger.info(`[getUserOrders] Successfully fetched ${orders.length} orders for user: ${targetUid}`);
-            return { orders };
+            res.status(200).json({ orders });
 
         } catch (error: any) {
             // 5. Error Handling
-            logger.error(`[getUserOrders] Database query failed for user ${targetUid}:`, error);
+            logger.error(`[getUserOrders] Database query failed:`, error);
             // This error often indicates a missing Firestore index. Check the emulator logs for a link to create it.
-            throw new HttpsError(
-                'internal',
-                'An error occurred while fetching the orders. This might be due to a missing database index.',
-                error.message
-            );
+            res.status(500).json({ 
+                error: 'An error occurred while fetching the orders. This might be due to a missing database index.',
+                details: error.message
+            });
         }
     }
 );
