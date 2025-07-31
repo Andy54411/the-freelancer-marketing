@@ -479,6 +479,8 @@ export async function POST(req: NextRequest) {
           const customerFirebaseId = paymentIntentSucceeded.metadata?.customerFirebaseId;
           const providerFirebaseId = paymentIntentSucceeded.metadata?.providerFirebaseId;
           const projectId = paymentIntentSucceeded.metadata?.projectId;
+          const projectTitle = paymentIntentSucceeded.metadata?.projectTitle;
+          const projectDescription = paymentIntentSucceeded.metadata?.projectDescription;
 
           if (!customerFirebaseId || !providerFirebaseId) {
             const errorKey = `missing_b2b_metadata_${paymentIntentSucceeded.id}`;
@@ -495,31 +497,126 @@ export async function POST(req: NextRequest) {
           }
 
           try {
-            // B2B Payment bereits erfolgreich - Order wird NICHT vom Webhook erstellt
-            // weil die ProviderBookingModal bereits die Order in createOrderInAuftraege erstellt hat
-            console.log(
-              `[WEBHOOK LOG] B2B Payment ${paymentIntentSucceeded.id} erfolgreich verarbeitet. Order wird von ProviderBookingModal erstellt.`
-            );
+            // CREATE B2B ORDER IN WEBHOOK (wie bei B2C-Orders)
+            const auftragCollectionRef = db.collection('auftraege');
 
-            // Optional: Zusätzliche B2B-spezifische Verarbeitung hier möglich
-            // z.B. Benachrichtigungen, Analytics, etc.
+            await db.runTransaction(async transaction => {
+              // Generiere eine eindeutige Auftrags-ID
+              const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+              // Berechne B2B-spezifische Daten
+              const totalAmountCents = paymentIntentSucceeded.amount;
+              const platformFeeAmount = paymentIntentSucceeded.application_fee_amount || 0;
+              const providerReceives = totalAmountCents - platformFeeAmount;
+
+              // Berechne Clearing-Periode (7 Tage für B2B)
+              const clearingPeriodDays = 7;
+              const paidAtDate = new Date();
+              const clearingEndsDate = new Date(
+                paidAtDate.getTime() + clearingPeriodDays * 24 * 60 * 60 * 1000
+              );
+              const clearingPeriodEndsAtTimestamp =
+                admin.firestore.Timestamp.fromDate(clearingEndsDate);
+
+              // B2B Order Data Structure
+              const b2bOrderData = {
+                // IDs
+                id: orderId,
+                customerFirebaseUid: customerFirebaseId,
+                kundeId: customerFirebaseId,
+                selectedAnbieterId: providerFirebaseId,
+
+                // B2B-spezifische Felder
+                customerType: 'firma',
+                paymentType: 'b2b_payment',
+                projectId: projectId || '',
+                projectTitle: projectTitle || 'B2B Service-Buchung',
+
+                // Service-Details aus Metadaten
+                description: projectDescription || 'B2B Dienstleistung',
+                selectedCategory: 'B2B Service',
+                selectedSubcategory: 'Business Service',
+
+                // Payment & Pricing (in Cents)
+                jobCalculatedPriceInCents: totalAmountCents,
+                originalJobPriceInCents: totalAmountCents,
+                totalAmountPaidByBuyer: totalAmountCents,
+
+                // B2B Platform-Gebühren (4.5% für B2B)
+                sellerCommissionInCents: platformFeeAmount,
+                totalPlatformFeeInCents: platformFeeAmount,
+                buyerServiceFeeInCents: 0, // B2B-Kunden zahlen keine Service-Gebühr
+
+                // Payment-Details
+                paymentIntentId: paymentIntentSucceeded.id,
+                paidAt: admin.firestore.FieldValue.serverTimestamp(),
+
+                // Status & Zeiten
+                status: 'zahlung_erhalten_clearing',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+
+                // Clearing (7 Tage für B2B)
+                clearingPeriodEndsAt: clearingPeriodEndsAtTimestamp,
+                buyerApprovedAt: null,
+
+                // Stripe-Details
+                paymentMethodId:
+                  typeof paymentIntentSucceeded.payment_method === 'string'
+                    ? paymentIntentSucceeded.payment_method
+                    : paymentIntentSucceeded.payment_method &&
+                        typeof paymentIntentSucceeded.payment_method === 'object' &&
+                        'id' in paymentIntentSucceeded.payment_method
+                      ? (paymentIntentSucceeded.payment_method as Stripe.PaymentMethod).id
+                      : null,
+                stripeCustomerId:
+                  typeof paymentIntentSucceeded.customer === 'string'
+                    ? paymentIntentSucceeded.customer
+                    : paymentIntentSucceeded.customer &&
+                        typeof paymentIntentSucceeded.customer === 'object' &&
+                        'id' in paymentIntentSucceeded.customer
+                      ? (paymentIntentSucceeded.customer as Stripe.Customer).id
+                      : null,
+
+                // Lokation (Standard für B2B)
+                jobCountry: 'DE',
+                jobPostalCode: null,
+                jobCity: null,
+                jobStreet: null,
+
+                // B2B Defaults für fehlende Felder
+                jobDateFrom: new Date().toISOString().split('T')[0],
+                jobDateTo: new Date().toISOString().split('T')[0],
+                jobTimePreference: 'Flexible Terminabsprache',
+                jobDurationString: 'Nach Absprache',
+                jobTotalCalculatedHours: 0, // Wird später durch Zeiterfassung bestimmt
+              };
+
+              const newAuftragRef = auftragCollectionRef.doc(orderId);
+              transaction.set(newAuftragRef, b2bOrderData);
+
+              console.log(
+                `[WEBHOOK LOG] B2B Order ${orderId} erfolgreich erstellt für Payment ${paymentIntentSucceeded.id}`
+              );
+            });
 
             return NextResponse.json({
               received: true,
-              message: 'B2B payment processed successfully',
+              message: 'B2B payment and order processed successfully',
             });
           } catch (b2bError: unknown) {
-            let b2bErrorMessage = 'Unbekannter Fehler bei B2B-Zahlungsverarbeitung.';
+            let b2bErrorMessage = 'Unbekannter Fehler bei B2B-Order-Erstellung.';
             if (b2bError instanceof Error) {
               b2bErrorMessage = b2bError.message;
             }
-            const errorKey = `b2b_processing_${paymentIntentSucceeded.id}`;
+            const errorKey = `b2b_order_creation_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-              console.error(`[WEBHOOK ERROR] B2B Payment Fehler:`, b2bError);
+              console.error(`[WEBHOOK ERROR] B2B Order Creation Fehler:`, b2bError);
             }
             return NextResponse.json({
               received: true,
-              message: `B2B payment processing failed: ${b2bErrorMessage}`,
+              message: `B2B order creation failed: ${b2bErrorMessage}`,
             });
           }
         }

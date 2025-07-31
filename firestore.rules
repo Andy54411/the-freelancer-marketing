@@ -160,8 +160,16 @@ service cloud.firestore {
         isSupportStaff()
       );
 
-      allow create,
-            delete: if false;
+      allow create: if request.auth != null && (
+        // B2B Company users can create orders for their own bookings
+        (isCompany() && request.resource.data.customerFirebaseUid == request.auth.uid) ||
+        // Regular users can create orders for their own bookings  
+        (!isCompany() && request.resource.data.customerFirebaseUid == request.auth.uid) ||
+        // Support staff can create orders for administrative purposes
+        isSupportStaff()
+      );
+      
+      allow delete: if false;
 
       // Sub-Collection: nachrichten
       // Hier muss jedes Nachricht-Dokument ein Feld `chatUsers` (Array) enthalten,
