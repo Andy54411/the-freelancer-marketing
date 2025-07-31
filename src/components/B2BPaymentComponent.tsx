@@ -231,7 +231,7 @@ function B2BCheckoutForm({
                   line1: 'auto',
                   line2: 'never',
                   city: 'auto',
-                  state: 'never',
+                  state: 'auto', // GEÄNDERT: auf 'auto' statt 'never' um Konflikt zu vermeiden
                   postalCode: 'auto',
                 },
               },
