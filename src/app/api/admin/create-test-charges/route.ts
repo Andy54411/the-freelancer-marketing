@@ -12,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const TEST_CARDS = {
   SUCCESS: 'pm_card_visa', // Standard erfolgreiche Karte
   SUCCESS_DEBIT: 'pm_card_visa_debit', // Debit-Karte
-  AVAILABLE_BALANCE: '4000000000000077', // Spezielle Karte für available balance
+  AVAILABLE_BALANCE: 'pm_card_visa', // Standard Visa für available balance
   DECLINE_GENERIC: 'pm_card_chargeDeclined',
   INSUFFICIENT_FUNDS: 'pm_card_chargeDeclinedInsufficientFunds',
 };
@@ -73,22 +73,8 @@ export async function POST(req: NextRequest) {
       try {
         console.log(`[TEST-CHARGES] Creating charge ${i + 1}/${count}`);
 
-        // Verwende spezielle Test-Karte für available balance
-        let paymentMethod;
-        if (cardType === 'AVAILABLE_BALANCE') {
-          // Erstelle PaymentMethod mit der speziellen Test-Karte
-          paymentMethod = await stripe.paymentMethods.create({
-            type: 'card',
-            card: {
-              number: TEST_CARDS.AVAILABLE_BALANCE,
-              exp_month: 12,
-              exp_year: 2030,
-              cvc: '123',
-            },
-          });
-        } else {
-          paymentMethod = { id: TEST_CARDS[cardType] };
-        }
+        // Verwende Test PaymentMethod
+        const paymentMethod = { id: TEST_CARDS[cardType] };
 
         // Erstelle PaymentIntent
         const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
