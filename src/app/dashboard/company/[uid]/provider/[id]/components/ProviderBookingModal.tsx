@@ -289,7 +289,9 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Termin buchen</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Dienstleistung buchen
+                </h2>
                 <button
                   onClick={handleClose}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -614,7 +616,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4" />
-                      Jetzt kostenpflichtig buchen
+                      Dienstleistung kostenpflichtig buchen
                     </>
                   )}
                 </button>
@@ -656,7 +658,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
             setIsDatePickerOpen(false);
             setCurrentStep('description');
           }}
-          onConfirm={handleDateTimeConfirm}
+          onConfirm={handleDateTimeConfirm} // WICHTIG: Verwendet handleDateTimeConfirm, NICHT die originale onConfirm!
           bookingSubcategory={provider.selectedSubcategory || provider.selectedCategory || null}
           contextCompany={{
             id: provider.id,

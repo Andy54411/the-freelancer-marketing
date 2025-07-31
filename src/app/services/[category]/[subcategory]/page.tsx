@@ -9,6 +9,7 @@ import { categories, Category } from '@/lib/categoriesData'; // Importiere die z
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import Header from '@/components/Header';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Provider {
   id: string;
@@ -34,6 +35,7 @@ interface Provider {
 export default function SubcategoryPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth(); // Auth Context für intelligente Payment-Weiterleitung
   const category = (params?.category as string) || '';
   const subcategory = (params?.subcategory as string) || '';
 
@@ -342,25 +344,54 @@ export default function SubcategoryPage() {
     description: string
   ) => {
     try {
-      console.log('Buchung bestätigt:', {
+      console.log('Intelligent Payment Routing:', {
         provider: selectedProvider,
+        user: user?.role,
+        isLoggedIn: !!user,
         selection,
         time,
         durationString,
         description,
       });
 
-      // Hier würden Sie die Buchungslogik implementieren
-      // z.B. Weiterleitung zur Zahlung oder zur Auftragserstellung
-
+      // Schließe das Modal
       setIsBookingModalOpen(false);
       setSelectedProvider(null);
 
-      // Optional: Erfolgsbenachrichtigung anzeigen
-      alert('Buchungsanfrage erfolgreich gesendet!');
+      // Intelligente Weiterleitung basierend auf User-Typ
+      if (!user) {
+        // Nicht eingeloggt → Login/Registrierung
+        console.log('User not logged in - redirecting to login');
+        router.push(
+          `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
+        );
+        return;
+      }
+
+      if (user.role === 'firma') {
+        // Firma → B2B Payment im Company Dashboard
+        console.log('Firma user - redirecting to B2B payment');
+        router.push(`/dashboard/company/${user.uid}/provider/${selectedProvider?.id}?booking=true`);
+        return;
+      }
+
+      if (user.role === 'kunde') {
+        // Kunde → B2C Payment Flow
+        console.log('Kunde user - redirecting to B2C payment');
+        router.push(
+          `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
+        );
+        return;
+      }
+
+      // Fallback für unbekannte Rollen
+      console.log('Unknown user role - redirecting to get-started');
+      router.push(
+        `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
+      );
     } catch (error) {
-      console.error('Fehler bei der Buchung:', error);
-      alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
+      console.error('Fehler bei der intelligenten Payment-Weiterleitung:', error);
+      alert('Fehler bei der Weiterleitung. Bitte versuchen Sie es erneut.');
     }
   };
 
@@ -706,7 +737,8 @@ export default function SubcategoryPage() {
         )}
       </div>
 
-      {/* Professional Booking Modal */}
+      {/* Intelligent Booking Modal - Unterscheidet automatisch zwischen B2B und B2C */}
+      {/* B2C: Weiterleitung zu get-started | B2B (Firma): Weiterleitung zu Company Dashboard */}
       {isBookingModalOpen && selectedProvider && (
         <ProviderBookingModal
           isOpen={isBookingModalOpen}
