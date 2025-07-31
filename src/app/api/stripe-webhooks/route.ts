@@ -471,9 +471,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Handle B2B Provider Booking payments (from ProviderBookingModal)
-        if (paymentType === 'b2b_payment') {
+        if (paymentType === 'b2b_payment' || paymentType === 'b2b_project') {
           console.log(
-            `[WEBHOOK LOG] Processing B2B Provider Booking payment: ${paymentIntentSucceeded.id}`
+            `[WEBHOOK LOG] Processing B2B Provider Booking payment: ${paymentIntentSucceeded.id} (type: ${paymentType})`
           );
 
           const customerFirebaseId = paymentIntentSucceeded.metadata?.customerFirebaseId;
@@ -528,7 +528,7 @@ export async function POST(req: NextRequest) {
 
                 // B2B-spezifische Felder
                 customerType: 'firma',
-                paymentType: 'b2b_payment',
+                paymentType: paymentType, // Verwende den echten paymentType (b2b_payment oder b2b_project)
                 projectId: projectId || '',
                 projectTitle: projectTitle || 'B2B Service-Buchung',
 
