@@ -99,15 +99,27 @@ export default function PaymentMonitoring() {
   };
 
   const calculateStats = (payments: PaymentEvent[], logs: DebugLog[]) => {
+    // DEBUG: Log the incoming data
+    console.log('[Payment Monitor] Calculating stats from:', {
+      paymentCount: payments.length,
+      firstPayment: payments[0],
+      logCount: logs.length,
+    });
+
     const newStats: MonitoringStats = {
       totalPayments: payments.length,
-      totalAmount: payments.reduce((sum, p) => sum + p.amount / 100, 0),
+      totalAmount: payments.reduce((sum, p) => sum + p.amount / 100, 0), // Stripe amounts are in cents
       successfulPayments: payments.filter(p => p.status === 'succeeded').length,
-      failedPayments: payments.filter(p => p.status === 'failed').length,
-      pendingPayments: payments.filter(p => p.status === 'pending').length,
+      failedPayments: payments.filter(p => ['failed', 'canceled', 'error'].includes(p.status))
+        .length,
+      pendingPayments: payments.filter(p =>
+        ['pending', 'processing', 'requires_action', 'requires_payment_method'].includes(p.status)
+      ).length,
       errorCount: logs.filter(l => l.level === 'error').length,
       warningCount: logs.filter(l => l.level === 'warning').length,
     };
+
+    console.log('[Payment Monitor] Calculated stats:', newStats);
     setStats(newStats);
   };
 
@@ -241,10 +253,11 @@ export default function PaymentMonitoring() {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as any)}
-                  className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === key
+                  className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === key
                       ? 'border-[#14ad9f] text-[#14ad9f]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                  }`}
                 >
                   <Icon size={16} />
                   {label}
@@ -330,12 +343,13 @@ export default function PaymentMonitoring() {
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-3 h-3 rounded-full ${payment.status === 'succeeded'
+                          className={`w-3 h-3 rounded-full ${
+                            payment.status === 'succeeded'
                               ? 'bg-green-500'
                               : payment.status === 'failed'
                                 ? 'bg-red-500'
                                 : 'bg-yellow-500'
-                            }`}
+                          }`}
                         ></div>
                         <div>
                           <p className="font-medium text-gray-900">
@@ -352,12 +366,13 @@ export default function PaymentMonitoring() {
                       <div className="text-right">
                         <p className="text-sm text-gray-600">{formatDateTime(payment.timestamp)}</p>
                         <p
-                          className={`text-xs font-medium ${payment.status === 'succeeded'
+                          className={`text-xs font-medium ${
+                            payment.status === 'succeeded'
                               ? 'text-green-600'
                               : payment.status === 'failed'
                                 ? 'text-red-600'
                                 : 'text-yellow-600'
-                            }`}
+                          }`}
                         >
                           {payment.status}
                         </p>
@@ -434,12 +449,13 @@ export default function PaymentMonitoring() {
                         </td>
                         <td className="py-3 px-4">
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${payment.status === 'succeeded'
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              payment.status === 'succeeded'
                                 ? 'bg-green-100 text-green-800'
                                 : payment.status === 'failed'
                                   ? 'bg-red-100 text-red-800'
                                   : 'bg-yellow-100 text-yellow-800'
-                              }`}
+                            }`}
                           >
                             {payment.status}
                           </span>
