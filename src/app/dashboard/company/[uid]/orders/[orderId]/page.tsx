@@ -69,6 +69,7 @@ export default function CompanyOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'provider' | 'customer' | null>(null); // Track user role for this order
 
   useEffect(() => {
     // Wait until the authentication process is complete.
@@ -136,15 +137,21 @@ export default function CompanyOrderDetailPage() {
         return;
       }
 
-      // --- NEU: Zusätzliche clientseitige Validierung ---
-      // Überprüft, ob der im Dokument gespeicherte Anbieter mit dem Benutzer übereinstimmt, der die Seite aufruft.
-      if (orderDataFromDb.selectedAnbieterId !== companyUid) {
+      // --- Erweiterte Validierung für B2B-Aufträge ---
+      // Ein Unternehmen kann sowohl Kunde als auch Anbieter sein
+      const isProvider = orderDataFromDb.selectedAnbieterId === companyUid;
+      const isCustomer = orderDataFromDb.customerFirebaseUid === companyUid;
+
+      if (!isProvider && !isCustomer) {
         setError(
-          `Daten-Inkonsistenz: Dieser Auftrag (${orderId}) ist dem Anbieter ${orderDataFromDb.selectedAnbieterId} zugeordnet, nicht Ihnen (${companyUid}).`
+          `Zugriff verweigert: Dieser Auftrag (${orderId}) gehört weder Ihnen als Anbieter (${orderDataFromDb.selectedAnbieterId}) noch als Kunde (${orderDataFromDb.customerFirebaseUid}) zu. Ihre ID: ${companyUid}.`
         );
         setLoadingOrder(false);
         return;
       }
+
+      // Setze die Rolle für die UI
+      setUserRole(isProvider ? 'provider' : 'customer');
 
       console.log('Raw Firestore data for orderId', orderId, ':', orderDataFromDb);
       console.log('Raw selectedCategory:', orderDataFromDb.selectedCategory);
@@ -324,17 +331,17 @@ export default function CompanyOrderDetailPage() {
   const isViewerProvider = currentUser.uid === order.providerId;
   const cardUser = isViewerProvider
     ? {
-      id: order.customerId,
-      name: order.customerName,
-      avatarUrl: order.customerAvatarUrl,
-      role: 'customer' as const,
-    }
+        id: order.customerId,
+        name: order.customerName,
+        avatarUrl: order.customerAvatarUrl,
+        role: 'customer' as const,
+      }
     : {
-      id: order.providerId,
-      name: order.providerName,
-      avatarUrl: order.providerAvatarUrl,
-      role: 'provider' as const,
-    };
+        id: order.providerId,
+        name: order.providerName,
+        avatarUrl: order.providerAvatarUrl,
+        role: 'provider' as const,
+      };
 
   return (
     <Suspense
