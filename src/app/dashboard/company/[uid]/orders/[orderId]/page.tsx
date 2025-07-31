@@ -17,6 +17,7 @@ import {
   AlertTriangle as FiAlertTriangle,
   Slash as FiSlash,
   Clock as FiClock,
+  CheckCircle as FiCheckCircle,
 } from 'lucide-react';
 
 // Komponenten
@@ -24,6 +25,10 @@ import UserInfoCard from '@/components/UserInfoCard';
 import TimeTrackingManager from '@/components/TimeTrackingManager';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
+// Stunden-Übersicht Komponente
+import HoursBillingOverview from '@/components/HoursBillingOverview';
+// Payment-Komponente
+import InlinePaymentComponent from '@/components/InlinePaymentComponent';
 
 interface ParticipantDetails {
   id: string;
@@ -70,6 +75,13 @@ export default function CompanyOrderDetailPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'provider' | 'customer' | null>(null); // Track user role for this order
+
+  // Payment Modal States - für HoursBillingOverview
+  const [showInlinePayment, setShowInlinePayment] = useState(false);
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentHours, setPaymentHours] = useState(0);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Wait until the authentication process is complete.
@@ -292,6 +304,96 @@ export default function CompanyOrderDetailPage() {
     }
   };
 
+  // Payment Modal Handler - für HoursBillingOverview
+  const handleOpenPayment = async () => {
+    if (!orderId) return;
+
+    try {
+      console.log('🔄 DIRECT: Starting payment process for order:', orderId);
+
+      // Import TimeTracker dynamisch
+      const { TimeTracker } = await import('@/lib/timeTracker');
+
+      // Stelle echte Stripe-Abrechnung für genehmigte Stunden
+      const billingResult = await TimeTracker.billApprovedHours(orderId);
+
+      console.log('✅ DIRECT: Real billing data received:', {
+        paymentIntentId: billingResult.paymentIntentId,
+        customerPays: billingResult.customerPays,
+        clientSecret: billingResult.clientSecret,
+      });
+
+      // Berechne echte Payment Hours aus OrderDetails
+      const orderDetails = await TimeTracker.getOrderDetails(orderId);
+      const paymentHours =
+        orderDetails?.timeTracking?.timeEntries
+          ?.filter((e: any) => {
+            // Alle Stunden die genehmigt sind aber noch bezahlt werden müssen
+            return (
+              e.category === 'additional' &&
+              (e.status === 'customer_approved' || e.status === 'billing_pending')
+            );
+          })
+          ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
+
+      // Setze echte Daten
+      setPaymentClientSecret(billingResult.clientSecret);
+      setPaymentAmount(billingResult.customerPays);
+      setPaymentHours(paymentHours);
+      setShowInlinePayment(true);
+
+      console.log('✅ DIRECT: Real payment modal opened with:', {
+        amount: billingResult.customerPays / 100,
+        hours: paymentHours,
+      });
+    } catch (error) {
+      console.error('❌ DIRECT: Error creating payment:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+
+      if (
+        errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
+        errorMessage.includes('Stripe Connect')
+      ) {
+        alert(
+          'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\nBitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
+        );
+      } else {
+        alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
+      }
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    console.log('✅ Payment successful!');
+    setShowInlinePayment(false);
+
+    // Success-Nachricht anzeigen
+    setSuccessMessage('Zahlung erfolgreich! Die Daten werden aktualisiert...');
+
+    // Warte kurz, damit Webhooks Zeit haben die Datenbank zu aktualisieren
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    try {
+      // Order data neu laden nach erfolgreichem Payment
+      window.location.reload();
+    } catch (error) {
+      console.error('❌ Error reloading order data after payment:', error);
+      setSuccessMessage(
+        'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
+      );
+
+      // Fallback: Seite nach 3 Sekunden neu laden
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    }
+  };
+
+  const handlePaymentCancel = () => {
+    console.log('❌ Payment cancelled');
+    setShowInlinePayment(false);
+  };
+
   if (overallLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -362,6 +464,16 @@ export default function CompanyOrderDetailPage() {
           </button>
 
           <h1 className="text-3xl font-semibold text-gray-800 mb-6">Auftrag #{orderId}</h1>
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+              <div className="flex items-center">
+                <FiCheckCircle className="mr-2" />
+                {successMessage}
+              </div>
+            </div>
+          )}
 
           {/* Layout mit Sidebar */}
           <div className="flex flex-col lg:flex-row gap-6">
@@ -452,6 +564,13 @@ export default function CompanyOrderDetailPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Stunden-Abrechnungsübersicht */}
+              <HoursBillingOverview
+                orderId={orderId}
+                className=""
+                onPaymentRequest={!isViewerProvider ? handleOpenPayment : undefined}
+              />
 
               {/* Time Tracking für aktive Aufträge */}
               {order.status === 'AKTIV' && isViewerProvider && (
@@ -588,6 +707,27 @@ export default function CompanyOrderDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Payment Modal */}
+        {showInlinePayment && paymentClientSecret && (
+          <InlinePaymentComponent
+            clientSecret={paymentClientSecret}
+            orderId={orderId}
+            totalAmount={paymentAmount}
+            totalHours={paymentHours}
+            customerId={order?.customerId}
+            isOpen={showInlinePayment}
+            onClose={handlePaymentCancel}
+            onSuccess={(paymentIntentId: string) => {
+              console.log('Payment successful:', paymentIntentId);
+              handlePaymentSuccess();
+            }}
+            onError={(error: string) => {
+              console.error('Payment error:', error);
+              handlePaymentCancel();
+            }}
+          />
+        )}
       </main>
     </Suspense>
   );
