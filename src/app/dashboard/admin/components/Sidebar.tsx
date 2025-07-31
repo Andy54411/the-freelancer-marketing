@@ -35,6 +35,7 @@ export default function Sidebar() {
     { href: '/dashboard/admin/payments', label: 'Real-Time Payment Monitor', icon: CreditCard },
     { href: '/dashboard/admin/payment-monitoring', label: 'Payment Analytics', icon: BarChart },
     { href: '/dashboard/admin/transfer-debug', label: 'Transfer Debug & Retry', icon: Bug },
+    { href: '/dashboard/admin/b2b-debug', label: 'B2B Payment Debug', icon: DollarSign },
 
     // Support & Communication
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
@@ -65,7 +66,7 @@ export default function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50',
                   pathname === item.href &&
-                  'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-50'
+                    'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-50'
                 )}
               >
                 <item.icon className="h-4 w-4" />

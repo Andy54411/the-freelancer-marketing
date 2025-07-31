@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Calendar, User, Euro, CreditCard, CheckCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DateTimeSelectionPopup,
   DateTimeSelectionPopupProps,
@@ -41,6 +42,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   provider,
   onConfirm,
 }) => {
+  const { user } = useAuth(); // Hole aktuellen User für B2B Payment
   const [currentStep, setCurrentStep] = useState<
     'description' | 'datetime' | 'payment' | 'stripe-payment'
   >('description');
@@ -85,6 +87,29 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
 
     setIsProcessingPayment(true);
     try {
+      // DEBUG: Provider Stripe Account prüfen
+      console.log('🔍 [B2B Payment Debug] Provider Info:', {
+        id: provider.id,
+        companyName: provider.companyName,
+        userName: provider.userName,
+        stripeAccountId: provider.stripeAccountId,
+        stripeAccountIdType: typeof provider.stripeAccountId,
+        stripeAccountIdValid: provider.stripeAccountId?.startsWith('acct_'),
+      });
+
+      // Prüfe ob Provider Stripe Account vorhanden und gültig ist
+      if (!provider.stripeAccountId || !provider.stripeAccountId.startsWith('acct_')) {
+        console.error('❌ [B2B Payment] Provider hat keine gültige Stripe Account ID:', {
+          stripeAccountId: provider.stripeAccountId,
+          providerId: provider.id,
+        });
+        alert(
+          'B2B Payment nicht möglich: Provider hat kein konfiguriertes Stripe Connect Konto. ' +
+            'Bitte kontaktieren Sie den Anbieter oder verwenden Sie eine andere Zahlungsmethode.'
+        );
+        return;
+      }
+
       // Berechne den Gesamtbetrag
       const hourlyRate = provider.hourlyRate || 0;
       const durationStr = selectedDateTime.duration;
@@ -119,27 +144,39 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
         dateSelection: selectedDateTime.dateSelection,
       });
 
-      // Erstelle Payment Intent über die bestehende API
-      const response = await fetch('/api/create-payment-intent', {
+      // **KORREKTUR:** Verwende die neue B2B Payment API
+      const response = await fetch('/api/b2b/create-project-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // Project Details
+          projectId: `b2b-booking-${Date.now()}`,
+          projectTitle: `Service-Buchung: ${provider.companyName || provider.userName}`,
+          projectDescription: `${totalHours}h Service von ${provider.companyName || provider.userName}`,
+
+          // Payment Details
           amount: totalAmountCents,
-          jobPriceInCents: totalAmountCents,
           currency: 'eur',
-          connectedAccountId: provider.stripeAccountId, // Provider's Stripe Account ID
-          taskId: `b2b-booking-${Date.now()}`, // Unique booking ID
-          firebaseUserId: 'current-user-id', // TODO: Get from auth context
-          stripeCustomerId: 'customer-stripe-id', // TODO: Get from auth context
+          paymentType: 'project_deposit', // B2B: Anzahlung für Projekt
+
+          // Provider & Customer - FIXED: Use real user ID from auth
+          providerStripeAccountId: provider.stripeAccountId,
+          customerFirebaseId: user?.uid || 'anonymous', // Real user ID from auth
+          providerFirebaseId: provider.id,
+
+          // B2B Specific
+          paymentTermsDays: 30,
+
+          // Billing Details für B2B
           billingDetails: {
-            name: 'Company Customer', // TODO: Get from company profile
-            email: 'company@example.com', // TODO: Get from company profile
+            companyName: 'Beispiel Unternehmen', // TODO: Get from company profile
+            email: 'firma@beispiel.de', // B2B API erwartet email
             address: {
-              line1: 'Company Address',
-              city: 'City',
-              postal_code: '12345',
+              line1: 'Firmenadresse 123',
+              city: 'Hamburg',
+              postal_code: '20095',
               country: 'DE',
             },
           },
