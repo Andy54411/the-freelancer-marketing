@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
+import Header from '@/components/Header';
 import Link from 'next/link';
 
 interface Provider {
@@ -371,6 +372,7 @@ export default function SubcategoryPage() {
   if (!categoryInfo || !subcategoryName) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <Header />
         {/* Debug Header - Zeige immer einen Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -431,6 +433,7 @@ export default function SubcategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       {/* Modern Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
