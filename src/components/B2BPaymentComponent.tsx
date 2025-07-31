@@ -111,37 +111,11 @@ function B2BCheckoutForm({
 
       console.log('[B2B PAYMENT] Elements validation successful, confirming B2B payment...');
 
-      // Schritt 2: B2B Payment bestätigen mit echten Kundendaten OHNE phone in billing_details
-      // Da phone: 'never' in PaymentElement gesetzt ist, dürfen wir KEINE phone übergeben
-      const effectiveCustomerData = realCustomerData || {
-        name: customerData.companyName || customerData.name || 'B2B Customer',
-        email: customerData.email || '',
-        address: undefined,
-      };
-
-      console.log('[B2B PAYMENT] Using effective customer data:', effectiveCustomerData);
-
+      // Schritt 2: B2B Payment bestätigen mit echten Kundendaten
+      // Da phone und address: 'auto' in PaymentElement gesetzt sind, lassen wir Stripe diese verwalten
       const confirmParams: any = {
         return_url: `${window.location.origin}/dashboard`,
-        payment_method_data: {
-          billing_details: {
-            name: effectiveCustomerData.name,
-            email: effectiveCustomerData.email,
-            // WICHTIG: phone NICHT übergeben wegen phone: 'never' Konfiguration
-            address: effectiveCustomerData.address
-              ? {
-                  line1: effectiveCustomerData.address.line1,
-                  city: effectiveCustomerData.address.city,
-                  postal_code: effectiveCustomerData.address.postal_code,
-                  state: '', // Erforderlich für Stripe, leer da nicht in DE verwendet
-                  country: effectiveCustomerData.address.country,
-                }
-              : {
-                  country: 'DE',
-                  state: '', // Erforderlich für Stripe
-                },
-          },
-        },
+        // Keine manual billing_details nötig, da PaymentElement sie automatisch verwaltet
       };
 
       console.log(
@@ -251,14 +225,14 @@ function B2BCheckoutForm({
               billingDetails: {
                 name: 'auto',
                 email: 'auto',
-                phone: 'never', // WICHTIG: Deaktiviert um Stripe-Konflikt zu vermeiden
+                phone: 'auto', // GEÄNDERT: auf 'auto' damit Stripe es selbst verwaltet
                 address: {
-                  country: 'never',
-                  line1: 'never',
+                  country: 'auto',
+                  line1: 'auto',
                   line2: 'never',
-                  city: 'never',
+                  city: 'auto',
                   state: 'never',
-                  postalCode: 'never',
+                  postalCode: 'auto',
                 },
               },
             },

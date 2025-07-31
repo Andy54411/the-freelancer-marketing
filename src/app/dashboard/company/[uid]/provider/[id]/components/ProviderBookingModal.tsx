@@ -115,6 +115,8 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
           const { doc, getDoc } = await import('firebase/firestore');
           const { db } = await import('@/firebase/clients');
 
+          console.log('🔍 [B2B Payment] Prüfe Firestore für Provider ID:', provider.id);
+
           const userDoc = await getDoc(doc(db, 'users', provider.id));
           if (userDoc.exists()) {
             const userData = userDoc.data();
@@ -122,6 +124,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
               stripeAccountId: userData.stripeAccountId,
               email: userData.email,
               companyName: userData.companyName,
+              verfügbareFelder: Object.keys(userData),
             });
 
             // Verwende die direkt geladene stripeAccountId
@@ -132,7 +135,18 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
               );
               // Überschreibe die provider stripeAccountId für diese Session
               provider.stripeAccountId = userData.stripeAccountId;
+            } else {
+              console.error('❌ [B2B Payment Fallback] Keine gültige stripeAccountId in DB:', {
+                stripeAccountId: userData.stripeAccountId,
+                isString: typeof userData.stripeAccountId,
+                startsWithAcct: userData.stripeAccountId?.startsWith('acct_'),
+              });
             }
+          } else {
+            console.error(
+              '❌ [B2B Payment Fallback] Kein User-Dokument gefunden für ID:',
+              provider.id
+            );
           }
         } catch (fallbackError) {
           console.error(
@@ -140,6 +154,11 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
             fallbackError
           );
         }
+      } else {
+        console.log(
+          '✅ [B2B Payment] Provider stripeAccountId bereits vorhanden:',
+          provider.stripeAccountId
+        );
       }
 
       // Prüfe ob Provider Stripe Account vorhanden und gültig ist
