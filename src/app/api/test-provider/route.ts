@@ -5,7 +5,14 @@ import { doc, getDoc } from 'firebase/firestore';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const providerId = searchParams.get('id') || 'NAZB6lKiD2SGU7V6rjb1LT0Ca3D3';
+    const providerId = searchParams.get('id');
+
+    if (!providerId) {
+      return NextResponse.json(
+        { error: 'Provider ID parameter is required. Use ?id=PROVIDER_ID' },
+        { status: 400 }
+      );
+    }
 
     console.log('🔍 Testing Provider ID:', providerId);
 

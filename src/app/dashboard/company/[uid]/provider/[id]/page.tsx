@@ -161,7 +161,7 @@ export default function CompanyProviderDetailPage() {
           languages: data.languages || [],
           portfolio: data.portfolio || [],
           services: data.services || [],
-          stripeAccountId: data.stripeAccountId, // Top-level field (should be: acct_1RqDkqDQHCYn2bzR)
+          stripeAccountId: data.stripeAccountId, // Top-level field from database
         });
       } else {
         // Falls nicht in firma gefunden, in users suchen
@@ -223,7 +223,7 @@ export default function CompanyProviderDetailPage() {
             website: data.website,
             languages: data.languages || [],
             portfolio: data.portfolio || [],
-            stripeAccountId: data.stripeAccountId, // Top-level field (should be: acct_1RqDkqDQHCYn2bzR)
+            stripeAccountId: data.stripeAccountId, // Top-level field from database
           });
         } else {
           console.error('Provider nicht gefunden');

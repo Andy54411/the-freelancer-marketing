@@ -98,29 +98,7 @@ export async function GET(request: NextRequest) {
       });
     } catch (userError) {
       console.log('[B2B Debug API] User collection query failed:', userError);
-
-      // REAL DATA: Manually add the specific provider we know exists
-      providerDebugInfo.push({
-        id: 'NAZB6lKiD2SGU7V6rjb1LT0Ca3D3',
-        type: 'user',
-        userName: 'The Freelancer Marketing Ldt.',
-        email: 'info@the-freelancer-marketing.de',
-        stripeAccountId: 'acct_1RqDkqDQHCYn2bzR',
-        stripeAccountStatus: 'valid',
-        lastUpdated: new Date('2025-07-29T16:52:39.000Z').toISOString(),
-        totalPayments: 0,
-      });
-
-      providerDebugInfo.push({
-        id: '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1',
-        type: 'user',
-        userName: 'Mietkoch Andy',
-        email: 'a.staudinger32@icloud.com',
-        stripeAccountId: 'acct_1RoSL4DlTKEWRrRh',
-        stripeAccountStatus: 'valid',
-        lastUpdated: new Date('2025-07-25T11:14:28.000Z').toISOString(),
-        totalPayments: 0,
-      });
+      // Fallback: Query failed, return empty providers array
     }
 
     // 2. B2B PAYMENTS STATUS
