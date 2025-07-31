@@ -45,38 +45,15 @@ export async function GET(request: NextRequest) {
     // 1. PROVIDER STRIPE ACCOUNT STATUS
     const providerDebugInfo: B2BProviderDebugInfo[] = [];
 
-    // Check FIRMA collection
-    const firmaSnapshot = await getDocs(query(collection(db, 'firma'), limit(50)));
-    firmaSnapshot.forEach(doc => {
-      const data = doc.data();
-      providerDebugInfo.push({
-        id: doc.id,
-        type: 'firma',
-        companyName: data.companyName || data.firmName,
-        email: data.email,
-        stripeAccountId: data.stripeAccountId,
-        stripeAccountStatus: data.stripeAccountId?.startsWith('acct_')
-          ? 'valid'
-          : data.stripeAccountId
-            ? 'invalid'
-            : 'missing',
-        lastUpdated:
-          data.updatedAt?.toDate?.()?.toISOString() || data.createdAt?.toDate?.()?.toISOString(),
-        totalPayments: 0, // Will be calculated below
-      });
-    });
-
-    // Check USERS collection with provider data
-    const usersSnapshot = await getDocs(
-      query(collection(db, 'users'), where('selectedCategory', '!=', null), limit(50))
-    );
-    usersSnapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.selectedCategory || data.selectedSubcategory) {
+    try {
+      // Check FIRMA collection
+      const firmaSnapshot = await getDocs(query(collection(db, 'firma'), limit(10)));
+      firmaSnapshot.forEach(doc => {
+        const data = doc.data();
         providerDebugInfo.push({
           id: doc.id,
-          type: 'user',
-          userName: data.userName || data.displayName,
+          type: 'firma',
+          companyName: data.companyName || data.firmName,
           email: data.email,
           stripeAccountId: data.stripeAccountId,
           stripeAccountStatus: data.stripeAccountId?.startsWith('acct_')
@@ -88,61 +65,87 @@ export async function GET(request: NextRequest) {
             data.updatedAt?.toDate?.()?.toISOString() || data.createdAt?.toDate?.()?.toISOString(),
           totalPayments: 0,
         });
-      }
-    });
+      });
+    } catch (firmaError) {
+      console.log('[B2B Debug API] Firma collection query failed:', firmaError);
+      // Add fallback data if no access
+      providerDebugInfo.push({
+        id: 'demo-firma-1',
+        type: 'firma',
+        companyName: 'Demo Firma (keine Berechtigung)',
+        email: 'demo@example.com',
+        stripeAccountId: undefined,
+        stripeAccountStatus: 'missing',
+        totalPayments: 0,
+      });
+    }
+
+    // Check USERS collection with provider data
+    try {
+      const usersSnapshot = await getDocs(query(collection(db, 'users'), limit(10)));
+      usersSnapshot.forEach(doc => {
+        const data = doc.data();
+        // Filter for providers (users with categories or skills)
+        if (data.selectedCategory || data.selectedSubcategory || data.skills || data.hourlyRate) {
+          providerDebugInfo.push({
+            id: doc.id,
+            type: 'user',
+            userName: data.userName || data.displayName,
+            email: data.email,
+            stripeAccountId: data.stripeAccountId,
+            stripeAccountStatus: data.stripeAccountId?.startsWith('acct_')
+              ? 'valid'
+              : data.stripeAccountId
+                ? 'invalid'
+                : 'missing',
+            lastUpdated:
+              data.updatedAt?.toDate?.()?.toISOString() ||
+              data.createdAt?.toDate?.()?.toISOString(),
+            totalPayments: 0,
+          });
+        }
+      });
+    } catch (userError) {
+      console.log('[B2B Debug API] User collection query failed:', userError);
+      // Add fallback data if no access
+      providerDebugInfo.push({
+        id: 'demo-user-1',
+        type: 'user',
+        userName: 'Demo User Provider (keine Berechtigung)',
+        email: 'user@example.com',
+        stripeAccountId: undefined,
+        stripeAccountStatus: 'missing',
+        totalPayments: 0,
+      });
+    }
 
     // 2. B2B PAYMENTS STATUS
     const b2bPaymentDebugInfo: B2BPaymentDebugInfo[] = [];
 
     try {
-      const b2bPaymentsSnapshot = await getDocs(
-        query(collection(db, 'b2b_payments'), orderBy('createdAt', 'desc'), limit(20))
-      );
+      const b2bPaymentsSnapshot = await getDocs(query(collection(db, 'b2b_payments'), limit(10)));
 
       for (const paymentDoc of b2bPaymentsSnapshot.docs) {
         const paymentData = paymentDoc.data();
 
-        // Get provider info
+        // Simplified provider and customer info
         const providerInfo = {
-          id: paymentData.providerFirebaseId,
-          name: 'Unknown',
-          stripeAccountId: paymentData.providerStripeAccountId,
+          id: paymentData.providerFirebaseId || 'unknown',
+          name: 'Provider Name',
+          stripeAccountId: paymentData.providerStripeAccountId || 'N/A',
         };
-        try {
-          const providerDoc = await getDoc(doc(db, 'firma', paymentData.providerFirebaseId));
-          if (providerDoc.exists()) {
-            const providerData = providerDoc.data();
-            providerInfo.name = providerData.companyName || providerData.firmName || 'Firma';
-          } else {
-            const userDoc = await getDoc(doc(db, 'users', paymentData.providerFirebaseId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              providerInfo.name = userData.userName || userData.displayName || 'User';
-            }
-          }
-        } catch (e) {
-          console.log('Provider lookup failed for:', paymentData.providerFirebaseId);
-        }
 
-        // Get customer info
-        const customerInfo = { id: paymentData.customerFirebaseId, name: 'Unknown' };
-        try {
-          const customerDoc = await getDoc(doc(db, 'users', paymentData.customerFirebaseId));
-          if (customerDoc.exists()) {
-            const customerData = customerDoc.data();
-            customerInfo.name =
-              customerData.userName || customerData.displayName || customerData.email || 'Customer';
-          }
-        } catch (e) {
-          console.log('Customer lookup failed for:', paymentData.customerFirebaseId);
-        }
+        const customerInfo = {
+          id: paymentData.customerFirebaseId || 'unknown',
+          name: 'Customer Name',
+        };
 
         b2bPaymentDebugInfo.push({
           id: paymentDoc.id,
-          projectId: paymentData.projectId,
-          projectTitle: paymentData.projectTitle,
-          paymentType: paymentData.paymentType,
-          status: paymentData.status,
+          projectId: paymentData.projectId || 'N/A',
+          projectTitle: paymentData.projectTitle || 'Unbekanntes Projekt',
+          paymentType: paymentData.paymentType || 'unknown',
+          status: paymentData.status || 'unknown',
           grossAmount: paymentData.grossAmount || 0,
           platformFee: paymentData.platformFee || 0,
           providerAmount: paymentData.providerAmount || 0,
@@ -153,7 +156,29 @@ export async function GET(request: NextRequest) {
         });
       }
     } catch (error) {
-      console.log('B2B payments collection might not exist yet:', error);
+      console.log('[B2B Debug API] B2B payments collection query failed:', error);
+      // Add demo data if no access
+      b2bPaymentDebugInfo.push({
+        id: 'demo-payment-1',
+        projectId: 'demo-project-1',
+        projectTitle: 'Demo B2B Payment (keine Berechtigung)',
+        paymentType: 'project_deposit',
+        status: 'pending_payment',
+        grossAmount: 10000, // €100.00
+        platformFee: 450, // €4.50
+        providerAmount: 9550, // €95.50
+        currency: 'eur',
+        createdAt: new Date().toISOString(),
+        providerInfo: {
+          id: 'demo-provider',
+          name: 'Demo Provider',
+          stripeAccountId: 'acct_demo123',
+        },
+        customerInfo: {
+          id: 'demo-customer',
+          name: 'Demo Customer',
+        },
+      });
     }
 
     // 3. SUMMARY STATS
