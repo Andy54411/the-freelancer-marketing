@@ -118,9 +118,27 @@ export const getUserOrders = onRequest(
                 return;
             }
 
-            // 4. Process and Return Data
-            const orders = snapshot.docs.map((doc): OrderData => {
+            // 4. Process and Return Data with Provider Details
+            const orders = await Promise.all(snapshot.docs.map(async (doc): Promise<OrderData> => {
                 const data = doc.data() || {}; // Use empty object as fallback
+                
+                // Lade Anbieter-Details wenn selectedAnbieterId vorhanden ist aber providerName fehlt
+                let providerName = data.providerName || '';
+                let freelancerAvatarUrl = data.freelancerAvatarUrl;
+                
+                if (data.selectedAnbieterId && !providerName) {
+                    try {
+                        const providerDoc = await db.collection('companies').doc(data.selectedAnbieterId).get();
+                        if (providerDoc.exists) {
+                            const providerData = providerDoc.data();
+                            providerName = providerData?.companyName || providerData?.firstName + ' ' + providerData?.lastName || 'Unbekannter Anbieter';
+                            freelancerAvatarUrl = providerData?.profileImageUrl || freelancerAvatarUrl;
+                        }
+                    } catch (error) {
+                        logger.warn(`[getUserOrders] Could not load provider details for ${data.selectedAnbieterId}:`, error);
+                    }
+                }
+                
                 // This explicit mapping ensures that the data sent to the client always
                 // matches the OrderData interface, providing default values for missing fields.
                 // This prevents errors like 'NaN €' if a price field is missing.
@@ -153,7 +171,7 @@ export const getUserOrders = onRequest(
                     originalJobPriceInCents: data.originalJobPriceInCents || 0,
                     paidAt: data.paidAt || new Timestamp(0, 0),
                     paymentMethodId: data.paymentMethodId || '',
-                    providerName: data.providerName || '',
+                    providerName: providerName,
                     selectedAnbieterId: data.selectedAnbieterId || '',
                     selectedCategory: data.selectedCategory || '',
                     selectedSubcategory: data.selectedSubcategory || '',
@@ -164,12 +182,12 @@ export const getUserOrders = onRequest(
                     totalAmountPaidByBuyer: data.totalAmountPaidByBuyer || 0,
                     totalPlatformFeeInCents: data.totalPlatformFeeInCents || 0,
                     serviceImageUrl: data.serviceImageUrl,
-                    freelancerAvatarUrl: data.freelancerAvatarUrl,
+                    freelancerAvatarUrl: freelancerAvatarUrl,
                     projectName: data.projectName,
                     projectId: data.projectId,
                     currency: data.currency || 'EUR', // Provide a fallback currency
                 } as OrderData;
-            });
+            }));
 
             logger.info(`[getUserOrders] Successfully fetched ${orders.length} orders for user: ${targetUid}`);
             res.status(200).json({ orders });
