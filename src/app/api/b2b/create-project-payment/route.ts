@@ -227,13 +227,12 @@ export async function POST(request: NextRequest) {
       // B2B: Use on_session setup for immediate payment
       setup_future_usage: paymentType === 'milestone' ? 'on_session' : 'off_session',
 
-      // Transfer to provider's account with B2B fee structure
+      // Transfer to provider's account (full amount, we'll get fee via separate mechanism)
       transfer_data: {
         destination: providerStripeAccountId,
-        amount: providerAmount, // Provider gets amount minus platform fee
       },
 
-      // B2B Application Fee (what we keep)
+      // B2B Application Fee (what we keep) - use only this, not transfer_data.amount
       application_fee_amount: platformFee,
 
       confirm: false,
