@@ -4,6 +4,51 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db, admin } from '@/firebase/server';
 
+// TypeScript Interfaces für bessere Typisierung
+interface Solution {
+  type: string;
+  title: string;
+  description: string;
+  steps: string[];
+  note?: string;
+  deficit?: number;
+  deficitFormatted?: string;
+  platformBalance?: number;
+  platformBalanceFormatted?: string;
+}
+
+interface FinalRecommendation {
+  priority: string;
+  action: string;
+  description: string;
+  details: Record<string, unknown>;
+}
+
+interface DebugInfo {
+  searchCriteria: {
+    transferId?: string | null;
+    orderId?: string | null;
+    connectAccountId?: string | null;
+  };
+  results: Record<string, unknown>;
+  solutions: Solution[];
+  recommendations: string[];
+  finalRecommendations?: FinalRecommendation[];
+}
+
+interface TimeEntry {
+  status: string;
+  [key: string]: unknown;
+}
+
+interface ActionResults {
+  action: string;
+  transferId?: string | null;
+  orderId?: string | null;
+  steps: Array<{ step: string; [key: string]: unknown }>;
+  success: boolean;
+}
+
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
@@ -32,7 +77,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const debugInfo: any = {
+    const debugInfo: DebugInfo = {
       searchCriteria: { transferId, orderId, connectAccountId },
       results: {},
       solutions: [],
@@ -179,15 +224,17 @@ export async function GET(req: NextRequest) {
                     'GOOD_NEWS: Ausreichend Guthaben vorhanden - Transfer sollte möglich sein'
                   );
                 }
-              } catch (balanceError: any) {
+              } catch (balanceError: unknown) {
+                const errorMessage = balanceError instanceof Error ? balanceError.message : String(balanceError);
                 debugInfo.results.connectAccountBalance = {
-                  error: balanceError.message,
+                  error: errorMessage,
                   note: 'Konnte Balance nicht abrufen - möglicherweise Berechtigungsproblem',
                 };
               }
-            } catch (accountError: any) {
+            } catch (accountError: unknown) {
+              const errorMessage = accountError instanceof Error ? accountError.message : String(accountError);
               debugInfo.results.connectAccount = {
-                error: accountError.message,
+                error: errorMessage,
                 note: 'Connect Account konnte nicht abgerufen werden',
               };
             }
@@ -223,7 +270,7 @@ export async function GET(req: NextRequest) {
                 entryCount: orderData.timeTracking.timeEntries?.length || 0,
                 transferredEntries:
                   orderData.timeTracking.timeEntries?.filter(
-                    (entry: any) => entry.status === 'transferred'
+                    (entry: TimeEntry) => entry.status === 'transferred'
                   )?.length || 0,
               }
               : null,
@@ -356,7 +403,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const results: any = {
+    const results: ActionResults = {
       action,
       transferId,
       orderId,
@@ -365,6 +412,106 @@ export async function POST(req: NextRequest) {
     };
 
     switch (action) {
+      case 'AUTO_FIX_INSUFFICIENT_FUNDS':
+        if (transferId && orderId) {
+          try {
+            results.steps.push({
+              step: 'ANALYZING_PROBLEM',
+              status: 'INFO',
+              message: 'Analysiere insufficient funds Problem...',
+            });
+
+            // 1. Hole Order-Daten
+            const orderDoc = await db.collection('orders').doc(orderId).get();
+            if (!orderDoc.exists) {
+              throw new Error(`Order ${orderId} not found`);
+            }
+
+            const orderData = orderDoc.data();
+            const paymentIntentId = orderData?.timeTracking?.billingData?.paymentIntentId;
+            
+            if (!paymentIntentId) {
+              throw new Error('PaymentIntent ID nicht gefunden');
+            }
+
+            results.steps.push({
+              step: 'FOUND_PAYMENT_INTENT',
+              status: 'SUCCESS',
+              message: `PaymentIntent gefunden: ${paymentIntentId}`,
+            });
+
+            // 2. Versuche Platform Funds zu releasen
+            try {
+              const releaseResponse = await fetch(`${req.url.split('/api')[0]}/api/release-platform-funds`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: orderId,
+                  paymentIntentIds: [paymentIntentId],
+                  reason: `Auto-fix for insufficient funds transfer ${transferId}`
+                }),
+              });
+
+              const releaseData = await releaseResponse.json();
+              
+              results.steps.push({
+                step: 'RELEASE_PLATFORM_FUNDS',
+                status: releaseData.success ? 'SUCCESS' : 'WARNING',
+                message: releaseData.success 
+                  ? 'Platform Funds erfolgreich released'
+                  : 'Platform Funds Release fehlgeschlagen oder nicht nötig',
+                details: releaseData
+              });
+
+            } catch (releaseError) {
+              results.steps.push({
+                step: 'RELEASE_PLATFORM_FUNDS',
+                status: 'WARNING',
+                message: 'Platform Funds Release übersprungen',
+                details: { error: String(releaseError) }
+              });
+            }
+
+            // 3. Warte kurz und versuche Transfer erneut
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const retryResponse = await fetch(`${req.url.split('/api')[0]}/api/admin/retry-failed-transfers`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ transferIds: [transferId] }),
+            });
+
+            const retryData = await retryResponse.json();
+
+            results.steps.push({
+              step: 'RETRY_TRANSFER',
+              status: retryData.success && retryData.successCount > 0 ? 'SUCCESS' : 'ERROR',
+              message: retryData.success && retryData.successCount > 0
+                ? 'Transfer retry erfolgreich!'
+                : 'Transfer retry fehlgeschlagen',
+              details: retryData,
+            });
+
+            results.success = retryData.success && retryData.successCount > 0;
+
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            results.steps.push({
+              step: 'AUTO_FIX_ERROR',
+              status: 'ERROR',
+              message: `Auto-Fix fehlgeschlagen: ${errorMessage}`,
+            });
+            results.success = false;
+          }
+        } else {
+          results.steps.push({
+            step: 'VALIDATION_ERROR',
+            status: 'ERROR',
+            message: 'transferId und orderId sind für AUTO_FIX erforderlich',
+          });
+        }
+        break;
+
       case 'CREATE_TEST_PAYMENT':
         results.steps.push({
           step: 'CREATE_TEST_PAYMENT',
