@@ -138,12 +138,14 @@ export default function CompanyOrderDetailPage() {
         return;
       }
 
-      // --- NEU: Zusätzliche clientseitige Validierung ---
-      // Überprüft, ob der im Dokument gespeicherte Anbieter mit dem Benutzer übereinstimmt, der die Seite aufruft.
-      if (orderDataFromDb.selectedAnbieterId !== companyUid) {
-        setError(
-          `Daten-Inkonsistenz: Dieser Auftrag (${orderId}) ist dem Anbieter ${orderDataFromDb.selectedAnbieterId} zugeordnet, nicht Ihnen (${companyUid}).`
-        );
+      // --- KORREKTUR: Validierung für B2B und B2C ---
+      // Überprüft, ob die Company ENTWEDER Provider (B2C) ODER Customer (B2B) ist
+      const isProvider = orderDataFromDb.selectedAnbieterId === companyUid;
+      const isCustomer =
+        orderDataFromDb.kundeId === companyUid || orderDataFromDb.orderedBy === companyUid;
+
+      if (!isProvider && !isCustomer) {
+        setError(`Zugriff verweigert: Sie sind weder Anbieter noch Kunde dieses Auftrags.`);
         setLoadingOrder(false);
         return;
       }
