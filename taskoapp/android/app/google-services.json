@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1022290879475",
+    "firebase_url": "https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "tilvo-f142f",
+    "storage_bucket": "tilvo-f142f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1022290879475:android:3a621239990633c35ae886",
+        "android_client_info": {
+          "package_name": "com.tilvo.de"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3-mx-FPoT-f2pXVP6HS_t1rE0w_eYNLY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1022290879475-ca1lvf8o1sau2f1gakf4qro1ondrfpti.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1022290879475-4k9lfpu0q44a0lafmus1ss5h25mul4um.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tilvo.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
