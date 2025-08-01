@@ -93,15 +93,18 @@ class ServiceHeader extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          // Stats Row
-          Row(
-            children: [
-              _buildStatItem(Icons.verified, '1,000+', 'Verifizierte Experten'),
-              const SizedBox(width: 24),
-              _buildStatItem(Icons.star, '4.9', 'Durchschnittsbewertung'),
-              const SizedBox(width: 24),
-              _buildStatItem(Icons.access_time, '24h', 'Antwortzeit'),
-            ],
+          // Stats Row - made responsive
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildStatItem(Icons.verified, '1,000+', 'Experten'),
+                const SizedBox(width: 20),
+                _buildStatItem(Icons.star, '4.9', 'Bewertung'),
+                const SizedBox(width: 20),
+                _buildStatItem(Icons.access_time, '24h', 'Antwort'),
+              ],
+            ),
           ),
         ],
       ),
@@ -110,13 +113,14 @@ class ServiceHeader extends StatelessWidget {
 
   Widget _buildStatItem(IconData icon, String value, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          size: 20,
+          size: 18,
           color: const Color(0xFF14ad9f),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -125,13 +129,13 @@ class ServiceHeader extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Color(0xFF14ad9f),
               ),
             ),
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 color: Colors.grey.shade600,
               ),
             ),
