@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../screens/provider/provider_details_screen.dart';
 
 class ProviderCard extends StatelessWidget {
   final Map<String, dynamic> provider;
@@ -168,8 +169,15 @@ class ProviderCard extends StatelessWidget {
                 // Action Buttons
                 TextButton(
                   onPressed: () {
-                    // TODO: Navigate to provider details
-                    debugPrint('View details for provider: ${provider['id']}');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProviderDetailsScreen(
+                          providerId: provider['id'] ?? '',
+                          providerData: provider,
+                        ),
+                      ),
+                    );
                   },
                   child: const Text(
                     'Details',
@@ -182,8 +190,15 @@ class ProviderCard extends StatelessWidget {
                 
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: Navigate to booking
-                    debugPrint('Book provider: ${provider['id']}');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProviderDetailsScreen(
+                          providerId: provider['id'] ?? '',
+                          providerData: provider,
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF14ad9f),

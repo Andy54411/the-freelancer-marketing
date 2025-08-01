@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/categories_service.dart';
-import 'subcategory_sheet.dart';
+import '../../services/service_discovery_screen.dart';
 
 class SubcategoriesPopup extends StatelessWidget {
   final String category;
@@ -117,33 +117,16 @@ class SubcategoriesPopup extends StatelessWidget {
                       onTap: () async {
                         Navigator.pop(context); // Schließe Popup
                         
-                        // Zeige Loading
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (context) => const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF14ad9f),
+                        // Navigiere zur Service Discovery Seite
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ServiceDiscoveryScreen(
+                              subcategory: subcategory,
+                              category: category,
                             ),
                           ),
                         );
-                        
-                        // Lade Daten für Subkategorie
-                        final data = await CategoriesService.getDataForSubcategory(subcategory);
-                        if (context.mounted) {
-                          Navigator.pop(context); // Schließe Loading
-                          
-                          // Zeige Subkategorie-Details
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (context) => SubcategorySheet(
-                              subcategory: subcategory,
-                              data: data,
-                            ),
-                          );
-                        }
                       },
                       child: Container(
                         decoration: BoxDecoration(
