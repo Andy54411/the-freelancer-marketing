@@ -821,4 +821,124 @@ export const updateCompanyStatus = onCall(
   }
 );
 
+/**
+ * Search for providers by subcategory in both users and companies collections
+ * This function provides access to provider data for the Flutter app
+ */
+export const searchProvidersBySubcategory = onCall(
+  { region: "europe-west1", ...corsOptions },
+  async (request: CallableRequest<{ subcategory: string }>) => {
+    try {
+      const { subcategory } = request.data;
+      
+      if (!subcategory) {
+        throw new HttpsError("invalid-argument", "Missing required parameter: subcategory");
+      }
+
+      logger.info(`[searchProvidersBySubcategory] Searching for providers in subcategory: ${subcategory}`);
+      
+      const db = getDb();
+      const providers: any[] = [];
+      const hourlyRates: number[] = [];
+
+      // Search in users collection
+      try {
+        const usersQuery = await db
+          .collection('users')
+          .where('selectedSubcategory', '==', subcategory)
+          .get();
+
+        logger.info(`[searchProvidersBySubcategory] Found ${usersQuery.docs.length} providers in users collection`);
+
+        for (const doc of usersQuery.docs) {
+          const data = doc.data();
+          const provider = {
+            id: doc.id,
+            name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Unbekannter Anbieter',
+            companyName: data.companyName || '',
+            description: data.publicDescription || '',
+            hourlyRate: data.hourlyRate || 0,
+            rating: null, // Can be calculated from reviews later
+            profilePictureURL: data.profilePictureURL || '',
+            location: `${data.personalCity || ''}, ${data.personalCountry || ''}`.trim().replace(/^,\s*/, ''),
+            source: 'users',
+            category: data.selectedCategory || '',
+            subcategory: data.selectedSubcategory || '',
+          };
+          
+          providers.push(provider);
+          
+          if (typeof data.hourlyRate === 'number' && data.hourlyRate > 0) {
+            hourlyRates.push(data.hourlyRate);
+          }
+        }
+      } catch (error) {
+        logger.warn(`[searchProvidersBySubcategory] Error searching users collection: ${error}`);
+      }
+
+      // Search in companies collection
+      try {
+        const companiesQuery = await db
+          .collection('companies')
+          .where('selectedSubcategory', '==', subcategory)
+          .get();
+
+        logger.info(`[searchProvidersBySubcategory] Found ${companiesQuery.docs.length} providers in companies collection`);
+
+        for (const doc of companiesQuery.docs) {
+          const data = doc.data();
+          const provider = {
+            id: doc.id,
+            name: data.companyName || 'Unbekanntes Unternehmen',
+            companyName: data.companyName || '',
+            description: data.publicDescription || '',
+            hourlyRate: data.hourlyRate || 0,
+            rating: null,
+            profilePictureURL: data.profilePictureURL || '',
+            location: `${data.companyCityForBackend || ''}, ${data.companyCountryForBackend || ''}`.trim().replace(/^,\s*/, ''),
+            source: 'companies',
+            category: data.selectedCategory || '',
+            subcategory: data.selectedSubcategory || '',
+          };
+          
+          providers.push(provider);
+          
+          if (typeof data.hourlyRate === 'number' && data.hourlyRate > 0) {
+            hourlyRates.push(data.hourlyRate);
+          }
+        }
+      } catch (error) {
+        logger.warn(`[searchProvidersBySubcategory] Error searching companies collection: ${error}`);
+      }
+
+      // Calculate statistics
+      const statistics = {
+        totalProviders: providers.length,
+        averagePrice: hourlyRates.length > 0 
+          ? `${(hourlyRates.reduce((a, b) => a + b, 0) / hourlyRates.length).toFixed(2)} €/h`
+          : 'N/A',
+        minPrice: hourlyRates.length > 0 ? `${Math.min(...hourlyRates)} €/h` : 'N/A',
+        maxPrice: hourlyRates.length > 0 ? `${Math.max(...hourlyRates)} €/h` : 'N/A',
+        averageRating: 'N/A', // Can be implemented later
+      };
+
+      logger.info(`[searchProvidersBySubcategory] Found ${providers.length} total providers for ${subcategory}`);
+
+      return {
+        providers,
+        statistics,
+        subcategory,
+        success: true,
+      };
+
+    } catch (error: any) {
+      logger.error(`[searchProvidersBySubcategory] Error:`, error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", `Error searching providers: ${error.message}`);
+    }
+  }
+);
+
 // --- Cloud Functions ---
