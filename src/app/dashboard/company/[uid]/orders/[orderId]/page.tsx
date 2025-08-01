@@ -48,7 +48,7 @@ interface OrderData {
   customerId: string;
   customerName: string;
   customerAvatarUrl?: string | null;
-  orderDate?: { _seconds: number; _nanoseconds: number } | string;
+  orderDate?: string; // ISO string nach Konvertierung
   priceInCents: number;
   status: string;
   selectedCategory?: string;
@@ -165,11 +165,6 @@ export default function CompanyOrderDetailPage() {
       // Setze die Rolle für die UI
       setUserRole(isProvider ? 'provider' : 'customer');
 
-      console.log('Raw Firestore data for orderId', orderId, ':', orderDataFromDb);
-      console.log('Raw selectedCategory:', orderDataFromDb.selectedCategory);
-      console.log('Raw selectedSubcategory:', orderDataFromDb.selectedSubcategory);
-      console.log('Raw jobTimePreference:', orderDataFromDb.jobTimePreference);
-
       // Step 2: Fetch participant details with its own error handling
       // KORREKTUR: Verwende die neue, sichere Cloud Function
       try {
@@ -190,7 +185,34 @@ export default function CompanyOrderDetailPage() {
           customerId: orderDataFromDb.kundeId,
           customerName: customerDetails.name, // Name aus der Cloud Function
           customerAvatarUrl: customerDetails.avatarUrl,
-          orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
+          // Korrigiertes Date-Mapping für Firestore Timestamps
+          orderDate: (() => {
+            // Priorität: paidAt -> createdAt -> lastUpdated -> lastUpdatedAt
+            const dateField =
+              orderDataFromDb.paidAt ||
+              orderDataFromDb.createdAt ||
+              orderDataFromDb.lastUpdated ||
+              orderDataFromDb.lastUpdatedAt;
+
+            if (!dateField) return undefined;
+
+            // Firestore Timestamp hat toDate() Methode
+            if (dateField && typeof dateField === 'object' && 'toDate' in dateField) {
+              return dateField.toDate().toISOString();
+            }
+
+            // Firestore Timestamp als Object mit _seconds
+            if (dateField && typeof dateField === 'object' && '_seconds' in dateField) {
+              return new Date(dateField._seconds * 1000).toISOString();
+            }
+
+            // String ISO Date
+            if (typeof dateField === 'string') {
+              return dateField;
+            }
+
+            return undefined;
+          })(),
           priceInCents:
             orderDataFromDb.jobCalculatedPriceInCents ||
             orderDataFromDb.totalAmountPaidByBuyer ||
@@ -541,17 +563,8 @@ export default function CompanyOrderDetailPage() {
                     <strong>Erstellt am:</strong>{' '}
                     {(() => {
                       if (order.orderDate) {
-                        // Handle Firebase Timestamp object or ISO string
-                        let date;
-                        if (typeof order.orderDate === 'object' && '_seconds' in order.orderDate) {
-                          // Firebase Timestamp
-                          date = new Date(order.orderDate._seconds * 1000);
-                        } else if (typeof order.orderDate === 'string') {
-                          // ISO string
-                          date = new Date(order.orderDate);
-                        } else {
-                          return 'Unbekanntes Datum';
-                        }
+                        // orderDate ist jetzt bereits ISO string nach Konvertierung
+                        const date = new Date(order.orderDate);
                         return date.toLocaleDateString('de-DE', {
                           year: 'numeric',
                           month: 'long',
