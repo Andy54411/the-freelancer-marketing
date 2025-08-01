@@ -175,7 +175,8 @@ export default function CompanyOrderDetailPage() {
           customerId: orderDataFromDb.kundeId,
           customerName: customerDetails.name, // Name aus der Cloud Function
           customerAvatarUrl: customerDetails.avatarUrl,
-          orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
+          orderDate:
+            orderDataFromDb.orderDate || orderDataFromDb.paidAt || orderDataFromDb.createdAt,
           priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
           status: orderDataFromDb.status || 'unbekannt',
           selectedCategory: orderDataFromDb.selectedCategory,
