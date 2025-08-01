@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useAlert } from '@/components/ui/AlertProvider';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -129,7 +128,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
   // NEU: Direkter Zugriff auf Auth-Context für Debugging
   const { user: authUser, firebaseUser } = useAuth();
-  const { showAlert } = useAlert(); // Alert-System für Statusbenachrichtigungen
 
   // Get the company name from the already fetched user data to pass to the drawer.
   const companyName = userData?.companyName || userData?.step2?.companyName || 'Ihre Firma';
@@ -141,9 +139,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  // State für Statusänderungen Überwachung
-  const [previousOrders, setPreviousOrders] = useState<OrderData[]>([]);
 
   // Handler, um einen Auftrag auszuwählen und die Sidebar zu öffnen
   const handleRowClick = (order: OrderData) => {
@@ -199,60 +194,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             }));
 
             console.log('🔄 Transformed orders for DataTable:', transformedOrders);
-
-            // Prüfe auf Statusänderungen und zeige Alerts an
-            if (previousOrders.length > 0) {
-              // Prüfe auf neue Aufträge
-              const newOrders = transformedOrders.filter(
-                (current: any) => !previousOrders.find(p => p.id === current.id)
-              );
-
-              newOrders.forEach((newOrder: any) => {
-                showAlert({
-                  type: 'info',
-                  title: '📋 Neuer Auftrag eingegangen!',
-                  message: `${newOrder.selectedSubcategory || 'Business Service'} von ${newOrder.customerName}\n\nStatus: ${newOrder.status.replace(/_/g, ' ')}`,
-                  autoClose: 12000,
-                });
-              });
-
-              // Prüfe auf Statusänderungen existierender Aufträge
-              transformedOrders.forEach((currentOrder: any) => {
-                const previousOrder = previousOrders.find(p => p.id === currentOrder.id);
-
-                if (previousOrder && previousOrder.status !== currentOrder.status) {
-                  // Statusänderung erkannt
-                  if (currentOrder.status === 'AKTIV') {
-                    showAlert({
-                      type: 'success',
-                      title: '🎉 Auftrag wurde aktiv!',
-                      message: `${currentOrder.selectedSubcategory || 'Business Service'} von ${currentOrder.customerName} ist jetzt AKTIV.\n\nSie können nun mit der Zeiterfassung beginnen.`,
-                      autoClose: 10000,
-                    });
-                  } else if (currentOrder.status === 'zahlung_erhalten_clearing') {
-                    showAlert({
-                      type: 'info',
-                      title: '💰 Neue Zahlung erhalten!',
-                      message: `${currentOrder.selectedSubcategory || 'Business Service'} von ${currentOrder.customerName} wurde bezahlt.\n\nBitte prüfen Sie den Auftrag und nehmen Sie ihn an.`,
-                      autoClose: 15000,
-                    });
-                  } else if (
-                    currentOrder.status === 'bezahlt' ||
-                    currentOrder.status === 'abgeschlossen'
-                  ) {
-                    showAlert({
-                      type: 'success',
-                      title: '✅ Auftrag abgeschlossen!',
-                      message: `${currentOrder.selectedSubcategory || 'Business Service'} von ${currentOrder.customerName} wurde erfolgreich abgeschlossen.`,
-                      autoClose: 8000,
-                    });
-                  }
-                }
-              });
-            }
-
-            // Aktualisiere previousOrders für die nächste Überprüfung
-            setPreviousOrders(transformedOrders);
             setOrders(transformedOrders);
           } else {
             setOrders([]);
