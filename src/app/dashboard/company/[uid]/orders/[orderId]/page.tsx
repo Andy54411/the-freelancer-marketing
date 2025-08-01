@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { db, functions, auth } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
+import { useAlert } from '@/components/ui/AlertProvider';
 
 // Icons für UI
 import {
@@ -17,7 +18,6 @@ import {
   AlertTriangle as FiAlertTriangle,
   Slash as FiSlash,
   Clock as FiClock,
-  CheckCircle as FiCheckCircle,
 } from 'lucide-react';
 
 // Komponenten
@@ -25,10 +25,6 @@ import UserInfoCard from '@/components/UserInfoCard';
 import TimeTrackingManager from '@/components/TimeTrackingManager';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
-// Stunden-Übersicht Komponente
-import HoursBillingOverview from '@/components/HoursBillingOverview';
-// Payment-Komponente
-import InlinePaymentComponent from '@/components/InlinePaymentComponent';
 
 interface ParticipantDetails {
   id: string;
@@ -48,7 +44,7 @@ interface OrderData {
   customerId: string;
   customerName: string;
   customerAvatarUrl?: string | null;
-  orderDate?: string; // ISO string nach Konvertierung
+  orderDate?: { _seconds: number; _nanoseconds: number } | string;
   priceInCents: number;
   status: string;
   selectedCategory?: string;
@@ -68,20 +64,13 @@ export default function CompanyOrderDetailPage() {
   const companyUid = typeof params?.uid === 'string' ? params.uid : '';
 
   const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: 'user' aus dem AuthContext verwenden
+  const { showAlert } = useAlert(); // Alert-System für Benachrichtigungen
 
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'provider' | 'customer' | null>(null); // Track user role for this order
-
-  // Payment Modal States - für HoursBillingOverview
-  const [showInlinePayment, setShowInlinePayment] = useState(false);
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentHours, setPaymentHours] = useState(0);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Wait until the authentication process is complete.
@@ -149,21 +138,20 @@ export default function CompanyOrderDetailPage() {
         return;
       }
 
-      // --- Erweiterte Validierung für B2B-Aufträge ---
-      // Ein Unternehmen kann sowohl Kunde als auch Anbieter sein
-      const isProvider = orderDataFromDb.selectedAnbieterId === companyUid;
-      const isCustomer = orderDataFromDb.customerFirebaseUid === companyUid;
-
-      if (!isProvider && !isCustomer) {
+      // --- NEU: Zusätzliche clientseitige Validierung ---
+      // Überprüft, ob der im Dokument gespeicherte Anbieter mit dem Benutzer übereinstimmt, der die Seite aufruft.
+      if (orderDataFromDb.selectedAnbieterId !== companyUid) {
         setError(
-          `Zugriff verweigert: Dieser Auftrag (${orderId}) gehört weder Ihnen als Anbieter (${orderDataFromDb.selectedAnbieterId}) noch als Kunde (${orderDataFromDb.customerFirebaseUid}) zu. Ihre ID: ${companyUid}.`
+          `Daten-Inkonsistenz: Dieser Auftrag (${orderId}) ist dem Anbieter ${orderDataFromDb.selectedAnbieterId} zugeordnet, nicht Ihnen (${companyUid}).`
         );
         setLoadingOrder(false);
         return;
       }
 
-      // Setze die Rolle für die UI
-      setUserRole(isProvider ? 'provider' : 'customer');
+      console.log('Raw Firestore data for orderId', orderId, ':', orderDataFromDb);
+      console.log('Raw selectedCategory:', orderDataFromDb.selectedCategory);
+      console.log('Raw selectedSubcategory:', orderDataFromDb.selectedSubcategory);
+      console.log('Raw jobTimePreference:', orderDataFromDb.jobTimePreference);
 
       // Step 2: Fetch participant details with its own error handling
       // KORREKTUR: Verwende die neue, sichere Cloud Function
@@ -185,53 +173,12 @@ export default function CompanyOrderDetailPage() {
           customerId: orderDataFromDb.kundeId,
           customerName: customerDetails.name, // Name aus der Cloud Function
           customerAvatarUrl: customerDetails.avatarUrl,
-          // Korrigiertes Date-Mapping für Firestore Timestamps
-          orderDate: (() => {
-            // Priorität: paidAt -> createdAt -> lastUpdated -> lastUpdatedAt
-            const dateField =
-              orderDataFromDb.paidAt ||
-              orderDataFromDb.createdAt ||
-              orderDataFromDb.lastUpdated ||
-              orderDataFromDb.lastUpdatedAt;
-
-            if (!dateField) return undefined;
-
-            // Firestore Timestamp hat toDate() Methode
-            if (dateField && typeof dateField === 'object' && 'toDate' in dateField) {
-              return dateField.toDate().toISOString();
-            }
-
-            // Firestore Timestamp als Object mit _seconds
-            if (dateField && typeof dateField === 'object' && '_seconds' in dateField) {
-              return new Date(dateField._seconds * 1000).toISOString();
-            }
-
-            // String ISO Date
-            if (typeof dateField === 'string') {
-              return dateField;
-            }
-
-            return undefined;
-          })(),
-          priceInCents:
-            orderDataFromDb.jobCalculatedPriceInCents ||
-            orderDataFromDb.totalAmountPaidByBuyer ||
-            0,
+          orderDate: orderDataFromDb.paidAt || orderDataFromDb.createdAt,
+          priceInCents: orderDataFromDb.jobCalculatedPriceInCents || 0,
           status: orderDataFromDb.status || 'unbekannt',
           selectedCategory: orderDataFromDb.selectedCategory,
           selectedSubcategory: orderDataFromDb.selectedSubcategory,
-          jobTotalCalculatedHours:
-            orderDataFromDb.jobTotalCalculatedHours ||
-            (() => {
-              // Fallback: Berechne Stunden basierend auf Preis (Standard B2B Rate 42€/h)
-              const priceInEur =
-                (orderDataFromDb.jobCalculatedPriceInCents ||
-                  orderDataFromDb.totalAmountPaidByBuyer ||
-                  0) / 100;
-              const standardHourlyRate = 42; // B2B Standard Rate
-              return Math.round(priceInEur / standardHourlyRate);
-            })(),
-          jobDurationString: orderDataFromDb.jobDurationString,
+          jobTotalCalculatedHours: orderDataFromDb.jobTotalCalculatedHours,
           beschreibung: orderDataFromDb.description,
           jobDateFrom: orderDataFromDb.jobDateFrom,
           jobDateTo: orderDataFromDb.jobDateTo,
@@ -305,9 +252,26 @@ export default function CompanyOrderDetailPage() {
       const result = await response.json();
       console.log('Accept Order Success:', result);
 
+      // Alert-Benachrichtigung für erfolgreiche Annahme
+      showAlert({
+        type: 'success',
+        title: '✅ Auftrag erfolgreich angenommen!',
+        message: `${order.selectedSubcategory || 'Business Service'} ist jetzt AKTIV.\n\nSie können nun mit der Zeiterfassung beginnen und den Chat nutzen.`,
+        autoClose: 8000,
+      });
+
       setOrder(prev => (prev ? { ...prev, status: 'AKTIV' } : null));
     } catch (err: any) {
       console.error('Fehler beim Annehmen des Auftrags:', err);
+
+      // Alert-Benachrichtigung für Fehler
+      showAlert({
+        type: 'error',
+        title: '❌ Fehler beim Annehmen des Auftrags',
+        message: err.message || 'Unbekannter Fehler beim Annehmen des Auftrags.',
+        autoClose: 10000,
+      });
+
       setActionError(err.message || 'Fehler beim Annehmen des Auftrags.');
     } finally {
       setIsActionLoading(false);
@@ -327,6 +291,15 @@ export default function CompanyOrderDetailPage() {
     try {
       const rejectOrderCallable = httpsCallable(functions, 'rejectOrder');
       await rejectOrderCallable({ orderId: order.id, reason: reason.trim() });
+
+      // Alert-Benachrichtigung für erfolgreiche Ablehnung
+      showAlert({
+        type: 'warning',
+        title: '⚠️ Auftrag abgelehnt',
+        message: `Der Auftrag "${order.selectedSubcategory || 'Business Service'}" wurde abgelehnt.\n\nDer Kunde wird benachrichtigt und erhält eine vollständige Rückerstattung.`,
+        autoClose: 8000,
+      });
+
       setOrder(prev => (prev ? { ...prev, status: 'abgelehnt_vom_anbieter' } : null));
     } catch (err: any) {
       console.error('Fehler beim Ablehnen des Auftrags:', err);
@@ -334,100 +307,19 @@ export default function CompanyOrderDetailPage() {
       if (err.details) {
         message += ` Details: ${JSON.stringify(err.details)}`;
       }
+
+      // Alert-Benachrichtigung für Fehler
+      showAlert({
+        type: 'error',
+        title: '❌ Fehler beim Ablehnen des Auftrags',
+        message: message,
+        autoClose: 10000,
+      });
+
       setActionError(message);
     } finally {
       setIsActionLoading(false);
     }
-  };
-
-  // Payment Modal Handler - für HoursBillingOverview
-  const handleOpenPayment = async () => {
-    if (!orderId) return;
-
-    try {
-      console.log('🔄 DIRECT: Starting payment process for order:', orderId);
-
-      // Import TimeTracker dynamisch
-      const { TimeTracker } = await import('@/lib/timeTracker');
-
-      // Stelle echte Stripe-Abrechnung für genehmigte Stunden
-      const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-      console.log('✅ DIRECT: Real billing data received:', {
-        paymentIntentId: billingResult.paymentIntentId,
-        customerPays: billingResult.customerPays,
-        clientSecret: billingResult.clientSecret,
-      });
-
-      // Berechne echte Payment Hours aus OrderDetails
-      const orderDetails = await TimeTracker.getOrderDetails(orderId);
-      const paymentHours =
-        orderDetails?.timeTracking?.timeEntries
-          ?.filter((e: any) => {
-            // Alle Stunden die genehmigt sind aber noch bezahlt werden müssen
-            return (
-              e.category === 'additional' &&
-              (e.status === 'customer_approved' || e.status === 'billing_pending')
-            );
-          })
-          ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
-
-      // Setze echte Daten
-      setPaymentClientSecret(billingResult.clientSecret);
-      setPaymentAmount(billingResult.customerPays);
-      setPaymentHours(paymentHours);
-      setShowInlinePayment(true);
-
-      console.log('✅ DIRECT: Real payment modal opened with:', {
-        amount: billingResult.customerPays / 100,
-        hours: paymentHours,
-      });
-    } catch (error) {
-      console.error('❌ DIRECT: Error creating payment:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-
-      if (
-        errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
-        errorMessage.includes('Stripe Connect')
-      ) {
-        alert(
-          'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\nBitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
-        );
-      } else {
-        alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
-      }
-    }
-  };
-
-  const handlePaymentSuccess = async () => {
-    console.log('✅ Payment successful!');
-    setShowInlinePayment(false);
-
-    // Success-Nachricht anzeigen
-    setSuccessMessage('Zahlung erfolgreich! Die Daten werden aktualisiert...');
-
-    // Warte kurz, damit Webhooks Zeit haben die Datenbank zu aktualisieren
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    try {
-      // Order data neu laden nach erfolgreichem Payment
-      window.location.reload();
-    } catch (error) {
-      console.error('❌ Error reloading order data after payment:', error);
-      setSuccessMessage(
-        'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
-      );
-
-      // Fallback: Seite nach 3 Sekunden neu laden
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-    }
-  };
-
-  const handlePaymentCancel = () => {
-    console.log('❌ Payment cancelled');
-    setShowInlinePayment(false);
   };
 
   if (overallLoading) {
@@ -501,16 +393,6 @@ export default function CompanyOrderDetailPage() {
 
           <h1 className="text-3xl font-semibold text-gray-800 mb-6">Auftrag #{orderId}</h1>
 
-          {/* Success Message */}
-          {successMessage && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-              <div className="flex items-center">
-                <FiCheckCircle className="mr-2" />
-                {successMessage}
-              </div>
-            </div>
-          )}
-
           {/* Layout mit Sidebar */}
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Hauptinhalt - Links */}
@@ -560,24 +442,7 @@ export default function CompanyOrderDetailPage() {
                     <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
                   </p>
                   <p>
-                    <strong>Erstellt am:</strong>{' '}
-                    {(() => {
-                      if (order.orderDate) {
-                        // orderDate ist jetzt bereits ISO string nach Konvertierung
-                        const date = new Date(order.orderDate);
-                        return date.toLocaleDateString('de-DE', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        });
-                      }
-                      return 'Unbekanntes Datum';
-                    })()}
-                  </p>
-                  <p>
-                    <strong>Ausführungsdatum:</strong> {order.jobDateFrom || 'N/A'}{' '}
+                    <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
                     {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
                       ? `- ${order.jobDateTo}`
                       : ''}
@@ -591,13 +456,6 @@ export default function CompanyOrderDetailPage() {
                   </p>
                 </div>
               </div>
-
-              {/* Stunden-Abrechnungsübersicht */}
-              <HoursBillingOverview
-                orderId={orderId}
-                className=""
-                onPaymentRequest={!isViewerProvider ? handleOpenPayment : undefined}
-              />
 
               {/* Time Tracking für aktive Aufträge */}
               {order.status === 'AKTIV' && isViewerProvider && (
@@ -734,27 +592,6 @@ export default function CompanyOrderDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Payment Modal */}
-        {showInlinePayment && paymentClientSecret && (
-          <InlinePaymentComponent
-            clientSecret={paymentClientSecret}
-            orderId={orderId}
-            totalAmount={paymentAmount}
-            totalHours={paymentHours}
-            customerId={order?.customerId}
-            isOpen={showInlinePayment}
-            onClose={handlePaymentCancel}
-            onSuccess={(paymentIntentId: string) => {
-              console.log('Payment successful:', paymentIntentId);
-              handlePaymentSuccess();
-            }}
-            onError={(error: string) => {
-              console.error('Payment error:', error);
-              handlePaymentCancel();
-            }}
-          />
-        )}
       </main>
     </Suspense>
   );
