@@ -1,0 +1,63 @@
+name: taskilo_app
+description: Taskilo Mobile App - Service-Marktplatz für B2B und B2C
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase Core & Auth
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  cloud_functions: ^4.5.4
+  firebase_storage: ^11.5.6
+  firebase_messaging: ^14.7.10
+  
+  # Payment
+  flutter_stripe: ^9.5.0
+  
+  # UI & Navigation
+  cupertino_icons: ^1.0.2
+  get: ^4.6.6
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  
+  # Location & Maps
+  geolocator: ^10.1.0
+  permission_handler: ^11.1.0
+  google_maps_flutter: ^2.5.0
+  
+  # Utils
+  http: ^1.1.2
+  intl: ^0.19.0
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.4
+  url_launcher: ^6.2.2
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Chat & Real-time
+  socket_io_client: ^2.0.3+1
+  
+  # Local Storage
+  sqflite: ^2.3.0
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
