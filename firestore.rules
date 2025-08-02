@@ -998,11 +998,10 @@ service cloud.firestore {
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
                        isCompany() &&
-                       request.resource.data.keys().hasAll(['companyId', 'name', 'status', 'createdBy', 'createdAt']) &&
+                       request.resource.data.keys().hasAll(['companyId', 'name', 'status', 'createdAt']) &&
                        request.resource.data.companyId is string &&
                        request.resource.data.name is string &&
-                       request.resource.data.status in ['active', 'completed', 'archived'] &&
-                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.status in ['planning', 'active', 'on-hold', 'completed', 'cancelled'] &&
                        request.resource.data.createdAt == request.time;
       
       // Firmen können ihre eigenen Projekte aktualisieren
@@ -1010,7 +1009,6 @@ service cloud.firestore {
                        resource.data.companyId == request.auth.uid &&
                        isCompany() &&
                        request.resource.data.companyId == request.auth.uid &&
-                       request.resource.data.lastModifiedBy == request.auth.uid &&
                        request.resource.data.updatedAt == request.time;
       
       // Firmen können ihre eigenen Projekte löschen
