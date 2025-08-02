@@ -6,6 +6,7 @@ export interface EditableCompanyProfile {
   displayName: string;
   companyName: string;
   photoURL: string;
+  companyLogo: string;
   description: string;
   country: string;
   city: string;

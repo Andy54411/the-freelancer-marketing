@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { CompanyMetrics } from '@/lib/companyMetrics';
 
 // Import der neuen modularen Komponenten
-import ProfileImageUpload from './profile/ProfileImageUpload';
+import ImageUploadsTab from './profile/ImageUploadsTab';
 import BasicInfoTab from './profile/BasicInfoTab';
 import PublicProfileTab from './profile/PublicProfileTab';
 import PortfolioManager from './profile/PortfolioManager';
@@ -57,6 +57,7 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         displayName: userData.displayName || '',
         companyName: userData.companyName || '',
         photoURL: userData.photoURL || '',
+        companyLogo: userData.companyLogo || '',
         description: userData.description || '',
         country: userData.country || '',
         city: userData.city || '',
@@ -131,6 +132,7 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
   }
 
   const tabs = [
+    { id: 'images', label: 'Bilder & Logo', icon: FiImage },
     { id: 'basic', label: 'Grunddaten', icon: FiUser },
     { id: 'skills', label: 'Skills & Bildung', icon: FiAward },
     { id: 'public', label: 'Öffentliches Profil', icon: FiEye },
@@ -141,11 +143,22 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
-      {/* Header mit Profilbild und Save Button */}
+      {/* Header mit Unternehmensinfo und Save Button */}
       <div className="border-b border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <ProfileImageUpload profile={profile} setProfile={setProfile} />
+            {/* Quick Logo Preview */}
+            <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-50 flex items-center justify-center">
+              {profile.companyLogo ? (
+                <img
+                  src={profile.companyLogo}
+                  alt="Logo"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <FiImage className="w-6 h-6 text-gray-400" />
+              )}
+            </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {profile.companyName || profile.displayName || 'Unternehmensprofil'}
@@ -188,6 +201,8 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
 
       {/* Tab Content */}
       <div className="p-6">
+        {activeTab === 'images' && <ImageUploadsTab profile={profile} setProfile={setProfile} />}
+
         {activeTab === 'basic' && <BasicInfoTab profile={profile} setProfile={setProfile} />}
 
         {activeTab === 'skills' && <SkillsEducationTab profile={profile} setProfile={setProfile} />}
