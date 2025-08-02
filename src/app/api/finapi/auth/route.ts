@@ -4,6 +4,22 @@ export async function POST(req: NextRequest) {
   try {
     const { credentialType = 'sandbox' } = await req.json();
 
+    // Debug: Log all available environment variables
+    console.log('Environment variables check:');
+    console.log(
+      'FINAPI_SANDBOX_CLIENT_ID:',
+      process.env.FINAPI_SANDBOX_CLIENT_ID ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      'FINAPI_SANDBOX_CLIENT_SECRET:',
+      process.env.FINAPI_SANDBOX_CLIENT_SECRET ? 'SET' : 'NOT SET'
+    );
+    console.log('FINAPI_ADMIN_CLIENT_ID:', process.env.FINAPI_ADMIN_CLIENT_ID ? 'SET' : 'NOT SET');
+    console.log(
+      'FINAPI_ADMIN_CLIENT_SECRET:',
+      process.env.FINAPI_ADMIN_CLIENT_SECRET ? 'SET' : 'NOT SET'
+    );
+
     // Environment variables für finAPI Credentials
     const credentials =
       credentialType === 'admin'
@@ -16,7 +32,16 @@ export async function POST(req: NextRequest) {
             clientSecret: process.env.FINAPI_SANDBOX_CLIENT_SECRET,
           };
 
+    console.log(`Using ${credentialType} credentials:`, {
+      clientId: credentials.clientId ? credentials.clientId.substring(0, 8) + '...' : 'NOT SET',
+      clientSecret: credentials.clientSecret ? 'SET' : 'NOT SET',
+    });
+
     if (!credentials.clientId || !credentials.clientSecret) {
+      console.error('Missing credentials:', {
+        clientId: !!credentials.clientId,
+        clientSecret: !!credentials.clientSecret,
+      });
       return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
     }
 
