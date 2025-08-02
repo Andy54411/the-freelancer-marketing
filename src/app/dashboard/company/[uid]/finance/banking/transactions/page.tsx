@@ -4,12 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankTransaction, BankAccount } from '@/types';
-import { FinAPIService } from '@/lib/finapi';
-import { Search, Filter, Download, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, Download, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function BankingTransactionsPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
+  const _searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
@@ -22,59 +21,125 @@ export default function BankingTransactionsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
+  // finAPI Authentication über Backend
+  const authenticateFinAPI = async (): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/finapi/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credentialType: 'sandbox' }),
+      });
 
-  // finAPI Service initialisieren
-  const finAPIService = new FinAPIService();
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
+
+      const data = await response.json();
+      return data.access_token;
+    } catch (error) {
+      console.error('Fehler bei finAPI Authentication:', error);
+      return null;
+    }
+  };
 
   const loadTransactions = async () => {
     try {
       setLoading(true);
-      const [finAPITransactionResponse, finAPIAccountResponse] = await Promise.all([
-        finAPIService.getTransactions(),
-        finAPIService.getAccounts(),
+
+      // Authentifizierung über Backend
+      const token = await authenticateFinAPI();
+      if (!token) {
+        throw new Error('Failed to authenticate with finAPI');
+      }
+
+      // Konten und Transaktionen über Backend API laden
+      const [accountsResponse, transactionsResponse] = await Promise.all([
+        fetch('/api/finapi/accounts', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        fetch('/api/finapi/transactions', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
       ]);
-      
+
+      if (!accountsResponse.ok || !transactionsResponse.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const [finAPIAccountResponse, finAPITransactionResponse] = await Promise.all([
+        accountsResponse.json(),
+        transactionsResponse.json(),
+      ]);
+
       // Convert finAPI data to our interface format
-      const convertedTransactions: BankTransaction[] = finAPITransactionResponse.transactions.map(tx => ({
-        id: tx.id.toString(),
-        accountId: tx.accountId.toString(),
-        amount: tx.amount,
-        currency: 'EUR', // Default currency
-        purpose: tx.purpose || 'Keine Beschreibung',
-        counterpartName: tx.counterpartName,
-        counterpartIban: tx.counterpartIban,
-        bookingDate: tx.bankBookingDate,
-        valueDate: tx.valueDate,
-        transactionType: tx.amount >= 0 ? 'CREDIT' : 'DEBIT',
-        category: tx.category?.name,
-        isReconciled: false,
-        isPending: tx.isNew,
-      }));
-      
-      const convertedAccounts: BankAccount[] = finAPIAccountResponse.accounts.map(acc => ({
-        id: acc.id.toString(),
-        accountName: acc.accountName,
-        iban: acc.iban || '',
-        bankName: 'Unbekannte Bank', // Bank information not available in this structure
-        accountNumber: acc.accountNumber || '',
-        balance: acc.balance || 0,
-        availableBalance: acc.availableFunds || acc.balance || 0,
-        currency: acc.accountCurrency,
-        accountType: 'CHECKING',
-        isDefault: false,
-      }));
-      
+      const convertedTransactions: BankTransaction[] =
+        finAPITransactionResponse.transactions?.map(
+          (tx: {
+            id?: number;
+            accountId?: number;
+            amount?: number;
+            purpose?: string;
+            counterpartName?: string;
+            counterpartIban?: string;
+            bankBookingDate?: string;
+            valueDate?: string;
+            category?: { name?: string };
+            isNew?: boolean;
+          }) => ({
+            id: tx.id?.toString() || 'unknown',
+            accountId: tx.accountId?.toString() || 'unknown',
+            amount: tx.amount || 0,
+            currency: 'EUR', // Default currency
+            purpose: tx.purpose || 'Keine Beschreibung',
+            counterpartName: tx.counterpartName || '',
+            counterpartIban: tx.counterpartIban || '',
+            bookingDate: tx.bankBookingDate || new Date().toISOString(),
+            valueDate: tx.valueDate || new Date().toISOString(),
+            transactionType: (tx.amount || 0) >= 0 ? 'CREDIT' : 'DEBIT',
+            category: tx.category?.name || 'Sonstiges',
+            isReconciled: false,
+            isPending: tx.isNew || false,
+          })
+        ) || [];
+
+      const convertedAccounts: BankAccount[] =
+        finAPIAccountResponse.accounts?.map(
+          (acc: {
+            id?: number;
+            accountName?: string;
+            balance?: number;
+            currency?: string;
+            accountTypeId?: number;
+            isNew?: boolean;
+            iban?: string;
+            bankName?: string;
+            accountNumber?: string;
+            availableFunds?: number;
+            accountCurrency?: string;
+          }) => ({
+            id: acc.id?.toString() || 'unknown',
+            accountName: acc.accountName || 'Unbekanntes Konto',
+            iban: acc.iban || '',
+            bankName: acc.bankName || 'Unbekannte Bank',
+            accountNumber: acc.accountNumber || '',
+            balance: acc.balance || 0,
+            availableBalance: acc.availableFunds || acc.balance || 0,
+            currency: acc.accountCurrency || 'EUR',
+            accountType: 'CHECKING',
+            isDefault: false,
+          })
+        ) || [];
+
       setTransactions(convertedTransactions);
       setAccounts(convertedAccounts);
     } catch (error) {
@@ -87,8 +152,8 @@ export default function BankingTransactionsPage() {
           iban: 'DE89 3704 0044 0532 0130 00',
           bankName: 'Deutsche Bank AG',
           accountNumber: '0532013000',
-          balance: 25750.50,
-          availableBalance: 25750.50,
+          balance: 25750.5,
+          availableBalance: 25750.5,
           currency: 'EUR',
           accountType: 'CHECKING',
           isDefault: true,
@@ -98,7 +163,7 @@ export default function BankingTransactionsPage() {
         {
           id: 'txn_001',
           accountId: 'mock_001',
-          amount: -250.00,
+          amount: -250.0,
           currency: 'EUR',
           purpose: 'Büromaterial Online-Shop',
           counterpartName: 'Amazon Business',
@@ -113,7 +178,7 @@ export default function BankingTransactionsPage() {
         {
           id: 'txn_002',
           accountId: 'mock_001',
-          amount: 1500.00,
+          amount: 1500.0,
           currency: 'EUR',
           purpose: 'Rechnung INV-2025-001',
           counterpartName: 'Musterfirma GmbH',
@@ -142,7 +207,7 @@ export default function BankingTransactionsPage() {
         {
           id: 'txn_004',
           accountId: 'mock_001',
-          amount: 2500.00,
+          amount: 2500.0,
           currency: 'EUR',
           purpose: 'Projektabrechnung Q3',
           counterpartName: 'Großkunde AG',
@@ -157,7 +222,7 @@ export default function BankingTransactionsPage() {
         {
           id: 'txn_005',
           accountId: 'mock_001',
-          amount: -1200.00,
+          amount: -1200.0,
           currency: 'EUR',
           purpose: 'Miete Büroräume August',
           counterpartName: 'Immobilien Partner',
@@ -210,14 +275,15 @@ export default function BankingTransactionsPage() {
 
   // Filter transactions
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = 
+    const matchesSearch =
       transaction.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (transaction.counterpartName?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      transaction.counterpartName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      false ||
       transaction.amount.toString().includes(searchTerm);
-    
+
     const matchesAccount = selectedAccount === 'all' || transaction.accountId === selectedAccount;
     const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
-    
+
     return matchesSearch && matchesAccount && matchesCategory;
   });
 
@@ -271,7 +337,7 @@ export default function BankingTransactionsPage() {
               type="text"
               placeholder="Suchen..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] w-full"
             />
           </div>
@@ -279,7 +345,7 @@ export default function BankingTransactionsPage() {
           {/* Account Filter */}
           <select
             value={selectedAccount}
-            onChange={(e) => setSelectedAccount(e.target.value)}
+            onChange={e => setSelectedAccount(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           >
             <option value="all">Alle Konten</option>
@@ -293,7 +359,7 @@ export default function BankingTransactionsPage() {
           {/* Category Filter */}
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={e => setSelectedCategory(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           >
             <option value="all">Alle Kategorien</option>
@@ -307,7 +373,7 @@ export default function BankingTransactionsPage() {
           {/* Date Range */}
           <select
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
+            onChange={e => setDateRange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           >
             <option value="7">Letzte 7 Tage</option>
@@ -322,7 +388,7 @@ export default function BankingTransactionsPage() {
       {/* Transactions Table */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
-          {filteredTransactions.map((transaction) => {
+          {filteredTransactions.map(transaction => {
             const account = accounts.find(a => a.id === transaction.accountId);
             return (
               <li key={transaction.id} className="px-6 py-4 hover:bg-gray-50">
@@ -337,11 +403,13 @@ export default function BankingTransactionsPage() {
                           {transaction.purpose}
                         </p>
                         <div className="ml-2 flex-shrink-0 flex">
-                          <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            transaction.isReconciled
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <p
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              transaction.isReconciled
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
                             {transaction.isReconciled ? 'Abgeglichen' : 'Offen'}
                           </p>
                         </div>
@@ -352,9 +420,7 @@ export default function BankingTransactionsPage() {
                             <span>{transaction.counterpartName} • </span>
                           )}
                           <span>{account?.accountName || 'Unbekanntes Konto'}</span>
-                          {transaction.category && (
-                            <span> • {transaction.category}</span>
-                          )}
+                          {transaction.category && <span> • {transaction.category}</span>}
                         </div>
                         <div className="ml-2">
                           <Calendar className="h-4 w-4 mr-1 inline" />
@@ -365,14 +431,15 @@ export default function BankingTransactionsPage() {
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <p className={`text-sm font-semibold ${
-                        transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {transaction.amount >= 0 ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
+                      <p
+                        className={`text-sm font-semibold ${
+                          transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {transaction.amount >= 0 ? '+' : ''}
+                        {formatCurrency(transaction.amount, transaction.currency)}
                       </p>
-                      {transaction.isPending && (
-                        <p className="text-xs text-gray-500">Ausstehend</p>
-                      )}
+                      {transaction.isPending && <p className="text-xs text-gray-500">Ausstehend</p>}
                     </div>
                   </div>
                 </div>
@@ -388,10 +455,9 @@ export default function BankingTransactionsPage() {
             <Search className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Transaktionen gefunden</h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || selectedAccount !== 'all' || selectedCategory !== 'all' 
+              {searchTerm || selectedAccount !== 'all' || selectedCategory !== 'all'
                 ? 'Versuchen Sie andere Filterkriterien.'
-                : 'Es sind noch keine Transaktionen vorhanden.'
-              }
+                : 'Es sind noch keine Transaktionen vorhanden.'}
             </p>
           </div>
         </div>
