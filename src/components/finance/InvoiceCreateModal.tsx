@@ -20,8 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarIcon, Plus } from 'lucide-react';
+import { CalendarIcon, Plus, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { InvoiceTemplatePicker } from './InvoiceTemplatePicker';
+import { InvoiceTemplate } from './InvoiceTemplates';
 
 interface InvoiceCreateModalProps {
   trigger?: React.ReactNode;
@@ -36,6 +38,7 @@ interface Customer {
 
 export function InvoiceCreateModal({ trigger, onInvoiceCreate }: InvoiceCreateModalProps) {
   const [open, setOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('modern');
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -78,6 +81,7 @@ export function InvoiceCreateModal({ trigger, onInvoiceCreate }: InvoiceCreateMo
       issueDate: new Date().toISOString().split('T')[0],
       dueDate: formData.dueDate,
       description: formData.description,
+      template: selectedTemplate, // Template info hinzufügen
     };
 
     // Call the callback if provided
@@ -139,6 +143,32 @@ export function InvoiceCreateModal({ trigger, onInvoiceCreate }: InvoiceCreateMo
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Template Selection */}
+          <div className="space-y-2">
+            <Label>Rechnungs-Template</Label>
+            <InvoiceTemplatePicker
+              selectedTemplate={selectedTemplate}
+              onTemplateSelect={setSelectedTemplate}
+              trigger={
+                <Button type="button" variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Template:{' '}
+                  {selectedTemplate === 'modern'
+                    ? 'Modern (Empfohlen)'
+                    : selectedTemplate === 'classic'
+                      ? 'Klassisch'
+                      : selectedTemplate === 'minimal'
+                        ? 'Minimal'
+                        : selectedTemplate === 'corporate'
+                          ? 'Corporate'
+                          : selectedTemplate === 'creative'
+                            ? 'Kreativ'
+                            : selectedTemplate}
+                </Button>
+              }
+            />
+          </div>
+
           {/* Customer Selection */}
           <div className="space-y-2">
             <Label htmlFor="customer">Kunde *</Label>

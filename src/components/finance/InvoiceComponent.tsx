@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, FileText, Settings } from 'lucide-react';
 import { InvoiceCreateModal } from './InvoiceCreateModal';
 
 interface Invoice {
@@ -27,6 +28,7 @@ interface InvoiceComponentProps {
 
 export function InvoiceComponent({ invoices: initialInvoices }: InvoiceComponentProps) {
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const router = useRouter();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
@@ -51,6 +53,10 @@ export function InvoiceComponent({ invoices: initialInvoices }: InvoiceComponent
     setInvoices(prev => [newInvoice, ...prev]);
   };
 
+  const handleTemplatesPage = () => {
+    router.push('./invoices/templates');
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -59,7 +65,17 @@ export function InvoiceComponent({ invoices: initialInvoices }: InvoiceComponent
             <CardTitle>Rechnungen</CardTitle>
             <CardDescription>Verwalten Sie Ihre Rechnungen</CardDescription>
           </div>
-          <InvoiceCreateModal onInvoiceCreate={handleInvoiceCreate} />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleTemplatesPage}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Templates
+            </Button>
+            <InvoiceCreateModal onInvoiceCreate={handleInvoiceCreate} />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
