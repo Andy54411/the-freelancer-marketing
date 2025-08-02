@@ -46,6 +46,30 @@ import {
   Project as ProjectType,
   TimeTrackingReport,
 } from '@/services/timeTrackingService';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+
+// Firebase Project Interface (von ProjectsComponent)
+interface FirebaseProject {
+  id: string;
+  name: string;
+  description: string;
+  client: string;
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
+  budget: number;
+  spent: number;
+  hourlyRate: number;
+  estimatedHours: number;
+  trackedHours: number;
+  startDate: string;
+  endDate: string;
+  progress: number;
+  teamMembers: string[];
+  tags: string[];
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface TimeTrackingComponentProps {
   companyId: string;
@@ -55,6 +79,7 @@ interface TimeTrackingComponentProps {
 export function TimeTrackingComponent({ companyId, userId }: TimeTrackingComponentProps) {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [firebaseProjects, setFirebaseProjects] = useState<FirebaseProject[]>([]); // Neue State für Firebase-Projekte
   const [runningEntry, setRunningEntry] = useState<TimeEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('timer');
@@ -138,15 +163,17 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
   const loadData = async () => {
     try {
       setLoading(true);
-      const [entries, projectList, running, statistics] = await Promise.all([
+      const [entries, projectList, running, statistics, fbProjects] = await Promise.all([
         TimeTrackingService.getTimeEntriesByCompany(companyId, { userId }),
         TimeTrackingService.getProjectsByCompany(companyId),
         TimeTrackingService.getRunningTimeEntry(companyId, userId),
         TimeTrackingService.getTimeTrackingStats(companyId),
+        loadFirebaseProjects(), // Neue Funktion zum Laden der Firebase-Projekte
       ]);
 
       setTimeEntries(entries);
       setProjects(projectList);
+      setFirebaseProjects(fbProjects);
       setRunningEntry(running);
       setStats(statistics);
     } catch (error) {
@@ -154,6 +181,98 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.error('Daten konnten nicht geladen werden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Neue Funktion zum Laden der Firebase-Projekte
+  const loadFirebaseProjects = async (): Promise<FirebaseProject[]> => {
+    try {
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const projectSnapshot = await getDocs(projectsQuery);
+      const loadedProjects: FirebaseProject[] = [];
+
+      projectSnapshot.forEach(doc => {
+        const data = doc.data();
+        loadedProjects.push({
+          id: doc.id,
+          name: data.name || '',
+          description: data.description || '',
+          client: data.client || '',
+          status: data.status || 'planning',
+          budget: data.budget || 0,
+          spent: data.spent || 0,
+          hourlyRate: data.hourlyRate || 0,
+          estimatedHours: data.estimatedHours || 0,
+          trackedHours: data.trackedHours || 0,
+          startDate: data.startDate || '',
+          endDate: data.endDate || '',
+          progress: data.progress || 0,
+          teamMembers: data.teamMembers || [],
+          tags: data.tags || [],
+          companyId: data.companyId || companyId,
+          createdAt: data.createdAt || '',
+          updatedAt: data.updatedAt || '',
+        });
+      });
+
+      return loadedProjects;
+    } catch (error) {
+      console.error('Fehler beim Laden der Firebase-Projekte:', error);
+      return [];
+    }
+  };
+
+  // Neue Funktion zum Behandeln der Projektauswahl
+  const handleProjectSelection = (projectId: string) => {
+    const selectedProject = firebaseProjects.find(p => p.id === projectId);
+
+    if (selectedProject) {
+      // Automatisch Stundensatz und Kunde aus dem Projekt übernehmen
+      setNewEntryForm(prev => ({
+        ...prev,
+        projectId,
+        hourlyRate: selectedProject.hourlyRate || prev.hourlyRate,
+        customerName: selectedProject.client || prev.customerName,
+      }));
+
+      toast.success(
+        `Projekt "${selectedProject.name}" ausgewählt - Stundensatz: ${selectedProject.hourlyRate}€`
+      );
+    } else {
+      // Projekt entfernt
+      setNewEntryForm(prev => ({
+        ...prev,
+        projectId,
+      }));
+    }
+  };
+
+  // Neue Funktion zum Behandeln der Projektauswahl bei manueller Zeiterfassung
+  const handleManualProjectSelection = (projectId: string) => {
+    const selectedProject = firebaseProjects.find(p => p.id === projectId);
+
+    if (selectedProject) {
+      // Automatisch Stundensatz aus dem Projekt übernehmen
+      setManualEntryForm(prev => ({
+        ...prev,
+        projectId,
+        hourlyRate: selectedProject.hourlyRate || prev.hourlyRate,
+      }));
+
+      toast.success(
+        `Projekt "${selectedProject.name}" ausgewählt - Stundensatz: ${selectedProject.hourlyRate}€`
+      );
+    } else {
+      // Projekt entfernt
+      setManualEntryForm(prev => ({
+        ...prev,
+        projectId,
+      }));
     }
   };
 
@@ -541,20 +660,27 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="project">Projekt</Label>
-                      <Select
-                        value={newEntryForm.projectId}
-                        onValueChange={value =>
-                          setNewEntryForm(prev => ({ ...prev, projectId: value }))
-                        }
-                      >
-                        <SelectTrigger>
+                      <Label htmlFor="project">
+                        Projekt wählen (optional)
+                        {newEntryForm.projectId && (
+                          <span className="ml-2 text-sm text-green-600">✓ Ausgewählt</span>
+                        )}
+                      </Label>
+                      <Select value={newEntryForm.projectId} onValueChange={handleProjectSelection}>
+                        <SelectTrigger
+                          className={newEntryForm.projectId ? 'ring-1 ring-green-500' : ''}
+                        >
                           <SelectValue placeholder="Projekt wählen (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          {projects.map(project => (
-                            <SelectItem key={project.id} value={project.id!}>
-                              {project.name}
+                          {firebaseProjects.map(project => (
+                            <SelectItem key={project.id} value={project.id}>
+                              <div className="flex flex-col">
+                                <span>{project.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {project.client} • {project.hourlyRate}€/h
+                                </span>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -869,20 +995,23 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="manual-project">Projekt</Label>
+                  <Label htmlFor="manual-project">Projekt wählen (optional)</Label>
                   <Select
                     value={manualEntryForm.projectId}
-                    onValueChange={value =>
-                      setManualEntryForm(prev => ({ ...prev, projectId: value }))
-                    }
+                    onValueChange={handleManualProjectSelection}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Projekt wählen (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projects.map(project => (
-                        <SelectItem key={project.id} value={project.id!}>
-                          {project.name}
+                      {firebaseProjects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>
+                          <div className="flex flex-col">
+                            <span>{project.name}</span>
+                            <span className="text-xs text-gray-500">
+                              {project.client} • {project.hourlyRate}€/h
+                            </span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
