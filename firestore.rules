@@ -531,14 +531,12 @@ service cloud.firestore {
       // Erstellen: Nur eigene Firma (mit flexibler Autorisierung)
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
-                       request.resource.data.createdBy == request.auth.uid &&
-                       request.resource.data.createdAt == request.time;
+                       request.resource.data.createdBy == request.auth.uid;
       
       // Aktualisieren: Nur eigene Firma (mit flexibler Autorisierung)
       allow update: if request.auth != null && 
                        resource.data.companyId == request.auth.uid &&
-                       request.resource.data.lastModifiedBy == request.auth.uid &&
-                       request.resource.data.updatedAt == request.time;
+                       request.resource.data.lastModifiedBy == request.auth.uid;
       
       // Löschen: Nur Support Staff oder Owner
       allow delete: if isSupportStaff() || 

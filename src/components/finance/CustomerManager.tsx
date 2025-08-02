@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,8 +105,24 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
+      console.log('🔍 Debug: handleAddCustomer called with:', {
+        customerData: customerData,
+        user: user?.uid,
+        companyId: companyId,
+      });
+
       if (!user) {
+        console.error('❌ User not authenticated');
         throw new Error('Benutzer nicht authentifiziert');
+      }
+
+      // Verify user has permission to add customers to this company
+      if (user.uid !== companyId) {
+        console.error('❌ User uid does not match company id:', {
+          userUid: user.uid,
+          companyId: companyId,
+        });
+        throw new Error('Keine Berechtigung für diese Firma');
       }
 
       // Filter undefined values for Firebase compatibility
@@ -125,13 +150,17 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         companyId,
         totalInvoices: 0,
         totalAmount: 0,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
         createdBy: user.uid,
         lastModifiedBy: user.uid,
-        updatedAt: Timestamp.now(),
+        updatedAt: serverTimestamp(),
       };
 
+      console.log('📤 Sending to Firestore:', newCustomer);
+
       const docRef = await addDoc(collection(db, 'customers'), newCustomer);
+
+      console.log('✅ Successfully added to Firestore with ID:', docRef.id);
 
       const addedCustomer: Customer = {
         ...customerData,
@@ -145,9 +174,20 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       setCustomers(prev => [addedCustomer, ...prev]);
       setNextCustomerNumber(generateNextCustomerNumber([addedCustomer, ...customers]));
 
+      console.log('🎉 Customer successfully added to state');
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Kunden:', error);
+      console.error('❌ Fehler beim Hinzufügen des Kunden:', error);
+
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        });
+      }
+
       throw error;
     }
   };
