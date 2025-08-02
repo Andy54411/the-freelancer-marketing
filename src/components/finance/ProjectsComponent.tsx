@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+import { useAuth } from '@/contexts/AuthContext';
+import { Customer } from './AddCustomerModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,8 +69,11 @@ interface ProjectsComponentProps {
 }
 
 export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -87,6 +94,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
   useEffect(() => {
     loadProjects();
+    loadCustomers();
   }, [companyId]);
 
   const loadProjects = async () => {
@@ -173,6 +181,51 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       toast.error('Projekte konnten nicht geladen werden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      setLoadingCustomers(true);
+      const customersQuery = query(
+        collection(db, 'customers'),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(customersQuery);
+      const loadedCustomers: Customer[] = [];
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        loadedCustomers.push({
+          id: doc.id,
+          customerNumber: data.customerNumber || 'KD-000',
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone,
+          address: data.address || '',
+          street: data.street || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          country: data.country || '',
+          taxNumber: data.taxNumber,
+          vatId: data.vatId,
+          vatValidated: data.vatValidated || false,
+          totalInvoices: data.totalInvoices || 0,
+          totalAmount: data.totalAmount || 0,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          contactPersons: data.contactPersons || [],
+          companyId: data.companyId || companyId,
+        });
+      });
+
+      setCustomers(loadedCustomers);
+    } catch (error) {
+      console.error('Fehler beim Laden der Kunden:', error);
+      toast.error('Kunden konnten nicht geladen werden');
+    } finally {
+      setLoadingCustomers(false);
     }
   };
 
@@ -569,11 +622,37 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
             <div className="space-y-2">
               <Label>Kunde *</Label>
-              <Input
+              <Select
                 value={newProject.client}
-                onChange={e => setNewProject(prev => ({ ...prev, client: e.target.value }))}
-                placeholder="z.B. TechCorp GmbH"
-              />
+                onValueChange={value => setNewProject(prev => ({ ...prev, client: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Kunde auswählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingCustomers ? (
+                    <SelectItem value="" disabled>
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Lade Kunden...
+                      </div>
+                    </SelectItem>
+                  ) : customers.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      Keine Kunden verfügbar
+                    </SelectItem>
+                  ) : (
+                    customers.map(customer => (
+                      <SelectItem key={customer.id} value={customer.name}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{customer.name}</span>
+                          <span className="text-xs text-gray-500">{customer.customerNumber}</span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="col-span-2 space-y-2">
