@@ -7,20 +7,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Bot,
-  Briefcase,
-  MessageSquare,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  Star,
-  Users,
-  BarChart3,
-  Lightbulb,
-  ArrowRight,
-  Zap,
-} from 'lucide-react';
+import { Bot, Briefcase, Clock, Star, CheckCircle, Lightbulb, ArrowRight } from 'lucide-react';
 import TaskiloProjectAssistant from '@/components/TaskiloProjectAssistant';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -28,100 +15,43 @@ export default function AIAssistantPage() {
   const { user } = useAuth();
   const [activeAssistant, setActiveAssistant] = useState<string | null>(null);
 
-  const assistantFeatures = [
-    {
-      id: 'project-creation',
-      title: 'Projekt-Erstellungs-Assistent',
-      description: 'Erstellt automatisch optimierte Aufträge basierend auf Ihren Beschreibungen',
-      icon: Briefcase,
-      color: 'bg-[#14ad9f]',
-      features: [
-        'Intelligente Kategorie-Erkennung',
-        'Automatische Preis-Schätzung',
-        'Standort-basierte Dienstleister-Suche',
-        'Optimierte Projektbeschreibungen',
-      ],
-      stats: {
-        Erfolgsrate: '94%',
-        'Ø Erstellungszeit': '3 Min',
-        Zufriedenheit: '4.8/5',
-      },
+  const projectCreationAssistant = {
+    id: 'project-creation',
+    title: 'Projekt-Erstellungs-Assistent',
+    description: 'Erstellt automatisch optimierte Aufträge basierend auf Ihren Beschreibungen',
+    icon: Briefcase,
+    color: 'bg-[#14ad9f]',
+    features: [
+      'Intelligente Kategorie-Erkennung',
+      'Automatische Preis-Schätzung',
+      'Standort-basierte Dienstleister-Suche',
+      'Optimierte Projektbeschreibungen',
+    ],
+    stats: {
+      Erfolgsrate: '94%',
+      'Ø Erstellungszeit': '3 Min',
+      Zufriedenheit: '4.8/5',
     },
-    {
-      id: 'project-monitoring',
-      title: 'Projekt-Überwachungs-Assistent',
-      description:
-        'Überwacht aktive Projekte und koordiniert automatisch zwischen allen Beteiligten',
-      icon: TrendingUp,
-      color: 'bg-blue-600',
-      features: [
-        'Echtzeit Fortschritts-Tracking',
-        'Automatische Termin-Koordination',
-        'Qualitäts-Überwachung',
-        'Proaktive Problem-Lösung',
-      ],
-      stats: {
-        'Aktive Projekte': '127',
-        'Ø Erfolgsrate': '96%',
-        'Zeit-Ersparnis': '40%',
-      },
-    },
-    {
-      id: 'communication',
-      title: 'Kommunikations-Assistent',
-      description: 'Vermittelt zwischen Kunden und Dienstleistern für reibungslose Kommunikation',
-      icon: MessageSquare,
-      color: 'bg-purple-600',
-      features: [
-        'Automatische Übersetzung',
-        'Missverständnis-Erkennung',
-        'Eskalations-Management',
-        'Multi-Channel Support',
-      ],
-      stats: {
-        'Nachrichten/Tag': '2.4k',
-        Auflösungsrate: '89%',
-        'Ø Antwortzeit': '< 2 Min',
-      },
-    },
-    {
-      id: 'analytics',
-      title: 'Analytics-Assistent',
-      description: 'Analysiert Ihre Projekte und gibt personalisierte Verbesserungsvorschläge',
-      icon: BarChart3,
-      color: 'bg-orange-600',
-      features: [
-        'Projekt-Performance-Analyse',
-        'Kosten-Optimierung',
-        'Trend-Erkennung',
-        'Personalisierte Empfehlungen',
-      ],
-      stats: {
-        'Daten-Punkte': '50k+',
-        Einsparungen: '€2.3k',
-        Optimierungen: '234',
-      },
-    },
-  ];
+  };
 
-  const aiInsights = [
+  const projectInsights = [
     {
-      title: 'Wöchentliche Projekt-Analyse',
-      description: 'Ihre Projektkosten sind diese Woche um 15% gesunken',
+      title: 'Erfolgreiche Projekt-Erstellung',
+      description: 'Ihre letzten 5 Projekte wurden erfolgreich mit dem KI-Assistenten erstellt',
       type: 'success',
       action: 'Details anzeigen',
     },
     {
-      title: 'Neue Dienstleister verfügbar',
-      description: '3 neue Top-bewertete Anbieter in Ihrer Region verfügbar',
-      type: 'info',
-      action: 'Anbieter ansehen',
-    },
-    {
-      title: 'Verbesserungsvorschlag',
-      description: 'Durch präzisere Projektbeschreibungen 20% bessere Angebote erhalten',
+      title: 'Optimierte Beschreibungen',
+      description: 'KI-generierte Projektbeschreibungen führten zu 20% besseren Angeboten',
       type: 'tip',
       action: 'Tipps ansehen',
+    },
+    {
+      title: 'Neue Features verfügbar',
+      description: 'Erweiterte Kategorie-Erkennung für noch präzisere Projekterstellung',
+      type: 'info',
+      action: 'Mehr erfahren',
     },
   ];
 
@@ -135,20 +65,22 @@ export default function AIAssistantPage() {
               <Bot className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">KI-Assistenten</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Projekt-Erstellungs-Assistent
+              </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Intelligente Unterstützung für all Ihre Projekte
+                Intelligente Unterstützung für die Erstellung Ihrer Projekte
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
-                  <Zap className="h-5 w-5 text-[#14ad9f]" />
+                  <Briefcase className="h-5 w-5 text-[#14ad9f]" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">KI-Interaktionen</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Projekte erstellt</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">1.2k</p>
                   </div>
                 </div>
@@ -160,20 +92,8 @@ export default function AIAssistantPage() {
                 <div className="flex items-center space-x-2">
                   <Clock className="h-5 w-5 text-blue-500" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Zeit gespart</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">24h</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Erfolgsrate</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">94%</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Ø Erstellungszeit</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">3 Min</p>
                   </div>
                 </div>
               </CardContent>
@@ -193,17 +113,16 @@ export default function AIAssistantPage() {
           </div>
         </div>
 
-        {/* KI-Insights */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Lightbulb className="h-5 w-5 text-[#14ad9f]" />
-              <span>KI-Insights & Empfehlungen</span>
+              <span>Projekt-Erstellungs Insights</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {aiInsights.map((insight, index) => (
+              {projectInsights.map((insight, index) => (
                 <div
                   key={index}
                   className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -246,97 +165,73 @@ export default function AIAssistantPage() {
           </CardContent>
         </Card>
 
-        {/* Assistenten-Übersicht */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {assistantFeatures.map(assistant => (
-            <Card key={assistant.id} className="overflow-hidden">
-              <CardHeader className={`${assistant.color} text-white`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <assistant.icon className="h-6 w-6" />
-                    <div>
-                      <CardTitle className="text-lg">{assistant.title}</CardTitle>
-                      <p className="text-sm opacity-90">{assistant.description}</p>
+        {/* Projekt-Erstellungs-Assistent */}
+        <div className="mb-8">
+          <Card className="overflow-hidden">
+            <CardHeader className={`${projectCreationAssistant.color} text-white`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <projectCreationAssistant.icon className="h-6 w-6" />
+                  <div>
+                    <CardTitle className="text-lg">{projectCreationAssistant.title}</CardTitle>
+                    <p className="text-sm opacity-90">{projectCreationAssistant.description}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setActiveAssistant(projectCreationAssistant.id)}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  Starten
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              {/* Features */}
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3 text-gray-900 dark:text-white">Funktionen:</h4>
+                <ul className="space-y-2">
+                  {projectCreationAssistant.features.map((feature, index) => (
+                    <li key={index} className="flex items-center space-x-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-[#14ad9f]" />
+                      <span className="text-gray-600 dark:text-gray-400">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Statistiken */}
+              <div>
+                <h4 className="font-semibold mb-3 text-gray-900 dark:text-white">Performance:</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  {Object.entries(projectCreationAssistant.stats).map(([key, value], index) => (
+                    <div key={index} className="text-center">
+                      <p className="text-lg font-bold text-[#14ad9f]">{String(value)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{key}</p>
                     </div>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setActiveAssistant(assistant.id)}
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                  >
-                    Starten
-                  </Button>
+                  ))}
                 </div>
-              </CardHeader>
-
-              <CardContent className="p-6">
-                {/* Features */}
-                <div className="mb-6">
-                  <h4 className="font-semibold mb-3 text-gray-900 dark:text-white">Funktionen:</h4>
-                  <ul className="space-y-2">
-                    {assistant.features.map((feature, index) => (
-                      <li key={index} className="flex items-center space-x-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-[#14ad9f]" />
-                        <span className="text-gray-600 dark:text-gray-400">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Statistiken */}
-                <div>
-                  <h4 className="font-semibold mb-3 text-gray-900 dark:text-white">Performance:</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    {Object.entries(assistant.stats).map(([key, value], index) => (
-                      <div key={index} className="text-center">
-                        <p className="text-lg font-bold text-[#14ad9f]">{value}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{key}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Quick Actions */}
+        {/* Projekt erstellen */}
         <Card>
           <CardHeader>
-            <CardTitle>Schnellaktionen</CardTitle>
+            <CardTitle>Neues Projekt erstellen</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
               <Button
                 onClick={() => setActiveAssistant('project-creation')}
-                className="h-16 bg-[#14ad9f] hover:bg-[#0f9d84]"
+                className="h-20 w-full bg-[#14ad9f] hover:bg-[#0f9d84] text-lg"
               >
                 <div className="text-center">
-                  <Briefcase className="h-6 w-6 mx-auto mb-1" />
-                  <span>Neues Projekt erstellen</span>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setActiveAssistant('project-monitoring')}
-                className="h-16"
-              >
-                <div className="text-center">
-                  <TrendingUp className="h-6 w-6 mx-auto mb-1" />
-                  <span>Projekte überwachen</span>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setActiveAssistant('analytics')}
-                className="h-16"
-              >
-                <div className="text-center">
-                  <BarChart3 className="h-6 w-6 mx-auto mb-1" />
-                  <span>Analytics anzeigen</span>
+                  <Briefcase className="h-8 w-8 mx-auto mb-2" />
+                  <span>KI-Assistenten für Projekt-Erstellung starten</span>
                 </div>
               </Button>
             </div>
