@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/firebase/server';
+import { auth, db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     let decodedToken;
     try {
       decodedToken = await auth.verifyIdToken(idToken);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 403, headers });
     }
 
@@ -37,44 +37,127 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized access' }, { status: 403, headers });
     }
 
-    // Make request to Firebase Function with proper headers
-    const functionUrl = `https://europe-west1-tilvo-f142f.cloudfunctions.net/getProviderOrders?providerId=${providerId}`;
+    // DIRECT FIRESTORE ACCESS - Bypass Firebase Functions billing issue
+    try {
+      console.log(`[getProviderOrders API] Fetching orders for provider: ${providerId}`);
 
-    const response = await fetch(functionUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-        'Content-Type': 'application/json',
-        Origin: 'https://taskilo.de',
-      },
-    });
+      // Fetch orders directly from Firestore
+      const ordersSnapshot = await db
+        .collection('auftraege')
+        .where('selectedAnbieterId', '==', providerId)
+        .orderBy('createdAt', 'desc')
+        .get();
 
-    if (!response.ok) {
-      const errorText = await response.text();
+      if (ordersSnapshot.empty) {
+        console.log(`[getProviderOrders API] No orders found for provider ${providerId}`);
+        return NextResponse.json({ orders: [] }, { headers });
+      }
+
+      // Process orders and fetch customer details
+      const orders = await Promise.all(
+        ordersSnapshot.docs.map(async doc => {
+          const orderData = doc.data();
+
+          // Fetch customer details
+          let customerName = 'Unbekannter Kunde';
+          let customerAvatarUrl = null;
+
+          if (orderData.customerFirebaseUid) {
+            try {
+              const customerDoc = await db
+                .collection('users')
+                .doc(orderData.customerFirebaseUid)
+                .get();
+              if (customerDoc.exists) {
+                const customerData = customerDoc.data();
+                const firstName = customerData?.firstName || '';
+                const lastName = customerData?.lastName || '';
+                customerName = `${firstName} ${lastName}`.trim() || 'Unbekannter Kunde';
+                customerAvatarUrl =
+                  customerData?.profilePictureURL || customerData?.profilePictureFirebaseUrl;
+              }
+            } catch (customerError) {
+              console.warn(
+                `[getProviderOrders API] Could not fetch customer details:`,
+                customerError
+              );
+            }
+          }
+
+          return {
+            id: doc.id,
+            ...orderData,
+            customerName,
+            customerAvatarUrl,
+            // Convert Firestore timestamps to ISO strings for JSON serialization
+            createdAt: orderData.createdAt?.toDate?.()?.toISOString() || orderData.createdAt,
+            updatedAt: orderData.updatedAt?.toDate?.()?.toISOString() || orderData.updatedAt,
+            paidAt: orderData.paidAt?.toDate?.()?.toISOString() || orderData.paidAt,
+            clearingPeriodEndsAt:
+              orderData.clearingPeriodEndsAt?.toDate?.()?.toISOString() ||
+              orderData.clearingPeriodEndsAt,
+            buyerApprovedAt:
+              orderData.buyerApprovedAt?.toDate?.()?.toISOString() || orderData.buyerApprovedAt,
+          };
+        })
+      );
+
+      console.log(
+        `[getProviderOrders API] Successfully fetched ${orders.length} orders for provider ${providerId}`
+      );
+
       return NextResponse.json(
         {
-          error: `Firebase Function error: ${response.status}`,
-          details: errorText,
+          orders,
+          success: true,
+          source: 'next-api-direct-firestore',
         },
-        { status: response.status, headers }
+        { headers }
+      );
+    } catch (firestoreError) {
+      console.error('[getProviderOrders API] Firestore direct access failed:', firestoreError);
+
+      // Fallback: Try Firebase Function (if billing gets activated)
+      console.log('[getProviderOrders API] Attempting Firebase Function fallback...');
+
+      const functionUrl = `https://europe-west1-tilvo-f142f.cloudfunctions.net/getProviderOrders?providerId=${providerId}`;
+
+      const response = await fetch(functionUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+          Origin: 'https://taskilo.de',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Firebase Function error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      return NextResponse.json(
+        {
+          ...data,
+          source: 'firebase-function-fallback',
+        },
+        { headers }
       );
     }
-
-    const data = await response.json();
-    return NextResponse.json(data, { headers });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Proxy Error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   const headers = new Headers();
   headers.set('Access-Control-Allow-Origin', '*');
   headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
