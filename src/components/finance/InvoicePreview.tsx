@@ -25,11 +25,16 @@ interface InvoicePreviewProps {
     companyPhone?: string;
     companyWebsite?: string;
     companyLogo?: string;
-    companyVatId?: string;
-    companyTaxNumber?: string;
+    vatId?: string;
+    taxNumber?: string;
     companyRegister?: string;
     districtCourt?: string;
     legalForm?: string;
+    ust?: string;
+    iban?: string;
+    accountHolder?: string;
+    bankName?: string;
+    bic?: string;
     isSmallBusiness?: boolean;
   };
 }
@@ -58,17 +63,18 @@ export function InvoicePreview({
     companyPhone: companySettings?.companyPhone || '+49 123 456789',
     companyWebsite: companySettings?.companyWebsite,
     companyLogo: companySettings?.companyLogo,
-    companyVatId: companySettings?.companyVatId,
-    companyTaxNumber: companySettings?.companyTaxNumber,
+    companyVatId: companySettings?.vatId,
+    companyTaxNumber: companySettings?.taxNumber,
     companyRegister: companySettings?.companyRegister,
     districtCourt: companySettings?.districtCourt,
     legalForm: companySettings?.legalForm,
-    companyTax: companySettings?.companyTaxNumber,
+    companyTax: companySettings?.taxNumber,
     items: invoiceData.items || [],
     amount: invoiceData.amount || 0,
     tax: invoiceData.tax || 0,
     total: invoiceData.total || 0,
-    isSmallBusiness: companySettings?.isSmallBusiness || false,
+    isSmallBusiness:
+      companySettings?.ust === 'kleinunternehmer' || companySettings?.isSmallBusiness || false,
     vatRate: 19,
     priceInput: 'netto' as const,
   };

@@ -28,6 +28,9 @@ export interface InvoiceData {
   districtCourt?: string;
   legalForm?: string;
   companyTax?: string;
+  // Bankdaten hinzugefügt
+  iban?: string;
+  accountHolder?: string;
   items: InvoiceItem[];
   amount: number;
   tax: number;
