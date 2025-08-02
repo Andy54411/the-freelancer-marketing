@@ -3,7 +3,7 @@
 import React from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { CustomerComponent } from '@/components/finance/CustomerComponent';
+import { CustomerManager } from '@/components/finance/CustomerManager';
 
 export default function CustomersPage() {
   const params = useParams();
@@ -22,37 +22,6 @@ export default function CustomersPage() {
     );
   }
 
-  // Mock data für Demo-Zwecke
-  const mockCustomers = [
-    {
-      id: 'cust_001',
-      name: 'Mustermann GmbH',
-      email: 'info@mustermann.de',
-      address: 'Musterstraße 1, 12345 Musterstadt',
-      taxNumber: 'DE123456789',
-      totalInvoices: 5,
-      totalAmount: 5950,
-    },
-    {
-      id: 'cust_002',
-      name: 'Tech Solutions AG',
-      email: 'kontakt@techsolutions.de',
-      address: 'Technologiepark 15, 80333 München',
-      taxNumber: 'DE987654321',
-      totalInvoices: 3,
-      totalAmount: 8750,
-    },
-    {
-      id: 'cust_003',
-      name: 'Digital Marketing GmbH',
-      email: 'hello@digitalmarketing.de',
-      address: 'Marketingstraße 42, 10178 Berlin',
-      taxNumber: 'DE456789123',
-      totalInvoices: 7,
-      totalAmount: 12300,
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-4">
@@ -62,7 +31,7 @@ export default function CustomersPage() {
         </p>
       </div>
 
-      <CustomerComponent customers={mockCustomers} />
+      <CustomerManager companyId={uid} />
     </div>
   );
 }
