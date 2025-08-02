@@ -3,12 +3,19 @@
 import React from 'react';
 
 // Invoice Template Types
-export type InvoiceTemplate = 'classic' | 'modern' | 'minimal' | 'corporate' | 'creative';
+export type InvoiceTemplate =
+  | 'classic'
+  | 'modern'
+  | 'minimal'
+  | 'corporate'
+  | 'creative'
+  | 'german-standard';
 
 export interface InvoiceData {
   id: string;
   number: string;
   invoiceNumber: string;
+  sequentialNumber: number;
   date: string;
   issueDate: string;
   dueDate: string;
@@ -38,6 +45,14 @@ export interface InvoiceData {
   isSmallBusiness: boolean;
   vatRate: number;
   priceInput: 'netto' | 'brutto';
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'storno';
+
+  // Storno-spezifische Felder
+  isStorno?: boolean;
+  originalInvoiceId?: string;
+  stornoReason?: string;
+  stornoDate?: Date;
+  stornoBy?: string;
 }
 
 export interface InvoiceItem {
@@ -1020,6 +1035,8 @@ export function InvoiceTemplateRenderer({ template, data, preview = false }: Inv
       return <CorporateTemplate data={data} preview={preview} />;
     case 'creative':
       return <CreativeTemplate data={data} preview={preview} />;
+    case 'german-standard':
+      return <GermanStandardTemplate data={data} preview={preview} />;
     default:
       return <ClassicTemplate data={data} preview={preview} />;
   }
@@ -1057,4 +1074,219 @@ export const INVOICE_TEMPLATES = [
     description: 'Farbenfrohes, modernes Design',
     preview: '/api/placeholder/invoice-creative.jpg',
   },
+  {
+    id: 'german-standard' as InvoiceTemplate,
+    name: 'Deutsch Standard',
+    description: 'GoBD-konformes deutsches Rechnungsformat mit Storno-Unterstützung',
+    preview: '/api/placeholder/invoice-german.jpg',
+  },
 ];
+
+// German Standard Template - GoBD compliant
+function GermanStandardTemplate({ data, preview = false }: Omit<InvoiceTemplateProps, 'template'>) {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string | Date) => {
+    return new Date(dateString).toLocaleDateString('de-DE');
+  };
+
+  const isStorno = data.isStorno || false;
+
+  return (
+    <div
+      className={`bg-white text-black min-h-full ${preview ? 'p-6' : 'p-8'} print:p-8 print:text-black`}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start mb-8">
+        <div className="flex-1">
+          {data.companyLogo && (
+            <img src={data.companyLogo} alt="Logo" className="h-16 w-auto mb-4" />
+          )}
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-gray-800">{data.companyName}</h1>
+            <div className="text-sm text-gray-600 whitespace-pre-line">{data.companyAddress}</div>
+            {data.companyPhone && (
+              <div className="text-sm text-gray-600">Tel: {data.companyPhone}</div>
+            )}
+            {data.companyEmail && (
+              <div className="text-sm text-gray-600">E-Mail: {data.companyEmail}</div>
+            )}
+            {data.companyWebsite && (
+              <div className="text-sm text-gray-600">Web: {data.companyWebsite}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="text-right">
+          <h2 className={`text-3xl font-bold mb-2 ${isStorno ? 'text-red-600' : 'text-gray-800'}`}>
+            {isStorno ? 'STORNO-RECHNUNG' : 'RECHNUNG'}
+          </h2>
+          <div className="text-lg font-semibold text-gray-700">
+            Nr. {data.sequentialNumber || data.invoiceNumber}
+          </div>
+          {isStorno && data.originalInvoiceId && (
+            <div className="text-sm text-red-600 mt-1">
+              Storno zu Rechnung: {data.originalInvoiceId}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Customer and Invoice Details */}
+      <div className="grid grid-cols-2 gap-8 mb-8">
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">Rechnungsempfänger:</h3>
+          <div className="text-sm space-y-1">
+            <div className="font-medium">{data.customerName}</div>
+            <div className="whitespace-pre-line text-gray-600">{data.customerAddress}</div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">Rechnungsdetails:</h3>
+          <div className="text-sm space-y-1">
+            <div className="flex justify-between">
+              <span>Rechnungsdatum:</span>
+              <span>{formatDate(data.issueDate)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Fälligkeitsdatum:</span>
+              <span>{formatDate(data.dueDate)}</span>
+            </div>
+            {data.customerEmail && (
+              <div className="flex justify-between">
+                <span>E-Mail:</span>
+                <span>{data.customerEmail}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Storno Information */}
+      {isStorno && data.stornoReason && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-red-800 mb-2">Stornierungsgrund:</h3>
+          <p className="text-sm text-red-700">{data.stornoReason}</p>
+          {data.stornoDate && (
+            <p className="text-xs text-red-600 mt-2">Storniert am: {formatDate(data.stornoDate)}</p>
+          )}
+        </div>
+      )}
+
+      {/* Invoice Items */}
+      <div className="mb-8">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold">
+                Position
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold">
+                Beschreibung
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold">
+                Menge
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold">
+                Einzelpreis
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold">
+                Gesamtpreis
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.items.map((item, index) => (
+              <tr key={item.id}>
+                <td className="border border-gray-300 px-4 py-3 text-sm">{index + 1}</td>
+                <td className="border border-gray-300 px-4 py-3 text-sm">{item.description}</td>
+                <td className="border border-gray-300 px-4 py-3 text-sm text-right">
+                  {Math.abs(item.quantity)}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-sm text-right">
+                  {formatCurrency(Math.abs(item.unitPrice))}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-sm text-right font-medium">
+                  {formatCurrency(item.total)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Summary */}
+      <div className="flex justify-end mb-8">
+        <div className="w-80">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Zwischensumme:</span>
+              <span>{formatCurrency(Math.abs(data.amount))}</span>
+            </div>
+            {!data.isSmallBusiness && (
+              <div className="flex justify-between text-sm">
+                <span>MwSt. ({data.vatRate}%):</span>
+                <span>{formatCurrency(Math.abs(data.tax))}</span>
+              </div>
+            )}
+            {data.isSmallBusiness && (
+              <div className="text-xs text-gray-600 mb-2">
+                Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
+              </div>
+            )}
+            <div className="border-t border-gray-300 pt-2">
+              <div className="flex justify-between font-bold text-lg">
+                <span>{isStorno ? 'Storno-Betrag:' : 'Gesamtbetrag:'}</span>
+                <span className={isStorno ? 'text-red-600' : ''}>{formatCurrency(data.total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Information */}
+      {!isStorno && (data.iban || data.accountHolder) && (
+        <div className="mb-8">
+          <h3 className="font-semibold text-gray-800 mb-2">Zahlungsinformationen:</h3>
+          <div className="text-sm space-y-1">
+            {data.accountHolder && <div>Kontoinhaber: {data.accountHolder}</div>}
+            {data.iban && <div>IBAN: {data.iban}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="border-t border-gray-300 pt-6 text-xs text-gray-600">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <div className="font-semibold mb-1">{data.companyName}</div>
+            <div>{data.companyAddress}</div>
+          </div>
+          <div>
+            {data.companyTaxNumber && <div>Steuernummer: {data.companyTaxNumber}</div>}
+            {data.companyVatId && <div>USt-IdNr.: {data.companyVatId}</div>}
+          </div>
+          <div>
+            {data.companyRegister && <div>Handelsregister: {data.companyRegister}</div>}
+            {data.districtCourt && <div>Amtsgericht: {data.districtCourt}</div>}
+          </div>
+        </div>
+
+        <div className="text-center mt-4 pt-4 border-t border-gray-200">
+          <p>Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.</p>
+          {isStorno && (
+            <p className="text-red-600 font-medium mt-1">
+              Dies ist eine Storno-Rechnung. Der ausgewiesene Betrag wird gutgeschrieben.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
