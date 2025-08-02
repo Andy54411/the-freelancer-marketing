@@ -224,6 +224,11 @@ export class TimeTrackingService {
 
       const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), {
         ...entryData,
+        // Filter undefined values to prevent Firebase errors
+        projectId: entryData.projectId || null,
+        customerId: entryData.customerId || null,
+        customerName: entryData.customerName || null,
+        category: entryData.category || null,
         status: 'running',
         startTime: new Date(),
         createdAt: new Date(),
@@ -339,6 +344,9 @@ export class TimeTrackingService {
 
       const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), {
         ...entryData,
+        // Filter undefined values to prevent Firebase errors
+        projectId: entryData.projectId || null,
+        notes: entryData.notes || null,
         status: 'stopped',
         duration,
         billableAmount,

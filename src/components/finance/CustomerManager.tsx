@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ interface CustomerManagerProps {
 }
 
 export function CustomerManager({ companyId }: CustomerManagerProps) {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,12 +89,19 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
+      if (!user) {
+        throw new Error('Benutzer nicht authentifiziert');
+      }
+
       const newCustomer = {
         ...customerData,
         companyId,
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: Timestamp.now(),
+        createdBy: user.uid,
+        lastModifiedBy: user.uid,
+        updatedAt: Timestamp.now(),
       };
 
       const docRef = await addDoc(collection(db, 'customers'), newCustomer);
@@ -273,8 +282,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
                       </div>
 
                       <div className="flex gap-1 mt-3">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleViewCustomer(customer)}
                         >
