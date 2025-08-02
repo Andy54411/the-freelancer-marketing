@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpenseComponent } from '@/components/finance/ExpenseComponent';
-import { FinanceService, ExpenseRecord } from '@/services/financeService';
+import { ExpenseRecord } from '@/services/financeService';
 import { toast } from 'sonner';
 
 export default function ExpensesPage() {
@@ -72,7 +72,7 @@ export default function ExpensesPage() {
     if (uid) {
       loadExpenses();
     }
-  }, [uid]);
+  }, [uid, loadExpenses]);
 
   if (loading) {
     return (

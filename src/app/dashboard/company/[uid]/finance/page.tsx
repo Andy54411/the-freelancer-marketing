@@ -56,7 +56,7 @@ export default function FinancePage() {
     if (uid) {
       loadFinanceStats();
     }
-  }, [uid]);
+  }, [uid, loadFinanceStats]);
 
   if (loading) {
     return (

@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { TaxComponent } from '@/components/finance/TaxComponent';
 import { FinanceService } from '@/services/financeService';
-import { InvoiceData } from '@/types/invoiceTypes';
 import { toast } from 'sonner';
 
 interface TaxData {
@@ -103,7 +102,7 @@ export default function TaxesPage() {
     if (uid) {
       loadTaxData();
     }
-  }, [uid]);
+  }, [uid, loadTaxData]);
 
   if (loading) {
     return (

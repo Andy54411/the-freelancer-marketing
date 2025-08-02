@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PaymentComponent } from '@/components/finance/PaymentComponent';
-import { FinanceService, PaymentRecord } from '@/services/financeService';
+import { PaymentRecord } from '@/services/financeService';
 import { toast } from 'sonner';
 
 export default function PaymentsPage() {
@@ -75,7 +75,7 @@ export default function PaymentsPage() {
     if (uid) {
       loadPayments();
     }
-  }, [uid]);
+  }, [uid, loadPayments]);
 
   if (loading) {
     return (
