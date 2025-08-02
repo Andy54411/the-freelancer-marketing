@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,9 +25,25 @@ import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 interface Customer {
   id: string;
+  customerNumber?: string;
   name: string;
   email: string;
+  phone?: string;
+  // Legacy address für Kompatibilität
   address?: string;
+  // Strukturierte Adresse
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  taxNumber?: string;
+  vatId?: string;
+  vatValidated?: boolean;
+  totalInvoices?: number;
+  totalAmount?: number;
+  createdAt?: string;
+  contactPersons?: any[];
+  companyId?: string;
 }
 
 interface InvoiceItem {
@@ -95,6 +111,64 @@ export default function CreateInvoicePage() {
 
     loadUserTemplate();
   }, [uid]);
+
+  // State für echte Kunden
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+
+  // Lade echte Kunden aus Firestore
+  useEffect(() => {
+    const loadCustomers = async () => {
+      if (!uid) return;
+
+      try {
+        setLoadingCustomers(true);
+        const customersQuery = query(
+          collection(db, 'customers'),
+          where('companyId', '==', uid),
+          orderBy('createdAt', 'desc')
+        );
+
+        const querySnapshot = await getDocs(customersQuery);
+        const loadedCustomers: Customer[] = [];
+
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          loadedCustomers.push({
+            id: doc.id,
+            customerNumber: data.customerNumber || '',
+            name: data.name || '',
+            email: data.email || '',
+            phone: data.phone,
+            // Legacy address fallback
+            address: data.address || '',
+            // Strukturierte Adresse
+            street: data.street || '',
+            city: data.city || '',
+            postalCode: data.postalCode || '',
+            country: data.country || '',
+            taxNumber: data.taxNumber,
+            vatId: data.vatId,
+            vatValidated: data.vatValidated || false,
+            totalInvoices: data.totalInvoices || 0,
+            totalAmount: data.totalAmount || 0,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            contactPersons: data.contactPersons || [],
+            companyId: data.companyId || uid,
+          });
+        });
+
+        setCustomers(loadedCustomers);
+      } catch (error) {
+        console.error('Fehler beim Laden der Kunden:', error);
+      } finally {
+        setLoadingCustomers(false);
+      }
+    };
+
+    loadCustomers();
+  }, [uid]);
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -116,28 +190,6 @@ export default function CreateInvoicePage() {
       total: 0,
     },
   ]);
-
-  // Mock customers - in real app would come from API
-  const mockCustomers: Customer[] = [
-    {
-      id: 'cust_001',
-      name: 'Mustermann GmbH',
-      email: 'info@mustermann.de',
-      address: 'Musterstraße 123\n12345 Berlin\nDeutschland',
-    },
-    {
-      id: 'cust_002',
-      name: 'Tech Solutions AG',
-      email: 'kontakt@techsolutions.de',
-      address: 'Techstraße 456\n54321 Hamburg\nDeutschland',
-    },
-    {
-      id: 'cust_003',
-      name: 'Digital Marketing GmbH',
-      email: 'hello@digitalmarketing.de',
-      address: 'Marketingweg 789\n98765 München\nDeutschland',
-    },
-  ];
 
   // Auto-generate invoice number
   React.useEffect(() => {
@@ -164,13 +216,19 @@ export default function CreateInvoicePage() {
   }, [formData.issueDate]);
 
   const handleCustomerSelect = (customerName: string) => {
-    const customer = mockCustomers.find(c => c.name === customerName);
+    const customer = customers.find(c => c.name === customerName);
     if (customer) {
+      // Erstelle Adresse aus strukturierten Feldern oder verwende Legacy-Adresse
+      const customerAddress =
+        customer.street || customer.city || customer.postalCode || customer.country
+          ? `${customer.street || ''}${customer.street ? '\n' : ''}${customer.postalCode || ''} ${customer.city || ''}${customer.city && customer.country ? '\n' : ''}${customer.country || ''}`
+          : customer.address || '';
+
       setFormData(prev => ({
         ...prev,
         customerName: customer.name,
         customerEmail: customer.email,
-        customerAddress: customer.address || '',
+        customerAddress: customerAddress,
       }));
     }
   };
@@ -348,12 +406,25 @@ export default function CreateInvoicePage() {
                     <Label htmlFor="customer">Kunde auswählen</Label>
                     <Select onValueChange={handleCustomerSelect}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Bestehenden Kunden wählen oder neu eingeben" />
+                        <SelectValue
+                          placeholder={
+                            loadingCustomers
+                              ? 'Kunden werden geladen...'
+                              : customers.length === 0
+                                ? 'Keine Kunden gefunden - erstellen Sie zuerst einen Kunden'
+                                : 'Bestehenden Kunden wählen oder neu eingeben'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockCustomers.map(customer => (
+                        {customers.map(customer => (
                           <SelectItem key={customer.id} value={customer.name}>
-                            {customer.name}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{customer.name}</span>
+                              <span className="text-xs text-gray-500">
+                                {customer.customerNumber}
+                              </span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>

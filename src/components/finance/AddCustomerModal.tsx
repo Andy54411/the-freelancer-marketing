@@ -74,6 +74,8 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     city: '',
     postalCode: '',
     country: 'Deutschland',
+    // Unternehmenstyp für Deutschland
+    businessType: 'kleinunternehmer', // 'kleinunternehmer' oder 'regelbesteuert'
     taxNumber: '',
     vatId: '',
     vatValidated: false,
@@ -99,7 +101,12 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
   // VAT Validation
   const handleVATChange = (value: string) => {
     const upperValue = value.toUpperCase();
-    setFormData(prev => ({ ...prev, vatId: upperValue }));
+    setFormData(prev => ({
+      ...prev,
+      vatId: upperValue,
+      // Leere Steuernummer wenn VAT befüllt wird
+      taxNumber: upperValue ? '' : prev.taxNumber,
+    }));
 
     if (upperValue.length > 2) {
       const validation = validateVATNumber(upperValue);
@@ -107,6 +114,17 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     } else {
       setFormData(prev => ({ ...prev, vatValidated: false }));
     }
+  };
+
+  // Tax Number Change Handler
+  const handleTaxNumberChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      taxNumber: value,
+      // Leere VAT wenn Steuernummer befüllt wird
+      vatId: value ? '' : prev.vatId,
+      vatValidated: false,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -188,6 +206,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         city: '',
         postalCode: '',
         country: 'Deutschland',
+        businessType: 'kleinunternehmer',
         taxNumber: '',
         vatId: '',
         vatValidated: false,
@@ -408,53 +427,129 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="taxNumber">Steuernummer</Label>
-              <Input
-                id="taxNumber"
-                name="tax-number"
-                value={formData.taxNumber}
-                onChange={e => handleChange('taxNumber', e.target.value)}
-                placeholder="12345/67890"
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <Label htmlFor="vatId">USt-IdNr.</Label>
-              <div className="space-y-2">
-                <div className="relative">
+            {/* Deutschland: Nur ENTWEDER Steuernummer ODER VAT */}
+            {formData.country === 'Deutschland' ? (
+              <>
+                <div>
+                  <Label htmlFor="taxNumber">Steuernummer</Label>
                   <Input
-                    id="vatId"
-                    name="vat-id"
-                    value={formData.vatId}
-                    onChange={e => handleVATChange(e.target.value)}
-                    placeholder="DE123456789"
+                    id="taxNumber"
+                    name="tax-number"
+                    value={formData.taxNumber}
+                    onChange={e => handleTaxNumberChange(e.target.value)}
+                    placeholder="12345/67890"
                     autoComplete="off"
-                    className={
-                      formData.vatId && formData.vatValidated
-                        ? 'border-green-500 pr-10'
-                        : formData.vatId && !formData.vatValidated
-                          ? 'border-red-500 pr-10'
-                          : ''
-                    }
+                    disabled={!!formData.vatId}
                   />
-                  {formData.vatId && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      {formData.vatValidated ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-500" />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.vatId
+                      ? 'Deaktiviert - VAT-Nummer ist gesetzt'
+                      : 'Deutsche Steuernummer (Kleinunternehmer)'}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="vatId">USt-IdNr.</Label>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Input
+                        id="vatId"
+                        name="vat-id"
+                        value={formData.vatId}
+                        onChange={e => handleVATChange(e.target.value)}
+                        placeholder="DE123456789"
+                        autoComplete="off"
+                        disabled={!!formData.taxNumber}
+                        className={
+                          formData.vatId && formData.vatValidated
+                            ? 'border-green-500 pr-10'
+                            : formData.vatId && !formData.vatValidated
+                              ? 'border-red-500 pr-10'
+                              : ''
+                        }
+                      />
+                      {formData.vatId && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {formData.vatValidated ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-                {formData.vatId && (
-                  <div className="text-xs text-gray-500">
-                    Format: {getVATFormat(formData.country)}
+                    <div className="text-xs text-gray-500">
+                      {formData.taxNumber
+                        ? 'Deaktiviert - Steuernummer ist gesetzt'
+                        : 'Deutsche USt-IdNr. (Regelbesteuert)'}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+              </>
+            ) : (
+              /* Andere Länder: Hauptsächlich VAT, optional lokale Steuernummer */
+              <>
+                <div>
+                  <Label htmlFor="vatId">USt-IdNr. / VAT-Nummer</Label>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Input
+                        id="vatId"
+                        name="vat-id"
+                        value={formData.vatId}
+                        onChange={e => handleVATChange(e.target.value)}
+                        placeholder={
+                          formData.country === 'Österreich'
+                            ? 'ATU12345678'
+                            : formData.country === 'Schweiz'
+                              ? 'CHE123456789'
+                              : formData.country === 'Niederlande'
+                                ? 'NL123456789B01'
+                                : formData.country === 'USA'
+                                  ? '12-3456789'
+                                  : formData.country === 'Brasilien'
+                                    ? '12.345.678/0001-90'
+                                    : 'Länderkürzel + Nummer'
+                        }
+                        autoComplete="off"
+                        className={
+                          formData.vatId && formData.vatValidated
+                            ? 'border-green-500 pr-10'
+                            : formData.vatId && !formData.vatValidated
+                              ? 'border-red-500 pr-10'
+                              : ''
+                        }
+                      />
+                      {formData.vatId && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {formData.vatValidated ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {formData.vatId && (
+                      <div className="text-xs text-gray-500">
+                        Format: {getVATFormat(formData.country)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="taxNumber">Lokale Steuernummer (optional)</Label>
+                  <Input
+                    id="taxNumber"
+                    name="tax-number"
+                    value={formData.taxNumber}
+                    onChange={e => handleTaxNumberChange(e.target.value)}
+                    placeholder="Lokale Steuernummer"
+                    autoComplete="off"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">Zusätzliche lokale Steuernummer</div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Ansprechpartner Sektion */}
