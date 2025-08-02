@@ -21,9 +21,9 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       </div>
 
       {/* Grundinformationen */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Linke Spalte */}
-        <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Grunddaten Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Firmenname *</label>
             <input
@@ -33,7 +33,7 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
                 setProfile(prev => (prev ? { ...prev, companyName: e.target.value } : null))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-              placeholder="Dein Firmenname"
+              placeholder="z.B. Max Mustermann GmbH"
             />
           </div>
 
@@ -60,38 +60,66 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
               </span>
             </div>
           </div>
+        </div>
 
-          {/* Info Hinweis */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="font-medium text-gray-700 mb-2">📍 Standort verwalten</h5>
-            <p className="text-sm text-gray-600">
-              Deinen Standort kannst du im <strong>&quot;Standort&quot;</strong> Tab mit Google
-              Places API präzise verwalten.
-            </p>
+        {/* Standort Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Stadt *</label>
+            <input
+              type="text"
+              value={profile.city || ''}
+              onChange={e => setProfile(prev => (prev ? { ...prev, city: e.target.value } : null))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              placeholder="z.B. München"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Land *</label>
+            <input
+              type="text"
+              value={profile.country || ''}
+              onChange={e =>
+                setProfile(prev => (prev ? { ...prev, country: e.target.value } : null))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              placeholder="z.B. Deutschland"
+            />
           </div>
         </div>
 
-        {/* Rechte Spalte */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Unternehmensbeschreibung *
-            </label>
-            <textarea
-              value={profile.publicDescription}
-              onChange={e =>
-                setProfile(prev => (prev ? { ...prev, publicDescription: e.target.value } : null))
-              }
-              rows={10}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-              placeholder="Beschreibe dein Unternehmen, deine Expertise und Dienstleistungen. Diese Beschreibung wird auf deinem öffentlichen Profil angezeigt und hilft Kunden dabei, dich zu finden und zu verstehen, was du anbietest..."
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Diese Beschreibung ist öffentlich sichtbar auf deinem Profil
+        {/* Unternehmensbeschreibung */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Unternehmensbeschreibung *
+          </label>
+          <textarea
+            value={profile.publicDescription}
+            onChange={e =>
+              setProfile(prev => (prev ? { ...prev, publicDescription: e.target.value } : null))
+            }
+            rows={8}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+            placeholder="Beschreibe dein Unternehmen, deine Expertise und Dienstleistungen. Diese Beschreibung wird auf deinem öffentlichen Profil angezeigt und hilft Kunden dabei, dich zu finden und zu verstehen, was du anbietest..."
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Diese Beschreibung ist öffentlich sichtbar auf deinem Profil
+          </p>
+        </div>
+
+        {/* Info Sections */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Erweiterte Standort Features */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h5 className="font-medium text-gray-700 mb-2">�️ Erweiterte Standort-Features</h5>
+            <p className="text-sm text-gray-600">
+              Im <strong>&quot;Standort&quot;</strong> Tab findest du Google Places API Integration
+              für präzise Adressauswahl und Geo-Koordinaten.
             </p>
           </div>
 
-          {/* Info Box */}
+          {/* Tipps */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h5 className="font-medium text-blue-900 mb-2">💡 Tipp für bessere Sichtbarkeit</h5>
             <ul className="text-sm text-blue-800 space-y-1">
