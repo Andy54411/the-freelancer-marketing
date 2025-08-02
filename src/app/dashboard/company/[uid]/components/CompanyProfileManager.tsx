@@ -93,8 +93,8 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
 
     setSaving(true);
     try {
-      const userRef = doc(db, 'users', profile.uid);
-      await updateDoc(userRef, {
+      const companyRef = doc(db, 'companies', profile.uid);
+      await updateDoc(companyRef, {
         // Grunddaten
         username: profile.username,
         displayName: profile.displayName,
