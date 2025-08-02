@@ -68,6 +68,8 @@ export function CustomerSelect({
           totalInvoices: data.totalInvoices || 0,
           totalAmount: data.totalAmount || 0,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          contactPersons: data.contactPersons || [],
+          companyId: data.companyId || companyId,
         });
       });
 

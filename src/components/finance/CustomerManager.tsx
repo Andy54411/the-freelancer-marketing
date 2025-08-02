@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Edit, Search, Eye, Mail, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddCustomerModal, Customer } from './AddCustomerModal';
+import { CustomerDetailModal } from './CustomerDetailModal';
 
 interface CustomerManagerProps {
   companyId: string;
@@ -20,6 +21,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Generate next customer number
   const generateNextCustomerNumber = (existingCustomers: Customer[]) => {
@@ -64,6 +67,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           totalInvoices: data.totalInvoices || 0,
           totalAmount: data.totalAmount || 0,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          contactPersons: data.contactPersons || [],
+          companyId: data.companyId || companyId,
         });
       });
 
@@ -79,7 +84,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
   // Add new customer
   const handleAddCustomer = async (
-    customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt'>
+    customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
       const newCustomer = {
@@ -95,6 +100,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       const addedCustomer: Customer = {
         ...customerData,
         id: docRef.id,
+        companyId,
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: new Date().toISOString(),
@@ -108,6 +114,11 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       console.error('Fehler beim Hinzufügen des Kunden:', error);
       throw error;
     }
+  };
+
+  const handleViewCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowDetailModal(true);
   };
 
   // Filter customers based on search term
@@ -262,7 +273,11 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
                       </div>
 
                       <div className="flex gap-1 mt-3">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleViewCustomer(customer)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm">
@@ -277,6 +292,16 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           )}
         </div>
       </CardContent>
+
+      {/* Customer Detail Modal */}
+      <CustomerDetailModal
+        customer={selectedCustomer}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedCustomer(null);
+        }}
+      />
     </Card>
   );
 }

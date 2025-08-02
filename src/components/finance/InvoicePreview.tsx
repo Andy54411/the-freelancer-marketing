@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Download, Mail, Printer, FileText } from 'lucide-react';
-import { InvoiceTemplateRenderer, InvoiceData, InvoiceTemplate } from './InvoiceTemplates';
+import { InvoiceTemplateRenderer, InvoiceTemplate } from './InvoiceTemplates';
+import { InvoiceData } from '@/types/invoiceTypes';
 
 interface InvoicePreviewProps {
   invoiceData: Partial<InvoiceData>;
@@ -50,21 +51,22 @@ export function InvoicePreview({
     id: 'preview',
     number: invoiceData.invoiceNumber || 'R-2025-000',
     invoiceNumber: invoiceData.invoiceNumber || 'R-2025-000',
+    sequentialNumber: 0,
     date: invoiceData.issueDate || new Date().toISOString().split('T')[0],
     issueDate: invoiceData.issueDate || new Date().toISOString().split('T')[0],
     dueDate: invoiceData.dueDate || new Date().toISOString().split('T')[0],
     customerName: invoiceData.customerName || 'Kunden auswählen...',
     customerAddress: invoiceData.customerAddress || 'Kundenadresse wird hier angezeigt',
-    customerEmail: invoiceData.customerEmail,
-    description: invoiceData.description,
+    customerEmail: invoiceData.customerEmail || '',
+    description: invoiceData.description || '',
     companyName: companySettings?.companyName || 'Ihr Unternehmen',
     companyAddress: companySettings?.companyAddress || 'Ihre Firmenadresse',
     companyEmail: companySettings?.companyEmail || 'info@ihrunternehmen.de',
     companyPhone: companySettings?.companyPhone || '+49 123 456789',
-    companyWebsite: companySettings?.companyWebsite,
-    companyLogo: companySettings?.companyLogo,
-    companyVatId: companySettings?.vatId,
-    companyTaxNumber: companySettings?.taxNumber,
+    companyWebsite: companySettings?.companyWebsite || '',
+    companyLogo: companySettings?.companyLogo || '',
+    companyVatId: companySettings?.vatId || '',
+    companyTaxNumber: companySettings?.taxNumber || '',
     companyRegister: companySettings?.companyRegister,
     districtCourt: companySettings?.districtCourt,
     legalForm: companySettings?.legalForm,
@@ -73,6 +75,11 @@ export function InvoicePreview({
     amount: invoiceData.amount || 0,
     tax: invoiceData.tax || 0,
     total: invoiceData.total || 0,
+    status: 'draft',
+    createdAt: new Date(),
+    year: new Date().getFullYear(),
+    companyId: 'preview',
+    isStorno: false,
     isSmallBusiness:
       companySettings?.ust === 'kleinunternehmer' || companySettings?.isSmallBusiness || false,
     vatRate: 19,

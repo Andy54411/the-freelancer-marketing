@@ -51,53 +51,60 @@ export default function InvoiceTemplatesPage() {
     loadUserTemplate();
   }, [uid]);
 
-  // Mock invoice data for preview
-  const mockInvoiceData: InvoiceData = {
-    id: 'inv_preview_001',
-    number: 'R-2025-001',
-    invoiceNumber: 'R-2025-001',
-    date: '2025-08-02',
-    issueDate: '2025-08-02',
-    dueDate: '2025-08-16',
-    customerName: 'Mustermann GmbH',
-    customerEmail: 'info@mustermann.de',
-    customerAddress: 'Musterstraße 123\n12345 Berlin\nDeutschland',
-    description: 'Beratungsleistungen - Projektmanagement und Strategie',
-    companyName: 'Ihre Firma GmbH',
-    companyAddress: 'Firmenstraße 456\n54321 Hamburg\nDeutschland',
-    companyEmail: 'kontakt@ihrefirma.de',
-    companyPhone: '+49 40 123456789',
-    companyWebsite: 'https://ihrefirma.de',
-    companyLogo: undefined,
-    companyVatId: 'DE123456789',
-    companyTaxNumber: '12345/67890',
-    companyRegister: 'HRB 12345',
-    districtCourt: 'Amtsgericht Hamburg',
-    legalForm: 'GmbH',
-    companyTax: 'DE123456789',
-    isSmallBusiness: false,
-    vatRate: 19,
-    priceInput: 'netto' as const,
-    amount: 1000.0,
-    tax: 190.0,
-    total: 1190.0,
-    items: [
-      {
-        id: 'item_1',
-        description: 'Projektmanagement (40 Stunden)',
-        quantity: 40,
-        unitPrice: 85.0,
-        total: 3400.0,
-      },
-      {
-        id: 'item_2',
-        description: 'Strategieberatung (20 Stunden)',
-        quantity: 20,
-        unitPrice: 120.0,
-        total: 2400.0,
-      },
-    ],
+  // Template-Vorschau-Daten erstellen
+  const createPreviewData = (): InvoiceData => {
+    return {
+      id: 'preview_template',
+      number: 'R-2025-001',
+      invoiceNumber: 'R-2025-001',
+      sequentialNumber: 1,
+      date: new Date().toISOString().split('T')[0],
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      customerName: 'Mustermann GmbH',
+      customerEmail: 'info@mustermann.de',
+      customerAddress: 'Musterstraße 123\n12345 Berlin\nDeutschland',
+      description: 'Beratungsleistungen - Projektmanagement und Strategie',
+      companyName: 'Ihre Firma GmbH',
+      companyAddress: 'Firmenstraße 456\n54321 Hamburg\nDeutschland',
+      companyEmail: 'kontakt@ihrefirma.de',
+      companyPhone: '+49 40 123456789',
+      companyWebsite: 'https://ihrefirma.de',
+      companyLogo: '',
+      companyVatId: 'DE123456789',
+      companyTaxNumber: '12345/67890',
+      companyRegister: 'HRB 12345',
+      districtCourt: 'Amtsgericht Hamburg',
+      legalForm: 'GmbH',
+      companyTax: 'DE123456789',
+      isSmallBusiness: false,
+      vatRate: 19,
+      priceInput: 'netto' as const,
+      amount: 5800.0,
+      tax: 1102.0,
+      total: 6902.0,
+      status: 'draft',
+      isStorno: false,
+      items: [
+        {
+          id: 'item_1',
+          description: 'Projektmanagement (40 Stunden)',
+          quantity: 40,
+          unitPrice: 85.0,
+          total: 3400.0,
+        },
+        {
+          id: 'item_2',
+          description: 'Strategieberatung (20 Stunden)',
+          quantity: 20,
+          unitPrice: 120.0,
+          total: 2400.0,
+        }
+      ]
+    };
   };
+
+  const previewData = createPreviewData();
 
   const handleTemplateSelect = (templateId: InvoiceTemplate) => {
     setSelectedTemplate(templateId);
@@ -223,7 +230,7 @@ export default function InvoiceTemplatesPage() {
                     <div className="transform scale-[0.15] origin-top-left w-[800px] h-[1000px] pointer-events-none">
                       <InvoiceTemplateRenderer
                         template={template.id}
-                        data={mockInvoiceData}
+                        data={previewData}
                         preview={true}
                       />
                     </div>
@@ -304,7 +311,7 @@ export default function InvoiceTemplatesPage() {
                 <div className="p-6">
                   <InvoiceTemplateRenderer
                     template={previewTemplate}
-                    data={mockInvoiceData}
+                    data={previewData}
                     preview={false}
                   />
                 </div>

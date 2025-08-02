@@ -1,14 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpenseComponent } from '@/components/finance/ExpenseComponent';
+import { FinanceService, ExpenseRecord } from '@/services/financeService';
+import { toast } from 'sonner';
 
 export default function ExpensesPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+  
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -22,41 +27,68 @@ export default function ExpensesPage() {
     );
   }
 
-  // Mock data für Demo-Zwecke
-  const mockExpenses = [
-    {
-      id: 'exp_001',
-      title: 'Büromaterial',
-      amount: 150.5,
-      category: 'Büroausstattung',
-      date: '2024-01-10',
-      description: 'Stifte, Papier, Drucker',
-    },
-    {
-      id: 'exp_002',
-      title: 'Software-Lizenzen',
-      amount: 299.99,
-      category: 'Software',
-      date: '2024-01-15',
-      description: 'Adobe Creative Suite Jahresabo',
-    },
-    {
-      id: 'exp_003',
-      title: 'Hosting & Domain',
-      amount: 89.99,
-      category: 'IT-Services',
-      date: '2024-01-08',
-      description: 'Webhosting und Domain-Erneuerung',
-    },
-    {
-      id: 'exp_004',
-      title: 'Fortbildung',
-      amount: 450.0,
-      category: 'Bildung',
-      date: '2024-01-12',
-      description: 'Online-Kurs für React Development',
-    },
-  ];
+  // Ausgaben laden
+  const loadExpenses = async () => {
+    try {
+      setLoading(true);
+      // Direkte Firestore-Abfrage für Ausgaben
+      const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+      const { db } = await import('@/firebase/clients');
+      
+      const expensesQuery = query(
+        collection(db, 'expenses'),
+        where('companyId', '==', uid),
+        orderBy('date', 'desc')
+      );
+
+      const querySnapshot = await getDocs(expensesQuery);
+      const loadedExpenses: ExpenseRecord[] = [];
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        loadedExpenses.push({
+          id: doc.id,
+          companyId: data.companyId,
+          amount: data.amount || 0,
+          category: data.category || '',
+          description: data.description || '',
+          date: data.date?.toDate?.() || new Date(),
+          receipt: data.receipt,
+          taxDeductible: data.taxDeductible || false,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+        });
+      });
+
+      setExpenses(loadedExpenses);
+    } catch (error) {
+      console.error('Fehler beim Laden der Ausgaben:', error);
+      toast.error('Fehler beim Laden der Ausgaben');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (uid) {
+      loadExpenses();
+    }
+  }, [uid]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="border-b border-gray-200 pb-4">
+          <h1 className="text-2xl font-bold text-gray-900">Ausgaben</h1>
+          <p className="text-gray-600 mt-1">Verwalten Sie Ihre Geschäftsausgaben und Belege</p>
+        </div>
+        
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+          <span className="ml-3 text-gray-600">Lade Ausgaben...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -65,7 +97,16 @@ export default function ExpensesPage() {
         <p className="text-gray-600 mt-1">Verwalten Sie Ihre Geschäftsausgaben und Belege</p>
       </div>
 
-      <ExpenseComponent expenses={mockExpenses} />
+      <ExpenseComponent 
+        expenses={expenses.map(e => ({
+          id: e.id,
+          title: e.description,
+          amount: e.amount,
+          category: e.category,
+          date: e.date.toISOString().split('T')[0],
+          description: e.description,
+        }))}
+      />
     </div>
   );
 }

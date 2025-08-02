@@ -20,8 +20,8 @@ import {
   INVOICE_TEMPLATES,
   InvoiceTemplate,
   InvoiceTemplateRenderer,
-  InvoiceData,
 } from './InvoiceTemplates';
+import { InvoiceData } from '@/types/invoiceTypes';
 
 interface InvoiceTemplatePickerProps {
   trigger?: React.ReactNode;
@@ -47,6 +47,7 @@ export function InvoiceTemplatePicker({
     id: 'preview',
     number: 'R-2024-001',
     invoiceNumber: 'R-2024-001',
+    sequentialNumber: 1,
     date: new Date().toISOString().split('T')[0],
     issueDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -59,7 +60,7 @@ export function InvoiceTemplatePicker({
     companyEmail: 'info@ihr-unternehmen.de',
     companyPhone: '+49 123 456789',
     companyWebsite: 'https://ihr-unternehmen.de',
-    companyLogo: undefined,
+    companyLogo: '',
     companyVatId: 'DE123456789',
     companyTaxNumber: '12345/67890',
     companyRegister: 'HRB 12345',
@@ -72,6 +73,11 @@ export function InvoiceTemplatePicker({
     amount: 1000,
     tax: 190,
     total: 1190,
+    status: 'draft',
+    createdAt: new Date(),
+    year: new Date().getFullYear(),
+    companyId: 'preview-company',
+    isStorno: false,
     items: [
       {
         id: '1',
