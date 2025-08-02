@@ -129,6 +129,11 @@ const navigationItems: NavigationItem[] = [
         value: 'finance-taxes',
         href: 'finance/taxes',
       },
+      {
+        label: 'Lagerbestand',
+        value: 'finance-inventory',
+        href: 'finance/inventory',
+      },
     ],
   },
   {
