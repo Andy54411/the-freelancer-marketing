@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getFinApiBaseUrl, getFinApiCredentials, buildFinApiAuthHeader } from '@/lib/finapi-config';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,19 +21,12 @@ export async function POST(req: NextRequest) {
       process.env.FINAPI_ADMIN_CLIENT_SECRET ? 'SET' : 'NOT SET'
     );
 
-    // Environment variables für finAPI Credentials
-    const credentials =
-      credentialType === 'admin'
-        ? {
-            clientId: process.env.FINAPI_ADMIN_CLIENT_ID,
-            clientSecret: process.env.FINAPI_ADMIN_CLIENT_SECRET,
-          }
-        : {
-            clientId: process.env.FINAPI_SANDBOX_CLIENT_ID,
-            clientSecret: process.env.FINAPI_SANDBOX_CLIENT_SECRET,
-          };
+    // Get finAPI configuration
+    const baseUrl = getFinApiBaseUrl(credentialType);
+    const credentials = getFinApiCredentials(credentialType);
 
-    console.log(`Using ${credentialType} credentials:`, {
+    console.log(`Using ${credentialType} credentials with base URL: ${baseUrl}`);
+    console.log('Credentials:', {
       clientId: credentials.clientId ? credentials.clientId.substring(0, 8) + '...' : 'NOT SET',
       clientSecret: credentials.clientSecret ? 'SET' : 'NOT SET',
     });
@@ -46,11 +40,11 @@ export async function POST(req: NextRequest) {
     }
 
     // finAPI OAuth Token Request
-    const authResponse = await fetch('https://sandbox.finapi.io/oauth/token', {
+    const authResponse = await fetch(`${baseUrl}/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${Buffer.from(`${credentials.clientId}:${credentials.clientSecret}`).toString('base64')}`,
+        Authorization: buildFinApiAuthHeader(credentials.clientId, credentials.clientSecret),
       },
       body: 'grant_type=client_credentials',
     });
