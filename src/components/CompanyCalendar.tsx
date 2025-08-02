@@ -12,6 +12,8 @@ import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 // Wiederverwendbarer OrderData-Typ
 type OrderData = {
@@ -24,20 +26,45 @@ type OrderData = {
   uid: string; // Provider UID
 };
 
+// Project-Typ für Kalenderanzeige
+type ProjectData = {
+  id: string;
+  name: string;
+  client: string;
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
+  startDate: string;
+  endDate: string;
+  companyId: string;
+};
+
 interface CompanyCalendarProps {
   companyUid: string;
   selectedOrderId?: string | null; // Die ID des Auftrags, der hervorgehoben werden soll
 }
 
-// NEU: Hilfsfunktion, um Farben basierend auf dem Auftragsstatus zu bestimmen
+// NEU: Hilfsfunktion, um Farben basierend auf dem Auftragsstatus oder Projektstatus zu bestimmen
 const getStatusColor = (status: string) => {
   switch (status) {
+    // Order statuses
     case 'AKTIV':
       return { backgroundColor: '#14ad9f', borderColor: '#14ad9f' }; // Teal
     case 'IN BEARBEITUNG':
       return { backgroundColor: '#f59e0b', borderColor: '#f59e0b' }; // Amber/Gelb
     case 'ABGESCHLOSSEN':
       return { backgroundColor: '#6b7280', borderColor: '#6b7280' }; // Grau
+
+    // Project statuses
+    case 'planning':
+      return { backgroundColor: '#3b82f6', borderColor: '#3b82f6' }; // Blau
+    case 'active':
+      return { backgroundColor: '#10b981', borderColor: '#10b981' }; // Grün
+    case 'on-hold':
+      return { backgroundColor: '#f59e0b', borderColor: '#f59e0b' }; // Amber/Gelb
+    case 'completed':
+      return { backgroundColor: '#6b7280', borderColor: '#6b7280' }; // Grau
+    case 'cancelled':
+      return { backgroundColor: '#ef4444', borderColor: '#ef4444' }; // Rot
+
     default:
       return { backgroundColor: '#a1a1aa', borderColor: '#a1a1aa' }; // Standard-Grau
   }
@@ -48,11 +75,12 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
   const { user, loading: authLoading } = useAuth();
 
   const [allOrders, setAllOrders] = useState<OrderData[]>([]); // Speichert die Rohdaten der Aufträge
+  const [allProjects, setAllProjects] = useState<ProjectData[]>([]); // Speichert die Rohdaten der Projekte
   const [events, setEvents] = useState<EventInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Effekt zum einmaligen Laden der Auftragsdaten
+  // Effekt zum einmaligen Laden der Auftrags- und Projektdaten
   useEffect(() => {
     if (authLoading || !user || user.uid !== companyUid) {
       if (!authLoading) {
@@ -62,20 +90,21 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       return; // Warten auf Authentifizierung oder bei fehlender Berechtigung abbrechen
     }
 
-    const fetchOrders = async () => {
+    const fetchOrdersAndProjects = async () => {
       setLoading(true);
       setError(null);
       try {
-        const result = await callHttpsFunction(
+        // Aufträge laden
+        const orderResult = await callHttpsFunction(
           'getProviderOrders',
           { providerId: companyUid },
           'GET'
         );
-        console.log('[CompanyCalendar] Rohdaten vom Backend erhalten:', result.orders);
+        console.log('[CompanyCalendar] Rohdaten vom Backend erhalten:', orderResult.orders);
 
         // KORREKTUR: Aufträge filtern, die im Kalender angezeigt werden sollen (AKTIV, IN BEARBEITUNG, ABGESCHLOSSEN)
         // und sicherstellen, dass sie ein Startdatum haben.
-        const relevantOrders = result.orders.filter((order: any) => {
+        const relevantOrders = orderResult.orders.filter((order: any) => {
           const hasValidStatus = ['AKTIV', 'IN BEARBEITUNG', 'ABGESCHLOSSEN'].includes(
             order.status
           );
@@ -89,22 +118,55 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         });
         console.log('[CompanyCalendar] Relevante, gefilterte Aufträge:', relevantOrders);
 
+        // Projekte aus Firebase laden
+        const projectsQuery = query(
+          collection(db, 'projects'),
+          where('companyId', '==', companyUid),
+          orderBy('createdAt', 'desc')
+        );
+
+        const projectSnapshot = await getDocs(projectsQuery);
+        const loadedProjects: ProjectData[] = [];
+
+        projectSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.startDate && data.endDate) {
+            loadedProjects.push({
+              id: doc.id,
+              name: data.name || '',
+              client: data.client || '',
+              status: data.status || 'planning',
+              startDate: data.startDate,
+              endDate: data.endDate,
+              companyId: data.companyId || companyUid,
+            });
+          }
+        });
+
+        console.log('[CompanyCalendar] Geladene Projekte:', loadedProjects);
+
         setAllOrders(relevantOrders);
+        setAllProjects(loadedProjects);
       } catch (err: any) {
-        setError(err.message || 'Fehler beim Laden der Aufträge.');
+        setError(err.message || 'Fehler beim Laden der Aufträge und Projekte.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrders();
+    fetchOrdersAndProjects();
   }, [user, authLoading, companyUid]);
 
-  // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge oder die Auswahl ändern
+  // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge, Projekte oder die Auswahl ändern
   useEffect(() => {
-    console.log('[CompanyCalendar] Erstelle Kalender-Events aus allOrders:', allOrders);
+    console.log(
+      '[CompanyCalendar] Erstelle Kalender-Events aus allOrders und allProjects:',
+      allOrders,
+      allProjects
+    );
 
-    const calendarEvents = allOrders.map(order => {
+    // Events für Aufträge erstellen
+    const orderEvents = allOrders.map(order => {
       const isSelected = order.id === selectedOrderId;
       const colors = getStatusColor(order.status);
 
@@ -120,7 +182,7 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
       const eventObject = {
         id: order.id,
-        title: order.selectedSubcategory,
+        title: `📋 ${order.selectedSubcategory}`,
         start: order.jobDateFrom ? new Date(order.jobDateFrom) : undefined,
         end: inclusiveEndDate, // Korrigiertes End-Datum verwenden
         allDay: true, // Behandle alle Aufträge mit Datum als "allDay" für eine saubere Monatsansicht
@@ -128,6 +190,7 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         extendedProps: {
           customerName: order.customerName,
           status: order.status,
+          type: 'order',
         },
         // Visuelle Hervorhebung für ausgewählte Aufträge
         className: isSelected ? 'border-2 border-white ring-2 ring-teal-500 z-10' : '',
@@ -143,13 +206,72 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
       return eventObject;
     });
+
+    // Events für Projekte erstellen
+    const projectEvents = allProjects.map(project => {
+      const colors = getStatusColor(project.status);
+
+      // End-Datum für FullCalendar anpassen (exklusiv)
+      let inclusiveEndDate;
+      if (project.endDate) {
+        const d = new Date(project.endDate);
+        d.setDate(d.getDate() + 1); // Einen Tag hinzufügen
+        inclusiveEndDate = d;
+      }
+
+      const eventObject = {
+        id: `project-${project.id}`,
+        title: `🚀 ${project.name}`,
+        start: project.startDate ? new Date(project.startDate) : undefined,
+        end: inclusiveEndDate,
+        allDay: true,
+        url: `/dashboard/company/${companyUid}/finance/projects`,
+        extendedProps: {
+          customerName: project.client,
+          status: project.status,
+          type: 'project',
+        },
+        ...colors,
+      };
+
+      console.log(`[CompanyCalendar] Erstelle Event für Projekt ${project.id}:`, {
+        title: eventObject.title,
+        start: eventObject.start,
+        end: eventObject.end,
+        allDay: eventObject.allDay,
+      });
+
+      return eventObject;
+    });
+
+    // Alle Events kombinieren
+    const calendarEvents = [...orderEvents, ...projectEvents];
     console.log('[CompanyCalendar] Finales Array von Kalender-Events:', calendarEvents);
     setEvents(calendarEvents);
-  }, [allOrders, selectedOrderId, companyUid]);
+  }, [allOrders, allProjects, selectedOrderId, companyUid]);
 
   // NEU: Funktion zum Rendern des Event-Inhalts mit Tooltip
   const renderEventContent = (eventInfo: EventContentArg) => {
-    const { status, customerName } = eventInfo.event.extendedProps;
+    const { status, customerName, type } = eventInfo.event.extendedProps;
+
+    // Deutsche Status-Labels
+    const getStatusLabel = (status: string) => {
+      const statusLabels: { [key: string]: string } = {
+        // Order statuses
+        AKTIV: 'Aktiv',
+        'IN BEARBEITUNG': 'In Bearbeitung',
+        ABGESCHLOSSEN: 'Abgeschlossen',
+        // Project statuses
+        planning: 'Planung',
+        active: 'Aktiv',
+        'on-hold': 'Pausiert',
+        completed: 'Abgeschlossen',
+        cancelled: 'Abgebrochen',
+      };
+      return statusLabels[status] || status;
+    };
+
+    const typeLabel = type === 'project' ? 'Projekt' : 'Auftrag';
 
     return (
       <Tooltip>
@@ -160,10 +282,9 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         </TooltipTrigger>
         <TooltipContent>
           <p className="font-semibold">{eventInfo.event.title}</p>
+          <p>{typeLabel}</p>
           <p>Kunde: {customerName}</p>
-          <p>
-            Status: <span className="capitalize">{status.replace(/_/g, ' ').toLowerCase()}</span>
-          </p>
+          <p>Status: {getStatusLabel(status)}</p>
         </TooltipContent>
       </Tooltip>
     );
