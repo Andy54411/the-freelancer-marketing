@@ -14,8 +14,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, Trash2, UserPlus, Star } from 'lucide-react';
+import { Plus, Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { validateVATNumber, getVATFormat } from '@/utils/vatValidation';
 
 export interface ContactPerson {
   id: string;
@@ -34,9 +35,16 @@ export interface Customer {
   name: string;
   email: string;
   phone?: string;
+  // Legacy address für Kompatibilität
   address: string;
+  // Strukturierte Adresse
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
   taxNumber?: string;
   vatId?: string;
+  vatValidated?: boolean;
   totalInvoices: number;
   totalAmount: number;
   createdAt: string;
@@ -59,9 +67,16 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     name: '',
     email: '',
     phone: '',
+    // Legacy address für Kompatibilität
     address: '',
+    // Strukturierte Adresse
+    street: '',
+    city: '',
+    postalCode: '',
+    country: 'Deutschland',
     taxNumber: '',
     vatId: '',
+    vatValidated: false,
   });
 
   const [contactPersons, setContactPersons] = useState<Omit<ContactPerson, 'id'>[]>([
@@ -81,10 +96,29 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     setFormData(prev => ({ ...prev, customerNumber: nextCustomerNumber }));
   }, [nextCustomerNumber]);
 
+  // VAT Validation
+  const handleVATChange = (value: string) => {
+    const upperValue = value.toUpperCase();
+    setFormData(prev => ({ ...prev, vatId: upperValue }));
+
+    if (upperValue.length > 2) {
+      const validation = validateVATNumber(upperValue);
+      setFormData(prev => ({ ...prev, vatValidated: validation.isValid }));
+    } else {
+      setFormData(prev => ({ ...prev, vatValidated: false }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.email.trim() || !formData.address.trim()) {
+    if (
+      !formData.name.trim() ||
+      !formData.email.trim() ||
+      !formData.street.trim() ||
+      !formData.city.trim() ||
+      !formData.postalCode.trim()
+    ) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
@@ -121,9 +155,16 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim() || undefined,
-        address: formData.address.trim(),
+        // Legacy address für Kompatibilität - kombiniert aus strukturierten Feldern
+        address: `${formData.street}, ${formData.postalCode} ${formData.city}, ${formData.country}`,
+        // Strukturierte Adresse
+        street: formData.street.trim(),
+        city: formData.city.trim(),
+        postalCode: formData.postalCode.trim(),
+        country: formData.country,
         taxNumber: formData.taxNumber.trim() || undefined,
         vatId: formData.vatId.trim() || undefined,
+        vatValidated: formData.vatValidated,
         contactPersons: validContactPersons.map((cp, index) => ({
           ...cp,
           id: `cp_${Date.now()}_${index}`,
@@ -143,8 +184,13 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         email: '',
         phone: '',
         address: '',
+        street: '',
+        city: '',
+        postalCode: '',
+        country: 'Deutschland',
         taxNumber: '',
         vatId: '',
+        vatValidated: false,
       });
 
       setContactPersons([
@@ -292,18 +338,73 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="address">Adresse *</Label>
-            <Textarea
-              id="address"
-              name="company-address"
-              value={formData.address}
-              onChange={e => handleChange('address', e.target.value)}
-              placeholder="Straße Hausnummer&#10;PLZ Ort&#10;Land"
-              rows={3}
-              required
-              autoComplete="street-address"
-            />
+          {/* Strukturierte Adresse */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Adresse *</Label>
+
+            <div>
+              <Label htmlFor="street">Straße & Hausnummer *</Label>
+              <Input
+                id="street"
+                name="street"
+                value={formData.street}
+                onChange={e => handleChange('street', e.target.value)}
+                placeholder="Musterstraße 123"
+                required
+                autoComplete="street-address"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="postalCode">PLZ *</Label>
+                <Input
+                  id="postalCode"
+                  name="postal-code"
+                  value={formData.postalCode}
+                  onChange={e => handleChange('postalCode', e.target.value)}
+                  placeholder="12345"
+                  required
+                  autoComplete="postal-code"
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">Stadt *</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={e => handleChange('city', e.target.value)}
+                  placeholder="Musterstadt"
+                  required
+                  autoComplete="address-level2"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="country">Land *</Label>
+              <select
+                id="country"
+                name="country"
+                value={formData.country}
+                onChange={e => handleChange('country', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
+                required
+              >
+                <option value="Deutschland">Deutschland</option>
+                <option value="Österreich">Österreich</option>
+                <option value="Schweiz">Schweiz</option>
+                <option value="Niederlande">Niederlande</option>
+                <option value="Belgien">Belgien</option>
+                <option value="Frankreich">Frankreich</option>
+                <option value="Italien">Italien</option>
+                <option value="Spanien">Spanien</option>
+                <option value="Polen">Polen</option>
+                <option value="Tschechien">Tschechien</option>
+                <option value="Andere">Andere</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -320,14 +421,39 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
             </div>
             <div>
               <Label htmlFor="vatId">USt-IdNr.</Label>
-              <Input
-                id="vatId"
-                name="vat-id"
-                value={formData.vatId}
-                onChange={e => handleChange('vatId', e.target.value)}
-                placeholder="DE123456789"
-                autoComplete="off"
-              />
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input
+                    id="vatId"
+                    name="vat-id"
+                    value={formData.vatId}
+                    onChange={e => handleVATChange(e.target.value)}
+                    placeholder="DE123456789"
+                    autoComplete="off"
+                    className={
+                      formData.vatId && formData.vatValidated
+                        ? 'border-green-500 pr-10'
+                        : formData.vatId && !formData.vatValidated
+                          ? 'border-red-500 pr-10'
+                          : ''
+                    }
+                  />
+                  {formData.vatId && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      {formData.vatValidated ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {formData.vatId && (
+                  <div className="text-xs text-gray-500">
+                    Format: {getVATFormat(formData.country)}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

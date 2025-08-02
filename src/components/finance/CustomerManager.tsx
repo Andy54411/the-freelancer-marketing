@@ -63,9 +63,16 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           name: data.name || '',
           email: data.email || '',
           phone: data.phone,
+          // Legacy address fallback für alte Kunden
           address: data.address || '',
+          // Neue strukturierte Adresse
+          street: data.street || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          country: data.country || '',
           taxNumber: data.taxNumber,
           vatId: data.vatId,
+          vatValidated: data.vatValidated || false,
           totalInvoices: data.totalInvoices || 0,
           totalAmount: data.totalAmount || 0,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -272,7 +279,16 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
                         <div className="flex items-start gap-2 md:col-span-2">
                           <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <span className="break-words">{customer.address}</span>
+                          <span className="break-words">
+                            {customer.street ||
+                            customer.city ||
+                            customer.postalCode ||
+                            customer.country
+                              ? // Neue strukturierte Adresse
+                                `${customer.street}${customer.street ? ', ' : ''}${customer.postalCode}${customer.postalCode ? ' ' : ''}${customer.city}${customer.city && customer.country ? ', ' : ''}${customer.country}`
+                              : // Fallback auf legacy address
+                                customer.address}
+                          </span>
                         </div>
 
                         {(customer.taxNumber || customer.vatId) && (
