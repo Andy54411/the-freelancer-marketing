@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Customer } from './AddCustomerModal';
@@ -62,6 +70,9 @@ interface Project {
   progress: number;
   teamMembers: string[];
   tags: string[];
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface ProjectsComponentProps {
@@ -100,82 +111,40 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
 
-      // Mock data
-      const mockProjects: Project[] = [
-        {
-          id: '1',
-          name: 'Website Redesign',
-          description: 'Komplette Überarbeitung der Unternehmenswebsite mit modernem Design',
-          client: 'TechCorp GmbH',
-          status: 'active',
-          budget: 25000.0,
-          spent: 12500.0,
-          hourlyRate: 85.0,
-          estimatedHours: 300,
-          trackedHours: 147,
-          startDate: '2025-01-15',
-          endDate: '2025-03-31',
-          progress: 50,
-          teamMembers: ['Max Müller', 'Sarah Schmidt', 'Tom Weber'],
-          tags: ['Web Development', 'Design', 'Frontend'],
-        },
-        {
-          id: '2',
-          name: 'Mobile App Development',
-          description: 'Entwicklung einer nativen iOS und Android App',
-          client: 'StartupXYZ',
-          status: 'planning',
-          budget: 45000.0,
-          spent: 2000.0,
-          hourlyRate: 95.0,
-          estimatedHours: 500,
-          trackedHours: 21,
-          startDate: '2025-02-01',
-          endDate: '2025-06-30',
-          progress: 5,
-          teamMembers: ['Lisa König', 'Mark Fischer'],
-          tags: ['Mobile', 'iOS', 'Android', 'React Native'],
-        },
-        {
-          id: '3',
-          name: 'E-Commerce Platform',
-          description: 'Aufbau einer maßgeschneiderten E-Commerce Lösung',
-          client: 'Fashion Store AG',
-          status: 'completed',
-          budget: 35000.0,
-          spent: 33500.0,
-          hourlyRate: 90.0,
-          estimatedHours: 400,
-          trackedHours: 372,
-          startDate: '2024-10-01',
-          endDate: '2024-12-31',
-          progress: 100,
-          teamMembers: ['Anna Bauer', 'David Klein', 'Emma Wolf'],
-          tags: ['E-Commerce', 'Backend', 'Payment'],
-        },
-        {
-          id: '4',
-          name: 'CRM Integration',
-          description: 'Integration verschiedener CRM-Systeme',
-          client: 'Consulting Partners',
-          status: 'on-hold',
-          budget: 15000.0,
-          spent: 7500.0,
-          hourlyRate: 80.0,
-          estimatedHours: 200,
-          trackedHours: 94,
-          startDate: '2025-01-01',
-          endDate: '2025-02-28',
-          progress: 25,
-          teamMembers: ['Peter Lang'],
-          tags: ['CRM', 'Integration', 'API'],
-        },
-      ];
+      const querySnapshot = await getDocs(projectsQuery);
+      const loadedProjects: Project[] = [];
 
-      setProjects(mockProjects);
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        loadedProjects.push({
+          id: doc.id,
+          name: data.name || '',
+          description: data.description || '',
+          client: data.client || '',
+          status: data.status || 'planning',
+          budget: data.budget || 0,
+          spent: data.spent || 0,
+          hourlyRate: data.hourlyRate || 0,
+          estimatedHours: data.estimatedHours || 0,
+          trackedHours: data.trackedHours || 0,
+          startDate: data.startDate || '',
+          endDate: data.endDate || '',
+          progress: data.progress || 0,
+          teamMembers: data.teamMembers || [],
+          tags: data.tags || [],
+          companyId: data.companyId || companyId,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        });
+      });
+
+      setProjects(loadedProjects);
     } catch (error) {
       console.error('Fehler beim Laden der Projekte:', error);
       toast.error('Projekte konnten nicht geladen werden');
@@ -287,8 +256,33 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         return;
       }
 
+      // Create project data for Firebase
+      const projectData = {
+        name: newProject.name,
+        description: newProject.description,
+        client: newProject.client,
+        status: 'planning' as const,
+        budget: parseFloat(newProject.budget) || 0,
+        spent: 0,
+        hourlyRate: parseFloat(newProject.hourlyRate) || 0,
+        estimatedHours: parseFloat(newProject.estimatedHours) || 0,
+        trackedHours: 0,
+        startDate: newProject.startDate,
+        endDate: newProject.endDate,
+        progress: 0,
+        teamMembers: [],
+        tags: [],
+        companyId: companyId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      // Add to Firebase
+      const docRef = await addDoc(collection(db, 'projects'), projectData);
+
+      // Create local project object for immediate UI update
       const project: Project = {
-        id: Date.now().toString(),
+        id: docRef.id,
         name: newProject.name,
         description: newProject.description,
         client: newProject.client,
@@ -303,8 +297,12 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         progress: 0,
         teamMembers: [],
         tags: [],
+        companyId: companyId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
+      // Update local state immediately
       setProjects(prev => [project, ...prev]);
       setShowCreateModal(false);
 
@@ -320,7 +318,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         endDate: '',
       });
 
-      toast.success('Projekt wurde erstellt');
+      toast.success('Projekt wurde erfolgreich erstellt');
     } catch (error) {
       console.error('Fehler beim Erstellen des Projekts:', error);
       toast.error('Projekt konnte nicht erstellt werden');
