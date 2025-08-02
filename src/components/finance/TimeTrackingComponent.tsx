@@ -168,12 +168,12 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         companyId,
         userId,
         description: newEntryForm.description,
-        projectId: newEntryForm.projectId || null,
-        customerId: newEntryForm.customerId || null,
-        customerName: newEntryForm.customerName || null,
+        projectId: newEntryForm.projectId || undefined,
+        customerId: newEntryForm.customerId || undefined,
+        customerName: newEntryForm.customerName || undefined,
         hourlyRate: newEntryForm.hourlyRate,
         billable: newEntryForm.billable,
-        category: newEntryForm.category || null,
+        category: newEntryForm.category || undefined,
         startTime: new Date(), // Erforderliches Feld hinzugefügt
       });
 
@@ -238,12 +238,12 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         companyId,
         userId,
         description: manualEntryForm.description,
-        projectId: manualEntryForm.projectId || null,
+        projectId: manualEntryForm.projectId || undefined,
         startTime: startDateTime,
         endTime: endDateTime,
         hourlyRate: manualEntryForm.hourlyRate,
         billable: manualEntryForm.billable,
-        notes: manualEntryForm.notes || null,
+        notes: manualEntryForm.notes || undefined,
       });
 
       toast.success('Zeiteintrag erfolgreich erstellt');
