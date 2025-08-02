@@ -11,9 +11,59 @@ export default function PaymentsPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  
+
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Zahlungen laden
+    const loadPayments = async () => {
+      try {
+        setLoading(true);
+        // Da FinanceService private Methoden für Zahlungen hat,
+        // erstellen wir hier eine direkte Firestore-Abfrage
+        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+
+        const paymentsQuery = query(
+          collection(db, 'payments'),
+          where('companyId', '==', uid),
+          orderBy('date', 'desc')
+        );
+
+        const querySnapshot = await getDocs(paymentsQuery);
+        const loadedPayments: PaymentRecord[] = [];
+
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          loadedPayments.push({
+            id: doc.id,
+            companyId: data.companyId,
+            amount: data.amount || 0,
+            type: data.type || 'income',
+            category: data.category || '',
+            description: data.description || '',
+            date: data.date?.toDate?.() || new Date(),
+            invoiceId: data.invoiceId,
+            method: data.method || 'bank_transfer',
+            reference: data.reference || '',
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          });
+        });
+
+        setPayments(loadedPayments);
+      } catch (error) {
+        console.error('Fehler beim Laden der Zahlungen:', error);
+        toast.error('Fehler beim Laden der Zahlungen');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (uid) {
+      loadPayments();
+    }
+  }, [uid]);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -27,56 +77,6 @@ export default function PaymentsPage() {
     );
   }
 
-  // Zahlungen laden
-  const loadPayments = async () => {
-    try {
-      setLoading(true);
-      // Da FinanceService private Methoden für Zahlungen hat, 
-      // erstellen wir hier eine direkte Firestore-Abfrage
-      const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
-      const { db } = await import('@/firebase/clients');
-      
-      const paymentsQuery = query(
-        collection(db, 'payments'),
-        where('companyId', '==', uid),
-        orderBy('date', 'desc')
-      );
-
-      const querySnapshot = await getDocs(paymentsQuery);
-      const loadedPayments: PaymentRecord[] = [];
-
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        loadedPayments.push({
-          id: doc.id,
-          companyId: data.companyId,
-          amount: data.amount || 0,
-          type: data.type || 'income',
-          category: data.category || '',
-          description: data.description || '',
-          date: data.date?.toDate?.() || new Date(),
-          invoiceId: data.invoiceId,
-          method: data.method || 'bank_transfer',
-          reference: data.reference || '',
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-        });
-      });
-
-      setPayments(loadedPayments);
-    } catch (error) {
-      console.error('Fehler beim Laden der Zahlungen:', error);
-      toast.error('Fehler beim Laden der Zahlungen');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (uid) {
-      loadPayments();
-    }
-  }, [uid, loadPayments]);
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -86,7 +86,7 @@ export default function PaymentsPage() {
             Übersicht über eingegangene Zahlungen und Transaktionen
           </p>
         </div>
-        
+
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
           <span className="ml-3 text-gray-600">Lade Zahlungen...</span>
@@ -104,7 +104,7 @@ export default function PaymentsPage() {
         </p>
       </div>
 
-      <PaymentComponent 
+      <PaymentComponent
         payments={payments
           .filter(p => p.invoiceId) // Nur Zahlungen mit Rechnungsbezug
           .map(p => ({
@@ -114,8 +114,7 @@ export default function PaymentsPage() {
             date: p.date.toISOString().split('T')[0],
             method: p.method || 'bank_transfer',
             reference: p.reference || `REF-${p.id.slice(-6).toUpperCase()}`,
-          }))
-        }
+          }))}
       />
     </div>
   );
