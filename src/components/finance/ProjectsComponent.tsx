@@ -5,6 +5,8 @@ import {
   collection,
   getDocs,
   addDoc,
+  updateDoc,
+  doc,
   query,
   where,
   orderBy,
@@ -323,6 +325,49 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       console.error('Fehler beim Erstellen des Projekts:', error);
       toast.error('Projekt konnte nicht erstellt werden');
     }
+  };
+
+  const handleStatusUpdate = async (projectId: string, newStatus: Project['status']) => {
+    try {
+      // Update in Firebase
+      const projectRef = doc(db, 'projects', projectId);
+      await updateDoc(projectRef, {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Update local state
+      setProjects(prev =>
+        prev.map(project =>
+          project.id === projectId
+            ? { ...project, status: newStatus, updatedAt: new Date().toISOString() }
+            : project
+        )
+      );
+
+      // Update selected project if it's the one being updated
+      if (selectedProject && selectedProject.id === projectId) {
+        setSelectedProject(prev =>
+          prev ? { ...prev, status: newStatus, updatedAt: new Date().toISOString() } : null
+        );
+      }
+
+      toast.success(`Projektstatus wurde auf "${getStatusLabel(newStatus)}" geändert`);
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren des Projektstatus:', error);
+      toast.error('Projektstatus konnte nicht geändert werden');
+    }
+  };
+
+  const getStatusLabel = (status: Project['status']) => {
+    const statusLabels = {
+      planning: 'Planung',
+      active: 'Aktiv',
+      'on-hold': 'Pausiert',
+      completed: 'Abgeschlossen',
+      cancelled: 'Abgebrochen',
+    };
+    return statusLabels[status] || status;
   };
 
   if (loading) {
@@ -843,6 +888,79 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
                   </div>
                 </div>
               )}
+
+              {/* Status Actions */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">Projekt-Aktionen</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProject.status === 'planning' && (
+                    <Button
+                      onClick={() => handleStatusUpdate(selectedProject.id, 'active')}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Projekt beginnen
+                    </Button>
+                  )}
+
+                  {selectedProject.status === 'active' && (
+                    <>
+                      <Button
+                        onClick={() => handleStatusUpdate(selectedProject.id, 'on-hold')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Pausieren
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusUpdate(selectedProject.id, 'completed')}
+                        className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Abschließen
+                      </Button>
+                    </>
+                  )}
+
+                  {selectedProject.status === 'on-hold' && (
+                    <>
+                      <Button
+                        onClick={() => handleStatusUpdate(selectedProject.id, 'active')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Fortsetzen
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusUpdate(selectedProject.id, 'completed')}
+                        className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Abschließen
+                      </Button>
+                    </>
+                  )}
+
+                  {(selectedProject.status === 'planning' ||
+                    selectedProject.status === 'active' ||
+                    selectedProject.status === 'on-hold') && (
+                    <Button
+                      onClick={() => handleStatusUpdate(selectedProject.id, 'cancelled')}
+                      variant="outline"
+                      className="text-red-600 border-red-600 hover:bg-red-50"
+                      size="sm"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Abbrechen
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
