@@ -4,94 +4,28 @@ import React, { useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
-  getStorage,
-  ref as storageRef,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage';
-import {
   FiLoader,
   FiSave,
   FiUser,
   FiImage,
   FiMapPin,
-  FiClock,
-  FiCheckCircle,
-  FiTrendingUp,
-  FiZap,
-  FiAward,
-  FiPlus,
-  FiEdit3,
-  FiTrash2,
   FiEye,
-  FiStar,
-  FiShield,
+  FiTrendingUp,
+  FiAward,
 } from 'react-icons/fi';
 import { toast } from 'sonner';
-import Image from 'next/image';
 import { CompanyMetrics } from '@/lib/companyMetrics';
 
-// Vereinfachtes Profile Interface (ohne automatische Metriken)
-interface EditableCompanyProfile {
-  uid: string;
-  username: string;
-  displayName: string;
-  companyName: string;
-  photoURL: string;
-  description: string;
-  country: string;
-  city: string;
-  hourlyRate: number;
-  portfolio: PortfolioItem[];
-  languages: { language: string; proficiency: string }[];
-  skills: string[];
-  education: { school: string; degree: string; year: string }[];
-  certifications: { name: string; from: string; year: string }[];
-  // Öffentliches Profil Features
-  publicDescription: string;
-  specialties: string[];
-  servicePackages: ServicePackage[];
-  workingHours: WorkingHours[];
-  instantBooking: boolean;
-  responseTimeGuarantee: number;
-  faqs: FAQ[];
-  profileBannerImage: string;
-  businessLicense: string;
-}
-
-interface PortfolioItem {
-  id?: string;
-  title: string;
-  description: string;
-  imageUrl?: string;
-  projectUrl?: string;
-  category: string;
-}
-
-interface ServicePackage {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  duration: string;
-  features: string[];
-}
-
-interface WorkingHours {
-  day: string;
-  isOpen: boolean;
-  openTime: string;
-  closeTime: string;
-}
-
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-}
+// Import der neuen modularen Komponenten
+import ProfileImageUpload from './profile/ProfileImageUpload';
+import BasicInfoTab from './profile/BasicInfoTab';
+import PublicProfileTab from './profile/PublicProfileTab';
+import PortfolioManager from './profile/PortfolioManager';
+import SkillsEducationTab from './profile/SkillsEducationTab';
+import { EditableCompanyProfile } from './profile/types';
 
 interface CompanyProfileManagerProps {
-  userData: any;
+  userData: EditableCompanyProfile;
   companyMetrics?: CompanyMetrics | null;
   onDataSaved: () => void;
 }
@@ -102,73 +36,46 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
   onDataSaved,
 }) => {
   const [profile, setProfile] = useState<EditableCompanyProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
-  const [newPortfolioItem, setNewPortfolioItem] = useState<PortfolioItem>({
-    title: '',
-    description: '',
-    category: '',
-    imageUrl: '',
-    projectUrl: '',
-  });
-  const [uploadingImage, setUploadingImage] = useState(false);
-
-  // State für öffentliches Profil Features
-  const [newSpecialty, setNewSpecialty] = useState('');
-  const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
-  const [newServicePackage, setNewServicePackage] = useState<ServicePackage>({
-    id: '',
-    title: '',
-    description: '',
-    price: 0,
-    duration: '',
-    features: [],
-  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (userData) {
-      // Standard-Arbeitsstunden
-      const defaultWorkingHours: WorkingHours[] = [
-        { day: 'Montag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
-        { day: 'Dienstag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
-        { day: 'Mittwoch', isOpen: true, openTime: '08:00', closeTime: '18:00' },
-        { day: 'Donnerstag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
-        { day: 'Freitag', isOpen: true, openTime: '08:00', closeTime: '18:00' },
-        { day: 'Samstag', isOpen: false, openTime: '09:00', closeTime: '16:00' },
-        { day: 'Sonntag', isOpen: false, openTime: '10:00', closeTime: '14:00' },
+      const defaultWorkingHours = [
+        { day: 'Montag', isOpen: true, openTime: '09:00', closeTime: '17:00' },
+        { day: 'Dienstag', isOpen: true, openTime: '09:00', closeTime: '17:00' },
+        { day: 'Mittwoch', isOpen: true, openTime: '09:00', closeTime: '17:00' },
+        { day: 'Donnerstag', isOpen: true, openTime: '09:00', closeTime: '17:00' },
+        { day: 'Freitag', isOpen: true, openTime: '09:00', closeTime: '17:00' },
+        { day: 'Samstag', isOpen: false, openTime: '09:00', closeTime: '17:00' },
+        { day: 'Sonntag', isOpen: false, openTime: '09:00', closeTime: '17:00' },
       ];
 
       setProfile({
         uid: userData.uid,
         username: userData.username || '',
-        displayName:
-          userData.displayName ||
-          `${userData.firstName || ''} ${userData.lastName || ''}`.trim() ||
-          '',
+        displayName: userData.displayName || '',
         companyName: userData.companyName || '',
-        photoURL: userData.profilePictureURL || '',
+        photoURL: userData.photoURL || '',
         description: userData.description || '',
         country: userData.country || '',
         city: userData.city || '',
-        hourlyRate: userData.hourlyRate || 50,
+        hourlyRate: userData.hourlyRate || 0,
         portfolio: userData.portfolio || [],
-        languages: userData.languages || [{ language: 'Deutsch', proficiency: 'Muttersprache' }],
+        languages: userData.languages || [],
         skills: userData.skills || [],
         education: userData.education || [],
         certifications: userData.certifications || [],
-        // Öffentliches Profil Features
-        publicDescription: userData.publicDescription || userData.description || '',
+        publicDescription: userData.publicDescription || '',
         specialties: userData.specialties || [],
         servicePackages: userData.servicePackages || [],
         workingHours: userData.workingHours || defaultWorkingHours,
-        instantBooking: userData.instantBooking ?? false,
+        instantBooking: userData.instantBooking || false,
         responseTimeGuarantee: userData.responseTimeGuarantee || 24,
         faqs: userData.faqs || [],
         profileBannerImage: userData.profileBannerImage || '',
         businessLicense: userData.businessLicense || '',
       });
-      setLoading(false);
     }
   }, [userData]);
 
@@ -182,6 +89,8 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         username: profile.username,
         displayName: profile.displayName,
         companyName: profile.companyName,
+        profilePictureURL: profile.photoURL,
+        photoURL: profile.photoURL,
         description: profile.description,
         country: profile.country,
         city: profile.city,
@@ -191,7 +100,6 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         skills: profile.skills,
         education: profile.education,
         certifications: profile.certifications,
-        // Öffentliches Profil Features
         publicDescription: profile.publicDescription,
         specialties: profile.specialties,
         servicePackages: profile.servicePackages,
@@ -214,260 +122,86 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
     }
   };
 
-  // Portfolio-Management Funktionen
-  const addPortfolioItem = async () => {
-    if (!newPortfolioItem.title || !newPortfolioItem.description) {
-      toast.error('Bitte fülle alle Pflichtfelder aus');
-      return;
-    }
-
-    const portfolioItem: PortfolioItem = {
-      ...newPortfolioItem,
-      id: Date.now().toString(),
-    };
-
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            portfolio: [...prev.portfolio, portfolioItem],
-          }
-        : null
-    );
-
-    setNewPortfolioItem({
-      title: '',
-      description: '',
-      category: '',
-      imageUrl: '',
-      projectUrl: '',
-    });
-
-    toast.success('Portfolio-Item hinzugefügt');
-  };
-
-  const removePortfolioItem = (id: string) => {
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            portfolio: prev.portfolio.filter(item => item.id !== id),
-          }
-        : null
-    );
-  };
-
-  const addSkill = (skill: string) => {
-    if (!skill.trim() || profile?.skills.includes(skill)) return;
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            skills: [...prev.skills, skill],
-          }
-        : null
-    );
-  };
-
-  const removeSkill = (skill: string) => {
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            skills: prev.skills.filter(s => s !== skill),
-          }
-        : null
-    );
-  };
-
-  // Öffentliches Profil Helper-Funktionen
-  const addSpecialty = () => {
-    if (!newSpecialty.trim() || profile?.specialties.includes(newSpecialty)) return;
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            specialties: [...prev.specialties, newSpecialty],
-          }
-        : null
-    );
-    setNewSpecialty('');
-  };
-
-  const removeSpecialty = (specialty: string) => {
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            specialties: prev.specialties.filter(s => s !== specialty),
-          }
-        : null
-    );
-  };
-
-  const addServicePackage = () => {
-    if (!newServicePackage.title || !newServicePackage.description) {
-      toast.error('Bitte fülle alle Pflichtfelder aus');
-      return;
-    }
-
-    const servicePackage: ServicePackage = {
-      ...newServicePackage,
-      id: Date.now().toString(),
-    };
-
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            servicePackages: [...prev.servicePackages, servicePackage],
-          }
-        : null
-    );
-
-    setNewServicePackage({
-      id: '',
-      title: '',
-      description: '',
-      price: 0,
-      duration: '',
-      features: [],
-    });
-
-    toast.success('Service Package hinzugefügt');
-  };
-
-  const removeServicePackage = (id: string) => {
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            servicePackages: prev.servicePackages.filter(pkg => pkg.id !== id),
-          }
-        : null
-    );
-  };
-
-  const addFAQ = () => {
-    if (!newFAQ.question.trim() || !newFAQ.answer.trim()) {
-      toast.error('Bitte fülle Frage und Antwort aus');
-      return;
-    }
-
-    const faq: FAQ = {
-      id: Date.now().toString(),
-      question: newFAQ.question,
-      answer: newFAQ.answer,
-    };
-
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            faqs: [...prev.faqs, faq],
-          }
-        : null
-    );
-
-    setNewFAQ({ question: '', answer: '' });
-    toast.success('FAQ hinzugefügt');
-  };
-
-  const removeFAQ = (id: string) => {
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            faqs: prev.faqs.filter(faq => faq.id !== id),
-          }
-        : null
-    );
-  };
-
-  const updateWorkingHours = (dayIndex: number, field: keyof WorkingHours, value: any) => {
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            workingHours: prev.workingHours.map((day, index) =>
-              index === dayIndex ? { ...day, [field]: value } : day
-            ),
-          }
-        : null
-    );
-  };
-
-  if (loading) {
+  if (!profile) {
     return (
-      <div className="flex justify-center items-center p-8">
+      <div className="flex items-center justify-center h-64">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f]" />
-        <span className="ml-3">Lade Profile...</span>
       </div>
     );
   }
 
-  if (!profile) {
-    return <div className="text-center p-8 text-red-500">Fehler beim Laden des Profils</div>;
-  }
+  const tabs = [
+    { id: 'basic', label: 'Grunddaten', icon: FiUser },
+    { id: 'skills', label: 'Skills & Bildung', icon: FiAward },
+    { id: 'public', label: 'Öffentliches Profil', icon: FiEye },
+    { id: 'portfolio', label: 'Portfolio', icon: FiImage },
+    { id: 'location', label: 'Standort', icon: FiMapPin },
+    { id: 'metrics', label: 'Statistiken', icon: FiTrendingUp },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
+      {/* Header mit Profilbild und Save Button */}
+      <div className="border-b border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <ProfileImageUpload profile={profile} setProfile={setProfile} />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {profile.companyName || profile.displayName || 'Unternehmensprofil'}
+              </h1>
+              <p className="text-gray-600">
+                {profile.city}, {profile.country}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 bg-[#14ad9f] hover:bg-[#129488] text-white rounded-md font-medium flex items-center space-x-2 disabled:opacity-50"
+          >
+            {saving ? <FiLoader className="animate-spin" /> : <FiSave />}
+            <span>{saving ? 'Speichert...' : 'Speichern'}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'basic', label: 'Grunddaten', icon: FiUser },
-            { id: 'public', label: 'Öffentliches Profil', icon: FiEye },
-            { id: 'metrics', label: 'Metriken', icon: FiTrendingUp },
-            { id: 'portfolio', label: 'Portfolio', icon: FiImage },
-            { id: 'skills', label: 'Skills & Sprachen', icon: FiAward },
-          ].map(tab => (
+        <nav className="flex space-x-8 px-6">
+          {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                 activeTab === tab.id
                   ? 'border-[#14ad9f] text-[#14ad9f]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <tab.icon className="mr-2 h-5 w-5" />
-              {tab.label}
+              <tab.icon className="w-4 h-4" />
+              <span>{tab.label}</span>
             </button>
           ))}
         </nav>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'basic' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Firmenname</label>
-              <input
-                type="text"
-                value={profile.companyName}
-                onChange={e =>
-                  setProfile(prev => (prev ? { ...prev, companyName: e.target.value } : null))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-            </div>
+      <div className="p-6">
+        {activeTab === 'basic' && <BasicInfoTab profile={profile} setProfile={setProfile} />}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
-              <textarea
-                value={profile.description}
-                onChange={e =>
-                  setProfile(prev => (prev ? { ...prev, description: e.target.value } : null))
-                }
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                placeholder="Beschreibe deine Dienstleistungen und Expertise..."
-              />
-            </div>
+        {activeTab === 'skills' && <SkillsEducationTab profile={profile} setProfile={setProfile} />}
 
-            <div className="grid grid-cols-2 gap-4">
+        {activeTab === 'public' && <PublicProfileTab profile={profile} setProfile={setProfile} />}
+
+        {activeTab === 'portfolio' && (
+          <PortfolioManager profile={profile} setProfile={setProfile} />
+        )}
+
+        {activeTab === 'location' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Standort</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Land</label>
                 <input
@@ -479,7 +213,6 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Stadt</label>
                 <input
@@ -492,513 +225,34 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
                 />
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stundensatz (€)
-              </label>
-              <input
-                type="number"
-                value={profile.hourlyRate}
-                onChange={e =>
-                  setProfile(prev =>
-                    prev ? { ...prev, hourlyRate: parseFloat(e.target.value) || 0 } : null
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'public' && (
-        <div className="space-y-8">
-          {/* Öffentliche Beschreibung */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Öffentliche Beschreibung</h3>
-            <textarea
-              value={profile.publicDescription}
-              onChange={e =>
-                setProfile(prev => (prev ? { ...prev, publicDescription: e.target.value } : null))
-              }
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              placeholder="Beschreibung für Ihr öffentliches Profil..."
-            />
-          </div>
-
-          {/* Spezialisierungen */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Spezialisierungen</h3>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {profile.specialties.map(specialty => (
-                <span
-                  key={specialty}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                >
-                  {specialty}
-                  <button
-                    onClick={() => removeSpecialty(specialty)}
-                    className="text-blue-600 hover:text-blue-800 ml-1"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Neue Spezialisierung hinzufügen"
-                value={newSpecialty}
-                onChange={e => setNewSpecialty(e.target.value)}
-                onKeyPress={e => {
-                  if (e.key === 'Enter') {
-                    addSpecialty();
-                  }
-                }}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-              <button
-                onClick={addSpecialty}
-                className="bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600"
-              >
-                <FiPlus />
-              </button>
-            </div>
-          </div>
-
-          {/* Service Packages */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Packages</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {profile.servicePackages.map(pkg => (
-                <div key={pkg.id} className="bg-white border rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900">{pkg.title}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{pkg.description}</p>
-                  <p className="text-lg font-bold text-[#14ad9f] mt-2">€{pkg.price}</p>
-                  <p className="text-xs text-gray-500">{pkg.duration}</p>
-                  <button
-                    onClick={() => removeServicePackage(pkg.id)}
-                    className="mt-2 text-red-600 hover:text-red-800 text-sm"
-                  >
-                    <FiTrash2 className="inline mr-1" /> Entfernen
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Neues Service Package hinzufügen */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-gray-900 mb-4">Neues Service Package</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Titel"
-                  value={newServicePackage.title}
-                  onChange={e => setNewServicePackage(prev => ({ ...prev, title: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-                <input
-                  type="number"
-                  placeholder="Preis (€)"
-                  value={newServicePackage.price}
-                  onChange={e =>
-                    setNewServicePackage(prev => ({
-                      ...prev,
-                      price: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-                <input
-                  type="text"
-                  placeholder="Dauer (z.B. 2-3 Tage)"
-                  value={newServicePackage.duration}
-                  onChange={e =>
-                    setNewServicePackage(prev => ({ ...prev, duration: e.target.value }))
-                  }
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-                <div></div>
-                <textarea
-                  placeholder="Beschreibung"
-                  value={newServicePackage.description}
-                  onChange={e =>
-                    setNewServicePackage(prev => ({ ...prev, description: e.target.value }))
-                  }
-                  className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                  rows={3}
-                />
-              </div>
-              <button
-                onClick={addServicePackage}
-                className="mt-4 bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors flex items-center gap-2"
-              >
-                <FiPlus /> Hinzufügen
-              </button>
-            </div>
-          </div>
-
-          {/* Arbeitszeiten */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Arbeitszeiten</h3>
-            <div className="space-y-2">
-              {profile.workingHours.map((day, index) => (
-                <div key={day.day} className="flex items-center gap-4 p-3 bg-gray-50 rounded">
-                  <div className="w-24">
-                    <span className="font-medium">{day.day}</span>
-                  </div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={day.isOpen}
-                      onChange={e => updateWorkingHours(index, 'isOpen', e.target.checked)}
-                      className="mr-2"
-                    />
-                    Geöffnet
-                  </label>
-                  {day.isOpen && (
-                    <>
-                      <input
-                        type="time"
-                        value={day.openTime}
-                        onChange={e => updateWorkingHours(index, 'openTime', e.target.value)}
-                        className="px-2 py-1 border rounded"
-                      />
-                      <span>bis</span>
-                      <input
-                        type="time"
-                        value={day.closeTime}
-                        onChange={e => updateWorkingHours(index, 'closeTime', e.target.value)}
-                        className="px-2 py-1 border rounded"
-                      />
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* FAQ */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Häufig gestellte Fragen (FAQ)
-            </h3>
-            <div className="space-y-4 mb-4">
-              {profile.faqs.map(faq => (
-                <div key={faq.id} className="bg-white border rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">{faq.question}</h4>
-                  <p className="text-gray-600 mb-2">{faq.answer}</p>
-                  <button
-                    onClick={() => removeFAQ(faq.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    <FiTrash2 className="inline mr-1" /> Entfernen
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Neue FAQ hinzufügen */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-gray-900 mb-4">Neue FAQ hinzufügen</h4>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Frage"
-                  value={newFAQ.question}
-                  onChange={e => setNewFAQ(prev => ({ ...prev, question: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-                <textarea
-                  placeholder="Antwort"
-                  value={newFAQ.answer}
-                  onChange={e => setNewFAQ(prev => ({ ...prev, answer: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                  rows={3}
-                />
-                <button
-                  onClick={addFAQ}
-                  className="bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors flex items-center gap-2"
-                >
-                  <FiPlus /> Hinzufügen
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Business Settings */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Einstellungen</h3>
-            <div className="space-y-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={profile.instantBooking}
-                  onChange={e =>
-                    setProfile(prev =>
-                      prev ? { ...prev, instantBooking: e.target.checked } : null
-                    )
-                  }
-                  className="mr-3"
-                />
-                <span className="font-medium">Sofortbuchung aktivieren</span>
-              </label>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Antwortzeit-Garantie (Stunden)
-                </label>
-                <input
-                  type="number"
-                  value={profile.responseTimeGuarantee}
-                  onChange={e =>
-                    setProfile(prev =>
-                      prev
-                        ? { ...prev, responseTimeGuarantee: parseInt(e.target.value) || 24 }
-                        : null
-                    )
-                  }
-                  className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'metrics' && (
-        <div className="bg-gray-50 rounded-lg p-6">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FiShield className="text-[#14ad9f]" />
-              Automatische Leistungsmetriken
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Diese Metriken werden automatisch basierend auf Ihren tatsächlichen Aktivitäten
-              berechnet.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <FiClock className="text-blue-500" />
-                <span className="text-sm font-medium text-gray-700">Antwortzeit</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                ~{companyMetrics?.responseTime || 24}h
-              </p>
-              <p className="text-xs text-gray-500">Durchschnittlich</p>
-            </div>
-
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <FiCheckCircle className="text-green-500" />
-                <span className="text-sm font-medium text-gray-700">Erfolgsrate</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {companyMetrics?.completionRate || 0}%
-              </p>
-              <p className="text-xs text-gray-500">Abgeschlossene Projekte</p>
-            </div>
-
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <FiTrendingUp className="text-purple-500" />
-                <span className="text-sm font-medium text-gray-700">Aufträge</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{companyMetrics?.totalOrders || 0}</p>
-              <p className="text-xs text-gray-500">Gesamt</p>
-            </div>
-
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <FiStar className="text-yellow-500" />
-                <span className="text-sm font-medium text-gray-700">Bewertung</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {companyMetrics?.averageRating || 0}★
-              </p>
-              <p className="text-xs text-gray-500">Durchschnitt</p>
-            </div>
-          </div>
-
-          {/* Badges */}
-          <div className="mt-6">
-            <h4 className="text-md font-semibold text-gray-900 mb-3">Verdiente Badges</h4>
-            <div className="flex flex-wrap gap-2">
-              {(companyMetrics?.badges || ['New Member']).map(badge => (
-                <span
-                  key={badge}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
-                >
-                  <FiAward size={12} />
-                  {badge}
-                </span>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Badges werden automatisch vergeben basierend auf Ihrer Leistung und
-              Kundenzufriedenheit.
-            </p>
-          </div>
-
-          {/* Online Status */}
-          <div className="mt-6 flex items-center gap-2">
-            <div
-              className={`w-3 h-3 rounded-full ${companyMetrics?.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
-            ></div>
-            <span className="text-sm text-gray-700">
-              {companyMetrics?.isOnline ? 'Online' : 'Offline'}
-            </span>
-            <span className="text-xs text-gray-500">(basierend auf letzter Aktivität)</span>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'portfolio' && (
-        <div className="space-y-6">
-          {/* Portfolio Items anzeigen */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {profile.portfolio.map(item => (
-              <div key={item.id} className="bg-white border rounded-lg overflow-hidden">
-                {item.imageUrl && (
-                  <div className="h-32 bg-gray-200">
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.title}
-                      width={300}
-                      height={128}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-4">
-                  <h4 className="font-semibold text-gray-900">{item.title}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                  <p className="text-xs text-gray-500 mt-2">{item.category}</p>
-                  <button
-                    onClick={() => removePortfolioItem(item.id!)}
-                    className="mt-2 text-red-600 hover:text-red-800 text-sm"
-                  >
-                    <FiTrash2 className="inline mr-1" /> Entfernen
-                  </button>
+        {activeTab === 'metrics' && companyMetrics && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Unternehmens-Statistiken</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-600">Durchschnittliche Bewertung</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {companyMetrics.averageRating?.toFixed(1) || 'N/A'}
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Neues Portfolio Item hinzufügen */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-gray-900 mb-4">Neues Portfolio-Item hinzufügen</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Titel"
-                value={newPortfolioItem.title}
-                onChange={e => setNewPortfolioItem(prev => ({ ...prev, title: e.target.value }))}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-              <input
-                type="text"
-                placeholder="Kategorie"
-                value={newPortfolioItem.category}
-                onChange={e => setNewPortfolioItem(prev => ({ ...prev, category: e.target.value }))}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-              <textarea
-                placeholder="Beschreibung"
-                value={newPortfolioItem.description}
-                onChange={e =>
-                  setNewPortfolioItem(prev => ({ ...prev, description: e.target.value }))
-                }
-                className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                rows={3}
-              />
-              <input
-                type="url"
-                placeholder="Projekt-URL (optional)"
-                value={newPortfolioItem.projectUrl}
-                onChange={e =>
-                  setNewPortfolioItem(prev => ({ ...prev, projectUrl: e.target.value }))
-                }
-                className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-            </div>
-            <button
-              onClick={addPortfolioItem}
-              className="mt-4 bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors flex items-center gap-2"
-            >
-              <FiPlus /> Hinzufügen
-            </button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'skills' && (
-        <div className="space-y-6">
-          {/* Skills */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-3">Fähigkeiten</h4>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {profile.skills.map(skill => (
-                <span
-                  key={skill}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm"
-                >
-                  {skill}
-                  <button
-                    onClick={() => removeSkill(skill)}
-                    className="text-red-500 hover:text-red-700 ml-1"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Neue Fähigkeit hinzufügen"
-                onKeyPress={e => {
-                  if (e.key === 'Enter') {
-                    addSkill(e.currentTarget.value);
-                    e.currentTarget.value = '';
-                  }
-                }}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-              />
-            </div>
-          </div>
-
-          {/* Sprachen */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-3">Sprachen</h4>
-            <div className="space-y-2">
-              {profile.languages.map((lang, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                  <span className="font-medium">{lang.language}</span>
-                  <span className="text-sm text-gray-600">- {lang.proficiency}</span>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-600">Gesamte Aufträge</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {companyMetrics.totalOrders || 0}
                 </div>
-              ))}
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-600">Abschlussrate</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {companyMetrics.completionRate?.toFixed(1) || 0}%
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Save Button */}
-      <div className="flex justify-end pt-6 border-t border-gray-200">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-[#14ad9f] text-white px-6 py-2 rounded-md hover:bg-teal-600 transition-colors flex items-center gap-2 disabled:opacity-50"
-        >
-          {saving ? <FiLoader className="animate-spin" /> : <FiSave />}
-          {saving ? 'Speichere...' : 'Profil speichern'}
-        </button>
+        )}
       </div>
     </div>
   );
