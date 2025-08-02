@@ -27,7 +27,8 @@ interface NavigationItem {
 interface NavigationSubItem {
   label: string;
   value: string;
-  href: string;
+  href?: string;
+  subItems?: NavigationSubItem[];
 }
 
 interface CompanySidebarProps {
@@ -147,7 +148,28 @@ const navigationItems: NavigationItem[] = [
       {
         label: 'Banking',
         value: 'finance-banking',
-        href: 'finance/banking',
+        subItems: [
+          {
+            label: 'Konten',
+            value: 'finance-banking-accounts',
+            href: 'finance/banking/accounts',
+          },
+          {
+            label: 'Transaktionen',
+            value: 'finance-banking-transactions',
+            href: 'finance/banking/transactions',
+          },
+          {
+            label: 'Import',
+            value: 'finance-banking-import',
+            href: 'finance/banking/import',
+          },
+          {
+            label: 'Abgleich',
+            value: 'finance-banking-reconciliation',
+            href: 'finance/banking/reconciliation',
+          },
+        ],
       },
       {
         label: 'Zeiterfassung',
@@ -279,20 +301,62 @@ export default function CompanySidebar({
                 {hasSubItems && isItemExpanded && (
                   <div className="ml-6 mt-1 space-y-1">
                     {item.subItems?.map(subItem => {
-                      const isSubActive = pathname?.includes(`/${subItem.href}`);
+                      const isSubActive = subItem.href ? pathname?.includes(`/${subItem.href}`) : false;
+                      const hasNestedSubItems = subItem.subItems && subItem.subItems.length > 0;
+                      const isSubExpanded = isExpanded(subItem.value);
+
                       return (
-                        <button
-                          key={subItem.value}
-                          onClick={() => onNavigate(subItem.value, subItem.href)}
-                          className={`${
-                            isSubActive
-                              ? 'bg-[#14ad9f] text-white'
-                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                          } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
-                        >
-                          <FiChevronRight className="mr-2 h-4 w-4" />
-                          {subItem.label}
-                        </button>
+                        <div key={subItem.value}>
+                          <button
+                            onClick={() => {
+                              if (hasNestedSubItems) {
+                                onToggleExpanded(subItem.value);
+                              } else if (subItem.href) {
+                                onNavigate(subItem.value, subItem.href);
+                              }
+                            }}
+                            className={`${
+                              isSubActive
+                                ? 'bg-[#14ad9f] text-white'
+                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            } group flex items-center justify-between px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                          >
+                            <div className="flex items-center">
+                              <FiChevronRight className="mr-2 h-4 w-4" />
+                              {subItem.label}
+                            </div>
+                            {hasNestedSubItems && (
+                              <FiChevronDown
+                                className={`h-3 w-3 transition-transform ${
+                                  isSubExpanded ? 'rotate-180' : ''
+                                }`}
+                              />
+                            )}
+                          </button>
+
+                          {/* Nested Sub-Items */}
+                          {hasNestedSubItems && isSubExpanded && (
+                            <div className="ml-6 mt-1 space-y-1">
+                              {subItem.subItems?.map(nestedItem => {
+                                const isNestedActive = nestedItem.href ? pathname?.includes(`/${nestedItem.href}`) : false;
+                                return (
+                                  <button
+                                    key={nestedItem.value}
+                                    onClick={() => nestedItem.href && onNavigate(nestedItem.value, nestedItem.href)}
+                                    className={`${
+                                      isNestedActive
+                                        ? 'bg-[#14ad9f] text-white'
+                                        : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                                    } group flex items-center px-2 py-1 text-xs rounded-md w-full transition-colors`}
+                                  >
+                                    <span className="mr-2">•</span>
+                                    {nestedItem.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
