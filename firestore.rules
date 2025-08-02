@@ -633,5 +633,23 @@ service cloud.firestore {
       // Aktualisieren/Löschen: Niemals erlaubt (Audit-Trail ist unveränderlich)
       allow update, delete: if false;
     }
+
+    // --- categories Collection ---
+    match /categories/{categoryId} {
+      // Öffentlicher Lesezugriff für Service-Discovery
+      allow get, list: if true;
+      
+      // Nur Support kann Categories verwalten
+      allow create, update, delete: if isSupportStaff();
+    }
+
+    // --- subcategories Collection ---
+    match /subcategories/{subcategoryId} {
+      // Öffentlicher Lesezugriff für Service-Discovery und Flutter App
+      allow get, list: if true;
+      
+      // Nur Support kann Subcategories verwalten
+      allow create, update, delete: if isSupportStaff();
+    }
   }
 }

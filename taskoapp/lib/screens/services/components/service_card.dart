@@ -141,28 +141,36 @@ class _ServiceCardState extends State<ServiceCard> {
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Provider Info
                     Row(
                       children: [
                         CircleAvatar(
-                          radius: 12,
+                          radius: 10, // Kleinerer Radius
                           backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.2),
-                          child: Text(
-                            _getProviderInitials(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF14ad9f),
-                            ),
-                          ),
+                          backgroundImage: (widget.service['profilePictureURL'] != null && 
+                                          widget.service['profilePictureURL'].toString().isNotEmpty)
+                              ? NetworkImage(widget.service['profilePictureURL'])
+                              : null,
+                          child: (widget.service['profilePictureURL'] == null || 
+                                  widget.service['profilePictureURL'].toString().isEmpty)
+                              ? Text(
+                                  _getProviderInitials(),
+                                  style: const TextStyle(
+                                    fontSize: 8, // Kleinere Schrift
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF14ad9f),
+                                  ),
+                                )
+                              : null,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6), // Kleinerer Abstand
                         Expanded(
                           child: Text(
                             widget.service['providerName'] ?? 'Unbekannter Anbieter',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11, // Kleinere Schrift
                               color: Colors.grey.shade600,
                               fontWeight: FontWeight.w500,
                             ),
@@ -172,20 +180,34 @@ class _ServiceCardState extends State<ServiceCard> {
                       ],
                     ),
                     
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6), // Kleinerer Abstand
                     
                     // Service Title
                     Text(
                       widget.service['title'] ?? 'Service-Titel',
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13, // Kleinere Schrift
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
-                        height: 1.2,
+                        height: 1.1,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    
+                    // Subcategory
+                    if (widget.service['subcategoryName'] != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.service['subcategoryName'],
+                        style: const TextStyle(
+                          fontSize: 10, // Kleinere Schrift
+                          color: Color(0xFF14ad9f),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     
                     const Spacer(),
                     
@@ -194,30 +216,30 @@ class _ServiceCardState extends State<ServiceCard> {
                       children: [
                         Icon(
                           Icons.star,
-                          size: 14,
+                          size: 12, // Kleineres Icon
                           color: Colors.amber.shade600,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 2), // Kleinerer Abstand
                         Text(
                           '${widget.service['rating'] ?? 4.8}',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11, // Kleinere Schrift
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 2), // Kleinerer Abstand
                         Text(
                           '(${widget.service['reviewCount'] ?? 127})',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11, // Kleinere Schrift
                             color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
                     
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4), // Kleinerer Abstand
                     
                     // Preis
                     Row(
@@ -225,14 +247,14 @@ class _ServiceCardState extends State<ServiceCard> {
                         Text(
                           'Ab ',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 10, // Kleinere Schrift
                             color: Colors.grey.shade600,
                           ),
                         ),
                         Text(
                           '€${widget.service['price'] ?? 49}',
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 12, // Kleinere Schrift
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF14ad9f),
                           ),
