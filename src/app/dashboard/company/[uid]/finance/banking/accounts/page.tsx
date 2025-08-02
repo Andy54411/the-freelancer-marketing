@@ -17,18 +17,6 @@ export default function BankingAccountsPage() {
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
-
   // finAPI Service initialisieren
   const finAPIService = new FinAPIService();
 
@@ -36,7 +24,7 @@ export default function BankingAccountsPage() {
     try {
       setLoading(true);
       const finAPIAccountResponse = await finAPIService.getAccounts();
-      
+
       // Convert finAPI data to our interface format
       const convertedAccounts: BankAccount[] = finAPIAccountResponse.accounts.map(acc => ({
         id: acc.id.toString(),
@@ -50,7 +38,7 @@ export default function BankingAccountsPage() {
         accountType: 'CHECKING',
         isDefault: false,
       }));
-      
+
       setAccounts(convertedAccounts);
     } catch (error) {
       console.error('Fehler beim Laden der Konten:', error);
@@ -62,8 +50,8 @@ export default function BankingAccountsPage() {
           iban: 'DE89 3704 0044 0532 0130 00',
           bankName: 'Deutsche Bank AG',
           accountNumber: '0532013000',
-          balance: 25750.50,
-          availableBalance: 25750.50,
+          balance: 25750.5,
+          availableBalance: 25750.5,
           currency: 'EUR',
           accountType: 'CHECKING',
           isDefault: true,
@@ -74,8 +62,8 @@ export default function BankingAccountsPage() {
           iban: 'DE89 3705 0198 0000 0047 11',
           bankName: 'Sparkasse München',
           accountNumber: '0000004711',
-          balance: 15000.00,
-          availableBalance: 15000.00,
+          balance: 15000.0,
+          availableBalance: 15000.0,
           currency: 'EUR',
           accountType: 'SAVINGS',
           isDefault: false,
@@ -95,6 +83,18 @@ export default function BankingAccountsPage() {
   useEffect(() => {
     loadAccounts();
   }, []);
+
+  // Autorisierung prüfen
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
+      </div>
+    );
+  }
 
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
     return new Intl.NumberFormat('de-DE', {
@@ -171,7 +171,7 @@ export default function BankingAccountsPage() {
 
       {/* Konten-Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {accounts.map((account) => (
+        {accounts.map(account => (
           <div
             key={account.id}
             className="bg-white overflow-hidden shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
@@ -180,20 +180,22 @@ export default function BankingAccountsPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                      account.isDefault ? 'bg-[#14ad9f]' : 'bg-gray-100'
-                    }`}>
-                      <span className={`text-sm font-medium ${
-                        account.isDefault ? 'text-white' : 'text-gray-600'
-                      }`}>
+                    <div
+                      className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                        account.isDefault ? 'bg-[#14ad9f]' : 'bg-gray-100'
+                      }`}
+                    >
+                      <span
+                        className={`text-sm font-medium ${
+                          account.isDefault ? 'text-white' : 'text-gray-600'
+                        }`}
+                      >
                         {account.accountName.substring(0, 2).toUpperCase()}
                       </span>
                     </div>
                   </div>
                   <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {account.accountName}
-                    </h3>
+                    <h3 className="text-lg font-medium text-gray-900">{account.accountName}</h3>
                     <p className="text-sm text-gray-500">{account.bankName}</p>
                   </div>
                 </div>
@@ -212,16 +214,20 @@ export default function BankingAccountsPage() {
 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Kontotyp</p>
-                  <p className="text-sm text-gray-900">{getAccountTypeLabel(account.accountType)}</p>
+                  <p className="text-sm text-gray-900">
+                    {getAccountTypeLabel(account.accountType)}
+                  </p>
                 </div>
 
                 {showBalances && (
                   <div className="pt-3 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-medium text-gray-500">Aktueller Saldo</p>
-                      <p className={`text-lg font-semibold ${
-                        account.balance >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <p
+                        className={`text-lg font-semibold ${
+                          account.balance >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
                         {formatCurrency(account.balance, account.currency)}
                       </p>
                     </div>
