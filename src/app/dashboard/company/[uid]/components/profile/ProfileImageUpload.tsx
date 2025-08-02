@@ -47,7 +47,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
       const storage = getStorage();
       const storageReference = storageRef(
         storage,
-        `profile-images/${profile.uid}/${Date.now()}_${file.name}`
+        `profilePictures/${profile.uid}/${Date.now()}_${file.name}`
       );
 
       // Löschen des alten Profilbilds falls vorhanden
