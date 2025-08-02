@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Service für Kategorie- und Subkategorie-Management
 /// Synchronisiert mit dem Web-Projekt
@@ -195,154 +195,104 @@ class CategoriesService {
     }
   }
 
-  /// Get providers for a subcategory from Firebase Functions
+  /// Get providers for a subcategory from Firestore directly
   static Future<List<Map<String, dynamic>>> getProvidersForSubcategory(String subcategory) async {
     try {
       debugPrint('🔍 Suche Provider für Subcategory: $subcategory');
       
-      // Configure Firebase Functions with correct region
-      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-      final HttpsCallable callable = functions.httpsCallable('searchProvidersBySubcategory');
-      
-      final result = await callable.call({
-        'subcategory': subcategory,
-      });
-      
-      if (result.data != null && result.data['success'] == true) {
-        final providers = result.data['providers'] as List?;
-        debugPrint('✅ ${providers?.length ?? 0} Provider gefunden für $subcategory');
-        
-        if (providers != null) {
-          // Convert to proper Map<String, dynamic> format
-          return providers.map((provider) => Map<String, dynamic>.from(provider)).toList();
-        }
+      // Check if user is authenticated
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ User nicht authentifiziert - kann nicht auf Firestore zugreifen');
+        return [];
       }
       
-      debugPrint('❌ Keine Provider für Subcategory gefunden: $subcategory');
-      return [];
+      debugPrint('✅ User authentifiziert: ${currentUser.uid}');
+      
+      List<Map<String, dynamic>> providers = [];
+      
+      // Search in users collection with limit for security rules
+      debugPrint('📋 Suche in users Collection...');
+      final usersQuery = await _firestore
+          .collection('users')
+          .where('selectedSubcategory', isEqualTo: subcategory)
+          .limit(50) // Add limit to satisfy security rules
+          .get();
+      
+      debugPrint('✅ ${usersQuery.docs.length} Provider in users Collection gefunden');
+      
+      for (final doc in usersQuery.docs) {
+        final data = doc.data();
+        final provider = {
+          'id': doc.id,
+          'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
+          'companyName': data['companyName'] ?? '',
+          'description': data['publicDescription'] ?? '',
+          'price': (data['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+          'rating': 4.5, // Default rating - can be calculated from reviews later
+          'reviewCount': 10, // Default review count
+          'profilePictureURL': data['profilePictureURL'] ?? '',
+          'location': '${data['personalCity'] ?? ''}, ${data['personalCountry'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
+          'isPro': true,
+          'isFastDelivery': (data['responseTimeGuarantee'] as num?)?.toInt() ?? 24 <= 24,
+          'isOnline': false,
+          'isOnsite': true,
+          'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
+          'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+          'responseTimeHours': (data['responseTimeGuarantee'] as num?)?.toDouble() ?? 24.0,
+          'completionRate': 95.0,
+          'source': 'users',
+          'category': data['selectedCategory'] ?? '',
+          'subcategory': data['selectedSubcategory'] ?? '',
+        };
+        
+        providers.add(provider);
+      }
+      
+      // Search in companies collection with limit for security rules
+      debugPrint('📋 Suche in companies Collection...');
+      final companiesQuery = await _firestore
+          .collection('companies')
+          .where('selectedSubcategory', isEqualTo: subcategory)
+          .limit(50) // Add limit to satisfy security rules
+          .get();
+      
+      debugPrint('✅ ${companiesQuery.docs.length} Provider in companies Collection gefunden');
+      
+      for (final doc in companiesQuery.docs) {
+        final data = doc.data();
+        final provider = {
+          'id': doc.id,
+          'name': data['companyName'] ?? 'Unbekanntes Unternehmen',
+          'companyName': data['companyName'] ?? '',
+          'description': data['publicDescription'] ?? '',
+          'price': (data['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+          'rating': 4.5,
+          'reviewCount': 15,
+          'profilePictureURL': data['profilePictureURL'] ?? '',
+          'location': '${data['companyCityForBackend'] ?? ''}, ${data['companyCountryForBackend'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
+          'isPro': true,
+          'isFastDelivery': true,
+          'isOnline': false,
+          'isOnsite': true,
+          'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
+          'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+          'responseTimeHours': 24.0,
+          'completionRate': 98.0,
+          'source': 'companies',
+          'category': data['selectedCategory'] ?? '',
+          'subcategory': data['selectedSubcategory'] ?? '',
+        };
+        
+        providers.add(provider);
+      }
+      
+      debugPrint('✅ Gesamt ${providers.length} Provider für $subcategory gefunden');
+      return providers;
+      
     } catch (e) {
       debugPrint('❌ Fehler beim Laden der Provider: $e');
-      
-      // Fallback: Return demo data for testing when Firebase Functions are not available
-      if (e.toString().contains('NOT_FOUND')) {
-        debugPrint('🔄 Firebase Functions nicht verfügbar - verwende Demo-Daten für Testing');
-        return _getDemoProvidersForSubcategory(subcategory);
-      }
-      
       return [];
-    }
-  }
-
-  /// Demo data for testing when Firebase Functions are not available
-  static List<Map<String, dynamic>> _getDemoProvidersForSubcategory(String subcategory) {
-    // Return demo providers based on subcategory
-    switch (subcategory) {
-      case 'Mietkoch':
-        return [
-          {
-            'id': 'demo-chef-1',
-            'name': 'Marco Schmidt',
-            'companyName': 'Gourmet Koch Service',
-            'description': 'Professioneller Mietkoch mit 15 Jahren Erfahrung in der gehobenen Gastronomie. Spezialisiert auf mediterrane und moderne deutsche Küche.',
-            'price': 85.0,
-            'rating': 4.8,
-            'reviewCount': 32,
-            'profilePictureURL': '',
-            'location': 'Berlin, Deutschland',
-            'isPro': true,
-            'isFastDelivery': true,
-            'isOnline': false,
-            'isOnsite': true,
-            'createdAt': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-            'responseTimeHours': 2.0,
-            'completionRate': 98.0,
-          },
-          {
-            'id': 'demo-chef-2',
-            'name': 'Sarah Weber',
-            'companyName': 'Vegane Kochkunst',
-            'description': 'Spezialistin für vegane und vegetarische Küche. Kocht leidenschaftlich gesunde und köstliche Mahlzeiten für besondere Anlässe.',
-            'price': 75.0,
-            'rating': 4.9,
-            'reviewCount': 28,
-            'profilePictureURL': '',
-            'location': 'München, Deutschland',
-            'isPro': true,
-            'isFastDelivery': false,
-            'isOnline': false,
-            'isOnsite': true,
-            'createdAt': DateTime.now().subtract(const Duration(days: 45)).toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-            'responseTimeHours': 1.5,
-            'completionRate': 100.0,
-          },
-          {
-            'id': 'demo-chef-3',
-            'name': 'Thomas Müller',
-            'companyName': 'Event Catering Pro',
-            'description': 'Erfahrener Koch für große Veranstaltungen und private Dinner. Internationale Küche mit Fokus auf asiatische Fusion.',
-            'price': 95.0,
-            'rating': 4.7,
-            'reviewCount': 45,
-            'profilePictureURL': '',
-            'location': 'Hamburg, Deutschland',
-            'isPro': true,
-            'isFastDelivery': true,
-            'isOnline': false,
-            'isOnsite': true,
-            'createdAt': DateTime.now().subtract(const Duration(days: 60)).toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(minutes: 30)).toIso8601String(),
-            'responseTimeHours': 3.0,
-            'completionRate': 95.0,
-          },
-        ];
-      
-      case 'Elektriker':
-        return [
-          {
-            'id': 'demo-electrician-1',
-            'name': 'Klaus Bergmann',
-            'companyName': 'Elektro Bergmann GmbH',
-            'description': 'Meisterbetrieb für alle Elektroarbeiten. Spezialisiert auf Hausinstallationen, Smart Home und Photovoltaik.',
-            'price': 65.0,
-            'rating': 4.6,
-            'reviewCount': 89,
-            'profilePictureURL': '',
-            'location': 'Frankfurt, Deutschland',
-            'isPro': true,
-            'isFastDelivery': true,
-            'isOnline': false,
-            'isOnsite': true,
-            'createdAt': DateTime.now().subtract(const Duration(days: 90)).toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(hours: 4)).toIso8601String(),
-            'responseTimeHours': 4.0,
-            'completionRate': 92.0,
-          },
-        ];
-      
-      default:
-        return [
-          {
-            'id': 'demo-provider-1',
-            'name': 'Demo Anbieter',
-            'companyName': 'Demo Service GmbH',
-            'description': 'Professioneller Service-Anbieter für $subcategory mit langjähriger Erfahrung.',
-            'price': 50.0,
-            'rating': 4.5,
-            'reviewCount': 20,
-            'profilePictureURL': '',
-            'location': 'Deutschland',
-            'isPro': false,
-            'isFastDelivery': true,
-            'isOnline': true,
-            'isOnsite': true,
-            'createdAt': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-            'responseTimeHours': 6.0,
-            'completionRate': 90.0,
-          },
-        ];
     }
   }
 
