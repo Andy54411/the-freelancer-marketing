@@ -1,10 +1,47 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { FiLoader } from 'react-icons/fi';
+import { toast } from 'sonner';
 import ProfileImageUpload from './ProfileImageUpload';
 import { ProfileTabProps } from './types';
+import { Gemini } from '@/components/logos';
 
 const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+
+  // Gemini-Beschreibung generieren
+  const generateDescription = async () => {
+    setIsGeneratingDescription(true);
+    try {
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyName: profile.companyName,
+          city: profile.city,
+          country: profile.country,
+          currentDescription: profile.publicDescription,
+          hourlyRate: profile.hourlyRate,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler bei der Beschreibungsgenerierung');
+      }
+
+      const data = await response.json();
+      setProfile(prev => (prev ? { ...prev, publicDescription: data.description } : null));
+      toast.success('Beschreibung erfolgreich generiert!');
+    } catch (error) {
+      console.error('Fehler bei der Beschreibungsgenerierung:', error);
+      toast.error('Fehler bei der Generierung der Beschreibung');
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -91,21 +128,52 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
 
         {/* Unternehmensbeschreibung */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Unternehmensbeschreibung *
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Unternehmensbeschreibung *
+            </label>
+            <button
+              onClick={generateDescription}
+              disabled={isGeneratingDescription}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+              {isGeneratingDescription ? (
+                <FiLoader className="animate-spin" size={16} />
+              ) : (
+                <Gemini className="w-4 h-4" />
+              )}
+              {isGeneratingDescription ? 'Wird generiert...' : 'Mit Gemini generieren'}
+            </button>
+          </div>
           <textarea
             value={profile.publicDescription}
             onChange={e =>
               setProfile(prev => (prev ? { ...prev, publicDescription: e.target.value } : null))
             }
             rows={8}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+            disabled={isGeneratingDescription}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] disabled:bg-gray-50 disabled:text-gray-500"
             placeholder="Beschreibe dein Unternehmen, deine Expertise und Dienstleistungen. Diese Beschreibung wird auf deinem öffentlichen Profil angezeigt und hilft Kunden dabei, dich zu finden und zu verstehen, was du anbietest..."
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Diese Beschreibung ist öffentlich sichtbar auf deinem Profil
-          </p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-gray-500">
+              Diese Beschreibung ist öffentlich sichtbar auf deinem Profil
+            </p>
+            <span className="text-xs text-gray-400">
+              {profile.publicDescription?.length || 0} Zeichen
+            </span>
+          </div>
+          {isGeneratingDescription && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-800">
+                <Gemini className="w-4 h-4" />
+                <span className="text-sm font-medium">Gemini KI arbeitet...</span>
+              </div>
+              <p className="text-blue-600 text-xs mt-1">
+                Die KI erstellt eine professionelle Beschreibung basierend auf Ihren Firmendaten.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

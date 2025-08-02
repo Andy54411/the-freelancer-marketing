@@ -161,10 +161,10 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
   }
 
   const tabs = [
-    { id: 'images', label: 'Bilder & Logo', icon: FiImage },
+    { id: 'images', label: 'Medien', icon: FiImage },
     { id: 'basic', label: 'Grunddaten', icon: FiUser },
-    { id: 'skills', label: 'Skills & Bildung', icon: FiAward },
-    { id: 'services', label: 'Services & Angebote', icon: FiPackage },
+    { id: 'skills', label: 'Qualifikationen', icon: FiAward },
+    { id: 'services', label: 'Services', icon: FiPackage },
     { id: 'faq', label: 'FAQ', icon: FiHelpCircle },
     { id: 'portfolio', label: 'Portfolio', icon: FiImage },
     { id: 'metrics', label: 'Statistiken', icon: FiTrendingUp },
