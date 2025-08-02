@@ -7,22 +7,34 @@ export type InvoiceTemplate = 'classic' | 'modern' | 'minimal' | 'corporate' | '
 
 export interface InvoiceData {
   id: string;
+  number: string;
   invoiceNumber: string;
+  date: string;
+  issueDate: string;
+  dueDate: string;
   customerName: string;
-  customerEmail: string;
-  customerAddress?: string;
+  customerAddress: string;
+  customerEmail?: string;
+  description?: string;
   companyName: string;
-  companyAddress?: string;
-  companyEmail?: string;
-  companyPhone?: string;
+  companyAddress: string;
+  companyEmail: string;
+  companyPhone: string;
+  companyWebsite?: string;
+  companyLogo?: string;
+  companyVatId?: string;
+  companyTaxNumber?: string;
+  companyRegister?: string;
+  districtCourt?: string;
+  legalForm?: string;
   companyTax?: string;
+  items: InvoiceItem[];
   amount: number;
   tax: number;
   total: number;
-  issueDate: string;
-  dueDate: string;
-  description: string;
-  items?: InvoiceItem[];
+  isSmallBusiness: boolean;
+  vatRate: number;
+  priceInput: 'netto' | 'brutto';
 }
 
 export interface InvoiceItem {
@@ -57,15 +69,26 @@ export function ClassicTemplate({ data, preview }: Omit<InvoiceTemplateProps, 't
       {/* Header */}
       <div className="border-b-2 border-gray-800 pb-6 mb-6">
         <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">{data.companyName}</h1>
-            {data.companyAddress && (
-              <div className="text-gray-600 text-sm leading-relaxed">
-                {data.companyAddress.split('\n').map((line, i) => (
-                  <div key={i}>{line}</div>
-                ))}
+          <div className="flex items-start space-x-4">
+            {data.companyLogo && (
+              <div className="flex-shrink-0">
+                <img
+                  src={data.companyLogo}
+                  alt={`${data.companyName} Logo`}
+                  className="h-16 w-auto object-contain"
+                />
               </div>
             )}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">{data.companyName}</h1>
+              {data.companyAddress && (
+                <div className="text-gray-600 text-sm leading-relaxed">
+                  {data.companyAddress.split('\n').map((line, i) => (
+                    <div key={i}>{line}</div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="text-right">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">RECHNUNG</h2>
@@ -133,18 +156,36 @@ export function ClassicTemplate({ data, preview }: Omit<InvoiceTemplateProps, 't
       {/* Totals */}
       <div className="flex justify-end mb-8">
         <div className="w-80">
-          <div className="flex justify-between py-2 border-b">
-            <span>Nettobetrag:</span>
-            <span>{formatCurrency(data.amount)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b">
-            <span>MwSt. (19%):</span>
-            <span>{formatCurrency(data.tax)}</span>
-          </div>
-          <div className="flex justify-between py-3 font-bold text-lg bg-gray-800 text-white px-3">
-            <span>Gesamtbetrag:</span>
-            <span>{formatCurrency(data.total)}</span>
-          </div>
+          {!data.isSmallBusiness ? (
+            <>
+              <div className="flex justify-between py-2 border-b">
+                <span>Nettobetrag:</span>
+                <span>{formatCurrency(data.amount)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span>MwSt. ({data.vatRate || 19}%):</span>
+                <span>{formatCurrency(data.tax)}</span>
+              </div>
+              <div className="flex justify-between py-3 font-bold text-lg bg-gray-800 text-white px-3">
+                <span>Gesamtbetrag:</span>
+                <span>{formatCurrency(data.total)}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between py-3 font-bold text-lg bg-gray-800 text-white px-3">
+                <span>Gesamtbetrag:</span>
+                <span>{formatCurrency(data.total)}</span>
+              </div>
+              <div className="text-xs text-gray-600 mt-2 text-center">
+                <em>
+                  Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.
+                  <br />
+                  (Kleinunternehmerregelung)
+                </em>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -156,6 +197,7 @@ export function ClassicTemplate({ data, preview }: Omit<InvoiceTemplateProps, 't
             <br />
             {data.companyEmail && <div>E-Mail: {data.companyEmail}</div>}
             {data.companyPhone && <div>Tel: {data.companyPhone}</div>}
+            {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
           </div>
           <div>
             <strong>Zahlungsbedingungen:</strong>
@@ -165,9 +207,16 @@ export function ClassicTemplate({ data, preview }: Omit<InvoiceTemplateProps, 't
             ohne Abzug.
           </div>
           <div>
-            <strong>Steuer-Nr.:</strong>
+            <strong>Rechtliche Angaben:</strong>
             <br />
-            {data.companyTax || 'DE123456789'}
+            {data.companyTax && <div>Steuer-Nr: {data.companyTax}</div>}
+            {data.companyVatId && <div>USt-IdNr: {data.companyVatId}</div>}
+            {data.companyRegister && data.districtCourt && (
+              <div>
+                {data.districtCourt} {data.companyRegister}
+              </div>
+            )}
+            {data.legalForm && <div>{data.legalForm}</div>}
           </div>
         </div>
       </div>
@@ -193,11 +242,22 @@ export function ModernTemplate({ data, preview }: Omit<InvoiceTemplateProps, 'te
       {/* Header with accent */}
       <div className="relative mb-8">
         <div className="absolute top-0 left-0 w-2 h-20 bg-[#14ad9f]"></div>
-        <div className="pl-6">
-          <h1 className="text-4xl font-light text-gray-800 mb-2">{data.companyName}</h1>
-          <div className="text-gray-500 text-sm">
-            {data.companyAddress && <div>{data.companyAddress.replace(/\n/g, ' • ')}</div>}
-            {data.companyEmail && <div className="mt-1">{data.companyEmail}</div>}
+        <div className="pl-6 flex items-start space-x-4">
+          {data.companyLogo && (
+            <div className="flex-shrink-0">
+              <img
+                src={data.companyLogo}
+                alt={`${data.companyName} Logo`}
+                className="h-16 w-auto object-contain"
+              />
+            </div>
+          )}
+          <div>
+            <h1 className="text-4xl font-light text-gray-800 mb-2">{data.companyName}</h1>
+            <div className="text-gray-500 text-sm">
+              {data.companyAddress && <div>{data.companyAddress.replace(/\n/g, ' • ')}</div>}
+              {data.companyEmail && <div className="mt-1">{data.companyEmail}</div>}
+            </div>
           </div>
         </div>
 
@@ -278,18 +338,36 @@ export function ModernTemplate({ data, preview }: Omit<InvoiceTemplateProps, 'te
       {/* Modern totals */}
       <div className="flex justify-end mb-8">
         <div className="w-80 space-y-2">
-          <div className="flex justify-between py-2 text-gray-600">
-            <span>Nettobetrag:</span>
-            <span>{formatCurrency(data.amount)}</span>
-          </div>
-          <div className="flex justify-between py-2 text-gray-600">
-            <span>MwSt. (19%):</span>
-            <span>{formatCurrency(data.tax)}</span>
-          </div>
-          <div className="flex justify-between py-4 text-xl font-medium bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] text-white px-4 rounded-lg">
-            <span>Gesamt:</span>
-            <span>{formatCurrency(data.total)}</span>
-          </div>
+          {!data.isSmallBusiness ? (
+            <>
+              <div className="flex justify-between py-2 text-gray-600">
+                <span>Nettobetrag:</span>
+                <span>{formatCurrency(data.amount)}</span>
+              </div>
+              <div className="flex justify-between py-2 text-gray-600">
+                <span>MwSt. ({data.vatRate || 19}%):</span>
+                <span>{formatCurrency(data.tax)}</span>
+              </div>
+              <div className="flex justify-between py-4 text-xl font-medium bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] text-white px-4 rounded-lg">
+                <span>Gesamt:</span>
+                <span>{formatCurrency(data.total)}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between py-4 text-xl font-medium bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] text-white px-4 rounded-lg">
+                <span>Gesamt:</span>
+                <span>{formatCurrency(data.total)}</span>
+              </div>
+              <div className="text-xs text-gray-600 mt-3 text-center bg-gray-50 p-3 rounded-lg">
+                <em>
+                  Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.
+                  <br />
+                  (Kleinunternehmerregelung)
+                </em>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -306,15 +384,20 @@ export function ModernTemplate({ data, preview }: Omit<InvoiceTemplateProps, 'te
             </div>
           </div>
           <div className="text-right space-y-2">
-            <div className="text-gray-600">
-              <div>
-                <strong>Steuer-Nr:</strong> {data.companyTax || 'DE123456789'}
-              </div>
-              {data.companyPhone && (
+            <div className="text-gray-600 space-y-1">
+              <div className="font-medium">{data.companyName}</div>
+              <div>{data.companyAddress}</div>
+              {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
+              <div>{data.companyEmail}</div>
+              {data.companyPhone && <div>Tel: {data.companyPhone}</div>}
+              {data.companyVatId && <div>USt-IdNr.: {data.companyVatId}</div>}
+              {data.companyTaxNumber && <div>Steuernummer: {data.companyTaxNumber}</div>}
+              {data.companyRegister && data.districtCourt && (
                 <div>
-                  <strong>Telefon:</strong> {data.companyPhone}
+                  {data.companyRegister} {data.districtCourt}
                 </div>
               )}
+              {data.legalForm && <div>{data.legalForm}</div>}
             </div>
           </div>
         </div>
@@ -340,8 +423,19 @@ export function MinimalTemplate({ data, preview }: Omit<InvoiceTemplateProps, 't
     <div className={`bg-white p-12 ${preview ? 'scale-75 transform-origin-top-left' : ''}`}>
       {/* Minimal header */}
       <div className="flex justify-between items-start mb-16">
-        <div>
-          <h1 className="text-2xl font-normal text-gray-900">{data.companyName}</h1>
+        <div className="flex items-center space-x-4">
+          {data.companyLogo && (
+            <div className="flex-shrink-0">
+              <img
+                src={data.companyLogo}
+                alt={`${data.companyName} Logo`}
+                className="h-12 w-auto object-contain"
+              />
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-normal text-gray-900">{data.companyName}</h1>
+          </div>
         </div>
         <div className="text-right">
           <div className="text-4xl font-thin text-gray-400 mb-4">RECHNUNG</div>
@@ -391,25 +485,57 @@ export function MinimalTemplate({ data, preview }: Omit<InvoiceTemplateProps, 't
 
         {/* Minimal totals */}
         <div className="space-y-2 max-w-xs ml-auto">
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Netto</span>
-            <span>{formatCurrency(data.amount)}</span>
-          </div>
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>MwSt.</span>
-            <span>{formatCurrency(data.tax)}</span>
-          </div>
-          <div className="flex justify-between text-lg font-medium pt-2 border-t">
-            <span>Gesamt</span>
-            <span>{formatCurrency(data.total)}</span>
-          </div>
+          {!data.isSmallBusiness ? (
+            <>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Netto</span>
+                <span>{formatCurrency(data.amount)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>MwSt. ({data.vatRate || 19}%)</span>
+                <span>{formatCurrency(data.tax)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-medium pt-2 border-t">
+                <span>Gesamt</span>
+                <span>{formatCurrency(data.total)}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between text-lg font-medium pt-2 border-t">
+                <span>Gesamt</span>
+                <span>{formatCurrency(data.total)}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-2 text-center">
+                <em>
+                  Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.
+                  <br />
+                  (Kleinunternehmerregelung)
+                </em>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Minimal footer */}
-      <div className="text-xs text-gray-400 text-center">
+      <div className="text-xs text-gray-400 text-center space-y-2">
         <div>Fällig bis {formatDate(data.dueDate)}</div>
-        <div className="mt-2">{data.companyTax || 'DE123456789'}</div>
+        <div className="space-y-1">
+          <div className="font-medium">{data.companyName}</div>
+          <div>{data.companyAddress}</div>
+          {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
+          <div>{data.companyEmail}</div>
+          {data.companyPhone && <div>Tel: {data.companyPhone}</div>}
+          {data.companyVatId && <div>USt-IdNr.: {data.companyVatId}</div>}
+          {data.companyTaxNumber && <div>Steuernummer: {data.companyTaxNumber}</div>}
+          {data.companyRegister && data.districtCourt && (
+            <div>
+              {data.companyRegister} {data.districtCourt}
+            </div>
+          )}
+          {data.legalForm && <div>{data.legalForm}</div>}
+        </div>
       </div>
     </div>
   );
@@ -433,16 +559,27 @@ export function CorporateTemplate({ data, preview }: Omit<InvoiceTemplateProps, 
       {/* Corporate header with dark background */}
       <div className="bg-gray-900 text-white p-8">
         <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{data.companyName}</h1>
-            {data.companyAddress && (
-              <div className="text-gray-300 text-sm">
-                {data.companyAddress.replace(/\n/g, ' • ')}
+          <div className="flex items-start space-x-4">
+            {data.companyLogo && (
+              <div className="flex-shrink-0">
+                <img
+                  src={data.companyLogo}
+                  alt={`${data.companyName} Logo`}
+                  className="h-16 w-auto object-contain bg-white rounded p-2"
+                />
               </div>
             )}
-            <div className="mt-2 text-gray-300 text-sm">
-              {data.companyEmail && <span>{data.companyEmail}</span>}
-              {data.companyPhone && <span> • {data.companyPhone}</span>}
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{data.companyName}</h1>
+              {data.companyAddress && (
+                <div className="text-gray-300 text-sm">
+                  {data.companyAddress.replace(/\n/g, ' • ')}
+                </div>
+              )}
+              <div className="mt-2 text-gray-300 text-sm">
+                {data.companyEmail && <span>{data.companyEmail}</span>}
+                {data.companyPhone && <span> • {data.companyPhone}</span>}
+              </div>
             </div>
           </div>
           <div className="text-right">
@@ -534,26 +671,57 @@ export function CorporateTemplate({ data, preview }: Omit<InvoiceTemplateProps, 
           <div className="w-96">
             <table className="w-full border-collapse border border-gray-300">
               <tbody>
-                <tr>
-                  <td className="border border-gray-300 p-3 bg-gray-100 font-bold">NETTOBETRAG:</td>
-                  <td className="border border-gray-300 p-3 text-right">
-                    {formatCurrency(data.amount)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-300 p-3 bg-gray-100 font-bold">
-                    MEHRWERTSTEUER (19%):
-                  </td>
-                  <td className="border border-gray-300 p-3 text-right">
-                    {formatCurrency(data.tax)}
-                  </td>
-                </tr>
-                <tr className="bg-gray-900 text-white">
-                  <td className="border border-gray-300 p-4 font-bold text-lg">GESAMTBETRAG:</td>
-                  <td className="border border-gray-300 p-4 text-right font-bold text-lg">
-                    {formatCurrency(data.total)}
-                  </td>
-                </tr>
+                {!data.isSmallBusiness ? (
+                  <>
+                    <tr>
+                      <td className="border border-gray-300 p-3 bg-gray-100 font-bold">
+                        NETTOBETRAG:
+                      </td>
+                      <td className="border border-gray-300 p-3 text-right">
+                        {formatCurrency(data.amount)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 p-3 bg-gray-100 font-bold">
+                        MEHRWERTSTEUER ({data.vatRate || 19}%):
+                      </td>
+                      <td className="border border-gray-300 p-3 text-right">
+                        {formatCurrency(data.tax)}
+                      </td>
+                    </tr>
+                    <tr className="bg-gray-900 text-white">
+                      <td className="border border-gray-300 p-4 font-bold text-lg">
+                        GESAMTBETRAG:
+                      </td>
+                      <td className="border border-gray-300 p-4 text-right font-bold text-lg">
+                        {formatCurrency(data.total)}
+                      </td>
+                    </tr>
+                  </>
+                ) : (
+                  <>
+                    <tr className="bg-gray-900 text-white">
+                      <td className="border border-gray-300 p-4 font-bold text-lg">
+                        GESAMTBETRAG:
+                      </td>
+                      <td className="border border-gray-300 p-4 text-right font-bold text-lg">
+                        {formatCurrency(data.total)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        colSpan={2}
+                        className="border border-gray-300 p-3 text-center text-sm bg-gray-50"
+                      >
+                        <em>
+                          Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.
+                          <br />
+                          (Kleinunternehmerregelung)
+                        </em>
+                      </td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -580,9 +748,19 @@ export function CorporateTemplate({ data, preview }: Omit<InvoiceTemplateProps, 
             <div>
               <h4 className="font-bold text-gray-900 mb-2">STEUERLICHE ANGABEN</h4>
               <div className="text-gray-700 space-y-1">
-                <div>Steuer-Nr: {data.companyTax || 'DE123456789'}</div>
-                <div>USt-IdNr: DE987654321</div>
-                <div>Geschäftsführer: Max Mustermann</div>
+                <div className="font-medium">{data.companyName}</div>
+                <div>{data.companyAddress}</div>
+                {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
+                <div>{data.companyEmail}</div>
+                {data.companyPhone && <div>Tel: {data.companyPhone}</div>}
+                {data.companyVatId && <div>USt-IdNr.: {data.companyVatId}</div>}
+                {data.companyTaxNumber && <div>Steuernummer: {data.companyTaxNumber}</div>}
+                {data.companyRegister && data.districtCourt && (
+                  <div>
+                    {data.companyRegister} {data.districtCourt}
+                  </div>
+                )}
+                {data.legalForm && <div>{data.legalForm}</div>}
               </div>
             </div>
           </div>
@@ -614,19 +792,30 @@ export function CreativeTemplate({ data, preview }: Omit<InvoiceTemplateProps, '
 
         <div className="relative z-10">
           <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold mb-3">{data.companyName}</h1>
-              <div className="text-gray-100 text-sm max-w-md">
-                {data.companyAddress && (
-                  <div className="leading-relaxed">
-                    {data.companyAddress.split('\n').map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
+            <div className="flex items-start space-x-4">
+              {data.companyLogo && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={data.companyLogo}
+                    alt={`${data.companyName} Logo`}
+                    className="h-16 w-auto object-contain bg-white rounded-lg p-2"
+                  />
+                </div>
+              )}
+              <div>
+                <h1 className="text-4xl font-bold mb-3">{data.companyName}</h1>
+                <div className="text-gray-100 text-sm max-w-md">
+                  {data.companyAddress && (
+                    <div className="leading-relaxed">
+                      {data.companyAddress.split('\n').map((line, i) => (
+                        <div key={i}>{line}</div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-2">
+                    {data.companyEmail && <span>{data.companyEmail}</span>}
+                    {data.companyPhone && <span> • {data.companyPhone}</span>}
                   </div>
-                )}
-                <div className="mt-2">
-                  {data.companyEmail && <span>{data.companyEmail}</span>}
-                  {data.companyPhone && <span> • {data.companyPhone}</span>}
                 </div>
               </div>
             </div>
@@ -738,20 +927,40 @@ export function CreativeTemplate({ data, preview }: Omit<InvoiceTemplateProps, '
           <div className="w-96">
             <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6 shadow-lg">
               <div className="space-y-3">
-                <div className="flex justify-between text-gray-600">
-                  <span>Nettobetrag:</span>
-                  <span className="font-medium">{formatCurrency(data.amount)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>MwSt. (19%):</span>
-                  <span className="font-medium">{formatCurrency(data.tax)}</span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between text-2xl font-bold">
-                    <span className="text-gray-900">Gesamt:</span>
-                    <span className="text-[#14ad9f]">{formatCurrency(data.total)}</span>
-                  </div>
-                </div>
+                {!data.isSmallBusiness ? (
+                  <>
+                    <div className="flex justify-between text-gray-600">
+                      <span>Nettobetrag:</span>
+                      <span className="font-medium">{formatCurrency(data.amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600">
+                      <span>MwSt. ({data.vatRate || 19}%):</span>
+                      <span className="font-medium">{formatCurrency(data.tax)}</span>
+                    </div>
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between text-2xl font-bold">
+                        <span className="text-gray-900">Gesamt:</span>
+                        <span className="text-[#14ad9f]">{formatCurrency(data.total)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between text-2xl font-bold">
+                        <span className="text-gray-900">Gesamt:</span>
+                        <span className="text-[#14ad9f]">{formatCurrency(data.total)}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-3 text-center bg-white p-3 rounded-lg">
+                      <em>
+                        Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.
+                        <br />
+                        (Kleinunternehmerregelung)
+                      </em>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -773,8 +982,19 @@ export function CreativeTemplate({ data, preview }: Omit<InvoiceTemplateProps, '
             <div className="text-right">
               <h4 className="font-bold text-gray-900 mb-3">Kontakt & Steuer</h4>
               <div className="text-sm text-gray-700 space-y-1">
-                <div>Steuer-Nr: {data.companyTax || 'DE123456789'}</div>
-                <div>Bei Fragen: {data.companyEmail}</div>
+                <div className="font-medium">{data.companyName}</div>
+                <div>{data.companyAddress}</div>
+                {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
+                <div>{data.companyEmail}</div>
+                {data.companyPhone && <div>Tel: {data.companyPhone}</div>}
+                {data.companyVatId && <div>USt-IdNr.: {data.companyVatId}</div>}
+                {data.companyTaxNumber && <div>Steuernummer: {data.companyTaxNumber}</div>}
+                {data.companyRegister && data.districtCourt && (
+                  <div>
+                    {data.companyRegister} {data.districtCourt}
+                  </div>
+                )}
+                {data.legalForm && <div>{data.legalForm}</div>}
               </div>
             </div>
           </div>

@@ -20,6 +20,7 @@ import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2 } from 'lucide-r
 import { toast } from 'sonner';
 import { InvoiceTemplatePicker } from '@/components/finance/InvoiceTemplatePicker';
 import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 interface Customer {
   id: string;
@@ -40,6 +41,13 @@ export default function CreateInvoicePage() {
   const router = useRouter();
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+
+  // Load company settings
+  const {
+    settings: companySettings,
+    loading: companyLoading,
+    error: companyError,
+  } = useCompanySettings(uid);
 
   // State for template loading and selection
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('modern');
@@ -203,9 +211,16 @@ export default function CreateInvoicePage() {
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const taxRate = parseFloat(formData.taxRate) / 100;
-    const tax = subtotal * taxRate;
-    const total = subtotal + tax;
+
+    // Use company settings for VAT calculation
+    let tax = 0;
+    let total = subtotal;
+
+    if (companySettings?.ust !== 'kleinunternehmer') {
+      const taxRate = parseFloat(companySettings?.defaultTaxRate || '19') / 100;
+      tax = subtotal * taxRate;
+      total = subtotal + tax;
+    }
 
     return { subtotal, tax, total };
   };
@@ -243,20 +258,42 @@ export default function CreateInvoicePage() {
 
     const newInvoice = {
       id: `inv_${Date.now()}`,
+      number: formData.invoiceNumber,
       invoiceNumber: formData.invoiceNumber,
-      customerId: 'cust_new',
+      date: formData.issueDate,
+      issueDate: formData.issueDate,
+      dueDate: formData.dueDate,
       customerName: formData.customerName,
       customerEmail: formData.customerEmail,
       customerAddress: formData.customerAddress,
+      description: formData.description,
+
+      // Company information from settings
+      companyName: companySettings?.companyName || '',
+      companyAddress: companySettings?.companyAddress || '',
+      companyEmail: companySettings?.companyEmail || '',
+      companyPhone: companySettings?.companyPhone || '',
+      companyWebsite: companySettings?.companyWebsite || '',
+      companyLogo: companySettings?.companyLogo || '',
+      companyVatId: companySettings?.vatId || '',
+      companyTaxNumber: companySettings?.taxNumber || '',
+      companyRegister: companySettings?.companyRegister || '',
+      districtCourt: companySettings?.districtCourt || '',
+      legalForm: companySettings?.legalForm || '',
+      companyTax: companySettings?.taxNumber || '',
+
+      // Tax settings
+      isSmallBusiness: companySettings?.ust === 'kleinunternehmer',
+      vatRate: parseFloat(companySettings?.defaultTaxRate || '19'),
+      priceInput: companySettings?.priceInput || 'netto',
+
+      // Financial data
+      items: items.filter(item => item.description && item.quantity > 0),
       amount: subtotal,
       tax,
       total,
       status: 'draft' as const,
-      issueDate: formData.issueDate,
-      dueDate: formData.dueDate,
-      description: formData.description,
       template: selectedTemplate,
-      items: items.filter(item => item.description && item.quantity > 0),
       notes: formData.notes,
     };
 
