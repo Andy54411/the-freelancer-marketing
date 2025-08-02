@@ -81,13 +81,35 @@ interface ProviderOrderData {
 
 export const getProviderOrders = onRequest(
     {
+        cors: [
+            "http://localhost:3000",
+            "http://localhost:3001", 
+            "http://localhost:3002",
+            "https://tilvo-f142f.web.app",
+            "http://localhost:5002",
+            "https://tasko-rho.vercel.app",
+            "https://tasko-zh8k.vercel.app",
+            "https://tasko-live.vercel.app",
+            "https://taskilo.de",
+            "http://taskilo.de"
+        ],
         region: "europe-west1",
-        cors: true,
         timeoutSeconds: 60,
         memory: "512MiB",
         cpu: 0.5
     },
     async (request, response): Promise<void> => {
+        // CORS handling
+        response.set('Access-Control-Allow-Origin', 'https://taskilo.de');
+        response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        response.set('Access-Control-Allow-Credentials', 'true');
+
+        if (request.method === 'OPTIONS') {
+            response.status(200).send('');
+            return;
+        }
+
         try {
             // 1. Authentication Check
             const authHeader = request.headers.authorization;

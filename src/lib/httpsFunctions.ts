@@ -31,8 +31,45 @@ async function callHttpsFunctionDirect(
   }
 
   const token = await user.getIdToken();
-  const baseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';
 
+  // Special handling for getProviderOrders - use Next.js API proxy to avoid CORS issues
+  if (functionName === 'getProviderOrders') {
+    let url = '/api/get-provider-orders';
+    const options: RequestInit = {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    if (method === 'GET') {
+      // For GET requests, add data as query parameters
+      if (data) {
+        const params = new URLSearchParams();
+        Object.keys(data).forEach(key => {
+          params.append(key, data[key]);
+        });
+        url += `?${params.toString()}`;
+      }
+    } else {
+      // For POST requests, add data to body
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
+  // For all other functions, use direct Firebase Functions calls
+  const baseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';
   let url = `${baseUrl}/${functionName}`;
   const options: RequestInit = {
     method,

@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./lib-minimal"
+  },
+  "include": [
+    "src/index-minimal.ts",
+    "src/getProviderOrders.ts",
+    "src/helpers.ts",
+    "src/constants.ts",
+    "src/env.d.ts"
+  ],
+  "exclude": [
+    "src/http_webhooks.ts",
+    "src/callable_stripe.ts",
+    "src/**/*webhook*",
+    "src/**/*stripe*"
+  ]
+}
