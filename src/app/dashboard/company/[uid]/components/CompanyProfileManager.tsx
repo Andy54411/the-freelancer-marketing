@@ -95,51 +95,51 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
     try {
       const companyRef = doc(db, 'companies', profile.uid);
       await updateDoc(companyRef, {
-        // Grunddaten
-        username: profile.username,
-        displayName: profile.displayName,
+        // Grunddaten (Company Basis-Informationen)
         companyName: profile.companyName,
-        profilePictureURL: profile.photoURL,
-        photoURL: profile.photoURL,
-        companyLogo: profile.companyLogo,
         description: profile.description,
+        profilePictureURL: profile.photoURL,
+        companyLogo: profile.companyLogo,
         publicDescription: profile.publicDescription,
 
-        // Standort-Daten (erweitert)
-        country: profile.country,
-        city: profile.city,
-        postalCode: profile.postalCode || '',
-        street: profile.street || '',
+        // Standort-Daten (existierende Struktur erweitern)
+        companyCountry: profile.country,
+        companyCity: profile.city,
+        companyPostalCode: profile.postalCode || '',
+        companyStreet: profile.street || '',
+        postalCode: profile.postalCode || '', // Backup für existierendes Feld
         fullAddress: profile.fullAddress || '',
-        latitude: profile.latitude || null,
-        longitude: profile.longitude || null,
+        lat: profile.latitude || null,
+        lng: profile.longitude || null,
 
         // Business-Daten
         hourlyRate: profile.hourlyRate,
         businessLicense: profile.businessLicense,
 
-        // Skills & Bildung
+        // Skills & Bildung (neue Felder)
         languages: profile.languages,
         skills: profile.skills,
         education: profile.education,
         certifications: profile.certifications,
         specialties: profile.specialties,
 
-        // Services & Angebote
+        // Services & Angebote (neue Felder)
         servicePackages: profile.servicePackages,
         workingHours: profile.workingHours,
         instantBooking: profile.instantBooking,
         responseTimeGuarantee: profile.responseTimeGuarantee,
 
-        // Portfolio & Medien
+        // Portfolio & Medien (neue Felder)
         portfolio: profile.portfolio,
         profileBannerImage: profile.profileBannerImage,
 
-        // FAQ
+        // FAQ (neue Felder)
         faqs: profile.faqs,
 
-        // Meta
+        // Meta-Daten (existierende Struktur)
         updatedAt: new Date(),
+        profileLastUpdatedAt: new Date(),
+        lastUpdated: new Date(), // Backup für existierendes Feld
       });
 
       toast.success('Company Profile wurde erfolgreich aktualisiert!');
