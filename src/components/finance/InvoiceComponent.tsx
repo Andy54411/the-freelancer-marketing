@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Trash2, Plus, FileText, Settings } from 'lucide-react';
-import { InvoiceCreateModal } from './InvoiceCreateModal';
+import { Eye, Edit, Trash2, Plus, FileText } from 'lucide-react';
 
 interface Invoice {
   id: string;
@@ -49,12 +48,12 @@ export function InvoiceComponent({ invoices: initialInvoices }: InvoiceComponent
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const handleInvoiceCreate = (newInvoice: Invoice) => {
-    setInvoices(prev => [newInvoice, ...prev]);
-  };
-
   const handleTemplatesPage = () => {
     router.push('./invoices/templates');
+  };
+
+  const handleCreateInvoice = () => {
+    router.push('./invoices/create');
   };
 
   return (
@@ -74,7 +73,13 @@ export function InvoiceComponent({ invoices: initialInvoices }: InvoiceComponent
               <FileText className="h-4 w-4" />
               Templates
             </Button>
-            <InvoiceCreateModal onInvoiceCreate={handleInvoiceCreate} />
+            <Button
+              onClick={handleCreateInvoice}
+              className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Neue Rechnung
+            </Button>
           </div>
         </div>
       </CardHeader>
