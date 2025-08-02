@@ -5,6 +5,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  doc,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -21,6 +23,7 @@ import { Edit, Search, Eye, Mail, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddCustomerModal, Customer } from './AddCustomerModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
+import { EditCustomerModal } from './EditCustomerModal';
 
 interface CustomerManagerProps {
   companyId: string;
@@ -34,6 +37,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
   // Generate next customer number
   const generateNextCustomerNumber = (existingCustomers: Customer[]) => {
@@ -195,6 +200,86 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   const handleViewCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowDetailModal(true);
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setShowEditModal(true);
+  };
+
+  // Update customer in Firebase
+  const handleUpdateCustomer = async (updatedCustomer: Customer) => {
+    try {
+      console.log('🔍 Debug: handleUpdateCustomer called with:', {
+        customerId: updatedCustomer.id,
+        customerData: updatedCustomer,
+        user: user?.uid,
+        companyId: companyId,
+      });
+
+      if (!user) {
+        console.error('❌ User not authenticated');
+        throw new Error('Benutzer nicht authentifiziert');
+      }
+
+      // Verify user has permission to update customers for this company
+      if (user.uid !== companyId) {
+        console.error('❌ User uid does not match company id:', {
+          userUid: user.uid,
+          companyId: companyId,
+        });
+        throw new Error('Keine Berechtigung für diese Firma');
+      }
+
+      // Filter undefined values for Firebase compatibility
+      const cleanCustomerData = Object.entries(updatedCustomer).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null && key !== 'id') {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
+      // Clean contact persons - remove undefined fields
+      if (cleanCustomerData.contactPersons) {
+        cleanCustomerData.contactPersons = cleanCustomerData.contactPersons.map((cp: any) => {
+          return Object.entries(cp).reduce((acc, [key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+              acc[key] = value;
+            }
+            return acc;
+          }, {} as any);
+        });
+      }
+
+      // Add update metadata
+      cleanCustomerData.lastModifiedBy = user.uid;
+      cleanCustomerData.updatedAt = serverTimestamp();
+
+      console.log('📤 Updating customer in Firestore:', cleanCustomerData);
+
+      const customerRef = doc(db, 'customers', updatedCustomer.id);
+      await updateDoc(customerRef, cleanCustomerData);
+
+      console.log('✅ Successfully updated customer in Firestore');
+
+      // Update local state
+      setCustomers(prev => prev.map(c => (c.id === updatedCustomer.id ? updatedCustomer : c)));
+
+      console.log('🎉 Customer successfully updated in state');
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren des Kunden:', error);
+
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        });
+      }
+
+      throw error;
+    }
   };
 
   // Filter customers based on search term
@@ -364,10 +449,16 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewCustomer(customer)}
+                          title="Kunde anzeigen"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditCustomer(customer)}
+                          title="Kunde bearbeiten"
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -388,6 +479,17 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           setShowDetailModal(false);
           setSelectedCustomer(null);
         }}
+      />
+
+      {/* Edit Customer Modal */}
+      <EditCustomerModal
+        customer={editingCustomer}
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingCustomer(null);
+        }}
+        onUpdateCustomer={handleUpdateCustomer}
       />
     </Card>
   );
