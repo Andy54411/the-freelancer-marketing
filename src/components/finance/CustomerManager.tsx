@@ -201,6 +201,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
+              name="customer-search"
+              autoComplete="off"
             />
           </div>
         </div>

@@ -64,15 +64,17 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     vatId: '',
   });
 
-  const [contactPersons, setContactPersons] = useState<Omit<ContactPerson, 'id'>[]>([{
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    position: '',
-    department: '',
-    isPrimary: true,
-  }]);
+  const [contactPersons, setContactPersons] = useState<Omit<ContactPerson, 'id'>[]>([
+    {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      position: '',
+      department: '',
+      isPrimary: true,
+    },
+  ]);
 
   // Update customer number when prop changes
   React.useEffect(() => {
@@ -95,8 +97,8 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     }
 
     // Validate contact persons
-    const validContactPersons = contactPersons.filter(cp => 
-      cp.firstName.trim() && cp.lastName.trim() && cp.email.trim()
+    const validContactPersons = contactPersons.filter(
+      cp => cp.firstName.trim() && cp.lastName.trim() && cp.email.trim()
     );
 
     if (validContactPersons.length === 0) {
@@ -145,15 +147,17 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         vatId: '',
       });
 
-      setContactPersons([{
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        position: '',
-        department: '',
-        isPrimary: true,
-      }]);
+      setContactPersons([
+        {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          position: '',
+          department: '',
+          isPrimary: true,
+        },
+      ]);
 
       setOpen(false);
       toast.success('Kunde erfolgreich hinzugefügt');
@@ -169,22 +173,27 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleContactPersonChange = (index: number, field: keyof Omit<ContactPerson, 'id'>, value: string | boolean) => {
-    setContactPersons(prev => prev.map((cp, i) => 
-      i === index ? { ...cp, [field]: value } : cp
-    ));
+  const handleContactPersonChange = (
+    index: number,
+    field: keyof Omit<ContactPerson, 'id'>,
+    value: string | boolean
+  ) => {
+    setContactPersons(prev => prev.map((cp, i) => (i === index ? { ...cp, [field]: value } : cp)));
   };
 
   const addContactPerson = () => {
-    setContactPersons(prev => [...prev, {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      position: '',
-      department: '',
-      isPrimary: false,
-    }]);
+    setContactPersons(prev => [
+      ...prev,
+      {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        position: '',
+        department: '',
+        isPrimary: false,
+      },
+    ]);
   };
 
   const removeContactPerson = (index: number) => {
@@ -194,10 +203,12 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
   };
 
   const setPrimaryContact = (index: number) => {
-    setContactPersons(prev => prev.map((cp, i) => ({
-      ...cp,
-      isPrimary: i === index
-    })));
+    setContactPersons(prev =>
+      prev.map((cp, i) => ({
+        ...cp,
+        isPrimary: i === index,
+      }))
+    );
   };
 
   return (
@@ -217,27 +228,38 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+          {/* Autofill-Honeypot - versteckte Felder für Browser-Autofill */}
+          <div style={{ display: 'none' }}>
+            <input type="text" name="username" tabIndex={-1} autoComplete="username" />
+            <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
+            <input type="email" name="fakeEmail" tabIndex={-1} autoComplete="email" />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="customerNumber">Kundennummer</Label>
               <Input
                 id="customerNumber"
+                name="customerNumber"
                 value={formData.customerNumber}
                 onChange={e => handleChange('customerNumber', e.target.value)}
                 placeholder="KD-001"
                 disabled
                 className="bg-gray-50"
+                autoComplete="off"
               />
             </div>
             <div>
               <Label htmlFor="name">Firmenname *</Label>
               <Input
                 id="name"
+                name="company-name"
                 value={formData.name}
                 onChange={e => handleChange('name', e.target.value)}
                 placeholder="z.B. Mustermann GmbH"
                 required
+                autoComplete="organization"
               />
             </div>
           </div>
@@ -247,21 +269,25 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
               <Label htmlFor="email">E-Mail *</Label>
               <Input
                 id="email"
+                name="company-email"
                 type="email"
                 value={formData.email}
                 onChange={e => handleChange('email', e.target.value)}
                 placeholder="info@kunde.de"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
               <Label htmlFor="phone">Telefon</Label>
               <Input
                 id="phone"
+                name="company-phone"
                 type="tel"
                 value={formData.phone}
                 onChange={e => handleChange('phone', e.target.value)}
                 placeholder="+49 123 456789"
+                autoComplete="tel"
               />
             </div>
           </div>
@@ -270,11 +296,13 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
             <Label htmlFor="address">Adresse *</Label>
             <Textarea
               id="address"
+              name="company-address"
               value={formData.address}
               onChange={e => handleChange('address', e.target.value)}
               placeholder="Straße Hausnummer&#10;PLZ Ort&#10;Land"
               rows={3}
               required
+              autoComplete="street-address"
             />
           </div>
 
@@ -283,18 +311,22 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
               <Label htmlFor="taxNumber">Steuernummer</Label>
               <Input
                 id="taxNumber"
+                name="tax-number"
                 value={formData.taxNumber}
                 onChange={e => handleChange('taxNumber', e.target.value)}
                 placeholder="12345/67890"
+                autoComplete="off"
               />
             </div>
             <div>
               <Label htmlFor="vatId">USt-IdNr.</Label>
               <Input
                 id="vatId"
+                name="vat-id"
                 value={formData.vatId}
                 onChange={e => handleChange('vatId', e.target.value)}
                 placeholder="DE123456789"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -355,20 +387,24 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                     <Label htmlFor={`firstName-${index}`}>Vorname *</Label>
                     <Input
                       id={`firstName-${index}`}
+                      name={`contact-firstName-${index}`}
                       value={contact.firstName}
                       onChange={e => handleContactPersonChange(index, 'firstName', e.target.value)}
                       placeholder="Max"
                       className="text-sm"
+                      autoComplete="given-name"
                     />
                   </div>
                   <div>
                     <Label htmlFor={`lastName-${index}`}>Nachname *</Label>
                     <Input
                       id={`lastName-${index}`}
+                      name={`contact-lastName-${index}`}
                       value={contact.lastName}
                       onChange={e => handleContactPersonChange(index, 'lastName', e.target.value)}
                       placeholder="Mustermann"
                       className="text-sm"
+                      autoComplete="family-name"
                     />
                   </div>
                 </div>
@@ -378,22 +414,26 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                     <Label htmlFor={`contactEmail-${index}`}>E-Mail *</Label>
                     <Input
                       id={`contactEmail-${index}`}
+                      name={`contact-email-${index}`}
                       type="email"
                       value={contact.email}
                       onChange={e => handleContactPersonChange(index, 'email', e.target.value)}
                       placeholder="max.mustermann@kunde.de"
                       className="text-sm"
+                      autoComplete="email"
                     />
                   </div>
                   <div>
                     <Label htmlFor={`contactPhone-${index}`}>Telefon</Label>
                     <Input
                       id={`contactPhone-${index}`}
+                      name={`contact-phone-${index}`}
                       type="tel"
                       value={contact.phone}
                       onChange={e => handleContactPersonChange(index, 'phone', e.target.value)}
                       placeholder="+49 123 456789"
                       className="text-sm"
+                      autoComplete="tel"
                     />
                   </div>
                 </div>
@@ -403,20 +443,24 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                     <Label htmlFor={`position-${index}`}>Position</Label>
                     <Input
                       id={`position-${index}`}
+                      name={`contact-position-${index}`}
                       value={contact.position}
                       onChange={e => handleContactPersonChange(index, 'position', e.target.value)}
                       placeholder="Geschäftsführer"
                       className="text-sm"
+                      autoComplete="organization-title"
                     />
                   </div>
                   <div>
                     <Label htmlFor={`department-${index}`}>Abteilung</Label>
                     <Input
                       id={`department-${index}`}
+                      name={`contact-department-${index}`}
                       value={contact.department}
                       onChange={e => handleContactPersonChange(index, 'department', e.target.value)}
                       placeholder="Einkauf"
                       className="text-sm"
+                      autoComplete="off"
                     />
                   </div>
                 </div>
