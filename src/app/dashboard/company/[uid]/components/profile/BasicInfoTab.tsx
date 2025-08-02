@@ -107,29 +107,6 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
             Diese Beschreibung ist öffentlich sichtbar auf deinem Profil
           </p>
         </div>
-
-        {/* Info Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Erweiterte Standort Features */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="font-medium text-gray-700 mb-2">�️ Erweiterte Standort-Features</h5>
-            <p className="text-sm text-gray-600">
-              Im <strong>&quot;Standort&quot;</strong> Tab findest du Google Places API Integration
-              für präzise Adressauswahl und Geo-Koordinaten.
-            </p>
-          </div>
-
-          {/* Tipps */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h5 className="font-medium text-blue-900 mb-2">💡 Tipp für bessere Sichtbarkeit</h5>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Verwende klare, aussagekräftige Beschreibungen</li>
-              <li>• Setze realistische und wettbewerbsfähige Stundensätze</li>
-              <li>• Aktualisiere deine Informationen regelmäßig</li>
-              <li>• Vervollständige alle Pflichtfelder (*)</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );

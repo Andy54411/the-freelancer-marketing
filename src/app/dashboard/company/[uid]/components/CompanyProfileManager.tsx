@@ -23,7 +23,6 @@ import ImageUploadsTab from './profile/ImageUploadsTab';
 import BasicInfoTab from './profile/BasicInfoTab';
 import FAQTab from './profile/FAQTab';
 import ServicesTab from './profile/ServicesTab';
-import LocationTab from './profile/LocationTab';
 import PortfolioManager from './profile/PortfolioManager';
 import SkillsEducationTab from './profile/SkillsEducationTab';
 import { EditableCompanyProfile } from './profile/types';
@@ -65,6 +64,11 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         description: userData.description || '',
         country: userData.country || '',
         city: userData.city || '',
+        postalCode: userData.postalCode || '',
+        street: userData.street || '',
+        fullAddress: userData.fullAddress || '',
+        latitude: userData.latitude || undefined,
+        longitude: userData.longitude || undefined,
         hourlyRate: userData.hourlyRate || 0,
         portfolio: userData.portfolio || [],
         languages: userData.languages || [],
@@ -91,29 +95,50 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
     try {
       const userRef = doc(db, 'users', profile.uid);
       await updateDoc(userRef, {
+        // Grunddaten
         username: profile.username,
         displayName: profile.displayName,
         companyName: profile.companyName,
         profilePictureURL: profile.photoURL,
         photoURL: profile.photoURL,
+        companyLogo: profile.companyLogo,
         description: profile.description,
+        publicDescription: profile.publicDescription,
+
+        // Standort-Daten (erweitert)
         country: profile.country,
         city: profile.city,
+        postalCode: profile.postalCode || '',
+        street: profile.street || '',
+        fullAddress: profile.fullAddress || '',
+        latitude: profile.latitude || null,
+        longitude: profile.longitude || null,
+
+        // Business-Daten
         hourlyRate: profile.hourlyRate,
-        portfolio: profile.portfolio,
+        businessLicense: profile.businessLicense,
+
+        // Skills & Bildung
         languages: profile.languages,
         skills: profile.skills,
         education: profile.education,
         certifications: profile.certifications,
-        publicDescription: profile.publicDescription,
         specialties: profile.specialties,
+
+        // Services & Angebote
         servicePackages: profile.servicePackages,
         workingHours: profile.workingHours,
         instantBooking: profile.instantBooking,
         responseTimeGuarantee: profile.responseTimeGuarantee,
-        faqs: profile.faqs,
+
+        // Portfolio & Medien
+        portfolio: profile.portfolio,
         profileBannerImage: profile.profileBannerImage,
-        businessLicense: profile.businessLicense,
+
+        // FAQ
+        faqs: profile.faqs,
+
+        // Meta
         updatedAt: new Date(),
       });
 
@@ -142,7 +167,6 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
     { id: 'services', label: 'Services & Angebote', icon: FiPackage },
     { id: 'faq', label: 'FAQ', icon: FiHelpCircle },
     { id: 'portfolio', label: 'Portfolio', icon: FiImage },
-    { id: 'location', label: 'Standort', icon: FiMapPin },
     { id: 'metrics', label: 'Statistiken', icon: FiTrendingUp },
   ];
 
@@ -219,8 +243,6 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         {activeTab === 'portfolio' && (
           <PortfolioManager profile={profile} setProfile={setProfile} />
         )}
-
-        {activeTab === 'location' && <LocationTab profile={profile} setProfile={setProfile} />}
 
         {activeTab === 'metrics' && companyMetrics && (
           <div className="space-y-6">
