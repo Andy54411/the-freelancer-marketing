@@ -651,5 +651,391 @@ service cloud.firestore {
       // Nur Support kann Subcategories verwalten
       allow create, update, delete: if isSupportStaff();
     }
+
+    // 📦 INVENTORY/LAGERBESTAND MANAGEMENT
+    // Inventar-Artikel können von authentifizierten Firmen verwaltet werden
+    match /inventory/{itemId} {
+      // Firmen können ihre eigenen Inventar-Artikel lesen
+      allow read: if request.auth != null && 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Firmen können ihre eigenen Inventar-Artikel erstellen
+      allow create: if request.auth != null && 
+                       isCompany() && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['name', 'sku', 'category', 'unit', 'quantity', 'minimumStock', 'unitPrice', 'totalValue', 'supplier', 'location', 'companyId']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.name is string &&
+                       request.resource.data.sku is string &&
+                       request.resource.data.quantity is number &&
+                       request.resource.data.unitPrice is number;
+      
+      // Firmen können ihre eigenen Inventar-Artikel aktualisieren
+      allow update: if request.auth != null && 
+                       isCompany() && 
+                       resource.data.companyId == request.auth.uid &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Firmen können ihre eigenen Inventar-Artikel löschen
+      allow delete: if request.auth != null && 
+                       isCompany() && 
+                       resource.data.companyId == request.auth.uid;
+    }
+
+    // 📊 FINANCE/FINANZEN COLLECTIONS
+    // Steuerberichte, E-Rechnungen, Zeiterfassung etc.
+    match /taxReports/{reportId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /taxSettings/{settingsId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /eInvoices/{invoiceId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /deliveryNotes/{noteId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /timeTracking/{entryId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /quotes/{quoteId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /reminders/{reminderId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /bankTransactions/{transactionId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /cashbook/{entryId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+    
+    match /credits/{creditId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+    }
+
+    // 📈 STOCK MOVEMENTS / LAGERBEWEGUNGEN COLLECTION
+    // Bewegungsdaten für Inventar-Tracking (Ein-/Ausgänge, Korrekturen)
+    match /stockMovements/{movementId} {
+      // Firmen können ihre eigenen Lagerbewegungen lesen
+      allow read: if request.auth != null && 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Firmen können Lagerbewegungen erstellen (automatisch via Inventar-Service)
+      allow create: if request.auth != null && 
+                       isCompany() && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['itemId', 'type', 'quantity', 'reason', 'companyId']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.itemId is string &&
+                       request.resource.data.type in ['in', 'out', 'correction'] &&
+                       request.resource.data.quantity is number;
+      
+      // Lagerbewegungen sind normalerweise unveränderlich (Audit-Trail)
+      allow update: if isSupportStaff();
+      
+      // Nur Support kann Lagerbewegungen löschen
+      allow delete: if isSupportStaff();
+    }
+
+    // 💳 STRIPE ACCOUNTS COLLECTION
+    // Stripe Connect Account-Informationen für Provider
+    match /stripe_accounts/{accountId} {
+      // Provider können ihre eigenen Stripe-Daten lesen
+      allow read: if request.auth != null && 
+                     request.auth.uid == accountId ||
+                     isSupportStaff();
+      
+      // Provider können ihre Stripe-Account-Daten erstellen
+      allow create: if request.auth != null && 
+                       request.auth.uid == accountId &&
+                       request.resource.data.keys().hasAll(['stripeAccountId']) &&
+                       request.resource.data.stripeAccountId is string;
+      
+      // Provider können ihre eigenen Stripe-Daten aktualisieren
+      allow update: if request.auth != null && 
+                       request.auth.uid == accountId ||
+                       isSupportStaff();
+      
+      // Nur Support kann Stripe-Accounts löschen
+      allow delete: if isSupportStaff();
+    }
+
+    // 📊 RESPONSE TIME METRICS COLLECTION
+    // Performance-Metriken für Provider-Antwortzeiten (bereits vorhanden, aber optimiert)
+    // Diese Rules sind bereits oben definiert, aber hier als Referenz
+
+    // 🏢 COMPANY PROFILES / ERWEITERTE FIRMENPROFILE
+    // Zusätzliche Firmendaten die eventuell in separater Collection gespeichert werden
+    match /companyProfiles/{companyId} {
+      // Öffentlicher Lesezugriff für Service-Discovery
+      allow read: if true;
+      
+      // Nur eigene Firma kann Profile erstellen/aktualisieren
+      allow create, update: if request.auth != null && 
+                              request.auth.uid == companyId &&
+                              isCompany();
+      
+      // Nur Support kann Profile löschen
+      allow delete: if isSupportStaff();
+    }
+
+    // 📧 EMAIL TEMPLATES COLLECTION (für Newsletter/Kommunikation)
+    // Templates für automatisierte E-Mails
+    match /emailTemplates/{templateId} {
+      // Nur Support kann Templates lesen
+      allow read: if isSupportStaff();
+      
+      // Nur Support kann Templates verwalten
+      allow create, update, delete: if isSupportStaff();
+    }
+
+    // 📑 DOCUMENTS COLLECTION (für sevdesk-Integration)
+    // Dokumente wie Rechnungs-PDFs, Belege etc.
+    match /documents/{documentId} {
+      // Firmen können ihre eigenen Dokumente lesen
+      allow read: if request.auth != null && 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Firmen können Dokumente hochladen
+      allow create: if request.auth != null && 
+                       isCompany() && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['fileName', 'type', 'companyId']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.fileName is string;
+      
+      // Firmen können ihre eigenen Dokumente aktualisieren
+      allow update: if request.auth != null && 
+                       isCompany() && 
+                       resource.data.companyId == request.auth.uid;
+      
+      // Firmen können ihre eigenen Dokumente löschen
+      allow delete: if request.auth != null && 
+                       (isCompany() && resource.data.companyId == request.auth.uid) ||
+                       isSupportStaff();
+    }
+
+    // 🔄 RECURRING INVOICES COLLECTION (für automatische Rechnungen)
+    // Wiederkehrende Rechnungsvorlagen
+    match /recurringInvoices/{recurringId} {
+      // Firmen können ihre eigenen wiederkehrenden Rechnungen lesen
+      allow read: if request.auth != null && 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Firmen können wiederkehrende Rechnungen erstellen
+      allow create: if request.auth != null && 
+                       isCompany() && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['templateName', 'frequency', 'companyId']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.frequency in ['MONTHLY', 'QUARTERLY', 'YEARLY'];
+      
+      // Firmen können ihre wiederkehrenden Rechnungen aktualisieren
+      allow update: if request.auth != null && 
+                       isCompany() && 
+                       resource.data.companyId == request.auth.uid;
+      
+      // Firmen können ihre wiederkehrenden Rechnungen löschen
+      allow delete: if request.auth != null && 
+                       (isCompany() && resource.data.companyId == request.auth.uid) ||
+                       isSupportStaff();
+    }
+
+    // 🏦 BANK ACCOUNTS COLLECTION (für sevdesk Banking-Integration)
+    // Bankverbindungen für automatischen Kontoumsatz-Import
+    match /bankAccounts/{bankAccountId} {
+      // Firmen können ihre eigenen Bankkonten lesen
+      allow read: if request.auth != null && 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Firmen können Bankkonten hinzufügen
+      allow create: if request.auth != null && 
+                       isCompany() && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['bankName', 'iban', 'companyId']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.iban is string;
+      
+      // Firmen können ihre Bankkonten aktualisieren
+      allow update: if request.auth != null && 
+                       isCompany() && 
+                       resource.data.companyId == request.auth.uid;
+      
+      // Firmen können ihre Bankkonten löschen (mit Vorsicht)
+      allow delete: if request.auth != null && 
+                       (isCompany() && resource.data.companyId == request.auth.uid) ||
+                       isSupportStaff();
+    }
+
+    // 📈 REPORTS COLLECTION (für sevdesk Berichte: EÜR, UStVA, etc.)
+    // Bereits als taxReports vorhanden, aber für allgemeine Berichte
+    match /reports/{reportId} {
+      // Firmen können ihre eigenen Berichte lesen
+      allow read: if request.auth != null && 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Berichte werden normalerweise automatisch generiert
+      allow create: if request.auth != null && 
+                       isCompany() && 
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Berichte können aktualisiert werden (z.B. Status-Updates)
+      allow update: if request.auth != null && 
+                       isCompany() && 
+                       resource.data.companyId == request.auth.uid;
+      
+      // Nur Support kann Berichte löschen
+      allow delete: if isSupportStaff();
+    }
+
+    // ⏱️ TIME ENTRIES COLLECTION (für Zeiterfassung im sevdesk Finance System)
+    // Zeiterfassungseinträge für Projekte und Abrechnung
+    match /timeEntries/{entryId} {
+      // Firmen können ihre eigenen Zeiteinträge lesen
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Listen nur mit companyId-Filter erlaubt (Performance & Sicherheit)
+      allow list: if request.auth != null && 
+                     isCompany() &&
+                     (
+                       isSupportStaff() ||
+                       (
+                         'where' in request.query &&
+                         request.query.where != null &&
+                         request.query.where.size() > 0 &&
+                         request.query.where[0].path == 'companyId' &&
+                         request.query.where[0].op == '==' &&
+                         request.query.where[0].value == request.auth.uid
+                       )
+                     );
+      
+      // Firmen können Zeiteinträge erstellen
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.keys().hasAll(['companyId', 'projectId', 'description', 'startTime', 'createdBy', 'createdAt']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.projectId is string &&
+                       request.resource.data.description is string &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Firmen können ihre eigenen Zeiteinträge aktualisieren
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Firmen können ihre eigenen Zeiteinträge löschen
+      allow delete: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+    }
+
+    // 📋 PROJECTS COLLECTION (für Projektmanagement im sevdesk Finance System)
+    // Projekte für Zeiterfassung und Rechnungsstellung
+    match /projects/{projectId} {
+      // Firmen können ihre eigenen Projekte lesen
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Listen nur mit companyId-Filter erlaubt (Performance & Sicherheit)
+      allow list: if request.auth != null && 
+                     isCompany() &&
+                     (
+                       isSupportStaff() ||
+                       (
+                         'where' in request.query &&
+                         request.query.where != null &&
+                         request.query.where.size() > 0 &&
+                         request.query.where[0].path == 'companyId' &&
+                         request.query.where[0].op == '==' &&
+                         request.query.where[0].value == request.auth.uid
+                       )
+                     );
+      
+      // Firmen können Projekte erstellen
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.keys().hasAll(['companyId', 'name', 'status', 'createdBy', 'createdAt']) &&
+                       request.resource.data.companyId is string &&
+                       request.resource.data.name is string &&
+                       request.resource.data.status in ['active', 'completed', 'archived'] &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Firmen können ihre eigenen Projekte aktualisieren
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Firmen können ihre eigenen Projekte löschen
+      allow delete: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+    }
+
+    // 🔐 API KEYS / INTEGRATION SETTINGS COLLECTION
+    // Sichere Speicherung von API-Schlüsseln für Integrationen (sevdesk, etc.)
+    match /integrationSettings/{settingsId} {
+      // Nur eigene Firma kann Einstellungen lesen
+      allow read: if request.auth != null && 
+                     isCompany() && 
+                     request.auth.uid == settingsId;
+      
+      // Nur eigene Firma kann Einstellungen erstellen/aktualisieren
+      allow create, update: if request.auth != null && 
+                              isCompany() && 
+                              request.auth.uid == settingsId;
+      
+      // Keine Löschung erlaubt (Sicherheit)
+      allow delete: if false;
+    }
   }
 }
