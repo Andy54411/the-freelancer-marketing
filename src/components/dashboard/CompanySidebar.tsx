@@ -13,6 +13,7 @@ import {
   ClipboardList as FiClipboardList,
   ChevronDown as FiChevronDown,
   ChevronRight as FiChevronRight,
+  Bot as FiBot,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -135,6 +136,12 @@ const navigationItems: NavigationItem[] = [
     icon: FiMessageSquare,
     value: 'reviews',
     href: 'reviews',
+  },
+  {
+    label: 'KI-Assistent',
+    icon: FiBot,
+    value: 'ai-assistant',
+    href: 'ai-assistant',
   },
   {
     label: 'Profil',
