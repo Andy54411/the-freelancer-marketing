@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankAccount } from '@/types';
-import { FinAPIService } from '@/lib/finapi';
 import { PlusCircle, ExternalLink, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 export default function BankingAccountsPage() {
@@ -16,28 +15,72 @@ export default function BankingAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
-  // finAPI Service initialisieren
-  const finAPIService = new FinAPIService();
+  // finAPI Authentication über Backend
+  const authenticateFinAPI = async (): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/finapi/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credentialType: 'sandbox' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
+
+      const data = await response.json();
+      return data.access_token;
+    } catch (error) {
+      console.error('Fehler bei finAPI Authentication:', error);
+      return null;
+    }
+  };
 
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const finAPIAccountResponse = await finAPIService.getAccounts();
+
+      // Authentifizierung über Backend
+      const token = await authenticateFinAPI();
+      if (!token) {
+        throw new Error('Failed to authenticate with finAPI');
+      }
+
+      setAuthToken(token);
+
+      // Konten über Backend API laden
+      const response = await fetch('/api/finapi/accounts', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch accounts');
+      }
+
+      const finAPIAccountResponse = await response.json();
 
       // Convert finAPI data to our interface format
-      const convertedAccounts: BankAccount[] = finAPIAccountResponse.accounts.map(acc => ({
-        id: acc.id.toString(),
-        accountName: acc.accountName,
-        iban: acc.iban || '',
-        bankName: 'Unbekannte Bank', // Bank information not available in this structure
-        accountNumber: acc.accountNumber || '',
-        balance: acc.balance || 0,
-        availableBalance: acc.availableFunds || acc.balance || 0,
-        currency: acc.accountCurrency,
-        accountType: 'CHECKING',
-        isDefault: false,
-      }));
+      const convertedAccounts: BankAccount[] =
+        finAPIAccountResponse.accounts?.map((acc: any) => ({
+          id: acc.id?.toString() || 'unknown',
+          accountName: acc.accountName || 'Unbekanntes Konto',
+          iban: acc.iban || '',
+          bankName: acc.bankName || 'Unbekannte Bank',
+          accountNumber: acc.accountNumber || '',
+          balance: acc.balance || 0,
+          availableBalance: acc.availableFunds || acc.balance || 0,
+          currency: acc.accountCurrency || 'EUR',
+          accountType: 'CHECKING',
+          isDefault: false,
+        })) || [];
 
       setAccounts(convertedAccounts);
     } catch (error) {
