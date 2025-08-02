@@ -10,6 +10,11 @@ export interface EditableCompanyProfile {
   description: string;
   country: string;
   city: string;
+  postalCode?: string;
+  street?: string;
+  fullAddress?: string;
+  latitude?: number;
+  longitude?: number;
   hourlyRate: number;
   portfolio: PortfolioItem[];
   languages: { language: string; proficiency: string }[];

@@ -12,6 +12,8 @@ import {
   FiEye,
   FiTrendingUp,
   FiAward,
+  FiPackage,
+  FiHelpCircle,
 } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { CompanyMetrics } from '@/lib/companyMetrics';
@@ -19,7 +21,9 @@ import { CompanyMetrics } from '@/lib/companyMetrics';
 // Import der neuen modularen Komponenten
 import ImageUploadsTab from './profile/ImageUploadsTab';
 import BasicInfoTab from './profile/BasicInfoTab';
-import PublicProfileTab from './profile/PublicProfileTab';
+import FAQTab from './profile/FAQTab';
+import ServicesTab from './profile/ServicesTab';
+import LocationTab from './profile/LocationTab';
 import PortfolioManager from './profile/PortfolioManager';
 import SkillsEducationTab from './profile/SkillsEducationTab';
 import { EditableCompanyProfile } from './profile/types';
@@ -135,7 +139,8 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
     { id: 'images', label: 'Bilder & Logo', icon: FiImage },
     { id: 'basic', label: 'Grunddaten', icon: FiUser },
     { id: 'skills', label: 'Skills & Bildung', icon: FiAward },
-    { id: 'public', label: 'Öffentliches Profil', icon: FiEye },
+    { id: 'services', label: 'Services & Angebote', icon: FiPackage },
+    { id: 'faq', label: 'FAQ', icon: FiHelpCircle },
     { id: 'portfolio', label: 'Portfolio', icon: FiImage },
     { id: 'location', label: 'Standort', icon: FiMapPin },
     { id: 'metrics', label: 'Statistiken', icon: FiTrendingUp },
@@ -207,41 +212,15 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
 
         {activeTab === 'skills' && <SkillsEducationTab profile={profile} setProfile={setProfile} />}
 
-        {activeTab === 'public' && <PublicProfileTab profile={profile} setProfile={setProfile} />}
+        {activeTab === 'services' && <ServicesTab profile={profile} setProfile={setProfile} />}
+
+        {activeTab === 'faq' && <FAQTab profile={profile} setProfile={setProfile} />}
 
         {activeTab === 'portfolio' && (
           <PortfolioManager profile={profile} setProfile={setProfile} />
         )}
 
-        {activeTab === 'location' && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Standort</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Land</label>
-                <input
-                  type="text"
-                  value={profile.country}
-                  onChange={e =>
-                    setProfile(prev => (prev ? { ...prev, country: e.target.value } : null))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Stadt</label>
-                <input
-                  type="text"
-                  value={profile.city}
-                  onChange={e =>
-                    setProfile(prev => (prev ? { ...prev, city: e.target.value } : null))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === 'location' && <LocationTab profile={profile} setProfile={setProfile} />}
 
         {activeTab === 'metrics' && companyMetrics && (
           <div className="space-y-6">
