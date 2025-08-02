@@ -16,10 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceTemplatePicker } from '@/components/finance/InvoiceTemplatePicker';
 import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
+import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 interface Customer {
@@ -311,7 +312,7 @@ export default function CreateInvoicePage() {
   const { subtotal, tax, total } = calculateTotals();
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <Button
@@ -331,307 +332,463 @@ export default function CreateInvoicePage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Customer Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Kundendaten</CardTitle>
-            <CardDescription>Informationen zum Rechnungsempfänger</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="customer">Kunde auswählen</Label>
-                <Select onValueChange={handleCustomerSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Bestehenden Kunden wählen oder neu eingeben" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockCustomers.map(customer => (
-                      <SelectItem key={customer.id} value={customer.name}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerName">Firmenname *</Label>
-                <Input
-                  id="customerName"
-                  value={formData.customerName}
-                  onChange={e => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                  placeholder="Mustermann GmbH"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customerEmail">E-Mail</Label>
-                <Input
-                  id="customerEmail"
-                  type="email"
-                  value={formData.customerEmail}
-                  onChange={e => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
-                  placeholder="info@mustermann.de"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="customerAddress">Rechnungsadresse</Label>
-              <Textarea
-                id="customerAddress"
-                value={formData.customerAddress}
-                onChange={e => setFormData(prev => ({ ...prev, customerAddress: e.target.value }))}
-                placeholder="Musterstraße 123&#10;12345 Berlin&#10;Deutschland"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Invoice Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Rechnungsdetails</CardTitle>
-            <CardDescription>Grundlegende Informationen zur Rechnung</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="invoiceNumber">Rechnungsnummer *</Label>
-                <Input
-                  id="invoiceNumber"
-                  value={formData.invoiceNumber}
-                  onChange={e => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                  placeholder="R-2025-001"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="issueDate">Rechnungsdatum *</Label>
-                <Input
-                  id="issueDate"
-                  type="date"
-                  value={formData.issueDate}
-                  onChange={e => setFormData(prev => ({ ...prev, issueDate: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Fälligkeitsdatum *</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Kurzbeschreibung</Label>
-              <Input
-                id="description"
-                value={formData.description}
-                onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="z.B. Beratungsleistungen für Projekt XYZ"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Invoice Items */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Rechnungspositionen</CardTitle>
-                <CardDescription>Fügen Sie Leistungen und Produkte hinzu</CardDescription>
-              </div>
-              <Button type="button" variant="outline" onClick={addItem}>
-                <Plus className="h-4 w-4 mr-2" />
-                Position hinzufügen
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {items.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-12 gap-3 items-end p-4 border rounded-lg"
-                >
-                  <div className="col-span-12 md:col-span-5">
-                    <Label htmlFor={`description_${item.id}`}>Beschreibung</Label>
-                    <Input
-                      id={`description_${item.id}`}
-                      value={item.description}
-                      onChange={e => updateItem(item.id, 'description', e.target.value)}
-                      placeholder="Leistungsbeschreibung"
-                    />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Form */}
+        <div className="lg:col-span-2">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Customer Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Kundendaten</CardTitle>
+                <CardDescription>Informationen zum Rechnungsempfänger</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="customer">Kunde auswählen</Label>
+                    <Select onValueChange={handleCustomerSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Bestehenden Kunden wählen oder neu eingeben" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockCustomers.map(customer => (
+                          <SelectItem key={customer.id} value={customer.name}>
+                            {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="col-span-4 md:col-span-2">
-                    <Label htmlFor={`quantity_${item.id}`}>Menge</Label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="customerName">Firmenname *</Label>
                     <Input
-                      id={`quantity_${item.id}`}
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={item.quantity}
-                      onChange={e => updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="col-span-4 md:col-span-2">
-                    <Label htmlFor={`unitPrice_${item.id}`}>Einzelpreis (€)</Label>
-                    <Input
-                      id={`unitPrice_${item.id}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.unitPrice}
+                      id="customerName"
+                      value={formData.customerName}
                       onChange={e =>
-                        updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
+                        setFormData(prev => ({ ...prev, customerName: e.target.value }))
                       }
+                      placeholder="Mustermann GmbH"
+                      required
                     />
                   </div>
-                  <div className="col-span-3 md:col-span-2">
-                    <Label>Gesamt</Label>
-                    <div className="text-lg font-medium text-gray-900 mt-2">
-                      {formatCurrency(item.total)}
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeItem(item.id)}
-                      disabled={items.length === 1}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="customerEmail">E-Mail</Label>
+                    <Input
+                      id="customerEmail"
+                      type="email"
+                      value={formData.customerEmail}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, customerEmail: e.target.value }))
+                      }
+                      placeholder="info@mustermann.de"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Totals */}
-            <div className="mt-6 pt-6 border-t">
-              <div className="flex justify-end">
-                <div className="w-80 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Zwischensumme:</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
+                <div className="space-y-2">
+                  <Label htmlFor="customerAddress">Rechnungsadresse</Label>
+                  <Textarea
+                    id="customerAddress"
+                    value={formData.customerAddress}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
+                    }
+                    placeholder="Musterstraße 123&#10;12345 Berlin&#10;Deutschland"
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Invoice Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Rechnungsdetails</CardTitle>
+                <CardDescription>Grundlegende Informationen zur Rechnung</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invoiceNumber">Rechnungsnummer *</Label>
+                    <Input
+                      id="invoiceNumber"
+                      value={formData.invoiceNumber}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))
+                      }
+                      placeholder="R-2025-001"
+                      required
+                    />
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span>MwSt.:</span>
-                      <Select
-                        value={formData.taxRate}
-                        onValueChange={value => setFormData(prev => ({ ...prev, taxRate: value }))}
-                      >
-                        <SelectTrigger className="w-20 h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">0%</SelectItem>
-                          <SelectItem value="7">7%</SelectItem>
-                          <SelectItem value="19">19%</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <span className="font-medium">{formatCurrency(tax)}</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="issueDate">Rechnungsdatum *</Label>
+                    <Input
+                      id="issueDate"
+                      type="date"
+                      value={formData.issueDate}
+                      onChange={e => setFormData(prev => ({ ...prev, issueDate: e.target.value }))}
+                      required
+                    />
                   </div>
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                    <span>Gesamtbetrag:</span>
-                    <span className="text-[#14ad9f]">{formatCurrency(total)}</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="dueDate">Fälligkeitsdatum *</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                      required
+                    />
                   </div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Template Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Design-Template</CardTitle>
-            <CardDescription>
-              {templateLoading
-                ? 'Template wird geladen...'
-                : 'Wählen Sie das Aussehen Ihrer Rechnung'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {templateLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-[#14ad9f]" />
-                <span className="ml-2 text-gray-600">Template wird geladen...</span>
-              </div>
-            ) : (
-              <InvoiceTemplatePicker
-                selectedTemplate={selectedTemplate}
-                onTemplateSelect={setSelectedTemplate}
-                userId={uid}
-                trigger={
-                  <Button variant="outline" className="w-full justify-start">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Template: {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Kurzbeschreibung</Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="z.B. Beratungsleistungen für Projekt XYZ"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Invoice Items */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Rechnungspositionen</CardTitle>
+                    <CardDescription>Fügen Sie Leistungen und Produkte hinzu</CardDescription>
+                  </div>
+                  <Button type="button" variant="outline" onClick={addItem}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Position hinzufügen
                   </Button>
-                }
-              />
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {items.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-12 gap-3 items-end p-4 border rounded-lg"
+                    >
+                      <div className="col-span-12 md:col-span-5">
+                        <Label htmlFor={`description_${item.id}`}>Beschreibung</Label>
+                        <Input
+                          id={`description_${item.id}`}
+                          value={item.description}
+                          onChange={e => updateItem(item.id, 'description', e.target.value)}
+                          placeholder="Leistungsbeschreibung"
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-2">
+                        <Label htmlFor={`quantity_${item.id}`}>Menge</Label>
+                        <Input
+                          id={`quantity_${item.id}`}
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantity}
+                          onChange={e =>
+                            updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)
+                          }
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-2">
+                        <Label htmlFor={`unitPrice_${item.id}`}>Einzelpreis (€)</Label>
+                        <Input
+                          id={`unitPrice_${item.id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={e =>
+                            updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
+                      <div className="col-span-3 md:col-span-2">
+                        <Label>Gesamt</Label>
+                        <div className="text-lg font-medium text-gray-900 mt-2">
+                          {formatCurrency(item.total)}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(item.id)}
+                          disabled={items.length === 1}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-        {/* Additional Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Zusätzliche Informationen</CardTitle>
-            <CardDescription>Optionale Anmerkungen für die Rechnung</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notizen</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Zusätzliche Informationen oder Zahlungshinweise..."
-                rows={3}
-              />
+                {/* Totals */}
+                <div className="mt-6 pt-6 border-t">
+                  <div className="flex justify-end">
+                    <div className="w-80 space-y-2">
+                      <div className="flex justify-between">
+                        <span>Zwischensumme:</span>
+                        <span className="font-medium">{formatCurrency(subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span>MwSt.:</span>
+                          <Select
+                            value={formData.taxRate}
+                            onValueChange={value =>
+                              setFormData(prev => ({ ...prev, taxRate: value }))
+                            }
+                          >
+                            <SelectTrigger className="w-20 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">0%</SelectItem>
+                              <SelectItem value="7">7%</SelectItem>
+                              <SelectItem value="19">19%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <span className="font-medium">{formatCurrency(tax)}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                        <span>Gesamtbetrag:</span>
+                        <span className="text-[#14ad9f]">{formatCurrency(total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Template Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Design-Template</CardTitle>
+                <CardDescription>
+                  {templateLoading
+                    ? 'Template wird geladen...'
+                    : 'Wählen Sie das Aussehen Ihrer Rechnung'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {templateLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#14ad9f]" />
+                    <span className="ml-2 text-gray-600">Template wird geladen...</span>
+                  </div>
+                ) : (
+                  <InvoiceTemplatePicker
+                    selectedTemplate={selectedTemplate}
+                    onTemplateSelect={setSelectedTemplate}
+                    userId={uid}
+                    trigger={
+                      <Button variant="outline" className="w-full justify-start">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Template:{' '}
+                        {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}
+                      </Button>
+                    }
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Additional Notes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Zusätzliche Informationen</CardTitle>
+                <CardDescription>Optionale Anmerkungen für die Rechnung</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notizen</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Zusätzliche Informationen oder Zahlungshinweise..."
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-6 border-t">
+              <Button type="button" variant="outline" onClick={handleBackToInvoices}>
+                Abbrechen
+              </Button>
+
+              <div className="flex gap-3">
+                {/* PDF Preview Button */}
+                <InvoicePreview
+                  invoiceData={{
+                    invoiceNumber: formData.invoiceNumber,
+                    issueDate: formData.issueDate,
+                    dueDate: formData.dueDate,
+                    customerName: formData.customerName,
+                    customerAddress: formData.customerAddress,
+                    customerEmail: formData.customerEmail,
+                    description: formData.description,
+                    items: items,
+                    amount: subtotal,
+                    tax: tax,
+                    total: total,
+                  }}
+                  template={selectedTemplate}
+                  companySettings={companySettings || undefined}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      PDF-Vorschau
+                    </Button>
+                  }
+                />
+
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Als Entwurf speichern
+                </Button>
+                <Button type="submit" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Rechnung erstellen
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </form>
+        </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-6 border-t">
-          <Button type="button" variant="outline" onClick={handleBackToInvoices}>
-            Abbrechen
-          </Button>
+        {/* Right Column: Live Preview */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Live PDF-Vorschau
+                </CardTitle>
+                <CardDescription>Echtzeit-Vorschau Ihrer Rechnung</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Quick Preview */}
+                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div className="h-96 overflow-hidden relative">
+                      <div className="transform scale-[0.15] origin-top-left w-[1000px] h-[1200px] pointer-events-none">
+                        <div className="bg-white p-8">
+                          {/* Mini Preview Content */}
+                          <div className="border-b-2 border-gray-800 pb-4 mb-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                                  {companySettings?.companyName || 'Ihr Unternehmen'}
+                                </h1>
+                                <div className="text-gray-600 text-xs">
+                                  {companySettings?.companyAddress || 'Ihre Firmenadresse'}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <h2 className="text-xl font-bold text-gray-800 mb-1">RECHNUNG</h2>
+                                <div className="text-xs text-gray-600">
+                                  <div>Nr.: {formData.invoiceNumber || 'R-2025-000'}</div>
+                                  <div>Datum: {formData.issueDate || 'TT.MM.JJJJ'}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mb-4">
+                            <h3 className="font-semibold text-gray-800 mb-1">
+                              Rechnungsempfänger:
+                            </h3>
+                            <div className="text-gray-700 text-xs">
+                              {formData.customerName || 'Kunden auswählen...'}
+                            </div>
+                          </div>
+                          <div className="border rounded p-2 mb-4">
+                            <div className="text-xs text-gray-600">
+                              {items.length} Position(en) • Gesamt: {formatCurrency(total)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none"></div>
+                    </div>
+                  </div>
 
-          <div className="flex gap-3">
-            <Button
-              type="submit"
-              variant="outline"
-              className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-            >
-              <Calculator className="h-4 w-4 mr-2" />
-              Als Entwurf speichern
-            </Button>
-            <Button type="submit" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-              <FileText className="h-4 w-4 mr-2" />
-              Rechnung erstellen
-            </Button>
+                  {/* Full Preview Button */}
+                  <InvoicePreview
+                    invoiceData={{
+                      invoiceNumber: formData.invoiceNumber,
+                      issueDate: formData.issueDate,
+                      dueDate: formData.dueDate,
+                      customerName: formData.customerName,
+                      customerAddress: formData.customerAddress,
+                      customerEmail: formData.customerEmail,
+                      description: formData.description,
+                      items: items,
+                      amount: subtotal,
+                      tax: tax,
+                      total: total,
+                    }}
+                    template={selectedTemplate}
+                    companySettings={companySettings || undefined}
+                    trigger={
+                      <Button
+                        variant="outline"
+                        className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Vollständige PDF-Vorschau
+                      </Button>
+                    }
+                  />
+
+                  {/* Quick Stats */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Positionen:</span>
+                      <span className="font-medium">{items.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Zwischensumme:</span>
+                      <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">MwSt. ({formData.taxRate}%):</span>
+                      <span className="font-medium">{formatCurrency(tax)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="font-semibold">Gesamtbetrag:</span>
+                      <span className="font-bold text-[#14ad9f]">{formatCurrency(total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
