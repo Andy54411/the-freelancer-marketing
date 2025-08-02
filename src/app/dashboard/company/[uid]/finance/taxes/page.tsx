@@ -20,9 +20,79 @@ export default function TaxesPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  
+
   const [taxData, setTaxData] = useState<TaxData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Steuerberechnungen laden
+    const loadTaxData = async () => {
+      try {
+        setLoading(true);
+
+        // Finanzstatistiken laden
+        const stats = await FinanceService.getFinanceStats(uid);
+
+        // Vereinfachte Quartalsberechnung basierend auf aktuellen Daten
+        const currentYear = new Date().getFullYear();
+        const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+
+        const quarterlyData: TaxData[] = [];
+
+        // Aktuelles Quartal
+        const taxableIncome = stats.totalRevenue - stats.totalExpenses;
+        const vatOwed = stats.totalRevenue * 0.19; // 19% MwSt
+        const incomeTaxOwed = taxableIncome * 0.2; // Vereinfachte Einkommensteuer
+
+        quarterlyData.push({
+          quarter: `Q${currentQuarter} ${currentYear}`,
+          revenue: stats.totalRevenue,
+          expenses: stats.totalExpenses,
+          taxableIncome,
+          vatOwed,
+          incomeTaxOwed,
+        });
+
+        // Wenn keine realen Daten vorhanden sind, zeige leere Struktur
+        if (stats.totalRevenue === 0) {
+          quarterlyData[0] = {
+            quarter: `Q${currentQuarter} ${currentYear}`,
+            revenue: 0,
+            expenses: 0,
+            taxableIncome: 0,
+            vatOwed: 0,
+            incomeTaxOwed: 0,
+          };
+        }
+
+        setTaxData(quarterlyData);
+      } catch (error) {
+        console.error('Fehler beim Laden der Steuerdaten:', error);
+        toast.error('Fehler beim Laden der Steuerdaten');
+
+        // Fallback: Leere Daten
+        const currentYear = new Date().getFullYear();
+        const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+
+        setTaxData([
+          {
+            quarter: `Q${currentQuarter} ${currentYear}`,
+            revenue: 0,
+            expenses: 0,
+            taxableIncome: 0,
+            vatOwed: 0,
+            incomeTaxOwed: 0,
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (uid) {
+      loadTaxData();
+    }
+  }, [uid]);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -36,74 +106,6 @@ export default function TaxesPage() {
     );
   }
 
-  // Steuerberechnungen laden
-  const loadTaxData = async () => {
-    try {
-      setLoading(true);
-      
-      // Finanzstatistiken laden
-      const stats = await FinanceService.getFinanceStats(uid);
-      
-      // Vereinfachte Quartalsberechnung basierend auf aktuellen Daten
-      const currentYear = new Date().getFullYear();
-      const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
-      
-      const quarterlyData: TaxData[] = [];
-      
-      // Aktuelles Quartal
-      const taxableIncome = stats.totalRevenue - stats.totalExpenses;
-      const vatOwed = stats.totalRevenue * 0.19; // 19% MwSt
-      const incomeTaxOwed = taxableIncome * 0.2; // Vereinfachte Einkommensteuer
-      
-      quarterlyData.push({
-        quarter: `Q${currentQuarter} ${currentYear}`,
-        revenue: stats.totalRevenue,
-        expenses: stats.totalExpenses,
-        taxableIncome,
-        vatOwed,
-        incomeTaxOwed,
-      });
-
-      // Wenn keine realen Daten vorhanden sind, zeige leere Struktur
-      if (stats.totalRevenue === 0) {
-        quarterlyData[0] = {
-          quarter: `Q${currentQuarter} ${currentYear}`,
-          revenue: 0,
-          expenses: 0,
-          taxableIncome: 0,
-          vatOwed: 0,
-          incomeTaxOwed: 0,
-        };
-      }
-
-      setTaxData(quarterlyData);
-    } catch (error) {
-      console.error('Fehler beim Laden der Steuerdaten:', error);
-      toast.error('Fehler beim Laden der Steuerdaten');
-      
-      // Fallback: Leere Daten
-      const currentYear = new Date().getFullYear();
-      const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
-      
-      setTaxData([{
-        quarter: `Q${currentQuarter} ${currentYear}`,
-        revenue: 0,
-        expenses: 0,
-        taxableIncome: 0,
-        vatOwed: 0,
-        incomeTaxOwed: 0,
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (uid) {
-      loadTaxData();
-    }
-  }, [uid, loadTaxData]);
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -113,7 +115,7 @@ export default function TaxesPage() {
             Steuerübersicht und Quartalsberichte für Ihr Unternehmen
           </p>
         </div>
-        
+
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
           <span className="ml-3 text-gray-600">Lade Steuerdaten...</span>
@@ -131,7 +133,7 @@ export default function TaxesPage() {
         </p>
       </div>
 
-      <TaxComponent taxData={taxData} />
+      <TaxComponent taxData={taxData} companyId={uid} />
     </div>
   );
 }
