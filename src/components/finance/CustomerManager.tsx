@@ -93,8 +93,28 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         throw new Error('Benutzer nicht authentifiziert');
       }
 
+      // Filter undefined values for Firebase compatibility
+      const cleanCustomerData = Object.entries(customerData).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
+      // Clean contact persons - remove undefined fields
+      if (cleanCustomerData.contactPersons) {
+        cleanCustomerData.contactPersons = cleanCustomerData.contactPersons.map((cp: any) => {
+          return Object.entries(cp).reduce((acc, [key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+              acc[key] = value;
+            }
+            return acc;
+          }, {} as any);
+        });
+      }
+
       const newCustomer = {
-        ...customerData,
+        ...cleanCustomerData,
         companyId,
         totalInvoices: 0,
         totalAmount: 0,
