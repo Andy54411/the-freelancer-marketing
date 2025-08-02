@@ -1,0 +1,1055 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Clock,
+  Play,
+  Pause,
+  Square,
+  Plus,
+  Edit3,
+  Trash2,
+  BarChart3,
+  Timer,
+  Loader2,
+  Calendar,
+  User,
+  DollarSign,
+  TrendingUp,
+  Folder,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  TimeTrackingService,
+  TimeEntry,
+  Project as ProjectType,
+  TimeTrackingReport,
+} from '@/services/timeTrackingService';
+
+interface TimeTrackingComponentProps {
+  companyId: string;
+  userId: string;
+}
+
+export function TimeTrackingComponent({ companyId, userId }: TimeTrackingComponentProps) {
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [runningEntry, setRunningEntry] = useState<TimeEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('timer');
+  const [stats, setStats] = useState({
+    todayHours: 0,
+    weekHours: 0,
+    monthHours: 0,
+    billableThisMonth: 0,
+    activeProjects: 0,
+    runningTimers: 0,
+  });
+
+  // Timer State
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Formulare
+  const [newEntryForm, setNewEntryForm] = useState({
+    description: '',
+    projectId: '',
+    customerId: '',
+    customerName: '',
+    hourlyRate: 75,
+    billable: true,
+    category: '',
+  });
+
+  const [manualEntryForm, setManualEntryForm] = useState({
+    description: '',
+    projectId: '',
+    date: new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    endTime: '17:00',
+    hourlyRate: 75,
+    billable: true,
+    notes: '',
+  });
+
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [report, setReport] = useState<TimeTrackingReport | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, [companyId, userId]);
+
+  // Timer-Effekt
+  useEffect(() => {
+    if (isRunning) {
+      intervalRef.current = setInterval(() => {
+        setTimerSeconds(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning]);
+
+  // Laufende Zeiterfassung überwachen
+  useEffect(() => {
+    if (runningEntry) {
+      const startTime = runningEntry.startTime.getTime();
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - startTime) / 1000);
+      setTimerSeconds(elapsedSeconds);
+      setIsRunning(true);
+    } else {
+      setIsRunning(false);
+      setTimerSeconds(0);
+    }
+  }, [runningEntry]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [entries, projectList, running, statistics] = await Promise.all([
+        TimeTrackingService.getTimeEntriesByCompany(companyId, { userId }),
+        TimeTrackingService.getProjectsByCompany(companyId),
+        TimeTrackingService.getRunningTimeEntry(companyId, userId),
+        TimeTrackingService.getTimeTrackingStats(companyId),
+      ]);
+
+      setTimeEntries(entries);
+      setProjects(projectList);
+      setRunningEntry(running);
+      setStats(statistics);
+    } catch (error) {
+      console.error('Fehler beim Laden der Daten:', error);
+      toast.error('Daten konnten nicht geladen werden');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartTimer = async () => {
+    try {
+      if (!newEntryForm.description.trim()) {
+        toast.error('Bitte geben Sie eine Beschreibung ein');
+        return;
+      }
+
+      const entryId = await TimeTrackingService.startTimeEntry({
+        companyId,
+        userId,
+        description: newEntryForm.description,
+        projectId: newEntryForm.projectId || undefined,
+        customerId: newEntryForm.customerId || undefined,
+        customerName: newEntryForm.customerName || undefined,
+        hourlyRate: newEntryForm.hourlyRate,
+        billable: newEntryForm.billable,
+        category: newEntryForm.category || undefined,
+        startTime: new Date(), // Erforderliches Feld hinzugefügt
+      });
+
+      toast.success('Zeiterfassung gestartet');
+      await loadData();
+    } catch (error) {
+      console.error('Fehler beim Starten der Zeiterfassung:', error);
+      toast.error('Zeiterfassung konnte nicht gestartet werden');
+    }
+  };
+
+  const handleStopTimer = async () => {
+    try {
+      if (!runningEntry?.id) return;
+
+      await TimeTrackingService.stopTimeEntry(runningEntry.id);
+      toast.success('Zeiterfassung gestoppt');
+      await loadData();
+    } catch (error) {
+      console.error('Fehler beim Stoppen der Zeiterfassung:', error);
+      toast.error('Zeiterfassung konnte nicht gestoppt werden');
+    }
+  };
+
+  const handlePauseTimer = async () => {
+    try {
+      if (!runningEntry?.id) return;
+
+      await TimeTrackingService.pauseTimeEntry(runningEntry.id);
+      toast.success('Zeiterfassung pausiert');
+      await loadData();
+    } catch (error) {
+      console.error('Fehler beim Pausieren der Zeiterfassung:', error);
+      toast.error('Zeiterfassung konnte nicht pausiert werden');
+    }
+  };
+
+  const handleResumeTimer = async () => {
+    try {
+      if (!runningEntry?.id) return;
+
+      await TimeTrackingService.resumeTimeEntry(runningEntry.id);
+      toast.success('Zeiterfassung fortgesetzt');
+      await loadData();
+    } catch (error) {
+      console.error('Fehler beim Fortsetzen der Zeiterfassung:', error);
+      toast.error('Zeiterfassung konnte nicht fortgesetzt werden');
+    }
+  };
+
+  const handleCreateManualEntry = async () => {
+    try {
+      const startDateTime = new Date(`${manualEntryForm.date}T${manualEntryForm.startTime}`);
+      const endDateTime = new Date(`${manualEntryForm.date}T${manualEntryForm.endTime}`);
+
+      if (endDateTime <= startDateTime) {
+        toast.error('Endzeit muss nach der Startzeit liegen');
+        return;
+      }
+
+      await TimeTrackingService.createManualTimeEntry({
+        companyId,
+        userId,
+        description: manualEntryForm.description,
+        projectId: manualEntryForm.projectId || undefined,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        hourlyRate: manualEntryForm.hourlyRate,
+        billable: manualEntryForm.billable,
+        notes: manualEntryForm.notes || undefined,
+      });
+
+      toast.success('Zeiteintrag erfolgreich erstellt');
+      setShowManualEntry(false);
+      resetManualForm();
+      await loadData();
+    } catch (error) {
+      console.error('Fehler beim Erstellen des Zeiteintrags:', error);
+      toast.error('Zeiteintrag konnte nicht erstellt werden');
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    try {
+      if (!confirm('Möchten Sie diesen Zeiteintrag wirklich löschen?')) {
+        return;
+      }
+
+      await TimeTrackingService.deleteTimeEntry(entryId);
+      toast.success('Zeiteintrag gelöscht');
+      await loadData();
+    } catch (error) {
+      console.error('Fehler beim Löschen des Zeiteintrags:', error);
+      toast.error('Zeiteintrag konnte nicht gelöscht werden');
+    }
+  };
+
+  const generateReport = async () => {
+    try {
+      const startDate = new Date();
+      startDate.setDate(1); // Erster Tag des Monats
+      const endDate = new Date();
+
+      const reportData = await TimeTrackingService.generateTimeReport(
+        companyId,
+        startDate,
+        endDate,
+        { userId }
+      );
+
+      setReport(reportData);
+      setShowReport(true);
+    } catch (error) {
+      console.error('Fehler beim Generieren des Reports:', error);
+      toast.error('Report konnte nicht generiert werden');
+    }
+  };
+
+  const resetManualForm = () => {
+    setManualEntryForm({
+      description: '',
+      projectId: '',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '09:00',
+      endTime: '17:00',
+      hourlyRate: 75,
+      billable: true,
+      notes: '',
+    });
+  };
+
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDuration = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}:${mins.toString().padStart(2, '0')}h`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'running':
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-200">
+            <Play className="h-3 w-3 mr-1" />
+            Läuft
+          </Badge>
+        );
+      case 'paused':
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+            <Pause className="h-3 w-3 mr-1" />
+            Pausiert
+          </Badge>
+        );
+      case 'stopped':
+        return (
+          <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+            <Square className="h-3 w-3 mr-1" />
+            Gestoppt
+          </Badge>
+        );
+      case 'billed':
+        return (
+          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+            <DollarSign className="h-3 w-3 mr-1" />
+            Abgerechnet
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary">Unbekannt</Badge>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
+        <span className="ml-2 text-gray-600">Lade Zeiterfassung...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Zeiterfassung</h2>
+          <p className="text-gray-600 mt-1">
+            Erfassen Sie Arbeitszeiten und ordnen Sie sie Projekten zu
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={generateReport}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Report
+          </Button>
+          <Button
+            onClick={() => setShowManualEntry(true)}
+            className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Manueller Eintrag
+          </Button>
+        </div>
+      </div>
+
+      {/* Statistiken */}
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-[#14ad9f]" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Heute</p>
+                <p className="text-xl font-bold text-gray-900">{stats.todayHours.toFixed(1)}h</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-blue-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Diese Woche</p>
+                <p className="text-xl font-bold text-gray-900">{stats.weekHours.toFixed(1)}h</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-green-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Diesen Monat</p>
+                <p className="text-xl font-bold text-gray-900">{stats.monthHours.toFixed(1)}h</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-yellow-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Abrechenbar</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {stats.billableThisMonth.toFixed(0)}€
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Folder className="h-8 w-8 text-purple-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Projekte</p>
+                <p className="text-xl font-bold text-gray-900">{stats.activeProjects}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Timer className="h-8 w-8 text-red-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Läuft</p>
+                <p className="text-xl font-bold text-gray-900">{stats.runningTimers}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="timer">Timer</TabsTrigger>
+          <TabsTrigger value="entries">Einträge</TabsTrigger>
+          <TabsTrigger value="projects">Projekte</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="timer" className="space-y-4">
+          {/* Timer Widget */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Timer className="h-5 w-5 mr-2" />
+                Zeiterfassung
+              </CardTitle>
+              <CardDescription>
+                Starten Sie eine neue Zeiterfassung oder verwalten Sie laufende Timer
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Aktueller Timer */}
+              {runningEntry ? (
+                <div className="text-center p-8 bg-gray-50 rounded-lg">
+                  <div className="text-6xl font-mono font-bold text-[#14ad9f] mb-4">
+                    {formatTime(timerSeconds)}
+                  </div>
+                  <div className="text-lg text-gray-700 mb-2">{runningEntry.description}</div>
+                  {runningEntry.projectName && (
+                    <div className="text-sm text-gray-600 mb-4">
+                      Projekt: {runningEntry.projectName}
+                    </div>
+                  )}
+                  <div className="flex gap-2 justify-center">
+                    {runningEntry.status === 'running' ? (
+                      <>
+                        <Button onClick={handlePauseTimer} variant="outline">
+                          <Pause className="h-4 w-4 mr-2" />
+                          Pausieren
+                        </Button>
+                        <Button onClick={handleStopTimer} variant="destructive">
+                          <Square className="h-4 w-4 mr-2" />
+                          Stoppen
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={handleResumeTimer}
+                          className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Fortsetzen
+                        </Button>
+                        <Button onClick={handleStopTimer} variant="destructive">
+                          <Square className="h-4 w-4 mr-2" />
+                          Stoppen
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Beschreibung *</Label>
+                      <Input
+                        id="description"
+                        value={newEntryForm.description}
+                        onChange={e =>
+                          setNewEntryForm(prev => ({ ...prev, description: e.target.value }))
+                        }
+                        placeholder="Was arbeiten Sie gerade?"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="project">Projekt</Label>
+                      <Select
+                        value={newEntryForm.projectId}
+                        onValueChange={value =>
+                          setNewEntryForm(prev => ({ ...prev, projectId: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Projekt wählen (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map(project => (
+                            <SelectItem key={project.id} value={project.id!}>
+                              {project.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customerName">Kunde</Label>
+                      <Input
+                        id="customerName"
+                        value={newEntryForm.customerName}
+                        onChange={e =>
+                          setNewEntryForm(prev => ({ ...prev, customerName: e.target.value }))
+                        }
+                        placeholder="Kundenname (optional)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="hourlyRate">Stundensatz (€)</Label>
+                      <Input
+                        id="hourlyRate"
+                        type="number"
+                        step="0.01"
+                        value={newEntryForm.hourlyRate}
+                        onChange={e =>
+                          setNewEntryForm(prev => ({
+                            ...prev,
+                            hourlyRate: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Kategorie</Label>
+                      <Input
+                        id="category"
+                        value={newEntryForm.category}
+                        onChange={e =>
+                          setNewEntryForm(prev => ({ ...prev, category: e.target.value }))
+                        }
+                        placeholder="z.B. Entwicklung, Meeting"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="billable"
+                      checked={newEntryForm.billable}
+                      onChange={e =>
+                        setNewEntryForm(prev => ({ ...prev, billable: e.target.checked }))
+                      }
+                      className="w-4 h-4 text-[#14ad9f]"
+                    />
+                    <Label htmlFor="billable">Abrechenbar</Label>
+                  </div>
+
+                  <div className="text-center">
+                    <Button
+                      onClick={handleStartTimer}
+                      disabled={!newEntryForm.description.trim()}
+                      className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white px-8 py-3 text-lg"
+                    >
+                      <Play className="h-5 w-5 mr-2" />
+                      Timer starten
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="entries" className="space-y-4">
+          {/* Zeiteinträge Liste */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Zeiteinträge</CardTitle>
+              <CardDescription>Alle erfassten Arbeitszeiten im Überblick</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {timeEntries.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Keine Zeiteinträge vorhanden
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Starten Sie Ihren ersten Timer oder erstellen Sie einen manuellen Eintrag.
+                  </p>
+                  <Button
+                    onClick={() => setActiveTab('timer')}
+                    className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                  >
+                    Timer starten
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {timeEntries.map(entry => (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <Clock className="h-8 w-8 text-[#14ad9f]" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{entry.description}</h4>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-sm text-gray-600">
+                              {entry.startTime.toLocaleDateString()} •
+                              {entry.startTime.toLocaleTimeString()} -
+                              {entry.endTime ? entry.endTime.toLocaleTimeString() : 'Läuft'}
+                            </span>
+                            {entry.projectName && (
+                              <>
+                                <span className="text-sm text-gray-400">•</span>
+                                <span className="text-sm text-gray-600">{entry.projectName}</span>
+                              </>
+                            )}
+                            {getStatusBadge(entry.status)}
+                            {entry.billable && (
+                              <Badge className="bg-green-100 text-green-800 border-green-200">
+                                Abrechenbar
+                              </Badge>
+                            )}
+                          </div>
+                          {entry.customerName && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Kunde: {entry.customerName}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="font-medium text-gray-900">
+                            {entry.duration ? formatDuration(entry.duration) : '-'}
+                          </div>
+                          {entry.billableAmount && (
+                            <div className="text-sm text-gray-600">
+                              {entry.billableAmount.toFixed(2)}€
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              /* Edit functionality */
+                            }}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteEntry(entry.id!)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="projects" className="space-y-4">
+          {/* Projekte Liste */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Projekte</CardTitle>
+              <CardDescription>Verwalten Sie Ihre Projekte für die Zeiterfassung</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {projects.length === 0 ? (
+                <div className="text-center py-8">
+                  <Folder className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Keine Projekte vorhanden
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Erstellen Sie Ihr erstes Projekt um Arbeitszeiten zu organisieren.
+                  </p>
+                  <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
+                    Erstes Projekt erstellen
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {projects.map(project => (
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <Folder className="h-8 w-8 text-[#14ad9f]" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{project.name}</h4>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-sm text-gray-600">{project.customerName}</span>
+                            <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
+                              {project.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="font-medium text-gray-900">
+                            {project.totalHours?.toFixed(1) || 0}h
+                          </div>
+                          {project.totalAmount && (
+                            <div className="text-sm text-gray-600">
+                              {project.totalAmount.toFixed(2)}€
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Button variant="outline" size="sm">
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Manueller Eintrag Modal */}
+      {showManualEntry && (
+        <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Manueller Zeiteintrag</DialogTitle>
+              <DialogDescription>
+                Erstellen Sie einen Zeiteintrag für bereits geleistete Arbeit
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="manual-description">Beschreibung *</Label>
+                <Input
+                  id="manual-description"
+                  value={manualEntryForm.description}
+                  onChange={e =>
+                    setManualEntryForm(prev => ({ ...prev, description: e.target.value }))
+                  }
+                  placeholder="Beschreibung der Tätigkeit"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="manual-date">Datum</Label>
+                  <Input
+                    id="manual-date"
+                    type="date"
+                    value={manualEntryForm.date}
+                    onChange={e => setManualEntryForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="manual-start">Startzeit</Label>
+                  <Input
+                    id="manual-start"
+                    type="time"
+                    value={manualEntryForm.startTime}
+                    onChange={e =>
+                      setManualEntryForm(prev => ({ ...prev, startTime: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="manual-end">Endzeit</Label>
+                  <Input
+                    id="manual-end"
+                    type="time"
+                    value={manualEntryForm.endTime}
+                    onChange={e =>
+                      setManualEntryForm(prev => ({ ...prev, endTime: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="manual-project">Projekt</Label>
+                  <Select
+                    value={manualEntryForm.projectId}
+                    onValueChange={value =>
+                      setManualEntryForm(prev => ({ ...prev, projectId: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Projekt wählen (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map(project => (
+                        <SelectItem key={project.id} value={project.id!}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="manual-rate">Stundensatz (€)</Label>
+                  <Input
+                    id="manual-rate"
+                    type="number"
+                    step="0.01"
+                    value={manualEntryForm.hourlyRate}
+                    onChange={e =>
+                      setManualEntryForm(prev => ({
+                        ...prev,
+                        hourlyRate: parseFloat(e.target.value) || 0,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="manual-notes">Notizen</Label>
+                <Textarea
+                  id="manual-notes"
+                  value={manualEntryForm.notes}
+                  onChange={e => setManualEntryForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Zusätzliche Notizen (optional)"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="manual-billable"
+                  checked={manualEntryForm.billable}
+                  onChange={e =>
+                    setManualEntryForm(prev => ({ ...prev, billable: e.target.checked }))
+                  }
+                  className="w-4 h-4 text-[#14ad9f]"
+                />
+                <Label htmlFor="manual-billable">Abrechenbar</Label>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCreateManualEntry}
+                  disabled={!manualEntryForm.description.trim()}
+                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                >
+                  Zeiteintrag erstellen
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowManualEntry(false);
+                    resetManualForm();
+                  }}
+                >
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Report Modal */}
+      {showReport && report && (
+        <Dialog open={showReport} onOpenChange={setShowReport}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Zeiterfassungs-Report</DialogTitle>
+              <DialogDescription>
+                {report.period.start.toLocaleDateString()} bis{' '}
+                {report.period.end.toLocaleDateString()}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {report.summary.totalHours.toFixed(1)}h
+                  </div>
+                  <div className="text-sm text-gray-600">Gesamt</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-[#14ad9f]">
+                    {report.summary.billableHours.toFixed(1)}h
+                  </div>
+                  <div className="text-sm text-gray-600">Abrechenbar</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {report.summary.billableAmount.toFixed(2)}€
+                  </div>
+                  <div className="text-sm text-gray-600">Umsatz</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {report.summary.averageHourlyRate.toFixed(2)}€
+                  </div>
+                  <div className="text-sm text-gray-600">⌀ Stundensatz</div>
+                </div>
+              </div>
+
+              {/* Nach Kunde */}
+              {report.byCustomer.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Nach Kunde</h4>
+                  <div className="space-y-2">
+                    {report.byCustomer.map((customer, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center p-3 border rounded"
+                      >
+                        <span className="font-medium">{customer.customerName}</span>
+                        <div className="text-right">
+                          <div>{customer.billableHours.toFixed(1)}h</div>
+                          <div className="text-sm text-gray-600">
+                            {customer.totalAmount.toFixed(2)}€
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Nach Projekt */}
+              {report.byProject.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Nach Projekt</h4>
+                  <div className="space-y-2">
+                    {report.byProject.map((project, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center p-3 border rounded"
+                      >
+                        <span className="font-medium">{project.projectName}</span>
+                        <div className="text-right">
+                          <div>{project.billableHours.toFixed(1)}h</div>
+                          <div className="text-sm text-gray-600">
+                            {project.totalAmount.toFixed(2)}€
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowReport(false)}>
+                  Schließen
+                </Button>
+                <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">PDF Export</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}

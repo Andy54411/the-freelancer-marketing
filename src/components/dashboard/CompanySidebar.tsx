@@ -95,7 +95,7 @@ const navigationItems: NavigationItem[] = [
     value: 'finance',
     subItems: [
       {
-        label: 'Übersicht',
+        label: 'Dashboard',
         value: 'finance-overview',
         href: 'finance',
       },
@@ -105,7 +105,32 @@ const navigationItems: NavigationItem[] = [
         href: 'finance/invoices',
       },
       {
-        label: 'Kunden',
+        label: 'E-Rechnungen',
+        value: 'finance-einvoices',
+        href: 'finance/einvoices',
+      },
+      {
+        label: 'Lieferscheine',
+        value: 'finance-delivery-notes',
+        href: 'finance/delivery-notes',
+      },
+      {
+        label: 'Angebote',
+        value: 'finance-quotes',
+        href: 'finance/quotes',
+      },
+      {
+        label: 'Gutschriften',
+        value: 'finance-credits',
+        href: 'finance/credits',
+      },
+      {
+        label: 'Mahnungen',
+        value: 'finance-reminders',
+        href: 'finance/reminders',
+      },
+      {
+        label: 'Kunden & CRM',
         value: 'finance-customers',
         href: 'finance/customers',
       },
@@ -125,7 +150,17 @@ const navigationItems: NavigationItem[] = [
         href: 'finance/banking',
       },
       {
-        label: 'Steuern',
+        label: 'Zeiterfassung',
+        value: 'finance-time-tracking',
+        href: 'finance/time-tracking',
+      },
+      {
+        label: 'Projekte',
+        value: 'finance-projects',
+        href: 'finance/projects',
+      },
+      {
+        label: 'Steuern & Berichte',
         value: 'finance-taxes',
         href: 'finance/taxes',
       },
@@ -133,6 +168,16 @@ const navigationItems: NavigationItem[] = [
         label: 'Lagerbestand',
         value: 'finance-inventory',
         href: 'finance/inventory',
+      },
+      {
+        label: 'Kassenbuch',
+        value: 'finance-cashbook',
+        href: 'finance/cashbook',
+      },
+      {
+        label: 'Auswertungen',
+        value: 'finance-reports',
+        href: 'finance/reports',
       },
     ],
   },

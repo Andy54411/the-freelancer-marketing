@@ -1,0 +1,491 @@
+/**
+ * E-Invoice Service für ZUGFeRD und XRechnung Standards
+ * Implementiert die deutsche E-Rechnungspflicht nach sevdesk Vorbild
+ */
+
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  orderBy,
+} from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+
+export interface EInvoiceData {
+  id?: string;
+  invoiceId: string;
+  companyId: string;
+  format: 'zugferd' | 'xrechnung';
+  standard: 'EN16931' | 'BASIC' | 'COMFORT' | 'EXTENDED';
+  xmlContent: string;
+  pdfContent?: string; // Base64 encoded PDF
+  validationStatus: 'valid' | 'invalid' | 'pending';
+  validationErrors?: string[];
+  transmissionStatus: 'draft' | 'sent' | 'received' | 'processed';
+  recipientEndpoint?: string;
+  leitweg?: string; // XRechnung Leitweg-ID
+  buyerReference?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EInvoiceSettings {
+  id?: string;
+  companyId: string;
+  defaultFormat: 'zugferd' | 'xrechnung';
+  defaultStandard: 'EN16931' | 'BASIC' | 'COMFORT' | 'EXTENDED';
+  enableAutoGeneration: boolean;
+  peppol: {
+    enabled: boolean;
+    participantId?: string;
+    endpoint?: string;
+  };
+  validation: {
+    strictMode: boolean;
+    autoCorrection: boolean;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface XRechnungMetadata {
+  buyerReference: string;
+  leitwegId: string;
+  processingNote?: string;
+  specificationId: string;
+  businessProcessType: string;
+}
+
+export interface ZUGFeRDMetadata {
+  conformanceLevel: 'BASIC' | 'COMFORT' | 'EXTENDED';
+  guideline: string;
+  specificationId: string;
+}
+
+export class EInvoiceService {
+  private static readonly COLLECTION = 'eInvoices';
+  private static readonly SETTINGS_COLLECTION = 'eInvoiceSettings';
+
+  /**
+   * Erstellt eine neue E-Rechnung
+   */
+  static async createEInvoice(
+    eInvoiceData: Omit<EInvoiceData, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, this.COLLECTION), {
+        ...eInvoiceData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Fehler beim Erstellen der E-Rechnung:', error);
+      throw new Error('E-Rechnung konnte nicht erstellt werden');
+    }
+  }
+
+  /**
+   * Generiert ZUGFeRD XML für eine Rechnung
+   */
+  static async generateZUGFeRDXML(
+    invoiceData: any,
+    metadata: ZUGFeRDMetadata,
+    companyData: any
+  ): Promise<string> {
+    try {
+      const xmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+                          xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
+                          xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+                          xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                          xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+  <rsm:ExchangedDocumentContext>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
+      <ram:ID>${metadata.guideline}</ram:ID>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
+  </rsm:ExchangedDocumentContext>
+  
+  <rsm:ExchangedDocument>
+    <ram:ID>${invoiceData.invoiceNumber}</ram:ID>
+    <ram:TypeCode>380</ram:TypeCode>
+    <ram:IssueDateTime>
+      <udt:DateTimeString format="102">${invoiceData.issueDate.replace(/-/g, '')}</udt:DateTimeString>
+    </ram:IssueDateTime>
+  </rsm:ExchangedDocument>
+  
+  <rsm:SupplyChainTradeTransaction>
+    <ram:ApplicableHeaderTradeAgreement>
+      <ram:BuyerReference>${invoiceData.buyerReference || ''}</ram:BuyerReference>
+      <ram:SellerTradeParty>
+        <ram:Name>${companyData.companyName}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${this.extractPostcode(companyData.companyAddress)}</ram:PostcodeCode>
+          <ram:LineOne>${this.extractAddressLine(companyData.companyAddress)}</ram:LineOne>
+          <ram:CityName>${this.extractCity(companyData.companyAddress)}</ram:CityName>
+          <ram:CountryID>DE</ram:CountryID>
+        </ram:PostalTradeAddress>
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">${companyData.companyVatId}</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+      </ram:SellerTradeParty>
+      
+      <ram:BuyerTradeParty>
+        <ram:Name>${invoiceData.customerName}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${this.extractPostcode(invoiceData.customerAddress)}</ram:PostcodeCode>
+          <ram:LineOne>${this.extractAddressLine(invoiceData.customerAddress)}</ram:LineOne>
+          <ram:CityName>${this.extractCity(invoiceData.customerAddress)}</ram:CityName>
+          <ram:CountryID>DE</ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:BuyerTradeParty>
+    </ram:ApplicableHeaderTradeAgreement>
+    
+    <ram:ApplicableHeaderTradeDelivery>
+      <ram:ActualDeliverySupplyChainEvent>
+        <ram:OccurrenceDateTime>
+          <udt:DateTimeString format="102">${invoiceData.issueDate.replace(/-/g, '')}</udt:DateTimeString>
+        </ram:OccurrenceDateTime>
+      </ram:ActualDeliverySupplyChainEvent>
+    </ram:ApplicableHeaderTradeDelivery>
+    
+    <ram:ApplicableHeaderTradeSettlement>
+      <ram:PaymentReference>${invoiceData.invoiceNumber}</ram:PaymentReference>
+      <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
+      
+      <ram:ApplicableTradeTax>
+        <ram:CalculatedAmount>${invoiceData.tax.toFixed(2)}</ram:CalculatedAmount>
+        <ram:TypeCode>VAT</ram:TypeCode>
+        <ram:BasisAmount>${invoiceData.amount.toFixed(2)}</ram:BasisAmount>
+        <ram:CategoryCode>S</ram:CategoryCode>
+        <ram:RateApplicablePercent>${invoiceData.vatRate}</ram:RateApplicablePercent>
+      </ram:ApplicableTradeTax>
+      
+      <ram:SpecifiedTradePaymentTerms>
+        <ram:DueDateDateTime>
+          <udt:DateTimeString format="102">${invoiceData.dueDate.replace(/-/g, '')}</udt:DateTimeString>
+        </ram:DueDateDateTime>
+      </ram:SpecifiedTradePaymentTerms>
+      
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>${invoiceData.amount.toFixed(2)}</ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>${invoiceData.amount.toFixed(2)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">${invoiceData.tax.toFixed(2)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${invoiceData.total.toFixed(2)}</ram:GrandTotalAmount>
+        <ram:TotalPrepaidAmount>0.00</ram:TotalPrepaidAmount>
+        <ram:DuePayableAmount>${invoiceData.total.toFixed(2)}</ram:DuePayableAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+    </ram:ApplicableHeaderTradeSettlement>
+    
+    ${this.generateLineItems(invoiceData.items)}
+  </rsm:SupplyChainTradeTransaction>
+</rsm:CrossIndustryInvoice>`;
+
+      return xmlTemplate;
+    } catch (error) {
+      console.error('Fehler beim Generieren der ZUGFeRD XML:', error);
+      throw new Error('ZUGFeRD XML konnte nicht generiert werden');
+    }
+  }
+
+  /**
+   * Generiert XRechnung XML für eine Rechnung
+   */
+  static async generateXRechnungXML(
+    invoiceData: any,
+    metadata: XRechnungMetadata,
+    companyData: any
+  ): Promise<string> {
+    try {
+      const xmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  
+  <cbc:CustomizationID>${metadata.specificationId}</cbc:CustomizationID>
+  <cbc:ProfileID>${metadata.businessProcessType}</cbc:ProfileID>
+  <cbc:ID>${invoiceData.invoiceNumber}</cbc:ID>
+  <cbc:IssueDate>${invoiceData.issueDate}</cbc:IssueDate>
+  <cbc:DueDate>${invoiceData.dueDate}</cbc:DueDate>
+  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+  <cbc:BuyerReference>${metadata.buyerReference}</cbc:BuyerReference>
+  
+  ${metadata.processingNote ? `<cbc:Note>${metadata.processingNote}</cbc:Note>` : ''}
+  
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyName>
+        <cbc:Name>${companyData.companyName}</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>${this.extractAddressLine(companyData.companyAddress)}</cbc:StreetName>
+        <cbc:CityName>${this.extractCity(companyData.companyAddress)}</cbc:CityName>
+        <cbc:PostalZone>${this.extractPostcode(companyData.companyAddress)}</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode>DE</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>${companyData.companyVatId}</cbc:CompanyID>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyName>
+        <cbc:Name>${invoiceData.customerName}</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>${this.extractAddressLine(invoiceData.customerAddress)}</cbc:StreetName>
+        <cbc:CityName>${this.extractCity(invoiceData.customerAddress)}</cbc:CityName>
+        <cbc:PostalZone>${this.extractPostcode(invoiceData.customerAddress)}</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode>DE</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>58</cbc:PaymentMeansCode>
+    <cbc:PaymentID>${invoiceData.invoiceNumber}</cbc:PaymentID>
+  </cac:PaymentMeans>
+  
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="EUR">${invoiceData.tax.toFixed(2)}</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">${invoiceData.amount.toFixed(2)}</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">${invoiceData.tax.toFixed(2)}</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>${invoiceData.vatRate}</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="EUR">${invoiceData.amount.toFixed(2)}</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="EUR">${invoiceData.amount.toFixed(2)}</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="EUR">${invoiceData.total.toFixed(2)}</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="EUR">${invoiceData.total.toFixed(2)}</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  
+  ${this.generateXRechnungLineItems(invoiceData.items)}
+</Invoice>`;
+
+      return xmlTemplate;
+    } catch (error) {
+      console.error('Fehler beim Generieren der XRechnung XML:', error);
+      throw new Error('XRechnung XML konnte nicht generiert werden');
+    }
+  }
+
+  /**
+   * Validiert E-Rechnung nach EN 16931 Standard
+   */
+  static async validateEInvoice(
+    xmlContent: string,
+    format: 'zugferd' | 'xrechnung'
+  ): Promise<{
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  }> {
+    try {
+      const errors: string[] = [];
+      const warnings: string[] = [];
+
+      // Basis XML-Validierung
+      if (!xmlContent.trim()) {
+        errors.push('XML-Inhalt ist leer');
+        return { isValid: false, errors, warnings };
+      }
+
+      // Format-spezifische Validierung
+      if (format === 'zugferd') {
+        if (!xmlContent.includes('CrossIndustryInvoice')) {
+          errors.push('Ungültiges ZUGFeRD Format - CrossIndustryInvoice Element fehlt');
+        }
+      } else if (format === 'xrechnung') {
+        if (!xmlContent.includes('urn:oasis:names:specification:ubl:schema:xsd:Invoice-2')) {
+          errors.push('Ungültiges XRechnung Format - UBL Namespace fehlt');
+        }
+      }
+
+      // Pflichtfelder prüfen
+      const requiredFields = [
+        'ID',
+        'IssueDate',
+        'InvoiceTypeCode',
+        'DocumentCurrencyCode',
+        'AccountingSupplierParty',
+        'AccountingCustomerParty',
+      ];
+
+      for (const field of requiredFields) {
+        if (!xmlContent.includes(field)) {
+          errors.push(`Pflichtfeld fehlt: ${field}`);
+        }
+      }
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings,
+      };
+    } catch (error) {
+      console.error('Fehler bei der E-Rechnungs-Validierung:', error);
+      return {
+        isValid: false,
+        errors: ['Validierung fehlgeschlagen: ' + (error as Error).message],
+        warnings: [],
+      };
+    }
+  }
+
+  /**
+   * Lädt alle E-Rechnungen für ein Unternehmen
+   */
+  static async getEInvoicesByCompany(companyId: string): Promise<EInvoiceData[]> {
+    try {
+      const q = query(
+        collection(db, this.COLLECTION),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      })) as EInvoiceData[];
+    } catch (error) {
+      console.error('Fehler beim Laden der E-Rechnungen:', error);
+      throw new Error('E-Rechnungen konnten nicht geladen werden');
+    }
+  }
+
+  /**
+   * Speichert oder aktualisiert E-Rechnungs-Einstellungen
+   */
+  static async saveEInvoiceSettings(
+    settings: Omit<EInvoiceSettings, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<void> {
+    try {
+      const q = query(
+        collection(db, this.SETTINGS_COLLECTION),
+        where('companyId', '==', settings.companyId)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // Neue Einstellungen erstellen
+        await addDoc(collection(db, this.SETTINGS_COLLECTION), {
+          ...settings,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        // Bestehende Einstellungen aktualisieren
+        const docRef = doc(db, this.SETTINGS_COLLECTION, querySnapshot.docs[0].id);
+        await updateDoc(docRef, {
+          ...settings,
+          updatedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern der E-Rechnungs-Einstellungen:', error);
+      throw new Error('E-Rechnungs-Einstellungen konnten nicht gespeichert werden');
+    }
+  }
+
+  // Hilfsmethoden für Adressparsingg
+  private static extractAddressLine(address: string): string {
+    return address.split('\n')[0] || '';
+  }
+
+  private static extractPostcode(address: string): string {
+    const lines = address.split('\n');
+    for (const line of lines) {
+      const match = line.match(/(\d{5})/);
+      if (match) return match[1];
+    }
+    return '';
+  }
+
+  private static extractCity(address: string): string {
+    const lines = address.split('\n');
+    for (const line of lines) {
+      const match = line.match(/\d{5}\s+(.+)/);
+      if (match) return match[1];
+    }
+    return '';
+  }
+
+  // Generiert Positionen für ZUGFeRD
+  private static generateLineItems(items: any[]): string {
+    return items
+      .map(
+        (item, index) => `
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${index + 1}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>${item.description}</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${item.unitPrice.toFixed(2)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="HUR">${item.quantity}</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${item.total.toFixed(2)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>`
+      )
+      .join('');
+  }
+
+  // Generiert Positionen für XRechnung
+  private static generateXRechnungLineItems(items: any[]): string {
+    return items
+      .map(
+        (item, index) => `
+  <cac:InvoiceLine>
+    <cbc:ID>${index + 1}</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="HUR">${item.quantity}</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">${item.total.toFixed(2)}</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>${item.description}</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">${item.unitPrice.toFixed(2)}</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>`
+      )
+      .join('');
+  }
+}
