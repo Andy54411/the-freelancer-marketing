@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Calculator, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceTemplatePicker } from '@/components/finance/InvoiceTemplatePicker';
 import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
@@ -39,7 +41,51 @@ export default function CreateInvoicePage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
+  // State for template loading and selection
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('modern');
+  const [templateLoading, setTemplateLoading] = useState(true);
+
+  // Load user's preferred template from database
+  useEffect(() => {
+    const loadUserTemplate = async () => {
+      if (!uid) return;
+
+      try {
+        setTemplateLoading(true);
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
+          if (preferredTemplate) {
+            setSelectedTemplate(preferredTemplate);
+          } else {
+            // Fallback to localStorage if no database preference
+            if (typeof window !== 'undefined') {
+              const savedTemplate = localStorage.getItem(
+                'selectedInvoiceTemplate'
+              ) as InvoiceTemplate;
+              if (savedTemplate) {
+                setSelectedTemplate(savedTemplate);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Template-Einstellung:', error);
+        // Fallback to localStorage on error
+        if (typeof window !== 'undefined') {
+          const savedTemplate = localStorage.getItem('selectedInvoiceTemplate') as InvoiceTemplate;
+          if (savedTemplate) {
+            setSelectedTemplate(savedTemplate);
+          }
+        }
+      } finally {
+        setTemplateLoading(false);
+      }
+    };
+
+    loadUserTemplate();
+  }, [uid]);
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -479,19 +525,31 @@ export default function CreateInvoicePage() {
         <Card>
           <CardHeader>
             <CardTitle>Design-Template</CardTitle>
-            <CardDescription>Wählen Sie das Aussehen Ihrer Rechnung</CardDescription>
+            <CardDescription>
+              {templateLoading
+                ? 'Template wird geladen...'
+                : 'Wählen Sie das Aussehen Ihrer Rechnung'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <InvoiceTemplatePicker
-              selectedTemplate={selectedTemplate}
-              onTemplateSelect={setSelectedTemplate}
-              trigger={
-                <Button variant="outline" className="w-full justify-start">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Template: {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}
-                </Button>
-              }
-            />
+            {templateLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-[#14ad9f]" />
+                <span className="ml-2 text-gray-600">Template wird geladen...</span>
+              </div>
+            ) : (
+              <InvoiceTemplatePicker
+                selectedTemplate={selectedTemplate}
+                onTemplateSelect={setSelectedTemplate}
+                userId={uid}
+                trigger={
+                  <Button variant="outline" className="w-full justify-start">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Template: {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}
+                  </Button>
+                }
+              />
+            )}
           </CardContent>
         </Card>
 

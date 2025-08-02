@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   INVOICE_TEMPLATES,
   InvoiceTemplate,
@@ -25,6 +28,7 @@ interface InvoiceTemplatePickerProps {
   onTemplateSelect?: (template: InvoiceTemplate) => void;
   selectedTemplate?: InvoiceTemplate;
   previewData?: InvoiceData;
+  userId?: string; // Add userId for database updates
 }
 
 export function InvoiceTemplatePicker({
@@ -32,9 +36,11 @@ export function InvoiceTemplatePicker({
   onTemplateSelect,
   selectedTemplate = 'classic',
   previewData,
+  userId,
 }: InvoiceTemplatePickerProps) {
   const [open, setOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Mock preview data if none provided
   const mockPreviewData: InvoiceData = previewData || {
@@ -72,11 +78,41 @@ export function InvoiceTemplatePicker({
     ],
   };
 
-  const handleTemplateSelect = (template: InvoiceTemplate) => {
-    if (onTemplateSelect) {
-      onTemplateSelect(template);
+  const handleTemplateSelect = async (template: InvoiceTemplate) => {
+    try {
+      setSaving(true);
+
+      // Save to database if userId is provided
+      if (userId) {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          preferredInvoiceTemplate: template,
+          updatedAt: new Date(),
+        });
+        toast.success(
+          `Template "${INVOICE_TEMPLATES.find(t => t.id === template)?.name}" ausgewählt und gespeichert`
+        );
+      }
+
+      // Also save to localStorage as fallback
+      localStorage.setItem('selectedInvoiceTemplate', template);
+
+      if (onTemplateSelect) {
+        onTemplateSelect(template);
+      }
+      setOpen(false);
+    } catch (error) {
+      console.error('Fehler beim Speichern der Template-Auswahl:', error);
+      toast.error('Fehler beim Speichern der Template-Auswahl');
+
+      // Still execute callback even if save failed
+      if (onTemplateSelect) {
+        onTemplateSelect(template);
+      }
+      setOpen(false);
+    } finally {
+      setSaving(false);
     }
-    setOpen(false);
   };
 
   const handlePreview = (template: InvoiceTemplate) => {
