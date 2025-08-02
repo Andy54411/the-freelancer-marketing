@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { InvoiceCreateModal } from './InvoiceCreateModal';
 
 interface Invoice {
   id: string;
@@ -24,7 +25,9 @@ interface InvoiceComponentProps {
   invoices: Invoice[];
 }
 
-export function InvoiceComponent({ invoices }: InvoiceComponentProps) {
+export function InvoiceComponent({ invoices: initialInvoices }: InvoiceComponentProps) {
+  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
@@ -44,6 +47,10 @@ export function InvoiceComponent({ invoices }: InvoiceComponentProps) {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleInvoiceCreate = (newInvoice: Invoice) => {
+    setInvoices(prev => [newInvoice, ...prev]);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -52,10 +59,7 @@ export function InvoiceComponent({ invoices }: InvoiceComponentProps) {
             <CardTitle>Rechnungen</CardTitle>
             <CardDescription>Verwalten Sie Ihre Rechnungen</CardDescription>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Rechnung
-          </Button>
+          <InvoiceCreateModal onInvoiceCreate={handleInvoiceCreate} />
         </div>
       </CardHeader>
       <CardContent>
