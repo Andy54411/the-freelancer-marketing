@@ -17,11 +17,24 @@ import {
   FiCheck,
   FiX,
   FiLoader,
+  FiUpload,
+  FiCamera,
 } from 'react-icons/fi';
 import { UserDataForSettings } from '../SettingsPage';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { Gemini } from '@/components/logos';
+import {
+  getStorage,
+  ref,
+  listAll,
+  deleteObject,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../firebase/clients';
+import { getAuth } from 'firebase/auth';
 
 interface PublicProfileFormProps {
   formData: UserDataForSettings;
@@ -102,6 +115,8 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Handler für Profile-Daten Updates
   const updateProfileData = (key: keyof PublicProfileData, value: any) => {
@@ -223,6 +238,103 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
     updateProfileData('workingHours', updated);
   };
 
+  // Profilbild Upload-Funktion
+  const handleProfileImageUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validierung der Datei
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Nur JPG, PNG und WebP Dateien sind erlaubt');
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Datei zu groß. Maximum 5MB erlaubt');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setUploadProgress(0);
+
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        toast.error('Sie müssen angemeldet sein');
+        return;
+      }
+
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile-images/${user.uid}/${Date.now()}_${file.name}`);
+
+      // Löschen des alten Profilbilds falls vorhanden
+      if (
+        formData.step3.profilePictureURL &&
+        formData.step3.profilePictureURL !== '/default-avatar.png' &&
+        formData.step3.profilePictureURL.includes('firebase')
+      ) {
+        try {
+          const oldImageRef = ref(storage, formData.step3.profilePictureURL);
+          await deleteObject(oldImageRef);
+        } catch (error) {
+          console.warn('Altes Profilbild konnte nicht gelöscht werden:', error);
+        }
+      }
+
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        'state_changed',
+        snapshot => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        error => {
+          console.error('Upload Fehler:', error);
+          toast.error('Fehler beim Upload des Profilbilds');
+          setIsUploadingImage(false);
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+            // Update über handleChange Funktion
+            handleChange('step3.profilePictureURL', downloadURL);
+
+            // Update in Firestore
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, {
+              'step3.profilePictureURL': downloadURL,
+            });
+
+            toast.success('Profilbild erfolgreich hochgeladen!');
+            setIsUploadingImage(false);
+            setUploadProgress(0);
+          } catch (error) {
+            console.error('Fehler beim Speichern der URL:', error);
+            toast.error('Fehler beim Speichern des Profilbilds');
+            setIsUploadingImage(false);
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Upload Fehler:', error);
+      toast.error('Fehler beim Upload');
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Datei-Input Handler
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleProfileImageUpload(file);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Vorschau des öffentlichen Profils */}
@@ -288,6 +400,89 @@ const PublicProfileForm: React.FC<PublicProfileFormProps> = ({ formData, handleC
       {/* Tab Content */}
       {activeSection === 'basic' && (
         <div className="space-y-6">
+          {/* Profilbild Upload Sektion */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-4">Profilbild</label>
+            <div className="flex items-center gap-6">
+              {/* Aktuelles Profilbild */}
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden">
+                  {formData.step3.profilePictureURL &&
+                  formData.step3.profilePictureURL !== '/default-avatar.png' ? (
+                    <Image
+                      src={formData.step3.profilePictureURL}
+                      alt="Profilbild"
+                      width={96}
+                      height={96}
+                      className="w-24 h-24 object-cover"
+                    />
+                  ) : (
+                    <FiUser size={32} className="text-gray-400" />
+                  )}
+                </div>
+                {isUploadingImage && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                    <div className="text-white text-xs font-medium">
+                      {Math.round(uploadProgress)}%
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Controls */}
+              <div className="flex-1">
+                <div className="flex gap-3">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] cursor-pointer transition-colors disabled:opacity-50">
+                    {isUploadingImage ? (
+                      <FiLoader className="animate-spin" size={16} />
+                    ) : (
+                      <FiCamera size={16} />
+                    )}
+                    <span>{isUploadingImage ? 'Wird hochgeladen...' : 'Neues Bild wählen'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      disabled={isUploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {formData.step3.profilePictureURL &&
+                    formData.step3.profilePictureURL !== '/default-avatar.png' && (
+                      <button
+                        onClick={() =>
+                          handleChange('step3.profilePictureURL', '/default-avatar.png')
+                        }
+                        disabled={isUploadingImage}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        <FiTrash2 size={16} />
+                        Entfernen
+                      </button>
+                    )}
+                </div>
+
+                {isUploadingImage && (
+                  <div className="mt-3">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-[#14ad9f] h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 mt-2">
+                  Empfohlen: Quadratisches Bild, mindestens 400x400px, max. 5MB
+                  <br />
+                  Unterstützte Formate: JPG, PNG, WebP
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
