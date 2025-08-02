@@ -39,7 +39,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
     }
 
-    // finAPI OAuth Token Request
+    // finAPI OAuth Token Request mit erweiterten Debug-Infos
+    console.log(`Making request to: ${baseUrl}/oauth/token`);
+    console.log('Request headers:', {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: 'Basic [HIDDEN]',
+    });
+    console.log('Request body: grant_type=client_credentials');
+
     const authResponse = await fetch(`${baseUrl}/oauth/token`, {
       method: 'POST',
       headers: {
