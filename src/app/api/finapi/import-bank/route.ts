@@ -3,37 +3,24 @@ import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
 import {
   AuthorizationApi,
   BankConnectionsApi,
+  UsersApi,
   createConfiguration,
   ServerConfiguration,
   BankingInterface,
 } from 'finapi-client';
 
 /**
- * Import Bank Connection - Uses Taskilo's finAPI account to connect user banks
- * No user needs to create their own finAPI account!
+ * Import Bank Connection - Uses finAPI Web Form 2.0 (Recommended approach)
+ * 1. Creates finAPI user for Taskilo if needed
+ * 2. Generates web form for bank connection import
+ * 3. Returns web form URL for user authentication
  */
 export async function POST(req: NextRequest) {
   try {
-    const { bankId, userId, credentials, credentialType = 'sandbox' } = await req.json();
+    const { bankId, userId, credentialType = 'sandbox' } = await req.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 401 });
-    }
-
-    if (!bankId || !credentials) {
-      return NextResponse.json(
-        {
-          error: 'Bank ID and credentials are required',
-          required_fields: ['bankId', 'credentials'],
-          example_credentials: {
-            loginCredentials: [
-              { label: 'Anmeldename', value: 'demo' },
-              { label: 'PIN', value: '1234' },
-            ],
-          },
-        },
-        { status: 400 }
-      );
     }
 
     // Get Taskilo's finAPI configuration
@@ -47,18 +34,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 1: Get Taskilo's client credentials token
+    // Step 1: Get Client Credentials Token
     const server = new ServerConfiguration(baseUrl, {});
     const authConfig = createConfiguration({ baseServer: server });
     const authApi = new AuthorizationApi(authConfig);
 
-    const clientToken = await authApi.getToken(
-      'client_credentials',
-      taskiloCredentials.clientId,
-      taskiloCredentials.clientSecret
-    );
+    let clientToken;
+    try {
+      clientToken = await authApi.getToken(
+        'client_credentials',
+        taskiloCredentials.clientId,
+        taskiloCredentials.clientSecret
+      );
+      console.log('✅ Client credentials token obtained');
+    } catch (authError: any) {
+      console.error('❌ Client authentication failed:', authError?.body || authError.message);
+      return NextResponse.json(
+        {
+          error: 'finAPI Client authentication failed',
+          details: authError?.body?.errors?.[0]?.message || authError.message,
+        },
+        { status: 401 }
+      );
+    }
 
-    // Step 2: Use Taskilo's token to import bank for user
+    // Step 2: Create or get finAPI user for this specific Taskilo user
     const configuration = createConfiguration({
       baseServer: server,
       authMethods: {
@@ -68,75 +68,130 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const bankConnectionsApi = new BankConnectionsApi(configuration);
-
-    console.log(
-      `Importing bank connection for user ${userId} with bank ${bankId} using Taskilo's finAPI account`
-    );
-
-    // Import bank connection using Taskilo's finAPI account
-    const importRequest = {
-      bankId: bankId,
-      bankingInterface: 'FINTS_SERVER' as BankingInterface,
-      loginCredentials: credentials.loginCredentials || credentials,
-      storeSecrets: true,
-      skipPositionsDownload: false,
-      loadOwnerData: true,
-      // Store user reference for later identification
-      externalId: userId, // Use Firebase UID as external ID
+    const usersApi = new UsersApi(configuration);
+    
+    // Use Firebase UID as finAPI user ID with prefix to ensure uniqueness
+    const finapiUserId = `taskilo_${userId}`;
+    const userCredentials = {
+      id: finapiUserId,
+      password: `secure_${userId}_${Date.now()}`, // Unique password per user
+      email: `user_${userId}@taskilo.de`,
+      phone: '+49123456789',
+      isAutoUpdateEnabled: true,
     };
 
-    const importResponse = await bankConnectionsApi.importBankConnection(importRequest);
+    let userAccessToken;
+    try {
+      // Try to create the user first
+      try {
+        const createUserResponse = await usersApi.createUser(userCredentials);
+        console.log('✅ finAPI user created for Taskilo user:', createUserResponse.id);
+      } catch (createError: any) {
+        // User might already exist, that's fine
+        if (createError.status === 422) {
+          console.log('✅ finAPI user already exists for Taskilo user:', finapiUserId);
+        } else {
+          throw createError;
+        }
+      }
 
-    console.log(
-      'Bank connection import started for user:',
-      userId,
-      'Connection ID:',
-      importResponse.id
-    );
-
-    // Store connection mapping in our database (you might want to save this to Firestore)
-    // TODO: Save to Firestore: { userId, connectionId: importResponse.id, bankId, timestamp }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Bank connection import started successfully',
-      userId: userId,
-      bankConnection: {
-        id: importResponse.id,
-        bankId: importResponse.bank?.id,
-        bankName: importResponse.bank?.name,
-        updateStatus: importResponse.updateStatus,
-        accountIds: importResponse.accountIds || [],
-        accountsCount: importResponse.accountIds?.length || 0,
-      },
-      debug_info: {
-        environment: credentialType,
-        base_url: baseUrl,
-        timestamp: new Date().toISOString(),
-      },
-      raw_response: importResponse,
-    });
-  } catch (error: any) {
-    console.error('Bank connection import error:', error);
-
-    // Enhanced error handling for finAPI import errors
-    if (error.status && error.body) {
+      // Get access token for the user
+      const userTokenResponse = await authApi.getToken(
+        'password',
+        taskiloCredentials.clientId,
+        taskiloCredentials.clientSecret,
+        userCredentials.id,
+        userCredentials.password
+      );
+      
+      userAccessToken = userTokenResponse.accessToken;
+      console.log('✅ User access token obtained for:', finapiUserId);
+    } catch (userError: any) {
+      console.error('❌ User authentication failed:', userError?.body || userError.message);
       return NextResponse.json(
         {
-          error: 'Bank connection import failed',
-          details: error.body?.errors?.[0]?.message || error.message,
-          finapi_error_code: error.body?.errors?.[0]?.code,
-          finapi_error_type: error.body?.errors?.[0]?.type,
-          status_code: error.status,
+          error: 'finAPI User authentication failed',
+          details: userError?.body?.errors?.[0]?.message || userError.message,
         },
-        { status: error.status }
+        { status: 401 }
       );
     }
 
+    // Step 3: Generate Web Form for Bank Connection Import
+    try {
+      // Use raw fetch since finapi-client might not have WebForm 2.0 support
+      const webFormRequest = {
+        bankId: bankId || undefined, // Optional - let user choose if not provided
+        accountTypes: ['CHECKING', 'SAVINGS'], // Focus on main account types
+        callbacks: {
+          successCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/webhooks?type=success&userId=${userId}`,
+          errorCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/webhooks?type=error&userId=${userId}`,
+        },
+        profileId: undefined, // Use default profile
+        redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/finance/banking/accounts?import=success`,
+      };
+
+      const webFormResponse = await fetch(`${baseUrl}/api/webForms/bankConnectionImport`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userAccessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webFormRequest),
+      });
+
+      if (!webFormResponse.ok) {
+        const errorData = await webFormResponse.json();
+        throw new Error(`WebForm creation failed: ${errorData.errors?.[0]?.message || 'Unknown error'}`);
+      }
+
+      const webFormData = await webFormResponse.json();
+      console.log('✅ Web Form created:', webFormData.url);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Web Form für Bank-Verbindung erstellt',
+        userId: userId,
+        finapiUserId: finapiUserId,
+        webForm: {
+          id: webFormData.id,
+          url: webFormData.url,
+          expiresAt: webFormData.expiresAt,
+        },
+        instructions: {
+          step: 'redirect_to_webform',
+          description: 'Leiten Sie den User zur Web Form URL weiter für Bank-Authentifizierung',
+          next_steps: [
+            '1. User zur webForm.url weiterleiten',
+            '2. User authentifiziert sich bei seiner Bank',
+            '3. Callback wird nach Abschluss aufgerufen',
+            '4. Bank-Verbindung ist dann verfügbar'
+          ]
+        },
+        debug_info: {
+          environment: credentialType,
+          base_url: baseUrl,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+    } catch (webFormError: any) {
+      console.error('❌ Web Form creation failed:', webFormError);
+      return NextResponse.json(
+        {
+          error: 'Web Form Erstellung fehlgeschlagen',
+          details: webFormError.message || 'Unknown error',
+          suggestion: 'Prüfen Sie die finAPI WebForm 2.0 API Berechtigung',
+        },
+        { status: 500 }
+      );
+    }
+
+  } catch (error: any) {
+    console.error('Bank connection web form error:', error);
     return NextResponse.json(
       {
-        error: 'Internal server error during bank import',
+        error: 'Internal server error during web form creation',
         details: error.message || 'Unknown error',
       },
       { status: 500 }

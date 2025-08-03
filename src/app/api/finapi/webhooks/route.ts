@@ -16,10 +16,21 @@ interface FinAPIWebhookEvent {
 /**
  * finAPI WebHook Handler
  * Handles real-time updates from finAPI when accounts or transactions change
+ * Also handles Web Form 2.0 callbacks
  */
 export async function POST(req: NextRequest) {
   try {
     console.log('finAPI WebHook received');
+
+    // Check if this is a Web Form 2.0 callback
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type');
+    const userId = searchParams.get('userId');
+
+    if (type && userId) {
+      // This is a Web Form 2.0 callback
+      return handleWebFormCallback(req, type, userId);
+    }
 
     // Parse webhook payload
     const webhookEvent: FinAPIWebhookEvent = await req.json();
@@ -152,6 +163,57 @@ async function handleUserUpdate(event: FinAPIWebhookEvent) {
 
     // TODO: Update user data
     // await updateUserInDatabase(event.data.userId);
+  }
+}
+
+/**
+ * Handle Web Form 2.0 callbacks
+ */
+async function handleWebFormCallback(req: NextRequest, type: string, userId: string) {
+  try {
+    const webhookData = await req.json();
+
+    console.log('finAPI Web Form 2.0 callback received:', {
+      type,
+      userId,
+      webhookData: JSON.stringify(webhookData, null, 2),
+    });
+
+    if (type === 'success') {
+      // Bank connection was successful
+      const { payload } = webhookData;
+      
+      if (payload?.bankConnectionId) {
+        console.log('✅ Bank connection successful:', {
+          userId,
+          bankConnectionId: payload.bankConnectionId,
+          accountIds: payload.accountIds,
+        });
+
+        // TODO: Store bank connection in Firestore
+        // await storeBankConnection(userId, payload.bankConnectionId, payload);
+      }
+    } else if (type === 'error') {
+      // Bank connection failed
+      console.error('❌ Bank connection failed:', {
+        userId,
+        error: webhookData,
+      });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Web Form callback processed',
+      type,
+      userId,
+    });
+
+  } catch (error) {
+    console.error('Web Form callback processing error:', error);
+    return NextResponse.json(
+      { error: 'Web Form callback processing failed' },
+      { status: 500 }
+    );
   }
 }
 

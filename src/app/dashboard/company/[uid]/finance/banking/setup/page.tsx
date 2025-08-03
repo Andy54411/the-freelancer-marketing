@@ -86,37 +86,21 @@ export default function FinAPISetupPage() {
     }
   };
 
-  // Connect Bank Account using Taskilo's finAPI credentials
+  // Connect Bank Account using finAPI Web Form 2.0
   const connectBankAccount = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      if (!selectedBank) {
-        setError('Bitte wählen Sie eine Bank aus');
-        return;
-      }
-
-      if (!bankCredentials.bankingUserId || !bankCredentials.bankingPin) {
-        setError('Bitte geben Sie Ihre Bankzugangsdaten ein');
-        return;
-      }
-
-      // Connect bank directly using Taskilo's finAPI account
+      // Generate Web Form for bank connection (no credentials needed upfront)
       const response = await fetch('/api/finapi/import-bank', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          bankId: selectedBank.id,
+          bankId: selectedBank?.id, // Optional - user can choose in web form
           userId: user.uid, // Use Firebase user ID to identify the user
-          credentials: {
-            loginCredentials: [
-              { label: 'Anmeldename', value: bankCredentials.bankingUserId },
-              { label: 'PIN', value: bankCredentials.bankingPin },
-            ],
-          },
           credentialType: 'sandbox',
         }),
       });
@@ -124,21 +108,26 @@ export default function FinAPISetupPage() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.details || errorData.error || 'Bank Connection Import fehlgeschlagen'
+          errorData.details || errorData.error || 'Web Form Erstellung fehlgeschlagen'
         );
       }
 
       const data = await response.json();
 
-      setSuccess(`Bank erfolgreich verbunden! ${data.accountsCount || 0} Konten gefunden.`);
-      console.log('Bank connected:', data);
+      if (data.success && data.webForm?.url) {
+        setSuccess('Web Form erstellt! Sie werden zur sicheren Bank-Authentifizierung weitergeleitet...');
+        console.log('Web Form created:', data.webForm);
 
-      // Move to complete step
-      setTimeout(() => {
-        setStep('complete');
-      }, 2000);
+        // Redirect to finAPI Web Form for secure bank authentication
+        setTimeout(() => {
+          window.location.href = data.webForm.url;
+        }, 2000);
+      } else {
+        throw new Error('Keine Web Form URL erhalten');
+      }
+
     } catch (error) {
-      console.error('Fehler beim Verbinden der Bank:', error);
+      console.error('Fehler beim Erstellen der Web Form:', error);
       setError(error instanceof Error ? error.message : 'Unbekannter Fehler');
     } finally {
       setLoading(false);
@@ -198,43 +187,16 @@ export default function FinAPISetupPage() {
         {selectedBank && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">
-              Zugangsdaten für {selectedBank.name}
+              Bank-Verbindung für {selectedBank.name}
             </h3>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Banking-User-ID / Login
-              </label>
-              <input
-                type="text"
-                value={bankCredentials.bankingUserId}
-                onChange={e =>
-                  setBankCredentials({ ...bankCredentials, bankingUserId: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                placeholder="demo (für Test-Banken)"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Banking-PIN</label>
-              <input
-                type="password"
-                value={bankCredentials.bankingPin}
-                onChange={e =>
-                  setBankCredentials({ ...bankCredentials, bankingPin: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                placeholder="demo (für Test-Banken)"
-              />
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <h4 className="font-medium text-blue-900 mb-2">💡 Demo-Zugangsdaten</h4>
-              <p className="text-blue-700 text-sm">
-                Für Test-Banken verwenden Sie typischerweise:
-                <br />• <strong>User-ID:</strong> demo
-                <br />• <strong>PIN:</strong> demo
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <h4 className="font-medium text-green-900 mb-2">🔒 Sichere finAPI Web Form</h4>
+              <p className="text-green-700 text-sm">
+                Ihre Bankdaten werden sicher über finAPI&apos;s verschlüsselte Web Form verarbeitet.
+                <br />• <strong>Keine Dateneingabe hier:</strong> Alles erfolgt sicher bei finAPI
+                <br />• <strong>Bank-Authentifizierung:</strong> Direkt bei Ihrer Bank
+                <br />• <strong>Höchste Sicherheit:</strong> PCI-DSS & DSGVO konform
               </p>
             </div>
           </div>
@@ -256,15 +218,10 @@ export default function FinAPISetupPage() {
 
         <button
           onClick={connectBankAccount}
-          disabled={
-            loading ||
-            !selectedBank ||
-            !bankCredentials.bankingUserId ||
-            !bankCredentials.bankingPin
-          }
+          disabled={loading || !selectedBank}
           className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Verbinde Bank...' : 'Bank verbinden'}
+          {loading ? 'Erstelle sichere Web Form...' : 'Sichere Bank-Verbindung starten'}
         </button>
       </div>
     </div>
