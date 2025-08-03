@@ -150,6 +150,11 @@ const navigationItems: NavigationItem[] = [
         value: 'finance-banking',
         subItems: [
           {
+            label: 'Setup',
+            value: 'finance-banking-setup',
+            href: 'finance/banking/setup',
+          },
+          {
             label: 'Konten',
             value: 'finance-banking-accounts',
             href: 'finance/banking/accounts',
@@ -301,7 +306,9 @@ export default function CompanySidebar({
                 {hasSubItems && isItemExpanded && (
                   <div className="ml-6 mt-1 space-y-1">
                     {item.subItems?.map(subItem => {
-                      const isSubActive = subItem.href ? pathname?.includes(`/${subItem.href}`) : false;
+                      const isSubActive = subItem.href
+                        ? pathname?.includes(`/${subItem.href}`)
+                        : false;
                       const hasNestedSubItems = subItem.subItems && subItem.subItems.length > 0;
                       const isSubExpanded = isExpanded(subItem.value);
 
@@ -338,11 +345,16 @@ export default function CompanySidebar({
                           {hasNestedSubItems && isSubExpanded && (
                             <div className="ml-6 mt-1 space-y-1">
                               {subItem.subItems?.map(nestedItem => {
-                                const isNestedActive = nestedItem.href ? pathname?.includes(`/${nestedItem.href}`) : false;
+                                const isNestedActive = nestedItem.href
+                                  ? pathname?.includes(`/${nestedItem.href}`)
+                                  : false;
                                 return (
                                   <button
                                     key={nestedItem.value}
-                                    onClick={() => nestedItem.href && onNavigate(nestedItem.value, nestedItem.href)}
+                                    onClick={() =>
+                                      nestedItem.href &&
+                                      onNavigate(nestedItem.value, nestedItem.href)
+                                    }
                                     className={`${
                                       isNestedActive
                                         ? 'bg-[#14ad9f] text-white'
