@@ -14,10 +14,11 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
     const error_description = searchParams.get('error_description');
 
-    const redirectUrl =
+    // Initial redirectUrl - will be updated with actual companyId after state parsing
+    let redirectUrl =
       process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000/dashboard/company/setup/datev'
-        : 'https://taskilo.de/dashboard/company/setup/datev';
+        ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
+        : 'https://taskilo.de/dashboard/company/unknown/datev/setup';
 
     // Log detailed callback information for debugging
     console.log('DATEV OpenID Connect Callback received:', {
@@ -84,6 +85,12 @@ export async function GET(request: NextRequest) {
     const codeVerifier = storedAuthData.codeVerifier;
     const nonce = storedAuthData.nonce;
     companyId = storedAuthData.companyId || companyId;
+
+    // Update redirectUrl with correct companyId
+    redirectUrl =
+      process.env.NODE_ENV === 'development'
+        ? `http://localhost:3000/dashboard/company/${companyId}/datev/setup`
+        : `https://taskilo.de/dashboard/company/${companyId}/datev/setup`;
 
     // Validate state timestamp (should not be older than 10 minutes)
     const stateTime = parseInt(timestamp);
