@@ -273,24 +273,16 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">E-Rechnungen</h2>
-          <p className="text-gray-600 mt-1">
-            ZUGFeRD und XRechnung konforme elektronische Rechnungen erstellen und verwalten
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowSettings(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            Einstellungen
-          </Button>
-          <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-            <FileText className="h-4 w-4 mr-2" />
-            Neue E-Rechnung
-          </Button>
-        </div>
+      {/* Action Bar */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" onClick={() => setShowSettings(true)}>
+          <Settings className="h-4 w-4 mr-2" />
+          Einstellungen
+        </Button>
+        <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
+          <FileText className="h-4 w-4 mr-2" />
+          Neue E-Rechnung
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
