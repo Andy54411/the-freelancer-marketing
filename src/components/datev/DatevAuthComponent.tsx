@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 import {
   FiExternalLink,
   FiCheck,
@@ -76,11 +78,12 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     try {
       setLoading(true);
 
-      // First check if we have a stored token
-      const token = DatevTokenManager.getUserToken();
+      // Check if we have stored tokens in Firestore for this company
+      const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
+      const tokenDoc = await getDoc(tokenDocRef);
 
-      if (!token) {
-        console.log('No DATEV token found');
+      if (!tokenDoc.exists()) {
+        console.log('No DATEV tokens found for company:', companyId);
         setConnection({
           isConnected: false,
           features: {
@@ -92,6 +95,41 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         });
         return;
       }
+
+      const tokenData = tokenDoc.data();
+
+      // Check if token is expired
+      const now = new Date();
+      const expiresAt = tokenData.expires_at?.toDate();
+
+      if (expiresAt && now > expiresAt) {
+        console.log('DATEV token expired for company:', companyId);
+        setConnection({
+          isConnected: false,
+          features: {
+            accountingData: false,
+            documents: false,
+            masterData: false,
+            cashRegister: false,
+          },
+        });
+        return;
+      }
+
+      // Store token in localStorage for API calls
+      DatevTokenManager.storeUserToken({
+        access_token: tokenData.access_token,
+        token_type: tokenData.token_type || 'Bearer',
+        expires_in: tokenData.expires_in || 3600,
+        refresh_token: tokenData.refresh_token,
+        scope: tokenData.scope || '',
+        user: {
+          id: companyId,
+          email: '',
+          name: 'DATEV User',
+          created_at: tokenData.connected_at?.toDate()?.toISOString() || new Date().toISOString(),
+        },
+      });
 
       // Validate the token by trying to fetch organizations
       try {

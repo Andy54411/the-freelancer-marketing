@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, validateSandboxClientPermissions } from '@/lib/datev-config';
 import { retrievePKCEData } from '@/lib/pkce-storage';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 /**
  * DATEV OAuth Callback Handler
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Store tokens securely for the company
-      // TODO: Implement secure token storage in database
+      await storeTokensForCompany(companyId, tokenData);
 
       console.log('DATEV token exchange successful for company:', companyId);
 
@@ -217,4 +219,50 @@ export async function OPTIONS() {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
+}
+
+/**
+ * Store DATEV tokens securely in Firestore for the company
+ */
+async function storeTokensForCompany(companyId: string, tokenData: any) {
+  try {
+    console.log('Storing DATEV tokens for company:', companyId);
+
+    // Calculate expiration timestamp
+    const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
+
+    // Store tokens in company's DATEV subcollection
+    const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
+
+    await setDoc(tokenDocRef, {
+      access_token: tokenData.access_token,
+      token_type: tokenData.token_type || 'Bearer',
+      expires_in: tokenData.expires_in || 3600,
+      expires_at: expiresAt,
+      refresh_token: tokenData.refresh_token || null,
+      scope: tokenData.scope || '',
+      connected_at: serverTimestamp(),
+      last_updated: serverTimestamp(),
+      is_active: true,
+    });
+
+    // Also store connection status in company document
+    const companyDocRef = doc(db, 'companies', companyId);
+    await setDoc(
+      companyDocRef,
+      {
+        datev: {
+          connected: true,
+          connected_at: serverTimestamp(),
+          status: 'active',
+        },
+      },
+      { merge: true }
+    );
+
+    console.log('DATEV tokens stored successfully for company:', companyId);
+  } catch (error) {
+    console.error('Failed to store DATEV tokens:', error);
+    throw new Error('Failed to store authentication tokens');
+  }
 }
