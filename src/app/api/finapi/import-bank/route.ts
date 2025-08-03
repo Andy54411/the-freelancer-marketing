@@ -69,12 +69,12 @@ export async function POST(req: NextRequest) {
     });
 
     const usersApi = new UsersApi(configuration);
-    
+
     // Use Firebase UID as finAPI user ID with prefix to ensure uniqueness
     const finapiUserId = `taskilo_${userId}`;
     const userCredentials = {
       id: finapiUserId,
-      password: `secure_${userId}_${Date.now()}`, // Unique password per user
+      password: `taskilo_secure_${userId}`, // Fixed password per user - consistent for repeated access
       email: `user_${userId}@taskilo.de`,
       phone: '+49123456789',
       isAutoUpdateEnabled: true,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         userCredentials.id,
         userCredentials.password
       );
-      
+
       userAccessToken = userTokenResponse.accessToken;
       console.log('✅ User access token obtained for:', finapiUserId);
     } catch (userError: any) {
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       const webFormResponse = await fetch(`${baseUrl}/api/webForms/bankConnectionImport`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${userAccessToken}`,
+          Authorization: `Bearer ${userAccessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(webFormRequest),
@@ -142,7 +142,9 @@ export async function POST(req: NextRequest) {
 
       if (!webFormResponse.ok) {
         const errorData = await webFormResponse.json();
-        throw new Error(`WebForm creation failed: ${errorData.errors?.[0]?.message || 'Unknown error'}`);
+        throw new Error(
+          `WebForm creation failed: ${errorData.errors?.[0]?.message || 'Unknown error'}`
+        );
       }
 
       const webFormData = await webFormResponse.json();
@@ -165,8 +167,8 @@ export async function POST(req: NextRequest) {
             '1. User zur webForm.url weiterleiten',
             '2. User authentifiziert sich bei seiner Bank',
             '3. Callback wird nach Abschluss aufgerufen',
-            '4. Bank-Verbindung ist dann verfügbar'
-          ]
+            '4. Bank-Verbindung ist dann verfügbar',
+          ],
         },
         debug_info: {
           environment: credentialType,
@@ -174,7 +176,6 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       });
-
     } catch (webFormError: any) {
       console.error('❌ Web Form creation failed:', webFormError);
       return NextResponse.json(
@@ -186,7 +187,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
   } catch (error: any) {
     console.error('Bank connection web form error:', error);
     return NextResponse.json(
