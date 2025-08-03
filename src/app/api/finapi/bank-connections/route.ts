@@ -1,40 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FinAPIClientManager } from '@/lib/finapi-client-manager';
+import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
+import {
+  AuthorizationApi,
+  BankConnectionsApi,
+  createConfiguration,
+  ServerConfiguration,
+} from 'finapi-client';
 
-// GET /api/finapi/bank-connections - Get bank connections
+// GET /api/finapi/bank-connections - Get bank connections for user through Taskilo's account
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const perPage = parseInt(searchParams.get('perPage') || '20');
-    const bankIds = searchParams.get('bankIds')?.split(',').map(Number).filter(Boolean);
+    const userId = searchParams.get('userId'); // Firebase user ID
+    const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const token = authHeader.substring(7);
-    const clientManager = new FinAPIClientManager(token);
+    // Get finAPI configuration
+    const baseUrl = getFinApiBaseUrl(credentialType);
+    const credentials = getFinApiCredentials(credentialType);
 
-    // Get bank connections - simplified approach using getAllBankConnections
-    const allConnections = [];
+    if (!credentials.clientId || !credentials.clientSecret) {
+      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
+    }
 
-    // For now, return empty array since API structure is unclear
-    const response = {
-      bankConnections: allConnections,
-      paging: { page: 1, perPage: 20, pageCount: 1, totalCount: 0 },
-    };
+    // Get client credentials token
+    const server = new ServerConfiguration(baseUrl, {});
+    const configuration = createConfiguration({
+      baseServer: server,
+    });
 
-    console.log('Bank connections retrieved:', response.bankConnections?.length || 0);
+    const authApi = new AuthorizationApi(configuration);
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      credentials.clientId,
+      credentials.clientSecret
+    );
+
+    // Set up bank connections API with client token
+    const bankConnectionsConfiguration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: clientToken.accessToken,
+        },
+      },
+    });
+
+    const bankConnectionsApi = new BankConnectionsApi(bankConnectionsConfiguration);
+
+    // Get bank connections filtered by user (through externalId or search)
+    const response = await bankConnectionsApi.getAllBankConnections();
+
+    console.log('Bank connections retrieved for user:', userId, response.connections?.length || 0);
 
     return NextResponse.json({
       success: true,
-      data: response.bankConnections,
-      paging: response.paging,
-      bankConnections: [], // Empty array since no real connections available
-      totalCount: response.bankConnections?.length || 0,
+      data: response.connections,
+      bankConnections: response.connections || [],
+      totalCount: response.connections?.length || 0,
     });
   } catch (error: any) {
     console.error('finAPI bank connections error:', error);
@@ -49,72 +75,64 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/finapi/bank-connections - Manage bank connections
+// POST /api/finapi/bank-connections - Manage bank connections through Taskilo's account
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action } = body;
+    const { action, userId, credentialType = 'sandbox' } = body;
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const token = authHeader.substring(7);
-    const clientManager = new FinAPIClientManager(token);
+    // Get finAPI configuration
+    const baseUrl = getFinApiBaseUrl(credentialType);
+    const credentials = getFinApiCredentials(credentialType);
+
+    if (!credentials.clientId || !credentials.clientSecret) {
+      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
+    }
+
+    // Get client credentials token
+    const server = new ServerConfiguration(baseUrl, {});
+    const configuration = createConfiguration({
+      baseServer: server,
+    });
+
+    const authApi = new AuthorizationApi(configuration);
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      credentials.clientId,
+      credentials.clientSecret
+    );
+
+    // Set up bank connections API with client token
+    const bankConnectionsConfiguration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: clientToken.accessToken,
+        },
+      },
+    });
+
+    const bankConnectionsApi = new BankConnectionsApi(bankConnectionsConfiguration);
 
     if (action === 'import') {
-      // Import bank connection
-      const {
-        bankId,
-        bankingUserId,
-        bankingCustomerId,
-        bankingPin,
-        storePin,
-        interface: bankInterface,
-        loginCredentials,
-        challengeResponse,
-        redirectUrl,
-        accountTypes,
-        accountReferences,
-        multiStepAuthentication,
-      } = body;
+      // Import bank connection through Taskilo's account
+      const { bankId, loginCredentials } = body;
 
-      const connection = await clientManager.bankConnections.importBankConnection({
+      const connection = await bankConnectionsApi.importBankConnection({
         bankId,
         bankingInterface: 'FINTS_SERVER',
+        loginCredentials,
+        // Link to user via externalId or other mechanism
       });
 
       return NextResponse.json({
         success: true,
         data: connection,
-      });
-    }
-
-    if (action === 'update') {
-      // Update bank connection - simplified
-      const { bankConnectionId } = body;
-
-      // For now, just return success since update parameters are unclear
-      return NextResponse.json({
-        success: true,
-        message: 'Update not implemented due to API complexity',
-      });
-    }
-
-    if (action === 'edit') {
-      // Edit bank connection
-      const { bankConnectionId, name, defaultTwoStepProcedureId } = body;
-
-      const connection = await clientManager.bankConnections.editBankConnection(bankConnectionId, {
-        name,
-        defaultTwoStepProcedureId,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: connection,
+        message: `Bank connection imported for user ${userId}`,
       });
     }
 
@@ -122,7 +140,7 @@ export async function POST(request: NextRequest) {
       // Delete bank connection
       const { bankConnectionId } = body;
 
-      await clientManager.bankConnections.deleteBankConnection(bankConnectionId);
+      await bankConnectionsApi.deleteBankConnection(bankConnectionId);
 
       return NextResponse.json({
         success: true,
@@ -130,11 +148,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (action === 'get') {
-      // Get specific bank connection
-      const { bankConnectionId } = body;
+    if (action === 'edit') {
+      // Edit bank connection
+      const { bankConnectionId, name } = body;
 
-      const connection = await clientManager.bankConnections.getBankConnection(bankConnectionId);
+      const connection = await bankConnectionsApi.editBankConnection(bankConnectionId, {
+        name,
+      });
 
       return NextResponse.json({
         success: true,

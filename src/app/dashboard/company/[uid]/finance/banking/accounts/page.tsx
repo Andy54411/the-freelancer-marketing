@@ -20,57 +20,27 @@ export default function BankingAccountsPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
 
-  // Check for existing finAPI token on component mount
+  // Load accounts on component mount - no token needed for B2B architecture
   useEffect(() => {
-    const checkFinAPIToken = () => {
-      const token = FinAPITokenManager.getUserToken();
-      if (token) {
-        console.log('finAPI token found, loading real banking data');
-        setHasFinAPIToken(true);
-      } else {
-        console.log('No finAPI token found, user needs to complete setup');
-        setHasFinAPIToken(false);
-      }
-    };
-
-    checkFinAPIToken();
-  }, []);
+    if (user?.uid) {
+      loadFinAPIAccounts();
+    }
+  }, [user]);
 
   const loadFinAPIAccounts = async () => {
     try {
-      // Check if user has finAPI token
-      const token = FinAPITokenManager.getUserToken();
-      if (!token) {
-        console.log('No finAPI token found, user needs to complete setup');
+      if (!user?.uid) {
+        console.log('No user found, cannot load accounts');
         setAccounts([]);
         return;
       }
 
-      console.log('Loading finAPI accounts for user:', token.user_email);
+      console.log('Loading finAPI accounts for user:', user.uid);
 
-      // First, get debug info
-      const debugResponse = await fetch('/api/finapi/debug', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (debugResponse.ok) {
-        const debugData = await debugResponse.json();
-        setDebugInfo(debugData);
-        console.log('finAPI Debug Info:', debugData);
-      }
-
-      // Call our accounts API with user token
-      const response = await fetch('/api/finapi/accounts', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Use new B2B API endpoint with user ID parameter
+      const response = await fetch(
+        `/api/finapi/accounts?userId=${user.uid}&credentialType=sandbox`
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -82,20 +52,17 @@ export default function BankingAccountsPage() {
       if (data.success && data.accounts) {
         console.log(`Loaded ${data.accounts.length} finAPI accounts`);
         setAccounts(data.accounts);
+        setDebugInfo({
+          accountsCount: data.accounts?.length || 0,
+          finapiAccounts: data.finapi_accounts || [],
+          totalCount: data.totalCount || 0,
+        });
       } else {
         console.log('No accounts found in finAPI response');
         setAccounts([]);
       }
     } catch (error) {
       console.error('finAPI Accounts Fehler:', error);
-
-      // If token is expired or invalid, clear it
-      if (error instanceof Error && error.message.includes('401')) {
-        FinAPITokenManager.clearUserToken();
-        setHasFinAPIToken(false);
-      }
-
-      // Show empty state for setup
       setAccounts([]);
     }
   };
@@ -115,13 +82,23 @@ export default function BankingAccountsPage() {
 
   const refreshAccounts = async () => {
     setRefreshing(true);
-    await loadAccounts();
+    await loadFinAPIAccounts();
     setRefreshing(false);
   };
 
+  // Load accounts when component mounts or user changes
   useEffect(() => {
-    loadAccounts();
-  }, [hasFinAPIToken]); // Reload when token status changes
+    if (user?.uid) {
+      loadFinAPIAccounts();
+    }
+  }, [user]);
+
+  // Set loading to false after first load attempt
+  useEffect(() => {
+    if (user?.uid) {
+      setLoading(false);
+    }
+  }, [accounts, user]);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {

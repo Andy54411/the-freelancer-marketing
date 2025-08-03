@@ -1,42 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FinAPIClientManager } from '@/lib/finapi-client-manager';
+import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
+import {
+  AuthorizationApi,
+  AccountsApi,
+  createConfiguration,
+  ServerConfiguration,
+} from 'finapi-client';
 import type { BankAccount } from '@/types';
 
-// GET /api/finapi/accounts - Get all accounts for authenticated user
+// GET /api/finapi/accounts - Get all accounts for user through Taskilo's finAPI account
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '20');
-    const bankConnectionIds = searchParams
-      .get('bankConnectionIds')
-      ?.split(',')
-      .map(Number)
-      .filter(Boolean);
+    const userId = searchParams.get('userId'); // Firebase user ID
+    const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const token = authHeader.substring(7);
-    const clientManager = new FinAPIClientManager(token);
+    // Get finAPI configuration
+    const baseUrl = getFinApiBaseUrl(credentialType);
+    const credentials = getFinApiCredentials(credentialType);
 
-    // Get accounts with filters
-    const response = await clientManager.accounts.getAndSearchAllAccounts(
-      undefined, // ids
-      undefined, // search
-      undefined, // accountTypes
-      bankConnectionIds,
-      undefined, // minBalance
-      undefined, // maxBalance
-      page,
-      perPage,
-      undefined // order
+    if (!credentials.clientId || !credentials.clientSecret) {
+      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
+    }
+
+    // Get client credentials token
+    const server = new ServerConfiguration(baseUrl, {});
+    const configuration = createConfiguration({
+      baseServer: server,
+    });
+
+    const authApi = new AuthorizationApi(configuration);
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      credentials.clientId,
+      credentials.clientSecret
     );
 
-    console.log('Accounts retrieved:', response.accounts?.length || 0);
+    // Set up accounts API with client token
+    const accountsConfiguration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: clientToken.accessToken,
+        },
+      },
+    });
+
+    const accountsApi = new AccountsApi(accountsConfiguration);
+
+    // Search accounts by externalId (Firebase user ID)
+    const response = await accountsApi.getAndSearchAllAccounts();
+
+    console.log('Accounts retrieved for user:', userId, response.accounts?.length || 0);
 
     // Transform finAPI accounts to our BankAccount interface
     const transformedAccounts: BankAccount[] =
@@ -44,7 +65,7 @@ export async function GET(request: NextRequest) {
         id: account.id?.toString() || `finapi_${index}`,
         accountName: account.accountName || `Konto ${account.id}`,
         iban: account.iban || '',
-        bankName: `finAPI Bank ${account.id}`,
+        bankName: `Bank ${account.bankConnectionId}`,
         accountNumber: account.accountNumber || '',
         balance: account.balance || 0,
         availableBalance: account.balance || 0,
@@ -87,24 +108,52 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/finapi/accounts - Create or update account
+// POST /api/finapi/accounts - Account operations through Taskilo's finAPI account
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accountId, action } = body;
+    const { accountId, action, userId, credentialType = 'sandbox' } = body;
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const token = authHeader.substring(7);
-    const clientManager = new FinAPIClientManager(token);
+    // Get finAPI configuration
+    const baseUrl = getFinApiBaseUrl(credentialType);
+    const credentials = getFinApiCredentials(credentialType);
+
+    if (!credentials.clientId || !credentials.clientSecret) {
+      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
+    }
+
+    // Get client credentials token
+    const server = new ServerConfiguration(baseUrl, {});
+    const configuration = createConfiguration({
+      baseServer: server,
+    });
+
+    const authApi = new AuthorizationApi(configuration);
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      credentials.clientId,
+      credentials.clientSecret
+    );
+
+    // Set up accounts API with client token
+    const accountsConfiguration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: clientToken.accessToken,
+        },
+      },
+    });
+
+    const accountsApi = new AccountsApi(accountsConfiguration);
 
     if (action === 'delete' && accountId) {
       // Delete account
-      await clientManager.accounts.deleteAccount(accountId);
+      await accountsApi.deleteAccount(accountId);
 
       return NextResponse.json({
         success: true,
@@ -114,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'get' && accountId) {
       // Get specific account
-      const account = await clientManager.accounts.getAccount(accountId);
+      const account = await accountsApi.getAccount(accountId);
 
       return NextResponse.json({
         success: true,
@@ -126,7 +175,7 @@ export async function POST(request: NextRequest) {
       // Edit account
       const { accountName } = body;
 
-      const updatedAccount = await clientManager.accounts.editAccount(accountId, {
+      const updatedAccount = await accountsApi.editAccount(accountId, {
         accountName,
       });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinApiBaseUrl } from '@/lib/finapi-config';
+import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
 import {
+  AuthorizationApi,
   BankConnectionsApi,
   createConfiguration,
   ServerConfiguration,
@@ -8,15 +9,15 @@ import {
 } from 'finapi-client';
 
 /**
- * Import Bank Connection - Creates connection between user and bank
- * This is the missing step to get accounts in finAPI Sandbox
+ * Import Bank Connection - Uses Taskilo's finAPI account to connect user banks
+ * No user needs to create their own finAPI account!
  */
 export async function POST(req: NextRequest) {
   try {
-    const { access_token, bankId, credentials, credentialType = 'sandbox' } = await req.json();
+    const { bankId, userId, credentials, credentialType = 'sandbox' } = await req.json();
 
-    if (!access_token) {
-      return NextResponse.json({ error: 'Access token required' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 401 });
     }
 
     if (!bankId || !credentials) {
@@ -35,42 +36,72 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get correct base URL
+    // Get Taskilo's finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
+    const taskiloCredentials = getFinApiCredentials(credentialType);
 
-    // finAPI SDK Configuration
+    if (!taskiloCredentials.clientId || !taskiloCredentials.clientSecret) {
+      return NextResponse.json(
+        { error: 'Taskilo finAPI credentials not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Step 1: Get Taskilo's client credentials token
     const server = new ServerConfiguration(baseUrl, {});
+    const authConfig = createConfiguration({ baseServer: server });
+    const authApi = new AuthorizationApi(authConfig);
+
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      taskiloCredentials.clientId,
+      taskiloCredentials.clientSecret
+    );
+
+    // Step 2: Use Taskilo's token to import bank for user
     const configuration = createConfiguration({
       baseServer: server,
       authMethods: {
         finapi_auth: {
-          accessToken: access_token,
+          accessToken: clientToken.accessToken,
         },
       },
     });
 
     const bankConnectionsApi = new BankConnectionsApi(configuration);
 
-    console.log(`Importing bank connection for bank ${bankId} with ${credentialType} environment`);
+    console.log(
+      `Importing bank connection for user ${userId} with bank ${bankId} using Taskilo's finAPI account`
+    );
 
-    // Import bank connection using finAPI SDK
+    // Import bank connection using Taskilo's finAPI account
     const importRequest = {
       bankId: bankId,
-      bankingInterface: 'FINTS_SERVER' as BankingInterface, // Type assertion for banking interface
+      bankingInterface: 'FINTS_SERVER' as BankingInterface,
       loginCredentials: credentials.loginCredentials || credentials,
-      storeSecrets: true, // Store credentials for automatic updates
-      skipPositionsDownload: false, // Download account positions
-      loadOwnerData: true, // Load account owner information
+      storeSecrets: true,
+      skipPositionsDownload: false,
+      loadOwnerData: true,
+      // Store user reference for later identification
+      externalId: userId, // Use Firebase UID as external ID
     };
 
     const importResponse = await bankConnectionsApi.importBankConnection(importRequest);
 
-    console.log('Bank connection import started:', importResponse.id);
+    console.log(
+      'Bank connection import started for user:',
+      userId,
+      'Connection ID:',
+      importResponse.id
+    );
 
-    // Return success response
+    // Store connection mapping in our database (you might want to save this to Firestore)
+    // TODO: Save to Firestore: { userId, connectionId: importResponse.id, bankId, timestamp }
+
     return NextResponse.json({
       success: true,
       message: 'Bank connection import started successfully',
+      userId: userId,
       bankConnection: {
         id: importResponse.id,
         bankId: importResponse.bank?.id,

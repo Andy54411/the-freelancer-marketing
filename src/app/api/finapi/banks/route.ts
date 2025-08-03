@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FinAPIClientManager } from '@/lib/finapi-client-manager';
+import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
+import {
+  AuthorizationApi,
+  BanksApi,
+  createConfiguration,
+  ServerConfiguration,
+} from 'finapi-client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,18 +14,44 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '20');
     const includeTestBanks = searchParams.get('includeTestBanks') === 'true';
+    const credentialType = (searchParams.get('credentialType') || 'sandbox') as 'sandbox' | 'admin';
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    // Get Taskilo's finAPI credentials
+    const baseUrl = getFinApiBaseUrl(credentialType);
+    const taskiloCredentials = getFinApiCredentials(credentialType);
+
+    if (!taskiloCredentials.clientId || !taskiloCredentials.clientSecret) {
+      return NextResponse.json(
+        { error: 'Taskilo finAPI credentials not configured' },
+        { status: 500 }
+      );
     }
 
-    const token = authHeader.substring(7);
-    const clientManager = new FinAPIClientManager(token);
+    // Get Taskilo's client credentials token
+    const server = new ServerConfiguration(baseUrl, {});
+    const authConfig = createConfiguration({ baseServer: server });
+    const authApi = new AuthorizationApi(authConfig);
+
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      taskiloCredentials.clientId,
+      taskiloCredentials.clientSecret
+    );
+
+    // Use Taskilo's token to search banks
+    const configuration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: clientToken.accessToken,
+        },
+      },
+    });
+
+    const banksApi = new BanksApi(configuration);
 
     // Search banks with all parameters
-    const response = await clientManager.banks.getAndSearchAllBanks(
+    const response = await banksApi.getAndSearchAllBanks(
       undefined, // ids
       search || 'demo', // search term - default to demo for sandbox
       undefined, // isSupported
@@ -67,23 +99,48 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bankId } = body;
+    const { bankId, credentialType = 'sandbox' } = body;
 
     if (!bankId) {
       return NextResponse.json({ success: false, error: 'Bank ID is required' }, { status: 400 });
     }
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    // Get Taskilo's finAPI credentials
+    const baseUrl = getFinApiBaseUrl(credentialType as 'sandbox' | 'admin');
+    const taskiloCredentials = getFinApiCredentials(credentialType as 'sandbox' | 'admin');
+
+    if (!taskiloCredentials.clientId || !taskiloCredentials.clientSecret) {
+      return NextResponse.json(
+        { error: 'Taskilo finAPI credentials not configured' },
+        { status: 500 }
+      );
     }
 
-    const token = authHeader.substring(7);
-    const clientManager = new FinAPIClientManager(token);
+    // Get Taskilo's client credentials token
+    const server = new ServerConfiguration(baseUrl, {});
+    const authConfig = createConfiguration({ baseServer: server });
+    const authApi = new AuthorizationApi(authConfig);
+
+    const clientToken = await authApi.getToken(
+      'client_credentials',
+      taskiloCredentials.clientId,
+      taskiloCredentials.clientSecret
+    );
+
+    // Use Taskilo's token to get bank details
+    const configuration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: clientToken.accessToken,
+        },
+      },
+    });
+
+    const banksApi = new BanksApi(configuration);
 
     // Get specific bank details
-    const bank = await clientManager.banks.getBank(bankId);
+    const bank = await banksApi.getBank(bankId);
 
     return NextResponse.json({
       success: true,
