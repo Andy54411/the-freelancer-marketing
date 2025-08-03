@@ -1,17 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getFinApiBaseUrl } from '@/lib/finapi-config';
 import { TransactionsApi, createConfiguration, ServerConfiguration } from 'finapi-client';
 
-async function handleFinAPITransactionsRequest(token: string, searchParams?: URLSearchParams) {
+interface Transaction {
+  id: string;
+  amount: number;
+  currency: string;
+  purpose: string;
+  counterpartName: string;
+  counterpartIban: string;
+  bankBookingDate: string;
+  valueDate: string;
+  finapiBookingDate: string;
+  accountId: string;
+  categoryId?: number;
+  categoryName?: string;
+  isNew: boolean;
+}
+
+async function handleFinAPITransactionsRequest(
+  token: string,
+  searchParams?: URLSearchParams,
+  credentialType: 'sandbox' | 'admin' = 'sandbox'
+) {
   try {
     // Extract query parameters
-    const accountIds = searchParams?.get('accountIds') || undefined;
+    const accountIds = searchParams?.get('accountIds')?.split(',') || undefined;
     const minBankBookingDate = searchParams?.get('minBankBookingDate') || undefined;
     const maxBankBookingDate = searchParams?.get('maxBankBookingDate') || undefined;
     const page = parseInt(searchParams?.get('page') || '1');
-    const perPage = parseInt(searchParams?.get('perPage') || '20');
+    const perPage = parseInt(searchParams?.get('perPage') || '50');
+
+    // Get correct base URL
+    const baseUrl = getFinApiBaseUrl(credentialType);
 
     // finAPI SDK Configuration
-    const server = new ServerConfiguration('https://sandbox.finapi.io', {});
+    const server = new ServerConfiguration(baseUrl, {});
     const configuration = createConfiguration({
       baseServer: server,
       authMethods: {
@@ -23,9 +47,9 @@ async function handleFinAPITransactionsRequest(token: string, searchParams?: URL
 
     const transactionsApi = new TransactionsApi(configuration);
 
-    console.log('Using finAPI SDK for transactions request');
+    console.log(`Using finAPI SDK for transactions request with ${credentialType} environment`);
 
-    // finAPI Transactions Request mit SDK
+    // finAPI Transactions Request mit SDK (using correct SDK syntax)
     const transactionsResponse = await transactionsApi.getAndSearchAllTransactions(
       'userView', // view - REQUIRED parameter
       undefined, // ids
@@ -33,7 +57,7 @@ async function handleFinAPITransactionsRequest(token: string, searchParams?: URL
       undefined, // counterpart
       undefined, // purpose
       undefined, // currency
-      accountIds?.split(',').map(id => parseInt(id)), // accountIds
+      accountIds?.map(id => parseInt(id)), // accountIds as number array
       minBankBookingDate, // minBankBookingDate
       maxBankBookingDate, // maxBankBookingDate
       undefined, // minFinapiBookingDate
@@ -50,12 +74,40 @@ async function handleFinAPITransactionsRequest(token: string, searchParams?: URL
       undefined, // minImportDate
       undefined, // maxImportDate
       page, // page
-      perPage // perPage
+      perPage, // perPage
+      ['bankBookingDate,desc'] // order - most recent first
     );
 
-    console.log('finAPI SDK transactions request successful');
+    console.log(
+      'finAPI SDK transactions request successful, transactions found:',
+      transactionsResponse.transactions?.length || 0
+    );
 
-    return NextResponse.json(transactionsResponse);
+    // Transform finAPI transactions to our format
+    const transformedTransactions: Transaction[] =
+      transactionsResponse.transactions?.map(transaction => ({
+        id: transaction.id?.toString() || '',
+        amount: transaction.amount || 0,
+        currency: transaction.currency || 'EUR',
+        purpose: transaction.purpose || 'Keine Beschreibung',
+        counterpartName: transaction.counterpartName || 'Unbekannt',
+        counterpartIban: transaction.counterpartIban || '',
+        bankBookingDate: transaction.bankBookingDate || '',
+        valueDate: transaction.valueDate || '',
+        finapiBookingDate: transaction.finapiBookingDate || '',
+        accountId: transaction.accountId?.toString() || '',
+        categoryId: transaction.category?.id,
+        categoryName: transaction.category?.name,
+        isNew: transaction.isNew || false,
+      })) || [];
+
+    return NextResponse.json({
+      success: true,
+      transactions: transformedTransactions,
+      total: transactionsResponse.transactions?.length || 0,
+      paging: transactionsResponse.paging,
+      finapi_raw: transactionsResponse, // For debugging
+    });
   } catch (error) {
     console.error('finAPI SDK transactions error:', error);
 
@@ -84,21 +136,23 @@ export async function GET(req: NextRequest) {
 
   const token = authHeader.substring(7);
   const url = new URL(req.url);
+  const credentialType =
+    (url.searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
 
-  return handleFinAPITransactionsRequest(token, url.searchParams);
+  return handleFinAPITransactionsRequest(token, url.searchParams, credentialType);
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { access_token } = body;
+    const { access_token, credentialType = 'sandbox' } = body;
 
     if (!access_token) {
       return NextResponse.json({ error: 'Access token required in request body' }, { status: 401 });
     }
 
     const url = new URL(req.url);
-    return handleFinAPITransactionsRequest(access_token, url.searchParams);
+    return handleFinAPITransactionsRequest(access_token, url.searchParams, credentialType);
   } catch (error) {
     console.error('POST finAPI transactions error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });

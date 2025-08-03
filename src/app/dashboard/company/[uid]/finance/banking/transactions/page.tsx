@@ -1,244 +1,151 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { BankTransaction, BankAccount } from '@/types';
-import { Search, Download, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  CreditCard,
+  ArrowUpRight,
+  ArrowDownRight,
+  DollarSign,
+  AlertCircle,
+} from 'lucide-react';
+import { FinAPITokenManager } from '@/lib/finapi-token-manager';
 
-export default function BankingTransactionsPage() {
-  const params = useParams();
-  const _searchParams = useSearchParams();
-  const { user } = useAuth();
-  const uid = typeof params?.uid === 'string' ? params.uid : '';
+interface Transaction {
+  id: string;
+  accountId: string;
+  amount: number;
+  currency: string;
+  purpose: string;
+  counterpartName?: string;
+  counterpartIban?: string;
+  bookingDate: string;
+  valueDate: string;
+  transactionType: 'CREDIT' | 'DEBIT';
+  category?: string;
+  isReconciled: boolean;
+  isPending: boolean;
+}
 
-  const [transactions, setTransactions] = useState<BankTransaction[]>([]);
+interface BankAccount {
+  id: string;
+  accountName: string;
+  iban: string;
+  bankName: string;
+  accountNumber: string;
+  balance: number;
+  availableBalance: number;
+  currency: string;
+  accountType: string;
+  isDefault: boolean;
+}
+
+export default function TransactionsPage() {
+  // State Management
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAccount, setSelectedAccount] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<string>('30');
+  const [error, setError] = useState<string | null>(null);
 
-  // finAPI Authentication über Backend
-  const authenticateFinAPI = async (): Promise<string | null> => {
+  // Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [dateRange, setDateRange] = useState('30');
+
+  // Load Transactions from finAPI
+  const loadTransactions = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch('/api/finapi/auth', {
-        method: 'POST',
+      if (!FinAPITokenManager.isUserAuthenticated()) {
+        setError('Sie sind nicht bei finAPI angemeldet. Bitte verbinden Sie zuerst Ihr Bankkonto.');
+        return;
+      }
+
+      // Load Transactions from finAPI
+      const authHeader = FinAPITokenManager.getAuthHeader();
+      if (!authHeader) {
+        throw new Error('Keine Authentifizierung gefunden');
+      }
+
+      const transactionsResponse = await fetch('/api/finapi/transactions', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: authHeader,
         },
-        body: JSON.stringify({ credentialType: 'sandbox' }),
       });
 
-      if (!response.ok) {
-        throw new Error('Authentication failed');
+      if (!transactionsResponse.ok) {
+        throw new Error(`Fehler beim Laden der Transaktionen: ${transactionsResponse.status}`);
       }
 
-      const data = await response.json();
-      return data.access_token;
-    } catch (error) {
-      console.error('Fehler bei finAPI Authentication:', error);
-      return null;
-    }
-  };
+      const transactionsData = await transactionsResponse.json();
+      console.log('finAPI Transactions Response:', transactionsData);
 
-  const loadTransactions = async () => {
-    try {
-      setLoading(true);
+      // Load Accounts from finAPI
+      const accountsResponse = await fetch('/api/finapi/accounts', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+      });
 
-      // Authentifizierung über Backend
-      const token = await authenticateFinAPI();
-      if (!token) {
-        throw new Error('Failed to authenticate with finAPI');
+      if (!accountsResponse.ok) {
+        throw new Error(`Fehler beim Laden der Konten: ${accountsResponse.status}`);
       }
 
-      // Konten und Transaktionen über Backend API laden
-      const [accountsResponse, transactionsResponse] = await Promise.all([
-        fetch('/api/finapi/accounts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            access_token: token,
-          }),
-        }),
-        fetch('/api/finapi/transactions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            access_token: token,
-          }),
-        }),
-      ]);
+      const accountsData = await accountsResponse.json();
+      console.log('finAPI Accounts Response:', accountsData);
 
-      if (!accountsResponse.ok || !transactionsResponse.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const [finAPIAccountResponse, finAPITransactionResponse] = await Promise.all([
-        accountsResponse.json(),
-        transactionsResponse.json(),
-      ]);
-
-      // Convert finAPI data to our interface format
-      const convertedTransactions: BankTransaction[] =
-        finAPITransactionResponse.transactions?.map(
-          (tx: {
-            id?: number;
-            accountId?: number;
-            amount?: number;
-            purpose?: string;
-            counterpartName?: string;
-            counterpartIban?: string;
-            bankBookingDate?: string;
-            valueDate?: string;
-            category?: { name?: string };
-            isNew?: boolean;
-          }) => ({
-            id: tx.id?.toString() || 'unknown',
-            accountId: tx.accountId?.toString() || 'unknown',
-            amount: tx.amount || 0,
-            currency: 'EUR', // Default currency
-            purpose: tx.purpose || 'Keine Beschreibung',
-            counterpartName: tx.counterpartName || '',
-            counterpartIban: tx.counterpartIban || '',
-            bookingDate: tx.bankBookingDate || new Date().toISOString(),
-            valueDate: tx.valueDate || new Date().toISOString(),
-            transactionType: (tx.amount || 0) >= 0 ? 'CREDIT' : 'DEBIT',
-            category: tx.category?.name || 'Sonstiges',
-            isReconciled: false,
-            isPending: tx.isNew || false,
-          })
-        ) || [];
+      // Transform finAPI data to our interface
+      const convertedTransactions: Transaction[] =
+        transactionsData.transactions?.map((tx: any) => ({
+          id: tx.id?.toString() || `tx_${Date.now()}_${Math.random()}`,
+          accountId: tx.accountId?.toString() || '',
+          amount: tx.amount || 0,
+          currency: tx.currency || 'EUR',
+          purpose: tx.purpose || tx.transactionCode || 'Keine Beschreibung',
+          counterpartName: tx.counterpartName || tx.counterpart?.name || 'Unbekannt',
+          counterpartIban: tx.counterpartIban || tx.counterpart?.iban || '',
+          bookingDate:
+            tx.bankBookingDate || tx.finapiBookingDate || new Date().toISOString().split('T')[0],
+          valueDate: tx.valueDate || tx.bankBookingDate || new Date().toISOString().split('T')[0],
+          transactionType: (tx.amount || 0) >= 0 ? 'CREDIT' : 'DEBIT',
+          category: tx.category?.name || tx.mcCategory || 'Sonstige',
+          isReconciled: tx.isAdjustingEntry === false,
+          isPending: tx.isPending || false,
+        })) || [];
 
       const convertedAccounts: BankAccount[] =
-        finAPIAccountResponse.accounts?.map(
-          (acc: {
-            id?: number;
-            accountName?: string;
-            balance?: number;
-            currency?: string;
-            accountTypeId?: number;
-            isNew?: boolean;
-            iban?: string;
-            bankName?: string;
-            accountNumber?: string;
-            availableFunds?: number;
-            accountCurrency?: string;
-          }) => ({
-            id: acc.id?.toString() || 'unknown',
-            accountName: acc.accountName || 'Unbekanntes Konto',
-            iban: acc.iban || '',
-            bankName: acc.bankName || 'Unbekannte Bank',
-            accountNumber: acc.accountNumber || '',
-            balance: acc.balance || 0,
-            availableBalance: acc.availableFunds || acc.balance || 0,
-            currency: acc.accountCurrency || 'EUR',
-            accountType: 'CHECKING',
-            isDefault: false,
-          })
-        ) || [];
+        accountsData.accounts?.map((acc: any) => ({
+          id: acc.id?.toString() || `acc_${Date.now()}_${Math.random()}`,
+          accountName: acc.accountName || acc.name || `Konto ${acc.accountNumber || acc.iban}`,
+          iban: acc.iban || '',
+          bankName: acc.bankName || 'Unbekannte Bank',
+          accountNumber: acc.accountNumber || '',
+          balance: acc.balance || 0,
+          availableBalance: acc.availableFunds || acc.balance || 0,
+          currency: acc.accountCurrency || 'EUR',
+          accountType: 'CHECKING',
+          isDefault: false,
+        })) || [];
 
       setTransactions(convertedTransactions);
       setAccounts(convertedAccounts);
     } catch (error) {
       console.error('Fehler beim Laden der Transaktionen:', error);
-      // Fallback auf Mock-Daten bei Fehler
-      setAccounts([
-        {
-          id: 'mock_001',
-          accountName: 'Geschäftskonto',
-          iban: 'DE89 3704 0044 0532 0130 00',
-          bankName: 'Deutsche Bank AG',
-          accountNumber: '0532013000',
-          balance: 25750.5,
-          availableBalance: 25750.5,
-          currency: 'EUR',
-          accountType: 'CHECKING',
-          isDefault: true,
-        },
-      ]);
-      setTransactions([
-        {
-          id: 'txn_001',
-          accountId: 'mock_001',
-          amount: -250.0,
-          currency: 'EUR',
-          purpose: 'Büromaterial Online-Shop',
-          counterpartName: 'Amazon Business',
-          counterpartIban: 'DE12 3456 7890 1234 5678 90',
-          bookingDate: '2025-08-01',
-          valueDate: '2025-08-01',
-          transactionType: 'DEBIT',
-          category: 'Büroausstattung',
-          isReconciled: false,
-          isPending: false,
-        },
-        {
-          id: 'txn_002',
-          accountId: 'mock_001',
-          amount: 1500.0,
-          currency: 'EUR',
-          purpose: 'Rechnung INV-2025-001',
-          counterpartName: 'Musterfirma GmbH',
-          counterpartIban: 'DE98 7654 3210 9876 5432 10',
-          bookingDate: '2025-07-30',
-          valueDate: '2025-07-30',
-          transactionType: 'CREDIT',
-          category: 'Umsatzerlöse',
-          isReconciled: true,
-          isPending: false,
-        },
-        {
-          id: 'txn_003',
-          accountId: 'mock_001',
-          amount: -89.99,
-          currency: 'EUR',
-          purpose: 'Tankstelle Automat',
-          counterpartName: 'Shell Deutschland',
-          bookingDate: '2025-07-29',
-          valueDate: '2025-07-29',
-          transactionType: 'DEBIT',
-          category: 'Fahrtkosten',
-          isReconciled: false,
-          isPending: false,
-        },
-        {
-          id: 'txn_004',
-          accountId: 'mock_001',
-          amount: 2500.0,
-          currency: 'EUR',
-          purpose: 'Projektabrechnung Q3',
-          counterpartName: 'Großkunde AG',
-          counterpartIban: 'DE11 2222 3333 4444 5555 66',
-          bookingDate: '2025-07-28',
-          valueDate: '2025-07-28',
-          transactionType: 'CREDIT',
-          category: 'Umsatzerlöse',
-          isReconciled: true,
-          isPending: false,
-        },
-        {
-          id: 'txn_005',
-          accountId: 'mock_001',
-          amount: -1200.0,
-          currency: 'EUR',
-          purpose: 'Miete Büroräume August',
-          counterpartName: 'Immobilien Partner',
-          counterpartIban: 'DE77 8888 9999 0000 1111 22',
-          bookingDate: '2025-07-27',
-          valueDate: '2025-08-01',
-          transactionType: 'DEBIT',
-          category: 'Miete',
-          isReconciled: true,
-          isPending: false,
-        },
-      ]);
+      setError('Fehler beim Laden der finAPI Daten. Bitte versuchen Sie es später erneut.');
     } finally {
       setLoading(false);
     }
@@ -254,6 +161,7 @@ export default function BankingTransactionsPage() {
     loadTransactions();
   }, []);
 
+  // Utility Functions
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
@@ -282,7 +190,6 @@ export default function BankingTransactionsPage() {
     const matchesSearch =
       transaction.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.counterpartName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      false ||
       transaction.amount.toString().includes(searchTerm);
 
     const matchesAccount = selectedAccount === 'all' || transaction.accountId === selectedAccount;
@@ -294,12 +201,42 @@ export default function BankingTransactionsPage() {
   // Get unique categories
   const categories = [...new Set(transactions.map(t => t.category).filter(Boolean))];
 
+  // Calculate summary statistics
+  const totalIncome = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = transactions
+    .filter(t => t.amount < 0)
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+
+  // Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin text-[#14ad9f] mx-auto mb-4" />
           <p className="text-gray-600">Transaktionen werden geladen...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Fehler beim Laden</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={loadTransactions}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Erneut versuchen
+          </button>
         </div>
       </div>
     );
@@ -327,6 +264,65 @@ export default function BankingTransactionsPage() {
               <Download className="h-4 w-4 mr-2" />
               Exportieren
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ArrowUpRight className="h-6 w-6 text-green-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Einnahmen (30 Tage)
+                  </dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {formatCurrency(totalIncome)}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ArrowDownRight className="h-6 w-6 text-red-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Ausgaben (30 Tage)</dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {formatCurrency(totalExpenses)}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <DollarSign className="h-6 w-6 text-[#14ad9f]" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Gesamtsaldo</dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {formatCurrency(totalBalance)}
+                  </dd>
+                </dl>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -453,6 +449,7 @@ export default function BankingTransactionsPage() {
         </ul>
       </div>
 
+      {/* Empty State */}
       {filteredTransactions.length === 0 && (
         <div className="text-center py-12">
           <div className="flex flex-col items-center">

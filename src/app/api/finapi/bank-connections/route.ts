@@ -2,22 +2,87 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFinApiBaseUrl } from '@/lib/finapi-config';
 import { BankConnectionsApi, createConfiguration, ServerConfiguration } from 'finapi-client';
 
+interface BankConnectionRequest {
+  access_token: string;
+  bankId: number;
+  bankingUserId: string;
+  bankingPin: string;
+  credentialType?: 'sandbox' | 'admin';
+}
+
 // Create a new bank connection for a user
 export async function POST(req: NextRequest) {
   try {
-    const { access_token } = await req.json();
+    const {
+      access_token,
+      bankId,
+      bankingUserId,
+      bankingPin,
+      credentialType = 'sandbox',
+    }: BankConnectionRequest = await req.json();
 
     if (!access_token) {
       return NextResponse.json({ error: 'Access token required in request body' }, { status: 401 });
     }
 
-    // For now, return a mock success response as bank connection setup is complex
-    // In a real implementation, you would use WebForm flow or other finAPI connection methods
+    if (!bankId || !bankingUserId || !bankingPin) {
+      return NextResponse.json(
+        {
+          error: 'Bank ID, banking user ID, and banking PIN are required',
+          required_fields: ['bankId', 'bankingUserId', 'bankingPin'],
+        },
+        { status: 400 }
+      );
+    }
+
+    // Get correct base URL
+    const baseUrl = getFinApiBaseUrl(credentialType);
+
+    // finAPI SDK Configuration
+    const server = new ServerConfiguration(baseUrl, {});
+    const configuration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: access_token,
+        },
+      },
+    });
+
+    const bankConnectionsApi = new BankConnectionsApi(configuration);
+
+    console.log(
+      `Demo bank connection request with ${credentialType} environment for bank ${bankId}`
+    );
+
+    // NOTE: Real bank connections in finAPI require WebForm 2.0 or complex multi-step process
+    // For this demo, we simulate a successful connection
+
+    // In production, this would be:
+    // 1. Create WebForm 2.0 URL
+    // 2. Redirect user to finAPI WebForm
+    // 3. Handle callback with bank connection ID
+    // 4. Update accounts via webhook
+
     return NextResponse.json({
       success: true,
-      message:
-        'Bank connection workflow initiated. In production, this would redirect to finAPI WebForm.',
-      note: 'This is a simplified demo response. Real bank connections require multi-step authentication.',
+      connection: {
+        id: `demo_connection_${bankId}_${Date.now()}`,
+        bankId: bankId,
+        bankName: `Demo Bank ${bankId}`,
+        updateStatus: 'SUCCESSFUL',
+        lastSuccessfulUpdate: new Date().toISOString(),
+        demo: true,
+      },
+      message: 'Demo bank connection created successfully',
+      production_note:
+        'In production, this would use finAPI WebForm 2.0 for secure bank authentication',
+      next_steps: [
+        'User would be redirected to bank login page',
+        'After successful authentication, accounts would be imported',
+        'Webhook would notify your backend about completion',
+        'Account data would be available via /api/finapi/accounts',
+      ],
     });
   } catch (error) {
     console.error('finAPI bank connection error:', error);
@@ -28,6 +93,8 @@ export async function POST(req: NextRequest) {
           error: 'Failed to create bank connection',
           details: error.message,
           type: 'BANK_CONNECTION_ERROR',
+          suggestion:
+            'Check if the provided banking credentials are correct or if the bank requires 2FA.',
         },
         { status: 500 }
       );

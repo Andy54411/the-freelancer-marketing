@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankAccount } from '@/types';
+import { FinAPITokenManager } from '@/lib/finapi-token-manager';
 import { PlusCircle, ExternalLink, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 export default function BankingAccountsPage() {
@@ -48,18 +49,48 @@ export default function BankingAccountsPage() {
 
   const loadRealFinAPIAccounts = async () => {
     try {
-      // Prüfe zuerst ob User registriert ist - TODO: Implement user token storage
-      // Für jetzt zeigen wir eine Meldung, dass Setup erforderlich ist
-      throw new Error('finAPI User Setup required');
+      // Check if user has finAPI token
+      const token = FinAPITokenManager.getUserToken();
+      if (!token) {
+        console.log('No finAPI token found, user needs to complete setup');
+        setAccounts([]);
+        return;
+      }
 
-      // Zukünftige Implementation mit echten User-Accounts:
-      // const userToken = await getUserToken(); // from localStorage/session
-      // const response = await fetch('/api/finapi/accounts', { ... });
-      // const accounts = await response.json();
-      // setAccounts(accounts);
+      console.log('Loading real finAPI accounts for user:', token.user_email);
+
+      // Call our accounts API with user token
+      const response = await fetch('/api/finapi/accounts', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`finAPI API Error: ${errorData.error || response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.accounts) {
+        console.log(`Loaded ${data.accounts.length} real finAPI accounts`);
+        setAccounts(data.accounts);
+      } else {
+        console.log('No accounts found in finAPI response');
+        setAccounts([]);
+      }
     } catch (error) {
       console.error('finAPI Accounts Fehler:', error);
-      // Zeige Setup-erforderlich Meldung
+
+      // If token is expired or invalid, clear it
+      if (error instanceof Error && error.message.includes('401')) {
+        FinAPITokenManager.clearUserToken();
+      }
+
+      // Show empty state for setup
       setAccounts([]);
     }
   };

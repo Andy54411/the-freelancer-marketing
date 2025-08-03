@@ -1,9 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Lock, Mail, Building2, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
+import { FinAPITokenManager } from '@/lib/finapi-token-manager';
+import {
+  PlusCircle,
+  CheckCircle,
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  User,
+  CreditCard,
+  Building2,
+  Mail,
+  Lock,
+} from 'lucide-react';
 
 interface FinAPIUser {
   id: string;
@@ -22,8 +35,9 @@ interface Bank {
 
 export default function FinAPISetupPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
-  const uid = typeof params?.uid === 'string' ? params.uid : '';
+  const uid = params.uid as string;
 
   const [step, setStep] = useState<'register' | 'connect-bank' | 'complete'>('register');
   const [loading, setLoading] = useState(false);
@@ -97,7 +111,22 @@ export default function FinAPISetupPage() {
       const data = await response.json();
       setFinAPIUser(data.user);
       setUserToken(data.access_token);
-      setSuccess('finAPI-User erfolgreich erstellt!');
+
+      // Store token in localStorage for future use
+      FinAPITokenManager.storeUserToken({
+        access_token: data.access_token,
+        token_type: data.token_type || 'Bearer',
+        expires_in: data.expires_in || 3600,
+        refresh_token: data.refresh_token,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          isAutoUpdateEnabled: data.user.isAutoUpdateEnabled,
+          created_at: new Date().toISOString(),
+        },
+      });
+
+      setSuccess('finAPI-User erfolgreich erstellt und angemeldet!');
 
       // Load available banks
       await loadAvailableBanks(data.access_token);
@@ -174,6 +203,11 @@ export default function FinAPISetupPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Complete setup and redirect to banking dashboard
+  const completeSetup = () => {
+    router.push(`/dashboard/company/${uid}/finance/banking/accounts`);
   };
 
   const renderRegisterStep = () => (
@@ -393,9 +427,7 @@ export default function FinAPISetupPage() {
       )}
 
       <button
-        onClick={() =>
-          (window.location.href = `/dashboard/company/${uid}/finance/banking/accounts`)
-        }
+        onClick={completeSetup}
         className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
       >
         Zu den Bankkonten
