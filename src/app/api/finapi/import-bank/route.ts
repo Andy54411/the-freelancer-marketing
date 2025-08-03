@@ -82,30 +82,40 @@ export async function POST(req: NextRequest) {
 
     let userAccessToken;
     try {
-      // Try to create the user first
+      // First try to get access token for existing user
       try {
-        const createUserResponse = await usersApi.createUser(userCredentials);
-        console.log('✅ finAPI user created for Taskilo user:', createUserResponse.id);
-      } catch (createError: any) {
-        // User might already exist, that's fine
-        if (createError.status === 422) {
-          console.log('✅ finAPI user already exists for Taskilo user:', finapiUserId);
+        const userTokenResponse = await authApi.getToken(
+          'password',
+          taskiloCredentials.clientId,
+          taskiloCredentials.clientSecret,
+          userCredentials.id,
+          userCredentials.password
+        );
+
+        userAccessToken = userTokenResponse.accessToken;
+        console.log('✅ User access token obtained for existing user:', finapiUserId);
+      } catch (loginError: any) {
+        // User doesn't exist, create them
+        if (loginError.status === 401) {
+          console.log('🔄 Creating new finAPI user for Taskilo user:', finapiUserId);
+          const createUserResponse = await usersApi.createUser(userCredentials);
+          console.log('✅ finAPI user created:', createUserResponse.id);
+
+          // Now get token for the newly created user
+          const userTokenResponse = await authApi.getToken(
+            'password',
+            taskiloCredentials.clientId,
+            taskiloCredentials.clientSecret,
+            userCredentials.id,
+            userCredentials.password
+          );
+
+          userAccessToken = userTokenResponse.accessToken;
+          console.log('✅ User access token obtained for new user:', finapiUserId);
         } else {
-          throw createError;
+          throw loginError;
         }
       }
-
-      // Get access token for the user
-      const userTokenResponse = await authApi.getToken(
-        'password',
-        taskiloCredentials.clientId,
-        taskiloCredentials.clientSecret,
-        userCredentials.id,
-        userCredentials.password
-      );
-
-      userAccessToken = userTokenResponse.accessToken;
-      console.log('✅ User access token obtained for:', finapiUserId);
     } catch (userError: any) {
       console.error('❌ User authentication failed:', userError?.body || userError.message);
       return NextResponse.json(
