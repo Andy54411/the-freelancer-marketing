@@ -17,6 +17,8 @@ export default function BankingAccountsPage() {
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasFinAPIToken, setHasFinAPIToken] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Check for existing finAPI token on component mount
   useEffect(() => {
@@ -45,6 +47,21 @@ export default function BankingAccountsPage() {
       }
 
       console.log('Loading finAPI accounts for user:', token.user_email);
+
+      // First, get debug info
+      const debugResponse = await fetch('/api/finapi/debug', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (debugResponse.ok) {
+        const debugData = await debugResponse.json();
+        setDebugInfo(debugData);
+        console.log('finAPI Debug Info:', debugData);
+      }
 
       // Call our accounts API with user token
       const response = await fetch('/api/finapi/accounts', {
@@ -160,6 +177,12 @@ export default function BankingAccountsPage() {
           </div>
           <div className="flex space-x-3">
             <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="inline-flex items-center px-3 py-2 border border-orange-300 shadow-sm text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-50 hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+            >
+              Debug Info
+            </button>
+            <button
               onClick={() =>
                 (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
               }
@@ -198,6 +221,63 @@ export default function BankingAccountsPage() {
           </div>
         </div>
       </div>
+
+      {/* Debug Info Panel */}
+      {showDebug && debugInfo && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-yellow-800 mb-4">finAPI Debug Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium text-yellow-700 mb-2">Umgebung</h4>
+              <p>
+                <strong>Environment:</strong> {debugInfo.debug_info?.environment}
+              </p>
+              <p>
+                <strong>Base URL:</strong> {debugInfo.debug_info?.base_url}
+              </p>
+              <p>
+                <strong>Token:</strong>{' '}
+                {debugInfo.debug_info?.token_provided ? '✅ Vorhanden' : '❌ Fehlt'}
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium text-yellow-700 mb-2">Bank-Verbindungen</h4>
+              <p>
+                <strong>Anzahl:</strong> {debugInfo.bank_connections?.count || 0}
+              </p>
+              {debugInfo.bank_connections?.data?.map((conn: any, idx: number) => (
+                <p key={idx}>
+                  <strong>Bank {idx + 1}:</strong> {conn.bank?.name || 'Unbekannt'}
+                </p>
+              ))}
+            </div>
+            <div>
+              <h4 className="font-medium text-yellow-700 mb-2">Konten</h4>
+              <p>
+                <strong>Anzahl:</strong> {debugInfo.accounts?.count || 0}
+              </p>
+              {debugInfo.accounts?.data?.map((acc: any, idx: number) => (
+                <p key={idx}>
+                  <strong>Konto {idx + 1}:</strong> {acc.accountName || acc.iban || `ID ${acc.id}`}
+                </p>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4">
+            <h4 className="font-medium text-yellow-700 mb-2">Test-Banken verfügbar</h4>
+            <p>
+              <strong>Anzahl:</strong> {debugInfo.test_banks?.count || 0}
+            </p>
+            <div className="max-h-32 overflow-y-auto">
+              {debugInfo.test_banks?.data?.map((bank: any, idx: number) => (
+                <p key={idx} className="text-xs">
+                  • {bank.name} (ID: {bank.id})
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Konten-Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
