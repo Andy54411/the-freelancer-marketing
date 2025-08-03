@@ -16,38 +16,25 @@ export default function BankingAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [useRealFinAPI, setUseRealFinAPI] = useState(false);
+  const [hasFinAPIToken, setHasFinAPIToken] = useState(false);
 
-  const loadMockAccounts = () => {
-    setAccounts([
-      {
-        id: 'mock_001',
-        accountName: 'Geschäftskonto',
-        iban: 'DE89 3704 0044 0532 0130 00',
-        bankName: 'Deutsche Bank AG',
-        accountNumber: '0532013000',
-        balance: 25750.5,
-        availableBalance: 25750.5,
-        currency: 'EUR',
-        accountType: 'CHECKING',
-        isDefault: true,
-      },
-      {
-        id: 'mock_002',
-        accountName: 'Sparkonto',
-        iban: 'DE89 3705 0198 0000 0047 11',
-        bankName: 'Sparkasse München',
-        accountNumber: '0000004711',
-        balance: 15000.0,
-        availableBalance: 15000.0,
-        currency: 'EUR',
-        accountType: 'SAVINGS',
-        isDefault: false,
-      },
-    ]);
-  };
+  // Check for existing finAPI token on component mount
+  useEffect(() => {
+    const checkFinAPIToken = () => {
+      const token = FinAPITokenManager.getUserToken();
+      if (token) {
+        console.log('finAPI token found, loading real banking data');
+        setHasFinAPIToken(true);
+      } else {
+        console.log('No finAPI token found, user needs to complete setup');
+        setHasFinAPIToken(false);
+      }
+    };
 
-  const loadRealFinAPIAccounts = async () => {
+    checkFinAPIToken();
+  }, []);
+
+  const loadFinAPIAccounts = async () => {
     try {
       // Check if user has finAPI token
       const token = FinAPITokenManager.getUserToken();
@@ -57,7 +44,7 @@ export default function BankingAccountsPage() {
         return;
       }
 
-      console.log('Loading real finAPI accounts for user:', token.user_email);
+      console.log('Loading finAPI accounts for user:', token.user_email);
 
       // Call our accounts API with user token
       const response = await fetch('/api/finapi/accounts', {
@@ -76,7 +63,7 @@ export default function BankingAccountsPage() {
       const data = await response.json();
 
       if (data.success && data.accounts) {
-        console.log(`Loaded ${data.accounts.length} real finAPI accounts`);
+        console.log(`Loaded ${data.accounts.length} finAPI accounts`);
         setAccounts(data.accounts);
       } else {
         console.log('No accounts found in finAPI response');
@@ -88,6 +75,7 @@ export default function BankingAccountsPage() {
       // If token is expired or invalid, clear it
       if (error instanceof Error && error.message.includes('401')) {
         FinAPITokenManager.clearUserToken();
+        setHasFinAPIToken(false);
       }
 
       // Show empty state for setup
@@ -98,10 +86,11 @@ export default function BankingAccountsPage() {
   const loadAccounts = async () => {
     setLoading(true);
 
-    if (useRealFinAPI) {
-      await loadRealFinAPIAccounts();
+    if (hasFinAPIToken) {
+      await loadFinAPIAccounts();
     } else {
-      loadMockAccounts();
+      // No token available, show empty state
+      setAccounts([]);
     }
 
     setLoading(false);
@@ -115,7 +104,7 @@ export default function BankingAccountsPage() {
 
   useEffect(() => {
     loadAccounts();
-  }, [useRealFinAPI]); // Reload when toggle changes
+  }, [hasFinAPIToken]); // Reload when token status changes
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -167,19 +156,9 @@ export default function BankingAccountsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Bankkonten</h1>
-            <p className="text-gray-600 mt-1">Übersicht über alle verbundenen Bankkonten</p>
+            <p className="text-gray-600 mt-1">Übersicht über alle finAPI-verbundenen Bankkonten</p>
           </div>
           <div className="flex space-x-3">
-            <button
-              onClick={() => setUseRealFinAPI(!useRealFinAPI)}
-              className={`inline-flex items-center px-3 py-2 border text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] ${
-                useRealFinAPI
-                  ? 'border-[#14ad9f] text-[#14ad9f] bg-blue-50'
-                  : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-              }`}
-            >
-              {useRealFinAPI ? '🔗 Live finAPI' : '🔧 Mock-Daten'}
-            </button>
             <button
               onClick={() =>
                 (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
@@ -312,13 +291,32 @@ export default function BankingAccountsPage() {
         <div className="text-center py-12">
           <div className="flex flex-col items-center">
             <PlusCircle className="h-12 w-12 text-gray-400 mb-4" />
-            {useRealFinAPI ? (
+            {hasFinAPIToken ? (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Keine Bankkonten verbunden
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Sie haben einen finAPI-Account, aber noch keine Bankkonten verbunden. Gehen Sie
+                  zum Setup, um Ihre ersten Bankkonten zu verbinden.
+                </p>
+                <button
+                  onClick={() =>
+                    (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
+                  }
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Bankkonten verbinden
+                </button>
+              </>
+            ) : (
               <>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   finAPI Setup erforderlich
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Um echte Bankdaten anzuzeigen, müssen Sie zuerst einen finAPI-Benutzer erstellen
+                  Um Ihre Bankdaten anzuzeigen, müssen Sie zuerst einen finAPI-Benutzer erstellen
                   und Ihre Bankkonten verbinden.
                 </p>
                 <button
@@ -329,17 +327,6 @@ export default function BankingAccountsPage() {
                 >
                   <PlusCircle className="h-4 w-4 mr-2" />
                   finAPI Setup starten
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Konten gefunden</h3>
-                <p className="text-gray-600 mb-6">
-                  Verbinden Sie Ihre ersten Bankkonten, um zu beginnen.
-                </p>
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Erstes Konto hinzufügen
                 </button>
               </>
             )}
