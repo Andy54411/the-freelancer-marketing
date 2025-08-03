@@ -14,7 +14,6 @@ import {
   FiUsers,
   FiFileText,
 } from 'react-icons/fi';
-import { generateDatevAuthUrl } from '@/lib/datev-config';
 import { DatevTokenManager } from '@/lib/datev-token-manager';
 import { DatevService, DatevOrganization } from '@/services/datevService';
 import { toast } from 'sonner';
@@ -142,13 +141,29 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     try {
       setConnecting(true);
 
-      // Generate OAuth URL with company context
+      // Generate OAuth URL via API route to avoid environment variable issues on client side
       const state = `company:${companyId}:${Date.now()}`;
-      const authUrl = generateDatevAuthUrl(state);
+
+      const response = await fetch('/api/datev/auth-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId,
+          state,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate auth URL');
+      }
 
       // Open DATEV OAuth in popup
       const popup = window.open(
-        authUrl,
+        result.authUrl,
         'datev-auth',
         'width=600,height=700,scrollbars=yes,resizable=yes'
       );
