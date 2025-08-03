@@ -68,6 +68,8 @@ export async function POST(req: NextRequest) {
 
       console.log('finAPI user created successfully:', { id: newUser.id, email: newUser.email });
     } catch (createError: any) {
+      console.error('Error creating user:', createError);
+
       // Check if user already exists
       if (createError.status === 422 && createError.body?.errors?.[0]?.code === 'ENTITY_EXISTS') {
         console.log('User already exists, attempting to authenticate existing user');
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
             expires_in: userToken.expiresIn,
             message: 'Bestehender finAPI-User erfolgreich authentifiziert',
           });
-        } catch (authError) {
+        } catch (authError: any) {
           console.error('Failed to authenticate existing user:', authError);
           return NextResponse.json(
             {
@@ -123,8 +125,17 @@ export async function POST(req: NextRequest) {
           );
         }
       } else {
-        // Re-throw other errors
-        throw createError;
+        // Handle other API errors properly
+        console.error('finAPI API Error:', createError);
+        return NextResponse.json(
+          {
+            error: 'finAPI User Erstellung fehlgeschlagen',
+            details:
+              createError.body?.errors?.[0]?.message || createError.message || 'Unbekannter Fehler',
+            type: 'USER_CREATION_ERROR',
+          },
+          { status: createError.status || 500 }
+        );
       }
     }
 

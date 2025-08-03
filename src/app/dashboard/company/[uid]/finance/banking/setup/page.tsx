@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinAPITokenManager } from '@/lib/finapi-token-manager';
+import { DatevTokenManager } from '@/lib/datev-token-manager';
+import { generateDatevAuthUrl } from '@/lib/datev-config';
 import {
   PlusCircle,
   CheckCircle,
@@ -16,6 +18,9 @@ import {
   Building2,
   Mail,
   Lock,
+  FileText,
+  Download,
+  Upload,
 } from 'lucide-react';
 
 interface FinAPIUser {
@@ -36,13 +41,19 @@ interface Bank {
 export default function FinAPISetupPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = params.uid as string;
 
-  const [step, setStep] = useState<'register' | 'connect-bank' | 'complete'>('register');
+  const [step, setStep] = useState<'register' | 'connect-bank' | 'datev-setup' | 'complete'>(
+    'register'
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // DATEV Integration State
+  const [datevConnected, setDatevConnected] = useState(false);
 
   // User Registration State
   const [userForm, setUserForm] = useState({
@@ -63,11 +74,41 @@ export default function FinAPISetupPage() {
     bankingPin: '',
   });
 
-  // Check existing token on component mount
+  // Check existing tokens on component mount
   useEffect(() => {
-    const checkExistingToken = () => {
+    const checkExistingTokens = () => {
+      // Check finAPI token
       const existingToken = FinAPITokenManager.getUserToken();
       const existingUserData = FinAPITokenManager.getUserData();
+
+      // Check DATEV token
+      const datevAuthenticated = DatevTokenManager.isUserAuthenticated();
+      setDatevConnected(datevAuthenticated);
+
+      // Handle DATEV OAuth callback
+      const datevAuth = searchParams?.get('datev_auth');
+      const tokenData = searchParams?.get('token_data');
+      const authError = searchParams?.get('error');
+
+      if (datevAuth === 'success' && tokenData) {
+        try {
+          const decodedTokenData = JSON.parse(Buffer.from(tokenData, 'base64').toString());
+          DatevTokenManager.storeUserToken(decodedTokenData);
+          setDatevConnected(true);
+          setSuccess('DATEV erfolgreich verbunden!');
+
+          // Clean URL parameters
+          const url = new URL(window.location.href);
+          url.searchParams.delete('datev_auth');
+          url.searchParams.delete('token_data');
+          window.history.replaceState({}, '', url.toString());
+        } catch (error) {
+          console.error('Error processing DATEV token:', error);
+          setError('Fehler beim Verarbeiten der DATEV-Verbindung');
+        }
+      } else if (authError) {
+        setError(`DATEV-Verbindung fehlgeschlagen: ${authError}`);
+      }
 
       if (existingToken && existingUserData) {
         console.log('Existing finAPI token found, skipping to bank connection');
@@ -82,7 +123,7 @@ export default function FinAPISetupPage() {
       }
     };
 
-    checkExistingToken();
+    checkExistingTokens();
   }, []);
 
   // Autorisierung prüfen
