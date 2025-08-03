@@ -19,16 +19,8 @@ export interface DatevConfig {
 export function getDatevConfig(): DatevConfig {
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Only validate in runtime, not during build
-  if (typeof window !== 'undefined' || process.env.NODE_ENV === 'development') {
-    if (isProduction && !process.env.DATEV_CLIENT_ID) {
-      throw new Error('DATEV_CLIENT_ID environment variable is required in production');
-    }
-
-    if (isProduction && !process.env.DATEV_CLIENT_SECRET) {
-      throw new Error('DATEV_CLIENT_SECRET environment variable is required in production');
-    }
-  }
+  // Only validate when DATEV is actually being used, not during module initialization
+  // This prevents build failures when DATEV environment variables are not yet configured
 
   return {
     clientId: process.env.DATEV_CLIENT_ID || '',
@@ -44,9 +36,25 @@ export function getDatevConfig(): DatevConfig {
 }
 
 /**
+ * Validate DATEV configuration - only call when DATEV is actually being used
+ */
+export function validateDatevConfig(): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction && !process.env.DATEV_CLIENT_ID) {
+    throw new Error('DATEV_CLIENT_ID environment variable is required in production');
+  }
+
+  if (isProduction && !process.env.DATEV_CLIENT_SECRET) {
+    throw new Error('DATEV_CLIENT_SECRET environment variable is required in production');
+  }
+}
+
+/**
  * Generate DATEV OAuth authorization URL
  */
 export function generateDatevAuthUrl(state?: string): string {
+  validateDatevConfig(); // Only validate when actually used
   const config = getDatevConfig();
   const params = new URLSearchParams({
     client_id: config.clientId,

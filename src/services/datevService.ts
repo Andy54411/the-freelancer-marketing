@@ -3,7 +3,7 @@
  * Direkte API-Calls an DATEV für Buchhaltung, Dokumente und Steuerberater-Integration
  */
 
-import { getDatevConfig, DATEV_ENDPOINTS } from '@/lib/datev-config';
+import { getDatevConfig, DATEV_ENDPOINTS, validateDatevConfig } from '@/lib/datev-config';
 import { DatevTokenManager } from '@/lib/datev-token-manager';
 
 // DATEV API Response Types
@@ -75,7 +75,9 @@ export interface DatevExportJob {
 }
 
 export class DatevService {
-  private static baseUrl = getDatevConfig().baseUrl;
+  private static getBaseUrl(): string {
+    return getDatevConfig().baseUrl;
+  }
 
   /**
    * Make authenticated API call to DATEV
@@ -99,7 +101,7 @@ export class DatevService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const response = await fetch(`${this.getBaseUrl()}${endpoint}`, {
         ...options,
         headers: {
           Authorization: authHeader,
@@ -295,7 +297,7 @@ export class DatevService {
         throw new Error('No DATEV access token available');
       }
 
-      const response = await fetch(`${this.baseUrl}${DATEV_ENDPOINTS.documents}`, {
+      const response = await fetch(`${this.getBaseUrl()}${DATEV_ENDPOINTS.documents}`, {
         method: 'POST',
         headers: {
           Authorization: authHeader,
