@@ -249,27 +249,49 @@ export default function FinAPISetupPage() {
         return;
       }
 
-      const response = await fetch('/api/finapi/bank-connections', {
+      const token = FinAPITokenManager.getUserToken();
+      if (!token) {
+        setError('Kein finAPI Token gefunden. Bitte erstellen Sie zuerst einen finAPI User.');
+        return;
+      }
+
+      // Use the new import-bank API for proper bank connection import
+      const response = await fetch('/api/finapi/import-bank', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          access_token: token.access_token,
           bankId: selectedBank.id,
-          loginCredentials: bankCredentials,
-          access_token: userToken,
+          credentials: {
+            loginCredentials: [
+              { label: 'Anmeldename', value: bankCredentials.bankingUserId },
+              { label: 'PIN', value: bankCredentials.bankingPin },
+            ],
+          },
           credentialType: 'sandbox',
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || 'Fehler beim Verbinden der Bank');
+        throw new Error(
+          errorData.details || errorData.error || 'Bank Connection Import fehlgeschlagen'
+        );
       }
 
       const data = await response.json();
-      setSuccess('Bank erfolgreich verbunden!');
-      setStep('complete');
+
+      setSuccess(
+        `Bank-Verbindung erfolgreich importiert! ${data.bankConnection.accountsCount} Konten gefunden.`
+      );
+      console.log('Bank connection imported:', data);
+
+      // Move to complete step
+      setTimeout(() => {
+        setStep('complete');
+      }, 2000);
     } catch (error) {
       console.error('Fehler beim Verbinden der Bank:', error);
       setError(error instanceof Error ? error.message : 'Unbekannter Fehler');

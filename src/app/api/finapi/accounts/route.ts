@@ -1,114 +1,169 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinApiBaseUrl } from '@/lib/finapi-config';
-import { AccountsApi, createConfiguration, ServerConfiguration } from 'finapi-client';
+import { FinAPIClientManager } from '@/lib/finapi-client-manager';
 import type { BankAccount } from '@/types';
 
-async function handleFinAPIAccountsRequest(
-  token: string,
-  credentialType: 'sandbox' | 'admin' = 'sandbox'
-) {
+// GET /api/finapi/accounts - Get all accounts for authenticated user
+export async function GET(request: NextRequest) {
   try {
-    // Get correct base URL
-    const baseUrl = getFinApiBaseUrl(credentialType);
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const perPage = parseInt(searchParams.get('perPage') || '20');
+    const bankConnectionIds = searchParams
+      .get('bankConnectionIds')
+      ?.split(',')
+      .map(Number)
+      .filter(Boolean);
 
-    // finAPI SDK Configuration
-    const server = new ServerConfiguration(baseUrl, {});
-    const configuration = createConfiguration({
-      baseServer: server,
-      authMethods: {
-        finapi_auth: {
-          accessToken: token,
-        },
-      },
-    });
+    // Get authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+    }
 
-    const accountsApi = new AccountsApi(configuration);
+    const token = authHeader.substring(7);
+    const clientManager = new FinAPIClientManager(token);
 
-    console.log(`Using finAPI SDK for accounts request with ${credentialType} environment`);
-
-    // finAPI Accounts Request mit SDK
-    const accountsResponse = await accountsApi.getAndSearchAllAccounts();
-
-    console.log(
-      'finAPI SDK accounts request successful, accounts found:',
-      accountsResponse.accounts?.length || 0
+    // Get accounts with filters
+    const response = await clientManager.accounts.getAndSearchAllAccounts(
+      undefined, // ids
+      undefined, // search
+      undefined, // accountTypes
+      bankConnectionIds,
+      undefined, // minBalance
+      undefined, // maxBalance
+      page,
+      perPage,
+      undefined // order
     );
+
+    console.log('Accounts retrieved:', response.accounts?.length || 0);
 
     // Transform finAPI accounts to our BankAccount interface
     const transformedAccounts: BankAccount[] =
-      accountsResponse.accounts?.map((account, index) => ({
+      response.accounts?.map((account, index) => ({
         id: account.id?.toString() || `finapi_${index}`,
         accountName: account.accountName || `Konto ${account.id}`,
         iban: account.iban || '',
-        bankName: `finAPI Bank ${account.id}`, // Simplified bank name
+        bankName: `finAPI Bank ${account.id}`,
         accountNumber: account.accountNumber || '',
         balance: account.balance || 0,
-        availableBalance: account.balance || 0, // finAPI might have overdraftLimit
+        availableBalance: account.balance || 0,
         currency: account.accountCurrency || 'EUR',
         accountType: mapFinAPIAccountType(account.accountType),
-        isDefault: index === 0, // First account as default
+        isDefault: index === 0,
       })) || [];
 
     return NextResponse.json({
       success: true,
+      data: response.accounts,
       accounts: transformedAccounts,
-      total: accountsResponse.accounts?.length || 0,
-      finapi_raw: accountsResponse, // For debugging
+      finapi_accounts:
+        response.accounts?.map(account => ({
+          id: account.id,
+          accountName: account.accountName,
+          iban: account.iban,
+          accountNumber: account.accountNumber,
+          subAccountNumber: account.subAccountNumber,
+          balance: account.balance,
+          overdraft: account.overdraft,
+          overdraftLimit: account.overdraftLimit,
+          accountCurrency: account.accountCurrency,
+          accountType: account.accountType,
+          isNew: account.isNew,
+          bankConnectionId: account.bankConnectionId,
+        })) || [],
+      totalCount: response.accounts?.length || 0,
     });
-  } catch (error) {
-    console.error('finAPI SDK accounts error:', error);
-
-    // Enhanced error handling for finAPI SDK
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          error: 'Failed to fetch accounts',
-          details: error.message,
-          type: 'SDK_ERROR',
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('finAPI accounts error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to get accounts',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
-// Map finAPI account types to our types
-function mapFinAPIAccountType(accountType?: any): 'CHECKING' | 'SAVINGS' | 'CREDIT_CARD' {
-  // Map based on finAPI account type strings
-  const typeStr = accountType?.toString().toLowerCase();
-  if (typeStr?.includes('saving')) return 'SAVINGS';
-  if (typeStr?.includes('credit')) return 'CREDIT_CARD';
-  return 'CHECKING'; // Default to checking
-}
-
-export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
-  }
-
-  const token = authHeader.substring(7);
-  const { searchParams } = new URL(req.url);
-  const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
-
-  return handleFinAPIAccountsRequest(token, credentialType);
-}
-
-export async function POST(req: NextRequest) {
+// POST /api/finapi/accounts - Create or update account
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { access_token, credentialType = 'sandbox' } = body;
+    const body = await request.json();
+    const { accountId, action } = body;
 
-    if (!access_token) {
-      return NextResponse.json({ error: 'Access token required in request body' }, { status: 401 });
+    // Get authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
     }
 
-    return handleFinAPIAccountsRequest(access_token, credentialType);
-  } catch (error) {
-    console.error('POST finAPI accounts error:', error);
-    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
+    const token = authHeader.substring(7);
+    const clientManager = new FinAPIClientManager(token);
+
+    if (action === 'delete' && accountId) {
+      // Delete account
+      await clientManager.accounts.deleteAccount(accountId);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Account deleted successfully',
+      });
+    }
+
+    if (action === 'get' && accountId) {
+      // Get specific account
+      const account = await clientManager.accounts.getAccount(accountId);
+
+      return NextResponse.json({
+        success: true,
+        data: account,
+      });
+    }
+
+    if (action === 'edit' && accountId) {
+      // Edit account
+      const { accountName } = body;
+
+      const updatedAccount = await clientManager.accounts.editAccount(accountId, {
+        accountName,
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: updatedAccount,
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Invalid action specified' },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    console.error('finAPI accounts POST error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to process account request',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
+}
+
+// Helper function to map finAPI account types
+function mapFinAPIAccountType(
+  type: any
+): 'CHECKING' | 'SAVINGS' | 'CREDIT_CARD' | 'INVESTMENT' | 'LOAN' {
+  const typeStr = String(type).toUpperCase();
+
+  if (typeStr.includes('CHECKING') || typeStr.includes('GIRO')) return 'CHECKING';
+  if (typeStr.includes('SAVINGS') || typeStr.includes('SPAR')) return 'SAVINGS';
+  if (typeStr.includes('CREDIT') || typeStr.includes('KREDITKARTE')) return 'CREDIT_CARD';
+  if (typeStr.includes('INVESTMENT') || typeStr.includes('DEPOT')) return 'INVESTMENT';
+  if (typeStr.includes('LOAN') || typeStr.includes('KREDIT')) return 'LOAN';
+
+  return 'CHECKING'; // Default fallback
 }
