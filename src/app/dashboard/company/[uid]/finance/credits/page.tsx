@@ -24,11 +24,6 @@ export default function CreditsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Gutschriften</h1>
-        <p className="text-gray-600 mt-1">Gutschriften und Stornierungen erstellen und verwalten</p>
-      </div>
-
       <CreditComponent companyId={uid} />
     </div>
   );

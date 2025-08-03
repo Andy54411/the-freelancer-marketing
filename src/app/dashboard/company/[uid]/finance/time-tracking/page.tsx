@@ -24,13 +24,6 @@ export default function TimeTrackingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Zeiterfassung</h1>
-        <p className="text-gray-600 mt-1">
-          Arbeitszeiten erfassen, Projekten zuordnen und automatisch abrechnen
-        </p>
-      </div>
-
       <TimeTrackingComponent companyId={uid} userId={uid} />
     </div>
   );

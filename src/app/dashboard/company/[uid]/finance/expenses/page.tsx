@@ -77,11 +77,6 @@ export default function ExpensesPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="border-b border-gray-200 pb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Ausgaben</h1>
-          <p className="text-gray-600 mt-1">Verwalten Sie Ihre Geschäftsausgaben und Belege</p>
-        </div>
-
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
           <span className="ml-3 text-gray-600">Lade Ausgaben...</span>
@@ -92,11 +87,6 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Ausgaben</h1>
-        <p className="text-gray-600 mt-1">Verwalten Sie Ihre Geschäftsausgaben und Belege</p>
-      </div>
-
       <ExpenseComponent
         expenses={expenses.map(e => ({
           id: e.id,

@@ -24,13 +24,6 @@ export default function QuotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Angebote</h1>
-        <p className="text-gray-600 mt-1">
-          Professionelle Angebote erstellen, verwalten und in Rechnungen umwandeln
-        </p>
-      </div>
-
       <QuoteComponent companyId={uid} />
     </div>
   );

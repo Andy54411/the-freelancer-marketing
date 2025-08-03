@@ -24,13 +24,6 @@ export default function DeliveryNotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Lieferscheine</h1>
-        <p className="text-gray-600 mt-1">
-          Lieferscheine erstellen, verwalten und automatisch in Rechnungen umwandeln
-        </p>
-      </div>
-
       <DeliveryNoteComponent companyId={uid} />
     </div>
   );
