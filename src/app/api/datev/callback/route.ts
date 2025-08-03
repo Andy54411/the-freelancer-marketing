@@ -18,24 +18,45 @@ export async function GET(request: NextRequest) {
         ? 'http://localhost:3000/dashboard/company/setup/banking'
         : 'https://taskilo.de/dashboard/company/setup/banking';
 
+    // Log detailed callback information for debugging
+    console.log('DATEV OAuth Callback received:', {
+      code: code ? `${code.substring(0, 10)}...` : null,
+      state: state,
+      error: error,
+      error_description: error_description,
+      timestamp: new Date().toISOString(),
+    });
+
     // Check for OAuth errors
     if (error) {
       console.error('DATEV OAuth error:', error, error_description);
       return NextResponse.redirect(
-        `${redirectUrl}?error=oauth_error&message=${encodeURIComponent(error_description || error)}`
+        `${redirectUrl}?error=oauth_error&message=${encodeURIComponent(error_description || error)}&request_id=${Date.now()}`
       );
     }
 
     // Validate required parameters
     if (!code || !state) {
-      console.error('Missing required OAuth parameters');
-      return NextResponse.redirect(`${redirectUrl}?error=missing_params`);
+      console.error('Missing required OAuth parameters - Code:', !!code, 'State:', !!state);
+      return NextResponse.redirect(
+        `${redirectUrl}?error=missing_params&details=${encodeURIComponent(`Code: ${!!code}, State: ${!!state}`)}`
+      );
     }
 
     // TODO: Validate state parameter against stored value (CSRF protection)
     // In production, you should verify the state parameter matches what was sent
 
     const config = getDatevConfig();
+
+    // Log token exchange attempt for debugging
+    console.log('DATEV Token Exchange attempt:', {
+      tokenUrl: config.tokenUrl,
+      clientId: config.clientId,
+      redirectUri: config.redirectUri,
+      codePresent: !!code,
+      codeLength: code ? code.length : 0,
+      timestamp: new Date().toISOString(),
+    });
 
     // Exchange authorization code for access token
     const tokenResponse = await fetch(config.tokenUrl, {
@@ -58,19 +79,25 @@ export async function GET(request: NextRequest) {
         status: tokenResponse.status,
         statusText: tokenResponse.statusText,
         error: errorData,
+        url: config.tokenUrl,
+        clientId: config.clientId,
+        redirectUri: config.redirectUri,
+        timestamp: new Date().toISOString(),
       });
 
       // Try to parse error for more details
       let errorMessage = 'Token exchange failed';
+      let requestId = 'unknown';
       try {
         const errorJson = JSON.parse(errorData);
         errorMessage = errorJson.error_description || errorJson.error || errorMessage;
+        requestId = errorJson.request_id || requestId;
       } catch {
         // Keep default message if JSON parsing fails
       }
 
       return NextResponse.redirect(
-        `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent(errorMessage)}`
+        `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent(errorMessage)}&request_id=${requestId}&status=${tokenResponse.status}`
       );
     }
 
