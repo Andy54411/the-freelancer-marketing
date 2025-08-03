@@ -138,12 +138,24 @@ export class DatevTokenManager {
    */
   static async refreshTokenIfNeeded(): Promise<boolean> {
     const token = this.getUserToken();
-    if (!token || !token.refresh_token) return false;
+    if (!token) {
+      console.log('No DATEV token available');
+      return false;
+    }
 
     // Check if token expires in next 10 minutes
     const tenMinutesFromNow = Date.now() + 10 * 60 * 1000;
     if (token.expires_at > tenMinutesFromNow) {
       return true; // Token is still valid
+    }
+
+    console.log('DATEV token expires soon, attempting refresh...');
+
+    // If no refresh token available, clear everything and require re-auth
+    if (!token.refresh_token) {
+      console.log('No refresh token available, clearing stored data');
+      this.clearUserToken();
+      return false;
     }
 
     try {
@@ -158,27 +170,71 @@ export class DatevTokenManager {
       });
 
       if (!response.ok) {
-        console.error('Failed to refresh DATEV token');
+        const errorData = await response.text();
+        console.error('Failed to refresh DATEV token:', response.status, errorData);
         this.clearUserToken();
         return false;
       }
 
       const data = await response.json();
 
+      // Validate response data
+      if (!data.access_token) {
+        console.error('Invalid refresh response: missing access_token');
+        this.clearUserToken();
+        return false;
+      }
+
+      const userData = this.getUserData();
+      if (!userData) {
+        console.error('No user data available for token refresh');
+        this.clearUserToken();
+        return false;
+      }
+
       // Store the new token
       this.storeUserToken({
         access_token: data.access_token,
-        token_type: data.token_type,
-        expires_in: data.expires_in,
+        token_type: data.token_type || 'Bearer',
+        expires_in: data.expires_in || 3600,
         refresh_token: data.refresh_token || token.refresh_token,
         scope: data.scope || token.scope,
-        user: this.getUserData()!,
+        user: userData,
       });
 
       console.log('DATEV token refreshed successfully');
       return true;
     } catch (error) {
       console.error('Error refreshing DATEV token:', error);
+      this.clearUserToken();
+      return false;
+    }
+  }
+
+  /**
+   * Force token validation by making a test API call
+   */
+  static async validateToken(): Promise<boolean> {
+    const token = this.getUserToken();
+    if (!token) return false;
+
+    try {
+      const response = await fetch('/api/datev/validate', {
+        method: 'GET',
+        headers: {
+          Authorization: `${token.token_type} ${token.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.log('Token validation failed, clearing stored token');
+        this.clearUserToken();
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error validating DATEV token:', error);
       this.clearUserToken();
       return false;
     }

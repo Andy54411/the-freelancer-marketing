@@ -31,8 +31,39 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('DATEV token refresh failed:', errorData);
-      return NextResponse.json({ error: 'Token refresh failed' }, { status: 401 });
+      console.error('DATEV token refresh failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+      });
+
+      // Parse error for specific error types
+      let errorMessage = 'Token refresh failed';
+      try {
+        const errorJson = JSON.parse(errorData);
+        errorMessage = errorJson.error_description || errorJson.error || errorMessage;
+
+        // Check for specific error types that require re-authentication
+        if (errorJson.error === 'invalid_grant' || errorJson.error === 'invalid_token') {
+          return NextResponse.json(
+            {
+              error: 'invalid_refresh_token',
+              message: 'Refresh token is invalid or expired. Re-authentication required.',
+            },
+            { status: 401 }
+          );
+        }
+      } catch {
+        // Keep default handling if JSON parsing fails
+      }
+
+      return NextResponse.json(
+        {
+          error: 'refresh_failed',
+          message: errorMessage,
+        },
+        { status: 401 }
+      );
     }
 
     const tokenData = await response.json();

@@ -54,19 +54,36 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const loadDatevConnection = async () => {
     try {
       setLoading(true);
-      const token = await DatevTokenManager.getUserToken();
 
-      if (token) {
+      // First check if we have a stored token
+      const token = DatevTokenManager.getUserToken();
+
+      if (!token) {
+        console.log('No DATEV token found');
+        setConnection({
+          isConnected: false,
+          features: {
+            accountingData: false,
+            documents: false,
+            masterData: false,
+            cashRegister: false,
+          },
+        });
+        return;
+      }
+
+      // Validate the token by trying to fetch organizations
+      try {
         const organizations = await DatevService.getOrganizations();
 
-        if (organizations.length > 0) {
+        if (organizations && organizations.length > 0) {
           const org = organizations[0]; // Use first available organization
           setConnection({
             isConnected: true,
             organization: org,
             user: {
               name: org.name || 'DATEV User',
-              email: 'user@datev.de', // DATEV doesn't expose user email
+              email: 'user@datev.de', // DATEV doesn't expose user email in this endpoint
               id: org.id,
             },
             connectedAt: new Date().toISOString(),
@@ -82,32 +99,43 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           if (onAuthSuccess) {
             onAuthSuccess(org);
           }
+
+          toast.success('DATEV-Verbindung erfolgreich überprüft');
+        } else {
+          console.log('No DATEV organizations found');
+          handleAuthError('Keine DATEV-Organisationen gefunden');
         }
-      } else {
-        setConnection({
-          isConnected: false,
-          features: {
-            accountingData: false,
-            documents: false,
-            masterData: false,
-            cashRegister: false,
-          },
-        });
+      } catch (apiError) {
+        console.error('DATEV API error during connection check:', apiError);
+
+        // If API call fails, the token is likely invalid
+        if (apiError instanceof Error && apiError.message.includes('authentication')) {
+          DatevTokenManager.clearUserToken();
+          toast.error('DATEV-Authentifizierung abgelaufen. Bitte erneut verbinden.');
+        } else {
+          toast.error('Fehler beim Überprüfen der DATEV-Verbindung');
+        }
+
+        handleAuthError(apiError instanceof Error ? apiError.message : 'API-Fehler');
       }
     } catch (error) {
       console.error('DATEV connection check failed:', error);
-      setConnection({
-        isConnected: false,
-        features: {
-          accountingData: false,
-          documents: false,
-          masterData: false,
-          cashRegister: false,
-        },
-      });
+      handleAuthError(error instanceof Error ? error.message : 'Unbekannter Fehler');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAuthError = (errorMessage: string) => {
+    setConnection({
+      isConnected: false,
+      features: {
+        accountingData: false,
+        documents: false,
+        masterData: false,
+        cashRegister: false,
+      },
+    });
   };
 
   const handleConnect = async () => {
@@ -125,21 +153,30 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         'width=600,height=700,scrollbars=yes,resizable=yes'
       );
 
-      // Listen for popup completion
-      const checkClosed = setInterval(() => {
+      // Monitor popup for completion
+      const checkPopup = setInterval(() => {
         if (popup?.closed) {
-          clearInterval(checkClosed);
+          clearInterval(checkPopup);
           setConnecting(false);
-          // Reload connection status
+
+          // Check if authentication was successful
           setTimeout(() => {
             loadDatevConnection();
-            toast.success('DATEV-Verbindung wird überprüft...');
           }, 1000);
         }
       }, 1000);
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        if (popup && !popup.closed) {
+          popup.close();
+        }
+        clearInterval(checkPopup);
+        setConnecting(false);
+      }, 300000);
     } catch (error) {
-      console.error('Fehler bei DATEV-Verbindung:', error);
-      toast.error('Fehler bei der DATEV-Verbindung');
+      console.error('DATEV connection failed:', error);
+      toast.error('Fehler beim Verbinden mit DATEV');
       setConnecting(false);
     }
   };
@@ -147,7 +184,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const handleDisconnect = async () => {
     try {
       DatevTokenManager.clearUserToken();
-
       setConnection({
         isConnected: false,
         features: {
@@ -157,22 +193,21 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           cashRegister: false,
         },
       });
-
       toast.success('DATEV-Verbindung getrennt');
     } catch (error) {
-      console.error('Fehler beim Trennen der DATEV-Verbindung:', error);
+      console.error('Error disconnecting from DATEV:', error);
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };
 
-  const handleSync = async () => {
+  const handleRefresh = async () => {
     try {
       setLoading(true);
       await loadDatevConnection();
-      toast.success('DATEV-Daten synchronisiert');
+      toast.success('DATEV-Verbindung aktualisiert');
     } catch (error) {
-      console.error('Sync-Fehler:', error);
-      toast.error('Fehler bei der Synchronisation');
+      console.error('Error refreshing DATEV connection:', error);
+      toast.error('Fehler beim Aktualisieren der DATEV-Verbindung');
     } finally {
       setLoading(false);
     }
@@ -180,10 +215,31 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-8">
-          <FiRefreshCw className="animate-spin text-[#14ad9f] mr-2" size={20} />
-          <span>Lade DATEV-Status...</span>
+      <Card className="w-full">
+        <CardHeader className="text-center">
+          <CardTitle className="flex items-center justify-center gap-2">
+            <FiRefreshCw className="animate-spin" />
+            DATEV-Verbindung wird überprüft...
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (!connection) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-red-600">Fehler</CardTitle>
+          <CardDescription>
+            Es ist ein Fehler beim Laden der DATEV-Verbindung aufgetreten.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleRefresh} variant="outline" className="w-full">
+            <FiRefreshCw className="mr-2" />
+            Erneut versuchen
+          </Button>
         </CardContent>
       </Card>
     );
@@ -192,251 +248,172 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   return (
     <div className="space-y-6">
       {/* Connection Status Card */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <FiShield className="text-[#14ad9f]" size={24} />
+                <FiShield className="text-[#14ad9f]" />
                 DATEV-Integration
+                {connection.isConnected ? (
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    <FiCheck className="mr-1" size={12} />
+                    Verbunden
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <FiAlertCircle className="mr-1" size={12} />
+                    Nicht verbunden
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                Sichere Verbindung zu Ihrem DATEV-System für automatische Buchhaltung
+                Verbindung zu DATEV für automatische Buchhaltung und Steuerberatung
               </CardDescription>
             </div>
-            <Badge variant={connection?.isConnected ? 'default' : 'secondary'}>
-              {connection?.isConnected ? 'Verbunden' : 'Nicht verbunden'}
-            </Badge>
+            <Button onClick={handleRefresh} variant="ghost" size="sm" disabled={loading}>
+              <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+            </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {connection?.isConnected ? (
-            <>
-              {/* Connected Info */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <FiCheck className="text-green-600" size={20} />
-                  <span className="font-medium text-green-800">
-                    Erfolgreich mit DATEV verbunden
-                  </span>
-                </div>
 
-                {connection.organization && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Organisation:</span>
-                      <div className="font-medium">{connection.organization.name}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Typ:</span>
-                      <div className="font-medium">{connection.organization.type}</div>
-                    </div>
-                  </div>
-                )}
-
-                {connection.user && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
-                    <div>
-                      <span className="text-gray-600">Benutzer:</span>
-                      <div className="font-medium">{connection.user.name}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">E-Mail:</span>
-                      <div className="font-medium">{connection.user.email}</div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
+        <CardContent className="space-y-4">
+          {connection.isConnected && connection.organization ? (
+            <div className="space-y-4">
+              {/* Organization Info */}
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Verbundene Organisation</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-600">Verbunden seit:</span>
-                    <div className="font-medium">
-                      {connection.connectedAt
-                        ? new Date(connection.connectedAt).toLocaleDateString('de-DE')
-                        : 'Unbekannt'}
-                    </div>
+                    <span className="font-medium">Name:</span> {connection.organization.name}
                   </div>
                   <div>
-                    <span className="text-gray-600">Letzte Sync:</span>
-                    <div className="font-medium">
-                      {connection.lastSync
-                        ? new Date(connection.lastSync).toLocaleDateString('de-DE')
-                        : 'Noch nie'}
-                    </div>
+                    <span className="font-medium">Typ:</span>{' '}
+                    {connection.organization.type === 'client' ? 'Mandant' : 'Berater'}
                   </div>
+                  <div>
+                    <span className="font-medium">Status:</span>{' '}
+                    {connection.organization.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+                  </div>
+                  {connection.organization.taxNumber && (
+                    <div>
+                      <span className="font-medium">Steuernummer:</span>{' '}
+                      {connection.organization.taxNumber}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Available Features */}
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Verfügbare Features</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg border ${
-                      connection.features.accountingData
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <FiDatabase
-                      className={
-                        connection.features.accountingData ? 'text-green-600' : 'text-gray-400'
-                      }
-                    />
-                    <span className="text-sm font-medium">Buchhaltung</span>
+                <h4 className="font-medium mb-3">Verfügbare Features</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <FiDatabase className="text-[#14ad9f]" />
+                    <span className="text-sm">Buchhaltungsdaten</span>
+                    <FiCheck className="text-green-600 ml-auto" size={16} />
                   </div>
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg border ${
-                      connection.features.documents
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <FiFileText
-                      className={connection.features.documents ? 'text-green-600' : 'text-gray-400'}
-                    />
-                    <span className="text-sm font-medium">Belege</span>
+                  <div className="flex items-center gap-2">
+                    <FiFileText className="text-[#14ad9f]" />
+                    <span className="text-sm">Dokumente</span>
+                    <FiCheck className="text-green-600 ml-auto" size={16} />
                   </div>
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg border ${
-                      connection.features.masterData
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <FiUsers
-                      className={
-                        connection.features.masterData ? 'text-green-600' : 'text-gray-400'
-                      }
-                    />
-                    <span className="text-sm font-medium">Stammdaten</span>
+                  <div className="flex items-center gap-2">
+                    <FiUsers className="text-[#14ad9f]" />
+                    <span className="text-sm">Stammdaten</span>
+                    <FiCheck className="text-green-600 ml-auto" size={16} />
                   </div>
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg border ${
-                      connection.features.cashRegister
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <FiCheck
-                      className={
-                        connection.features.cashRegister ? 'text-green-600' : 'text-gray-400'
-                      }
-                    />
-                    <span className="text-sm font-medium">Kasse</span>
+                  <div className="flex items-center gap-2">
+                    <FiShield className="text-[#14ad9f]" />
+                    <span className="text-sm">Kassenbuch</span>
+                    <FiCheck className="text-green-600 ml-auto" size={16} />
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button onClick={handleSync} className="bg-[#14ad9f] hover:bg-[#129488]">
-                  <FiRefreshCw className="mr-2" size={16} />
-                  Jetzt synchronisieren
-                </Button>
-                <Button
-                  onClick={handleDisconnect}
-                  variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50"
-                >
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button onClick={handleDisconnect} variant="outline" className="flex-1">
                   Verbindung trennen
                 </Button>
+                <Button
+                  onClick={() => window.open('https://www.datev.de', '_blank')}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <FiExternalLink className="mr-2" />
+                  DATEV öffnen
+                </Button>
               </div>
-            </>
+            </div>
           ) : (
-            <>
-              {/* Not Connected Info */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FiAlertCircle className="text-yellow-600" size={20} />
-                  <span className="font-medium text-yellow-800">DATEV nicht verbunden</span>
-                </div>
-                <p className="text-yellow-700 text-sm">
-                  Verbinden Sie Taskilo mit DATEV für automatische Buchhaltung und nahtlose
-                  Steuerberater-Integration.
-                </p>
-              </div>
-
-              {/* Benefits */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Vorteile der DATEV-Integration</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-3">
-                    <FiCheck className="text-green-500 mt-1" size={16} />
-                    <div>
-                      <div className="font-medium text-sm">Automatische Buchhaltung</div>
-                      <div className="text-gray-600 text-xs">
-                        Rechnungen und Belege automatisch in DATEV übertragen
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <FiCheck className="text-green-500 mt-1" size={16} />
-                    <div>
-                      <div className="font-medium text-sm">Steuerberater-Zugang</div>
-                      <div className="text-gray-600 text-xs">
-                        Ihr Steuerberater hat direkten Zugriff auf alle Daten
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <FiCheck className="text-green-500 mt-1" size={16} />
-                    <div>
-                      <div className="font-medium text-sm">GoBD-Konformität</div>
-                      <div className="text-gray-600 text-xs">
-                        Rechtssichere Archivierung aller Geschäftsdaten
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <FiCheck className="text-green-500 mt-1" size={16} />
-                    <div>
-                      <div className="font-medium text-sm">Zeitersparnis</div>
-                      <div className="text-gray-600 text-xs">
-                        Keine doppelte Dateneingabe mehr erforderlich
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              {/* Benefits Section */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-3">Vorteile der DATEV-Integration</h4>
+                <ul className="space-y-2 text-sm text-blue-700">
+                  <li className="flex items-center gap-2">
+                    <FiCheck size={16} />
+                    Automatische Synchronisation von Rechnungen und Zahlungen
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheck size={16} />
+                    Nahtlose Zusammenarbeit mit Ihrem Steuerberater
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheck size={16} />
+                    Rechtssichere Dokumentenarchivierung
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheck size={16} />
+                    Automatische Umsatzsteuer-Voranmeldung
+                  </li>
+                </ul>
               </div>
 
               {/* Connect Button */}
               <Button
                 onClick={handleConnect}
                 disabled={connecting}
-                className="w-full bg-[#14ad9f] hover:bg-[#129488]"
-                size="lg"
+                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
               >
                 {connecting ? (
                   <>
-                    <FiRefreshCw className="animate-spin mr-2" size={16} />
-                    Verbinde mit DATEV...
+                    <FiRefreshCw className="mr-2 animate-spin" />
+                    Verbindung wird hergestellt...
                   </>
                 ) : (
                   <>
-                    <FiExternalLink className="mr-2" size={16} />
+                    <FiExternalLink className="mr-2" />
                     Mit DATEV verbinden
                   </>
                 )}
               </Button>
 
-              {/* Security Note */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FiShield className="text-blue-600" size={16} />
-                  <span className="font-medium text-blue-800 text-sm">Sicherheitshinweis</span>
-                </div>
-                <p className="text-blue-700 text-xs">
-                  Die Verbindung erfolgt über OAuth 2.0 direkt mit DATEV. Taskilo erhält nur die von
-                  Ihnen autorisierten Zugriffsrechte.
-                </p>
-              </div>
-            </>
+              <p className="text-xs text-gray-500 text-center">
+                Sie werden sicher zu DATEV weitergeleitet, um die Verbindung zu autorisieren.
+              </p>
+            </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Security Note */}
+      <Card className="border-gray-200">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <FiShield className="text-gray-400 mt-1" />
+            <div className="text-sm text-gray-600">
+              <p className="font-medium mb-1">Sicherheit & Datenschutz</p>
+              <p>
+                Ihre DATEV-Zugangsdaten werden sicher verschlüsselt und nur für die autorisierten
+                Integrationen verwendet. Die Verbindung erfolgt über DATEV&apos;s offizielle
+                OAuth2-Schnittstelle.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-export default DatevAuthComponent;

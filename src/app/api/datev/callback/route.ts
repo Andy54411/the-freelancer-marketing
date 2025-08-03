@@ -54,8 +54,24 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('DATEV token exchange failed:', errorData);
-      return NextResponse.redirect(`${redirectUrl}?error=token_exchange_failed`);
+      console.error('DATEV token exchange failed:', {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorData,
+      });
+
+      // Try to parse error for more details
+      let errorMessage = 'Token exchange failed';
+      try {
+        const errorJson = JSON.parse(errorData);
+        errorMessage = errorJson.error_description || errorJson.error || errorMessage;
+      } catch {
+        // Keep default message if JSON parsing fails
+      }
+
+      return NextResponse.redirect(
+        `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent(errorMessage)}`
+      );
     }
 
     const tokenData = await tokenResponse.json();
@@ -69,8 +85,17 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userResponse.ok) {
-      console.error('Failed to fetch DATEV user info');
-      return NextResponse.redirect(`${redirectUrl}?error=user_info_failed`);
+      const errorData = await userResponse.text();
+      console.error('Failed to fetch DATEV user info:', {
+        status: userResponse.status,
+        statusText: userResponse.statusText,
+        error: errorData,
+      });
+
+      // If this fails, the token might be invalid even though exchange succeeded
+      return NextResponse.redirect(
+        `${redirectUrl}?error=user_info_failed&message=${encodeURIComponent('Could not fetch user information')}`
+      );
     }
 
     const userData = await userResponse.json();

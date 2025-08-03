@@ -81,10 +81,16 @@ export class DatevService {
    * Make authenticated API call to DATEV
    */
   private static async makeApiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    // Ensure token is valid
-    const isAuthenticated = await DatevTokenManager.refreshTokenIfNeeded();
+    // First try to ensure token is valid
+    let isAuthenticated = await DatevTokenManager.refreshTokenIfNeeded();
+
     if (!isAuthenticated) {
-      throw new Error('DATEV authentication required');
+      // Try to validate existing token
+      isAuthenticated = await DatevTokenManager.validateToken();
+
+      if (!isAuthenticated) {
+        throw new Error('DATEV authentication required - please re-authenticate');
+      }
     }
 
     const authHeader = DatevTokenManager.getAuthHeader();
@@ -92,22 +98,74 @@ export class DatevService {
       throw new Error('No DATEV access token available');
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        Authorization: authHeader,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...options.headers,
-      },
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
+        headers: {
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`DATEV API error (${response.status}): ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+
+        // Handle specific DATEV API errors
+        if (response.status === 401) {
+          console.log('DATEV API returned 401, clearing token and requiring re-auth');
+          DatevTokenManager.clearUserToken();
+          throw new Error('DATEV authentication expired - please re-authenticate');
+        }
+
+        if (response.status === 403) {
+          throw new Error(
+            `DATEV API access denied: ${errorData.message || 'Insufficient permissions'}`
+          );
+        }
+
+        if (response.status === 429) {
+          throw new Error('DATEV API rate limit exceeded - please try again later');
+        }
+
+        if (response.status >= 500) {
+          throw new Error(
+            `DATEV API server error (${response.status}): ${errorData.message || 'Internal server error'}`
+          );
+        }
+
+        // General error with more context
+        throw new Error(
+          `DATEV API error (${response.status}): ${errorData.message || errorData.error || errorText}`
+        );
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        return {} as T; // Return empty object for empty responses
+      }
+
+      return JSON.parse(responseText);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('DATEV API call failed:', {
+          endpoint,
+          error: error.message,
+          stack: error.stack,
+        });
+        throw error;
+      }
+
+      throw new Error(`Unexpected error during DATEV API call: ${String(error)}`);
     }
-
-    return response.json();
   }
 
   /**

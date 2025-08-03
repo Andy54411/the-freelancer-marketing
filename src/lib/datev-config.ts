@@ -19,9 +19,20 @@ export interface DatevConfig {
 export function getDatevConfig(): DatevConfig {
   const isProduction = process.env.NODE_ENV === 'production';
 
+  // Only validate in runtime, not during build
+  if (typeof window !== 'undefined' || process.env.NODE_ENV === 'development') {
+    if (isProduction && !process.env.DATEV_CLIENT_ID) {
+      throw new Error('DATEV_CLIENT_ID environment variable is required in production');
+    }
+
+    if (isProduction && !process.env.DATEV_CLIENT_SECRET) {
+      throw new Error('DATEV_CLIENT_SECRET environment variable is required in production');
+    }
+  }
+
   return {
-    clientId: process.env.DATEV_CLIENT_ID || '6111ad8e8cae82d1a805950f2ae4adc4',
-    clientSecret: process.env.DATEV_CLIENT_SECRET || '8caca150047703ca73ab6f9a789482ec',
+    clientId: process.env.DATEV_CLIENT_ID || '',
+    clientSecret: process.env.DATEV_CLIENT_SECRET || '',
     redirectUri: isProduction
       ? 'https://taskilo.de/api/datev/callback'
       : 'http://localhost:3000/api/datev/callback',
