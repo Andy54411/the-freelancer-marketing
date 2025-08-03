@@ -14,6 +14,7 @@ import {
   ChevronDown as FiChevronDown,
   ChevronRight as FiChevronRight,
   Bot as FiBot,
+  TrendingUp as FiTrendingUp,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -207,6 +208,12 @@ const navigationItems: NavigationItem[] = [
         href: 'finance/reports',
       },
     ],
+  },
+  {
+    label: 'Google Ads',
+    icon: FiTrendingUp,
+    value: 'google-ads',
+    href: 'google-ads',
   },
   {
     label: 'DATEV Integration',

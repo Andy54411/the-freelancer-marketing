@@ -1,0 +1,432 @@
+// ✅ PHASE 1: Google Ads Overview Component
+// Hauptkomponente für Google Ads Dashboard mit Account-Verknüpfung
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { GoogleAdsConnectionStatus, GoogleAdsServiceStatus } from '@/types/googleAds';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Loader2,
+  ExternalLink,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  Settings,
+  TrendingUp,
+} from 'lucide-react';
+
+interface GoogleAdsOverviewProps {
+  companyId: string;
+}
+
+export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
+  const [status, setStatus] = useState<GoogleAdsConnectionStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Status laden beim Component Mount
+  useEffect(() => {
+    loadConnectionStatus();
+  }, [companyId]);
+
+  const loadConnectionStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/google-ads/status?companyId=${companyId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus(data);
+      } else {
+        console.error('Failed to load status:', data.error);
+      }
+    } catch (error) {
+      console.error('Error loading status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    try {
+      setConnecting(true);
+
+      const response = await fetch('/api/google-ads/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        console.error('Auth URL generation failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Connection error:', error);
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await loadConnectionStatus();
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      const response = await fetch('/api/google-ads/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId,
+          action: 'test_connection',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        await loadConnectionStatus();
+      }
+    } catch (error) {
+      console.error('Test connection error:', error);
+    }
+  };
+
+  const getStatusColor = (status: GoogleAdsServiceStatus) => {
+    switch (status) {
+      case 'CONNECTED':
+        return 'bg-green-100 text-green-800';
+      case 'DISCONNECTED':
+        return 'bg-red-100 text-red-800';
+      case 'ERROR':
+        return 'bg-red-100 text-red-800';
+      case 'SYNCING':
+        return 'bg-blue-100 text-blue-800';
+      case 'SETUP_REQUIRED':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: GoogleAdsServiceStatus) => {
+    switch (status) {
+      case 'CONNECTED':
+        return <CheckCircle2 className="h-4 w-4" />;
+      case 'DISCONNECTED':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'ERROR':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'SYNCING':
+        return <Loader2 className="h-4 w-4 animate-spin" />;
+      case 'SETUP_REQUIRED':
+        return <Settings className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
+        <span className="ml-2 text-gray-600">Lade Google Ads Status...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Connection Status Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {status && getStatusIcon(status.status)}
+                Verbindungsstatus
+              </CardTitle>
+              <CardDescription>Status Ihrer Google Ads Integration</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className={getStatusColor(status?.status || 'SETUP_REQUIRED')}>
+                {status?.status || 'UNBEKANNT'}
+              </Badge>
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {status?.status === 'SETUP_REQUIRED' && (
+            <div className="space-y-4">
+              <Alert>
+                <Settings className="h-4 w-4" />
+                <AlertDescription>
+                  Google Ads ist noch nicht konfiguriert. Verbinden Sie Ihr Google Ads Account um zu
+                  beginnen.
+                </AlertDescription>
+              </Alert>
+
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="bg-[#14ad9f] hover:bg-[#129488]"
+              >
+                {connecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verbinde...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Google Ads verbinden
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {status?.status === 'CONNECTED' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="text-sm text-green-600 font-medium">Verbundene Accounts</div>
+                  <div className="text-2xl font-bold text-green-900">
+                    {status.accountsConnected}
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="text-sm text-blue-600 font-medium">Letzte Synchronisation</div>
+                  <div className="text-sm text-blue-900">
+                    {status.lastSync ? new Date(status.lastSync).toLocaleString('de-DE') : 'Nie'}
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="text-sm text-purple-600 font-medium">API Quota (Täglich)</div>
+                  <div className="text-sm text-purple-900">
+                    {status.quotaUsage?.daily.used} / {status.quotaUsage?.daily.limit}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleTestConnection} size="sm">
+                  Verbindung testen
+                </Button>
+
+                <Button variant="outline" onClick={() => loadConnectionStatus()} size="sm">
+                  Status aktualisieren
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {status?.status === 'ERROR' && status.error && (
+            <div className="space-y-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Fehler:</strong> {status.error.message}
+                  {status.error.retryable && (
+                    <span className="block mt-1 text-sm">
+                      Dieser Fehler kann möglicherweise durch einen erneuten Versuch behoben werden.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex gap-2">
+                <Button onClick={handleConnect} variant="outline" size="sm">
+                  Erneut verbinden
+                </Button>
+
+                <Button onClick={handleRefresh} variant="outline" size="sm">
+                  Status prüfen
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {status?.status === 'DISCONNECTED' && (
+            <div className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Die Verbindung zu Google Ads wurde getrennt. Stellen Sie die Verbindung wieder her
+                  um fortzufahren.
+                </AlertDescription>
+              </Alert>
+
+              <Button onClick={handleConnect} className="bg-[#14ad9f] hover:bg-[#129488]">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Neu verbinden
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Accounts List */}
+      {status?.accounts && status.accounts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Verbundene Accounts</CardTitle>
+            <CardDescription>Ihre mit Taskilo verknüpften Google Ads Accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {status.accounts.map(account => (
+                <div
+                  key={account.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{account.name}</div>
+                    <div className="text-sm text-gray-500">
+                      ID: {account.id} • {account.currency}
+                    </div>
+                    {account.linkedAt && (
+                      <div className="text-xs text-gray-400">
+                        Verbunden: {new Date(account.linkedAt).toLocaleDateString('de-DE')}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={account.status === 'ENABLED' ? 'default' : 'secondary'}
+                      className={account.status === 'ENABLED' ? 'bg-green-100 text-green-800' : ''}
+                    >
+                      {account.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Next Steps */}
+      {status?.status === 'CONNECTED' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-[#14ad9f]" />
+              Nächste Schritte
+            </CardTitle>
+            <CardDescription>
+              Nutzen Sie das volle Potenzial Ihrer Google Ads Integration
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Kampagnen verwalten</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Erstellen und verwalten Sie Ihre Google Ads Kampagnen direkt aus Taskilo.
+                </p>
+                <Button variant="outline" size="sm" disabled>
+                  Bald verfügbar
+                </Button>
+              </div>
+
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Performance Analytics</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Analysieren Sie die Performance Ihrer Kampagnen mit detaillierten Berichten.
+                </p>
+                <Button variant="outline" size="sm" disabled>
+                  Bald verfügbar
+                </Button>
+              </div>
+
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Automatisierung</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Richten Sie automatische Regeln für Budget und Gebote ein.
+                </p>
+                <Button variant="outline" size="sm" disabled>
+                  Bald verfügbar
+                </Button>
+              </div>
+
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">DATEV Integration</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Automatische Übertragung der Werbekosten in Ihre Buchhaltung.
+                </p>
+                <Button variant="outline" size="sm" disabled>
+                  Bald verfügbar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Development Status */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-blue-900">Entwicklungsstatus</CardTitle>
+          <CardDescription className="text-blue-700">
+            PHASE 1: Grundlagen & API Setup
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <span>Google Ads API Konfiguration</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <span>OAuth2-Flow für Account-Verknüpfung</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <span>Token-Management System</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <span>Grundlegendes Dashboard</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="h-4 w-4 border-2 border-gray-300 rounded-full" />
+              <span>Kampagnen-Management (PHASE 2)</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="h-4 w-4 border-2 border-gray-300 rounded-full" />
+              <span>Performance Analytics (PHASE 2)</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
