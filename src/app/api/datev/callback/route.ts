@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
 
     const redirectUrl =
       process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000/dashboard/company/setup/banking'
-        : 'https://taskilo.de/dashboard/company/setup/banking';
+        ? 'http://localhost:3000/dashboard/company/setup/datev'
+        : 'https://taskilo.de/dashboard/company/setup/datev';
 
     // Log detailed callback information for debugging
     console.log('DATEV OAuth Callback received:', {
@@ -30,18 +30,46 @@ export async function GET(request: NextRequest) {
     // Check for OAuth errors
     if (error) {
       console.error('DATEV OAuth error:', error, error_description);
+
+      // Parse state for company ID even in error case
+      let companyId = 'unknown';
+      try {
+        const stateParts = state?.split(':');
+        if (stateParts && stateParts.length >= 2 && stateParts[0] === 'company') {
+          companyId = stateParts[1];
+        }
+      } catch (error) {
+        console.warn('Failed to parse state parameter in error case:', state);
+      }
+
+      const errorRedirectUrl = `${redirectUrl.replace('/setup/datev', `/${companyId}/datev/setup`)}`;
       return NextResponse.redirect(
-        `${redirectUrl}?error=oauth_error&message=${encodeURIComponent(error_description || error)}&request_id=${Date.now()}`
+        `${errorRedirectUrl}?error=oauth_error&message=${encodeURIComponent(error_description || error)}&request_id=${Date.now()}`
       );
     }
 
     // Validate required parameters
     if (!code || !state) {
       console.error('Missing required OAuth parameters - Code:', !!code, 'State:', !!state);
+      const errorRedirectUrl = `${redirectUrl.replace('/setup/datev', `/unknown/datev/setup`)}`;
       return NextResponse.redirect(
-        `${redirectUrl}?error=missing_params&details=${encodeURIComponent(`Code: ${!!code}, State: ${!!state}`)}`
+        `${errorRedirectUrl}?error=missing_params&details=${encodeURIComponent(`Code: ${!!code}, State: ${!!state}`)}`
       );
     }
+
+    // Parse state to extract company ID
+    let companyId = 'unknown';
+    try {
+      const stateParts = state.split(':');
+      if (stateParts && stateParts.length >= 2 && stateParts[0] === 'company') {
+        companyId = stateParts[1];
+      }
+    } catch (error) {
+      console.warn('Failed to parse state parameter:', state);
+    }
+
+    // Update redirect URL with company ID
+    const finalRedirectUrl = `${redirectUrl.replace('/setup/datev', `/${companyId}/datev/setup`)}`;
 
     // TODO: Validate state parameter against stored value (CSRF protection)
     // In production, you should verify the state parameter matches what was sent
@@ -97,7 +125,7 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.redirect(
-        `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent(errorMessage)}&request_id=${requestId}&status=${tokenResponse.status}`
+        `${finalRedirectUrl}?error=token_exchange_failed&message=${encodeURIComponent(errorMessage)}&request_id=${requestId}&status=${tokenResponse.status}`
       );
     }
 
@@ -121,7 +149,7 @@ export async function GET(request: NextRequest) {
 
       // If this fails, the token might be invalid even though exchange succeeded
       return NextResponse.redirect(
-        `${redirectUrl}?error=user_info_failed&message=${encodeURIComponent('Could not fetch user information')}`
+        `${finalRedirectUrl}?error=user_info_failed&message=${encodeURIComponent('Could not fetch user information')}`
       );
     }
 
@@ -144,7 +172,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Create success redirect with token data
-    const successUrl = new URL(redirectUrl);
+    const successUrl = new URL(finalRedirectUrl);
     successUrl.searchParams.set('datev_auth', 'success');
     successUrl.searchParams.set(
       'token_data',
@@ -154,11 +182,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(successUrl.toString());
   } catch (error) {
     console.error('DATEV OAuth callback error:', error);
-    const redirectUrl =
+    const errorRedirectUrl =
       process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000/dashboard/company/setup/banking'
-        : 'https://taskilo.de/dashboard/company/setup/banking';
-    return NextResponse.redirect(`${redirectUrl}?error=callback_error`);
+        ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
+        : 'https://taskilo.de/dashboard/company/unknown/datev/setup';
+    return NextResponse.redirect(`${errorRedirectUrl}?error=callback_error`);
   }
 }
 

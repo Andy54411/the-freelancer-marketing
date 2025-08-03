@@ -161,37 +161,16 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         throw new Error(result.error || 'Failed to generate auth URL');
       }
 
-      // Open DATEV OAuth in popup
-      const popup = window.open(
-        result.authUrl,
-        'datev-auth',
-        'width=600,height=700,scrollbars=yes,resizable=yes'
-      );
-
-      // Monitor popup for completion
-      const checkPopup = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(checkPopup);
-          setConnecting(false);
-
-          // Check if authentication was successful
-          setTimeout(() => {
-            loadDatevConnection();
-          }, 1000);
-        }
-      }, 1000);
-
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        if (popup && !popup.closed) {
-          popup.close();
-        }
-        clearInterval(checkPopup);
-        setConnecting(false);
-      }, 300000);
+      // WICHTIG: Vollständige Seitenweiterleitung statt Popup
+      // DATEV OAuth funktioniert nicht korrekt mit Popups
+      console.log('Redirecting to DATEV OAuth:', result.authUrl);
+      window.location.href = result.authUrl;
     } catch (error) {
       console.error('DATEV connection failed:', error);
-      toast.error('Fehler beim Verbinden mit DATEV');
+      toast.error(
+        'Fehler beim Verbinden mit DATEV: ' +
+          (error instanceof Error ? error.message : 'Unbekannter Fehler')
+      );
       setConnecting(false);
     }
   };
