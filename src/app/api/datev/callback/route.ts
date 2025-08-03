@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatevConfig } from '@/lib/datev-config-correct';
+import { getDatevConfig, validateSandboxClientPermissions } from '@/lib/datev-config';
+import { retrievePKCEData } from '@/lib/pkce-storage';
 
 /**
  * DATEV OAuth Callback Handler
@@ -70,10 +71,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: In production, retrieve codeVerifier and nonce from secure storage using state
-    // For now, we'll use a placeholder - THIS NEEDS TO BE IMPLEMENTED
-    const codeVerifier = 'PLACEHOLDER_CODE_VERIFIER'; // Retrieve from secure storage
-    const nonce = 'PLACEHOLDER_NONCE'; // Retrieve from secure storage
+    // Retrieve codeVerifier and nonce from secure storage using state
+    const storedAuthData = retrievePKCEData(state);
+
+    if (!storedAuthData) {
+      console.error('No stored auth data found for state:', state);
+      return NextResponse.redirect(
+        `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Authentifizierungs-Session nicht gefunden oder abgelaufen')}`
+      );
+    }
+
+    const codeVerifier = storedAuthData.codeVerifier;
+    const nonce = storedAuthData.nonce;
+    companyId = storedAuthData.companyId || companyId;
 
     // Validate state timestamp (should not be older than 10 minutes)
     const stateTime = parseInt(timestamp);
@@ -91,8 +101,23 @@ export async function GET(request: NextRequest) {
       // Exchange authorization code for tokens using PKCE
       const tokenData = await exchangeCodeForTokenPKCE(code, codeVerifier);
 
+      // Validate sandbox client permissions if using sandbox
+      const config = getDatevConfig();
+      if (config.consultantNumber) {
+        const clientValidation = validateSandboxClientPermissions(
+          config.defaultClientId || '455148-1'
+        );
+        console.log('Sandbox client validation:', clientValidation);
+
+        if (!clientValidation.hasFullPermissions) {
+          console.warn(
+            `Client ${config.defaultClientId} has limited permissions. Recommended: ${clientValidation.recommendedClient}`
+          );
+        }
+      }
+
       // Store tokens securely for the company
-      // TODO: Implement secure token storage
+      // TODO: Implement secure token storage in database
 
       console.log('DATEV token exchange successful for company:', companyId);
 

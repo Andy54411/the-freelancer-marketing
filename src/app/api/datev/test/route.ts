@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
               hasClientId: !!config.clientId,
               hasClientSecret: !!config.clientSecret,
               redirectUri: config.redirectUri,
-              baseUrl: config.baseUrl,
+              baseUrl: config.apiBaseUrl,
               authUrl: config.authUrl,
               tokenUrl: config.tokenUrl,
               scopesCount: config.scopes.length,
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
                 reachable: authResponse.ok,
                 status: authResponse.status,
               },
-              baseUrl: config.baseUrl,
+              baseUrl: config.apiBaseUrl,
             },
             message: 'DATEV endpoint accessibility tested',
           });

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
             clientId: config.clientId ? `${config.clientId.substring(0, 8)}...` : 'missing',
             clientSecret: config.clientSecret ? 'configured' : 'missing',
             redirectUri: config.redirectUri,
-            baseUrl: config.baseUrl,
+            apiBaseUrl: config.apiBaseUrl,
             authUrl: config.authUrl,
             tokenUrl: config.tokenUrl,
             scopes: config.scopes,
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         const config = getDatevConfig();
 
         // Test token by calling user info endpoint
-        const userResponse = await fetch(`${config.baseUrl}${DATEV_ENDPOINTS.userInfo}`, {
+        const userResponse = await fetch(`${config.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',

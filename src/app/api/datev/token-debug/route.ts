@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
         try {
           // Test token against DATEV user info endpoint
-          const userResponse = await fetch(`${config.baseUrl}${DATEV_ENDPOINTS.userInfo}`, {
+          const userResponse = await fetch(`${config.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}`, {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: 'application/json',
@@ -74,9 +74,12 @@ export async function GET(request: NextRequest) {
       case 'test-endpoints':
         const testConfig = getDatevConfig();
         const endpoints = [
-          { name: 'userInfo', url: `${testConfig.baseUrl}${DATEV_ENDPOINTS.userInfo}` },
-          { name: 'organizations', url: `${testConfig.baseUrl}${DATEV_ENDPOINTS.organizations}` },
-          { name: 'accounts', url: `${testConfig.baseUrl}${DATEV_ENDPOINTS.accounts}` },
+          { name: 'userInfo', url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}` },
+          {
+            name: 'organizations',
+            url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.organizations}`,
+          },
+          { name: 'clients', url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.clients}` },
         ];
 
         const results: Array<{
@@ -154,7 +157,7 @@ export async function POST(request: NextRequest) {
       const authHeaderToUse = authHeader || `Bearer ${token}`;
 
       try {
-        const response = await fetch(`${config.baseUrl}${DATEV_ENDPOINTS.userInfo}`, {
+        const response = await fetch(`${config.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}`, {
           headers: {
             Authorization: authHeaderToUse,
             Accept: 'application/json',
@@ -173,7 +176,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           request: {
-            url: `${config.baseUrl}${DATEV_ENDPOINTS.userInfo}`,
+            url: `${config.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}`,
             headers: {
               Authorization: authHeaderToUse.replace(/Bearer\s+(.{10}).*/, 'Bearer $1...'),
               Accept: 'application/json',

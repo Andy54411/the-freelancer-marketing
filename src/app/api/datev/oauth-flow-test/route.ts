@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
             clientId: config.clientId,
             clientSecret: config.clientSecret ? '***configured***' : 'NOT_SET',
             redirectUri: config.redirectUri,
-            baseUrl: config.baseUrl,
+            baseUrl: config.apiBaseUrl,
             authUrl: config.authUrl,
             tokenUrl: config.tokenUrl,
             scopes: config.scopes,

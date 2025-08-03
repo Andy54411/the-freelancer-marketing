@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const config = getDatevConfig();
 
     // Test token by calling DATEV user info endpoint
-    const response = await fetch(`${config.baseUrl}${DATEV_ENDPOINTS.userInfo}`, {
+    const response = await fetch(`${config.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}`, {
       headers: {
         Authorization: authHeader,
         Accept: 'application/json',

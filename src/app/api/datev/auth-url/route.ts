@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateDatevAuthUrl } from '@/lib/datev-config';
+import { storePKCEData } from '@/lib/pkce-storage';
 
 /**
  * DATEV OAuth URL Generation with PKCE
@@ -17,8 +18,14 @@ export async function POST(request: NextRequest) {
     // Generate OAuth URL with PKCE server-side
     const authData = generateDatevAuthUrl(companyId);
 
-    // TODO: Store codeVerifier, state, and nonce securely
-    // These need to be retrieved during the callback
+    // Store PKCE data securely for retrieval during callback
+    storePKCEData(authData.state, {
+      codeVerifier: authData.codeVerifier,
+      nonce: authData.nonce,
+      timestamp: Date.now(),
+      companyId,
+    });
+
     console.log('Generated DATEV auth data:', {
       state: authData.state,
       codeVerifier: authData.codeVerifier.substring(0, 10) + '...',
@@ -26,21 +33,11 @@ export async function POST(request: NextRequest) {
       authUrl: authData.authUrl.substring(0, 100) + '...',
     });
 
-    // WARNING: In production, store these securely (Redis, Database, etc.)
-    // For now, we'll need to implement proper storage
-    // Temporary solution: Return state and expect client to handle storage
-
     return NextResponse.json({
       success: true,
       authUrl: authData.authUrl,
       state: authData.state,
-      // DO NOT return codeVerifier and nonce to client in production!
-      // This is temporary for development
-      metadata: {
-        codeVerifier: authData.codeVerifier,
-        nonce: authData.nonce,
-        timestamp: new Date().toISOString(),
-      },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('DATEV auth URL generation failed:', error);
@@ -74,6 +71,14 @@ export async function GET(request: NextRequest) {
     // Generate OAuth URL with PKCE
     const authData = generateDatevAuthUrl(companyId);
 
+    // Store PKCE data securely for retrieval during callback
+    storePKCEData(authData.state, {
+      codeVerifier: authData.codeVerifier,
+      nonce: authData.nonce,
+      timestamp: Date.now(),
+      companyId,
+    });
+
     // Log for debugging
     console.log('Generated DATEV auth data (GET):', {
       state: authData.state,
@@ -85,12 +90,7 @@ export async function GET(request: NextRequest) {
       success: true,
       authUrl: authData.authUrl,
       state: authData.state,
-      // Development only - implement secure storage in production
-      metadata: {
-        codeVerifier: authData.codeVerifier,
-        nonce: authData.nonce,
-        timestamp: new Date().toISOString(),
-      },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('DATEV auth URL generation failed:', error);

@@ -76,7 +76,7 @@ export interface DatevExportJob {
 
 export class DatevService {
   private static getBaseUrl(): string {
-    return getDatevConfig().baseUrl;
+    return getDatevConfig().apiBaseUrl;
   }
 
   /**
@@ -210,7 +210,7 @@ export class DatevService {
       if (!orgId) throw new Error('No organization ID available');
 
       const data = await this.makeApiCall<{ accounts: DatevAccount[] }>(
-        `${DATEV_ENDPOINTS.accounts}?organizationId=${orgId}`
+        `${DATEV_ENDPOINTS.accounting.clients}?organizationId=${orgId}`
       );
       return data.accounts || [];
     } catch (error) {
@@ -239,7 +239,7 @@ export class DatevService {
       });
 
       const data = await this.makeApiCall<{ transactions: DatevTransaction[] }>(
-        `${DATEV_ENDPOINTS.transactions}?${params}`
+        `${DATEV_ENDPOINTS.accounting.extfFiles}?${params}`
       );
       return data.transactions || [];
     } catch (error) {
@@ -259,7 +259,7 @@ export class DatevService {
       const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
       if (!orgId) throw new Error('No organization ID available');
 
-      const data = await this.makeApiCall<DatevTransaction>(DATEV_ENDPOINTS.transactions, {
+      const data = await this.makeApiCall<DatevTransaction>(DATEV_ENDPOINTS.accounting.extfFiles, {
         method: 'POST',
         body: JSON.stringify({
           ...transaction,
@@ -297,7 +297,7 @@ export class DatevService {
         throw new Error('No DATEV access token available');
       }
 
-      const response = await fetch(`${this.getBaseUrl()}${DATEV_ENDPOINTS.documents}`, {
+      const response = await fetch(`${this.getBaseUrl()}${DATEV_ENDPOINTS.accounting.documents}`, {
         method: 'POST',
         headers: {
           Authorization: authHeader,
@@ -326,7 +326,7 @@ export class DatevService {
       if (!orgId) throw new Error('No organization ID available');
 
       const data = await this.makeApiCall<{ documents: DatevDocument[] }>(
-        `${DATEV_ENDPOINTS.documents}?organizationId=${orgId}`
+        `${DATEV_ENDPOINTS.accounting.documents}?organizationId=${orgId}`
       );
       return data.documents || [];
     } catch (error) {
@@ -349,7 +349,7 @@ export class DatevService {
       const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
       if (!orgId) throw new Error('No organization ID available');
 
-      const data = await this.makeApiCall<DatevExportJob>(DATEV_ENDPOINTS.export, {
+      const data = await this.makeApiCall<DatevExportJob>(DATEV_ENDPOINTS.accounting.dxsoJobs, {
         method: 'POST',
         body: JSON.stringify({
           type,
@@ -371,7 +371,9 @@ export class DatevService {
    */
   static async getExportJob(jobId: string): Promise<DatevExportJob> {
     try {
-      const data = await this.makeApiCall<DatevExportJob>(`${DATEV_ENDPOINTS.export}/${jobId}`);
+      const data = await this.makeApiCall<DatevExportJob>(
+        `${DATEV_ENDPOINTS.accounting.dxsoJobs}/${jobId}`
+      );
       return data;
     } catch (error) {
       console.error('Error fetching DATEV export job:', error);
