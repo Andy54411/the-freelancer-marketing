@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface CredentialTest {
+  name: string;
+  clientId: { exists: boolean; length?: number; format?: string };
+  clientSecret: { exists: boolean; length?: number; format?: string };
+}
+
+interface ConnectivityTest {
+  name: string;
+  status?: number;
+  reachable: boolean;
+  error?: string;
+}
+
 export async function GET(req: NextRequest) {
   try {
     // Test verschiedene finAPI Auth-Szenarien
-    const tests = [];
+    const tests: (CredentialTest | ConnectivityTest)[] = [];
 
     // 1. Test Sandbox Credentials Format
     const sandboxClientId = process.env.FINAPI_SANDBOX_CLIENT_ID;
