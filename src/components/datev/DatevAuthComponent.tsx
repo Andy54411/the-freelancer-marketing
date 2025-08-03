@@ -47,6 +47,28 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
+    // Check URL parameters for OAuth callback results
+    const urlParams = new URLSearchParams(window.location.search);
+    const authStatus = urlParams.get('datev_auth');
+    const errorMessage = urlParams.get('message');
+    const errorType = urlParams.get('error');
+
+    // Handle OAuth callback results
+    if (authStatus === 'success') {
+      toast.success('DATEV-Authentifizierung erfolgreich abgeschlossen!');
+      // Clean the URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else if (authStatus === 'error' || errorType) {
+      const message = errorMessage
+        ? decodeURIComponent(errorMessage)
+        : 'DATEV-Authentifizierung fehlgeschlagen';
+      toast.error(`DATEV-Fehler: ${message}`);
+      // Clean the URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+
     loadDatevConnection();
   }, [companyId]);
 
