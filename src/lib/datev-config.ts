@@ -19,18 +19,25 @@ export interface DatevConfig {
 export function getDatevConfig(): DatevConfig {
   const isProduction = process.env.NODE_ENV === 'production';
 
+  // DATEV Sandbox vs Production URLs
+  // Sandbox Client ID: 6111ad8e8cae82d1a805950f2ae4adc4 → Use Sandbox URLs
+  const clientId = process.env.DATEV_CLIENT_ID || '';
+  const isSandbox = clientId === '6111ad8e8cae82d1a805950f2ae4adc4';
+
+  const baseUrl = isSandbox ? 'https://sandbox-api.datev.de' : 'https://api.datev.de';
+
   // Only validate when DATEV is actually being used, not during module initialization
   // This prevents build failures when DATEV environment variables are not yet configured
 
   return {
-    clientId: process.env.DATEV_CLIENT_ID || '',
+    clientId,
     clientSecret: process.env.DATEV_CLIENT_SECRET || '',
     redirectUri: isProduction
       ? 'https://taskilo.de/api/datev/callback'
       : 'http://localhost:3000/api/datev/callback',
-    baseUrl: 'https://api.datev.de',
-    authUrl: 'https://api.datev.de/platform/v1/oauth2/authorize',
-    tokenUrl: 'https://api.datev.de/platform/v1/oauth2/token',
+    baseUrl,
+    authUrl: `${baseUrl}/platform/v1/oauth2/authorize`,
+    tokenUrl: `${baseUrl}/platform/v1/oauth2/token`,
     scopes: ['accounting-data:read', 'accounting-data:write', 'organizations:read', 'user:read'],
   };
 }
