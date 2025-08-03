@@ -2,29 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateDatevAuthUrl } from '@/lib/datev-config';
 
 /**
- * DATEV OAuth URL Generation
- * Generates DATEV OAuth authorization URLs server-side to avoid environment variable issues
+ * DATEV OAuth URL Generation with PKCE
+ * Generates DATEV OAuth authorization URLs server-side with proper PKCE implementation
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { companyId, state } = body;
+    const { companyId } = body;
 
     if (!companyId) {
       return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
     }
 
-    // Generate state with company context if not provided
-    const authState = state || `company:${companyId}:${Date.now()}`;
+    // Generate OAuth URL with PKCE server-side
+    const authData = generateDatevAuthUrl(companyId);
 
-    // Generate OAuth URL server-side where environment variables are available
-    const authUrl = generateDatevAuthUrl(authState);
+    // TODO: Store codeVerifier, state, and nonce securely
+    // These need to be retrieved during the callback
+    console.log('Generated DATEV auth data:', {
+      state: authData.state,
+      codeVerifier: authData.codeVerifier.substring(0, 10) + '...',
+      nonce: authData.nonce.substring(0, 10) + '...',
+      authUrl: authData.authUrl.substring(0, 100) + '...',
+    });
+
+    // WARNING: In production, store these securely (Redis, Database, etc.)
+    // For now, we'll need to implement proper storage
+    // Temporary solution: Return state and expect client to handle storage
 
     return NextResponse.json({
       success: true,
-      authUrl,
-      state: authState,
-      timestamp: new Date().toISOString(),
+      authUrl: authData.authUrl,
+      state: authData.state,
+      // DO NOT return codeVerifier and nonce to client in production!
+      // This is temporary for development
+      metadata: {
+        codeVerifier: authData.codeVerifier,
+        nonce: authData.nonce,
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
     console.error('DATEV auth URL generation failed:', error);
@@ -47,7 +63,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
-    const state = searchParams.get('state');
 
     if (!companyId) {
       return NextResponse.json(
@@ -56,17 +71,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Generate state with company context if not provided
-    const authState = state || `company:${companyId}:${Date.now()}`;
+    // Generate OAuth URL with PKCE
+    const authData = generateDatevAuthUrl(companyId);
 
-    // Generate OAuth URL server-side
-    const authUrl = generateDatevAuthUrl(authState);
+    // Log for debugging
+    console.log('Generated DATEV auth data (GET):', {
+      state: authData.state,
+      codeVerifier: authData.codeVerifier.substring(0, 10) + '...',
+      nonce: authData.nonce.substring(0, 10) + '...',
+    });
 
     return NextResponse.json({
       success: true,
-      authUrl,
-      state: authState,
-      timestamp: new Date().toISOString(),
+      authUrl: authData.authUrl,
+      state: authData.state,
+      // Development only - implement secure storage in production
+      metadata: {
+        codeVerifier: authData.codeVerifier,
+        nonce: authData.nonce,
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
     console.error('DATEV auth URL generation failed:', error);

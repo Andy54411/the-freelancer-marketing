@@ -50,26 +50,59 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: In production, validate state parameter against stored value
-    // and retrieve the corresponding code_verifier for PKCE
+    // Parse state to extract company ID and stored state
+    let companyId: string;
+    let timestamp: string;
+    let randomPart: string;
+    try {
+      const stateParts = state.split(':');
+      if (stateParts.length >= 4 && stateParts[0] === 'company') {
+        companyId = stateParts[1];
+        timestamp = stateParts[2];
+        randomPart = stateParts[3];
+      } else {
+        throw new Error('Invalid state format');
+      }
+    } catch (error) {
+      console.error('Invalid state parameter:', state);
+      return NextResponse.redirect(
+        `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter format')}`
+      );
+    }
 
-    // For now, return success with demonstration of next steps
-    console.log('DATEV OAuth callback successful - next steps needed:', {
-      receivedCode: code.substring(0, 20) + '...',
-      receivedState: state,
-      nextImplementationSteps: [
-        'Validate state parameter against stored value',
-        'Retrieve code_verifier for PKCE flow',
-        'Exchange authorization code for access token',
-        'Validate ID token and access token',
-        'Store tokens securely for user session',
-      ],
-    });
+    // TODO: In production, retrieve codeVerifier and nonce from secure storage using state
+    // For now, we'll use a placeholder - THIS NEEDS TO BE IMPLEMENTED
+    const codeVerifier = 'PLACEHOLDER_CODE_VERIFIER'; // Retrieve from secure storage
+    const nonce = 'PLACEHOLDER_NONCE'; // Retrieve from secure storage
 
-    // Redirect with success indication
-    return NextResponse.redirect(
-      `${redirectUrl}?datev_auth=received&state=${state}&implementation_needed=true`
-    );
+    // Validate state timestamp (should not be older than 10 minutes)
+    const stateTime = parseInt(timestamp);
+    const now = Date.now();
+    const maxAge = 10 * 60 * 1000; // 10 minutes
+
+    if (now - stateTime > maxAge) {
+      console.error('State parameter expired:', { stateTime, now, age: now - stateTime });
+      return NextResponse.redirect(
+        `${redirectUrl}?error=expired_state&message=${encodeURIComponent('Authentication request expired')}`
+      );
+    }
+
+    try {
+      // Exchange authorization code for tokens using PKCE
+      const tokenData = await exchangeCodeForTokenPKCE(code, codeVerifier);
+
+      // Store tokens securely for the company
+      // TODO: Implement secure token storage
+
+      console.log('DATEV token exchange successful for company:', companyId);
+
+      return NextResponse.redirect(`${redirectUrl}?datev_auth=success&company=${companyId}`);
+    } catch (tokenError) {
+      console.error('Token exchange failed:', tokenError);
+      return NextResponse.redirect(
+        `${redirectUrl}?error=token_exchange&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
+      );
+    }
   } catch (error) {
     console.error('DATEV OAuth callback error:', error);
     const errorRedirectUrl =
@@ -81,32 +114,57 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Token Exchange Function (for future implementation)
- * Exchanges authorization code for access token using PKCE
+ * Token Exchange Function with proper PKCE implementation
+ * Exchanges authorization code for access token using PKCE as required by DATEV
  */
-async function _exchangeCodeForTokenPKCE(code: string, _state: string, codeVerifier: string) {
+async function exchangeCodeForTokenPKCE(code: string, codeVerifier: string) {
   const config = getDatevConfig();
 
+  console.log('Exchanging code for tokens with PKCE...', {
+    tokenUrl: config.tokenUrl,
+    clientId: config.clientId,
+    redirectUri: config.redirectUri,
+  });
+
   try {
+    // DATEV requires Basic Authentication with client credentials
+    const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64');
+
     const tokenResponse = await fetch(config.tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${credentials}`, // Required by DATEV
+        Accept: 'application/json',
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: config.clientId,
         code: code,
         redirect_uri: config.redirectUri,
         code_verifier: codeVerifier, // PKCE verification
+        client_id: config.clientId, // Include client_id in body as well
       }),
     });
 
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      throw new Error(`Token exchange failed: ${tokenData.error || 'Unknown error'}`);
+      console.error('Token exchange failed:', {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: tokenData,
+      });
+      throw new Error(
+        `Token exchange failed: ${tokenData.error || 'Unknown error'} - ${tokenData.error_description || ''}`
+      );
     }
+
+    console.log('Token exchange successful:', {
+      access_token: tokenData.access_token ? 'received' : 'missing',
+      refresh_token: tokenData.refresh_token ? 'received' : 'missing',
+      expires_in: tokenData.expires_in,
+      token_type: tokenData.token_type,
+    });
 
     return tokenData;
   } catch (error) {
