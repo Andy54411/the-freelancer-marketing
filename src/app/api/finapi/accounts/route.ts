@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AccountsApi, createConfiguration, ServerConfiguration } from 'finapi-client';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,29 +11,42 @@ export async function GET(req: NextRequest) {
 
     const token = authHeader.substring(7);
 
-    // finAPI Accounts Request
-    const accountsResponse = await fetch('https://sandbox.finapi.io/api/v1/accounts', {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    // finAPI SDK Configuration
+    const server = new ServerConfiguration('https://sandbox.finapi.io', {});
+    const configuration = createConfiguration({
+      baseServer: server,
+      authMethods: {
+        finapi_auth: {
+          accessToken: token,
+        },
       },
     });
 
-    if (!accountsResponse.ok) {
-      const errorText = await accountsResponse.text();
-      console.error('finAPI accounts request failed:', errorText);
+    const accountsApi = new AccountsApi(configuration);
+
+    console.log('Using finAPI SDK for accounts request');
+
+    // finAPI Accounts Request mit SDK
+    const accountsResponse = await accountsApi.getAndSearchAllAccounts();
+
+    console.log('finAPI SDK accounts request successful');
+
+    return NextResponse.json(accountsResponse);
+  } catch (error) {
+    console.error('finAPI SDK accounts error:', error);
+
+    // Enhanced error handling for finAPI SDK
+    if (error instanceof Error) {
       return NextResponse.json(
-        { error: 'Failed to fetch accounts', details: errorText },
-        { status: accountsResponse.status }
+        {
+          error: 'Failed to fetch accounts',
+          details: error.message,
+          type: 'SDK_ERROR',
+        },
+        { status: 500 }
       );
     }
 
-    const accountsData = await accountsResponse.json();
-
-    return NextResponse.json(accountsData);
-  } catch (error) {
-    console.error('finAPI accounts error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

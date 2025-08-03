@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinApiBaseUrl, getFinApiCredentials, buildFinApiAuthHeader } from '@/lib/finapi-config';
+import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
+import { AuthorizationApi, createConfiguration, ServerConfiguration } from 'finapi-client';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,41 +40,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
     }
 
-    // finAPI OAuth Token Request mit erweiterten Debug-Infos
-    console.log(`Making request to: ${baseUrl}/oauth/token`);
-    console.log('Request headers:', {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: 'Basic [HIDDEN]',
-    });
-    console.log('Request body: grant_type=client_credentials');
-
-    const authResponse = await fetch(`${baseUrl}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: buildFinApiAuthHeader(credentials.clientId, credentials.clientSecret),
-      },
-      body: 'grant_type=client_credentials',
+    // finAPI SDK Configuration
+    const server = new ServerConfiguration(baseUrl, {});
+    const configuration = createConfiguration({
+      baseServer: server,
     });
 
-    if (!authResponse.ok) {
-      const errorText = await authResponse.text();
-      console.error('finAPI auth failed:', errorText);
+    const authApi = new AuthorizationApi(configuration);
+
+    console.log(`Making SDK request to: ${baseUrl}/api/v2/oauth/token`);
+    console.log('Using finAPI SDK for authentication');
+
+    // OAuth Token Request mit finAPI SDK
+    const authResponse = await authApi.getToken(
+      'client_credentials',
+      credentials.clientId,
+      credentials.clientSecret
+    );
+
+    console.log('finAPI SDK auth successful');
+
+    return NextResponse.json({
+      access_token: authResponse.accessToken,
+      token_type: authResponse.tokenType || 'Bearer',
+      expires_in: authResponse.expiresIn,
+    });
+  } catch (error) {
+    console.error('finAPI SDK auth error:', error);
+
+    // Enhanced error handling for finAPI SDK
+    if (error instanceof Error) {
       return NextResponse.json(
-        { error: 'Authentication failed', details: errorText },
-        { status: authResponse.status }
+        {
+          error: 'Authentication failed',
+          details: error.message,
+          type: 'SDK_ERROR',
+        },
+        { status: 403 }
       );
     }
 
-    const authData = await authResponse.json();
-
-    return NextResponse.json({
-      access_token: authData.access_token,
-      token_type: authData.token_type,
-      expires_in: authData.expires_in,
-    });
-  } catch (error) {
-    console.error('finAPI auth error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

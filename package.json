@@ -84,6 +84,7 @@
     "critters": "^0.0.23",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.0",
+    "finapi-client": "^1.0.3",
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
     "framer-motion": "^12.23.3",
