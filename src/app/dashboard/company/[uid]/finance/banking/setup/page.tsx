@@ -63,6 +63,28 @@ export default function FinAPISetupPage() {
     bankingPin: '',
   });
 
+  // Check existing token on component mount
+  useEffect(() => {
+    const checkExistingToken = () => {
+      const existingToken = FinAPITokenManager.getUserToken();
+      const existingUserData = FinAPITokenManager.getUserData();
+
+      if (existingToken && existingUserData) {
+        console.log('Existing finAPI token found, skipping to bank connection');
+        setFinAPIUser({
+          id: existingUserData.id,
+          email: existingUserData.email,
+          isAutoUpdateEnabled: existingUserData.isAutoUpdateEnabled,
+        });
+        setUserToken(existingToken.access_token);
+        setStep('connect-bank');
+        loadAvailableBanks(existingToken.access_token);
+      }
+    };
+
+    checkExistingToken();
+  }, []);
+
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
     return (
@@ -105,7 +127,16 @@ export default function FinAPISetupPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || 'Fehler beim Erstellen des finAPI-Users');
+
+        // Handle existing user scenario more gracefully
+        if (response.status === 422 && errorData.type === 'EXISTING_USER_AUTH_ERROR') {
+          setError(
+            'Benutzer existiert bereits, aber Passwort ist falsch. Bitte verwenden Sie das korrekte Passwort oder eine andere E-Mail-Adresse.'
+          );
+        } else {
+          setError(errorData.details || 'Fehler beim Erstellen/Authentifizieren des finAPI-Users');
+        }
+        return;
       }
 
       const data = await response.json();
@@ -126,7 +157,8 @@ export default function FinAPISetupPage() {
         },
       });
 
-      setSuccess('finAPI-User erfolgreich erstellt und angemeldet!');
+      // Show appropriate success message
+      setSuccess(data.message || 'finAPI-User erfolgreich eingerichtet!');
 
       // Load available banks
       await loadAvailableBanks(data.access_token);

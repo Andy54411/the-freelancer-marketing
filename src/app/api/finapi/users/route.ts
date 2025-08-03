@@ -54,38 +54,105 @@ export async function POST(req: NextRequest) {
 
     const usersApi = new UsersApi(userConfiguration);
 
-    const newUser = await usersApi.createUser({
-      id: email, // Use email as user ID
-      password: password,
-      email: email,
-      phone: undefined, // Optional
-      isAutoUpdateEnabled: true, // Enable automatic bank data updates
-    });
+    let newUser;
+    let userExists = false;
 
-    console.log('finAPI user created successfully:', { id: newUser.id, email: newUser.email });
+    try {
+      newUser = await usersApi.createUser({
+        id: email, // Use email as user ID
+        password: password,
+        email: email,
+        phone: undefined, // Optional
+        isAutoUpdateEnabled: true, // Enable automatic bank data updates
+      });
 
-    // Step 3: Get user token for the new user
-    const userToken = await authApi.getToken(
-      'password',
-      credentials.clientId,
-      credentials.clientSecret,
-      email,
-      password
-    );
+      console.log('finAPI user created successfully:', { id: newUser.id, email: newUser.email });
+    } catch (createError: any) {
+      // Check if user already exists
+      if (createError.status === 422 && createError.body?.errors?.[0]?.code === 'ENTITY_EXISTS') {
+        console.log('User already exists, attempting to authenticate existing user');
+        userExists = true;
 
-    console.log('User token obtained for new user');
+        // Try to get user token for existing user
+        try {
+          const userToken = await authApi.getToken(
+            'password',
+            credentials.clientId,
+            credentials.clientSecret,
+            email,
+            password
+          );
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        isAutoUpdateEnabled: newUser.isAutoUpdateEnabled,
-      },
-      access_token: userToken.accessToken,
-      token_type: userToken.tokenType || 'Bearer',
-      expires_in: userToken.expiresIn,
-    });
+          console.log('Authenticated existing user successfully');
+
+          // Get user info to return consistent response
+          const userInfoConfig = createConfiguration({
+            baseServer: server,
+            authMethods: {
+              finapi_auth: {
+                accessToken: userToken.accessToken,
+              },
+            },
+          });
+
+          const userInfoApi = new UsersApi(userInfoConfig);
+          const existingUser = await userInfoApi.getAuthorizedUser();
+
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              isAutoUpdateEnabled: existingUser.isAutoUpdateEnabled,
+            },
+            access_token: userToken.accessToken,
+            token_type: userToken.tokenType || 'Bearer',
+            expires_in: userToken.expiresIn,
+            message: 'Bestehender finAPI-User erfolgreich authentifiziert',
+          });
+        } catch (authError) {
+          console.error('Failed to authenticate existing user:', authError);
+          return NextResponse.json(
+            {
+              error: 'User existiert bereits, aber Authentifizierung fehlgeschlagen',
+              details:
+                'Bitte überprüfen Sie Ihre Anmeldedaten oder verwenden Sie andere Zugangsdaten',
+              type: 'EXISTING_USER_AUTH_ERROR',
+            },
+            { status: 422 }
+          );
+        }
+      } else {
+        // Re-throw other errors
+        throw createError;
+      }
+    }
+
+    // Step 3: Get user token for the new user (only if user was newly created)
+    if (!userExists) {
+      const userToken = await authApi.getToken(
+        'password',
+        credentials.clientId,
+        credentials.clientSecret,
+        email,
+        password
+      );
+
+      console.log('User token obtained for new user');
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: newUser!.id,
+          email: newUser!.email,
+          isAutoUpdateEnabled: newUser!.isAutoUpdateEnabled,
+        },
+        access_token: userToken.accessToken,
+        token_type: userToken.tokenType || 'Bearer',
+        expires_in: userToken.expiresIn,
+        message: 'Neuer finAPI-User erfolgreich erstellt',
+      });
+    }
   } catch (error) {
     console.error('finAPI user creation error:', error);
 
