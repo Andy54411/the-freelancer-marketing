@@ -209,6 +209,28 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'DATEV Integration',
+    icon: FiDollarSign,
+    value: 'datev-overview',
+    subItems: [
+      {
+        label: 'Dashboard',
+        value: 'datev-overview',
+        href: 'datev/overview',
+      },
+      {
+        label: 'Einrichtung',
+        value: 'datev-setup',
+        href: 'datev/setup',
+      },
+      {
+        label: 'Steuerberater',
+        value: 'datev-steuerberater',
+        href: 'datev/steuerberater',
+      },
+    ],
+  },
+  {
     label: 'Bewertungen',
     icon: FiMessageSquare,
     value: 'reviews',
