@@ -15,109 +15,65 @@ export default function BankingAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [authToken, setAuthToken] = useState<string | null>(null);
   const [useRealFinAPI, setUseRealFinAPI] = useState(false);
 
-  // finAPI Authentication über Backend
-  const authenticateFinAPI = async (): Promise<string | null> => {
+  const loadMockAccounts = () => {
+    setAccounts([
+      {
+        id: 'mock_001',
+        accountName: 'Geschäftskonto',
+        iban: 'DE89 3704 0044 0532 0130 00',
+        bankName: 'Deutsche Bank AG',
+        accountNumber: '0532013000',
+        balance: 25750.5,
+        availableBalance: 25750.5,
+        currency: 'EUR',
+        accountType: 'CHECKING',
+        isDefault: true,
+      },
+      {
+        id: 'mock_002',
+        accountName: 'Sparkonto',
+        iban: 'DE89 3705 0198 0000 0047 11',
+        bankName: 'Sparkasse München',
+        accountNumber: '0000004711',
+        balance: 15000.0,
+        availableBalance: 15000.0,
+        currency: 'EUR',
+        accountType: 'SAVINGS',
+        isDefault: false,
+      },
+    ]);
+  };
+
+  const loadRealFinAPIAccounts = async () => {
     try {
-      const response = await fetch('/api/finapi/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ credentialType: 'sandbox' }),
-      });
+      // Prüfe zuerst ob User registriert ist - TODO: Implement user token storage
+      // Für jetzt zeigen wir eine Meldung, dass Setup erforderlich ist
+      throw new Error('finAPI User Setup required');
 
-      if (!response.ok) {
-        throw new Error('Authentication failed');
-      }
-
-      const data = await response.json();
-      return data.access_token;
+      // Zukünftige Implementation mit echten User-Accounts:
+      // const userToken = await getUserToken(); // from localStorage/session
+      // const response = await fetch('/api/finapi/accounts', { ... });
+      // const accounts = await response.json();
+      // setAccounts(accounts);
     } catch (error) {
-      console.error('Fehler bei finAPI Authentication:', error);
-      return null;
+      console.error('finAPI Accounts Fehler:', error);
+      // Zeige Setup-erforderlich Meldung
+      setAccounts([]);
     }
   };
 
   const loadAccounts = async () => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
-      // Authentifizierung über Backend
-      const token = await authenticateFinAPI();
-      if (!token) {
-        throw new Error('Failed to authenticate with finAPI');
-      }
-
-      setAuthToken(token);
-
-      // Konten über Backend API laden
-      const response = await fetch('/api/finapi/accounts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          access_token: token,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch accounts');
-      }
-
-      const finAPIAccountResponse = await response.json();
-
-      // Convert finAPI data to our interface format
-      const convertedAccounts: BankAccount[] =
-        finAPIAccountResponse.accounts?.map((acc: any) => ({
-          id: acc.id?.toString() || 'unknown',
-          accountName: acc.accountName || 'Unbekanntes Konto',
-          iban: acc.iban || '',
-          bankName: acc.bankName || 'Unbekannte Bank',
-          accountNumber: acc.accountNumber || '',
-          balance: acc.balance || 0,
-          availableBalance: acc.availableFunds || acc.balance || 0,
-          currency: acc.accountCurrency || 'EUR',
-          accountType: 'CHECKING',
-          isDefault: false,
-        })) || [];
-
-      setAccounts(convertedAccounts);
-    } catch (error) {
-      console.error('Fehler beim Laden der Konten:', error);
-      // Fallback auf Mock-Daten bei Fehler
-      setAccounts([
-        {
-          id: 'mock_001',
-          accountName: 'Geschäftskonto',
-          iban: 'DE89 3704 0044 0532 0130 00',
-          bankName: 'Deutsche Bank AG',
-          accountNumber: '0532013000',
-          balance: 25750.5,
-          availableBalance: 25750.5,
-          currency: 'EUR',
-          accountType: 'CHECKING',
-          isDefault: true,
-        },
-        {
-          id: 'mock_002',
-          accountName: 'Sparkonto',
-          iban: 'DE89 3705 0198 0000 0047 11',
-          bankName: 'Sparkasse München',
-          accountNumber: '0000004711',
-          balance: 15000.0,
-          availableBalance: 15000.0,
-          currency: 'EUR',
-          accountType: 'SAVINGS',
-          isDefault: false,
-        },
-      ]);
-    } finally {
-      setLoading(false);
+    if (useRealFinAPI) {
+      await loadRealFinAPIAccounts();
+    } else {
+      loadMockAccounts();
     }
+
+    setLoading(false);
   };
 
   const refreshAccounts = async () => {
@@ -128,7 +84,7 @@ export default function BankingAccountsPage() {
 
   useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [useRealFinAPI]); // Reload when toggle changes
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -325,14 +281,37 @@ export default function BankingAccountsPage() {
         <div className="text-center py-12">
           <div className="flex flex-col items-center">
             <PlusCircle className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Konten gefunden</h3>
-            <p className="text-gray-600 mb-6">
-              Verbinden Sie Ihre ersten Bankkonten, um zu beginnen.
-            </p>
-            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Erstes Konto hinzufügen
-            </button>
+            {useRealFinAPI ? (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  finAPI Setup erforderlich
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Um echte Bankdaten anzuzeigen, müssen Sie zuerst einen finAPI-Benutzer erstellen
+                  und Ihre Bankkonten verbinden.
+                </p>
+                <button
+                  onClick={() =>
+                    (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
+                  }
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  finAPI Setup starten
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Konten gefunden</h3>
+                <p className="text-gray-600 mb-6">
+                  Verbinden Sie Ihre ersten Bankkonten, um zu beginnen.
+                </p>
+                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Erstes Konto hinzufügen
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
