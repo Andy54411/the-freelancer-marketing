@@ -16,6 +16,7 @@ export default function BankingAccountsPage() {
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [useRealFinAPI, setUseRealFinAPI] = useState(false);
 
   // finAPI Authentication über Backend
   const authenticateFinAPI = async (): Promise<string | null> => {
@@ -182,6 +183,24 @@ export default function BankingAccountsPage() {
             <p className="text-gray-600 mt-1">Übersicht über alle verbundenen Bankkonten</p>
           </div>
           <div className="flex space-x-3">
+            <button
+              onClick={() => setUseRealFinAPI(!useRealFinAPI)}
+              className={`inline-flex items-center px-3 py-2 border text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] ${
+                useRealFinAPI
+                  ? 'border-[#14ad9f] text-[#14ad9f] bg-blue-50'
+                  : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+              }`}
+            >
+              {useRealFinAPI ? '🔗 Live finAPI' : '🔧 Mock-Daten'}
+            </button>
+            <button
+              onClick={() =>
+                (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
+              }
+              className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              finAPI Setup
+            </button>
             <button
               onClick={() => setShowBalances(!showBalances)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
