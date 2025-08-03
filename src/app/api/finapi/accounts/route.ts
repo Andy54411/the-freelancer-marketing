@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AccountsApi, createConfiguration, ServerConfiguration } from 'finapi-client';
 
-export async function GET(req: NextRequest) {
+async function handleFinAPIAccountsRequest(token: string) {
   try {
-    const authHeader = req.headers.get('authorization');
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-
     // finAPI SDK Configuration
     const server = new ServerConfiguration('https://sandbox.finapi.io', {});
     const configuration = createConfiguration({
@@ -48,5 +40,32 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization');
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Authorization token required' }, { status: 401 });
+  }
+
+  const token = authHeader.substring(7);
+  return handleFinAPIAccountsRequest(token);
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { access_token } = body;
+
+    if (!access_token) {
+      return NextResponse.json({ error: 'Access token required in request body' }, { status: 401 });
+    }
+
+    return handleFinAPIAccountsRequest(access_token);
+  } catch (error) {
+    console.error('POST finAPI accounts error:', error);
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }

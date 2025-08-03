@@ -54,11 +54,13 @@ export default function BankingAccountsPage() {
 
       // Konten über Backend API laden
       const response = await fetch('/api/finapi/accounts', {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          access_token: token,
+        }),
       });
 
       if (!response.ok) {

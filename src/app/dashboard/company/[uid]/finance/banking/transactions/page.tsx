@@ -57,18 +57,22 @@ export default function BankingTransactionsPage() {
       // Konten und Transaktionen über Backend API laden
       const [accountsResponse, transactionsResponse] = await Promise.all([
         fetch('/api/finapi/accounts', {
-          method: 'GET',
+          method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            access_token: token,
+          }),
         }),
         fetch('/api/finapi/transactions', {
-          method: 'GET',
+          method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            access_token: token,
+          }),
         }),
       ]);
 
