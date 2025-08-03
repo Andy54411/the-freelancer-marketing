@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankAccount } from '@/types';
-import { FinAPITokenManager } from '@/lib/finapi-token-manager';
 import { PlusCircle, ExternalLink, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 export default function BankingAccountsPage() {
@@ -16,7 +15,6 @@ export default function BankingAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [hasFinAPIToken, setHasFinAPIToken] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
 
@@ -69,14 +67,7 @@ export default function BankingAccountsPage() {
 
   const loadAccounts = async () => {
     setLoading(true);
-
-    if (hasFinAPIToken) {
-      await loadFinAPIAccounts();
-    } else {
-      // No token available, show empty state
-      setAccounts([]);
-    }
-
+    await loadFinAPIAccounts();
     setLoading(false);
   };
 
@@ -348,45 +339,19 @@ export default function BankingAccountsPage() {
         <div className="text-center py-12">
           <div className="flex flex-col items-center">
             <PlusCircle className="h-12 w-12 text-gray-400 mb-4" />
-            {hasFinAPIToken ? (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Keine Bankkonten verbunden
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Sie haben einen finAPI-Account, aber noch keine Bankkonten verbunden. Gehen Sie
-                  zum Setup, um Ihre ersten Bankkonten zu verbinden.
-                </p>
-                <button
-                  onClick={() =>
-                    (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
-                  }
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Bankkonten verbinden
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  finAPI Setup erforderlich
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Um Ihre Bankdaten anzuzeigen, müssen Sie zuerst einen finAPI-Benutzer erstellen
-                  und Ihre Bankkonten verbinden.
-                </p>
-                <button
-                  onClick={() =>
-                    (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
-                  }
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  finAPI Setup starten
-                </button>
-              </>
-            )}
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankkonten verbunden</h3>
+            <p className="text-gray-600 mb-6">
+              Verbinden Sie Ihre ersten Bankkonten über unser Banking-Setup.
+            </p>
+            <button
+              onClick={() =>
+                (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
+              }
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Bankkonten verbinden
+            </button>
           </div>
         </div>
       )}
