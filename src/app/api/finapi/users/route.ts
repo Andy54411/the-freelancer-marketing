@@ -71,7 +71,11 @@ export async function POST(req: NextRequest) {
       console.error('Error creating user:', createError);
 
       // Check if user already exists
-      if (createError.status === 422 && createError.body?.errors?.[0]?.code === 'ENTITY_EXISTS') {
+      if (
+        createError.body?.errors?.[0]?.code === 'ENTITY_EXISTS' ||
+        createError.message?.includes('already exists') ||
+        createError.message?.includes('same identifier')
+      ) {
         console.log('User already exists, attempting to authenticate existing user');
         userExists = true;
 
@@ -116,6 +120,7 @@ export async function POST(req: NextRequest) {
           console.error('Failed to authenticate existing user:', authError);
           return NextResponse.json(
             {
+              success: false,
               error: 'User existiert bereits, aber Authentifizierung fehlgeschlagen',
               details:
                 'Bitte überprüfen Sie Ihre Anmeldedaten oder verwenden Sie andere Zugangsdaten',
@@ -129,6 +134,7 @@ export async function POST(req: NextRequest) {
         console.error('finAPI API Error:', createError);
         return NextResponse.json(
           {
+            success: false,
             error: 'finAPI User Erstellung fehlgeschlagen',
             details:
               createError.body?.errors?.[0]?.message || createError.message || 'Unbekannter Fehler',

@@ -168,14 +168,43 @@ export default function FinAPISetupPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('finAPI User API Error:', errorData);
 
         // Handle existing user scenario more gracefully
         if (response.status === 422 && errorData.type === 'EXISTING_USER_AUTH_ERROR') {
           setError(
             'Benutzer existiert bereits, aber Passwort ist falsch. Bitte verwenden Sie das korrekte Passwort oder eine andere E-Mail-Adresse.'
           );
+        } else if (errorData.success === false && errorData.message?.includes('authentifiziert')) {
+          // User exists and was authenticated successfully - this should be handled as success
+          console.log('User exists and was authenticated, treating as success');
+          setFinAPIUser(errorData.user);
+          setUserToken(errorData.access_token);
+
+          // Store token and continue
+          FinAPITokenManager.storeUserToken({
+            access_token: errorData.access_token,
+            token_type: errorData.token_type || 'Bearer',
+            expires_in: errorData.expires_in || 3600,
+            refresh_token: errorData.refresh_token,
+            user: {
+              id: errorData.user.id,
+              email: errorData.user.email,
+              isAutoUpdateEnabled: errorData.user.isAutoUpdateEnabled,
+              created_at: new Date().toISOString(),
+            },
+          });
+
+          console.log('finAPI User authenticated successfully:', errorData.user);
+          setStep('connect-bank');
+          loadAvailableBanks(errorData.access_token);
+          return;
         } else {
-          setError(errorData.details || 'Fehler beim Erstellen/Authentifizieren des finAPI-Users');
+          setError(
+            errorData.details ||
+              errorData.error ||
+              'Fehler beim Erstellen/Authentifizieren des finAPI-Users'
+          );
         }
         return;
       }
