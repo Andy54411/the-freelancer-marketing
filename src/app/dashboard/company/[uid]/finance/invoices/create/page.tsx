@@ -191,6 +191,8 @@ export default function CreateInvoicePage() {
     notes: '',
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [items, setItems] = useState<InvoiceItem[]>([
     {
       id: 'item_1',
@@ -301,34 +303,84 @@ export default function CreateInvoicePage() {
     }).format(amount);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Funktion zum Generieren der nächsten Rechnungsnummer
+  const generateNextInvoiceNumber = async () => {
+    try {
+      const year = new Date().getFullYear();
+      const invoicesQuery = query(
+        collection(db, 'invoices'),
+        where('companyId', '==', uid),
+        where('status', '==', 'finalized'), // Nur finalisierte Rechnungen zählen
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(invoicesQuery);
+      let highestNumber = 0;
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const invoiceNumber = data.invoiceNumber || data.number;
+        if (invoiceNumber && typeof invoiceNumber === 'string') {
+          // Extract number from format R-YYYY-XXX
+          const match = invoiceNumber.match(/R-(\d{4})-(\d+)/);
+          if (match && parseInt(match[1]) === year) {
+            const number = parseInt(match[2]);
+            if (number > highestNumber) {
+              highestNumber = number;
+            }
+          }
+        }
+      });
+
+      const nextNumber = highestNumber + 1;
+      return `R-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    } catch (error) {
+      console.error('Fehler beim Generieren der Rechnungsnummer:', error);
+      // Fallback
+      const year = new Date().getFullYear();
+      const randomNumber = Math.floor(Math.random() * 1000) + 1;
+      return `R-${year}-${randomNumber.toString().padStart(3, '0')}`;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent, action: 'draft' | 'finalize') => {
     e.preventDefault();
 
-    // Validation
-    if (
-      !formData.customerName ||
-      !formData.invoiceNumber ||
-      !formData.issueDate ||
-      !formData.dueDate
-    ) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
-      return;
-    }
-
-    const hasValidItems = items.some(
-      item => item.description && item.quantity > 0 && item.unitPrice > 0
-    );
-    if (!hasValidItems) {
-      toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
-      return;
-    }
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
+      // Validation
+      if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
+        toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+        return;
+      }
+
+      // Für finalisierte Rechnungen auch Rechnungsnummer validieren
+      if (action === 'finalize' && !formData.invoiceNumber) {
+        toast.error('Rechnungsnummer ist für finalisierte Rechnungen erforderlich');
+        return;
+      }
+
+      const hasValidItems = items.some(
+        item => item.description && item.quantity > 0 && item.unitPrice > 0
+      );
+      if (!hasValidItems) {
+        toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
+        return;
+      }
+
       const { subtotal, tax, total } = calculateTotals();
 
+      // Bei Finalisierung automatisch Rechnungsnummer generieren, falls nicht vorhanden
+      let finalInvoiceNumber = formData.invoiceNumber;
+      if (action === 'finalize' && !finalInvoiceNumber) {
+        finalInvoiceNumber = await generateNextInvoiceNumber();
+      }
+
       const newInvoice = {
-        number: formData.invoiceNumber,
-        invoiceNumber: formData.invoiceNumber,
+        number: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
+        invoiceNumber: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
         date: formData.issueDate,
         issueDate: formData.issueDate,
         dueDate: formData.dueDate,
@@ -362,13 +414,15 @@ export default function CreateInvoicePage() {
         amount: subtotal,
         tax,
         total,
-        status: 'draft' as const,
+        status: action === 'finalize' ? 'finalized' : 'draft',
         template: selectedTemplate,
         notes: formData.notes,
 
         // Timestamps
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        // Nur bei finalisierten Rechnungen das Finalisierungsdatum setzen
+        ...(action === 'finalize' && { finalizedAt: serverTimestamp() }),
       };
 
       // Save invoice to Firestore
@@ -377,11 +431,19 @@ export default function CreateInvoicePage() {
       const docRef = await addDoc(collection(db, 'invoices'), newInvoice);
 
       console.log('Invoice saved with ID:', docRef.id);
-      toast.success('Rechnung erfolgreich erstellt!');
+
+      if (action === 'finalize') {
+        toast.success(`Rechnung ${finalInvoiceNumber} erfolgreich erstellt!`);
+      } else {
+        toast.success('Entwurf erfolgreich gespeichert!');
+      }
+
       router.push(`/dashboard/company/${uid}/finance/invoices`);
     } catch (error) {
       console.error('Fehler beim Speichern der Rechnung:', error);
       toast.error('Fehler beim Speichern der Rechnung');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -415,7 +477,7 @@ export default function CreateInvoicePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={e => e.preventDefault()} className="space-y-8">
             {/* Customer Information */}
             <Card>
               <CardHeader>
@@ -505,15 +567,19 @@ export default function CreateInvoicePage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="invoiceNumber">Rechnungsnummer *</Label>
+                    <Label htmlFor="invoiceNumber">
+                      Rechnungsnummer
+                      <span className="text-sm text-gray-500 ml-2">
+                        (wird automatisch generiert beim Erstellen)
+                      </span>
+                    </Label>
                     <Input
                       id="invoiceNumber"
                       value={formData.invoiceNumber}
                       onChange={e =>
                         setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))
                       }
-                      placeholder="R-2025-001"
-                      required
+                      placeholder="R-2025-001 (optional für Entwürfe)"
                     />
                   </div>
                   <div className="space-y-2">
@@ -756,15 +822,30 @@ export default function CreateInvoicePage() {
                 />
 
                 <Button
-                  type="submit"
+                  type="button"
                   variant="outline"
+                  disabled={isSubmitting}
+                  onClick={e => handleSubmit(e, 'draft')}
                   className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                 >
-                  <Calculator className="h-4 w-4 mr-2" />
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Calculator className="h-4 w-4 mr-2" />
+                  )}
                   Als Entwurf speichern
                 </Button>
-                <Button type="submit" className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-                  <FileText className="h-4 w-4 mr-2" />
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={e => handleSubmit(e, 'finalize')}
+                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4 mr-2" />
+                  )}
                   Rechnung erstellen
                 </Button>
               </div>
