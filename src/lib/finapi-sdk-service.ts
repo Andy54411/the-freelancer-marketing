@@ -322,15 +322,15 @@ export function createFinAPIService(
   environment: 'sandbox' | 'production' = 'sandbox'
 ): FinAPISDKService {
   const credentials: FinAPICredentials = {
-    clientId: process.env.FINAPI_SANDBOX_CLIENT_ID || '',
-    clientSecret: process.env.FINAPI_SANDBOX_CLIENT_SECRET || '',
-    dataDecryptionKey: process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY,
+    clientId: (process.env.FINAPI_SANDBOX_CLIENT_ID || '').trim(),
+    clientSecret: (process.env.FINAPI_SANDBOX_CLIENT_SECRET || '').trim(),
+    dataDecryptionKey: process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY?.trim(),
   };
 
   if (environment === 'production') {
-    credentials.clientId = process.env.FINAPI_PRODUCTION_CLIENT_ID || '';
-    credentials.clientSecret = process.env.FINAPI_PRODUCTION_CLIENT_SECRET || '';
-    credentials.dataDecryptionKey = process.env.FINAPI_PRODUCTION_DATA_DECRYPTION_KEY;
+    credentials.clientId = (process.env.FINAPI_PRODUCTION_CLIENT_ID || '').trim();
+    credentials.clientSecret = (process.env.FINAPI_PRODUCTION_CLIENT_SECRET || '').trim();
+    credentials.dataDecryptionKey = process.env.FINAPI_PRODUCTION_DATA_DECRYPTION_KEY?.trim();
   }
 
   return new FinAPISDKService({
@@ -343,9 +343,9 @@ export function createFinAPIAdminService(
   environment: 'sandbox' | 'production' = 'sandbox'
 ): FinAPISDKService {
   const credentials: FinAPICredentials = {
-    clientId: process.env.FINAPI_ADMIN_CLIENT_ID || '',
-    clientSecret: process.env.FINAPI_ADMIN_CLIENT_SECRET || '',
-    dataDecryptionKey: process.env.FINAPI_ADMIN_DATA_DECRYPTION_KEY,
+    clientId: (process.env.FINAPI_ADMIN_CLIENT_ID || '').trim(),
+    clientSecret: (process.env.FINAPI_ADMIN_CLIENT_SECRET || '').trim(),
+    dataDecryptionKey: process.env.FINAPI_ADMIN_DATA_DECRYPTION_KEY?.trim(),
   };
 
   return new FinAPISDKService({

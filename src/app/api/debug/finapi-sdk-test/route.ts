@@ -1,6 +1,6 @@
 // src/app/api/debug/finapi-sdk-test/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
+import { finapiService, finapiAdminService } from '@/lib/finapi-sdk-service';
 
 /**
  * Test the new finAPI SDK Service
@@ -69,9 +69,9 @@ export async function GET(_request: NextRequest) {
     console.log('👤 Test 3: User management...');
     const testUserId = `taskilo_sdk_test_${Date.now()}`;
     const testPassword = 'SDKTestPassword123!';
-    
+
     try {
-      const userResult = await finapiService.getOrCreateUser(
+      const userResult = await finapiAdminService.getOrCreateUser(
         testUserId,
         testPassword,
         `${testUserId}@taskilo.de`
@@ -86,8 +86,8 @@ export async function GET(_request: NextRequest) {
       // TEST 4: User-specific operations (Bank Connections, Accounts)
       console.log('🔗 Test 4: User-specific operations...');
       try {
-        const bankConnections = await finapiService.getBankConnections(userResult.userToken);
-        const accounts = await finapiService.getAccounts(userResult.userToken);
+        const bankConnections = await finapiAdminService.getBankConnections(userResult.userToken);
+        const accounts = await finapiAdminService.getAccounts(userResult.userToken);
 
         results.tests.user_operations = {
           success: true,
@@ -100,7 +100,6 @@ export async function GET(_request: NextRequest) {
           error: error.message,
         };
       }
-
     } catch (error: any) {
       results.tests.user_management = {
         success: false,
@@ -111,7 +110,7 @@ export async function GET(_request: NextRequest) {
     // Overall assessment
     const successfulTests = Object.values(results.tests).filter((test: any) => test.success).length;
     const totalTests = Object.keys(results.tests).length;
-    
+
     results.summary = {
       successful_tests: successfulTests,
       total_tests: totalTests,
@@ -120,20 +119,23 @@ export async function GET(_request: NextRequest) {
     };
 
     if (successfulTests === totalTests) {
-      results.recommendation = '✅ finAPI SDK Service is fully functional! Ready for production integration.';
+      results.recommendation =
+        '✅ finAPI SDK Service is fully functional! Ready for production integration.';
     } else {
       results.recommendation = '⚠️ Some tests failed. Check environment variables and credentials.';
     }
 
     console.log('✅ finAPI SDK Service test completed');
     return NextResponse.json(results);
-
   } catch (error: any) {
     console.error('❌ finAPI SDK Service test failed:', error);
-    return NextResponse.json({
-      error: 'SDK Service test failed',
-      details: error.message,
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'SDK Service test failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }
