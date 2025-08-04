@@ -140,12 +140,51 @@ export class FirestoreInvoiceService {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        return {
-          ...data,
+        // Explizite Transformation, um die Datenintegrität sicherzustellen
+        // und die Typkonsistenz mit InvoiceData zu gewährleisten.
+        const invoice: InvoiceData = {
           id: docSnap.id,
-          createdAt: data.createdAt.toDate(),
-          stornoDate: data.stornoDate ? data.stornoDate.toDate() : undefined,
-        } as InvoiceData;
+          companyId: data.companyId,
+          customerName: data.customerName,
+          customerAddress: data.customerAddress,
+          items: data.items,
+          total: data.total,
+          status: data.status,
+          invoiceNumber: data.invoiceNumber,
+          number: data.number,
+          sequentialNumber: data.sequentialNumber,
+          date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+          issueDate: data.issueDate,
+          dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
+          createdAt: data.createdAt?.toDate(),
+          description: data.description,
+          customerEmail: data.customerEmail,
+          companyName: data.companyName,
+          companyAddress: data.companyAddress,
+          companyEmail: data.companyEmail,
+          companyPhone: data.companyPhone,
+          companyWebsite: data.companyWebsite,
+          companyLogo: data.companyLogo,
+          companyVatId: data.companyVatId,
+          companyTaxNumber: data.companyTaxNumber,
+          isSmallBusiness: data.isSmallBusiness,
+          vatRate: data.vatRate,
+          priceInput: data.priceInput,
+          amount: data.amount,
+          tax: data.tax,
+          year: data.year,
+          // Stellt sicher, dass 'template' immer definiert ist (entweder der Wert oder null)
+          template: data.template || null,
+          isStorno: data.isStorno || false,
+          originalInvoiceId: data.originalInvoiceId,
+          stornoReason: data.stornoReason,
+          stornoDate: data.stornoDate?.toDate(),
+          stornoBy: data.stornoBy,
+          notes: data.notes,
+          paymentTerms: data.paymentTerms,
+          bankDetails: data.bankDetails,
+        };
+        return invoice;
       }
 
       return null;
