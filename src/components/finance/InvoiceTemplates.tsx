@@ -2,6 +2,9 @@
 
 import React from 'react';
 
+// Default Template Konstante für die gesamte Anwendung
+export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplate = 'classic';
+
 // Invoice Template Types
 export type InvoiceTemplate =
   | 'classic'
