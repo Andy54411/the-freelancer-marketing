@@ -85,6 +85,9 @@ export default function InvoiceTemplatesPage() {
       total: 6902.0,
       status: 'draft',
       isStorno: false,
+      createdAt: new Date(),
+      year: new Date().getFullYear(),
+      companyId: uid || 'preview_company',
       items: [
         {
           id: 'item_1',
@@ -99,8 +102,8 @@ export default function InvoiceTemplatesPage() {
           quantity: 20,
           unitPrice: 120.0,
           total: 2400.0,
-        }
-      ]
+        },
+      ],
     };
   };
 
