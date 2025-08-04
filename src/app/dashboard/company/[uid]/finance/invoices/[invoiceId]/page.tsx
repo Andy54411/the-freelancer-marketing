@@ -159,9 +159,9 @@ export default function InvoiceDetailPage() {
 
     setDownloadingPdf(true);
     try {
-      console.log('🎯 Starte PDF-Download...');
+      console.log('🚀 Starte React-basierte PDF-Generation...');
 
-      // Call our PDF API endpoint with enhanced fallback handling
+      // Call our modern PDF API endpoint
       const response = await fetch('/api/generate-invoice-pdf', {
         method: 'POST',
         headers: {
@@ -174,113 +174,81 @@ export default function InvoiceDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-
-        // Handle fallback case (503 Service Unavailable)
-        if (response.status === 503 && errorData.fallback) {
-          toast.error(
-            'PDF-Service wird gestartet. Bitte versuchen Sie es in wenigen Sekunden erneut.'
-          );
-          return;
-        }
-
         throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
       }
 
-      // Check if we got HTML fallback instead of PDF
       const contentType = response.headers.get('content-type');
-      const fallbackMode = response.headers.get('X-PDF-Fallback');
-      const productionMode = response.headers.get('X-Production-Mode');
 
-      if (contentType?.includes('text/html') || fallbackMode) {
-        console.log('📄 HTML-Fallback erhalten, verwende Browser-Print...', {
-          fallbackMode,
-          productionMode,
-        });
+      // Check if we got a PDF directly (Development with Puppeteer)
+      if (contentType?.includes('application/pdf')) {
+        console.log('✅ PDF erfolgreich vom Server erhalten');
 
-        // Get HTML content
-        const htmlContent = await response.text();
+        const pdfBlob = await response.blob();
+        const pdfUrl = window.URL.createObjectURL(pdfBlob);
 
-        // Create a blob URL for the HTML content
-        const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
-        const htmlUrl = window.URL.createObjectURL(htmlBlob);
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-        // Open in new window for printing/downloading
-        const printWindow = window.open(htmlUrl, '_blank');
-        if (printWindow) {
-          // Give the page time to load before focusing/printing
-          setTimeout(() => {
-            printWindow.focus();
-            // Trigger print dialog after content loads
-            setTimeout(() => {
-              printWindow.print();
-            }, 1500);
-          }, 500);
+        // Clean up URL
+        setTimeout(() => {
+          window.URL.revokeObjectURL(pdfUrl);
+        }, 5000);
 
-          toast.success(
-            productionMode
-              ? 'Rechnung wurde zum Drucken geöffnet (PDF-Service startet noch)'
-              : 'Rechnung wurde zum Drucken geöffnet'
-          );
+        toast.success('PDF erfolgreich heruntergeladen!');
+        return;
+      }
 
-          // Clean up URL after some time
-          setTimeout(() => {
-            window.URL.revokeObjectURL(htmlUrl);
-          }, 10000);
+      // Check if we got JSON response with print URL (Production fallback)
+      if (contentType?.includes('application/json')) {
+        const responseData = await response.json();
 
-          return;
-        } else {
-          // If popup is blocked, try direct download
-          const link = document.createElement('a');
-          link.href = htmlUrl;
-          link.download = `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.html`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        if (responseData.success && responseData.printUrl && responseData.useClientPrint) {
+          console.log('🖨️ Verwende React Print-Seite für PDF-Generation:', responseData.printUrl);
 
-          toast.success(
-            'Rechnung als HTML-Datei heruntergeladen (öffnen Sie diese im Browser zum Drucken)'
-          );
-          setTimeout(() => {
-            window.URL.revokeObjectURL(htmlUrl);
-          }, 5000);
+          // Open our React-based print page in a new window
+          const printWindow = window.open(responseData.printUrl, '_blank', 'width=1200,height=800');
+
+          if (printWindow) {
+            // Wait for the page to load, then trigger print
+            printWindow.addEventListener('load', () => {
+              setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+              }, 1000);
+            });
+
+            toast.success('Rechnung wird zum Drucken geöffnet...');
+          } else {
+            // Fallback: User can manually navigate to print page
+            toast.info('Popup wurde blockiert. Navigieren Sie zur Print-Seite für PDF-Download.', {
+              action: {
+                label: 'Print-Seite öffnen',
+                onClick: () => window.open(responseData.printUrl, '_blank'),
+              },
+              duration: 8000,
+            });
+          }
           return;
         }
       }
 
-      // Get PDF blob from response
-      const pdfBlob = await response.blob();
-
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.pdf`;
-
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      window.URL.revokeObjectURL(url);
-
-      console.log('✅ PDF erfolgreich heruntergeladen!');
-      toast.success('PDF wurde erfolgreich heruntergeladen!');
+      // If we get here, something unexpected happened
+      throw new Error('Unerwartetes Response-Format vom PDF-Service');
     } catch (error) {
-      console.error('❌ Fehler beim PDF-Download:', error);
+      console.error('❌ Fehler bei PDF-Generation:', error);
 
-      // Provide user-friendly error messages
-      let userMessage = 'Fehler beim Erstellen der Rechnung';
-      if (error.message.includes('PDF-Service temporär nicht verfügbar')) {
-        userMessage =
-          'PDF-Service startet noch. Bitte versuchen Sie es in wenigen Sekunden erneut.';
-      } else if (error.message.includes('Netzwerk') || error.message.includes('fetch')) {
-        userMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
-      } else if (error.message) {
-        userMessage = error.message;
-      }
-
-      toast.error(userMessage);
+      // Ultimate fallback: browser print
+      toast.error('PDF-Service nicht verfügbar. Verwende Browser-Druck als Fallback.', {
+        action: {
+          label: 'Jetzt drucken',
+          onClick: () => window.print(),
+        },
+        duration: 8000,
+      });
     } finally {
       setDownloadingPdf(false);
     }

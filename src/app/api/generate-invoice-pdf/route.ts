@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { generateInvoiceHTML, type InvoiceTemplate } from '@/lib/invoice-templates';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 
 // Dynamic import for Puppeteer to handle server environment
 let puppeteer: any = null;
@@ -92,40 +89,19 @@ function getBrowserConfig() {
   }
 }
 
-// Get user's preferred template from database
-async function getUserTemplate(companyId: string): Promise<InvoiceTemplate> {
-  try {
-    console.log('🎨 Lade Benutzer-Template für Company:', companyId);
-    const userDoc = await getDoc(doc(db, 'users', companyId));
-
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
-      console.log('✅ Gefundenes Template:', preferredTemplate);
-      return preferredTemplate || 'minimal';
-    }
-
-    console.log('⚠️ Kein Benutzer gefunden, verwende Standard-Template');
-    return 'minimal';
-  } catch (error) {
-    console.error('❌ Fehler beim Laden des Templates:', error);
-    return 'minimal';
-  }
-}
-
 export async function POST(request: NextRequest) {
-  let browser;
+  let browser = null;
   const isVercel = process.env.VERCEL === '1';
   const isProduction = process.env.NODE_ENV === 'production';
 
   try {
-    console.log('🎯 Starte PDF-Generation...', { isVercel, isProduction });
+    console.log('🚀 Starte React-basierte PDF-Generation...', { isVercel, isProduction });
 
     const { invoiceData } = await request.json();
 
-    if (!invoiceData) {
-      console.error('❌ Keine Rechnungsdaten erhalten');
-      return NextResponse.json({ error: 'Rechnungsdaten fehlen' }, { status: 400 });
+    if (!invoiceData || !invoiceData.id) {
+      console.error('❌ Keine gültigen Rechnungsdaten erhalten');
+      return NextResponse.json({ error: 'Rechnungsdaten oder ID fehlen' }, { status: 400 });
     }
 
     console.log('📄 Rechnungsdaten erhalten:', {
@@ -136,108 +112,92 @@ export async function POST(request: NextRequest) {
       template: invoiceData.template,
     });
 
-    // Template aus Datenbank laden
-    console.log('🔍 Versuche Template zu laden für CompanyId:', invoiceData.companyId);
-    const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
-    console.log(
-      '🎨 Verwende Template:',
-      template,
-      'aus:',
-      invoiceData.template ? 'invoiceData' : 'database'
+    // Konstruiere URL zur React-basierten Print-Seite
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de';
+    const printUrl = `${baseUrl}/print/invoice/${invoiceData.id}`;
+
+    console.log('🖨️ Navigiere zur React Print-Seite:', printUrl);
+
+    // Puppeteer nur in Development versuchen
+    if (!isVercel && !isProduction) {
+      console.log('🔍 Versuche Puppeteer für PDF-Generation (Development)...');
+
+      try {
+        const puppeteerLib = await getPuppeteer();
+        const browserConfig = getBrowserConfig();
+
+        browser = await puppeteerLib.launch(browserConfig);
+        if (!browser) {
+          throw new Error('Browser konnte nicht gestartet werden');
+        }
+
+        const page = await (browser as any).newPage();
+
+        // Viewport für konsistente Darstellung
+        await page.setViewport({
+          width: 1200,
+          height: 1600,
+          deviceScaleFactor: 1.5,
+        });
+
+        // Navigiere zur React Print-Seite
+        await page.goto(printUrl, {
+          waitUntil: ['load', 'networkidle0'],
+          timeout: 30000,
+        });
+
+        console.log('🖨️ Generiere PDF von React-Seite...');
+
+        // PDF-Generierung mit professionellen Einstellungen
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '15mm',
+            bottom: '20mm',
+            left: '15mm',
+          },
+          preferCSSPageSize: true,
+          timeout: 30000,
+        });
+
+        await (browser as any).close();
+
+        console.log('✅ PDF erfolgreich generiert! Größe:', pdfBuffer.length, 'bytes');
+
+        return new NextResponse(pdfBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="Rechnung_${invoiceData.invoiceNumber || invoiceData.number || 'invoice'}.pdf"`,
+            'Content-Length': pdfBuffer.length.toString(),
+          },
+        });
+      } catch (puppeteerError) {
+        console.warn('⚠️ Puppeteer-PDF-Generation fehlgeschlagen:', puppeteerError.message);
+        if (browser) {
+          try {
+            await (browser as any).close();
+          } catch (closeError) {
+            console.error('❌ Fehler beim Schließen des Browsers:', closeError);
+          }
+        }
+      }
+    }
+
+    // Fallback: Redirect zur Print-Seite für Browser-basierte PDF-Generierung
+    console.log('🔄 Verwende Browser-Fallback - Redirect zur Print-Seite');
+
+    return NextResponse.json(
+      {
+        success: true,
+        printUrl: printUrl,
+        message: 'Rechnung für Druck vorbereitet',
+        useClientPrint: true,
+      },
+      { status: 200 }
     );
-
-    // Sofortiger HTML-Fallback in Production für Stabilität
-    if (isVercel || isProduction) {
-      console.log('🔄 Verwende HTML-Fallback für Production-Umgebung');
-
-      const htmlContent = generateInvoiceHTML(invoiceData, template);
-      return new NextResponse(htmlContent, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'X-PDF-Fallback': 'true',
-          'X-Production-Mode': 'true',
-        },
-      });
-    }
-
-    // Nur in Entwicklungsumgebung versuchen wir Puppeteer
-    console.log('🔍 Prüfe Puppeteer-Verfügbarkeit (Development)...');
-    let puppeteerLib;
-    try {
-      puppeteerLib = await getPuppeteer();
-    } catch (puppeteerError) {
-      console.warn('⚠️ Puppeteer nicht verfügbar, verwende HTML-Fallback:', puppeteerError.message);
-
-      // Fallback: Sende HTML für Client-seitige PDF-Generierung
-      const htmlContent = generateInvoiceHTML(invoiceData, template);
-      return new NextResponse(htmlContent, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'X-PDF-Fallback': 'true',
-          'X-Puppeteer-Error': 'unavailable',
-        },
-      });
-    }
-
-    // Launch Puppeteer nur in Development
-    console.log('🚀 Starte Puppeteer Browser (Development)...');
-    const browserConfig = getBrowserConfig();
-
-    browser = await puppeteerLib.launch(browserConfig);
-
-    console.log('📄 Erstelle neue Seite...');
-    const page = await browser.newPage();
-
-    // Set viewport for consistent rendering
-    await page.setViewport({
-      width: 1200,
-      height: 1600,
-      deviceScaleFactor: 1.5,
-    });
-
-    console.log('🎨 Generiere HTML Content...');
-
-    // Generate professional HTML content with template
-    const htmlContent = generateInvoiceHTML(invoiceData, template);
-
-    console.log('📝 Setze HTML Content...');
-    // Set content and wait for network idle
-    await page.setContent(htmlContent, {
-      waitUntil: ['load', 'networkidle0'],
-      timeout: 30000,
-    });
-
-    console.log('🖨️ Generiere PDF...');
-    // Generate PDF with professional settings
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm',
-      },
-      preferCSSPageSize: true,
-      timeout: 30000,
-    });
-
-    console.log('🧹 Schließe Browser...');
-    await browser.close();
-
-    console.log('✅ PDF erfolgreich generiert! Größe:', pdfBuffer.length, 'bytes');
-
-    // Return PDF as response
-    return new NextResponse(pdfBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Rechnung_${invoiceData.invoiceNumber || invoiceData.number || 'invoice'}.pdf"`,
-        'Content-Length': pdfBuffer.length.toString(),
-      },
-    });
   } catch (error) {
     console.error('❌ Fehler bei PDF-Generation:', {
       message: error.message,
@@ -246,54 +206,43 @@ export async function POST(request: NextRequest) {
       environment: { isVercel, isProduction },
     });
 
-    // Ensure browser is closed even on error
+    // Browser schließen bei Fehler
     if (browser) {
       try {
-        await browser.close();
+        await (browser as any).close();
         console.log('🧹 Browser nach Fehler geschlossen');
       } catch (closeError) {
         console.error('❌ Fehler beim Schließen des Browsers:', closeError.message);
       }
     }
 
-    // Bei jedem Fehler HTML-Fallback anbieten
-    console.log('🔄 Verwende HTML-Fallback nach Fehler');
+    // Fallback: Immer Print-URL zurückgeben
     try {
       const { invoiceData } = await request.json();
-      if (invoiceData) {
-        // Template aus Datenbank laden
-        console.log(
-          '🔍 Versuche Template zu laden für CompanyId (Error fallback):',
-          invoiceData.companyId
-        );
-        const template =
-          invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
-        console.log(
-          '🎨 Verwende Template (Error fallback):',
-          template,
-          'aus:',
-          invoiceData.template ? 'invoiceData' : 'database'
-        );
+      if (invoiceData && invoiceData.id) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+        const printUrl = `${baseUrl}/print/invoice/${invoiceData.id}`;
 
-        const htmlContent = generateInvoiceHTML(invoiceData, template);
-        return new NextResponse(htmlContent, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'X-PDF-Fallback': 'true',
-            'X-Error-Recovery': 'true',
-            'X-Original-Error': error.message,
+        return NextResponse.json(
+          {
+            success: true,
+            printUrl: printUrl,
+            message: 'Fallback: Browser-Druck verfügbar',
+            useClientPrint: true,
+            error: error.message,
           },
-        });
+          { status: 200 }
+        );
       }
     } catch (fallbackError) {
-      console.error('❌ Auch HTML-Fallback fehlgeschlagen:', fallbackError);
+      console.error('❌ Auch Fallback-Response fehlgeschlagen:', fallbackError);
     }
 
     return NextResponse.json(
       {
         error: 'PDF-Service temporär nicht verfügbar',
-        details: 'Verwende HTML-Fallback für PDF-Generierung',
+        details: error.message,
         fallback: true,
         environment: { isVercel, isProduction },
       },

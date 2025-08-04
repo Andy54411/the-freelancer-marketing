@@ -110,6 +110,9 @@ importers:
       '@react-google-maps/api':
         specifier: ^2.20.7
         version: 2.20.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@sparticuz/chromium':
+        specifier: ^123.0.1
+        version: 123.0.1
       '@stripe/react-stripe-js':
         specifier: ^2.9.0
         version: 2.9.0(@stripe/stripe-js@4.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1918,6 +1921,10 @@ packages:
   '@sendgrid/mail@8.1.5':
     resolution: {integrity: sha512-W+YuMnkVs4+HA/bgfto4VHKcPKLc7NiZ50/NH2pzO6UHCCFuq8/GNB98YJlLEr/ESDyzAaDr7lVE7hoBwFTT3Q==}
     engines: {node: '>=12.*'}
+
+  '@sparticuz/chromium@123.0.1':
+    resolution: {integrity: sha512-RPrA99xrddbXXZjhUH1WZkTCK3QDQ77t/0y+vULtiW1uAlWLBxorxGnNTuzBDk6eNolxOVFrXZ2aoAN+/eB5TA==}
+    engines: {node: '>= 16'}
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
@@ -7641,6 +7648,14 @@ snapshots:
       '@sendgrid/client': 8.1.5
       '@sendgrid/helpers': 8.0.0
     transitivePeerDependencies:
+      - debug
+
+  '@sparticuz/chromium@123.0.1':
+    dependencies:
+      follow-redirects: 1.15.9
+      tar-fs: 3.1.0
+    transitivePeerDependencies:
+      - bare-buffer
       - debug
 
   '@standard-schema/utils@0.3.0': {}
