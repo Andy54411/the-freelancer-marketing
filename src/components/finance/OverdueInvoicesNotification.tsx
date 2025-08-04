@@ -57,7 +57,7 @@ export const OverdueInvoicesNotification: React.FC<OverdueInvoicesNotificationPr
   if (loading || !hasOverdueInvoices) {
     return (
       <Button variant="ghost" size="sm" className="relative">
-        <Bell className="h-5 w-5" />
+        <AlertTriangle className="h-5 w-5" />
       </Button>
     );
   }

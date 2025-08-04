@@ -43,7 +43,7 @@ import {
   Info as FiInfo,
 } from 'lucide-react';
 import { useAuth, HeaderChatPreview } from '@/contexts/AuthContext'; // HeaderChatPreview aus dem Context importieren
-import { OverdueInvoicesNotification } from '@/components/finance/OverdueInvoicesNotification';
+import { OverdueInvoicesAlert } from '@/components/finance/OverdueInvoicesAlert';
 const auth = getAuth(app);
 
 // NEU: Interface für Benachrichtigungen
@@ -435,9 +435,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
             {/* Icons und Benutzerprofil */}
             <div className="flex items-center space-x-4">
-              {/* Überfällige Rechnungen für Company-Benutzer */}
-              {currentUid && <OverdueInvoicesNotification companyId={currentUid} />}
-
               {/* NEU: Glocken-Icon mit Hover-Dropdown und Badge */}
               <div
                 className="relative"
@@ -457,6 +454,20 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                     <div className="p-3 border-b">
                       <h4 className="font-semibold text-gray-800">Benachrichtigungen</h4>
                     </div>
+
+                    {/* Überfällige Rechnungen Alert für Company-Benutzer */}
+                    {currentUid && (
+                      <div className="border-b">
+                        <OverdueInvoicesAlert
+                          companyId={currentUid}
+                          onViewInvoicesClick={() => {
+                            router.push(`/dashboard/company/${currentUid}/finance/invoices`);
+                            setIsNotificationDropdownOpen(false);
+                          }}
+                        />
+                      </div>
+                    )}
+
                     {notifications.length > 0 ? (
                       <ul>
                         {notifications.map(notification => (
