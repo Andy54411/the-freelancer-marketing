@@ -560,6 +560,45 @@ service cloud.firestore {
                         resource.data.status == 'DRAFT');
     }
 
+    // Finance: Projects Collection
+    match /projects/{projectId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+      allow list: if request.auth != null && 
+                    (isSupportStaff() ||
+                     (isCompany() && 
+                      'where' in request.query &&
+                      request.query.where != null &&
+                      request.query.where.size() > 0 &&
+                      request.query.where[0].path == 'companyId' &&
+                      request.query.where[0].op == '==' &&
+                      request.query.where[0].value == request.auth.uid));
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff oder eigene Firma
+      allow delete: if (isSupportStaff()) || 
+                       (request.auth != null && 
+                        resource.data.companyId == request.auth.uid &&
+                        isCompany());
+    }
+
     // Finance: Customers Collection
     match /customers/{customerId} {
       // Lesen: Nur eigene Firma oder Support Staff
