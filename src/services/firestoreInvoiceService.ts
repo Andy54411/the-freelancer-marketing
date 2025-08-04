@@ -173,8 +173,7 @@ export class FirestoreInvoiceService {
           amount: data.amount,
           tax: data.tax,
           year: data.year,
-          // Stellt sicher, dass 'template' immer definiert ist (entweder der Wert oder null)
-          template: data.template || null,
+          // Das Template-Feld wird bewusst ignoriert, da es global aus dem User-Profil geladen wird
           isStorno: data.isStorno || false,
           originalInvoiceId: data.originalInvoiceId,
           stornoReason: data.stornoReason,

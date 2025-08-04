@@ -27,18 +27,19 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadInvoice = async () => {
+    const loadData = async () => {
       const { invoiceId } = await params;
 
       try {
+        // 1. Lade die Rechnungsdaten
         const data = await FirestoreInvoiceService.getInvoiceById(invoiceId);
         if (!data) {
           return notFound();
         }
         setInvoiceData(data);
 
-        // Lade das bevorzugte Template des Users als Fallback, wenn in der Rechnung keins gesetzt ist
-        if (data.companyId && !data.template) {
+        // 2. Lade IMMER das globale Template des Benutzers
+        if (data.companyId) {
           try {
             const userDoc = await getDoc(doc(db, 'users', data.companyId));
             if (userDoc.exists()) {
@@ -48,6 +49,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
             }
           } catch (error) {
             console.error('❌ Fehler beim Laden des User-Templates:', error);
+            // Fallback auf Default-Template wird unten im JSX gehandhabt
           }
         }
       } catch (error) {
@@ -58,7 +60,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       }
     };
 
-    loadInvoice();
+    loadData();
 
     const initializePage = async () => {
       const resolvedParams = await params;
@@ -255,9 +257,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         {/* Minimales A4-optimiertes Layout */}
         <div className="print-invoice-wrapper">
           <InvoiceTemplateRenderer
-            template={
-              (invoiceData.template || userTemplate || DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate
-            }
+            template={(userTemplate || DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate}
             data={invoiceData}
             preview={false}
           />
