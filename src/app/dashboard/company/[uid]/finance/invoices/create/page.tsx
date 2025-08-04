@@ -2,7 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -291,7 +301,7 @@ export default function CreateInvoicePage() {
     }).format(amount);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -313,54 +323,66 @@ export default function CreateInvoicePage() {
       return;
     }
 
-    const { subtotal, tax, total } = calculateTotals();
+    try {
+      const { subtotal, tax, total } = calculateTotals();
 
-    const newInvoice = {
-      id: `inv_${Date.now()}`,
-      number: formData.invoiceNumber,
-      invoiceNumber: formData.invoiceNumber,
-      date: formData.issueDate,
-      issueDate: formData.issueDate,
-      dueDate: formData.dueDate,
-      customerName: formData.customerName,
-      customerEmail: formData.customerEmail,
-      customerAddress: formData.customerAddress,
-      description: formData.description,
+      const newInvoice = {
+        number: formData.invoiceNumber,
+        invoiceNumber: formData.invoiceNumber,
+        date: formData.issueDate,
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
+        customerName: formData.customerName,
+        customerEmail: formData.customerEmail,
+        customerAddress: formData.customerAddress,
+        description: formData.description,
 
-      // Company information from settings
-      companyName: companySettings?.companyName || '',
-      companyAddress: companySettings?.companyAddress || '',
-      companyEmail: companySettings?.companyEmail || '',
-      companyPhone: companySettings?.companyPhone || '',
-      companyWebsite: companySettings?.companyWebsite || '',
-      companyLogo: companySettings?.companyLogo || '',
-      companyVatId: companySettings?.vatId || '',
-      companyTaxNumber: companySettings?.taxNumber || '',
-      companyRegister: companySettings?.companyRegister || '',
-      districtCourt: companySettings?.districtCourt || '',
-      legalForm: companySettings?.legalForm || '',
-      companyTax: companySettings?.taxNumber || '',
+        // Company information from settings
+        companyId: uid,
+        companyName: companySettings?.companyName || '',
+        companyAddress: companySettings?.companyAddress || '',
+        companyEmail: companySettings?.companyEmail || '',
+        companyPhone: companySettings?.companyPhone || '',
+        companyWebsite: companySettings?.companyWebsite || '',
+        companyLogo: companySettings?.companyLogo || '',
+        companyVatId: companySettings?.vatId || '',
+        companyTaxNumber: companySettings?.taxNumber || '',
+        companyRegister: companySettings?.companyRegister || '',
+        districtCourt: companySettings?.districtCourt || '',
+        legalForm: companySettings?.legalForm || '',
+        companyTax: companySettings?.taxNumber || '',
 
-      // Tax settings
-      isSmallBusiness: companySettings?.ust === 'kleinunternehmer',
-      vatRate: parseFloat(companySettings?.defaultTaxRate || '19'),
-      priceInput: companySettings?.priceInput || 'netto',
+        // Tax settings
+        isSmallBusiness: companySettings?.ust === 'kleinunternehmer',
+        vatRate: parseFloat(companySettings?.defaultTaxRate || '19'),
+        priceInput: companySettings?.priceInput || 'netto',
 
-      // Financial data
-      items: items.filter(item => item.description && item.quantity > 0),
-      amount: subtotal,
-      tax,
-      total,
-      status: 'draft' as const,
-      template: selectedTemplate,
-      notes: formData.notes,
-    };
+        // Financial data
+        items: items.filter(item => item.description && item.quantity > 0),
+        amount: subtotal,
+        tax,
+        total,
+        status: 'draft' as const,
+        template: selectedTemplate,
+        notes: formData.notes,
 
-    // In real app: Save to database
-    console.log('Creating invoice:', newInvoice);
+        // Timestamps
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
 
-    toast.success('Rechnung erfolgreich erstellt!');
-    router.push(`/dashboard/company/${uid}/finance/invoices`);
+      // Save invoice to Firestore
+      console.log('Saving invoice to Firestore:', newInvoice);
+
+      const docRef = await addDoc(collection(db, 'invoices'), newInvoice);
+
+      console.log('Invoice saved with ID:', docRef.id);
+      toast.success('Rechnung erfolgreich erstellt!');
+      router.push(`/dashboard/company/${uid}/finance/invoices`);
+    } catch (error) {
+      console.error('Fehler beim Speichern der Rechnung:', error);
+      toast.error('Fehler beim Speichern der Rechnung');
+    }
   };
 
   const handleBackToInvoices = () => {

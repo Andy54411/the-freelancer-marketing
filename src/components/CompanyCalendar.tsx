@@ -37,12 +37,23 @@ type ProjectData = {
   companyId: string;
 };
 
+// Invoice-Typ für Kalenderanzeige
+type InvoiceData = {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  total: number;
+  dueDate: string;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  companyId: string;
+};
+
 interface CompanyCalendarProps {
   companyUid: string;
   selectedOrderId?: string | null; // Die ID des Auftrags, der hervorgehoben werden soll
 }
 
-// NEU: Hilfsfunktion, um Farben basierend auf dem Auftragsstatus oder Projektstatus zu bestimmen
+// NEU: Hilfsfunktion, um Farben basierend auf dem Auftragsstatus, Projektstatus oder Rechnungsstatus zu bestimmen
 const getStatusColor = (status: string) => {
   switch (status) {
     // Order statuses
@@ -65,6 +76,18 @@ const getStatusColor = (status: string) => {
     case 'cancelled':
       return { backgroundColor: '#ef4444', borderColor: '#ef4444' }; // Rot
 
+    // Invoice statuses
+    case 'draft':
+      return { backgroundColor: '#a1a1aa', borderColor: '#a1a1aa' }; // Grau
+    case 'sent':
+      return { backgroundColor: '#3b82f6', borderColor: '#3b82f6' }; // Blau
+    case 'paid':
+      return { backgroundColor: '#10b981', borderColor: '#10b981' }; // Grün
+    case 'overdue':
+      return { backgroundColor: '#ef4444', borderColor: '#ef4444' }; // Rot
+    case 'cancelled':
+      return { backgroundColor: '#6b7280', borderColor: '#6b7280' }; // Grau
+
     default:
       return { backgroundColor: '#a1a1aa', borderColor: '#a1a1aa' }; // Standard-Grau
   }
@@ -76,11 +99,12 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
   const [allOrders, setAllOrders] = useState<OrderData[]>([]); // Speichert die Rohdaten der Aufträge
   const [allProjects, setAllProjects] = useState<ProjectData[]>([]); // Speichert die Rohdaten der Projekte
+  const [allInvoices, setAllInvoices] = useState<InvoiceData[]>([]); // Speichert die Rohdaten der Rechnungen
   const [events, setEvents] = useState<EventInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Effekt zum einmaligen Laden der Auftrags- und Projektdaten
+  // Effekt zum einmaligen Laden der Auftrags-, Projekt- und Rechnungsdaten
   useEffect(() => {
     if (authLoading || !user || user.uid !== companyUid) {
       if (!authLoading) {
@@ -90,7 +114,7 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       return; // Warten auf Authentifizierung oder bei fehlender Berechtigung abbrechen
     }
 
-    const fetchOrdersAndProjects = async () => {
+    const fetchOrdersProjectsAndInvoices = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -145,24 +169,63 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
         console.log('[CompanyCalendar] Geladene Projekte:', loadedProjects);
 
+        // Rechnungen aus Firebase laden
+        const invoicesQuery = query(
+          collection(db, 'invoices'),
+          where('companyId', '==', companyUid),
+          orderBy('createdAt', 'desc')
+        );
+
+        const invoiceSnapshot = await getDocs(invoicesQuery);
+        const loadedInvoices: InvoiceData[] = [];
+
+        invoiceSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.dueDate && data.status !== 'paid' && data.status !== 'cancelled') {
+            // Automatisch prüfen ob Rechnung überfällig ist
+            const dueDate = new Date(data.dueDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zeit auf 00:00 setzen für korrekte Vergleiche
+
+            let actualStatus = data.status;
+            if (dueDate < today && data.status === 'sent') {
+              actualStatus = 'overdue';
+            }
+
+            loadedInvoices.push({
+              id: doc.id,
+              invoiceNumber: data.invoiceNumber || data.number || '',
+              customerName: data.customerName || '',
+              total: data.total || 0,
+              dueDate: data.dueDate,
+              status: actualStatus,
+              companyId: data.companyId || companyUid,
+            });
+          }
+        });
+
+        console.log('[CompanyCalendar] Geladene Rechnungen:', loadedInvoices);
+
         setAllOrders(relevantOrders);
         setAllProjects(loadedProjects);
+        setAllInvoices(loadedInvoices);
       } catch (err: any) {
-        setError(err.message || 'Fehler beim Laden der Aufträge und Projekte.');
+        setError(err.message || 'Fehler beim Laden der Aufträge, Projekte und Rechnungen.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrdersAndProjects();
+    fetchOrdersProjectsAndInvoices();
   }, [user, authLoading, companyUid]);
 
-  // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge, Projekte oder die Auswahl ändern
+  // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge, Projekte, Rechnungen oder die Auswahl ändern
   useEffect(() => {
     console.log(
-      '[CompanyCalendar] Erstelle Kalender-Events aus allOrders und allProjects:',
+      '[CompanyCalendar] Erstelle Kalender-Events aus allOrders, allProjects und allInvoices:',
       allOrders,
-      allProjects
+      allProjects,
+      allInvoices
     );
 
     // Events für Aufträge erstellen
@@ -244,15 +307,61 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       return eventObject;
     });
 
+    // Events für Rechnungen erstellen (Fälligkeitsdatum)
+    const invoiceEvents = allInvoices.map(invoice => {
+      const colors = getStatusColor(invoice.status);
+
+      // Emoji basierend auf Status wählen
+      const getInvoiceEmoji = (status: string) => {
+        switch (status) {
+          case 'overdue':
+            return '🚨'; // Überfällig
+          case 'sent':
+            return '📄'; // Versendet
+          case 'draft':
+            return '📝'; // Entwurf
+          default:
+            return '💰'; // Standard
+        }
+      };
+
+      const eventObject = {
+        id: `invoice-${invoice.id}`,
+        title: `${getInvoiceEmoji(invoice.status)} Rechnung ${invoice.invoiceNumber}`,
+        start: invoice.dueDate ? new Date(invoice.dueDate) : undefined,
+        allDay: true,
+        url: `/dashboard/company/${companyUid}/finance/invoices`,
+        extendedProps: {
+          customerName: invoice.customerName,
+          status: invoice.status,
+          type: 'invoice',
+          total: invoice.total,
+          invoiceNumber: invoice.invoiceNumber,
+        },
+        // Überfällige Rechnungen besonders hervorheben
+        className: invoice.status === 'overdue' ? 'invoice-overdue' : '',
+        ...colors,
+      };
+
+      console.log(`[CompanyCalendar] Erstelle Event für Rechnung ${invoice.id}:`, {
+        title: eventObject.title,
+        start: eventObject.start,
+        status: invoice.status,
+        dueDate: invoice.dueDate,
+      });
+
+      return eventObject;
+    });
+
     // Alle Events kombinieren
-    const calendarEvents = [...orderEvents, ...projectEvents];
+    const calendarEvents = [...orderEvents, ...projectEvents, ...invoiceEvents];
     console.log('[CompanyCalendar] Finales Array von Kalender-Events:', calendarEvents);
     setEvents(calendarEvents);
-  }, [allOrders, allProjects, selectedOrderId, companyUid]);
+  }, [allOrders, allProjects, allInvoices, selectedOrderId, companyUid]);
 
   // NEU: Funktion zum Rendern des Event-Inhalts mit Tooltip
   const renderEventContent = (eventInfo: EventContentArg) => {
-    const { status, customerName, type } = eventInfo.event.extendedProps;
+    const { status, customerName, type, total, invoiceNumber } = eventInfo.event.extendedProps;
 
     // Deutsche Status-Labels
     const getStatusLabel = (status: string) => {
@@ -267,11 +376,35 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         'on-hold': 'Pausiert',
         completed: 'Abgeschlossen',
         cancelled: 'Abgebrochen',
+        // Invoice statuses
+        draft: 'Entwurf',
+        sent: 'Versendet',
+        paid: 'Bezahlt',
+        overdue: 'Überfällig',
       };
       return statusLabels[status] || status;
     };
 
-    const typeLabel = type === 'project' ? 'Projekt' : 'Auftrag';
+    const getTypeLabel = (type: string) => {
+      switch (type) {
+        case 'project':
+          return 'Projekt';
+        case 'invoice':
+          return 'Rechnung';
+        default:
+          return 'Auftrag';
+      }
+    };
+
+    const typeLabel = getTypeLabel(type);
+
+    // Formatierung für Rechnungsbeträge
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+      }).format(amount);
+    };
 
     return (
       <Tooltip>
@@ -285,6 +418,12 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           <p>{typeLabel}</p>
           <p>Kunde: {customerName}</p>
           <p>Status: {getStatusLabel(status)}</p>
+          {type === 'invoice' && total && (
+            <>
+              <p>Betrag: {formatCurrency(total)}</p>
+              {status === 'overdue' && <p className="text-red-600 font-semibold">⚠️ Überfällig!</p>}
+            </>
+          )}
         </TooltipContent>
       </Tooltip>
     );
@@ -370,6 +509,23 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         .fc .fc-button-primary:hover {
           background-color: #129a8f; /* Etwas dunklerer Hover-Effekt */
           border-color: #129a8f;
+        }
+
+        /* Überfällige Rechnungen - besondere Hervorhebung */
+        .fc-event.invoice-overdue {
+          animation: blink 2s linear infinite;
+          box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+        }
+
+        @keyframes blink {
+          0%,
+          50% {
+            opacity: 1;
+          }
+          51%,
+          100% {
+            opacity: 0.7;
+          }
         }
       `}</style>
     </Suspense>
