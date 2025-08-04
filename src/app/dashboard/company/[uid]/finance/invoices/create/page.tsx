@@ -358,6 +358,7 @@ export default function CreateInvoicePage() {
       if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
         console.error('❌ Validierung fehlgeschlagen: Pflichtfelder fehlen');
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+        setIsSubmitting(false);
         return;
       }
 
@@ -367,6 +368,7 @@ export default function CreateInvoicePage() {
           '❌ Validierung fehlgeschlagen: Rechnungsnummer fehlt für finalisierte Rechnung'
         );
         toast.error('Rechnungsnummer ist für finalisierte Rechnungen erforderlich');
+        setIsSubmitting(false);
         return;
       }
 
@@ -376,6 +378,7 @@ export default function CreateInvoicePage() {
       if (!hasValidItems) {
         console.error('❌ Validierung fehlgeschlagen: Keine gültigen Positionen', items);
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
+        setIsSubmitting(false);
         return;
       }
 

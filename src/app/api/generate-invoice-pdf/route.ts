@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InvoiceData } from '@/types/invoiceTypes';
+import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 // Dynamic import for Puppeteer to handle server environment
 let puppeteer: any = null;
@@ -89,6 +92,419 @@ function getBrowserConfig() {
   }
 }
 
+// Get user's preferred template from database
+async function getUserTemplate(companyId: string): Promise<InvoiceTemplate> {
+  try {
+    console.log('🎨 Lade Benutzer-Template für Company:', companyId);
+    const userDoc = await getDoc(doc(db, 'users', companyId));
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
+      console.log('✅ Gefundenes Template:', preferredTemplate);
+      return preferredTemplate || 'minimal';
+    }
+
+    console.log('⚠️ Kein Benutzer gefunden, verwende Standard-Template');
+    return 'minimal';
+  } catch (error) {
+    console.error('❌ Fehler beim Laden des Templates:', error);
+    return 'minimal';
+  }
+}
+
+function generateInvoiceHTML(invoice: InvoiceData, template: InvoiceTemplate = 'minimal'): string {
+  console.log('🎨 Generiere HTML mit Template:', template);
+
+  // Template-spezifische HTML-Generierung
+  switch (template) {
+    case 'minimal':
+      return generateMinimalHTML(invoice);
+    case 'classic':
+      return generateClassicHTML(invoice);
+    case 'modern':
+      return generateModernHTML(invoice);
+    case 'corporate':
+      return generateCorporateHTML(invoice);
+    case 'creative':
+      return generateCreativeHTML(invoice);
+    case 'german-standard':
+      return generateGermanStandardHTML(invoice);
+    default:
+      return generateMinimalHTML(invoice);
+  }
+}
+
+function generateMinimalHTML(invoice: InvoiceData): string {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('de-DE');
+  };
+
+  return `
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Rechnung ${invoice.invoiceNumber || invoice.number}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          line-height: 1.6;
+          color: #1f2937;
+          background: white;
+          font-size: 14px;
+        }
+        
+        .invoice-container {
+          max-width: 210mm;
+          margin: 0 auto;
+          padding: 48px;
+          background: white;
+          min-height: 100vh;
+        }
+        
+        /* Minimal header */
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 64px;
+        }
+        
+        .company-info {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        
+        .company-logo {
+          height: 48px;
+          width: auto;
+          object-fit: contain;
+        }
+        
+        .company-name {
+          font-size: 24px;
+          font-weight: 400;
+          color: #1f2937;
+        }
+        
+        .invoice-meta {
+          text-align: right;
+        }
+        
+        .invoice-title {
+          font-size: 48px;
+          font-weight: 100;
+          color: #9ca3af;
+          margin-bottom: 16px;
+          letter-spacing: -1px;
+        }
+        
+        .invoice-details {
+          font-size: 14px;
+          color: #6b7280;
+          line-height: 1.5;
+        }
+        
+        /* Customer section - minimal */
+        .customer-section {
+          margin-bottom: 64px;
+        }
+        
+        .customer-name {
+          font-size: 18px;
+          font-weight: 500;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        
+        .customer-address {
+          color: #6b7280;
+          font-size: 14px;
+          line-height: 1.8;
+        }
+        
+        /* Items section - ultra minimal */
+        .items-section {
+          margin-bottom: 64px;
+        }
+        
+        .items-border {
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 32px;
+          margin-bottom: 32px;
+        }
+        
+        .item-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 0;
+        }
+        
+        .item-description {
+          flex: 1;
+        }
+        
+        .item-name {
+          color: #1f2937;
+          font-size: 14px;
+        }
+        
+        .item-details {
+          font-size: 12px;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        
+        .item-total {
+          color: #1f2937;
+          font-weight: 500;
+        }
+        
+        /* Minimal totals */
+        .totals-section {
+          max-width: 300px;
+          margin-left: auto;
+        }
+        
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          font-size: 14px;
+        }
+        
+        .total-row.subtotal,
+        .total-row.tax {
+          color: #6b7280;
+          font-size: 12px;
+        }
+        
+        .total-row.final {
+          font-size: 18px;
+          font-weight: 500;
+          padding-top: 16px;
+          border-top: 1px solid #e5e7eb;
+          margin-top: 8px;
+        }
+        
+        .small-business-note {
+          font-size: 10px;
+          color: #6b7280;
+          font-style: italic;
+          text-align: center;
+          margin-top: 16px;
+          line-height: 1.4;
+        }
+        
+        /* Minimal footer */
+        .footer {
+          font-size: 10px;
+          color: #9ca3af;
+          text-align: center;
+          margin-top: 64px;
+          line-height: 1.6;
+        }
+        
+        .due-date {
+          margin-bottom: 24px;
+          font-size: 12px;
+        }
+        
+        .company-details {
+          margin-bottom: 8px;
+          font-weight: 500;
+        }
+        
+        .company-address-footer {
+          margin-bottom: 16px;
+        }
+        
+        .company-contact {
+          margin-bottom: 8px;
+        }
+        
+        .company-legal {
+          border-top: 1px solid #f3f4f6;
+          padding-top: 16px;
+          margin-top: 16px;
+        }
+        
+        @media print {
+          body { -webkit-print-color-adjust: exact; }
+          .invoice-container { padding: 20mm 15mm; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="invoice-container">
+        <!-- Minimal header -->
+        <div class="header">
+          <div class="company-info">
+            ${
+              invoice.companyLogo
+                ? `
+              <img src="${invoice.companyLogo}" alt="${invoice.companyName} Logo" class="company-logo" />
+            `
+                : ''
+            }
+            <div class="company-name">${invoice.companyName}</div>
+          </div>
+          <div class="invoice-meta">
+            <div class="invoice-title">RECHNUNG</div>
+            <div class="invoice-details">
+              <div>${invoice.invoiceNumber || invoice.number}</div>
+              <div>${formatDate(invoice.issueDate)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer - minimal -->
+        <div class="customer-section">
+          <div class="customer-name">${invoice.customerName}</div>
+          ${
+            invoice.customerAddress
+              ? `
+            <div class="customer-address">
+              ${invoice.customerAddress
+                .split('\n')
+                .map(line => `<div>${line}</div>`)
+                .join('')}
+            </div>
+          `
+              : ''
+          }
+        </div>
+
+        <!-- Items - ultra minimal -->
+        <div class="items-section">
+          <div class="items-border">
+            ${
+              invoice.items && invoice.items.length > 0
+                ? invoice.items
+                    .map(
+                      item => `
+                <div class="item-row">
+                  <div class="item-description">
+                    <div class="item-name">${item.description}</div>
+                    <div class="item-details">${item.quantity} × ${formatCurrency(item.unitPrice)}</div>
+                  </div>
+                  <div class="item-total">${formatCurrency(item.total)}</div>
+                </div>
+              `
+                    )
+                    .join('')
+                : `
+                <div class="item-row">
+                  <div class="item-description">
+                    <div class="item-name">${invoice.description}</div>
+                  </div>
+                  <div class="item-total">${formatCurrency(invoice.amount)}</div>
+                </div>
+              `
+            }
+          </div>
+
+          <!-- Minimal totals -->
+          <div class="totals-section">
+            ${
+              !invoice.isSmallBusiness
+                ? `
+              <div class="total-row subtotal">
+                <span>Netto</span>
+                <span>${formatCurrency(invoice.amount)}</span>
+              </div>
+              <div class="total-row tax">
+                <span>MwSt. (${invoice.vatRate || 19}%)</span>
+                <span>${formatCurrency(invoice.tax)}</span>
+              </div>
+              <div class="total-row final">
+                <span>Gesamt</span>
+                <span>${formatCurrency(invoice.total)}</span>
+              </div>
+            `
+                : `
+              <div class="total-row final">
+                <span>Gesamt</span>
+                <span>${formatCurrency(invoice.total)}</span>
+              </div>
+              <div class="small-business-note">
+                <em>
+                  Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.<br>
+                  (Kleinunternehmerregelung)
+                </em>
+              </div>
+            `
+            }
+          </div>
+        </div>
+
+        <!-- Minimal footer -->
+        <div class="footer">
+          <div class="due-date">Fällig bis ${formatDate(invoice.dueDate)}</div>
+          <div class="company-details">${invoice.companyName}</div>
+          <div class="company-address-footer">${invoice.companyAddress}</div>
+          ${invoice.companyWebsite ? `<div class="company-contact">Web: ${invoice.companyWebsite}</div>` : ''}
+          <div class="company-contact">${invoice.companyEmail}</div>
+          ${invoice.companyPhone ? `<div class="company-contact">Tel: ${invoice.companyPhone}</div>` : ''}
+          
+          <div class="company-legal">
+            ${invoice.companyVatId ? `<div>USt-IdNr.: ${invoice.companyVatId}</div>` : ''}
+            ${invoice.companyTaxNumber ? `<div>Steuernummer: ${invoice.companyTaxNumber}</div>` : ''}
+            ${
+              invoice.companyRegister && invoice.districtCourt
+                ? `
+              <div>${invoice.companyRegister} ${invoice.districtCourt}</div>
+            `
+                : ''
+            }
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Placeholder functions for other templates (können später implementiert werden)
+function generateClassicHTML(invoice: InvoiceData): string {
+  return generateMinimalHTML(invoice); // Fallback für jetzt
+}
+
+function generateModernHTML(invoice: InvoiceData): string {
+  return generateMinimalHTML(invoice); // Fallback für jetzt
+}
+
+function generateCorporateHTML(invoice: InvoiceData): string {
+  return generateMinimalHTML(invoice); // Fallback für jetzt
+}
+
+function generateCreativeHTML(invoice: InvoiceData): string {
+  return generateMinimalHTML(invoice); // Fallback für jetzt
+}
+
+function generateGermanStandardHTML(invoice: InvoiceData): string {
+  return generateMinimalHTML(invoice); // Fallback für jetzt
+}
+
 export async function POST(request: NextRequest) {
   let browser;
   const isVercel = process.env.VERCEL === '1';
@@ -113,7 +529,12 @@ export async function POST(request: NextRequest) {
     // Sofortiger HTML-Fallback in Production für Stabilität
     if (isVercel || isProduction) {
       console.log('🔄 Verwende HTML-Fallback für Production-Umgebung');
-      const htmlContent = generateInvoiceHTML(invoiceData);
+
+      // Template aus Datenbank laden
+      const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
+      console.log('🎨 Verwende Template:', template);
+
+      const htmlContent = generateInvoiceHTML(invoiceData, template);
       return new NextResponse(htmlContent, {
         status: 200,
         headers: {
@@ -132,8 +553,12 @@ export async function POST(request: NextRequest) {
     } catch (puppeteerError) {
       console.warn('⚠️ Puppeteer nicht verfügbar, verwende HTML-Fallback:', puppeteerError.message);
 
+      // Template aus Datenbank laden
+      const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
+      console.log('🎨 Verwende Template:', template);
+
       // Fallback: Sende HTML für Client-seitige PDF-Generierung
-      const htmlContent = generateInvoiceHTML(invoiceData);
+      const htmlContent = generateInvoiceHTML(invoiceData, template);
       return new NextResponse(htmlContent, {
         status: 200,
         headers: {
@@ -161,8 +586,12 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('🎨 Generiere HTML Content...');
+    // Template aus Datenbank laden
+    const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
+    console.log('🎨 Verwende Template:', template);
+
     // Generate professional HTML content
-    const htmlContent = generateInvoiceHTML(invoiceData);
+    const htmlContent = generateInvoiceHTML(invoiceData, template);
 
     console.log('📝 Setze HTML Content...');
     // Set content and wait for network idle
@@ -222,7 +651,11 @@ export async function POST(request: NextRequest) {
     console.log('🔄 Verwende HTML-Fallback nach Fehler');
     const { invoiceData } = await request.json();
     if (invoiceData) {
-      const htmlContent = generateInvoiceHTML(invoiceData);
+      // Template aus Datenbank laden
+      const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
+      console.log('🎨 Verwende Template:', template);
+
+      const htmlContent = generateInvoiceHTML(invoiceData, template);
       return new NextResponse(htmlContent, {
         status: 200,
         headers: {
@@ -244,354 +677,4 @@ export async function POST(request: NextRequest) {
       { status: 503 }
     );
   }
-}
-
-function generateInvoiceHTML(invoice: InvoiceData): string {
-  return `
-    <!DOCTYPE html>
-    <html lang="de">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Rechnung ${invoice.invoiceNumber || invoice.number}</title>
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        body {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          line-height: 1.6;
-          color: #1f2937;
-          background: white;
-          font-size: 14px;
-        }
-        
-        .invoice-container {
-          max-width: 210mm;
-          margin: 0 auto;
-          padding: 20mm 15mm;
-          background: white;
-          min-height: 100vh;
-        }
-        
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 40px;
-          padding-bottom: 20px;
-          border-bottom: 3px solid #14ad9f;
-        }
-        
-        .company-info h1 {
-          font-size: 28px;
-          font-weight: 700;
-          color: #14ad9f;
-          margin-bottom: 12px;
-          letter-spacing: -0.5px;
-        }
-        
-        .company-details {
-          color: #6b7280;
-          line-height: 1.5;
-          font-size: 13px;
-        }
-        
-        .invoice-meta {
-          text-align: right;
-        }
-        
-        .invoice-title {
-          font-size: 32px;
-          font-weight: 700;
-          color: #1f2937;
-          margin-bottom: 8px;
-          letter-spacing: -0.8px;
-        }
-        
-        .invoice-number {
-          font-size: 18px;
-          font-weight: 600;
-          color: #14ad9f;
-          margin-bottom: 16px;
-        }
-        
-        .invoice-dates {
-          color: #6b7280;
-          font-size: 13px;
-          line-height: 1.6;
-        }
-        
-        .customer-section {
-          background: #f8fafc;
-          padding: 24px;
-          border-radius: 12px;
-          border-left: 4px solid #14ad9f;
-          margin: 32px 0;
-        }
-        
-        .customer-section h3 {
-          font-size: 16px;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 12px;
-        }
-        
-        .customer-details {
-          color: #374151;
-          line-height: 1.6;
-        }
-        
-        .customer-name {
-          font-weight: 600;
-          font-size: 15px;
-          color: #1f2937;
-          margin-bottom: 8px;
-        }
-        
-        .items-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 32px 0;
-          background: white;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .items-table th {
-          background: #14ad9f;
-          color: white;
-          padding: 16px 12px;
-          text-align: left;
-          font-weight: 600;
-          font-size: 13px;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-        }
-        
-        .items-table th:last-child,
-        .items-table td:last-child {
-          text-align: right;
-        }
-        
-        .items-table td {
-          padding: 16px 12px;
-          border-bottom: 1px solid #e5e7eb;
-          color: #374151;
-        }
-        
-        .items-table tr:last-child td {
-          border-bottom: none;
-        }
-        
-        .items-table .quantity,
-        .items-table .price {
-          text-align: center;
-          font-weight: 500;
-        }
-        
-        .items-table .amount {
-          font-weight: 600;
-          color: #1f2937;
-        }
-        
-        .totals-section {
-          margin-top: 32px;
-          display: flex;
-          justify-content: flex-end;
-        }
-        
-        .totals-table {
-          min-width: 320px;
-          border-collapse: collapse;
-        }
-        
-        .totals-table td {
-          padding: 12px 16px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .totals-table .label {
-          text-align: right;
-          color: #6b7280;
-          font-weight: 500;
-        }
-        
-        .totals-table .value {
-          text-align: right;
-          font-weight: 600;
-          min-width: 120px;
-        }
-        
-        .totals-table .total-row td {
-          border-top: 2px solid #14ad9f;
-          border-bottom: 2px solid #14ad9f;
-          background: #f0fdfa;
-          color: #14ad9f;
-          font-size: 18px;
-          font-weight: 700;
-          padding: 16px;
-        }
-        
-        .notes-section {
-          margin-top: 40px;
-          padding: 24px;
-          background: #f8fafc;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-        }
-        
-        .notes-section h4 {
-          font-size: 16px;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 12px;
-        }
-        
-        .notes-content {
-          color: #6b7280;
-          line-height: 1.6;
-          white-space: pre-wrap;
-        }
-        
-        .footer {
-          margin-top: 48px;
-          padding-top: 24px;
-          border-top: 1px solid #e5e7eb;
-          text-align: center;
-          color: #9ca3af;
-          font-size: 12px;
-        }
-        
-        .footer-message {
-          font-style: italic;
-          color: #14ad9f;
-          font-weight: 500;
-        }
-        
-        .currency {
-          font-variant-numeric: tabular-nums;
-        }
-        
-        @media print {
-          body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          .invoice-container {
-            padding: 0;
-            margin: 0;
-            max-width: none;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="invoice-container">
-        <!-- Header -->
-        <div class="header">
-          <div class="company-info">
-            <h1>${invoice.companyName || 'Ihr Unternehmen'}</h1>
-            <div class="company-details">
-              ${(invoice.companyAddress || '').replace(/\n/g, '<br>')}<br>
-              ${invoice.companyEmail || ''}<br>
-              ${invoice.companyPhone || ''}
-              ${invoice.companyVatId ? `<br>USt-IdNr.: ${invoice.companyVatId}` : ''}
-            </div>
-          </div>
-          
-          <div class="invoice-meta">
-            <div class="invoice-title">RECHNUNG</div>
-            <div class="invoice-number">${invoice.invoiceNumber || invoice.number || 'R-' + invoice.id?.substring(0, 8)}</div>
-            <div class="invoice-dates">
-              <strong>Datum:</strong> ${new Date(invoice.date || invoice.issueDate).toLocaleDateString('de-DE')}<br>
-              <strong>Fällig:</strong> ${new Date(invoice.dueDate).toLocaleDateString('de-DE')}
-            </div>
-          </div>
-        </div>
-
-        <!-- Customer Section -->
-        <div class="customer-section">
-          <h3>Rechnungsempfänger</h3>
-          <div class="customer-details">
-            <div class="customer-name">${invoice.customerName}</div>
-            <div>${invoice.customerEmail}</div>
-            <div>${(invoice.customerAddress || '').replace(/\n/g, '<br>')}</div>
-          </div>
-        </div>
-
-        <!-- Items Table -->
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th style="width: 50%">Beschreibung</th>
-              <th style="width: 15%">Menge</th>
-              <th style="width: 20%">Einzelpreis</th>
-              <th style="width: 15%">Gesamtpreis</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(invoice.items || [])
-              .map(
-                item => `
-              <tr>
-                <td>${item.description}</td>
-                <td class="quantity">${item.quantity}</td>
-                <td class="price currency">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(item.unitPrice)}</td>
-                <td class="amount currency">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(item.total)}</td>
-              </tr>
-            `
-              )
-              .join('')}
-          </tbody>
-        </table>
-
-        <!-- Totals Section -->
-        <div class="totals-section">
-          <table class="totals-table">
-            <tr>
-              <td class="label">Zwischensumme:</td>
-              <td class="value currency">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.amount)}</td>
-            </tr>
-            <tr>
-              <td class="label">MwSt. (${invoice.vatRate || 19}%):</td>
-              <td class="value currency">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.tax)}</td>
-            </tr>
-            <tr class="total-row">
-              <td class="label">Gesamtbetrag:</td>
-              <td class="value currency">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.total)}</td>
-            </tr>
-          </table>
-        </div>
-
-        ${
-          invoice.notes
-            ? `
-        <!-- Notes Section -->
-        <div class="notes-section">
-          <h4>Anmerkungen</h4>
-          <div class="notes-content">${invoice.notes.replace(/\n/g, '<br>')}</div>
-        </div>
-        `
-            : ''
-        }
-
-        <!-- Footer -->
-        <div class="footer">
-          <div class="footer-message">Vielen Dank für Ihr Vertrauen!</div>
-          <div style="margin-top: 8px;">
-            Erstellt mit Taskilo • ${new Date().toLocaleDateString('de-DE')}
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
 }
