@@ -3,6 +3,7 @@ import { getDatevConfig, validateSandboxClientPermissions } from '@/lib/datev-co
 import { retrievePKCEData } from '@/lib/pkce-storage';
 import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
+import { setDatevTokenCookies } from '@/lib/datev-server-utils';
 
 /**
  * DATEV OAuth Callback Handler
@@ -222,7 +223,8 @@ export async function OPTIONS() {
 }
 
 /**
- * Store DATEV tokens securely in Firestore for the company
+ * Store DATEV tokens securely in Firestore AND Cookies for the company
+ * This is the KEY FIX - we need both Firestore (persistence) and Cookies (session)
  */
 async function storeTokensForCompany(companyId: string, tokenData: any) {
   try {
@@ -239,7 +241,7 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
     console.log('🔧 [DATEV Callback] Token will expire at:', expiresAt);
 
-    // Store tokens in company's DATEV subcollection (using Admin SDK)
+    // 1. Store tokens in Firestore (for persistence across sessions)
     const tokenDocRef = db.collection('companies').doc(companyId).collection('datev').doc('tokens');
     console.log('🔧 [DATEV Callback] Storing at path:', `companies/${companyId}/datev/tokens`);
 
@@ -258,7 +260,16 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     await tokenDocRef.set(tokenDocData);
     console.log('✅ [DATEV Callback] Token document created successfully');
 
-    // Also store connection status in company document (using Admin SDK)
+    // 2. Store tokens in httpOnly cookies (for current session API calls)
+    await setDatevTokenCookies(
+      tokenData.access_token,
+      tokenData.refresh_token,
+      tokenData.expires_in || 3600
+    );
+
+    console.log('✅ [DATEV Callback] Tokens stored in cookies');
+
+    // 3. Also store connection status in company document (using Admin SDK)
     const companyDocRef = db.collection('companies').doc(companyId);
     const companyUpdateData = {
       datev: {

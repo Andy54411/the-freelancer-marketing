@@ -3,9 +3,10 @@
  * Proxy für DATEV Organizations API - löst CORS-Problem
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, DATEV_ENDPOINTS } from '@/lib/datev-config';
 import { DatevTokenManager } from '@/lib/datev-token-manager';
+import { getDatevTokenFromCookies } from '@/lib/datev-server-utils';
 import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
@@ -16,10 +17,19 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const companyId = url.searchParams.get('companyId') || request.headers.get('x-company-id');
 
-    // Try to get authentication token from multiple sources
-    let authHeader = DatevTokenManager.getServerAuthHeader(request);
+    // 1. Try to get authentication token from Cookie (FASTEST)
+    let authHeader: string | null = null;
+    try {
+      const cookieToken = await getDatevTokenFromCookies();
+      if (cookieToken) {
+        authHeader = `Bearer ${cookieToken}`;
+        console.log('[DATEV Organizations] Using cookie token');
+      }
+    } catch (cookieError) {
+      console.log('[DATEV Organizations] Cookie token not available:', cookieError);
+    }
 
-    // If no cookie-based token, try to get from Firestore
+    // 2. If no cookie token and companyId available, try Firestore
     if (!authHeader && companyId) {
       console.log(
         '[DATEV Organizations] No cookie token, checking Firestore for company:',
@@ -50,6 +60,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 3. Final check - no auth available
     if (!authHeader) {
       console.log('[DATEV Organizations] No auth header available - authentication required');
       return Response.json(

@@ -1,10 +1,19 @@
 /**
  * DATEV Service - Produktionsreife Integration
- * Direkte API-Calls an DATEV für Buchhaltung, Dokumente und Steuerberater-Integration
+ * Client-side service für DATEV-Integration
+ * Server-side Funktionen sind in /lib/datev-server-utils.ts und API-Routen
  */
 
 import { getDatevConfig, DATEV_ENDPOINTS, validateDatevConfig } from '@/lib/datev-config';
 import { DatevTokenManager } from '@/lib/datev-token-manager';
+
+// DATEV Sandbox URLs (unterschiedlich von Production!)
+const DATEV_API_BASE =
+  process.env.NODE_ENV === 'production' ? 'https://api.datev.de' : 'https://sandbox-api.datev.de';
+const DATEV_AUTH_BASE =
+  process.env.NODE_ENV === 'production'
+    ? 'https://login.datev.de'
+    : 'https://sandbox-login.datev.de';
 
 // DATEV API Response Types
 export interface DatevOrganization {
