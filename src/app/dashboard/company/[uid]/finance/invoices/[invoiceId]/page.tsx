@@ -97,15 +97,47 @@ export default function InvoiceDetailPage() {
 
     setUpdating(true);
     try {
+      // Generiere Rechnungsnummer wenn noch keine vorhanden
+      let invoiceNumber = invoice.invoiceNumber || invoice.number;
+      let sequentialNumber = invoice.sequentialNumber;
+
+      if (!invoiceNumber) {
+        console.log('🔢 Generiere Rechnungsnummer beim Finalisieren...');
+        try {
+          const result = await FirestoreInvoiceService.getNextInvoiceNumber(uid);
+          invoiceNumber = result.formattedNumber;
+          sequentialNumber = result.sequentialNumber;
+          console.log('✅ Rechnungsnummer generiert:', invoiceNumber);
+        } catch (error) {
+          console.error('❌ Fehler beim Generieren der Rechnungsnummer:', error);
+          toast.error('Fehler beim Generieren der Rechnungsnummer');
+          return;
+        }
+      }
+
       const invoiceRef = doc(db, 'invoices', invoiceId);
       await updateDoc(invoiceRef, {
         status: 'finalized',
+        invoiceNumber,
+        number: invoiceNumber,
+        ...(sequentialNumber && { sequentialNumber }),
         finalizedAt: new Date(),
         updatedAt: new Date(),
       });
 
-      setInvoice(prev => (prev ? { ...prev, status: 'finalized' } : null));
-      toast.success('Rechnung wurde finalisiert!');
+      setInvoice(prev =>
+        prev
+          ? {
+              ...prev,
+              status: 'finalized',
+              invoiceNumber,
+              number: invoiceNumber,
+              ...(sequentialNumber && { sequentialNumber }),
+            }
+          : null
+      );
+
+      toast.success(`Rechnung ${invoiceNumber} wurde finalisiert!`);
     } catch (error) {
       console.error('Fehler beim Finalisieren:', error);
       toast.error('Fehler beim Finalisieren der Rechnung');
@@ -320,7 +352,9 @@ export default function InvoiceDetailPage() {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Rechnung {invoice.invoiceNumber || invoice.sequentialNumber}
+              {invoice.status === 'draft'
+                ? 'Rechnungsentwurf'
+                : `Rechnung ${invoice.invoiceNumber || invoice.number || invoice.sequentialNumber}`}
             </h1>
             <div className="flex items-center gap-4">
               {getStatusBadge(invoice.status)}

@@ -207,41 +207,11 @@ export default function CreateInvoicePage() {
     loadCustomers();
   }, [uid, user]);
 
-  // Auto-generate invoice number using FirestoreInvoiceService
+  // Auto-generate invoice number only when finalizing (not for drafts)
   React.useEffect(() => {
-    const generateInvoiceNumber = async () => {
-      if (!formData.invoiceNumber && uid) {
-        try {
-          console.log('🔢 Generiere Vorschau-Rechnungsnummer via FirestoreInvoiceService...');
-          const { formattedNumber } = await FirestoreInvoiceService.getNextInvoiceNumber(uid);
-          console.log('✅ Vorschau-Nummer generiert:', formattedNumber);
-          setFormData(prev => ({
-            ...prev,
-            invoiceNumber: formattedNumber,
-          }));
-        } catch (error) {
-          console.error('❌ Fehler beim Generieren der Vorschau-Nummer:', error);
-
-          // Robust fallback based on current date and random component
-          const currentYear = new Date().getFullYear();
-          const dateComponent = new Date().getDate().toString().padStart(2, '0');
-          const randomComponent = Math.floor(Math.random() * 99) + 1;
-          const fallbackNumber = `R-${currentYear}-${dateComponent}${randomComponent}`;
-
-          console.log('🔄 Verwende Fallback-Nummer:', fallbackNumber);
-          setFormData(prev => ({
-            ...prev,
-            invoiceNumber: fallbackNumber,
-          }));
-        }
-      }
-    };
-
-    // Nur generieren wenn noch keine Nummer vorhanden
-    if (!formData.invoiceNumber) {
-      generateInvoiceNumber();
-    }
-  }, [uid]); // Entferne formData.invoiceNumber aus dependencies um Loop zu vermeiden
+    // Keine automatische Generierung der Rechnungsnummer für Entwürfe
+    // Die Nummer wird erst beim Finalisieren erstellt
+  }, [uid]); // Entferne die automatische Generierung komplett
 
   // Auto-set due date (14 days from issue date)
   React.useEffect(() => {
@@ -414,30 +384,37 @@ export default function CreateInvoicePage() {
       const { subtotal, tax, total } = calculateTotals();
       console.log('💰 Berechnungen:', { subtotal, tax, total });
 
-      // Bei Finalisierung automatisch Rechnungsnummer generieren, falls nicht vorhanden
-      let finalInvoiceNumber = formData.invoiceNumber;
+      // Bei Finalisierung automatisch Rechnungsnummer generieren
+      let finalInvoiceNumber = '';
       let sequentialNumber: number | undefined;
 
-      // Für finale Rechnungen oder falls keine Nummer vorhanden ist, generiere automatisch
-      if ((action === 'finalize' && !finalInvoiceNumber) || !finalInvoiceNumber) {
-        console.log('🔢 Generiere automatische Rechnungsnummer...');
+      // Nur für finale Rechnungen eine echte Rechnungsnummer generieren
+      if (action === 'finalize') {
+        console.log('🔢 Generiere finale Rechnungsnummer...');
         const result = await generateNextInvoiceNumber();
         finalInvoiceNumber = result.number;
         sequentialNumber = result.sequentialNumber;
         console.log(
-          '✅ Generierte Rechnungsnummer:',
+          '✅ Generierte finale Rechnungsnummer:',
           finalInvoiceNumber,
           'Sequential:',
           sequentialNumber
         );
+      } else {
+        // Für Entwürfe keine Rechnungsnummer setzen
+        console.log('📝 Entwurf wird ohne finale Rechnungsnummer gespeichert');
       }
 
       console.log('📋 Erstelle Rechnungsobjekt...');
       const newInvoice = {
-        number: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
-        invoiceNumber: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
-        // Nur sequentialNumber setzen wenn es definiert ist (vermeidet undefined in Firestore)
-        ...(sequentialNumber !== undefined && { sequentialNumber }),
+        // Rechnungsnummer nur für finalisierte Rechnungen
+        ...(action === 'finalize' &&
+          finalInvoiceNumber && {
+            number: finalInvoiceNumber,
+            invoiceNumber: finalInvoiceNumber,
+          }),
+        // Sequentialumber nur setzen wenn es definiert ist und die Rechnung finalisiert wird
+        ...(action === 'finalize' && sequentialNumber !== undefined && { sequentialNumber }),
         date: formData.issueDate,
         issueDate: formData.issueDate,
         dueDate: formData.dueDate,
@@ -650,12 +627,12 @@ export default function CreateInvoicePage() {
                   <div className="space-y-2">
                     <Label htmlFor="invoiceNumber">Rechnungsnummer</Label>
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                      <span className="text-gray-700 font-medium">
-                        {formData.invoiceNumber || 'Wird automatisch generiert'}
+                      <span className="text-gray-500 font-medium">
+                        Wird bei Finalisierung automatisch generiert
                       </span>
                     </div>
                     <p className="text-sm text-gray-500">
-                      Wird automatisch generiert beim Erstellen der Rechnung
+                      Entwürfe erhalten noch keine finale Rechnungsnummer
                     </p>
                   </div>
                   <div className="space-y-2">
