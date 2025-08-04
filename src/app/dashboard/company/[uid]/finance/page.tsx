@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinanceOverview } from '@/components/finance/FinanceOverview';
@@ -11,24 +11,12 @@ export default function FinancePage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  
+
   const [stats, setStats] = useState<FinanceStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Finanzstatistiken laden
-  const loadFinanceStats = async () => {
+  const loadFinanceStats = useCallback(async () => {
+    if (!uid) return;
     try {
       setLoading(true);
       const financeStats = await FinanceService.getFinanceStats(uid);
@@ -36,7 +24,7 @@ export default function FinancePage() {
     } catch (error) {
       console.error('Fehler beim Laden der Finanzstatistiken:', error);
       toast.error('Fehler beim Laden der Finanzstatistiken');
-      
+
       // Fallback: Leere Statistiken
       setStats({
         totalRevenue: 0,
@@ -50,13 +38,23 @@ export default function FinancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [uid]);
 
   useEffect(() => {
-    if (uid) {
-      loadFinanceStats();
-    }
-  }, [uid, loadFinanceStats]);
+    loadFinanceStats();
+  }, [loadFinanceStats]);
+
+  // Autorisierung prüfen
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -67,10 +65,14 @@ export default function FinancePage() {
             Überblick über Ihre finanzielle Situation und wichtigste Kennzahlen
           </p>
         </div>
-        
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
-          <span className="ml-3 text-gray-600">Lade Finanzstatistiken...</span>
+
+        {/* Skeleton Loading */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+          <div className="bg-gray-200 h-24 rounded-lg"></div>
+          <div className="bg-gray-200 h-24 rounded-lg"></div>
+          <div className="bg-gray-200 h-24 rounded-lg"></div>
+          <div className="bg-gray-200 h-24 rounded-lg sm:col-span-1 lg:col-span-1"></div>
+          <div className="bg-gray-200 h-24 rounded-lg sm:col-span-1 lg:col-span-2"></div>
         </div>
       </div>
     );
