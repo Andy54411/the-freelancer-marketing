@@ -221,6 +221,9 @@ importers:
       pdfkit:
         specifier: ^0.17.1
         version: 0.17.1
+      puppeteer-core:
+        specifier: ^24.15.0
+        version: 24.15.0
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -7956,7 +7959,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 20.19.9
     optional: true
 
   '@typescript-eslint/eslint-plugin@8.38.0(@typescript-eslint/parser@8.38.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)':

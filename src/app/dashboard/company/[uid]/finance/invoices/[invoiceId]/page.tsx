@@ -142,6 +142,15 @@ export default function InvoiceDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        // Handle fallback case (503 Service Unavailable)
+        if (response.status === 503 && errorData.fallback) {
+          toast.error(
+            'PDF-Service temporär nicht verfügbar. Bitte versuchen Sie es später erneut.'
+          );
+          return;
+        }
+
         throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
       }
 
@@ -166,7 +175,18 @@ export default function InvoiceDetailPage() {
       toast.success('PDF wurde erfolgreich heruntergeladen!');
     } catch (error) {
       console.error('❌ Fehler beim PDF-Download:', error);
-      toast.error('Fehler beim Erstellen des PDFs: ' + error.message);
+
+      // Provide user-friendly error messages
+      let userMessage = 'Fehler beim Erstellen des PDFs';
+      if (error.message.includes('PDF-Service temporär nicht verfügbar')) {
+        userMessage = 'PDF-Service temporär nicht verfügbar. Bitte versuchen Sie es später erneut.';
+      } else if (error.message.includes('Netzwerk') || error.message.includes('fetch')) {
+        userMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
+      } else if (error.message) {
+        userMessage = error.message;
+      }
+
+      toast.error(userMessage);
     } finally {
       setDownloadingPdf(false);
     }

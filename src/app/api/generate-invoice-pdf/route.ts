@@ -1,19 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 import { InvoiceData } from '@/types/invoiceTypes';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { invoiceData } = await request.json();
+// Dynamic import for Puppeteer to handle server environment
+let puppeteer: any = null;
+let puppeteerCore: any = null;
 
-    if (!invoiceData) {
-      return NextResponse.json({ error: 'Rechnungsdaten fehlen' }, { status: 400 });
+async function getPuppeteer() {
+  if (!puppeteer && !puppeteerCore) {
+    try {
+      // Try puppeteer first (includes Chrome)
+      console.log('🔍 Versuche Puppeteer zu laden...');
+      puppeteer = await import('puppeteer');
+      console.log('✅ Puppeteer erfolgreich geladen');
+      return puppeteer.default || puppeteer;
+    } catch (error) {
+      console.warn('⚠️ Puppeteer nicht verfügbar, versuche puppeteer-core:', error.message);
+      try {
+        // Fallback to puppeteer-core
+        puppeteerCore = await import('puppeteer-core');
+        console.log('✅ Puppeteer-core erfolgreich geladen');
+        return puppeteerCore.default || puppeteerCore;
+      } catch (coreError) {
+        console.error('❌ Weder Puppeteer noch Puppeteer-core verfügbar:', coreError.message);
+        throw new Error('PDF-Engine nicht verfügbar');
+      }
     }
+  }
+  return puppeteer ? puppeteer.default || puppeteer : puppeteerCore.default || puppeteerCore;
+}
 
-    console.log('🎯 Starte PDF-Generation mit Puppeteer...');
+function getBrowserConfig() {
+  const isVercel = process.env.VERCEL === '1';
+  const isProduction = process.env.NODE_ENV === 'production';
 
-    // Launch Puppeteer with optimized settings
-    const browser = await puppeteer.launch({
+  console.log('🔧 Umgebung:', { isVercel, isProduction });
+
+  if (isVercel || isProduction) {
+    // Vercel/Production configuration
+    return {
       headless: true,
       args: [
         '--no-sandbox',
@@ -21,27 +45,74 @@ export async function POST(request: NextRequest) {
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote',
+        '--disable-extensions',
       ],
+      timeout: 60000,
+    };
+  } else {
+    // Local development configuration
+    return {
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      timeout: 30000,
+    };
+  }
+}
+
+export async function POST(request: NextRequest) {
+  let browser;
+
+  try {
+    console.log('🎯 Starte PDF-Generation mit Puppeteer...');
+
+    const { invoiceData } = await request.json();
+
+    if (!invoiceData) {
+      console.error('❌ Keine Rechnungsdaten erhalten');
+      return NextResponse.json({ error: 'Rechnungsdaten fehlen' }, { status: 400 });
+    }
+
+    console.log('📄 Rechnungsdaten erhalten:', {
+      id: invoiceData.id,
+      number: invoiceData.invoiceNumber || invoiceData.number,
+      companyName: invoiceData.companyName,
     });
 
+    // Launch Puppeteer with optimized settings for Vercel
+    console.log('🚀 Starte Puppeteer Browser...');
+    const puppeteerLib = await getPuppeteer();
+    const browserConfig = getBrowserConfig();
+
+    browser = await puppeteerLib.launch(browserConfig);
+
+    console.log('📄 Erstelle neue Seite...');
     const page = await browser.newPage();
 
     // Set viewport for consistent rendering
     await page.setViewport({
       width: 1200,
       height: 1600,
-      deviceScaleFactor: 2,
+      deviceScaleFactor: 1.5,
     });
 
+    console.log('🎨 Generiere HTML Content...');
     // Generate professional HTML content
     const htmlContent = generateInvoiceHTML(invoiceData);
 
+    console.log('📝 Setze HTML Content...');
     // Set content and wait for network idle
     await page.setContent(htmlContent, {
-      waitUntil: 'networkidle0',
+      waitUntil: ['load', 'networkidle0'],
       timeout: 30000,
     });
 
+    console.log('🖨️ Generiere PDF...');
     // Generate PDF with professional settings
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -53,11 +124,13 @@ export async function POST(request: NextRequest) {
         left: '15mm',
       },
       preferCSSPageSize: true,
+      timeout: 30000,
     });
 
+    console.log('🧹 Schließe Browser...');
     await browser.close();
 
-    console.log('✅ PDF erfolgreich generiert!');
+    console.log('✅ PDF erfolgreich generiert! Größe:', pdfBuffer.length, 'bytes');
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {
@@ -69,9 +142,44 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Fehler bei PDF-Generation:', error);
+    console.error('❌ Fehler bei PDF-Generation:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+
+    // Ensure browser is closed even on error
+    if (browser) {
+      try {
+        await browser.close();
+        console.log('🧹 Browser nach Fehler geschlossen');
+      } catch (closeError) {
+        console.error('❌ Fehler beim Schließen des Browsers:', closeError.message);
+      }
+    }
+
+    // Check if this is a Puppeteer availability issue
+    if (
+      error.message.includes('PDF-Engine nicht verfügbar') ||
+      error.message.includes('chrome-headless-shell') ||
+      error.message.includes('Could not find Chrome')
+    ) {
+      return NextResponse.json(
+        {
+          error: 'PDF-Service temporär nicht verfügbar',
+          details: 'Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support.',
+          fallback: true,
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Fehler bei der PDF-Generierung', details: error.message },
+      {
+        error: 'Fehler bei der PDF-Generierung',
+        details: error.message,
+        type: error.name,
+      },
       { status: 500 }
     );
   }

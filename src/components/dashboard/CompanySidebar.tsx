@@ -291,29 +291,39 @@ export default function CompanySidebar({
             const isMainActive = (() => {
               // Spezifische Pfad-Matches für jeden Bereich
               if (item.value === 'finance') {
-                // Finance ist aktiv wenn IRGENDEINE Finance-Seite aktiv ist
-                return pathname?.includes('/finance');
+                // Finance ist nur aktiv wenn genau die Finance-Hauptseite aktiv ist
+                // NICHT die Unterseiten
+                return pathname?.endsWith('/finance') || pathname?.endsWith('/finance/');
               }
               if (item.value === 'orders') {
-                return pathname?.includes('/orders');
+                // Orders ist nur aktiv wenn genau die Orders-Hauptseite aktiv ist
+                return pathname?.endsWith('/orders') || pathname?.endsWith('/orders/');
               }
               if (item.value === 'inbox') {
-                return pathname?.includes('/inbox');
+                // Inbox ist nur aktiv wenn genau die Inbox-Hauptseite aktiv ist
+                return pathname?.endsWith('/inbox') || pathname?.endsWith('/inbox/');
               }
               if (item.value === 'profile') {
-                return pathname?.includes('/profile');
+                return pathname?.endsWith('/profile') || pathname?.endsWith('/profile/');
               }
               if (item.value === 'settings') {
-                return pathname?.includes('/settings');
+                return pathname?.endsWith('/settings') || pathname?.endsWith('/settings/');
               }
-              if (item.value === 'ai') {
-                return pathname?.includes('/ai-assistant');
+              if (item.value === 'ai-assistant') {
+                return pathname?.endsWith('/ai-assistant') || pathname?.endsWith('/ai-assistant/');
               }
               if (item.value === 'calendar') {
-                return pathname?.includes('/calendar');
+                return pathname?.endsWith('/calendar') || pathname?.endsWith('/calendar/');
               }
               if (item.value === 'reviews') {
-                return pathname?.includes('/reviews');
+                return pathname?.endsWith('/reviews') || pathname?.endsWith('/reviews/');
+              }
+              if (item.value === 'google-ads') {
+                return pathname?.endsWith('/google-ads') || pathname?.endsWith('/google-ads/');
+              }
+              if (item.value === 'datev-overview') {
+                // DATEV ist ein spezieller Fall - hier soll das Hauptmenü aktiv sein wenn man in datev/ ist
+                return pathname?.includes('/datev');
               }
               if (item.value === 'dashboard') {
                 // Dashboard ist nur aktiv wenn KEIN anderer spezifischer Pfad aktiv ist
@@ -326,7 +336,10 @@ export default function CompanySidebar({
                   !pathname?.includes('/settings') &&
                   !pathname?.includes('/ai-assistant') &&
                   !pathname?.includes('/calendar') &&
-                  !pathname?.includes('/reviews')
+                  !pathname?.includes('/reviews') &&
+                  !pathname?.includes('/google-ads') &&
+                  !pathname?.includes('/datev') &&
+                  !pathname?.includes('/provider')
                 );
               }
               // Fallback für currentView
