@@ -524,6 +524,8 @@ export async function POST(request: NextRequest) {
       id: invoiceData.id,
       number: invoiceData.invoiceNumber || invoiceData.number,
       companyName: invoiceData.companyName,
+      companyId: invoiceData.companyId,
+      template: invoiceData.template,
     });
 
     // Sofortiger HTML-Fallback in Production für Stabilität
@@ -531,8 +533,14 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Verwende HTML-Fallback für Production-Umgebung');
 
       // Template aus Datenbank laden
+      console.log('🔍 Versuche Template zu laden für CompanyId:', invoiceData.companyId);
       const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
-      console.log('🎨 Verwende Template:', template);
+      console.log(
+        '🎨 Verwende Template:',
+        template,
+        'aus:',
+        invoiceData.template ? 'invoiceData' : 'database'
+      );
 
       const htmlContent = generateInvoiceHTML(invoiceData, template);
       return new NextResponse(htmlContent, {
@@ -554,8 +562,17 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ Puppeteer nicht verfügbar, verwende HTML-Fallback:', puppeteerError.message);
 
       // Template aus Datenbank laden
+      console.log(
+        '🔍 Versuche Template zu laden für CompanyId (Puppeteer fallback):',
+        invoiceData.companyId
+      );
       const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
-      console.log('🎨 Verwende Template:', template);
+      console.log(
+        '🎨 Verwende Template (Puppeteer fallback):',
+        template,
+        'aus:',
+        invoiceData.template ? 'invoiceData' : 'database'
+      );
 
       // Fallback: Sende HTML für Client-seitige PDF-Generierung
       const htmlContent = generateInvoiceHTML(invoiceData, template);
@@ -587,8 +604,17 @@ export async function POST(request: NextRequest) {
 
     console.log('🎨 Generiere HTML Content...');
     // Template aus Datenbank laden
+    console.log(
+      '🔍 Versuche Template zu laden für CompanyId (Puppeteer PDF):',
+      invoiceData.companyId
+    );
     const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
-    console.log('🎨 Verwende Template:', template);
+    console.log(
+      '🎨 Verwende Template (Puppeteer PDF):',
+      template,
+      'aus:',
+      invoiceData.template ? 'invoiceData' : 'database'
+    );
 
     // Generate professional HTML content
     const htmlContent = generateInvoiceHTML(invoiceData, template);
@@ -652,8 +678,17 @@ export async function POST(request: NextRequest) {
     const { invoiceData } = await request.json();
     if (invoiceData) {
       // Template aus Datenbank laden
+      console.log(
+        '🔍 Versuche Template zu laden für CompanyId (Error fallback):',
+        invoiceData.companyId
+      );
       const template = invoiceData.template || (await getUserTemplate(invoiceData.companyId || ''));
-      console.log('🎨 Verwende Template:', template);
+      console.log(
+        '🎨 Verwende Template (Error fallback):',
+        template,
+        'aus:',
+        invoiceData.template ? 'invoiceData' : 'database'
+      );
 
       const htmlContent = generateInvoiceHTML(invoiceData, template);
       return new NextResponse(htmlContent, {
