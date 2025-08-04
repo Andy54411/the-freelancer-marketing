@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
+import { db } from '@/firebase/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -21,11 +21,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
-    // Rechnung laden
-    const invoice = await FirestoreInvoiceService.getInvoiceById(invoiceId);
-    if (!invoice) {
+    // Rechnung laden (direkt mit Admin SDK)
+    console.log('🔄 Lade Rechnung aus Firestore...');
+    const invoiceDoc = await db.collection('invoices').doc(invoiceId).get();
+    if (!invoiceDoc.exists) {
       return NextResponse.json({ error: 'Rechnung nicht gefunden' }, { status: 404 });
     }
+
+    const invoice = { id: invoiceDoc.id, ...invoiceDoc.data() } as any; // Typisierung für Firestore-Daten
 
     // PDF generieren
     console.log('🔄 Generiere PDF für E-Mail-Anhang...');
@@ -156,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     // Rechnungsstatus auf "sent" aktualisieren
     try {
-      await FirestoreInvoiceService.updateInvoiceStatus(invoiceId, 'sent');
+      await db.collection('invoices').doc(invoiceId).update({ status: 'sent' });
       console.log('✅ Rechnungsstatus auf "sent" aktualisiert');
     } catch (updateError) {
       console.warn('⚠️ Rechnungsstatus konnte nicht aktualisiert werden:', updateError);

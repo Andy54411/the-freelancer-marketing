@@ -152,6 +152,7 @@ export async function POST(request: NextRequest) {
         const pdfBuffer = await page.pdf({
           format: 'A4',
           printBackground: true,
+          displayHeaderFooter: false, // Keine Browser-Header/Footer
           margin: {
             top: '20mm',
             right: '15mm',

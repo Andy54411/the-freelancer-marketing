@@ -1,16 +1,16 @@
 'use client';
 
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
-import { type InvoiceTemplate } from '@/lib/invoice-templates';
+import {
+  InvoiceTemplateRenderer,
+  type InvoiceTemplate,
+} from '@/components/finance/InvoiceTemplates';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { InvoiceData } from '@/types/invoiceTypes';
 
 interface PrintInvoicePageProps {
-  params: Promise<{
-    invoiceId: string;
-  }>;
+  params: Promise<{ invoiceId: string }>;
 }
 
 /**
@@ -19,29 +19,17 @@ interface PrintInvoicePageProps {
  * Optimiert für Puppeteer-basierte PDF-Generierung
  */
 export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
-  const [invoiceId, setInvoiceId] = useState<string>('');
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initParams = async () => {
-      const resolvedParams = await params;
-      setInvoiceId(resolvedParams.invoiceId);
-    };
-    initParams();
-  }, [params]);
-
-  useEffect(() => {
     const loadInvoice = async () => {
-      if (!invoiceId) {
-        return;
-      }
+      const { invoiceId } = await params;
 
       try {
         const data = await FirestoreInvoiceService.getInvoiceById(invoiceId);
         if (!data) {
-          notFound();
-          return;
+          return notFound();
         }
         setInvoiceData(data);
       } catch (error) {
@@ -53,12 +41,15 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
     };
 
     loadInvoice();
-  }, [invoiceId]);
 
-  useEffect(() => {
-    // Add print-page class to body
-    document.body.classList.add('print-page');
-    console.log('🖨️ Print page initialized for invoice:', invoiceId);
+    const initializePage = async () => {
+      const resolvedParams = await params;
+      // Add print-page class to body
+      document.body.classList.add('print-page');
+      console.log('🖨️ Print page initialized for invoice:', resolvedParams.invoiceId);
+    };
+
+    initializePage();
 
     // Ensure all images and assets are loaded
     const handleLoad = () => {
@@ -71,7 +62,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       document.body.classList.remove('print-page');
       window.removeEventListener('load', handleLoad);
     };
-  }, [invoiceId]);
+  }, [params]);
 
   if (loading) {
     return (
@@ -97,6 +88,19 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           margin: 20mm;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+        }
+
+        /* Hide browser UI elements that might appear in PDF */
+        @media print {
+          @page {
+            margin: 0;
+          }
+
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
         }
 
         @media print {
@@ -148,6 +152,15 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         }
 
         /* Hide everything except invoice content */
+        body.print-page * {
+          visibility: hidden !important;
+        }
+
+        body.print-page .invoice-print-content,
+        body.print-page .invoice-print-content * {
+          visibility: visible !important;
+        }
+
         body.print-page > *:not(.invoice-print-content) {
           display: none !important;
         }
@@ -213,13 +226,22 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         }
       `}</style>
 
-      {/* Sauberer Invoice Content */}
+      {/* Sauberer Invoice Content - NUR die Rechnung */}
       <div className="invoice-print-content">
-        <InvoiceTemplateRenderer
-          template={(invoiceData.template as InvoiceTemplate) || 'minimal'}
-          data={invoiceData}
-          preview={false}
-        />
+        {/* Debug: Daten anzeigen */}
+        <div style={{ display: 'none' }}>
+          DEBUG: Invoice ID: {invoiceData.id}, Number:{' '}
+          {invoiceData.invoiceNumber || invoiceData.number}
+        </div>
+
+        {/* Minimales A4-optimiertes Layout */}
+        <div className="print-invoice-wrapper">
+          <InvoiceTemplateRenderer
+            template={(invoiceData.template || 'modern') as InvoiceTemplate}
+            data={invoiceData}
+            preview={false}
+          />
+        </div>
       </div>
     </>
   );
