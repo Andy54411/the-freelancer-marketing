@@ -106,12 +106,23 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
   // Effekt zum einmaligen Laden der Auftrags-, Projekt- und Rechnungsdaten
   useEffect(() => {
-    if (authLoading || !user || user.uid !== companyUid) {
-      if (!authLoading) {
-        setError('Zugriff verweigert.');
-        setLoading(false);
-      }
-      return; // Warten auf Authentifizierung oder bei fehlender Berechtigung abbrechen
+    if (authLoading) {
+      return; // Warten auf Authentifizierung
+    }
+
+    if (!user) {
+      setError('Benutzer nicht authentifiziert.');
+      setLoading(false);
+      return;
+    }
+
+    // Berechtigungsprüfung: Benutzer muss entweder die Company UID haben ODER master/support sein
+    const hasAccess = user.uid === companyUid || user.role === 'master' || user.role === 'support';
+
+    if (!hasAccess) {
+      setError('Zugriff verweigert. Keine Berechtigung für diese Firma.');
+      setLoading(false);
+      return;
     }
 
     const fetchOrdersProjectsAndInvoices = async () => {
