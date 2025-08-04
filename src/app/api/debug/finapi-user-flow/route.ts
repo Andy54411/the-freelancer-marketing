@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
     console.log('📋 finAPI User Flow Test:');
     console.log('- Default Client ID:', defaultClientId.substring(0, 8) + '...');
 
-    // SCHRITT 1: Default Client Access Token generieren
+    // SCHRITT 1: Default Client Access Token generieren (V2 API)
     console.log('🔑 SCHRITT 1: Default Client Access Token...');
     try {
-      const clientTokenResponse = await fetch(`${FINAPI_API_URL}/oauth/token`, {
+      const clientTokenResponse = await fetch(`${FINAPI_API_URL}/api/v2/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
           token_preview: clientAccessToken ? `${clientAccessToken.substring(0, 20)}...` : null,
         };
 
-        // SCHRITT 2: User erstellen mit Client Access Token
+        // SCHRITT 2: User erstellen mit Client Access Token (V2 API)
         console.log('👤 SCHRITT 2: User erstellen...');
         try {
-          const createUserResponse = await fetch(`${FINAPI_API_URL}/api/v1/users`, {
+          const createUserResponse = await fetch(`${FINAPI_API_URL}/api/v2/users`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${clientAccessToken}`,
@@ -98,12 +98,12 @@ export async function GET(request: NextRequest) {
               user_id: userData?.id || 'existing_user',
             };
 
-            // SCHRITT 3: User Access Token generieren
+            // SCHRITT 3: User Access Token generieren (V2 API)
             console.log('🔐 SCHRITT 3: User Access Token...');
             const testUserId = userData?.id || `taskilo_test_user_${Date.now()}`;
 
             try {
-              const userTokenResponse = await fetch(`${FINAPI_API_URL}/oauth/token`, {
+              const userTokenResponse = await fetch(`${FINAPI_API_URL}/api/v2/oauth/token`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
@@ -131,11 +131,11 @@ export async function GET(request: NextRequest) {
                   token_preview: userAccessToken ? `${userAccessToken.substring(0, 20)}...` : null,
                 };
 
-                // SCHRITT 4: Banken auflisten mit User Access Token
+                // SCHRITT 4: Banken auflisten mit User Access Token (V2 API)
                 console.log('🏦 SCHRITT 4: Banken auflisten...');
                 try {
                   const banksResponse = await fetch(
-                    `${FINAPI_API_URL}/api/v1/banks?page=1&perPage=10`,
+                    `${FINAPI_API_URL}/api/v2/banks?page=1&perPage=10`,
                     {
                       method: 'GET',
                       headers: {
