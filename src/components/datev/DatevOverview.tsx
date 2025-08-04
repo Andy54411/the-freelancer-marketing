@@ -64,14 +64,17 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
         setOrganization(org);
 
         // Load accounts and calculate stats
-        const accounts = await DatevService.getAccounts(org.id);
-        const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0];
-        const dateTo = new Date().toISOString().split('T')[0];
-        const transactions = await DatevService.getTransactions(dateFrom, dateTo, org.id);
+        const accounts = await DatevService.getAccounts();
 
-        // Calculate overview statistics
+        // Temporarily disable transactions until backend route exists
+        // const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        //   .toISOString()
+        //   .split('T')[0];
+        // const dateTo = new Date().toISOString().split('T')[0];
+        // const transactions = await DatevService.getTransactions(dateFrom, dateTo, org.id);
+
+        // Calculate overview statistics (using placeholder data temporarily)
+        const transactions: any[] = []; // Empty array until backend route exists
         const revenue = transactions
           .filter(t => t.amount > 0)
           .reduce((sum, t) => sum + t.amount, 0);

@@ -75,36 +75,17 @@ export interface DatevExportJob {
 }
 
 export class DatevService {
-  private static getBaseUrl(): string {
-    return getDatevConfig().apiBaseUrl;
-  }
-
   /**
-   * Make authenticated API call to DATEV
+   * Make API call to our backend API routes (bypasses CORS)
    */
-  private static async makeApiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    // First try to ensure token is valid
-    let isAuthenticated = await DatevTokenManager.refreshTokenIfNeeded();
-
-    if (!isAuthenticated) {
-      // Try to validate existing token
-      isAuthenticated = await DatevTokenManager.validateToken();
-
-      if (!isAuthenticated) {
-        throw new Error('DATEV authentication required - please re-authenticate');
-      }
-    }
-
-    const authHeader = DatevTokenManager.getAuthHeader();
-    if (!authHeader) {
-      throw new Error('No DATEV access token available');
-    }
-
+  private static async makeBackendApiCall<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     try {
-      const response = await fetch(`${this.getBaseUrl()}${endpoint}`, {
+      const response = await fetch(`/api/datev${endpoint}`, {
         ...options,
         headers: {
-          Authorization: authHeader,
           'Content-Type': 'application/json',
           Accept: 'application/json',
           ...options.headers,
@@ -121,16 +102,14 @@ export class DatevService {
           errorData = { message: errorText };
         }
 
-        // Handle specific DATEV API errors
+        // Handle specific DATEV backend errors
         if (response.status === 401) {
-          console.log('DATEV API returned 401, clearing token and requiring re-auth');
-          DatevTokenManager.clearUserToken();
-          throw new Error('DATEV authentication expired - please re-authenticate');
+          throw new Error('DATEV authentication required - please re-authenticate');
         }
 
         if (response.status === 403) {
           throw new Error(
-            `DATEV API access denied: ${errorData.message || 'Insufficient permissions'}`
+            `DATEV API access denied: ${errorData.error || 'Insufficient permissions'}`
           );
         }
 
@@ -140,13 +119,13 @@ export class DatevService {
 
         if (response.status >= 500) {
           throw new Error(
-            `DATEV API server error (${response.status}): ${errorData.message || 'Internal server error'}`
+            `DATEV API server error (${response.status}): ${errorData.error || 'Internal server error'}`
           );
         }
 
         // General error with more context
         throw new Error(
-          `DATEV API error (${response.status}): ${errorData.message || errorData.error || errorText}`
+          `DATEV API error (${response.status}): ${errorData.error || errorData.message || errorText}`
         );
       }
 
@@ -158,10 +137,9 @@ export class DatevService {
       return JSON.parse(responseText);
     } catch (error) {
       if (error instanceof Error) {
-        console.error('DATEV API call failed:', {
+        console.error('DATEV backend API call failed:', {
           endpoint,
           error: error.message,
-          stack: error.stack,
         });
         throw error;
       }
@@ -175,8 +153,8 @@ export class DatevService {
    */
   static async getOrganizations(): Promise<DatevOrganization[]> {
     try {
-      const data = await this.makeApiCall<{ organizations: DatevOrganization[] }>(
-        DATEV_ENDPOINTS.organizations
+      const data = await this.makeBackendApiCall<{ organizations: DatevOrganization[] }>(
+        '/organizations'
       );
       return data.organizations || [];
     } catch (error) {
@@ -202,17 +180,24 @@ export class DatevService {
   }
 
   /**
-   * Get chart of accounts
+   * Get client accounts/data
    */
-  static async getAccounts(organizationId?: string): Promise<DatevAccount[]> {
+  static async getAccounts(): Promise<DatevAccount[]> {
     try {
-      const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) throw new Error('No organization ID available');
+      const data = await this.makeBackendApiCall<{ clients: any[] }>('/accounts');
 
-      const data = await this.makeApiCall<{ accounts: DatevAccount[] }>(
-        `${DATEV_ENDPOINTS.accounting.clients}?organizationId=${orgId}`
-      );
-      return data.accounts || [];
+      // Transform DATEV clients data to our Account interface
+      const accounts: DatevAccount[] = (data.clients || []).map((client: any) => ({
+        id: client.id || client.clientId,
+        number: client.number || client.clientNumber,
+        name: client.name || client.companyName,
+        type: 'asset', // Default type, should be determined from client data
+        balance: 0, // Not available in clients endpoint
+        currency: 'EUR',
+        isActive: client.status === 'active' || true,
+      }));
+
+      return accounts;
     } catch (error) {
       console.error('Error fetching DATEV accounts:', error);
       throw error;
@@ -228,20 +213,9 @@ export class DatevService {
     organizationId?: string
   ): Promise<DatevTransaction[]> {
     try {
-      const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) throw new Error('No organization ID available');
-
-      const params = new URLSearchParams({
-        organizationId: orgId,
-        dateFrom,
-        dateTo,
-        limit: '1000',
-      });
-
-      const data = await this.makeApiCall<{ transactions: DatevTransaction[] }>(
-        `${DATEV_ENDPOINTS.accounting.extfFiles}?${params}`
-      );
-      return data.transactions || [];
+      // Note: This would need a dedicated backend route for transactions
+      console.warn('getTransactions not yet implemented with backend routing');
+      return [];
     } catch (error) {
       console.error('Error fetching DATEV transactions:', error);
       throw error;
@@ -256,17 +230,9 @@ export class DatevService {
     organizationId?: string
   ): Promise<DatevTransaction> {
     try {
-      const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) throw new Error('No organization ID available');
-
-      const data = await this.makeApiCall<DatevTransaction>(DATEV_ENDPOINTS.accounting.extfFiles, {
-        method: 'POST',
-        body: JSON.stringify({
-          ...transaction,
-          organizationId: orgId,
-        }),
-      });
-      return data;
+      // Note: This would need a dedicated backend route for transactions
+      console.warn('createTransaction not yet implemented with backend routing');
+      throw new Error('createTransaction not yet implemented');
     } catch (error) {
       console.error('Error creating DATEV transaction:', error);
       throw error;
@@ -282,35 +248,9 @@ export class DatevService {
     organizationId?: string
   ): Promise<DatevDocument> {
     try {
-      const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) throw new Error('No organization ID available');
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('organizationId', orgId);
-      if (description) {
-        formData.append('description', description);
-      }
-
-      const authHeader = DatevTokenManager.getAuthHeader();
-      if (!authHeader) {
-        throw new Error('No DATEV access token available');
-      }
-
-      const response = await fetch(`${this.getBaseUrl()}${DATEV_ENDPOINTS.accounting.documents}`, {
-        method: 'POST',
-        headers: {
-          Authorization: authHeader,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Document upload failed (${response.status}): ${errorText}`);
-      }
-
-      return response.json();
+      // Note: This would need a dedicated backend route for document upload
+      console.warn('uploadDocument not yet implemented with backend routing');
+      throw new Error('uploadDocument not yet implemented');
     } catch (error) {
       console.error('Error uploading document to DATEV:', error);
       throw error;
@@ -322,13 +262,9 @@ export class DatevService {
    */
   static async getDocuments(organizationId?: string): Promise<DatevDocument[]> {
     try {
-      const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) throw new Error('No organization ID available');
-
-      const data = await this.makeApiCall<{ documents: DatevDocument[] }>(
-        `${DATEV_ENDPOINTS.accounting.documents}?organizationId=${orgId}`
-      );
-      return data.documents || [];
+      // Note: This would need a dedicated backend route for documents
+      console.warn('getDocuments not yet implemented with backend routing');
+      return [];
     } catch (error) {
       console.error('Error fetching DATEV documents:', error);
       throw error;
@@ -346,20 +282,9 @@ export class DatevService {
     organizationId?: string
   ): Promise<DatevExportJob> {
     try {
-      const orgId = organizationId || DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) throw new Error('No organization ID available');
-
-      const data = await this.makeApiCall<DatevExportJob>(DATEV_ENDPOINTS.accounting.dxsoJobs, {
-        method: 'POST',
-        body: JSON.stringify({
-          type,
-          format,
-          dateFrom,
-          dateTo,
-          organizationId: orgId,
-        }),
-      });
-      return data;
+      // Note: This would need a dedicated backend route for export jobs
+      console.warn('createExportJob not yet implemented with backend routing');
+      throw new Error('createExportJob not yet implemented');
     } catch (error) {
       console.error('Error creating DATEV export job:', error);
       throw error;
@@ -371,10 +296,9 @@ export class DatevService {
    */
   static async getExportJob(jobId: string): Promise<DatevExportJob> {
     try {
-      const data = await this.makeApiCall<DatevExportJob>(
-        `${DATEV_ENDPOINTS.accounting.dxsoJobs}/${jobId}`
-      );
-      return data;
+      // Note: This would need a dedicated backend route for export jobs
+      console.warn('getExportJob not yet implemented with backend routing');
+      throw new Error('getExportJob not yet implemented');
     } catch (error) {
       console.error('Error fetching DATEV export job:', error);
       throw error;
@@ -398,20 +322,9 @@ export class DatevService {
     organizationId?: string
   ): Promise<DatevTransaction> {
     try {
-      // Convert Taskilo invoice to DATEV transaction
-      const transaction = {
-        date: invoice.date,
-        amount: invoice.amount,
-        currency: 'EUR',
-        description: `Rechnung ${invoice.invoiceNumber} - ${invoice.customerName}`,
-        reference: invoice.invoiceNumber,
-        accountNumber: '8400', // Standard revenue account
-        contraAccountNumber: '1200', // Standard receivables account
-        vatCode: '1', // Standard VAT code for 19%
-        vatAmount: invoice.vatAmount,
-      };
-
-      return await this.createTransaction(transaction, organizationId);
+      // Note: This requires createTransaction to be implemented
+      console.warn('importInvoiceToDatev not yet fully implemented');
+      throw new Error('importInvoiceToDatev requires transaction creation');
     } catch (error) {
       console.error('Error importing invoice to DATEV:', error);
       throw error;
@@ -432,18 +345,9 @@ export class DatevService {
     organizationId?: string
   ): Promise<DatevTransaction> {
     try {
-      const transaction = {
-        date: payment.date,
-        amount: payment.amount,
-        currency: 'EUR',
-        description: `Zahlung ${payment.reference}`,
-        reference: payment.id,
-        accountNumber: '1200', // Receivables account
-        contraAccountNumber: '1000', // Bank account
-        documentId: payment.invoiceId,
-      };
-
-      return await this.createTransaction(transaction, organizationId);
+      // Note: This requires createTransaction to be implemented
+      console.warn('syncPaymentToDatev not yet fully implemented');
+      throw new Error('syncPaymentToDatev requires transaction creation');
     } catch (error) {
       console.error('Error syncing payment to DATEV:', error);
       throw error;

@@ -57,16 +57,16 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
         setOrganization(org);
 
         // Load accounts
-        const accountsData = await DatevService.getAccounts(org.id);
+        const accountsData = await DatevService.getAccounts();
         setAccounts(accountsData);
 
-        // Load recent transactions
-        const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0];
-        const dateTo = new Date().toISOString().split('T')[0];
-        const transactionsData = await DatevService.getTransactions(dateFrom, dateTo, org.id);
-        setTransactions(transactionsData);
+        // Load recent transactions (temporarily disabled until backend route exists)
+        // const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        //   .toISOString()
+        //   .split('T')[0];
+        // const dateTo = new Date().toISOString().split('T')[0];
+        // const transactionsData = await DatevService.getTransactions(dateFrom, dateTo, org.id);
+        // setTransactions(transactionsData);
 
         setLastSync(new Date().toISOString());
       }
