@@ -236,25 +236,50 @@ export default function CompanyMobileSidebar({
           <nav className="flex-1 px-2 py-4 space-y-1">
             {navigationItems.map(item => {
               const currentView = getCurrentView();
-              const isMainActive =
-                currentView === item.value ||
-                (pathname?.includes('/finance') && item.value === 'finance') ||
-                (pathname?.includes('/orders') && item.value === 'orders') ||
-                (pathname?.includes('/payouts') && item.value === 'finance') ||
-                (pathname?.includes('/inbox') && item.value === 'inbox') ||
-                (pathname?.includes('/profile') && item.value === 'profile') ||
-                (pathname?.includes('/settings') && item.value === 'settings') ||
-                (pathname?.includes('/ai-assistant') && item.value === 'ai') ||
-                (pathname?.includes('/calendar') && item.value === 'calendar') ||
-                (item.value === 'dashboard' &&
-                  !pathname?.includes('/finance') &&
-                  !pathname?.includes('/orders') &&
-                  !pathname?.includes('/payouts') &&
-                  !pathname?.includes('/inbox') &&
-                  !pathname?.includes('/profile') &&
-                  !pathname?.includes('/settings') &&
-                  !pathname?.includes('/ai-assistant') &&
-                  !pathname?.includes('/calendar'));
+              // Präzise Pfad-Erkennung für aktive Zustände
+              const isMainActive = (() => {
+                // Spezifische Pfad-Matches für jeden Bereich
+                if (item.value === 'finance') {
+                  return pathname?.includes('/finance') || pathname?.includes('/payouts');
+                }
+                if (item.value === 'orders') {
+                  return pathname?.includes('/orders');
+                }
+                if (item.value === 'inbox') {
+                  return pathname?.includes('/inbox');
+                }
+                if (item.value === 'profile') {
+                  return pathname?.includes('/profile');
+                }
+                if (item.value === 'settings') {
+                  return pathname?.includes('/settings');
+                }
+                if (item.value === 'ai') {
+                  return pathname?.includes('/ai-assistant');
+                }
+                if (item.value === 'calendar') {
+                  return pathname?.includes('/calendar');
+                }
+                if (item.value === 'reviews') {
+                  return pathname?.includes('/reviews');
+                }
+                if (item.value === 'dashboard') {
+                  // Dashboard ist nur aktiv wenn KEIN anderer spezifischer Pfad aktiv ist
+                  return (
+                    !pathname?.includes('/finance') &&
+                    !pathname?.includes('/orders') &&
+                    !pathname?.includes('/payouts') &&
+                    !pathname?.includes('/inbox') &&
+                    !pathname?.includes('/profile') &&
+                    !pathname?.includes('/settings') &&
+                    !pathname?.includes('/ai-assistant') &&
+                    !pathname?.includes('/calendar') &&
+                    !pathname?.includes('/reviews')
+                  );
+                }
+                // Fallback für currentView
+                return currentView === item.value;
+              })();
 
               const hasSubItems = item.subItems && item.subItems.length > 0;
               const isItemExpanded = isExpanded(item.value);

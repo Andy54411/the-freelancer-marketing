@@ -35,6 +35,7 @@ export function InvoiceComponent({
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: 'Entwurf', variant: 'secondary' as const },
+      finalized: { label: 'Rechnung', variant: 'default' as const },
       sent: { label: 'Gesendet', variant: 'default' as const },
       paid: { label: 'Bezahlt', variant: 'default' as const },
       overdue: { label: 'Überfällig', variant: 'destructive' as const },
@@ -118,7 +119,11 @@ export function InvoiceComponent({
                   <div className="flex-1">
                     <div className="flex items-center gap-4">
                       <div>
-                        <div className="font-medium">{invoice.sequentialNumber}</div>
+                        <div className="font-medium">
+                          {invoice.invoiceNumber ||
+                            invoice.sequentialNumber ||
+                            `R-${invoice.id.substring(0, 8)}`}
+                        </div>
                         <div className="text-sm text-muted-foreground">{invoice.customerName}</div>
                       </div>
                       <div className="text-right">
