@@ -29,33 +29,52 @@ export class FirestoreInvoiceService {
     const currentYear = new Date().getFullYear();
     const numberingDocId = `${companyId}_${currentYear}`;
 
-    return await runTransaction(db, async transaction => {
-      const numberingRef = doc(db, 'invoice_numbering', numberingDocId);
-      const numberingDoc = await transaction.get(numberingRef);
+    try {
+      return await runTransaction(db, async transaction => {
+        const numberingRef = doc(db, 'invoice_numbering', numberingDocId);
+        const numberingDoc = await transaction.get(numberingRef);
 
-      let nextNumber = 1;
+        let nextNumber = 1;
 
-      if (numberingDoc.exists()) {
-        const data = numberingDoc.data() as InvoiceNumbering;
-        nextNumber = data.nextNumber;
-      }
+        if (numberingDoc.exists()) {
+          const data = numberingDoc.data() as InvoiceNumbering;
+          nextNumber = data.nextNumber;
+        } else {
+          console.log(
+            `🆕 Erstelle neue Rechnungsnummern-Sequenz für ${companyId} in Jahr ${currentYear}`
+          );
+        }
 
-      // Update der nächsten Nummer
-      const newNumberingData: InvoiceNumbering = {
-        companyId,
-        year: currentYear,
-        lastNumber: nextNumber,
-        nextNumber: nextNumber + 1,
-        updatedAt: new Date(),
-      };
+        // Update der nächsten Nummer
+        const newNumberingData: InvoiceNumbering = {
+          companyId,
+          year: currentYear,
+          lastNumber: nextNumber,
+          nextNumber: nextNumber + 1,
+          updatedAt: new Date(),
+        };
 
-      transaction.set(numberingRef, newNumberingData);
+        transaction.set(numberingRef, newNumberingData);
+
+        console.log(`✅ Rechnungsnummer generiert: ${nextNumber} für ${companyId}`);
+
+        return {
+          sequentialNumber: nextNumber,
+          formattedNumber: GermanInvoiceService.formatInvoiceNumber(nextNumber, currentYear),
+        };
+      });
+    } catch (error) {
+      console.error('❌ Fehler bei Rechnungsnummerngenerierung:', error);
+
+      // Fallback: Generiere eine Nummer basierend auf Timestamp
+      const fallbackNumber = Date.now() % 1000;
+      console.log(`🔄 Fallback-Rechnungsnummer: ${fallbackNumber}`);
 
       return {
-        sequentialNumber: nextNumber,
-        formattedNumber: GermanInvoiceService.formatInvoiceNumber(nextNumber, currentYear),
+        sequentialNumber: fallbackNumber,
+        formattedNumber: GermanInvoiceService.formatInvoiceNumber(fallbackNumber, currentYear),
       };
-    });
+    }
   }
 
   /**

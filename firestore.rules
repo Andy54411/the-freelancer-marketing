@@ -709,6 +709,27 @@ service cloud.firestore {
       allow delete: if isSupportStaff();
     }
 
+    // Finance: Invoice Numbering Collection (für automatische Rechnungsnummern)
+    match /invoice_numbering/{numberingId} {
+      // Lesen: Nur eigene Firma (um aktuelle Nummer zu prüfen)
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma (beim ersten Mal)
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma (für Nummerngenerierung via Transaction)
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
     // Finance: Audit Trail Collection (optional für GoBD-Compliance)
     match /financeAudit/{auditId} {
       // Lesen: Nur eigene Firma

@@ -221,19 +221,27 @@ export default function CreateInvoicePage() {
           }));
         } catch (error) {
           console.error('❌ Fehler beim Generieren der Vorschau-Nummer:', error);
-          // Fallback nur im Fehlerfall
+
+          // Robust fallback based on current date and random component
           const currentYear = new Date().getFullYear();
-          const fallbackNum = Math.floor(Math.random() * 999) + 1;
+          const dateComponent = new Date().getDate().toString().padStart(2, '0');
+          const randomComponent = Math.floor(Math.random() * 99) + 1;
+          const fallbackNumber = `R-${currentYear}-${dateComponent}${randomComponent}`;
+
+          console.log('🔄 Verwende Fallback-Nummer:', fallbackNumber);
           setFormData(prev => ({
             ...prev,
-            invoiceNumber: `R-${currentYear}-${String(fallbackNum).padStart(3, '0')}`,
+            invoiceNumber: fallbackNumber,
           }));
         }
       }
     };
 
-    generateInvoiceNumber();
-  }, [formData.invoiceNumber, uid]);
+    // Nur generieren wenn noch keine Nummer vorhanden
+    if (!formData.invoiceNumber) {
+      generateInvoiceNumber();
+    }
+  }, [uid]); // Entferne formData.invoiceNumber aus dependencies um Loop zu vermeiden
 
   // Auto-set due date (14 days from issue date)
   React.useEffect(() => {
@@ -641,14 +649,11 @@ export default function CreateInvoicePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="invoiceNumber">Rechnungsnummer</Label>
-                    <Input
-                      id="invoiceNumber"
-                      value={formData.invoiceNumber}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))
-                      }
-                      placeholder="R-2025-001"
-                    />
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                      <span className="text-gray-700 font-medium">
+                        {formData.invoiceNumber || 'Wird automatisch generiert'}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-500">
                       Wird automatisch generiert beim Erstellen der Rechnung
                     </p>
