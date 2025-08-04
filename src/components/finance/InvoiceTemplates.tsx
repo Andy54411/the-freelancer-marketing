@@ -45,7 +45,7 @@ export interface InvoiceData {
   isSmallBusiness: boolean;
   vatRate: number;
   priceInput: 'netto' | 'brutto';
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'storno';
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'storno' | 'finalized';
 
   // Storno-spezifische Felder
   isStorno?: boolean;

@@ -61,7 +61,7 @@ export interface InvoiceData {
   total: number; // Gesamtbetrag
 
   // Status und Metadaten
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'storno';
+  status: 'draft' | 'finalized' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'storno';
   createdAt: Date;
   year: number;
   companyId: string;

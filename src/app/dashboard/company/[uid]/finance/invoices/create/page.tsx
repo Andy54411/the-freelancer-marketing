@@ -33,6 +33,7 @@ import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
+import { FirestoreDebugPanel } from '@/components/debug/FirestoreDebugPanel';
 
 interface Customer {
   id: string;
@@ -1040,6 +1041,9 @@ export default function CreateInvoicePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Debug Panel - nur in Development */}
+            {process.env.NODE_ENV === 'development' && <FirestoreDebugPanel uid={uid} />}
           </div>
         </div>
       </div>

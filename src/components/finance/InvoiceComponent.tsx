@@ -45,6 +45,14 @@ export function InvoiceComponent({
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleViewInvoice = (invoiceId: string) => {
+    router.push(`./invoices/${invoiceId}`);
+  };
+
+  const handleEditInvoice = (invoiceId: string) => {
+    router.push(`./invoices/edit/${invoiceId}`);
+  };
+
   const handleCreateStorno = (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (invoice) {
@@ -124,11 +132,21 @@ export function InvoiceComponent({
                   <div className="flex items-center gap-3">
                     {getStatusBadge(invoice.status)}
                     <div className="flex space-x-1">
-                      <Button variant="ghost" size="sm" title="Anzeigen">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Anzeigen"
+                        onClick={() => handleViewInvoice(invoice.id)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                       {invoice.status === 'draft' && (
-                        <Button variant="ghost" size="sm" title="Bearbeiten">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Bearbeiten"
+                          onClick={() => handleEditInvoice(invoice.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       )}
