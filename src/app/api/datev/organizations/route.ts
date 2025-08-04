@@ -1,12 +1,13 @@
 /**
  * DATEV Organizations API Route
- * Proxy für DATEV Organizations API - löst CORS-Problem
+ * This API route acts as a secure proxy for the DATEV Organizations API.
+ * It handles authentication by first checking for a valid session cookie,
+ * then falling back to Firestore for persistent tokens.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, DATEV_ENDPOINTS } from '@/lib/datev-config';
-import { DatevTokenManager } from '@/lib/datev-token-manager';
-import { getDatevTokenFromCookies } from '@/lib/datev-server-utils';
+import { getDatevTokenFromCookies, ServerDatevToken } from '@/lib/datev-server-utils';
 import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
@@ -14,25 +15,23 @@ export async function GET(request: NextRequest) {
     console.log('[DATEV Organizations] Processing request...');
 
     // Extract company ID from URL or headers
-    const url = new URL(request.url);
-    const companyId = url.searchParams.get('companyId') || request.headers.get('x-company-id');
+    const companyId =
+      new URL(request.url).searchParams.get('companyId') || request.headers.get('x-company-id');
 
-    // 1. Try to get authentication token from Cookie (FASTEST)
-    let authHeader: string | null = null;
-    try {
-      const cookieToken = await getDatevTokenFromCookies();
-      if (cookieToken) {
-        authHeader = `Bearer ${cookieToken}`;
-        console.log('[DATEV Organizations] Using cookie token');
-      }
-    } catch (cookieError) {
-      console.log('[DATEV Organizations] Cookie token not available:', cookieError);
+    let accessToken: string | null = null;
+
+    // 1. Try to get a valid token from the secure cookie first.
+    const cookieToken: ServerDatevToken | null = await getDatevTokenFromCookies();
+    if (cookieToken?.access_token) {
+      accessToken = cookieToken.access_token;
+      console.log('[DATEV Organizations] Using valid token from cookie.');
     }
 
-    // 2. If no cookie token and companyId available, try Firestore
-    if (!authHeader && companyId) {
+    // 2. If no valid cookie token, fall back to Firestore (e.g., for server-to-server calls or first load)
+    if (!accessToken && companyId) {
       console.log(
-        '[DATEV Organizations] No cookie token, checking Firestore for company:',
+        // eslint-disable-line
+        '[DATEV Organizations] No valid cookie token. Checking Firestore for company:',
         companyId
       );
       try {
@@ -48,8 +47,8 @@ export async function GET(request: NextRequest) {
           const expiresAt = tokenData?.expires_at?.toDate?.() || new Date(tokenData?.expires_at);
 
           // Check if token is still valid (with 5-minute buffer)
-          if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData) {
-            authHeader = `${tokenData.token_type || 'Bearer'} ${tokenData.access_token}`;
+          if (expiresAt && expiresAt.getTime() > Date.now() && tokenData?.access_token) {
+            accessToken = tokenData.access_token;
             console.log('[DATEV Organizations] Using Firestore token');
           } else {
             console.log('[DATEV Organizations] Firestore token expired');
@@ -61,9 +60,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Final check - no auth available
-    if (!authHeader) {
-      console.log('[DATEV Organizations] No auth header available - authentication required');
-      return Response.json(
+    if (!accessToken) {
+      console.log('[DATEV Organizations] No valid token available - authentication required');
+      return NextResponse.json(
         {
           error: 'DATEV authentication required - please re-authenticate',
           requiresAuth: true,
@@ -72,16 +71,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Organizations] Auth header found, making API call...');
+    console.log('[DATEV Organizations] Valid token found, making API call...');
 
     const config = getDatevConfig();
-    const url2 = `${config.apiBaseUrl}${DATEV_ENDPOINTS.organizations}`;
+    const apiUrl = `${config.apiBaseUrl}${DATEV_ENDPOINTS.organizations}`;
 
     // Make API call to DATEV
-    const response = await fetch(url2, {
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        Authorization: authHeader,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
@@ -107,7 +106,7 @@ export async function GET(request: NextRequest) {
 
       // Handle specific errors
       if (response.status === 401) {
-        return Response.json(
+        return NextResponse.json(
           {
             error: 'DATEV authentication required - please re-authenticate',
             requiresAuth: true,
@@ -117,33 +116,32 @@ export async function GET(request: NextRequest) {
       }
 
       if (response.status === 403) {
-        return Response.json(
+        return NextResponse.json(
           { error: `DATEV API access denied: ${errorData.message || 'Insufficient permissions'}` },
           { status: 403 }
         );
       }
 
       if (response.status === 429) {
-        return Response.json({ error: 'DATEV API rate limit exceeded' }, { status: 429 });
+        return NextResponse.json({ error: 'DATEV API rate limit exceeded' }, { status: 429 });
       }
 
-      return Response.json(
+      return NextResponse.json(
         { error: `DATEV API error: ${errorData.message || errorData.error || errorText}` },
         { status: response.status }
       );
     }
 
     const responseText = await response.text();
-
     if (!responseText.trim()) {
-      return Response.json({ organizations: [] });
+      return NextResponse.json({ organizations: [] });
     }
 
     const data = JSON.parse(responseText);
     console.log('[DATEV Organizations] Success - returning data');
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error in DATEV organizations API route:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
