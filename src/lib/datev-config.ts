@@ -15,6 +15,7 @@ export interface DatevConfig {
   clientSecret: string;
   redirectUri: string;
   apiBaseUrl: string;
+  baseUrl: string; // Alias für apiBaseUrl für Rückwärtskompatibilität
   authUrl: string;
   tokenUrl: string;
   userInfoUrl: string;
@@ -120,6 +121,7 @@ export function getDatevConfig(): DatevConfig {
       clientSecret: process.env.DATEV_CLIENT_SECRET || '',
       redirectUri: 'https://taskilo.de/api/datev/callback',
       apiBaseUrl: 'https://api.datev.de',
+      baseUrl: 'https://api.datev.de', // Alias für apiBaseUrl
       authUrl: 'https://login.datev.de/openid/authorize',
       tokenUrl: 'https://api.datev.de/token',
       userInfoUrl: 'https://api.datev.de/userinfo',
@@ -140,6 +142,7 @@ export function getDatevConfig(): DatevConfig {
         ? 'https://taskilo.de/api/datev/callback'
         : 'http://localhost:3000/api/datev/callback',
       apiBaseUrl: DATEV_SANDBOX_CONFIG.endpoints.apiBase,
+      baseUrl: DATEV_SANDBOX_CONFIG.endpoints.apiBase, // Alias für apiBaseUrl
       authUrl: DATEV_SANDBOX_CONFIG.endpoints.authorization,
       tokenUrl: DATEV_SANDBOX_CONFIG.endpoints.token,
       userInfoUrl: DATEV_SANDBOX_CONFIG.endpoints.userinfo,

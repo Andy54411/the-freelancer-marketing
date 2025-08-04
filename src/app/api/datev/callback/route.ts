@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, validateSandboxClientPermissions } from '@/lib/datev-config';
 import { retrievePKCEData } from '@/lib/pkce-storage';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { db } from '@/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * DATEV OAuth Callback Handler
@@ -239,8 +239,8 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
     console.log('🔧 [DATEV Callback] Token will expire at:', expiresAt);
 
-    // Store tokens in company's DATEV subcollection
-    const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
+    // Store tokens in company's DATEV subcollection (using Admin SDK)
+    const tokenDocRef = db.collection('companies').doc(companyId).collection('datev').doc('tokens');
     console.log('🔧 [DATEV Callback] Storing at path:', `companies/${companyId}/datev/tokens`);
 
     const tokenDocData = {
@@ -250,25 +250,25 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
       expires_at: expiresAt,
       refresh_token: tokenData.refresh_token || null,
       scope: tokenData.scope || '',
-      connected_at: serverTimestamp(),
-      last_updated: serverTimestamp(),
+      connected_at: FieldValue.serverTimestamp(),
+      last_updated: FieldValue.serverTimestamp(),
       is_active: true,
     };
 
-    await setDoc(tokenDocRef, tokenDocData);
+    await tokenDocRef.set(tokenDocData);
     console.log('✅ [DATEV Callback] Token document created successfully');
 
-    // Also store connection status in company document
-    const companyDocRef = doc(db, 'companies', companyId);
+    // Also store connection status in company document (using Admin SDK)
+    const companyDocRef = db.collection('companies').doc(companyId);
     const companyUpdateData = {
       datev: {
         connected: true,
-        connected_at: serverTimestamp(),
+        connected_at: FieldValue.serverTimestamp(),
         status: 'active',
       },
     };
 
-    await setDoc(companyDocRef, companyUpdateData, { merge: true });
+    await companyDocRef.set(companyUpdateData, { merge: true });
     console.log('✅ [DATEV Callback] Company document updated with connection status');
 
     console.log('🎉 [DATEV Callback] DATEV tokens stored successfully for company:', companyId);
