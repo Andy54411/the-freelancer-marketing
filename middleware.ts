@@ -35,4 +35,3 @@ export const config = {
   // Apply to all routes except static files
   matcher: ['/((?!_next|favicon.ico|images|icon).*)'],
 };
-// Force redeploy Mo  4 Aug 2025 19:16:04 CEST
