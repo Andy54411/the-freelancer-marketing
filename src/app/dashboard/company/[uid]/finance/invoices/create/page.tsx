@@ -32,6 +32,7 @@ import { InvoiceTemplatePicker } from '@/components/finance/InvoiceTemplatePicke
 import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
   id: string;
@@ -67,6 +68,7 @@ interface InvoiceItem {
 export default function CreateInvoicePage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   // Load company settings
@@ -80,10 +82,38 @@ export default function CreateInvoicePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('modern');
   const [templateLoading, setTemplateLoading] = useState(true);
 
+  // State für echte Kunden
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+
+  const [formData, setFormData] = useState({
+    customerName: '',
+    customerEmail: '',
+    customerAddress: '',
+    invoiceNumber: '',
+    issueDate: new Date().toISOString().split('T')[0],
+    dueDate: '',
+    description: '',
+    taxRate: '19', // Standard German VAT
+    notes: '',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [items, setItems] = useState<InvoiceItem[]>([
+    {
+      id: 'item_1',
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0,
+    },
+  ]);
+
   // Load user's preferred template from database
   useEffect(() => {
     const loadUserTemplate = async () => {
-      if (!uid) return;
+      if (!uid || !user || user.uid !== uid) return;
 
       try {
         setTemplateLoading(true);
@@ -120,16 +150,12 @@ export default function CreateInvoicePage() {
     };
 
     loadUserTemplate();
-  }, [uid]);
-
-  // State für echte Kunden
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(true);
+  }, [uid, user]);
 
   // Lade echte Kunden aus Firestore
   useEffect(() => {
     const loadCustomers = async () => {
-      if (!uid) return;
+      if (!uid || !user || user.uid !== uid) return;
 
       try {
         setLoadingCustomers(true);
@@ -177,31 +203,7 @@ export default function CreateInvoicePage() {
     };
 
     loadCustomers();
-  }, [uid]);
-
-  const [formData, setFormData] = useState({
-    customerName: '',
-    customerEmail: '',
-    customerAddress: '',
-    invoiceNumber: '',
-    issueDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
-    description: '',
-    taxRate: '19', // Standard German VAT
-    notes: '',
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [items, setItems] = useState<InvoiceItem[]>([
-    {
-      id: 'item_1',
-      description: '',
-      quantity: 1,
-      unitPrice: 0,
-      total: 0,
-    },
-  ]);
+  }, [uid, user]);
 
   // Auto-generate invoice number
   React.useEffect(() => {
@@ -213,7 +215,7 @@ export default function CreateInvoicePage() {
         invoiceNumber: `R-${currentYear}-${String(randomNum).padStart(3, '0')}`,
       }));
     }
-  }, []);
+  }, [formData.invoiceNumber]);
 
   // Auto-set due date (14 days from issue date)
   React.useEffect(() => {
@@ -225,7 +227,21 @@ export default function CreateInvoicePage() {
         dueDate: dueDate.toISOString().split('T')[0],
       }));
     }
-  }, [formData.issueDate]);
+  }, [formData.issueDate, formData.dueDate]);
+
+  // Sicherheitsprüfung: Nur der Owner kann Rechnungen erstellen
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 p-8 bg-gray-50">
+          <h1 className="text-2xl font-bold mb-6">Nicht berechtigt</h1>
+          <p className="text-gray-600">
+            Sie sind nicht berechtigt, Rechnungen für diese Firma zu erstellen.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleCustomerSelect = (customerName: string) => {
     const customer = customers.find(c => c.name === customerName);
@@ -307,6 +323,20 @@ export default function CreateInvoicePage() {
   const generateNextInvoiceNumber = async () => {
     try {
       const year = new Date().getFullYear();
+
+      // Erstmal schauen, ob es eine Migration aus einem alten System gibt
+      let highestNumber = 0;
+
+      // Prüfe die lastInvoiceNumber aus den Firmeneinstellungen
+      if (companySettings?.lastInvoiceNumber) {
+        const migrationMatch = companySettings.lastInvoiceNumber.match(/(\d+)$/);
+        if (migrationMatch) {
+          highestNumber = parseInt(migrationMatch[1]);
+          console.log(`[Invoice Migration] Startnummer aus Einstellungen: ${highestNumber}`);
+        }
+      }
+
+      // Dann prüfe existierende Rechnungen in der Datenbank
       const invoicesQuery = query(
         collection(db, 'invoices'),
         where('companyId', '==', uid),
@@ -315,7 +345,6 @@ export default function CreateInvoicePage() {
       );
 
       const querySnapshot = await getDocs(invoicesQuery);
-      let highestNumber = 0;
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
@@ -333,7 +362,13 @@ export default function CreateInvoicePage() {
       });
 
       const nextNumber = highestNumber + 1;
-      return `R-${year}-${nextNumber.toString().padStart(3, '0')}`;
+      const invoiceNumber = `R-${year}-${nextNumber.toString().padStart(3, '0')}`;
+
+      console.log(
+        `[Invoice Generation] Nächste Rechnungsnummer: ${invoiceNumber} (basierend auf höchster Nummer: ${highestNumber})`
+      );
+
+      return invoiceNumber;
     } catch (error) {
       console.error('Fehler beim Generieren der Rechnungsnummer:', error);
       // Fallback
@@ -421,6 +456,7 @@ export default function CreateInvoicePage() {
         // Timestamps
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        createdBy: uid, // Erforderlich für Firestore-Regeln
         // Nur bei finalisierten Rechnungen das Finalisierungsdatum setzen
         ...(action === 'finalize' && { finalizedAt: serverTimestamp() }),
       };
@@ -567,20 +603,18 @@ export default function CreateInvoicePage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="invoiceNumber">
-                      Rechnungsnummer
-                      <span className="text-sm text-gray-500 ml-2">
-                        (wird automatisch generiert beim Erstellen)
-                      </span>
-                    </Label>
+                    <Label htmlFor="invoiceNumber">Rechnungsnummer</Label>
                     <Input
                       id="invoiceNumber"
                       value={formData.invoiceNumber}
                       onChange={e =>
                         setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))
                       }
-                      placeholder="R-2025-001 (optional für Entwürfe)"
+                      placeholder="R-2025-001"
                     />
+                    <p className="text-sm text-gray-500">
+                      Wird automatisch generiert beim Erstellen der Rechnung
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="issueDate">Rechnungsdatum *</Label>

@@ -170,6 +170,7 @@ export interface UserDataForSettings {
     defaultTaxRate?: string;
     accountingSystem?: string;
     priceInput?: string;
+    lastInvoiceNumber?: string; // Für Rechnungsnummern-Migration
   };
   step4: {
     accountHolder: string;

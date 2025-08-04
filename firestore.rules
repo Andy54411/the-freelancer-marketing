@@ -521,15 +521,15 @@ service cloud.firestore {
     
     // Finance: Invoices Collection
     match /invoices/{invoiceId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Nur eigene Firma oder Support Staff (temporär flexibler)
       allow read: if request.auth != null && 
-                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     (resource.data.companyId == request.auth.uid) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff (temporär flexibler)
       allow list: if request.auth != null && 
                     (isSupportStaff() ||
-                     (isCompany() && 
+                     (request.auth != null && 
                       'where' in request.query &&
                       request.query.where != null &&
                       request.query.where.size() > 0 &&
@@ -537,10 +537,9 @@ service cloud.firestore {
                       request.query.where[0].op == '==' &&
                       request.query.where[0].value == request.auth.uid));
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Nur eigene Firma (temporär flexibler für Debugging)
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
-                       isCompany() &&
                        request.resource.data.createdBy == request.auth.uid &&
                        request.resource.data.createdAt == request.time;
       

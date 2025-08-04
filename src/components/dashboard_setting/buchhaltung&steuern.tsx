@@ -70,6 +70,53 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           <p className={helperTextClass}>Wo finde ich meine Steuernummer?</p>
         </div>
       </div>
+
+      {/* Neuer Bereich für Rechnungsnummern-Migration */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 className="text-lg font-semibold mb-4 text-blue-900 dark:text-blue-100">
+          🧾 Rechnungsnummern-Migration
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className={labelClass}>Letzte Rechnungsnummer aus altem System</label>
+            <input
+              type="text"
+              value={formData?.step3?.lastInvoiceNumber || ''}
+              onChange={e => handleChange('step3.lastInvoiceNumber', e.target.value)}
+              className={inputClass}
+              placeholder="z.B. R-2024-456 oder 2024-456"
+            />
+            <p className={helperTextClass}>
+              📋 <strong>Wichtig für Steuerkonformität:</strong> Tragen Sie hier Ihre letzte
+              Rechnungsnummer aus dem vorherigen System ein, damit die neue Nummerierung nahtlos
+              fortgesetzt wird.
+            </p>
+          </div>
+          <div className="flex items-center">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                <strong>Nächste Rechnungsnummer:</strong>
+              </div>
+              <div className="text-lg font-mono text-[#14ad9f]">
+                {formData?.step3?.lastInvoiceNumber
+                  ? (() => {
+                      const match = formData.step3.lastInvoiceNumber.match(/(\d+)$/);
+                      if (match) {
+                        const nextNumber = parseInt(match[1]) + 1;
+                        const year = new Date().getFullYear();
+                        return `R-${year}-${nextNumber.toString().padStart(3, '0')}`;
+                      }
+                      return 'R-2025-001';
+                    })()
+                  : 'R-2025-001'}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Automatisch generiert bei Rechnungserstellung
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className={labelClass}>Amtsgericht</label>

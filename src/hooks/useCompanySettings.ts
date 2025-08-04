@@ -26,6 +26,7 @@ export interface CompanySettings {
   defaultTaxRate?: '0' | '7' | '19'; // Standard-Steuersatz
   priceInput?: 'netto' | 'brutto'; // Preiseingabe
   accountingSystem?: 'skro3' | 'skro4'; // Kontenrahmen
+  lastInvoiceNumber?: string; // Letzte Rechnungsnummer aus altem System (für Migration)
 
   // Banking
   iban?: string;
