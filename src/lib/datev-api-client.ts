@@ -3,9 +3,12 @@
  * Provides access to all DATEV sandbox APIs based on official documentation
  * APIs: cashregister:import, master-data:master-clients, accounting:extf-files,
  *       accounting:dxso-jobs, accounting:documents
+ * Enhanced with multi-source authentication (cookies, Firestore, etc.)
  */
 
 import { getDatevConfig } from './datev-config';
+import { DatevTokenManager } from '@/lib/datev-token-manager';
+import { db } from '@/firebase/server';
 
 export interface DatevApiResponse<T = any> {
   success: boolean;
@@ -29,6 +32,98 @@ export class DatevApiClient {
 
   constructor() {
     this.config = getDatevConfig();
+  }
+
+  /**
+   * Get authentication header with fallback to multiple token sources
+   */
+  static async getAuthHeader(request: Request, companyId?: string): Promise<string | null> {
+    // Try cookie-based token first
+    let authHeader = DatevTokenManager.getServerAuthHeader(request);
+
+    if (authHeader) {
+      console.log('[DatevApiClient] Using cookie-based token');
+      return authHeader;
+    }
+
+    // Try to extract company ID from URL if not provided
+    if (!companyId) {
+      const url = new URL(request.url);
+      companyId =
+        url.searchParams.get('companyId') ||
+        request.headers.get('x-company-id') ||
+        url.pathname.split('/').find((segment, index, array) => array[index - 1] === 'company');
+    }
+
+    // If we have a company ID, try Firestore
+    if (companyId) {
+      console.log('[DatevApiClient] Checking Firestore for company:', companyId);
+      try {
+        const tokenDoc = await db
+          .collection('companies')
+          .doc(companyId)
+          .collection('datev')
+          .doc('tokens')
+          .get();
+
+        if (tokenDoc.exists) {
+          const tokenData = tokenDoc.data();
+          const expiresAt = tokenData?.expires_at?.toDate?.() || new Date(tokenData?.expires_at);
+
+          // Check if token is still valid (with 5-minute buffer)
+          if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData) {
+            authHeader = `${tokenData.token_type || 'Bearer'} ${tokenData.access_token}`;
+            console.log('[DatevApiClient] Using Firestore token');
+            return authHeader;
+          } else {
+            console.log('[DatevApiClient] Firestore token expired');
+          }
+        }
+      } catch (firestoreError) {
+        console.error('[DatevApiClient] Firestore token retrieval failed:', firestoreError);
+      }
+    }
+
+    console.log('[DatevApiClient] No valid authentication token found');
+    return null;
+  }
+
+  /**
+   * Make authenticated API call to DATEV
+   */
+  static async makeApiCall(
+    endpoint: string,
+    options: RequestInit,
+    request: Request,
+    companyId?: string
+  ): Promise<Response> {
+    const authHeader = await this.getAuthHeader(request, companyId);
+
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({
+          error: 'DATEV authentication required - please re-authenticate',
+          requiresAuth: true,
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Merge auth header with existing headers
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...options.headers,
+      Authorization: authHeader,
+    };
+
+    return fetch(endpoint, {
+      ...options,
+      headers,
+    });
   }
 
   /**

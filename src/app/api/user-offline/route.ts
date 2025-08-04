@@ -10,6 +10,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userId required' }, { status: 400 });
     }
 
+    // Check if database is properly configured
+    if (!admin.database) {
+      console.warn(
+        '[USER-OFFLINE] Realtime Database not available - Firebase Database URL may be missing'
+      );
+      return NextResponse.json({ success: true, warning: 'Database not available' });
+    }
+
     // Setze Benutzer offline in Realtime Database (server-side)
     const realtimeDb = admin.database();
     const userPresenceRef = realtimeDb.ref(`presence/${userId}`);
@@ -25,6 +33,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[USER-OFFLINE ERROR]', error);
-    return NextResponse.json({ error: 'Failed to set user offline' }, { status: 500 });
+    return NextResponse.json(
+      { success: true, warning: 'Offline status update failed' },
+      { status: 200 }
+    );
   }
 }

@@ -118,9 +118,13 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       limit(10) // Die 10 neuesten Benachrichtigungen
     );
 
+    let isSubscriptionActive = true; // Flag to prevent processing after unmount
+
     const unsubscribe = onSnapshot(
       notificationsQuery,
       (snapshot: QuerySnapshot) => {
+        if (!isSubscriptionActive) return; // Prevent processing if component unmounted
+
         console.log(
           `[UserHeader] Benachrichtigungen erfolgreich geladen für User: ${uid}, Anzahl: ${snapshot.size}`
         );
@@ -137,6 +141,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         setUnreadNotificationsCount(unreadCount);
       },
       error => {
+        if (!isSubscriptionActive) return; // Prevent processing if component unmounted
+
         // KORREKTUR: Verwende warn statt error für permission-denied, um Console-Spam zu reduzieren
         if (error.code === 'permission-denied') {
           console.warn('[UserHeader] Permission denied für notifications - silent fallback');
@@ -153,7 +159,10 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      isSubscriptionActive = false;
+      unsubscribe();
+    };
   }, []);
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
@@ -242,7 +251,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentUid, router, loadFirestoreUserData]);
+  }, [currentUid, router]); // Removed loadFirestoreUserData dependency to prevent loop
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {
@@ -257,7 +266,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       setNotifications([]);
       setUnreadNotificationsCount(0);
     }
-  }, [currentUser?.uid, currentUid, subscribeToNotifications]);
+  }, [currentUser?.uid, currentUid]); // Removed subscribeToNotifications dependency to prevent loop
 
   useEffect(() => {
     const handleProfileUpdate = (event: Event) => {
@@ -274,7 +283,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     };
     window.addEventListener('profileUpdated', handleProfileUpdate);
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
-  }, [currentUser?.uid, loadProfilePictureFromStorage, loadFirestoreUserData]);
+  }, [currentUser?.uid]); // Removed function dependencies to prevent loop
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -297,7 +306,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [profileDropdownRef, searchDropdownContainerRef, isProfileDropdownOpen, isSearchDropdownOpen]);
+  }, [isProfileDropdownOpen, isSearchDropdownOpen]); // Removed ref dependencies to prevent loop
 
   const handleSubcategorySelect = () => {
     setIsSearchDropdownOpen(false);
