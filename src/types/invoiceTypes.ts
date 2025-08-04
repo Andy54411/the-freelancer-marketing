@@ -239,7 +239,7 @@ export class GermanInvoiceService {
    */
   static formatInvoiceNumber(sequentialNumber: number, year?: number): string {
     const currentYear = year || new Date().getFullYear();
-    return `${currentYear}-${String(sequentialNumber).padStart(3, '0')}`;
+    return `R-${currentYear}-${String(sequentialNumber).padStart(3, '0')}`;
   }
 
   /**

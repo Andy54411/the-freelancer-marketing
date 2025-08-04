@@ -122,8 +122,8 @@ export function InvoiceComponent({
                         <div className="font-medium">
                           {invoice.number ||
                             invoice.invoiceNumber ||
-                            (invoice.sequentialNumber
-                              ? `R-2025-${invoice.sequentialNumber}`
+                            (invoice.sequentialNumber && invoice.sequentialNumber > 0
+                              ? `R-${new Date().getFullYear()}-${String(invoice.sequentialNumber).padStart(3, '0')}`
                               : `R-${invoice.id.substring(0, 8)}`)}
                         </div>
                         <div className="text-sm text-muted-foreground">{invoice.customerName}</div>

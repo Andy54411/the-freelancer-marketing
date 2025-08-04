@@ -1,5 +1,6 @@
 'use client';
 
+import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -320,62 +321,23 @@ export default function CreateInvoicePage() {
     }).format(amount);
   };
 
-  // Funktion zum Generieren der nächsten Rechnungsnummer
+  // Funktion zum Generieren der nächsten Rechnungsnummer - nutzt den korrekten Service
   const generateNextInvoiceNumber = async () => {
     try {
-      const year = new Date().getFullYear();
-
-      // Erstmal schauen, ob es eine Migration aus einem alten System gibt
-      let highestNumber = 0;
-
-      // Prüfe die lastInvoiceNumber aus den Firmeneinstellungen
-      if (companySettings?.lastInvoiceNumber) {
-        const migrationMatch = companySettings.lastInvoiceNumber.match(/(\d+)$/);
-        if (migrationMatch) {
-          highestNumber = parseInt(migrationMatch[1]);
-          console.log(`[Invoice Migration] Startnummer aus Einstellungen: ${highestNumber}`);
-        }
-      }
-
-      // Dann prüfe existierende Rechnungen in der Datenbank
-      const invoicesQuery = query(
-        collection(db, 'invoices'),
-        where('companyId', '==', uid),
-        where('status', '==', 'finalized'), // Nur finalisierte Rechnungen zählen
-        orderBy('createdAt', 'desc')
-      );
-
-      const querySnapshot = await getDocs(invoicesQuery);
-
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        const invoiceNumber = data.invoiceNumber || data.number;
-        if (invoiceNumber && typeof invoiceNumber === 'string') {
-          // Extract number from format R-YYYY-XXX
-          const match = invoiceNumber.match(/R-(\d{4})-(\d+)/);
-          if (match && parseInt(match[1]) === year) {
-            const number = parseInt(match[2]);
-            if (number > highestNumber) {
-              highestNumber = number;
-            }
-          }
-        }
-      });
-
-      const nextNumber = highestNumber + 1;
-      const invoiceNumber = `R-${year}-${nextNumber.toString().padStart(3, '0')}`;
-
+      console.log('🔢 Generiere nächste Rechnungsnummer via FirestoreInvoiceService...');
+      const { sequentialNumber, formattedNumber } =
+        await FirestoreInvoiceService.getNextInvoiceNumber(uid);
       console.log(
-        `[Invoice Generation] Nächste Rechnungsnummer: ${invoiceNumber} (basierend auf höchster Nummer: ${highestNumber})`
+        `✅ Generierte Rechnungsnummer: ${formattedNumber} (sequentialNumber: ${sequentialNumber})`
       );
-
-      return invoiceNumber;
+      return { number: formattedNumber, sequentialNumber };
     } catch (error) {
-      console.error('Fehler beim Generieren der Rechnungsnummer:', error);
+      console.error('❌ Fehler beim Generieren der Rechnungsnummer:', error);
       // Fallback
       const year = new Date().getFullYear();
       const randomNumber = Math.floor(Math.random() * 1000) + 1;
-      return `R-${year}-${randomNumber.toString().padStart(3, '0')}`;
+      const fallbackNumber = `R-${year}-${randomNumber.toString().padStart(3, '0')}`;
+      return { number: fallbackNumber, sequentialNumber: randomNumber };
     }
   };
 
@@ -430,16 +392,25 @@ export default function CreateInvoicePage() {
 
       // Bei Finalisierung automatisch Rechnungsnummer generieren, falls nicht vorhanden
       let finalInvoiceNumber = formData.invoiceNumber;
+      let sequentialNumber: number | undefined;
       if (action === 'finalize' && !finalInvoiceNumber) {
         console.log('🔢 Generiere automatische Rechnungsnummer...');
-        finalInvoiceNumber = await generateNextInvoiceNumber();
-        console.log('✅ Generierte Rechnungsnummer:', finalInvoiceNumber);
+        const result = await generateNextInvoiceNumber();
+        finalInvoiceNumber = result.number;
+        sequentialNumber = result.sequentialNumber;
+        console.log(
+          '✅ Generierte Rechnungsnummer:',
+          finalInvoiceNumber,
+          'Sequential:',
+          sequentialNumber
+        );
       }
 
       console.log('📋 Erstelle Rechnungsobjekt...');
       const newInvoice = {
         number: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
         invoiceNumber: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
+        sequentialNumber: sequentialNumber, // Wichtig für fortlaufende Nummerierung
         date: formData.issueDate,
         issueDate: formData.issueDate,
         dueDate: formData.dueDate,
