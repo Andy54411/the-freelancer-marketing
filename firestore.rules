@@ -712,9 +712,10 @@ service cloud.firestore {
     // Finance: Invoice Numbering Collection (für automatische Rechnungsnummern)
     match /invoice_numbering/{numberingId} {
       // Lesen: Nur eigene Firma (um aktuelle Nummer zu prüfen)
+      // Special case: Erlaubt lesen auch wenn Dokument nicht existiert (für Transaction)
       allow read: if request.auth != null && 
-                     resource.data.companyId == request.auth.uid &&
-                     isCompany();
+                     isCompany() &&
+                     (resource == null || resource.data.companyId == request.auth.uid);
       
       // Erstellen: Nur eigene Firma (beim ersten Mal)
       allow create: if request.auth != null && 

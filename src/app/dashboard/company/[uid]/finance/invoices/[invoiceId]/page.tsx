@@ -127,9 +127,9 @@ export default function InvoiceDetailPage() {
 
     setDownloadingPdf(true);
     try {
-      console.log('🎯 Starte PDF-Download mit Puppeteer API...');
+      console.log('🎯 Starte PDF-Download...');
 
-      // Call our new Puppeteer API endpoint
+      // Call our PDF API endpoint with enhanced fallback handling
       const response = await fetch('/api/generate-invoice-pdf', {
         method: 'POST',
         headers: {
@@ -146,7 +146,7 @@ export default function InvoiceDetailPage() {
         // Handle fallback case (503 Service Unavailable)
         if (response.status === 503 && errorData.fallback) {
           toast.error(
-            'PDF-Service temporär nicht verfügbar. Bitte versuchen Sie es später erneut.'
+            'PDF-Service wird gestartet. Bitte versuchen Sie es in wenigen Sekunden erneut.'
           );
           return;
         }
@@ -156,27 +156,61 @@ export default function InvoiceDetailPage() {
 
       // Check if we got HTML fallback instead of PDF
       const contentType = response.headers.get('content-type');
-      if (contentType?.includes('text/html')) {
-        console.log('📄 HTML-Fallback erhalten, verwende Browser-Print...');
+      const fallbackMode = response.headers.get('X-PDF-Fallback');
+      const productionMode = response.headers.get('X-Production-Mode');
+
+      if (contentType?.includes('text/html') || fallbackMode) {
+        console.log('📄 HTML-Fallback erhalten, verwende Browser-Print...', {
+          fallbackMode,
+          productionMode,
+        });
 
         // Get HTML content
         const htmlContent = await response.text();
 
-        // Open in new window for printing
-        const printWindow = window.open('', '_blank');
+        // Create a blob URL for the HTML content
+        const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+        const htmlUrl = window.URL.createObjectURL(htmlBlob);
+
+        // Open in new window for printing/downloading
+        const printWindow = window.open(htmlUrl, '_blank');
         if (printWindow) {
-          printWindow.document.write(htmlContent);
-          printWindow.document.close();
-
-          // Wait for content to load, then trigger print dialog
+          // Give the page time to load before focusing/printing
           setTimeout(() => {
-            printWindow.print();
-          }, 1000);
+            printWindow.focus();
+            // Trigger print dialog after content loads
+            setTimeout(() => {
+              printWindow.print();
+            }, 1500);
+          }, 500);
 
-          toast.success('Rechnung wurde in neuem Fenster zum Drucken geöffnet');
+          toast.success(
+            productionMode
+              ? 'Rechnung wurde zum Drucken geöffnet (PDF-Service startet noch)'
+              : 'Rechnung wurde zum Drucken geöffnet'
+          );
+
+          // Clean up URL after some time
+          setTimeout(() => {
+            window.URL.revokeObjectURL(htmlUrl);
+          }, 10000);
+
           return;
         } else {
-          toast.error('Pop-up blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
+          // If popup is blocked, try direct download
+          const link = document.createElement('a');
+          link.href = htmlUrl;
+          link.download = `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.html`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          toast.success(
+            'Rechnung als HTML-Datei heruntergeladen (öffnen Sie diese im Browser zum Drucken)'
+          );
+          setTimeout(() => {
+            window.URL.revokeObjectURL(htmlUrl);
+          }, 5000);
           return;
         }
       }
@@ -204,9 +238,10 @@ export default function InvoiceDetailPage() {
       console.error('❌ Fehler beim PDF-Download:', error);
 
       // Provide user-friendly error messages
-      let userMessage = 'Fehler beim Erstellen des PDFs';
+      let userMessage = 'Fehler beim Erstellen der Rechnung';
       if (error.message.includes('PDF-Service temporär nicht verfügbar')) {
-        userMessage = 'PDF-Service temporär nicht verfügbar. Bitte versuchen Sie es später erneut.';
+        userMessage =
+          'PDF-Service startet noch. Bitte versuchen Sie es in wenigen Sekunden erneut.';
       } else if (error.message.includes('Netzwerk') || error.message.includes('fetch')) {
         userMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
       } else if (error.message) {

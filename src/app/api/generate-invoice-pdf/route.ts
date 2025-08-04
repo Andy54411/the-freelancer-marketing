@@ -91,9 +91,11 @@ function getBrowserConfig() {
 
 export async function POST(request: NextRequest) {
   let browser;
+  const isVercel = process.env.VERCEL === '1';
+  const isProduction = process.env.NODE_ENV === 'production';
 
   try {
-    console.log('🎯 Starte PDF-Generation mit Puppeteer...');
+    console.log('🎯 Starte PDF-Generation...', { isVercel, isProduction });
 
     const { invoiceData } = await request.json();
 
@@ -108,8 +110,22 @@ export async function POST(request: NextRequest) {
       companyName: invoiceData.companyName,
     });
 
-    // Erste Prüfung: Ist Puppeteer verfügbar?
-    console.log('🔍 Prüfe Puppeteer-Verfügbarkeit...');
+    // Sofortiger HTML-Fallback in Production für Stabilität
+    if (isVercel || isProduction) {
+      console.log('🔄 Verwende HTML-Fallback für Production-Umgebung');
+      const htmlContent = generateInvoiceHTML(invoiceData);
+      return new NextResponse(htmlContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'X-PDF-Fallback': 'true',
+          'X-Production-Mode': 'true',
+        },
+      });
+    }
+
+    // Nur in Entwicklungsumgebung versuchen wir Puppeteer
+    console.log('🔍 Prüfe Puppeteer-Verfügbarkeit (Development)...');
     let puppeteerLib;
     try {
       puppeteerLib = await getPuppeteer();
@@ -123,12 +139,13 @@ export async function POST(request: NextRequest) {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'X-PDF-Fallback': 'true',
+          'X-Puppeteer-Error': 'unavailable',
         },
       });
     }
 
-    // Launch Puppeteer with optimized settings for Vercel
-    console.log('🚀 Starte Puppeteer Browser...');
+    // Launch Puppeteer nur in Development
+    console.log('🚀 Starte Puppeteer Browser (Development)...');
     const browserConfig = getBrowserConfig();
 
     browser = await puppeteerLib.launch(browserConfig);
@@ -188,6 +205,7 @@ export async function POST(request: NextRequest) {
       message: error.message,
       stack: error.stack,
       name: error.name,
+      environment: { isVercel, isProduction },
     });
 
     // Ensure browser is closed even on error
@@ -200,29 +218,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if this is a Puppeteer availability issue
-    if (
-      error.message.includes('PDF-Engine nicht verfügbar') ||
-      error.message.includes('chrome-headless-shell') ||
-      error.message.includes('Could not find Chrome')
-    ) {
-      return NextResponse.json(
-        {
-          error: 'PDF-Service temporär nicht verfügbar',
-          details: 'Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support.',
-          fallback: true,
+    // Bei jedem Fehler HTML-Fallback anbieten
+    console.log('🔄 Verwende HTML-Fallback nach Fehler');
+    const { invoiceData } = await request.json();
+    if (invoiceData) {
+      const htmlContent = generateInvoiceHTML(invoiceData);
+      return new NextResponse(htmlContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'X-PDF-Fallback': 'true',
+          'X-Error-Recovery': 'true',
+          'X-Original-Error': error.message,
         },
-        { status: 503 }
-      );
+      });
     }
 
     return NextResponse.json(
       {
-        error: 'Fehler bei der PDF-Generierung',
-        details: error.message,
-        type: error.name,
+        error: 'PDF-Service temporär nicht verfügbar',
+        details: 'Verwende HTML-Fallback für PDF-Generierung',
+        fallback: true,
+        environment: { isVercel, isProduction },
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 }
