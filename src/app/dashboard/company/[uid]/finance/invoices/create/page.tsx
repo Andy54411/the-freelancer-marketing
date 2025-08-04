@@ -207,17 +207,33 @@ export default function CreateInvoicePage() {
     loadCustomers();
   }, [uid, user]);
 
-  // Auto-generate invoice number
+  // Auto-generate invoice number using FirestoreInvoiceService
   React.useEffect(() => {
-    if (!formData.invoiceNumber) {
-      const currentYear = new Date().getFullYear();
-      const randomNum = Math.floor(Math.random() * 999) + 1;
-      setFormData(prev => ({
-        ...prev,
-        invoiceNumber: `R-${currentYear}-${String(randomNum).padStart(3, '0')}`,
-      }));
-    }
-  }, [formData.invoiceNumber]);
+    const generateInvoiceNumber = async () => {
+      if (!formData.invoiceNumber && uid) {
+        try {
+          console.log('🔢 Generiere Vorschau-Rechnungsnummer via FirestoreInvoiceService...');
+          const { formattedNumber } = await FirestoreInvoiceService.getNextInvoiceNumber(uid);
+          console.log('✅ Vorschau-Nummer generiert:', formattedNumber);
+          setFormData(prev => ({
+            ...prev,
+            invoiceNumber: formattedNumber,
+          }));
+        } catch (error) {
+          console.error('❌ Fehler beim Generieren der Vorschau-Nummer:', error);
+          // Fallback nur im Fehlerfall
+          const currentYear = new Date().getFullYear();
+          const fallbackNum = Math.floor(Math.random() * 999) + 1;
+          setFormData(prev => ({
+            ...prev,
+            invoiceNumber: `R-${currentYear}-${String(fallbackNum).padStart(3, '0')}`,
+          }));
+        }
+      }
+    };
+
+    generateInvoiceNumber();
+  }, [formData.invoiceNumber, uid]);
 
   // Auto-set due date (14 days from issue date)
   React.useEffect(() => {

@@ -325,7 +325,7 @@ importers:
         specifier: ^3.6.2
         version: 3.6.2
       puppeteer:
-        specifier: ^24.14.0
+        specifier: ^24.15.0
         version: 24.15.0(typescript@5.8.3)
       tailwindcss:
         specifier: ^4
