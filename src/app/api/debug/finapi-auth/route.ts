@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
     );
 
     // 2. Teste Admin-Anmeldeinformationen
-    let adminAuthResult: any = null;
+    let adminAuthResult: { success: boolean; data?: any; error?: string; status?: number } | null =
+      null;
     if (adminClientId && adminClientSecret) {
       console.log('🔑 Teste Admin-Client-Authentifizierung...');
       try {
@@ -68,12 +69,20 @@ export async function GET(request: NextRequest) {
         }
       } catch (error) {
         console.error('❌ Admin-Auth Fehler:', error);
-        adminAuthResult = { success: false, error: error.message };
+        adminAuthResult = {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     }
 
     // 3. Teste Sandbox-Anmeldeinformationen
-    let sandboxAuthResult: any = null;
+    let sandboxAuthResult: {
+      success: boolean;
+      data?: any;
+      error?: string;
+      status?: number;
+    } | null = null;
     if (sandboxClientId && sandboxClientSecret) {
       console.log('🔑 Teste Sandbox-Client-Authentifizierung...');
       try {
@@ -109,12 +118,20 @@ export async function GET(request: NextRequest) {
         }
       } catch (error) {
         console.error('❌ Sandbox-Auth Fehler:', error);
-        sandboxAuthResult = { success: false, error: error.message };
+        sandboxAuthResult = {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     }
 
     // 4. Ergebnis zusammenfassen
-    const result = {
+    const result: {
+      timestamp: string;
+      environment: any;
+      tests: any;
+      recommendation: string | null;
+    } = {
       timestamp: new Date().toISOString(),
       environment: {
         adminClientId: adminClientId ? `${adminClientId.substring(0, 8)}...` : null,
@@ -128,7 +145,7 @@ export async function GET(request: NextRequest) {
         adminAuth: adminAuthResult,
         sandboxAuth: sandboxAuthResult,
       },
-      recommendation: null,
+      recommendation: null as string | null,
     };
 
     // 5. Empfehlung basierend auf Ergebnissen
