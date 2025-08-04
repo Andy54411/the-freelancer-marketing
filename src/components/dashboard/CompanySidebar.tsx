@@ -289,10 +289,23 @@ export default function CompanySidebar({
             const currentView = getCurrentView();
             const isMainActive =
               currentView === item.value ||
-              (currentView === 'dashboard' && item.value === 'dashboard') ||
               (pathname?.includes('/finance') && item.value === 'finance') ||
               (pathname?.includes('/orders') && item.value === 'orders') ||
-              (pathname?.includes('/payouts') && item.value === 'finance');
+              (pathname?.includes('/payouts') && item.value === 'finance') ||
+              (pathname?.includes('/inbox') && item.value === 'inbox') ||
+              (pathname?.includes('/profile') && item.value === 'profile') ||
+              (pathname?.includes('/settings') && item.value === 'settings') ||
+              (pathname?.includes('/ai-assistant') && item.value === 'ai') ||
+              (pathname?.includes('/calendar') && item.value === 'calendar') ||
+              (item.value === 'dashboard' &&
+                !pathname?.includes('/finance') &&
+                !pathname?.includes('/orders') &&
+                !pathname?.includes('/payouts') &&
+                !pathname?.includes('/inbox') &&
+                !pathname?.includes('/profile') &&
+                !pathname?.includes('/settings') &&
+                !pathname?.includes('/ai-assistant') &&
+                !pathname?.includes('/calendar'));
 
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isItemExpanded = isExpanded(item.value);
