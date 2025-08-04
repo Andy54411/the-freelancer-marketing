@@ -226,15 +226,24 @@ export async function OPTIONS() {
  */
 async function storeTokensForCompany(companyId: string, tokenData: any) {
   try {
-    console.log('Storing DATEV tokens for company:', companyId);
+    console.log('🔧 [DATEV Callback] Storing DATEV tokens for company:', companyId);
+    console.log('🔧 [DATEV Callback] Token data received:', {
+      hasAccessToken: !!tokenData.access_token,
+      tokenType: tokenData.token_type,
+      expiresIn: tokenData.expires_in,
+      hasRefreshToken: !!tokenData.refresh_token,
+      scope: tokenData.scope,
+    });
 
     // Calculate expiration timestamp
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
+    console.log('🔧 [DATEV Callback] Token will expire at:', expiresAt);
 
     // Store tokens in company's DATEV subcollection
     const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
+    console.log('🔧 [DATEV Callback] Storing at path:', `companies/${companyId}/datev/tokens`);
 
-    await setDoc(tokenDocRef, {
+    const tokenDocData = {
       access_token: tokenData.access_token,
       token_type: tokenData.token_type || 'Bearer',
       expires_in: tokenData.expires_in || 3600,
@@ -244,25 +253,27 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
       connected_at: serverTimestamp(),
       last_updated: serverTimestamp(),
       is_active: true,
-    });
+    };
+
+    await setDoc(tokenDocRef, tokenDocData);
+    console.log('✅ [DATEV Callback] Token document created successfully');
 
     // Also store connection status in company document
     const companyDocRef = doc(db, 'companies', companyId);
-    await setDoc(
-      companyDocRef,
-      {
-        datev: {
-          connected: true,
-          connected_at: serverTimestamp(),
-          status: 'active',
-        },
+    const companyUpdateData = {
+      datev: {
+        connected: true,
+        connected_at: serverTimestamp(),
+        status: 'active',
       },
-      { merge: true }
-    );
+    };
 
-    console.log('DATEV tokens stored successfully for company:', companyId);
+    await setDoc(companyDocRef, companyUpdateData, { merge: true });
+    console.log('✅ [DATEV Callback] Company document updated with connection status');
+
+    console.log('🎉 [DATEV Callback] DATEV tokens stored successfully for company:', companyId);
   } catch (error) {
-    console.error('Failed to store DATEV tokens:', error);
+    console.error('❌ [DATEV Callback] Failed to store DATEV tokens:', error);
     throw new Error('Failed to store authentication tokens');
   }
 }

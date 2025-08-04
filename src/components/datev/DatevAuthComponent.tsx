@@ -77,13 +77,20 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const loadDatevConnection = async () => {
     try {
       setLoading(true);
+      console.log('🔍 [DATEV Debug] Loading connection for company:', companyId);
 
       // Check if we have stored tokens in Firestore for this company
       const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
+      console.log(
+        '🔍 [DATEV Debug] Checking document path:',
+        `companies/${companyId}/datev/tokens`
+      );
+
       const tokenDoc = await getDoc(tokenDocRef);
+      console.log('🔍 [DATEV Debug] Token document exists:', tokenDoc.exists());
 
       if (!tokenDoc.exists()) {
-        console.log('No DATEV tokens found for company:', companyId);
+        console.log('❌ [DATEV Debug] No DATEV tokens found for company:', companyId);
         setConnection({
           isConnected: false,
           features: {
@@ -97,6 +104,11 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       }
 
       const tokenData = tokenDoc.data();
+      console.log('✅ [DATEV Debug] Token data found:', {
+        hasAccessToken: !!tokenData.access_token,
+        expiresAt: tokenData.expires_at?.toDate?.(),
+        isActive: tokenData.is_active,
+      });
 
       // Check if token is expired
       const now = new Date();
