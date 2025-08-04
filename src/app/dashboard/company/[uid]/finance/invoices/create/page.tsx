@@ -103,10 +103,10 @@ export default function CreateInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([
     {
       id: 'item_1',
-      description: '',
+      description: 'Leistung',
       quantity: 1,
-      unitPrice: 0,
-      total: 0,
+      unitPrice: 50,
+      total: 50,
     },
   ]);
 
@@ -381,18 +381,34 @@ export default function CreateInvoicePage() {
   const handleSubmit = async (e: React.FormEvent, action: 'draft' | 'finalize') => {
     e.preventDefault();
 
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log('⚠️ Submit bereits in Bearbeitung, ignoriere weiteren Submit');
+      return;
+    }
+
+    console.log(`🚀 Starting handleSubmit with action: ${action}`);
     setIsSubmitting(true);
 
     try {
       // Validation
+      console.log('🔍 Validiere Formulardaten...', {
+        customerName: formData.customerName,
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
+        itemsCount: items.length,
+      });
+
       if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
+        console.error('❌ Validierung fehlgeschlagen: Pflichtfelder fehlen');
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
       }
 
       // Für finalisierte Rechnungen auch Rechnungsnummer validieren
       if (action === 'finalize' && !formData.invoiceNumber) {
+        console.error(
+          '❌ Validierung fehlgeschlagen: Rechnungsnummer fehlt für finalisierte Rechnung'
+        );
         toast.error('Rechnungsnummer ist für finalisierte Rechnungen erforderlich');
         return;
       }
@@ -401,18 +417,25 @@ export default function CreateInvoicePage() {
         item => item.description && item.quantity > 0 && item.unitPrice > 0
       );
       if (!hasValidItems) {
+        console.error('❌ Validierung fehlgeschlagen: Keine gültigen Positionen', items);
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
         return;
       }
 
+      console.log('✅ Alle Validierungen bestanden');
+
       const { subtotal, tax, total } = calculateTotals();
+      console.log('💰 Berechnungen:', { subtotal, tax, total });
 
       // Bei Finalisierung automatisch Rechnungsnummer generieren, falls nicht vorhanden
       let finalInvoiceNumber = formData.invoiceNumber;
       if (action === 'finalize' && !finalInvoiceNumber) {
+        console.log('🔢 Generiere automatische Rechnungsnummer...');
         finalInvoiceNumber = await generateNextInvoiceNumber();
+        console.log('✅ Generierte Rechnungsnummer:', finalInvoiceNumber);
       }
 
+      console.log('📋 Erstelle Rechnungsobjekt...');
       const newInvoice = {
         number: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
         invoiceNumber: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
@@ -461,12 +484,17 @@ export default function CreateInvoicePage() {
         ...(action === 'finalize' && { finalizedAt: serverTimestamp() }),
       };
 
-      // Save invoice to Firestore
-      console.log('Saving invoice to Firestore:', newInvoice);
+      console.log('📤 Speichere Rechnung in Firestore...', {
+        status: newInvoice.status,
+        companyId: newInvoice.companyId,
+        createdBy: newInvoice.createdBy,
+        itemsCount: newInvoice.items.length,
+      });
 
+      // Save invoice to Firestore
       const docRef = await addDoc(collection(db, 'invoices'), newInvoice);
 
-      console.log('Invoice saved with ID:', docRef.id);
+      console.log('✅ Rechnung erfolgreich gespeichert! Document ID:', docRef.id);
 
       if (action === 'finalize') {
         toast.success(`Rechnung ${finalInvoiceNumber} erfolgreich erstellt!`);
@@ -474,11 +502,29 @@ export default function CreateInvoicePage() {
         toast.success('Entwurf erfolgreich gespeichert!');
       }
 
+      // Leite weiter zur Rechnungsübersicht
+      console.log('🔄 Leite weiter zur Rechnungsübersicht...');
       router.push(`/dashboard/company/${uid}/finance/invoices`);
     } catch (error) {
-      console.error('Fehler beim Speichern der Rechnung:', error);
-      toast.error('Fehler beim Speichern der Rechnung');
+      console.error('❌ Fehler beim Speichern der Rechnung:', error);
+
+      // Detaillierte Fehleranalyse
+      if (error.code) {
+        console.error('🔍 Firestore Error Code:', error.code);
+        console.error('🔍 Firestore Error Message:', error.message);
+
+        if (error.code === 'permission-denied') {
+          toast.error('Berechtigung verweigert - bitte kontaktieren Sie den Support');
+        } else if (error.code === 'network-request-failed') {
+          toast.error('Netzwerkfehler - bitte prüfen Sie Ihre Internetverbindung');
+        } else {
+          toast.error(`Firestore Fehler: ${error.message}`);
+        }
+      } else {
+        toast.error('Unbekannter Fehler beim Speichern der Rechnung');
+      }
     } finally {
+      console.log('🏁 Submit beendet, setze isSubmitting auf false');
       setIsSubmitting(false);
     }
   };
