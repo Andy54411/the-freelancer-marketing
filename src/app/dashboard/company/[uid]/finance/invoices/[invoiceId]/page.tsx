@@ -10,6 +10,7 @@ import { ArrowLeft, Download, Edit, Send, X, FileText } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
+import { SendInvoiceDialog } from '@/components/finance/SendInvoiceDialog';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ export default function InvoiceDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user && user.uid === uid && invoiceId) {
@@ -356,7 +358,11 @@ export default function InvoiceDetailPage() {
             )}
 
             {invoice.status === 'finalized' && (
-              <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+              <Button
+                variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                onClick={() => setSendDialogOpen(true)}
+              >
                 <Send className="h-4 w-4 mr-2" />
                 Senden
               </Button>
@@ -487,6 +493,16 @@ export default function InvoiceDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Send Invoice Dialog */}
+      {invoice && (
+        <SendInvoiceDialog
+          isOpen={sendDialogOpen}
+          onClose={() => setSendDialogOpen(false)}
+          invoice={invoice}
+          companyName={invoice.companyName || 'Ihr Unternehmen'}
+        />
+      )}
     </div>
   );
 }
