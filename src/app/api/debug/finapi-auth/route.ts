@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     );
 
     // 2. Teste Admin-Anmeldeinformationen
-    let adminAuthResult = null;
+    let adminAuthResult: any = null;
     if (adminClientId && adminClientSecret) {
       console.log('🔑 Teste Admin-Client-Authentifizierung...');
       try {
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Teste Sandbox-Anmeldeinformationen
-    let sandboxAuthResult = null;
+    let sandboxAuthResult: any = null;
     if (sandboxClientId && sandboxClientSecret) {
       console.log('🔑 Teste Sandbox-Client-Authentifizierung...');
       try {
