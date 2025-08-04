@@ -154,6 +154,33 @@ export default function InvoiceDetailPage() {
         throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
       }
 
+      // Check if we got HTML fallback instead of PDF
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('text/html')) {
+        console.log('📄 HTML-Fallback erhalten, verwende Browser-Print...');
+
+        // Get HTML content
+        const htmlContent = await response.text();
+
+        // Open in new window for printing
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+
+          // Wait for content to load, then trigger print dialog
+          setTimeout(() => {
+            printWindow.print();
+          }, 1000);
+
+          toast.success('Rechnung wurde in neuem Fenster zum Drucken geöffnet');
+          return;
+        } else {
+          toast.error('Pop-up blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
+          return;
+        }
+      }
+
       // Get PDF blob from response
       const pdfBlob = await response.blob();
 

@@ -36,9 +36,10 @@ function getBrowserConfig() {
   console.log('🔧 Umgebung:', { isVercel, isProduction });
 
   if (isVercel || isProduction) {
-    // Vercel/Production configuration
+    // Vercel/Production configuration mit Chrome detection
     return {
       headless: true,
+      executablePath: process.env.CHROME_EXECUTABLE_PATH || undefined,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -48,12 +49,35 @@ function getBrowserConfig() {
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-images',
+        '--run-all-compositor-stages-before-draw',
+        '--disable-background-media-playback',
+        '--disable-background-sync',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--metrics-recording-only',
+        '--mute-audio',
+        '--no-first-run',
+        '--safebrowsing-disable-auto-update',
+        '--ignore-ssl-errors',
+        '--ignore-certificate-errors',
+        '--ignore-certificate-errors-spki-list',
+        '--ignore-ssl-errors-spki-list',
         '--disable-gpu',
         '--single-process',
         '--no-zygote',
-        '--disable-extensions',
       ],
-      timeout: 60000,
+      defaultViewport: {
+        width: 1200,
+        height: 800,
+        deviceScaleFactor: 1,
+      },
+      timeout: 30000,
     };
   } else {
     // Local development configuration
@@ -84,9 +108,27 @@ export async function POST(request: NextRequest) {
       companyName: invoiceData.companyName,
     });
 
+    // Erste Prüfung: Ist Puppeteer verfügbar?
+    console.log('🔍 Prüfe Puppeteer-Verfügbarkeit...');
+    let puppeteerLib;
+    try {
+      puppeteerLib = await getPuppeteer();
+    } catch (puppeteerError) {
+      console.warn('⚠️ Puppeteer nicht verfügbar, verwende HTML-Fallback:', puppeteerError.message);
+
+      // Fallback: Sende HTML für Client-seitige PDF-Generierung
+      const htmlContent = generateInvoiceHTML(invoiceData);
+      return new NextResponse(htmlContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'X-PDF-Fallback': 'true',
+        },
+      });
+    }
+
     // Launch Puppeteer with optimized settings for Vercel
     console.log('🚀 Starte Puppeteer Browser...');
-    const puppeteerLib = await getPuppeteer();
     const browserConfig = getBrowserConfig();
 
     browser = await puppeteerLib.launch(browserConfig);
