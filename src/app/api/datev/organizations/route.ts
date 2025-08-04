@@ -9,18 +9,18 @@ import { DatevTokenManager } from '@/lib/datev-token-manager';
 
 export async function GET(request: NextRequest) {
   try {
-    // Validate authentication
-    let isAuthenticated = await DatevTokenManager.refreshTokenIfNeeded();
+    // Validate authentication using server-side methods
+    let isAuthenticated = await DatevTokenManager.refreshServerTokenIfNeeded(request);
 
     if (!isAuthenticated) {
-      isAuthenticated = await DatevTokenManager.validateToken();
+      isAuthenticated = await DatevTokenManager.validateServerToken(request);
 
       if (!isAuthenticated) {
         return Response.json({ error: 'DATEV authentication required' }, { status: 401 });
       }
     }
 
-    const authHeader = DatevTokenManager.getAuthHeader();
+    const authHeader = DatevTokenManager.getServerAuthHeader(request);
     if (!authHeader) {
       return Response.json({ error: 'No DATEV access token available' }, { status: 401 });
     }
@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
 
       // Handle specific errors
       if (response.status === 401) {
-        DatevTokenManager.clearUserToken();
+        // Note: For server-side, we can't clear localStorage
+        // Client will need to handle token expiration
         return Response.json({ error: 'DATEV authentication expired' }, { status: 401 });
       }
 
