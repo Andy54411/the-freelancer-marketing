@@ -393,7 +393,9 @@ export default function CreateInvoicePage() {
       // Bei Finalisierung automatisch Rechnungsnummer generieren, falls nicht vorhanden
       let finalInvoiceNumber = formData.invoiceNumber;
       let sequentialNumber: number | undefined;
-      if (action === 'finalize' && !finalInvoiceNumber) {
+
+      // Für finale Rechnungen oder falls keine Nummer vorhanden ist, generiere automatisch
+      if ((action === 'finalize' && !finalInvoiceNumber) || !finalInvoiceNumber) {
         console.log('🔢 Generiere automatische Rechnungsnummer...');
         const result = await generateNextInvoiceNumber();
         finalInvoiceNumber = result.number;
@@ -410,7 +412,8 @@ export default function CreateInvoicePage() {
       const newInvoice = {
         number: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
         invoiceNumber: finalInvoiceNumber || '', // Nur für finalisierte Rechnungen
-        sequentialNumber: sequentialNumber, // Wichtig für fortlaufende Nummerierung
+        // Nur sequentialNumber setzen wenn es definiert ist (vermeidet undefined in Firestore)
+        ...(sequentialNumber !== undefined && { sequentialNumber }),
         date: formData.issueDate,
         issueDate: formData.issueDate,
         dueDate: formData.dueDate,
