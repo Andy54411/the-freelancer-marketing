@@ -133,11 +133,11 @@ export async function POST(request: NextRequest) {
 
         const page = await (browser as any).newPage();
 
-        // Viewport für konsistente Darstellung
+        // Viewport für A4-optimierte Darstellung
         await page.setViewport({
-          width: 1200,
-          height: 1600,
-          deviceScaleFactor: 1.5,
+          width: 794, // A4 Breite in px bei 96 DPI (210mm)
+          height: 1123, // A4 Höhe in px bei 96 DPI (297mm)
+          deviceScaleFactor: 1,
         });
 
         // Navigiere zur React Print-Seite

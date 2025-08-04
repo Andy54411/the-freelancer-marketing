@@ -164,13 +164,23 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
 
       if (selectedInvoiceData && !invoiceData) {
         // Konvertiere FirestoreInvoiceData zu E-Rechnungs-Format
+        // Sichere Behandlung von Date-Feldern (können Date-Objekte oder Strings sein)
+        const formatDateSafely = (dateValue: any): string => {
+          if (!dateValue) return new Date().toISOString().split('T')[0];
+          if (typeof dateValue === 'string') return dateValue;
+          if (dateValue instanceof Date) return dateValue.toISOString().split('T')[0];
+          if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+            // Firestore Timestamp
+            return dateValue.toDate().toISOString().split('T')[0];
+          }
+          return new Date(dateValue).toISOString().split('T')[0];
+        };
+
         finalInvoiceData = {
           invoiceNumber: selectedInvoiceData.invoiceNumber || selectedInvoiceData.number,
-          issueDate: selectedInvoiceData.createdAt
-            ? selectedInvoiceData.createdAt.toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
+          issueDate: formatDateSafely(selectedInvoiceData.createdAt),
           dueDate: selectedInvoiceData.dueDate
-            ? selectedInvoiceData.dueDate.toISOString().split('T')[0]
+            ? formatDateSafely(selectedInvoiceData.dueDate)
             : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           customerName: selectedInvoiceData.customerName || 'Kunde',
           customerAddress: selectedInvoiceData.customerAddress || 'Adresse nicht verfügbar',

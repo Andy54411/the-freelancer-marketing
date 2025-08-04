@@ -90,19 +90,44 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
 
   return (
     <>
-      {/* Print-spezifische CSS-Optimierungen */}
+      {/* Print-spezifische CSS-Optimierungen für A4-Format */}
       <style jsx global>{`
+        @page {
+          size: A4;
+          margin: 20mm;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
         @media print {
           body {
             -webkit-print-color-adjust: exact !important; /* Chrome/Safari */
             print-color-adjust: exact !important; /* Standard */
-            color-adjust: exact !important; /* Firefox */
+            color-adjust: exact !important;
+            font-size: 12pt !important;
+            line-height: 1.4 !important;
           }
 
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
+          }
+
+          /* A4-optimierte Schriftgrößen */
+          h1 {
+            font-size: 18pt !important;
+          }
+          h2 {
+            font-size: 16pt !important;
+          }
+          h3 {
+            font-size: 14pt !important;
+          }
+          h4,
+          h5,
+          h6 {
+            font-size: 12pt !important;
           }
         }
 
@@ -116,7 +141,10 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
             BlinkMacSystemFont,
             'Segoe UI',
             sans-serif;
-          line-height: 1.6;
+          line-height: 1.4;
+          font-size: 14px;
+          width: 210mm; /* A4 Breite */
+          min-height: 297mm; /* A4 Höhe */
         }
 
         /* Hide everything except invoice content */
@@ -126,13 +154,15 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
 
         .invoice-print-content {
           width: 100% !important;
-          max-width: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
+          max-width: 210mm !important; /* A4 Breite */
+          margin: 0 auto !important;
+          padding: 20mm !important; /* A4 Standard-Ränder */
           background: white !important;
+          box-sizing: border-box;
+          min-height: 257mm; /* A4 Höhe minus Ränder */
         }
 
-        /* PDF-optimierte Farben */
+        /* PDF-optimierte Farben und Größen */
         .bg-\\[\\#14ad9f\\] {
           background-color: #14ad9f !important;
         }
@@ -147,6 +177,39 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         .invoice-section {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+        }
+
+        /* Optimierte Schriftgrößen für A4 */
+        .invoice-print-content {
+          font-size: 11pt !important;
+          line-height: 1.3 !important;
+        }
+
+        .invoice-print-content h1 {
+          font-size: 16pt !important;
+          margin-bottom: 8pt !important;
+        }
+
+        .invoice-print-content h2 {
+          font-size: 14pt !important;
+          margin-bottom: 6pt !important;
+        }
+
+        .invoice-print-content h3 {
+          font-size: 12pt !important;
+          margin-bottom: 4pt !important;
+        }
+
+        .invoice-print-content table {
+          font-size: 10pt !important;
+        }
+
+        .invoice-print-content .text-sm {
+          font-size: 9pt !important;
+        }
+
+        .invoice-print-content .text-xs {
+          font-size: 8pt !important;
         }
       `}</style>
 
