@@ -45,6 +45,8 @@ import {
   XRechnungMetadata,
   ZUGFeRDMetadata,
 } from '@/services/eInvoiceService';
+import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
+import { InvoiceData } from '@/types/invoiceTypes';
 
 interface EInvoiceComponentProps {
   companyId: string;
@@ -60,6 +62,8 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
   const [previewXML, setPreviewXML] = useState('');
   const [generating, setGenerating] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
+  const [selectedInvoiceData, setSelectedInvoiceData] = useState<any>(null);
 
   // Form States für neue E-Rechnung
   const [newEInvoiceForm, setNewEInvoiceForm] = useState({
@@ -114,9 +118,92 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
     }
   };
 
-  const handleGenerateEInvoice = async (invoiceData: any) => {
+  const loadInvoiceByNumber = async (invoiceNumber: string) => {
+    if (!invoiceNumber.trim()) {
+      setSelectedInvoiceData(null);
+      return;
+    }
+
+    try {
+      setLoadingInvoice(true);
+      console.log('Lade Rechnung mit Nummer:', invoiceNumber);
+
+      // Alle Rechnungen der Firma laden
+      const allInvoices = await FirestoreInvoiceService.getInvoicesByCompany(companyId);
+      console.log('Gefundene Rechnungen:', allInvoices.length);
+
+      // Rechnung anhand der Rechnungsnummer finden
+      const foundInvoice = allInvoices.find(
+        invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber
+      );
+
+      if (foundInvoice) {
+        console.log('Rechnung gefunden:', foundInvoice);
+        setSelectedInvoiceData(foundInvoice);
+        toast.success(`Rechnung ${invoiceNumber} gefunden`);
+      } else {
+        console.log('Rechnung nicht gefunden');
+        setSelectedInvoiceData(null);
+        toast.error(`Rechnung ${invoiceNumber} nicht gefunden`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Rechnung:', error);
+      toast.error('Fehler beim Laden der Rechnung');
+      setSelectedInvoiceData(null);
+    } finally {
+      setLoadingInvoice(false);
+    }
+  };
+
+  const handleGenerateEInvoice = async (invoiceData?: any) => {
     try {
       setGenerating(true);
+
+      // Verwende echte Rechnungsdaten falls verfügbar, sonst Fallback zu Test-Daten
+      let finalInvoiceData = invoiceData;
+
+      if (selectedInvoiceData && !invoiceData) {
+        // Konvertiere FirestoreInvoiceData zu E-Rechnungs-Format
+        finalInvoiceData = {
+          invoiceNumber: selectedInvoiceData.invoiceNumber || selectedInvoiceData.number,
+          issueDate: selectedInvoiceData.createdAt
+            ? selectedInvoiceData.createdAt.toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          dueDate: selectedInvoiceData.dueDate
+            ? selectedInvoiceData.dueDate.toISOString().split('T')[0]
+            : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          customerName: selectedInvoiceData.customerName || 'Kunde',
+          customerAddress: selectedInvoiceData.customerAddress || 'Adresse nicht verfügbar',
+          amount: selectedInvoiceData.amount || 0,
+          tax: selectedInvoiceData.tax || 0,
+          total: selectedInvoiceData.total || 0,
+          vatRate: selectedInvoiceData.vatRate || 19,
+          items: selectedInvoiceData.items || [
+            {
+              description: 'Position aus importierter Rechnung',
+              quantity: 1,
+              unitPrice: selectedInvoiceData.amount || 0,
+              total: selectedInvoiceData.amount || 0,
+            },
+          ],
+        };
+        console.log('Verwende echte Rechnungsdaten:', finalInvoiceData);
+      } else if (!finalInvoiceData) {
+        // Fallback zu Test-Daten
+        finalInvoiceData = {
+          invoiceNumber: newEInvoiceForm.invoiceId,
+          issueDate: new Date().toISOString().split('T')[0],
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          customerName: 'Test Kunde',
+          customerAddress: 'Test Str. 1\n12345 Berlin',
+          amount: 1000,
+          tax: 190,
+          total: 1190,
+          vatRate: 19,
+          items: [{ description: 'Test Position', quantity: 1, unitPrice: 1000, total: 1000 }],
+        };
+        console.log('Verwende Test-Daten:', finalInvoiceData);
+      }
 
       let xmlContent = '';
 
@@ -127,7 +214,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
           specificationId: 'urn:cen.eu:en16931:2017',
         };
 
-        xmlContent = await EInvoiceService.generateZUGFeRDXML(invoiceData, metadata, {
+        xmlContent = await EInvoiceService.generateZUGFeRDXML(finalInvoiceData, metadata, {
           companyName: 'Test Firma',
           companyAddress: 'Test Str. 1\n12345 Berlin',
           companyVatId: 'DE123456789',
@@ -141,7 +228,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
           businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
         };
 
-        xmlContent = await EInvoiceService.generateXRechnungXML(invoiceData, metadata, {
+        xmlContent = await EInvoiceService.generateXRechnungXML(finalInvoiceData, metadata, {
           companyName: 'Test Firma',
           companyAddress: 'Test Str. 1\n12345 Berlin',
           companyVatId: 'DE123456789',
@@ -153,7 +240,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
 
       // E-Rechnung speichern
       const eInvoiceId = await EInvoiceService.createEInvoice({
-        invoiceId: newEInvoiceForm.invoiceId,
+        invoiceId: finalInvoiceData.invoiceNumber || newEInvoiceForm.invoiceId,
         companyId,
         format: newEInvoiceForm.format,
         standard: newEInvoiceForm.standard,
@@ -488,14 +575,75 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="invoiceId">Rechnungs-ID</Label>
-                <Input
-                  id="invoiceId"
-                  value={newEInvoiceForm.invoiceId}
-                  onChange={e =>
-                    setNewEInvoiceForm(prev => ({ ...prev, invoiceId: e.target.value }))
-                  }
-                  placeholder="z.B. R-2025-001"
-                />
+                <div className="relative">
+                  <Input
+                    id="invoiceId"
+                    value={newEInvoiceForm.invoiceId}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setNewEInvoiceForm(prev => ({ ...prev, invoiceId: value }));
+                      // Automatische Suche nach der Rechnung bei Eingabe
+                      if (value.length >= 3) {
+                        loadInvoiceByNumber(value);
+                      } else {
+                        setSelectedInvoiceData(null);
+                      }
+                    }}
+                    placeholder="z.B. R-2025-001"
+                    className={selectedInvoiceData ? 'border-green-500' : ''}
+                  />
+                  {loadingInvoice && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Anzeige der gefundenen Rechnung */}
+                {selectedInvoiceData && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-800">Rechnung gefunden</span>
+                    </div>
+                    <div className="text-sm text-green-700 space-y-1">
+                      <div>
+                        <strong>Kunde:</strong> {selectedInvoiceData.customerName || 'Unbekannt'}
+                      </div>
+                      <div>
+                        <strong>Betrag:</strong>{' '}
+                        {(
+                          selectedInvoiceData.totalAmount ||
+                          selectedInvoiceData.total ||
+                          0
+                        ).toFixed(2)}{' '}
+                        €
+                      </div>
+                      <div>
+                        <strong>Datum:</strong>{' '}
+                        {selectedInvoiceData.createdAt
+                          ? new Date(selectedInvoiceData.createdAt).toLocaleDateString('de-DE')
+                          : 'Unbekannt'}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {selectedInvoiceData.status || 'Unbekannt'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {newEInvoiceForm.invoiceId.length >= 3 &&
+                  !loadingInvoice &&
+                  !selectedInvoiceData && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <span className="text-sm text-yellow-800">
+                          Keine Rechnung mit dieser ID gefunden. Es werden Test-Daten verwendet.
+                        </span>
+                      </div>
+                    </div>
+                  )}
               </div>
 
               {newEInvoiceForm.format === 'xrechnung' && (
@@ -541,24 +689,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() =>
-                    handleGenerateEInvoice({
-                      invoiceNumber: newEInvoiceForm.invoiceId,
-                      issueDate: new Date().toISOString().split('T')[0],
-                      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-                        .toISOString()
-                        .split('T')[0],
-                      customerName: 'Test Kunde',
-                      customerAddress: 'Test Str. 1\n12345 Berlin',
-                      amount: 1000,
-                      tax: 190,
-                      total: 1190,
-                      vatRate: 19,
-                      items: [
-                        { description: 'Test Position', quantity: 1, unitPrice: 1000, total: 1000 },
-                      ],
-                    })
-                  }
+                  onClick={() => handleGenerateEInvoice()}
                   disabled={generating || !newEInvoiceForm.invoiceId}
                   className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
                 >
@@ -570,7 +701,9 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                   ) : (
                     <>
                       <FileText className="h-4 w-4 mr-2" />
-                      E-Rechnung generieren
+                      {selectedInvoiceData
+                        ? 'E-Rechnung aus importierter Rechnung generieren'
+                        : 'E-Rechnung mit Test-Daten generieren'}
                     </>
                   )}
                 </Button>
