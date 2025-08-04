@@ -120,9 +120,11 @@ export function InvoiceComponent({
                     <div className="flex items-center gap-4">
                       <div>
                         <div className="font-medium">
-                          {invoice.invoiceNumber ||
-                            invoice.sequentialNumber ||
-                            `R-${invoice.id.substring(0, 8)}`}
+                          {invoice.number ||
+                            invoice.invoiceNumber ||
+                            (invoice.sequentialNumber
+                              ? `R-2025-${invoice.sequentialNumber}`
+                              : `R-${invoice.id.substring(0, 8)}`)}
                         </div>
                         <div className="text-sm text-muted-foreground">{invoice.customerName}</div>
                       </div>
