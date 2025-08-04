@@ -39,6 +39,13 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
 
+  // Auto-expand Finance section when on finance pages
+  useEffect(() => {
+    if (pathname?.includes('/finance') && !expandedItems.includes('finance')) {
+      setExpandedItems(prev => [...prev, 'finance']);
+    }
+  }, [pathname, expandedItems]);
+
   // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
   const { isChecking, isAuthorized, userData, view, setView } = useCompanyDashboard();
 

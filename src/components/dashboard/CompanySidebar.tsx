@@ -373,9 +373,17 @@ export default function CompanySidebar({
                 {hasSubItems && isItemExpanded && (
                   <div className="ml-6 mt-1 space-y-1">
                     {item.subItems?.map(subItem => {
-                      const isSubActive = subItem.href
-                        ? pathname?.includes(`/${subItem.href}`)
-                        : false;
+                      const isSubActive = (() => {
+                        if (!subItem.href || !pathname) return false;
+
+                        // Spezielle Behandlung für Rechnungen - auch Rechnungsdetailseiten markieren
+                        if (subItem.href === 'finance/invoices') {
+                          return pathname.includes('/finance/invoices');
+                        }
+
+                        // Standard-Check für andere Sub-Items
+                        return pathname.includes(`/${subItem.href}`);
+                      })();
                       const hasNestedSubItems = subItem.subItems && subItem.subItems.length > 0;
                       const isSubExpanded = isExpanded(subItem.value);
 
