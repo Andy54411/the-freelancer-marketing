@@ -3,8 +3,8 @@ import { admin } from '@/firebase/server';
 import { FinapiUserCredentials } from '@/types/finapiTypes';
 
 const FINAPI_API_URL = 'https://sandbox.finapi.io';
-const FINAPI_CLIENT_ID = process.env.FINAPI_CLIENT_ID;
-const FINAPI_CLIENT_SECRET = process.env.FINAPI_CLIENT_SECRET;
+const FINAPI_CLIENT_ID = process.env.FINAPI_SANDBOX_CLIENT_ID;
+const FINAPI_CLIENT_SECRET = process.env.FINAPI_SANDBOX_CLIENT_SECRET;
 
 /**
  * Holt einen Client-Token von finAPI.
