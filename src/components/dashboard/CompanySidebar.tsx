@@ -291,8 +291,8 @@ export default function CompanySidebar({
             const isMainActive = (() => {
               // Spezifische Pfad-Matches für jeden Bereich
               if (item.value === 'finance') {
-                // Finance Dashboard ist nur aktiv auf der Hauptseite, NICHT auf Unterseiten
-                return pathname === `/dashboard/company/${uid}/finance`;
+                // Finance ist aktiv wenn IRGENDEINE Finance-Seite aktiv ist
+                return pathname?.includes('/finance');
               }
               if (item.value === 'orders') {
                 return pathname?.includes('/orders');

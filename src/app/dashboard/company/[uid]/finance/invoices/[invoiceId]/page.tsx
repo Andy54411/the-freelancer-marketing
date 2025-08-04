@@ -130,49 +130,195 @@ export default function InvoiceDetailPage() {
       // Dynamically import html2pdf to avoid SSR issues
       const html2pdf = (await import('html2pdf.js')).default;
 
-      // Create a hidden div to render the template
-      const printContainer = document.createElement('div');
-      printContainer.style.position = 'absolute';
-      printContainer.style.left = '-9999px';
-      printContainer.style.top = '-9999px';
-      printContainer.style.width = '210mm'; // A4 width
-      printContainer.style.minHeight = '297mm'; // A4 height
-      printContainer.style.backgroundColor = 'white';
-      printContainer.style.padding = '20mm';
-      printContainer.style.boxSizing = 'border-box';
-      document.body.appendChild(printContainer);
+      // Create styled HTML template directly (more reliable than React rendering)
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Rechnung ${invoice.invoiceNumber || invoice.number}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              background: white;
+              color: #333;
+              line-height: 1.6;
+            }
+            .header { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-bottom: 30px; 
+              border-bottom: 2px solid #14ad9f;
+              padding-bottom: 20px;
+            }
+            .company-info { 
+              flex: 1; 
+            }
+            .invoice-info { 
+              flex: 1; 
+              text-align: right; 
+            }
+            .invoice-title { 
+              font-size: 24px; 
+              font-weight: bold; 
+              color: #14ad9f; 
+              margin-bottom: 10px;
+            }
+            .customer-section { 
+              margin: 30px 0; 
+              background: #f8f9fa;
+              padding: 20px;
+              border-left: 4px solid #14ad9f;
+            }
+            .items-table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin: 30px 0; 
+            }
+            .items-table th, .items-table td { 
+              border: 1px solid #dee2e6; 
+              padding: 12px; 
+              text-align: left; 
+            }
+            .items-table th { 
+              background-color: #14ad9f; 
+              color: white; 
+              font-weight: bold;
+            }
+            .items-table .amount { 
+              text-align: right; 
+            }
+            .totals { 
+              margin-left: auto; 
+              width: 300px; 
+              margin-top: 20px;
+            }
+            .totals table { 
+              width: 100%; 
+              border-collapse: collapse; 
+            }
+            .totals td { 
+              padding: 8px; 
+              border-bottom: 1px solid #eee; 
+            }
+            .total-row { 
+              font-weight: bold; 
+              background-color: #f8f9fa; 
+              border-top: 2px solid #14ad9f !important;
+            }
+            .total-row td { 
+              color: #14ad9f; 
+              font-size: 18px;
+            }
+            .notes { 
+              margin-top: 30px; 
+              padding: 20px; 
+              background: #f8f9fa; 
+              border-radius: 5px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-info">
+              <h1 style="margin: 0; color: #14ad9f;">${invoice.companyName}</h1>
+              <div style="margin-top: 10px;">
+                ${invoice.companyAddress.replace(/\n/g, '<br>')}<br>
+                ${invoice.companyEmail}<br>
+                ${invoice.companyPhone}
+              </div>
+              ${invoice.companyVatId ? `<div style="margin-top: 10px;">USt-IdNr.: ${invoice.companyVatId}</div>` : ''}
+            </div>
+            <div class="invoice-info">
+              <div class="invoice-title">RECHNUNG</div>
+              <div style="font-size: 18px; font-weight: bold;">${invoice.invoiceNumber || invoice.number || 'R-' + invoice.id.substring(0, 8)}</div>
+              <div style="margin-top: 15px;">
+                <strong>Datum:</strong> ${new Date(invoice.date).toLocaleDateString('de-DE')}<br>
+                <strong>Fällig:</strong> ${new Date(invoice.dueDate).toLocaleDateString('de-DE')}
+              </div>
+            </div>
+          </div>
 
-      // Import React and ReactDOM dynamically
-      const React = (await import('react')).default;
-      const { createRoot } = await import('react-dom/client');
+          <div class="customer-section">
+            <strong>Rechnungsempfänger:</strong><br>
+            <div style="margin-top: 10px;">
+              <strong>${invoice.customerName}</strong><br>
+              ${invoice.customerEmail}<br>
+              ${invoice.customerAddress.replace(/\n/g, '<br>')}
+            </div>
+          </div>
 
-      // Create the template component
-      const root = createRoot(printContainer);
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Beschreibung</th>
+                <th style="width: 80px; text-align: center;">Menge</th>
+                <th style="width: 100px; text-align: right;">Einzelpreis</th>
+                <th style="width: 100px; text-align: right;">Gesamtpreis</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                invoice.items
+                  ?.map(
+                    item => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td style="text-align: center;">${item.quantity}</td>
+                  <td class="amount">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(item.unitPrice)}</td>
+                  <td class="amount">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(item.total)}</td>
+                </tr>
+              `
+                  )
+                  .join('') || ''
+              }
+            </tbody>
+          </table>
 
-      await new Promise<void>((resolve, reject) => {
-        try {
-          // Use the saved template or fall back to 'modern'
-          const templateToUse = invoice.template || 'modern';
-          console.log('Using template:', templateToUse);
+          <div class="totals">
+            <table>
+              <tr>
+                <td style="text-align: right;">Zwischensumme:</td>
+                <td style="text-align: right;">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.amount)}</td>
+              </tr>
+              <tr>
+                <td style="text-align: right;">MwSt. (${invoice.vatRate}%):</td>
+                <td style="text-align: right;">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.tax)}</td>
+              </tr>
+              <tr class="total-row">
+                <td style="text-align: right;">Gesamtbetrag:</td>
+                <td style="text-align: right;">${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.total)}</td>
+              </tr>
+            </table>
+          </div>
 
-          const TemplateComponent = React.createElement(InvoiceTemplateRenderer, {
-            template: templateToUse as any,
-            data: invoice,
-            preview: false,
-          });
+          ${
+            invoice.notes
+              ? `
+            <div class="notes">
+              <strong>Anmerkungen:</strong><br>
+              ${invoice.notes.replace(/\n/g, '<br>')}
+            </div>
+          `
+              : ''
+          }
 
-          root.render(TemplateComponent);
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
+            Vielen Dank für Ihr Vertrauen!
+          </div>
+        </body>
+        </html>
+      `;
 
-          // Wait a bit longer for rendering to complete
-          setTimeout(() => {
-            console.log('Template rendered, content length:', printContainer.innerHTML.length);
-            resolve();
-          }, 500);
-        } catch (error) {
-          console.error('Error rendering template:', error);
-          reject(error);
-        }
-      });
+      // Create temporary element
+      const element = document.createElement('div');
+      element.innerHTML = htmlContent;
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.style.top = '0';
+      document.body.appendChild(element);
 
       const options = {
         margin: 10,
@@ -193,15 +339,15 @@ export default function InvoiceDetailPage() {
 
       console.log('Starting PDF generation...');
       // @ts-ignore - html2pdf doesn't have TypeScript types
-      await html2pdf().set(options).from(printContainer).save();
+      await html2pdf().set(options).from(element).save();
 
       // Clean up
-      document.body.removeChild(printContainer);
+      document.body.removeChild(element);
 
       toast.success('PDF wurde erfolgreich heruntergeladen!');
     } catch (error) {
       console.error('Fehler beim PDF-Download:', error);
-      toast.error('Fehler beim Erstellen des PDFs');
+      toast.error('Fehler beim Erstellen des PDFs: ' + error.message);
     } finally {
       setDownloadingPdf(false);
     }
