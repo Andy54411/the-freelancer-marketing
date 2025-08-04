@@ -14,54 +14,75 @@ const DATEV_AUTH_BASE =
     ? 'https://login.datev.de'
     : 'https://sandbox-login.datev.de';
 
+export interface ServerDatevToken {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
+  expires_at: number;
+  scope: string;
+}
+
 /**
- * Server-only function to retrieve DATEV access token from cookies
+ * Server-only function to retrieve a valid DATEV token object from cookies.
  * This function can only be used in Server Components and API Routes
  */
-export async function getDatevTokenFromCookies(): Promise<string | null> {
+export async function getDatevTokenFromCookies(): Promise<ServerDatevToken | null> {
   const cookieStore = await cookies();
+  const tokenCookie = cookieStore.get('datev_session_token');
 
-  // Try sandbox token first, then production token
-  const sandboxToken = cookieStore.get('datev_sandbox_access_token');
-  const prodToken = cookieStore.get('datev_access_token');
+  if (!tokenCookie?.value) {
+    return null;
+  }
 
-  return sandboxToken?.value || prodToken?.value || null;
+  try {
+    const tokenData: ServerDatevToken = JSON.parse(tokenCookie.value);
+
+    // Check if token is expired (with 5-minute buffer)
+    if (Date.now() >= tokenData.expires_at - 300000) {
+      console.log('[datev-server-utils] Cookie token is expired.');
+      // Hier könnte man eine Token-Refresh-Logik einbauen, wenn ein Refresh-Token vorhanden ist.
+      return null;
+    }
+
+    return tokenData;
+  } catch (error) {
+    console.error('[datev-server-utils] Failed to parse token from cookie:', error);
+    return null;
+  }
 }
 
 /**
  * Server-only function to set DATEV tokens in cookies
  */
-export async function setDatevTokenCookies(
-  accessToken: string,
-  refreshToken?: string,
-  expiresIn: number = 3600
-): Promise<void> {
+export async function setDatevTokenCookies(tokenData: {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+}): Promise<void> {
   const cookieStore = await cookies();
   const isProduction = process.env.NODE_ENV === 'production';
-  const isSandbox = process.env.DATEV_SANDBOX_CLIENT_ID && process.env.DATEV_SANDBOX_CLIENT_SECRET;
 
-  const cookieName = isSandbox ? 'datev_sandbox_access_token' : 'datev_access_token';
-  const refreshCookieName = isSandbox ? 'datev_sandbox_refresh_token' : 'datev_refresh_token';
+  const cookieName = 'datev_session_token';
+  const expiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000;
 
-  // Set access token cookie
-  cookieStore.set(cookieName, accessToken, {
+  const cookieValue = JSON.stringify({
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+    token_type: tokenData.token_type,
+    expires_at: expiresAt,
+    scope: tokenData.scope,
+  });
+
+  // Set a single cookie with the full token object
+  cookieStore.set(cookieName, cookieValue, {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'lax',
-    maxAge: expiresIn,
+    maxAge: tokenData.expires_in || 3600,
     path: '/',
   });
-
-  // Set refresh token cookie if available
-  if (refreshToken) {
-    cookieStore.set(refreshCookieName, refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: 90 * 24 * 60 * 60, // 90 days
-      path: '/',
-    });
-  }
 }
 
 /**

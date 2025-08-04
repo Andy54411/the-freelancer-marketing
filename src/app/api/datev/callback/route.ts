@@ -261,11 +261,7 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     console.log('✅ [DATEV Callback] Token document created successfully');
 
     // 2. Store tokens in httpOnly cookies (for current session API calls)
-    await setDatevTokenCookies(
-      tokenData.access_token,
-      tokenData.refresh_token,
-      tokenData.expires_in || 3600
-    );
+    await setDatevTokenCookies(tokenData);
 
     console.log('✅ [DATEV Callback] Tokens stored in cookies');
 

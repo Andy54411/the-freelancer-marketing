@@ -4,13 +4,10 @@ import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import {
   InvoiceTemplateRenderer,
   type InvoiceTemplate,
-  DEFAULT_INVOICE_TEMPLATE,
 } from '@/components/finance/InvoiceTemplates';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
 
 interface PrintInvoicePageProps {
   params: Promise<{ invoiceId: string }>;
@@ -23,7 +20,6 @@ interface PrintInvoicePageProps {
  */
 export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [userTemplate, setUserTemplate] = useState<InvoiceTemplate | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,23 +32,6 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           return notFound();
         }
         setInvoiceData(data);
-
-        // Lade das bevorzugte Template des Users als Fallback
-        if (data.companyId && !data.template) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', data.companyId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
-              setUserTemplate(preferredTemplate || DEFAULT_INVOICE_TEMPLATE);
-            } else {
-              setUserTemplate(DEFAULT_INVOICE_TEMPLATE);
-            }
-          } catch (error) {
-            console.error('❌ Fehler beim Laden des User-Templates:', error);
-            setUserTemplate(DEFAULT_INVOICE_TEMPLATE);
-          }
-        }
       } catch (error) {
         console.error('❌ Fehler beim Laden der Rechnung für PDF-Druck:', error);
         notFound();
@@ -258,9 +237,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         {/* Minimales A4-optimiertes Layout */}
         <div className="print-invoice-wrapper">
           <InvoiceTemplateRenderer
-            template={
-              (invoiceData.template || userTemplate || DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate
-            }
+            template={invoiceData.template as InvoiceTemplate}
             data={invoiceData}
             preview={false}
           />
