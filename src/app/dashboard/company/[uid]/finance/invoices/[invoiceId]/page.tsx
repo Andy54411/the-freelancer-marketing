@@ -124,6 +124,7 @@ export default function InvoiceDetailPage() {
         number: invoiceNumber,
         ...(sequentialNumber && { sequentialNumber }),
         finalizedAt: new Date(),
+
         updatedAt: new Date(),
       });
 
@@ -134,6 +135,7 @@ export default function InvoiceDetailPage() {
               status: 'finalized',
               invoiceNumber,
               number: invoiceNumber,
+
               ...(sequentialNumber && { sequentialNumber }),
             }
           : null
