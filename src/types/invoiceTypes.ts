@@ -62,6 +62,7 @@ export interface InvoiceData {
 
   // Status und Metadaten
   status: 'draft' | 'finalized' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'storno';
+  template?: string; // Gespeichertes Template für PDF-Generation
   createdAt: Date;
   year: number;
   companyId: string;

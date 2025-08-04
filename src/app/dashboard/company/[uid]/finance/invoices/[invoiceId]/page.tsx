@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Download, Edit, Send, X, FileText } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
+import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
@@ -129,130 +130,78 @@ export default function InvoiceDetailPage() {
       // Dynamically import html2pdf to avoid SSR issues
       const html2pdf = (await import('html2pdf.js')).default;
 
-      // Create a temporary container with the invoice content
-      const element = document.createElement('div');
-      element.innerHTML = `
-        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px;">
-          <!-- Header -->
-          <div style="text-align: center; border-bottom: 2px solid #14ad9f; padding-bottom: 20px; margin-bottom: 30px;">
-            <h1 style="color: #14ad9f; margin: 0; font-size: 28px;">RECHNUNG</h1>
-            <p style="margin: 5px 0; font-size: 18px; font-weight: bold;">${invoice.invoiceNumber || invoice.number || 'R-' + invoice.id.substring(0, 8)}</p>
-          </div>
+      // Create a hidden div to render the template
+      const printContainer = document.createElement('div');
+      printContainer.style.position = 'absolute';
+      printContainer.style.left = '-9999px';
+      printContainer.style.top = '-9999px';
+      printContainer.style.width = '210mm'; // A4 width
+      printContainer.style.minHeight = '297mm'; // A4 height
+      printContainer.style.backgroundColor = 'white';
+      printContainer.style.padding = '20mm';
+      printContainer.style.boxSizing = 'border-box';
+      document.body.appendChild(printContainer);
 
-          <!-- Company and Customer Info -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
-            <div>
-              <h3 style="color: #14ad9f; margin-bottom: 10px;">Von:</h3>
-              <p style="margin: 0; line-height: 1.5;">
-                <strong>${invoice.companyName}</strong><br>
-                ${invoice.companyAddress}<br>
-                ${invoice.companyEmail}<br>
-                ${invoice.companyPhone}
-              </p>
-              ${invoice.companyVatId ? `<p style="margin-top: 10px;">USt-IdNr.: ${invoice.companyVatId}</p>` : ''}
-            </div>
-            <div>
-              <h3 style="color: #14ad9f; margin-bottom: 10px;">An:</h3>
-              <p style="margin: 0; line-height: 1.5;">
-                <strong>${invoice.customerName}</strong><br>
-                ${invoice.customerEmail}<br>
-                ${invoice.customerAddress.replace(/\n/g, '<br>')}
-              </p>
-            </div>
-          </div>
+      // Import React and ReactDOM dynamically
+      const React = (await import('react')).default;
+      const { createRoot } = await import('react-dom/client');
 
-          <!-- Invoice Details -->
-          <div style="margin-bottom: 30px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Rechnungsdatum:</strong></td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${new Date(invoice.date).toLocaleDateString('de-DE')}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Fälligkeitsdatum:</strong></td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${new Date(invoice.dueDate).toLocaleDateString('de-DE')}</td>
-              </tr>
-            </table>
-          </div>
+      // Create the template component
+      const root = createRoot(printContainer);
 
-          <!-- Invoice Items -->
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-            <thead>
-              <tr style="background-color: #f8f9fa;">
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Beschreibung</th>
-                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Menge</th>
-                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Einzelpreis</th>
-                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Gesamtpreis</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                invoice.items
-                  ?.map(
-                    item => `
-                <tr>
-                  <td style="padding: 12px; border: 1px solid #dee2e6;">${item.description}</td>
-                  <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">${item.quantity}</td>
-                  <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${formatCurrency(item.unitPrice)}</td>
-                  <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${formatCurrency(item.total)}</td>
-                </tr>
-              `
-                  )
-                  .join('') || ''
-              }
-            </tbody>
-          </table>
+      await new Promise<void>((resolve, reject) => {
+        try {
+          // Use the saved template or fall back to 'modern'
+          const templateToUse = invoice.template || 'modern';
+          console.log('Using template:', templateToUse);
 
-          <!-- Totals -->
-          <div style="margin-left: auto; width: 300px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">Zwischensumme:</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${formatCurrency(invoice.amount)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">MwSt.:</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${formatCurrency(invoice.tax)}</td>
-              </tr>
-              <tr style="font-weight: bold; background-color: #f8f9fa;">
-                <td style="padding: 12px; text-align: right; border-top: 2px solid #14ad9f;">Gesamtbetrag:</td>
-                <td style="padding: 12px; text-align: right; border-top: 2px solid #14ad9f; color: #14ad9f;">${formatCurrency(invoice.total)}</td>
-              </tr>
-            </table>
-          </div>
+          const TemplateComponent = React.createElement(InvoiceTemplateRenderer, {
+            template: templateToUse as any,
+            data: invoice,
+            preview: false,
+          });
 
-          ${
-            invoice.notes
-              ? `
-            <div style="margin-top: 30px;">
-              <h3 style="color: #14ad9f;">Anmerkungen:</h3>
-              <p style="line-height: 1.5;">${invoice.notes.replace(/\n/g, '<br>')}</p>
-            </div>
-          `
-              : ''
-          }
+          root.render(TemplateComponent);
 
-          <!-- Footer -->
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
-            <p>Vielen Dank für Ihr Vertrauen!</p>
-          </div>
-        </div>
-      `;
+          // Wait a bit longer for rendering to complete
+          setTimeout(() => {
+            console.log('Template rendered, content length:', printContainer.innerHTML.length);
+            resolve();
+          }, 500);
+        } catch (error) {
+          console.error('Error rendering template:', error);
+          reject(error);
+        }
+      });
 
       const options = {
-        margin: 1,
+        margin: 10,
         filename: `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: {
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: 'white',
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+        },
       };
 
+      console.log('Starting PDF generation...');
       // @ts-ignore - html2pdf doesn't have TypeScript types
-      await html2pdf().set(options).from(element).save();
+      await html2pdf().set(options).from(printContainer).save();
+
+      // Clean up
+      document.body.removeChild(printContainer);
+
       toast.success('PDF wurde erfolgreich heruntergeladen!');
     } catch (error) {
       console.error('Fehler beim PDF-Download:', error);
-      toast.error('Fehler beim Erstellen der PDF-Datei');
+      toast.error('Fehler beim Erstellen des PDFs');
     } finally {
       setDownloadingPdf(false);
     }
