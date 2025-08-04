@@ -1,60 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  PlusCircle,
-  CheckCircle,
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
-  User,
-  CreditCard,
-  Building2,
-  Mail,
-  Lock,
-  FileText,
-  Download,
-  Upload,
-} from 'lucide-react';
-
-interface Bank {
-  id: number;
-  name: string;
-  bic?: string;
-  blz?: string;
-  location?: string;
-  isTestBank?: boolean;
-}
+import { CheckCircle, AlertCircle, Loader2, Building2, ArrowRight } from 'lucide-react';
 
 export default function FinAPISetupPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = params.uid as string;
 
-  const [step, setStep] = useState<'connect-bank' | 'complete'>('connect-bank');
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<'initial' | 'loading' | 'success' | 'error'>('initial');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [finapiUserId, setFinapiUserId] = useState<string | null>(null);
 
-  // Bank Connection State
-  const [availableBanks, setAvailableBanks] = useState<Bank[]>([]);
-  const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
-  const [bankCredentials, setBankCredentials] = useState({
-    bankingUserId: '',
-    bankingPin: '',
-  });
-
-  // Check existing connections on component mount
+  // Check for existing connection on mount (optional, but good practice)
   useEffect(() => {
-    loadAvailableBanks();
-  }, []);
+    // You could add a check here to see if credentials already exist
+    // and automatically move to the success step if they do.
+  }, [uid]);
 
-  // Autorisierung prüfen
   if (!user || user.uid !== uid) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -66,206 +32,139 @@ export default function FinAPISetupPage() {
     );
   }
 
-  // Load Available Banks using Taskilo's finAPI Account
-  const loadAvailableBanks = async () => {
+  const setupFinapiIntegration = async () => {
+    setStatus('loading');
+    setError(null);
+
     try {
-      setLoading(true);
-      const response = await fetch('/api/finapi/banks?credentialType=sandbox');
-
-      if (!response.ok) {
-        throw new Error('Fehler beim Laden der Banken');
-      }
-
-      const data = await response.json();
-      setAvailableBanks(data.banks || []);
-    } catch (error) {
-      console.error('Fehler beim Laden der Banken:', error);
-      setError('Fehler beim Laden der verfügbaren Banken');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Connect Bank Account using finAPI Web Form 2.0
-  const connectBankAccount = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Generate Web Form for bank connection (no credentials needed upfront)
-      const response = await fetch('/api/finapi/import-bank', {
+      const response = await fetch('/api/finapi/setup-integration', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          bankId: selectedBank?.id, // Optional - user can choose in web form
-          userId: user.uid, // Use Firebase user ID to identify the user
-          credentialType: 'sandbox',
-        }),
+        body: JSON.stringify({ userId: uid }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.details || errorData.error || 'Web Form Erstellung fehlgeschlagen'
-        );
-      }
 
       const data = await response.json();
 
-      if (data.success && data.webForm?.url) {
-        setSuccess('Web Form erstellt! Sie werden zur sicheren Bank-Authentifizierung weitergeleitet...');
-        console.log('Web Form created:', data.webForm);
-
-        // Redirect to finAPI Web Form for secure bank authentication
-        setTimeout(() => {
-          window.location.href = data.webForm.url;
-        }, 2000);
-      } else {
-        throw new Error('Keine Web Form URL erhalten');
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Ein unbekannter Fehler ist aufgetreten.');
       }
 
-    } catch (error) {
-      console.error('Fehler beim Erstellen der Web Form:', error);
-      setError(error instanceof Error ? error.message : 'Unbekannter Fehler');
-    } finally {
-      setLoading(false);
+      setFinapiUserId(data.finapiUserId);
+      setStatus('success');
+    } catch (err) {
+      console.error('Fehler bei der finAPI-Integration:', err);
+      setError(err instanceof Error ? err.message : 'Ein unbekannter Fehler ist aufgetreten.');
+      setStatus('error');
     }
   };
 
-  // Complete setup and redirect to banking dashboard
-  const completeSetup = () => {
-    router.push(`/dashboard/company/${uid}/finance/banking/accounts`);
+  const proceedToBankConnection = () => {
+    // Redirect to the page where the user can actually connect their bank accounts
+    // This page would now use the stored credentials to get a user token
+    router.push(`/dashboard/company/${uid}/finance/banking/connect`);
   };
 
-  const renderConnectBankStep = () => (
-    <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-6">
-        <Building2 className="h-12 w-12 text-[#14ad9f] mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900">Bank verbinden</h2>
-        <p className="text-gray-600 mt-2">
-          Verbinden Sie Ihr Bankkonto sicher über unsere finAPI-Integration
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        {loading && !availableBanks.length ? (
-          <div className="text-center py-8">
-            <Loader2 className="h-8 w-8 text-[#14ad9f] animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Lade verfügbare Banken...</p>
-          </div>
-        ) : (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Verfügbare Demo-Banken
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {availableBanks.map(bank => (
-                <div
-                  key={bank.id}
-                  onClick={() => setSelectedBank(bank)}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedBank?.id === bank.id
-                      ? 'border-[#14ad9f] bg-blue-50'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <h3 className="font-medium text-gray-900">{bank.name}</h3>
-                  {bank.location && <p className="text-sm text-gray-500">{bank.location}</p>}
-                  {bank.isTestBank && (
-                    <span className="inline-block mt-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                      Test-Bank
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {selectedBank && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              Bank-Verbindung für {selectedBank.name}
-            </h3>
-
-            <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <h4 className="font-medium text-green-900 mb-2">🔒 Sichere finAPI Web Form</h4>
-              <p className="text-green-700 text-sm">
-                Ihre Bankdaten werden sicher über finAPI&apos;s verschlüsselte Web Form verarbeitet.
-                <br />• <strong>Keine Dateneingabe hier:</strong> Alles erfolgt sicher bei finAPI
-                <br />• <strong>Bank-Authentifizierung:</strong> Direkt bei Ihrer Bank
-                <br />• <strong>Höchste Sicherheit:</strong> PCI-DSS & DSGVO konform
-              </p>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-md">
-            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-            <span className="text-red-700">{error}</span>
-          </div>
-        )}
-
-        {success && (
-          <div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-md">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-            <span className="text-green-700">{success}</span>
-          </div>
-        )}
-
-        <button
-          onClick={connectBankAccount}
-          disabled={loading || !selectedBank}
-          className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Erstelle sichere Web Form...' : 'Sichere Bank-Verbindung starten'}
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderCompleteStep = () => (
-    <div className="max-w-md mx-auto text-center">
-      <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Setup abgeschlossen!</h2>
-      <p className="text-gray-600 mb-6">
-        Ihre Bank wurde erfolgreich verbunden. Sie können jetzt echte Banking-Daten in der
-        Konten-Übersicht abrufen.
+  const renderInitialStep = () => (
+    <div className="text-center">
+      <Building2 className="h-12 w-12 text-[#14ad9f] mx-auto mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900">finAPI Banking-Integration</h2>
+      <p className="text-gray-600 mt-2 mb-6">
+        Richten Sie Ihr Taskilo-Konto für die sichere Anbindung an Ihr Online-Banking über finAPI
+        ein.
+        <br />
+        Dieser einmalige Schritt erstellt einen dedizierten, sicheren Benutzer für Sie bei finAPI.
       </p>
-
-      <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
-        <h3 className="font-medium text-gray-900 mb-2">Banking-Integration:</h3>
-        <p className="text-sm text-gray-600">
-          <strong>Status:</strong> Aktiv
-          <br />
-          <strong>Bank:</strong> {selectedBank?.name || 'Unbekannt'}
-          <br />
-          <strong>Integration:</strong> finAPI Sandbox
-        </p>
-      </div>
-
       <button
-        onClick={completeSetup}
-        className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+        onClick={setupFinapiIntegration}
+        disabled={status === 'loading'}
+        className="w-full max-w-xs mx-auto bg-[#14ad9f] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
       >
-        Zu den Bankkonten
+        {status === 'loading' ? (
+          <>
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            <span>Integration wird eingerichtet...</span>
+          </>
+        ) : (
+          'Sichere Integration jetzt starten'
+        )}
       </button>
     </div>
   );
+
+  const renderSuccessStep = () => (
+    <div className="text-center">
+      <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">Einrichtung erfolgreich!</h2>
+      <p className="text-gray-600 mb-6">
+        Ihr Konto ist nun bereit für die Bank-Anbindung. Im nächsten Schritt können Sie Ihre erste
+        Bankverbindung herstellen.
+      </p>
+      <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6 max-w-md mx-auto">
+        <h3 className="font-medium text-gray-900 mb-2">Integrationsdetails:</h3>
+        <p className="text-sm text-gray-600 break-all">
+          <strong>Status:</strong> Aktiv
+          <br />
+          <strong>Ihre finAPI Benutzer-ID:</strong> {finapiUserId}
+        </p>
+      </div>
+      <button
+        onClick={proceedToBankConnection}
+        className="w-full max-w-xs mx-auto bg-[#14ad9f] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] flex items-center justify-center"
+      >
+        <span>Weiter zur Bank-Anbindung</span>
+        <ArrowRight className="h-5 w-5 ml-2" />
+      </button>
+    </div>
+  );
+
+  const renderErrorStep = () => (
+    <div className="text-center">
+      <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">Fehler bei der Einrichtung</h2>
+      <p className="text-gray-600 mb-6">
+        Leider ist bei der Einrichtung der finAPI-Integration ein Fehler aufgetreten.
+      </p>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 text-red-800 text-left max-w-md mx-auto">
+          <p>
+            <strong>Fehlermeldung:</strong> {error}
+          </p>
+        </div>
+      )}
+      <button
+        onClick={setupFinapiIntegration}
+        className="w-full max-w-xs mx-auto bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Erneut versuchen
+      </button>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (status) {
+      case 'loading':
+      case 'initial':
+        return renderInitialStep();
+      case 'success':
+        return renderSuccessStep();
+      case 'error':
+        return renderErrorStep();
+      default:
+        return renderInitialStep();
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-2xl font-bold text-gray-900">Banking Setup</h1>
-        <p className="text-gray-600 mt-1">Verbinden Sie Ihr Bankkonto mit Taskilo</p>
+        <p className="text-gray-600 mt-1">Sichere Verbindung zu finAPI herstellen</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        {step === 'connect-bank' && renderConnectBankStep()}
-        {step === 'complete' && renderCompleteStep()}
+      <div className="bg-white rounded-lg shadow p-8 min-h-[300px] flex items-center justify-center">
+        {renderContent()}
       </div>
     </div>
   );
