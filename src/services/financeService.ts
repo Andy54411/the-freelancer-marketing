@@ -41,17 +41,25 @@ export interface ExpenseRecord {
 }
 
 export class FinanceService {
-  
   /**
    * Lädt alle Finanzstatistiken für ein Unternehmen
    */
   static async getFinanceStats(companyId: string): Promise<FinanceStats> {
     try {
+      console.log('🔄 FinanceService: Lade Finanzstatistiken für Company:', companyId);
+
       const [invoices, payments, expenses] = await Promise.all([
         this.getInvoices(companyId),
         this.getPayments(companyId),
-        this.getExpenses(companyId)
+        this.getExpenses(companyId),
       ]);
+
+      console.log('📊 FinanceService: Geladene Daten:', {
+        invoicesCount: invoices.length,
+        paymentsCount: payments.length,
+        expensesCount: expenses.length,
+        invoices: invoices.map(inv => ({ id: inv.id, status: inv.status, total: inv.total })),
+      });
 
       // Berechne Umsatz aus bezahlten Rechnungen
       const totalRevenue = invoices
@@ -59,29 +67,24 @@ export class FinanceService {
         .reduce((sum, inv) => sum + inv.total, 0);
 
       // Berechne Ausgaben
-      const totalExpenses = expenses
-        .reduce((sum, exp) => sum + exp.amount, 0);
+      const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
       // Berechne ausstehende Rechnungen
-      const outstandingInvoices = invoices.filter(inv => 
-        inv.status === 'sent' || inv.status === 'overdue'
+      const outstandingInvoices = invoices.filter(
+        inv => inv.status === 'sent' || inv.status === 'overdue'
       );
-      
-      const outstandingAmount = outstandingInvoices
-        .reduce((sum, inv) => sum + inv.total, 0);
+
+      const outstandingAmount = outstandingInvoices.reduce((sum, inv) => sum + inv.total, 0);
 
       // Berechne Umsatz diesen Monat
       const currentMonth = new Date();
       currentMonth.setDate(1);
-      
+
       const thisMonthRevenue = invoices
-        .filter(inv => 
-          inv.status === 'paid' && 
-          new Date(inv.issueDate) >= currentMonth
-        )
+        .filter(inv => inv.status === 'paid' && new Date(inv.issueDate) >= currentMonth)
         .reduce((sum, inv) => sum + inv.total, 0);
 
-      return {
+      const stats = {
         totalRevenue,
         totalExpenses,
         netProfit: totalRevenue - totalExpenses,
@@ -91,6 +94,8 @@ export class FinanceService {
         lastUpdate: new Date(),
       };
 
+      console.log('💰 FinanceService: Berechnete Statistiken:', stats);
+      return stats;
     } catch (error) {
       console.error('Fehler beim Laden der Finanzstatistiken:', error);
       throw error;
@@ -101,6 +106,8 @@ export class FinanceService {
    * Lädt alle Rechnungen für ein Unternehmen
    */
   private static async getInvoices(companyId: string): Promise<InvoiceData[]> {
+    console.log('📄 FinanceService: Lade Rechnungen für Company:', companyId);
+
     const invoicesQuery = query(
       collection(db, 'invoices'),
       where('companyId', '==', companyId),
@@ -117,6 +124,16 @@ export class FinanceService {
         id: doc.id,
         createdAt: data.createdAt?.toDate?.() || new Date(),
       } as InvoiceData);
+    });
+
+    console.log('✅ FinanceService: Rechnungen geladen:', {
+      count: invoices.length,
+      invoices: invoices.map(inv => ({
+        id: inv.id,
+        status: inv.status,
+        total: inv.total,
+        invoiceNumber: inv.invoiceNumber,
+      })),
     });
 
     return invoices;
@@ -200,7 +217,7 @@ export class FinanceService {
   static async createPayment(payment: Omit<PaymentRecord, 'id' | 'createdAt'>): Promise<void> {
     try {
       const { addDoc, Timestamp } = await import('firebase/firestore');
-      
+
       await addDoc(collection(db, 'payments'), {
         ...payment,
         createdAt: Timestamp.now(),
@@ -217,7 +234,7 @@ export class FinanceService {
   static async createExpense(expense: Omit<ExpenseRecord, 'id' | 'createdAt'>): Promise<void> {
     try {
       const { addDoc, Timestamp } = await import('firebase/firestore');
-      
+
       await addDoc(collection(db, 'expenses'), {
         ...expense,
         createdAt: Timestamp.now(),
@@ -234,7 +251,7 @@ export class FinanceService {
   static async updatePayment(id: string, updates: Partial<PaymentRecord>): Promise<void> {
     try {
       const { doc, updateDoc } = await import('firebase/firestore');
-      
+
       await updateDoc(doc(db, 'payments', id), updates);
     } catch (error) {
       console.error('Fehler beim Aktualisieren der Zahlung:', error);
@@ -248,7 +265,7 @@ export class FinanceService {
   static async updateExpense(id: string, updates: Partial<ExpenseRecord>): Promise<void> {
     try {
       const { doc, updateDoc } = await import('firebase/firestore');
-      
+
       await updateDoc(doc(db, 'expenses', id), updates);
     } catch (error) {
       console.error('Fehler beim Aktualisieren der Ausgabe:', error);
@@ -262,7 +279,7 @@ export class FinanceService {
   static async deletePayment(id: string): Promise<void> {
     try {
       const { doc, deleteDoc } = await import('firebase/firestore');
-      
+
       await deleteDoc(doc(db, 'payments', id));
     } catch (error) {
       console.error('Fehler beim Löschen der Zahlung:', error);
@@ -276,7 +293,7 @@ export class FinanceService {
   static async deleteExpense(id: string): Promise<void> {
     try {
       const { doc, deleteDoc } = await import('firebase/firestore');
-      
+
       await deleteDoc(doc(db, 'expenses', id));
     } catch (error) {
       console.error('Fehler beim Löschen der Ausgabe:', error);
