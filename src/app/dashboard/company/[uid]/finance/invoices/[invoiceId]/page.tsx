@@ -23,6 +23,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -118,6 +119,143 @@ export default function InvoiceDetailPage() {
 
   const handleEditInvoice = () => {
     router.push(`/dashboard/company/${uid}/finance/invoices/edit/${invoiceId}`);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+
+    setDownloadingPdf(true);
+    try {
+      // Dynamically import html2pdf to avoid SSR issues
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      // Create a temporary container with the invoice content
+      const element = document.createElement('div');
+      element.innerHTML = `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px;">
+          <!-- Header -->
+          <div style="text-align: center; border-bottom: 2px solid #14ad9f; padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 style="color: #14ad9f; margin: 0; font-size: 28px;">RECHNUNG</h1>
+            <p style="margin: 5px 0; font-size: 18px; font-weight: bold;">${invoice.invoiceNumber || invoice.number || 'R-' + invoice.id.substring(0, 8)}</p>
+          </div>
+
+          <!-- Company and Customer Info -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
+            <div>
+              <h3 style="color: #14ad9f; margin-bottom: 10px;">Von:</h3>
+              <p style="margin: 0; line-height: 1.5;">
+                <strong>${invoice.companyName}</strong><br>
+                ${invoice.companyAddress}<br>
+                ${invoice.companyEmail}<br>
+                ${invoice.companyPhone}
+              </p>
+              ${invoice.companyVatId ? `<p style="margin-top: 10px;">USt-IdNr.: ${invoice.companyVatId}</p>` : ''}
+            </div>
+            <div>
+              <h3 style="color: #14ad9f; margin-bottom: 10px;">An:</h3>
+              <p style="margin: 0; line-height: 1.5;">
+                <strong>${invoice.customerName}</strong><br>
+                ${invoice.customerEmail}<br>
+                ${invoice.customerAddress.replace(/\n/g, '<br>')}
+              </p>
+            </div>
+          </div>
+
+          <!-- Invoice Details -->
+          <div style="margin-bottom: 30px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Rechnungsdatum:</strong></td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${new Date(invoice.date).toLocaleDateString('de-DE')}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Fälligkeitsdatum:</strong></td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${new Date(invoice.dueDate).toLocaleDateString('de-DE')}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Invoice Items -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+              <tr style="background-color: #f8f9fa;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Beschreibung</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Menge</th>
+                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Einzelpreis</th>
+                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Gesamtpreis</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                invoice.items
+                  ?.map(
+                    item => `
+                <tr>
+                  <td style="padding: 12px; border: 1px solid #dee2e6;">${item.description}</td>
+                  <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">${item.quantity}</td>
+                  <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${formatCurrency(item.unitPrice)}</td>
+                  <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${formatCurrency(item.total)}</td>
+                </tr>
+              `
+                  )
+                  .join('') || ''
+              }
+            </tbody>
+          </table>
+
+          <!-- Totals -->
+          <div style="margin-left: auto; width: 300px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">Zwischensumme:</td>
+                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${formatCurrency(invoice.amount)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">MwSt.:</td>
+                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${formatCurrency(invoice.tax)}</td>
+              </tr>
+              <tr style="font-weight: bold; background-color: #f8f9fa;">
+                <td style="padding: 12px; text-align: right; border-top: 2px solid #14ad9f;">Gesamtbetrag:</td>
+                <td style="padding: 12px; text-align: right; border-top: 2px solid #14ad9f; color: #14ad9f;">${formatCurrency(invoice.total)}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${
+            invoice.notes
+              ? `
+            <div style="margin-top: 30px;">
+              <h3 style="color: #14ad9f;">Anmerkungen:</h3>
+              <p style="line-height: 1.5;">${invoice.notes.replace(/\n/g, '<br>')}</p>
+            </div>
+          `
+              : ''
+          }
+
+          <!-- Footer -->
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
+            <p>Vielen Dank für Ihr Vertrauen!</p>
+          </div>
+        </div>
+      `;
+
+      const options = {
+        margin: 1,
+        filename: `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+      };
+
+      // @ts-ignore - html2pdf doesn't have TypeScript types
+      await html2pdf().set(options).from(element).save();
+      toast.success('PDF wurde erfolgreich heruntergeladen!');
+    } catch (error) {
+      console.error('Fehler beim PDF-Download:', error);
+      toast.error('Fehler beim Erstellen der PDF-Datei');
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   // Autorisierung prüfen
@@ -226,9 +364,14 @@ export default function InvoiceDetailPage() {
               </Button>
             )}
 
-            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+            <Button
+              variant="outline"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
               <Download className="h-4 w-4 mr-2" />
-              PDF
+              {downloadingPdf ? 'Erstelle PDF...' : 'PDF'}
             </Button>
           </div>
         </div>
