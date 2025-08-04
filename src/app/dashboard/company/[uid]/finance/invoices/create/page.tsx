@@ -315,6 +315,24 @@ export default function CreateInvoicePage() {
     }).format(amount);
   };
 
+  // Funktion zum Prüfen ob eine Rechnungsnummer bereits existiert
+  const checkInvoiceNumberExists = async (invoiceNumber: string): Promise<boolean> => {
+    try {
+      console.log('🕵️ Prüfe ob Rechnungsnummer bereits existiert:', invoiceNumber);
+      const allInvoices = await FirestoreInvoiceService.getInvoicesByCompany(uid);
+      const exists = allInvoices.some(
+        invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber
+      );
+      console.log(
+        `${exists ? '❌' : '✅'} Rechnungsnummer ${invoiceNumber} ${exists ? 'existiert bereits' : 'ist verfügbar'}`
+      );
+      return exists;
+    } catch (error) {
+      console.error('❌ Fehler beim Prüfen der Rechnungsnummer:', error);
+      return false;
+    }
+  };
+
   // Funktion zum Generieren der nächsten Rechnungsnummer - nutzt den korrekten Service
   const generateNextInvoiceNumber = async () => {
     try {
@@ -362,14 +380,28 @@ export default function CreateInvoicePage() {
         return;
       }
 
-      // Für finalisierte Rechnungen auch Rechnungsnummer validieren
-      if (action === 'finalize' && !formData.invoiceNumber) {
-        console.error(
-          '❌ Validierung fehlgeschlagen: Rechnungsnummer fehlt für finalisierte Rechnung'
-        );
-        toast.error('Rechnungsnummer ist für finalisierte Rechnungen erforderlich');
-        setIsSubmitting(false);
-        return;
+      // Rechnungsnummer-Logik für finalisierte Rechnungen
+      if (action === 'finalize') {
+        // Prüfe ob bereits eine Rechnungsnummer vorhanden ist (bei Draft-Bearbeitung)
+        if (!formData.invoiceNumber) {
+          console.log('🔢 Keine Rechnungsnummer vorhanden - generiere neue für Finalisierung...');
+          // Generiere neue Rechnungsnummer nur wenn keine vorhanden ist
+        } else {
+          console.log('✅ Rechnungsnummer bereits vorhanden:', formData.invoiceNumber);
+          // Prüfe ob die vorhandene Rechnungsnummer eindeutig ist
+          const numberExists = await checkInvoiceNumberExists(formData.invoiceNumber);
+          if (numberExists) {
+            console.error(
+              '❌ Validierung fehlgeschlagen: Rechnungsnummer bereits vergeben:',
+              formData.invoiceNumber
+            );
+            toast.error(
+              `Rechnungsnummer ${formData.invoiceNumber} ist bereits vergeben. Bitte verwenden Sie eine andere Nummer.`
+            );
+            setIsSubmitting(false);
+            return;
+          }
+        }
       }
 
       const hasValidItems = items.some(
@@ -387,13 +419,13 @@ export default function CreateInvoicePage() {
       const { subtotal, tax, total } = calculateTotals();
       console.log('💰 Berechnungen:', { subtotal, tax, total });
 
-      // Bei Finalisierung automatisch Rechnungsnummer generieren
-      let finalInvoiceNumber = '';
+      // Bei Finalisierung Rechnungsnummer verwalten
+      let finalInvoiceNumber = formData.invoiceNumber || '';
       let sequentialNumber: number | undefined;
 
-      // Nur für finale Rechnungen eine echte Rechnungsnummer generieren
-      if (action === 'finalize') {
-        console.log('🔢 Generiere finale Rechnungsnummer...');
+      // Nur für finale Rechnungen eine echte Rechnungsnummer generieren (wenn nicht bereits vorhanden)
+      if (action === 'finalize' && !finalInvoiceNumber) {
+        console.log('🔢 Generiere neue finale Rechnungsnummer...');
         const result = await generateNextInvoiceNumber();
         finalInvoiceNumber = result.number;
         sequentialNumber = result.sequentialNumber;
@@ -403,6 +435,8 @@ export default function CreateInvoicePage() {
           'Sequential:',
           sequentialNumber
         );
+      } else if (action === 'finalize' && finalInvoiceNumber) {
+        console.log('✅ Verwende vorhandene Rechnungsnummer:', finalInvoiceNumber);
       } else {
         // Für Entwürfe keine Rechnungsnummer setzen
         console.log('📝 Entwurf wird ohne finale Rechnungsnummer gespeichert');
