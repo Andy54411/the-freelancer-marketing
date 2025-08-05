@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertTriangle, User, Key } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/firebase/clients';
 
 interface TestResult {
   success: boolean;
@@ -21,10 +23,22 @@ interface TestResults {
   [key: string]: any;
 }
 
+interface UserAuthResult {
+  success: boolean;
+  user?: any;
+  status?: any;
+  accessToken?: string;
+  tokenLength?: number;
+  error?: string;
+}
+
 export default function FinApiDebugComponent() {
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userAuthResult, setUserAuthResult] = useState<UserAuthResult | null>(null);
+  const [userAuthLoading, setUserAuthLoading] = useState(false);
+  const { user } = useAuth();
 
   const runFinApiTest = async (testType: string = 'all') => {
     setIsLoading(true);
@@ -45,6 +59,49 @@ export default function FinApiDebugComponent() {
       setError(err.message || 'Network error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const runUserAuthTest = async (action: string) => {
+    if (!user) {
+      setError('Benutzer muss eingeloggt sein für User Auth Tests');
+      return;
+    }
+
+    setUserAuthLoading(true);
+    setError(null);
+
+    try {
+      // Get Firebase ID token
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error('Firebase User nicht verfügbar');
+      }
+
+      const idToken = await firebaseUser.getIdToken();
+
+      const response = await fetch('/api/finapi/user-auth', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          email: user.email,
+        }),
+      });
+
+      const data = await response.json();
+      setUserAuthResult(data);
+
+      if (!data.success) {
+        setError(data.error || 'User Auth Test failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'User Auth Network error');
+    } finally {
+      setUserAuthLoading(false);
     }
   };
 
@@ -99,6 +156,54 @@ export default function FinApiDebugComponent() {
               Config Test
             </Button>
           </div>
+
+          {/* User Authentication Tests */}
+          {user && (
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                User Authentication Tests
+              </h4>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  onClick={() => runUserAuthTest('create-user')}
+                  disabled={userAuthLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  size="sm"
+                >
+                  {userAuthLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  User erstellen
+                </Button>
+                <Button
+                  onClick={() => runUserAuthTest('get-status')}
+                  disabled={userAuthLoading}
+                  variant="outline"
+                  size="sm"
+                >
+                  Status prüfen
+                </Button>
+                <Button
+                  onClick={() => runUserAuthTest('get-token')}
+                  disabled={userAuthLoading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Key className="h-4 w-4 mr-1" />
+                  Token holen
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!user && (
+            <div className="border-t pt-4">
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 text-sm">
+                  <strong>User Authentication Tests:</strong> Benutzer muss eingeloggt sein.
+                </p>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -225,6 +330,128 @@ export default function FinApiDebugComponent() {
               )}
             </div>
           )}
+
+          {/* User Auth Results */}
+          {userAuthResult && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium mb-2">User Authentication Test Ergebnis</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>Success:</strong> {userAuthResult.success ? 'Ja' : 'Nein'}
+                  </div>
+                  <div>
+                    <strong>Timestamp:</strong> {new Date().toISOString()}
+                  </div>
+                </div>
+              </div>
+
+              {userAuthResult.user && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-4 w-4 text-blue-500" />
+                      finAPI User Created
+                      <Badge variant="default" className="bg-blue-500">
+                        SUCCESS
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <strong>User ID:</strong> {userAuthResult.user.id}
+                      </div>
+                      <div>
+                        <strong>Email:</strong> {userAuthResult.user.email}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {userAuthResult.user.status}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {userAuthResult.status && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      User Status
+                      <Badge variant="default" className="bg-green-500">
+                        OK
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <strong>finAPI User ID:</strong> {userAuthResult.status.finapiUserId}
+                      </div>
+                      <div>
+                        <strong>Has Token:</strong> {userAuthResult.status.hasToken ? 'Ja' : 'Nein'}
+                      </div>
+                      <div>
+                        <strong>Token Expired:</strong>{' '}
+                        {userAuthResult.status.tokenExpired ? 'Ja' : 'Nein'}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {userAuthResult.status.status}
+                      </div>
+                      <div>
+                        <strong>Created:</strong>{' '}
+                        {new Date(userAuthResult.status.createdAt).toLocaleString()}
+                      </div>
+                      <div>
+                        <strong>Updated:</strong>{' '}
+                        {new Date(userAuthResult.status.updatedAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {userAuthResult.accessToken && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Key className="h-4 w-4 text-blue-500" />
+                      Access Token
+                      <Badge variant="default" className="bg-blue-500">
+                        ACTIVE
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <strong>Token:</strong> {userAuthResult.accessToken}
+                      </div>
+                      <div>
+                        <strong>Length:</strong> {userAuthResult.tokenLength} characters
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {userAuthResult.error && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-red-500" />
+                      Error
+                      <Badge variant="destructive">FAILED</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-red-600">{userAuthResult.error}</div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -247,9 +474,9 @@ export default function FinApiDebugComponent() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <CheckCircle className="h-4 w-4 text-green-500" />
               <span>
-                <strong>User Authentication:</strong> Noch nicht implementiert
+                <strong>User Authentication System:</strong> Implementiert und testbar
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -263,10 +490,11 @@ export default function FinApiDebugComponent() {
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 className="font-medium text-blue-800 mb-2">Nächste Schritte:</h4>
             <ol className="text-blue-700 text-sm space-y-1">
-              <li>1. User Authentication System implementieren</li>
-              <li>2. finAPI User Creation über getOrCreateUser() aktivieren</li>
-              <li>3. User Token Management hinzufügen</li>
-              <li>4. WebForm 2.0 Integration für Bank-Verbindungen</li>
+              <li>1. ✅ User Authentication System implementiert</li>
+              <li>2. ✅ finAPI User Creation über getOrCreateUser() verfügbar</li>
+              <li>3. ✅ User Token Management hinzugefügt</li>
+              <li>4. 🚧 WebForm 2.0 Integration für Bank-Verbindungen aktivieren</li>
+              <li>5. 🚧 Banking UI mit User Authentication verbinden</li>
             </ol>
           </div>
         </CardContent>
