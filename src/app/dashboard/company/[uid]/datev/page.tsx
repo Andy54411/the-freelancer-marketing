@@ -61,26 +61,24 @@ export default function DatevMainPage() {
         },
       });
 
-      if (!response.ok) {
-        console.warn('DATEV API not available or not configured:', response.status);
-        setConnections([]);
-        return;
-      }
-
       const data = await response.json();
 
-      if (data.success && data.organizations) {
+      if (response.ok && data.success && data.organizations) {
         const datevConnections: DatevConnection[] = data.organizations.map((org: any) => ({
           id: org.id,
           organizationName: org.name,
           status: org.status === 'active' ? 'connected' : 'error',
           accountCount: org.accountCount || 0,
-          lastSync: new Date().toISOString(), // Real sync time würde aus org.lastSync kommen
+          lastSync: org.lastSync || new Date().toISOString(),
         }));
 
         setConnections(datevConnections);
+      } else if (response.status === 401 && data.authRequired) {
+        // DATEV Authentication required - this is expected for fresh installations
+        console.log('DATEV authentication required - user needs to complete OAuth2 flow');
+        setConnections([]);
       } else {
-        console.log('No DATEV organizations found');
+        console.warn('DATEV API error:', response.status, data.error || 'Unknown error');
         setConnections([]);
       }
     } catch (error) {

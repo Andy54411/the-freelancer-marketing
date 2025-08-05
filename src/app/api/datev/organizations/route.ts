@@ -98,13 +98,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. Final check - no auth available
+    // 3. Check if we have valid authentication - if not, return auth required error
     if (!accessToken) {
-      console.log('[DATEV Organizations] No valid token available - authentication required');
+      console.warn('[DATEV Organizations] No valid DATEV authentication token found');
+
       return NextResponse.json(
         {
+          success: false,
           error: 'DATEV authentication required - please re-authenticate',
-          requiresAuth: true,
+          authRequired: true,
+          details: 'No valid DATEV access token available. Please complete DATEV OAuth2 flow.',
+          redirectUrl: '/api/datev/oauth-start',
+          environment: process.env.NODE_ENV,
         },
         { status: 401 }
       );
