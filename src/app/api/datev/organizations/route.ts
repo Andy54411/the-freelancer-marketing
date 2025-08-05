@@ -1,37 +1,76 @@
 /**
  * DATEV Organizations API Route
- * This API route acts as a secure proxy for the DATEV Organizations API.
- * It handles authentication by first checking for a valid session cookie,
- * then falling back to Firestore for persistent tokens.
+ * Enhanced with new DATEV Authentication Middleware
+ * Handles authentication using the same pattern as finAPI
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, DATEV_ENDPOINTS } from '@/lib/datev-config';
 import { getDatevTokenFromCookies, ServerDatevToken } from '@/lib/datev-server-utils';
 import { db } from '@/firebase/server';
+import { getDatevUserToken, validateDatevUserExists } from '@/services/datev-user-auth-service';
+import { getAuth } from 'firebase-admin/auth';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('[DATEV Organizations] Processing request...');
 
-    // Extract company ID from URL or headers
+    // Get Firebase user from Authorization header
+    let firebaseUserId: string | null = null;
+    const authHeader = request.headers.get('Authorization');
+
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const decodedToken = await getAuth().verifyIdToken(token);
+        firebaseUserId = decodedToken.uid;
+        console.log('[DATEV Organizations] Firebase user authenticated:', firebaseUserId);
+      } catch (authError) {
+        console.error('[DATEV Organizations] Firebase auth failed:', authError);
+      }
+    }
+
+    // Fallback: Extract company ID from URL or headers
     const companyId =
       new URL(request.url).searchParams.get('companyId') || request.headers.get('x-company-id');
 
     let accessToken: string | null = null;
 
-    // 1. Try to get a valid token from the secure cookie first.
-    const cookieToken: ServerDatevToken | null = await getDatevTokenFromCookies();
-    if (cookieToken?.access_token) {
-      accessToken = cookieToken.access_token;
-      console.log('[DATEV Organizations] Using valid token from cookie.');
+    // 1. Try new DATEV auth middleware if Firebase user is available
+    if (firebaseUserId) {
+      console.log('[DATEV Organizations] Using new DATEV auth middleware');
+
+      // Validate DATEV user exists
+      const userValidation = await validateDatevUserExists(firebaseUserId);
+
+      if (userValidation.exists && userValidation.isActive) {
+        // Get DATEV token from Firestore via new service
+        const tokenResult = await getDatevUserToken(firebaseUserId);
+
+        if (tokenResult.success && tokenResult.token) {
+          accessToken = tokenResult.token.accessToken;
+          console.log('[DATEV Organizations] Using token from new auth service');
+        } else {
+          console.log('[DATEV Organizations] New auth service token failed:', tokenResult.error);
+        }
+      } else {
+        console.log("[DATEV Organizations] DATEV user not active or doesn't exist");
+      }
     }
 
-    // 2. If no valid cookie token, fall back to Firestore (e.g., for server-to-server calls or first load)
+    // 2. Fallback: Try to get a valid token from the secure cookie
+    if (!accessToken) {
+      const cookieToken: ServerDatevToken | null = await getDatevTokenFromCookies();
+      if (cookieToken?.access_token) {
+        accessToken = cookieToken.access_token;
+        console.log('[DATEV Organizations] Using valid token from cookie (fallback)');
+      }
+    }
+
+    // 3. Fallback: Check Firestore for company-based tokens (legacy)
     if (!accessToken && companyId) {
       console.log(
-        // eslint-disable-line
-        '[DATEV Organizations] No valid cookie token. Checking Firestore for company:',
+        '[DATEV Organizations] No auth token found. Checking legacy Firestore for company:',
         companyId
       );
       try {

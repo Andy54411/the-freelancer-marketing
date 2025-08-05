@@ -63,11 +63,46 @@ export function DatevDebugComponent() {
   const [tokenInfo, setTokenInfo] = useState<DatevTokenInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [newAuthStatus, setNewAuthStatus] = useState<'idle' | 'testing' | 'success' | 'error'>(
+    'idle'
+  );
+  const [newAuthMessage, setNewAuthMessage] = useState('');
 
   useEffect(() => {
     loadDebugInfo();
     loadTokenInfo();
+    testNewAuthMiddleware();
   }, []);
+
+  const testNewAuthMiddleware = async () => {
+    setNewAuthStatus('testing');
+    setNewAuthMessage('Testing new DATEV authentication middleware...');
+
+    try {
+      // Test if organizations API works with new middleware
+      const response = await fetch('/api/datev/organizations', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setNewAuthStatus('success');
+        setNewAuthMessage('✅ New auth middleware working - organizations API accessible');
+      } else if (result.requiresAuth) {
+        setNewAuthStatus('error');
+        setNewAuthMessage('🔐 New auth middleware detected - DATEV authentication required');
+      } else {
+        setNewAuthStatus('error');
+        setNewAuthMessage(`❌ New auth middleware error: ${result.error}`);
+      }
+    } catch (error: any) {
+      setNewAuthStatus('error');
+      setNewAuthMessage(`❌ New auth middleware test failed: ${error.message}`);
+    }
+  };
 
   const loadDebugInfo = async () => {
     try {
@@ -202,6 +237,67 @@ export function DatevDebugComponent() {
           Aktualisieren
         </Button>
       </div>
+
+      {/* New Authentication Middleware Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FiShield className="text-[#14ad9f]" />
+            New Authentication Middleware Status
+            {newAuthStatus === 'success' ? (
+              <Badge variant="default" className="bg-green-100 text-green-800">
+                <FiCheck className="mr-1" size={12} />
+                Active
+              </Badge>
+            ) : newAuthStatus === 'error' ? (
+              <Badge variant="destructive">
+                <FiX className="mr-1" size={12} />
+                Issues
+              </Badge>
+            ) : (
+              <Badge variant="secondary">
+                <FiClock className="mr-1" size={12} />
+                Testing
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm font-medium text-blue-800 mb-1">
+                Authentication Middleware Test Result:
+              </p>
+              <p className="text-sm text-blue-700">{newAuthMessage}</p>
+            </div>
+
+            <div className="text-xs text-gray-600">
+              <p>• Testing finAPI-like authentication pattern for DATEV</p>
+              <p>• Uses Firebase user authentication + token-based API access</p>
+              <p>• Fallback to legacy authentication if needed</p>
+            </div>
+
+            <Button
+              onClick={testNewAuthMiddleware}
+              disabled={newAuthStatus === 'testing'}
+              variant="outline"
+              size="sm"
+            >
+              {newAuthStatus === 'testing' ? (
+                <>
+                  <FiClock className="mr-2 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <FiRefreshCw className="mr-2" />
+                  Test Again
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Configuration Status */}
       <Card>

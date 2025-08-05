@@ -5,9 +5,19 @@ import {
   DATEV_SANDBOX_CONFIG,
 } from '@/lib/datev-config';
 import { storePKCEData } from '@/lib/pkce-storage';
+import { getAuth } from 'firebase-admin/auth';
+import { initiateDatevAuthFlow, getOrCreateDatevUser } from '@/services/datev-user-auth-service';
 
 /**
- * DATEV OAuth Initialization Route with Sandbox Support
+ * DATEV OAuth Initialization Route with Enhanced Authentication
+ * Support for both legacy and new auth middleware patterns
+ *
+ * GET /api/datev/auth - Legacy OAuth flow
+ * POST /api/datev/auth - Enhanced OAuth flow (Firebase-integrated or legacy)
+ */
+
+/**
+ * DATEV OAuth Initialization Route with Sandbox Support (Legacy)
  * Generates authorization URL and redirects user to DATEV login
  *
  * Supports DATEV Sandbox testing with consultant 455148 and clients 1-6
@@ -28,113 +38,140 @@ export async function GET(request: NextRequest) {
           sandbox_info: {
             consultant_number: DATEV_SANDBOX_CONFIG.consultantNumber,
             available_clients: DATEV_SANDBOX_CONFIG.clientNumbers,
-            fully_authorized_client: DATEV_SANDBOX_CONFIG.fullyAuthorizedClient,
+            usage: 'Fügen Sie ?company_id=test&sandbox_client=1 hinzu',
+            example_url: `/api/datev/auth?company_id=test&sandbox_client=${DATEV_SANDBOX_CONFIG.fullyAuthorizedClient}`,
           },
         },
         { status: 400 }
       );
     }
 
-    console.log('Initiating DATEV OAuth flow:', {
+    console.log(
+      '[DATEV Auth] Starting OAuth flow for company:',
       companyId,
-      sandboxClient,
-      testClientId: generateSandboxClientId(sandboxClient),
-    });
+      'sandbox client:',
+      sandboxClient
+    );
 
-    // Generate DATEV authorization URL with PKCE
-    const { authUrl, codeVerifier, state, nonce } = generateDatevAuthUrl(companyId);
+    // Generate a unique client ID for sandbox (e.g., "455148-2")
+    const clientId = generateSandboxClientId(sandboxClient);
 
-    console.log('Generated DATEV OAuth parameters:', {
-      companyId,
-      state,
-      nonce,
-      authUrl: authUrl.substring(0, 100) + '...',
-      codeVerifierLength: codeVerifier.length,
-      sandboxClientId: generateSandboxClientId(sandboxClient),
-    });
+    // Generate the full OAuth URL
+    const { authUrl } = generateDatevAuthUrl(companyId);
 
-    // Store PKCE data securely using the new storage system
-    storePKCEData(state, {
-      codeVerifier,
-      nonce,
-      timestamp: Date.now(),
-      companyId,
-    });
+    console.log('[DATEV Auth] Generated OAuth URL:', authUrl);
 
-    console.log('Stored PKCE data for state:', state.substring(0, 20) + '...');
-
-    // Redirect to DATEV authorization server
+    // Redirect user to DATEV authorization page
     return NextResponse.redirect(authUrl);
-  } catch (error) {
-    console.error('DATEV OAuth initialization error:', error);
-
-    const errorRedirectUrl =
-      process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000/dashboard/company/setup/datev'
-        : 'https://taskilo.de/dashboard/company/setup/datev';
-
-    return NextResponse.redirect(
-      `${errorRedirectUrl}?error=init_failed&message=${encodeURIComponent('DATEV-Authentifizierung konnte nicht gestartet werden')}`
+  } catch (error: any) {
+    console.error('[DATEV Auth] Error generating OAuth URL:', error);
+    return NextResponse.json(
+      {
+        error: 'oauth_generation_failed',
+        message: error.message || 'Fehler beim Generieren der OAuth-URL',
+        details: error.stack,
+      },
+      { status: 500 }
     );
   }
 }
 
 /**
- * Handle POST requests to manually trigger OAuth with specific parameters
+ * Handle POST requests for both legacy and new Firebase-integrated OAuth
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { companyId, returnUrl, sandboxClient = '1' } = body;
 
-    if (!companyId) {
-      return NextResponse.json(
-        {
-          error: 'missing_company_id',
-          message: 'Company ID ist erforderlich',
-          sandbox_help: {
-            consultant_number: DATEV_SANDBOX_CONFIG.consultantNumber,
-            recommended_client: DATEV_SANDBOX_CONFIG.fullyAuthorizedClient,
-            note: 'Client 1 (455148-1) hat volle Rechnungsdatenservice-Berechtigung',
+    // Check if this is a Firebase-integrated request (has Authorization header)
+    const authHeader = request.headers.get('Authorization');
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // New Firebase-integrated DATEV OAuth Flow
+      console.log('🔐 [DATEV Auth] Initiating Firebase-integrated OAuth flow...');
+
+      let firebaseUserId: string;
+      try {
+        const token = authHeader.substring(7);
+        const decodedToken = await getAuth().verifyIdToken(token);
+        firebaseUserId = decodedToken.uid;
+      } catch (authError) {
+        console.error('[DATEV Auth] Firebase token verification failed:', authError);
+        return NextResponse.json({ error: 'Invalid Firebase token' }, { status: 401 });
+      }
+
+      const { redirectUri } = body;
+
+      // Create or get DATEV user configuration
+      const userResult = await getOrCreateDatevUser(firebaseUserId, {
+        isActive: true,
+        authMethod: 'oauth',
+        permissions: ['read', 'write'],
+      });
+
+      if (!userResult.success) {
+        return NextResponse.json(
+          { error: 'Failed to create DATEV user configuration' },
+          { status: 500 }
+        );
+      }
+
+      // Initiate OAuth flow
+      const authResult = await initiateDatevAuthFlow(firebaseUserId, redirectUri);
+
+      console.log('✅ [DATEV Auth] OAuth flow initiated successfully');
+
+      return NextResponse.json({
+        success: true,
+        authUrl: authResult.authUrl,
+        state: authResult.state,
+        datefUserId: userResult.datefUserId,
+      });
+    } else {
+      // Legacy OAuth flow for manual trigger
+      const { companyId, returnUrl, sandboxClient = '1' } = body;
+
+      if (!companyId) {
+        return NextResponse.json(
+          {
+            error: 'missing_company_id',
+            message: 'Company ID ist erforderlich',
+            sandbox_help: {
+              consultant_number: DATEV_SANDBOX_CONFIG.consultantNumber,
+              recommended_client: DATEV_SANDBOX_CONFIG.fullyAuthorizedClient,
+              note: 'Client 1 (455148-1) hat volle Rechnungsdatenservice-Berechtigung',
+            },
           },
+          { status: 400 }
+        );
+      }
+
+      // Generate DATEV authorization URL
+      const { authUrl, codeVerifier, state, nonce } = generateDatevAuthUrl(companyId);
+
+      // Store OAuth data securely
+      storePKCEData(state, {
+        codeVerifier,
+        nonce,
+        timestamp: Date.now(),
+        companyId,
+      });
+
+      return NextResponse.json({
+        success: true,
+        authUrl,
+        state,
+        sandbox_info: {
+          consultant_number: DATEV_SANDBOX_CONFIG.consultantNumber,
+          client_id: generateSandboxClientId(sandboxClient),
+          note: `Sandbox Test mit Client ${sandboxClient}`,
         },
-        { status: 400 }
-      );
+        return_url: returnUrl,
+      });
     }
-
-    // Generate DATEV authorization URL
-    const { authUrl, codeVerifier, state, nonce } = generateDatevAuthUrl(companyId);
-
-    // Store OAuth data securely
-    storePKCEData(state, {
-      codeVerifier,
-      nonce,
-      timestamp: Date.now(),
-      companyId,
-    });
-
-    return NextResponse.json({
-      success: true,
-      authUrl,
-      state,
-      sandbox_info: {
-        consultant_number: DATEV_SANDBOX_CONFIG.consultantNumber,
-        client_id: generateSandboxClientId(sandboxClient),
-        has_full_permissions: sandboxClient === '1',
-      },
-      message: 'OAuth-URL erfolgreich generiert',
-    });
-  } catch (error) {
-    console.error('DATEV OAuth POST error:', error);
-
-    return NextResponse.json(
-      {
-        error: 'generation_failed',
-        message: 'Fehler beim Generieren der OAuth-URL',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
-      },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error('❌ [DATEV Auth] OAuth failed:', error);
+    return NextResponse.json({ error: error.message || 'Authentication failed' }, { status: 500 });
   }
 }
 
