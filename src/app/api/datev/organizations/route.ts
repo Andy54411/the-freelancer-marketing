@@ -2,11 +2,17 @@
  * DATEV Organizations API Route
  * Enhanced with new DATEV Authentication Middleware
  * Handles authentication using the same pattern as finAPI
+ * INCLUDES TOKEN REFRESH LOGIC
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, DATEV_ENDPOINTS } from '@/lib/datev-config';
-import { getDatevTokenFromCookies, ServerDatevToken } from '@/lib/datev-server-utils';
+import {
+  getDatevTokenFromCookies,
+  ServerDatevToken,
+  refreshDatevAccessToken,
+  setDatevTokenCookies,
+} from '@/lib/datev-server-utils';
 import { db } from '@/firebase/server';
 import { getDatevUserToken, validateDatevUserExists } from '@/services/datev-user-auth-service';
 import { getAuth } from 'firebase-admin/auth';
@@ -83,14 +89,39 @@ export async function GET(request: NextRequest) {
 
         if (tokenDoc.exists) {
           const tokenData = tokenDoc.data();
-          const expiresAt = tokenData?.expires_at?.toDate?.() || new Date(tokenData?.expires_at);
+          const expiresAt =
+            tokenData?.expires_at?.toDate?.() || new Date(tokenData?.expires_at || 0);
 
-          // Check if token is still valid (with 5-minute buffer)
-          if (expiresAt && expiresAt.getTime() > Date.now() && tokenData?.access_token) {
+          // Check if token is still valid
+          if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData?.access_token) {
+            // Token is valid (with 5-minute buffer)
             accessToken = tokenData.access_token;
-            console.log('[DATEV Organizations] Using Firestore token');
+            console.log('[DATEV Organizations] Using valid token from Firestore.');
+          } else if (tokenData?.refresh_token) {
+            // Token is expired, try to refresh it
+            console.log('[DATEV Organizations] Firestore token expired, attempting refresh...');
+            try {
+              const newTokenData = await refreshDatevAccessToken(tokenData.refresh_token);
+              accessToken = newTokenData.access_token;
+              console.log('[DATEV Organizations] Token refresh successful.');
+
+              // Asynchronously update cookies and Firestore with the new token
+              setDatevTokenCookies(newTokenData);
+              const newExpiresAt = new Date(Date.now() + (newTokenData.expires_in || 3600) * 1000);
+              tokenDoc.ref.update({
+                access_token: newTokenData.access_token,
+                refresh_token: newTokenData.refresh_token,
+                expires_at: newExpiresAt,
+                last_updated: new Date(),
+              });
+            } catch (refreshError) {
+              console.error('[DATEV Organizations] Token refresh failed:', refreshError);
+              // Continue with no access token, will result in 401
+            }
           } else {
-            console.log('[DATEV Organizations] Firestore token expired');
+            console.log(
+              '[DATEV Organizations] Firestore token expired and no refresh token found.'
+            );
           }
         }
       } catch (firestoreError) {

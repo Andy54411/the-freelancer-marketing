@@ -6,6 +6,7 @@
 
 import { db } from '@/firebase/clients';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { getDatevConfig } from '@/lib/datev-config';
 
 interface DatevTokenData {
   accessToken: string;
@@ -288,7 +289,7 @@ export async function initiateDatevAuthFlow(
   storeAuthState(state, userId);
 
   // Build DATEV OAuth authorization URL
-  const config = await getDatevConfig();
+  const config = getDatevConfig();
   const authUrl = new URL(config.authUrl || 'https://api.datev.de/oauth2/authorize');
 
   authUrl.searchParams.set('client_id', config.clientId || process.env.DATEV_CLIENT_ID || '');
@@ -328,17 +329,6 @@ function generateSecureState(userId: string): string {
 function storeAuthState(state: string, userId: string): void {
   // Store state for OAuth flow verification
   console.log('Storing auth state for user:', userId, 'state:', state);
-}
-
-async function getDatevConfig(): Promise<any> {
-  // Get DATEV configuration
-  return {
-    authUrl: 'https://api.datev.de/oauth2/authorize',
-    tokenUrl: 'https://api.datev.de/oauth2/token',
-    clientId: process.env.DATEV_CLIENT_ID,
-    clientSecret: process.env.DATEV_CLIENT_SECRET,
-    redirectUri: '/api/datev/callback',
-  };
 }
 
 export { type DatevTokenData, type DatevUserConfig };

@@ -384,6 +384,14 @@ service cloud.firestore {
         (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
       );
 
+      // HINWEIS ZU "PERMISSION DENIED" FEHLERN:
+      // Wenn im Frontend ein "Permission denied" Fehler für Benachrichtigungen auftritt,
+      // liegt das höchstwahrscheinlich daran, dass die Firestore-Abfrage (query)
+      // nicht die erforderliche 'where'-Klausel enthält.
+      //
+      // KORREKTE CLIENT-SEITIGE ABFRAGE:
+      // collection(db, 'notifications').where('userId', '==', currentUser.uid)
+
       // list: Erweiterte Regel für Admin-Dashboard und Benutzer-Benachrichtigungen
       allow list: if request.auth != null && (
         isSupportStaff() ||

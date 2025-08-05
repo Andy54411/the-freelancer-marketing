@@ -5,6 +5,7 @@
 
 import { cookies } from 'next/headers';
 import { db } from '@/firebase/server';
+import { getDatevConfig } from './datev-config';
 
 // DATEV Sandbox URLs (unterschiedlich von Production!)
 const DATEV_API_BASE =
@@ -200,4 +201,47 @@ export async function saveTokensToFirestore(
   );
 
   console.log('✅ DATEV Sandbox tokens saved to Firestore for user:', userId);
+}
+
+/**
+ * Exchanges a refresh token for a new access token from DATEV.
+ * @param refreshToken The refresh token.
+ * @returns The new token data from DATEV.
+ */
+export async function refreshDatevAccessToken(refreshToken: string) {
+  const { clientId, clientSecret, tokenUrl } = getDatevConfig();
+
+  if (!clientId || !clientSecret) {
+    throw new Error('DATEV environment variables are not configured for token refresh.');
+  }
+
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+  const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${credentials}`,
+      Accept: 'application/json',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  });
+
+  const tokenData = await response.json();
+
+  if (!response.ok) {
+    console.error('❌ DATEV Token Refresh Error:', {
+      status: response.status,
+      body: tokenData,
+    });
+    throw new Error(
+      `Failed to refresh DATEV token: ${tokenData.error_description || 'Unknown error'}`
+    );
+  }
+
+  console.log('✅ DATEV Token refreshed successfully.');
+  return tokenData;
 }

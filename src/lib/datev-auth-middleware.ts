@@ -4,6 +4,7 @@
  * Ähnlich dem finAPI Pattern mit OAuth 2.0 Flow
  */
 
+import { getDatevConfig } from './datev-config';
 interface DatevAuthResult {
   success: boolean;
   accessToken?: string;
@@ -171,9 +172,4 @@ function generateSecureState(userId: string): string {
 
 function storeAuthState(state: string, userId: string): void {
   // Store state for OAuth flow verification
-}
-
-async function getDatevConfig(): Promise<any> {
-  // Get DATEV configuration
-  return {};
 }
