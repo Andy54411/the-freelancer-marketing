@@ -353,16 +353,40 @@ export class FinAPISDKService {
 export function createFinAPIService(
   environment: 'sandbox' | 'production' = 'sandbox'
 ): FinAPISDKService {
-  const credentials: FinAPICredentials = {
-    clientId: (process.env.FINAPI_SANDBOX_CLIENT_ID || '').trim(),
-    clientSecret: (process.env.FINAPI_SANDBOX_CLIENT_SECRET || '').trim(),
-    dataDecryptionKey: process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY?.trim(),
-  };
+  let credentials: FinAPICredentials;
 
-  if (environment === 'production') {
-    credentials.clientId = (process.env.FINAPI_PRODUCTION_CLIENT_ID || '').trim();
-    credentials.clientSecret = (process.env.FINAPI_PRODUCTION_CLIENT_SECRET || '').trim();
-    credentials.dataDecryptionKey = process.env.FINAPI_PRODUCTION_DATA_DECRYPTION_KEY?.trim();
+  if (environment === 'sandbox') {
+    const clientId = process.env.FINAPI_SANDBOX_CLIENT_ID?.trim();
+    const clientSecret = process.env.FINAPI_SANDBOX_CLIENT_SECRET?.trim();
+    const dataDecryptionKey = process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY?.trim();
+
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        'finAPI Sandbox credentials are not configured. Please set FINAPI_SANDBOX_CLIENT_ID and FINAPI_SANDBOX_CLIENT_SECRET in environment variables.'
+      );
+    }
+
+    credentials = {
+      clientId,
+      clientSecret,
+      dataDecryptionKey,
+    };
+  } else {
+    const clientId = process.env.FINAPI_PRODUCTION_CLIENT_ID?.trim();
+    const clientSecret = process.env.FINAPI_PRODUCTION_CLIENT_SECRET?.trim();
+    const dataDecryptionKey = process.env.FINAPI_PRODUCTION_DATA_DECRYPTION_KEY?.trim();
+
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        'finAPI Production credentials are not configured. Please set FINAPI_PRODUCTION_CLIENT_ID and FINAPI_PRODUCTION_CLIENT_SECRET in environment variables.'
+      );
+    }
+
+    credentials = {
+      clientId,
+      clientSecret,
+      dataDecryptionKey,
+    };
   }
 
   return new FinAPISDKService({
@@ -374,11 +398,41 @@ export function createFinAPIService(
 export function createFinAPIAdminService(
   environment: 'sandbox' | 'production' = 'sandbox'
 ): FinAPISDKService {
-  const credentials: FinAPICredentials = {
-    clientId: (process.env.FINAPI_ADMIN_CLIENT_ID || '').trim(),
-    clientSecret: (process.env.FINAPI_ADMIN_CLIENT_SECRET || '').trim(),
-    dataDecryptionKey: process.env.FINAPI_ADMIN_DATA_DECRYPTION_KEY?.trim(),
-  };
+  let credentials: FinAPICredentials;
+
+  if (environment === 'sandbox') {
+    const clientId = process.env.FINAPI_ADMIN_CLIENT_ID?.trim();
+    const clientSecret = process.env.FINAPI_ADMIN_CLIENT_SECRET?.trim();
+    const dataDecryptionKey = process.env.FINAPI_ADMIN_DATA_DECRYPTION_KEY?.trim();
+
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        'finAPI Admin credentials are not configured. Please set FINAPI_ADMIN_CLIENT_ID and FINAPI_ADMIN_CLIENT_SECRET in environment variables.'
+      );
+    }
+
+    credentials = {
+      clientId,
+      clientSecret,
+      dataDecryptionKey,
+    };
+  } else {
+    const clientId = process.env.FINAPI_ADMIN_PRODUCTION_CLIENT_ID?.trim();
+    const clientSecret = process.env.FINAPI_ADMIN_PRODUCTION_CLIENT_SECRET?.trim();
+    const dataDecryptionKey = process.env.FINAPI_ADMIN_PRODUCTION_DATA_DECRYPTION_KEY?.trim();
+
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        'finAPI Admin Production credentials are not configured. Please set FINAPI_ADMIN_PRODUCTION_CLIENT_ID and FINAPI_ADMIN_PRODUCTION_CLIENT_SECRET in environment variables.'
+      );
+    }
+
+    credentials = {
+      clientId,
+      clientSecret,
+      dataDecryptionKey,
+    };
+  }
 
   return new FinAPISDKService({
     credentials,

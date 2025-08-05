@@ -1,14 +1,14 @@
-# finAPI Credentials Update - Anleitung
+# finAPI Credentials Configuration - Security Guide
 
-## 🎉 ERFOLG: Neue finAPI Credentials erhalten und bestätigt!
+## 🔒 SECURITY: Hardcoded credentials removed for security
 
-### Status: ✅ ALLE CREDENTIALS GÜLTIG
-- FINAPI_SANDBOX_CLIENT_ID: ac54e888-8ccf-40ef-9b92-b27c9dc02f29
-- FINAPI_SANDBOX_CLIENT_SECRET: 73689ad2-95e5-4180-93a2-7209ba6e10aa
-- FINAPI_ADMIN_CLIENT_ID: a2d8cf0e-c68c-45fa-b4ad-4184a355094e
-- FINAPI_ADMIN_CLIENT_SECRET: 478a0e66-8c9a-49ee-84cd-e49d87d077c9
+### Status: ✅ CREDENTIALS NOW PROPERLY SECURED
+- FINAPI_SANDBOX_CLIENT_ID: [Set in environment variables only]
+- FINAPI_SANDBOX_CLIENT_SECRET: [Set in environment variables only]
+- FINAPI_ADMIN_CLIENT_ID: [Set in environment variables only]
+- FINAPI_ADMIN_CLIENT_SECRET: [Set in environment variables only]
 
-### 📋 Lösung:
+### 📋 Configuration Steps:
 
 1. **finAPI Developer Portal öffnen:**
    ```

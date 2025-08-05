@@ -1,9 +1,9 @@
 /**
  * finAPI Service für Taskilo Banking Integration
- * 
+ *
  * Environment Variables:
  * - FINAPI_SANDBOX_CLIENT_ID
- * - FINAPI_SANDBOX_CLIENT_SECRET  
+ * - FINAPI_SANDBOX_CLIENT_SECRET
  * - FINAPI_SANDBOX_DATA_DECRYPTION_KEY
  * - FINAPI_ADMIN_CLIENT_ID
  * - FINAPI_ADMIN_CLIENT_SECRET
@@ -149,22 +149,23 @@ export class FinAPIService {
   constructor(useAdminAccess = false) {
     // Environment Variables laden
     const environment = process.env.FINAPI_ENVIRONMENT || 'sandbox';
-    
+
     if (useAdminAccess) {
       this.config = {
         clientId: process.env.FINAPI_ADMIN_CLIENT_ID || '',
         clientSecret: process.env.FINAPI_ADMIN_CLIENT_SECRET || '',
         dataDecryptionKey: process.env.FINAPI_ADMIN_DATA_DECRYPTION_KEY || '',
         baseUrl: environment === 'sandbox' ? 'https://sandbox.finapi.io' : 'https://finapi.io',
-        environment: environment as 'sandbox' | 'production'
+        environment: environment as 'sandbox' | 'production',
       };
     } else {
       this.config = {
-        clientId: process.env.FINAPI_SANDBOX_CLIENT_ID || 'ac54e888-8ccf-40ef-9b92-b27c9dc02f29',
-        clientSecret: process.env.FINAPI_SANDBOX_CLIENT_SECRET || '73689ad2-95e5-4180-93a2-7209ba6e10aa',
-        dataDecryptionKey: process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY || 'eb8c7cd129dc2eee8e31a4098fba4921',
+        clientId: process.env.FINAPI_SANDBOX_CLIENT_ID || '',
+        clientSecret: process.env.FINAPI_SANDBOX_CLIENT_SECRET || '',
+        dataDecryptionKey:
+          process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY || 'eb8c7cd129dc2eee8e31a4098fba4921',
         baseUrl: 'https://sandbox.finapi.io',
-        environment: 'sandbox'
+        environment: 'sandbox',
       };
     }
   }
@@ -174,11 +175,11 @@ export class FinAPIService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${this.config.clientId}:${this.config.clientSecret}`)}`
+        Authorization: `Basic ${btoa(`${this.config.clientId}:${this.config.clientSecret}`)}`,
       },
       body: new URLSearchParams({
-        grant_type: 'client_credentials'
-      })
+        grant_type: 'client_credentials',
+      }),
     });
 
     if (!response.ok) {
@@ -199,14 +200,14 @@ export class FinAPIService {
 
   private async apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const accessToken = await this.ensureAuthenticated();
-    
+
     const response = await fetch(`${this.config.baseUrl}${endpoint}`, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        ...options.headers
-      }
+        ...options.headers,
+      },
     });
 
     if (!response.ok) {
@@ -226,8 +227,8 @@ export class FinAPIService {
         password,
         email,
         phone: null,
-        isAutoUpdateEnabled: true
-      })
+        isAutoUpdateEnabled: true,
+      }),
     });
   }
 
@@ -241,7 +242,7 @@ export class FinAPIService {
   }
 
   async createBankConnection(
-    bankId: number, 
+    bankId: number,
     loginCredentials: Array<{ label: string; value: string }>,
     interfaceType?: string
   ): Promise<FinAPIBankConnection> {
@@ -255,8 +256,14 @@ export class FinAPIService {
         skipPositionsDownload: false,
         loadOwnerData: true,
         maxDaysForDownload: 3650,
-        accountTypes: ['Girokonto', 'Sparkonto', 'Kreditkartenkonto', 'Bausparkonto', 'Versicherungskonto']
-      })
+        accountTypes: [
+          'Girokonto',
+          'Sparkonto',
+          'Kreditkartenkonto',
+          'Bausparkonto',
+          'Versicherungskonto',
+        ],
+      }),
     });
   }
 
@@ -267,14 +274,14 @@ export class FinAPIService {
         accountTypes: ['Girokonto', 'Sparkonto', 'Kreditkartenkonto', 'Bausparkonto'],
         skipPositionsDownload: false,
         loadOwnerData: true,
-        maxDaysForDownload: 89
-      })
+        maxDaysForDownload: 89,
+      }),
     });
   }
 
   async deleteBankConnection(connectionId: number): Promise<void> {
     await this.apiRequest(`/api/v1/bankConnections/${connectionId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     });
   }
 
@@ -297,7 +304,7 @@ export class FinAPIService {
     order?: string[];
   }): Promise<{ transactions: FinAPITransaction[]; paging: any }> {
     const searchParams = new URLSearchParams();
-    
+
     if (params?.accountIds) {
       searchParams.append('accountIds', params.accountIds.join(','));
     }
@@ -321,7 +328,7 @@ export class FinAPIService {
 
     const queryString = searchParams.toString();
     const endpoint = `/api/v1/transactions${queryString ? `?${queryString}` : ''}`;
-    
+
     return this.apiRequest(endpoint);
   }
 
@@ -351,12 +358,12 @@ export class FinAPIService {
       const user = await this.getUser();
       return {
         status: 'success',
-        message: `Verbindung erfolgreich. Environment: ${this.config.environment}`
+        message: `Verbindung erfolgreich. Environment: ${this.config.environment}`,
       };
     } catch (error) {
       return {
         status: 'error',
-        message: `Verbindungsfehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+        message: `Verbindungsfehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
       };
     }
   }
@@ -373,9 +380,11 @@ export class FinAPIService {
       currency: finApiAccount.accountCurrency,
       type: finApiAccount.accountType,
       isActive: true,
-      lastSync: finApiAccount.lastSuccessfulUpdate ? new Date(finApiAccount.lastSuccessfulUpdate) : new Date(),
+      lastSync: finApiAccount.lastSuccessfulUpdate
+        ? new Date(finApiAccount.lastSuccessfulUpdate)
+        : new Date(),
       provider: 'finAPI',
-      connectionId: finApiAccount.bankConnectionId.toString()
+      connectionId: finApiAccount.bankConnectionId.toString(),
     };
   }
 
@@ -396,7 +405,7 @@ export class FinAPIService {
       isReconciled: false,
       reference: finApiTransaction.primanota,
       provider: 'finAPI',
-      finApiId: finApiTransaction.id
+      finApiId: finApiTransaction.id,
     };
   }
 
@@ -415,27 +424,27 @@ export class FinAPIService {
       // Get transactions for last 90 days
       const minDate = new Date();
       minDate.setDate(minDate.getDate() - 90);
-      
+
       const transactionsResponse = await this.getTransactions({
         minBankBookingDate: minDate.toISOString().split('T')[0],
         perPage: 500,
-        order: ['-bankBookingDate']
+        order: ['-bankBookingDate'],
       });
-      
+
       const transactions = transactionsResponse.transactions.map(tx => this.convertTransaction(tx));
 
       return {
         accounts,
         transactions,
         success: true,
-        message: `${accounts.length} Konten und ${transactions.length} Transaktionen synchronisiert`
+        message: `${accounts.length} Konten und ${transactions.length} Transaktionen synchronisiert`,
       };
     } catch (error) {
       return {
         accounts: [],
         transactions: [],
         success: false,
-        message: `Synchronisation fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+        message: `Synchronisation fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
       };
     }
   }
