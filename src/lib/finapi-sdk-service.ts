@@ -230,9 +230,41 @@ export class FinAPISDKService {
   }
 
   /**
-   * List available banks
+   * List available banks (Public API - no user token required)
    */
-  async listBanks(userToken?: string, search?: string, page = 1, perPage = 20): Promise<Bank[]> {
+  async listBanks(search?: string, location?: string, page = 1, perPage = 20): Promise<Bank[]> {
+    console.log('🏦 Listing banks with client credentials...');
+
+    // Use client token only for public banks listing
+    const banksApi = await this.getBanksApi();
+    const response = await banksApi.getAndSearchAllBanks(
+      undefined, // ids
+      search,
+      undefined, // isSupported
+      undefined, // pinsAreVolatile
+      undefined, // supportedDataSources
+      undefined, // location (number[] not supported in current search)
+      true, // includeTestBanks for sandbox
+      page,
+      perPage
+    );
+
+    console.log(`✅ Found ${response.banks?.length || 0} banks`);
+    return response.banks || [];
+  }
+
+  /**
+   * List available banks for specific user
+   */
+  async listBanksForUser(
+    userToken: string,
+    search?: string,
+    location?: string,
+    page = 1,
+    perPage = 20
+  ): Promise<Bank[]> {
+    console.log('🏦 Listing banks for user...');
+
     const banksApi = await this.getBanksApi(userToken);
     const response = await banksApi.getAndSearchAllBanks(
       undefined, // ids
@@ -240,7 +272,7 @@ export class FinAPISDKService {
       undefined, // isSupported
       undefined, // pinsAreVolatile
       undefined, // supportedDataSources
-      undefined, // location
+      undefined, // location (number[] not supported in current search)
       true, // includeTestBanks for sandbox
       page,
       perPage

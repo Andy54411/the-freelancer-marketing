@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Use the finAPI SDK Service to get banks
     const banks = await finapiService.listBanks(
       search || undefined,
-      search || undefined, // Also search in location
+      undefined, // location - not used in current implementation
       page,
       perPage
     );
