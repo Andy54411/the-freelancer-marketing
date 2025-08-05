@@ -38,27 +38,64 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Define redirect URL for after finAPI Web Form
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const redirectUrl = `${baseUrl}/dashboard/company/${userId}/finance/banking/callback`;
+    // WebForm 2.0 Integration - Redirect to import-bank for full WebForm flow
+    console.log('🔄 Redirecting to WebForm 2.0 import-bank API for user:', userId, 'bank:', bankId);
 
-    // For now, return not implemented due to user authentication requirements
-    // TODO: Implement bank connection when user authentication system is ready
-    return NextResponse.json(
+    // Call the fully functional import-bank API with WebForm 2.0
+    const importResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/import-bank`,
       {
-        success: false,
-        error: 'Bank connection not implemented',
-        message: 'User authentication system required for bank connections',
-        needsImplementation: {
-          userToken: 'Requires getUserToken method for user authentication',
-          webFormIntegration: 'Requires WebForm 2.0 integration for bank connection',
-          bankConnectionAPI: 'Requires bank connection creation via SDK service',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        redirectUrl: redirectUrl, // Return for reference
-        bankId: bankId,
-      },
-      { status: 501 }
+        body: JSON.stringify({
+          userId: userId,
+          bankId: bankId,
+          credentialType: credentialType,
+        }),
+      }
     );
+
+    const importData = await importResponse.json();
+
+    if (importResponse.ok && importData.success) {
+      console.log('✅ WebForm 2.0 created successfully via import-bank');
+
+      return NextResponse.json({
+        success: true,
+        message: 'WebForm 2.0 für Bankverbindung erstellt',
+        redirectUrl: importData.webForm.url,
+        webForm: importData.webForm,
+        instructions: {
+          step: 'redirect_to_webform',
+          description: 'User wird zur sicheren finAPI WebForm weitergeleitet',
+          next_steps: [
+            '1. Automatische Weiterleitung zur WebForm URL',
+            '2. User authentifiziert sich sicher bei seiner Bank',
+            '3. Bankverbindung wird automatisch erstellt',
+            '4. Callback erfolgt nach Abschluss',
+          ],
+        },
+        debug_info: {
+          environment: credentialType,
+          finapiUserId: importData.finapiUserId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } else {
+      console.error('❌ WebForm 2.0 creation failed:', importData);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'WebForm 2.0 Erstellung fehlgeschlagen',
+          details: importData.error || importData.details || 'Unknown error',
+          suggestion: 'Überprüfen Sie die finAPI Konfiguration und Benutzer-Authentifizierung',
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Fehler beim Starten der Bankverbindung:', error);
     const errorMessage =

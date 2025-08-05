@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
+import { getOrCreateFinAPIUser } from '@/lib/banking-auth-middleware';
 import {
   AuthorizationApi,
   BankConnectionsApi,
