@@ -36,6 +36,7 @@ export default function Sidebar() {
     { href: '/dashboard/admin/payment-monitoring', label: 'Payment Analytics', icon: BarChart },
     { href: '/dashboard/admin/transfer-debug', label: 'Transfer Debug & Retry', icon: Bug },
     { href: '/dashboard/admin/b2b-debug', label: 'B2B Payment Debug', icon: DollarSign },
+    { href: '/dashboard/admin/finapi-debug', label: 'finAPI & DATEV Debug', icon: Activity },
 
     // Support & Communication
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
