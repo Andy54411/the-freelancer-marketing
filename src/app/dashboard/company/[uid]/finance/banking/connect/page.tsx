@@ -9,6 +9,11 @@ interface Bank {
   id: number;
   name: string;
   isTestBank?: boolean;
+  blz?: string;
+  location?: string;
+  city?: string;
+  popularity?: number;
+  interfaces?: unknown[];
 }
 
 export default function ConnectBankPage() {
@@ -20,6 +25,8 @@ export default function ConnectBankPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [availableBanks, setAvailableBanks] = useState<Bank[]>([]);
+  const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -30,6 +37,21 @@ export default function ConnectBankPage() {
       loadAvailableBanks();
     }
   }, [user, uid]);
+
+  // Filter banks based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredBanks(availableBanks);
+    } else {
+      const filtered = availableBanks.filter(
+        bank =>
+          bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bank.blz?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredBanks(filtered);
+    }
+  }, [availableBanks, searchTerm]);
 
   if (!user || user.uid !== uid) {
     return (
@@ -46,15 +68,17 @@ export default function ConnectBankPage() {
     setLoading(true);
     setError(null);
     try {
-      // This API route needs to be created.
-      // It will get a user token and then fetch the banks from finAPI.
-      const response = await fetch(`/api/finapi/banks?userId=${uid}`);
+      // Use the updated finAPI Banks API (no userId needed - public endpoint)
+      const response = await fetch('/api/finapi/banks?perPage=50&includeTestBanks=true');
       if (!response.ok) {
         const err = await response.json();
         throw new Error(err.details || 'Banken konnten nicht geladen werden.');
       }
       const data = await response.json();
-      setAvailableBanks(data.banks || []);
+      // Extract banks from the new API response structure
+      const banks = data.success ? data.data.banks : [];
+      setAvailableBanks(banks);
+      setFilteredBanks(banks);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ein unbekannter Fehler ist aufgetreten.');
     } finally {
@@ -157,11 +181,22 @@ export default function ConnectBankPage() {
 
         <div className="space-y-6">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Bank suchen</label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Bank Name, BLZ oder Stadt eingeben..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Verfügbare Banken
+              Verfügbare Banken ({filteredBanks.length})
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {availableBanks.map(bank => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+              {filteredBanks.map(bank => (
                 <div
                   key={bank.id}
                   onClick={() => setSelectedBank(bank)}
@@ -172,6 +207,8 @@ export default function ConnectBankPage() {
                   }`}
                 >
                   <h3 className="font-medium text-gray-900">{bank.name}</h3>
+                  {bank.blz && <p className="text-sm text-gray-600 mt-1">BLZ: {bank.blz}</p>}
+                  {bank.city && <p className="text-sm text-gray-600">📍 {bank.city}</p>}
                   {bank.isTestBank && (
                     <span className="inline-block mt-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                       Test-Bank
@@ -180,6 +217,14 @@ export default function ConnectBankPage() {
                 </div>
               ))}
             </div>
+
+            {filteredBanks.length === 0 && searchTerm && (
+              <div className="text-center py-8 text-gray-500">
+                <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>Keine Banken gefunden für &ldquo;{searchTerm}&rdquo;</p>
+                <p className="text-sm mt-1">Versuchen Sie einen anderen Suchbegriff</p>
+              </div>
+            )}
           </div>
 
           {connectionStatus === 'error' && (
