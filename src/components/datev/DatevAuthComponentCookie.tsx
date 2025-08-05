@@ -113,10 +113,53 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           onAuthSuccess(orgData.organization);
         }
       } else {
-        console.error('❌ [DATEV Cookie Auth] Failed to fetch organization data');
+        const errorData = await response.json().catch(() => null);
+
+        // Check if it's a token error that requires re-authentication
+        if (
+          response.status === 401 &&
+          (errorData?.error === 'invalid_tokens' ||
+            errorData?.error === 'token_expired' ||
+            errorData?.error === 'no_tokens' ||
+            errorData?.error === 'invalid_token' ||
+            (errorData?.error_description &&
+              (errorData.error_description.includes('Token issued to another client') ||
+                errorData.error_description.includes('Token malformed') ||
+                errorData.error_description.includes('invalid_token'))))
+        ) {
+          console.warn(
+            '⚠️ [DATEV Cookie Auth] Token invalid, clearing stored tokens...',
+            errorData
+          );
+
+          // Clear invalid tokens
+          DatevCookieManager.clearTokens(companyId);
+
+          // Show user-friendly message
+          toast.error('DATEV-Token ungültig. Bitte verbinden Sie sich erneut.');
+
+          // Force reload connection status to show disconnected state
+          setConnection({
+            isConnected: false,
+            features: {
+              accountingData: false,
+              documents: false,
+              masterData: false,
+              cashRegister: false,
+            },
+          });
+        } else {
+          console.error(
+            '❌ [DATEV Cookie Auth] Failed to fetch organization data:',
+            response.status,
+            errorData
+          );
+          toast.error('Fehler beim Laden der DATEV-Organisationsdaten');
+        }
       }
     } catch (error) {
       console.error('❌ [DATEV Cookie Auth] Error fetching organization data:', error);
+      toast.error('Netzwerkfehler beim Laden der DATEV-Daten');
     }
   };
 
@@ -160,6 +203,29 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           features: status.features,
         });
       } else {
+        const errorData = await response.json().catch(() => null);
+
+        // Check if it's a token error - auto-clear invalid tokens
+        if (
+          response.status === 401 &&
+          errorData &&
+          (errorData.error === 'invalid_token' ||
+            errorData.error === 'token_expired' ||
+            errorData.error === 'no_tokens' ||
+            (errorData.error_description &&
+              (errorData.error_description.includes('Token issued to another client') ||
+                errorData.error_description.includes('Token malformed') ||
+                errorData.error_description.includes('invalid_token'))))
+        ) {
+          console.warn(
+            '⚠️ [DATEV Cookie Auth] Invalid tokens detected in status check, clearing...',
+            errorData
+          );
+
+          // Clear invalid tokens silently
+          DatevCookieManager.clearTokens(companyId);
+        }
+
         console.error('❌ [DATEV Cookie Auth] Failed to fetch connection status');
         setConnection({
           isConnected: false,
@@ -437,13 +503,13 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
             <span>Sichere OAuth2-Authentifizierung nach sevdesk-Standard</span>
           </div>
           <p>
-            Sie werden zu DATEV weitergeleitet, um sich sicher anzumelden. Ihre Zugangsdaten
-            werden nie von Taskilo gespeichert. Alle Daten werden DSGVO-konform und 
-            ausschließlich in Deutschland verarbeitet.
+            Sie werden zu DATEV weitergeleitet, um sich sicher anzumelden. Ihre Zugangsdaten werden
+            nie von Taskilo gespeichert. Alle Daten werden DSGVO-konform und ausschließlich in
+            Deutschland verarbeitet.
           </p>
           <div className="text-xs text-gray-500 mt-2">
-            🇩🇪 Datenschutz: Nach deutschem Recht • 🔒 Verschlüsselt • 
-            📋 Auftragsverarbeitungsvertrag verfügbar
+            🇩🇪 Datenschutz: Nach deutschem Recht • 🔒 Verschlüsselt • 📋
+            Auftragsverarbeitungsvertrag verfügbar
           </div>
         </div>
       </div>

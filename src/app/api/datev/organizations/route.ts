@@ -196,6 +196,72 @@ export async function GET(request: NextRequest) {
 
       // Handle specific errors
       if (response.status === 401) {
+        // Check for specific token errors that require clearing tokens
+        const tokenError = errorData?.error;
+        const errorDescription = errorData?.error_description;
+
+        if (
+          tokenError === 'invalid_token' ||
+          (errorDescription &&
+            (errorDescription.includes('Token issued to another client') ||
+              errorDescription.includes('Token malformed') ||
+              errorDescription.includes('invalid_token')))
+        ) {
+          console.warn('[DATEV Organizations] Invalid token detected, clearing tokens:', {
+            error: tokenError,
+            description: errorDescription,
+          });
+
+          // Clear tokens from all storage locations
+          if (firebaseUserId) {
+            try {
+              await db.collection('datev_tokens').doc(firebaseUserId).delete();
+              console.log('[DATEV Organizations] Cleared token from datev_tokens collection');
+            } catch (e) {
+              console.error('[DATEV Organizations] Error clearing datev_tokens:', e);
+            }
+          }
+
+          if (companyId) {
+            try {
+              await db
+                .collection('companies')
+                .doc(companyId)
+                .collection('datev')
+                .doc('tokens')
+                .delete();
+              console.log('[DATEV Organizations] Cleared legacy company tokens');
+            } catch (e) {
+              console.error('[DATEV Organizations] Error clearing company tokens:', e);
+            }
+          }
+
+          // Also clear cookies by setting them to expire
+          const response = NextResponse.json(
+            {
+              error: 'invalid_token',
+              error_description:
+                errorDescription || 'Token ungültig - erneute Authentifizierung erforderlich',
+              requiresAuth: true,
+              clearTokens: true,
+            },
+            { status: 401 }
+          );
+
+          // Clear the DATEV token cookies
+          if (companyId) {
+            response.cookies.set(`datev_tokens_${companyId}`, '', {
+              expires: new Date(0),
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+            });
+          }
+
+          return response;
+        }
+
         return NextResponse.json(
           {
             error: 'DATEV authentication required - please re-authenticate',

@@ -9,11 +9,11 @@ import { getDatevConfig } from '@/lib/datev-config';
 export async function POST(request: NextRequest) {
   try {
     console.log('[DATEV Cookie Organization] Request received');
-    
+
     // Debug: Log request details
     const rawBody = await request.text();
     console.log('[DATEV Cookie Organization] Raw request body:', rawBody);
-    
+
     let requestData;
     try {
       requestData = JSON.parse(rawBody);
@@ -49,7 +49,10 @@ export async function POST(request: NextRequest) {
     if (!tokenCookie?.value) {
       console.log('❌ [DATEV Cookie Organization] No token cookie found:', cookieName);
       return NextResponse.json(
-        { error: 'no_tokens', message: 'Keine DATEV-Token gefunden. Bitte authentifizieren Sie sich zuerst.' },
+        {
+          error: 'no_tokens',
+          message: 'Keine DATEV-Token gefunden. Bitte authentifizieren Sie sich zuerst.',
+        },
         { status: 401 }
       );
     }
@@ -59,36 +62,44 @@ export async function POST(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-      
+
       console.log('✅ [DATEV Cookie Organization] Token data loaded:', {
         hasAccessToken: !!tokenData.access_token,
         hasRefreshToken: !!tokenData.refresh_token,
-        connectedAt: tokenData.connected_at ? new Date(tokenData.connected_at).toISOString() : 'unknown'
+        connectedAt: tokenData.connected_at
+          ? new Date(tokenData.connected_at).toISOString()
+          : 'unknown',
       });
     } catch (parseError) {
       console.error('❌ [DATEV Cookie Organization] Failed to parse token cookie:', parseError);
       return NextResponse.json(
-        { error: 'invalid_tokens', message: 'Ungültige Token-Daten. Bitte authentifizieren Sie sich erneut.' },
+        {
+          error: 'invalid_tokens',
+          message: 'Ungültige Token-Daten. Bitte authentifizieren Sie sich erneut.',
+        },
         { status: 401 }
       );
     }
 
     // Check if tokens are expired
     const now = Date.now();
-    const expiresAt = tokenData.connected_at + (tokenData.expires_in * 1000);
-    
+    const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
+
     if (now >= expiresAt) {
       console.log('⚠️ [DATEV Cookie Organization] Tokens expired, attempting refresh...');
-      
+
       // Try to refresh tokens
       const refreshResult = await refreshTokens(finalCompanyId, tokenData.refresh_token);
       if (!refreshResult.success) {
         return NextResponse.json(
-          { error: 'token_expired', message: 'Token abgelaufen. Bitte authentifizieren Sie sich erneut.' },
+          {
+            error: 'token_expired',
+            message: 'Token abgelaufen. Bitte authentifizieren Sie sich erneut.',
+          },
           { status: 401 }
         );
       }
-      
+
       tokenData = refreshResult.tokenData;
     }
 
@@ -100,8 +111,8 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${config.apiBaseUrl}/platform/v1/userinfo`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Accept: 'application/json',
       },
     });
 
@@ -112,19 +123,62 @@ export async function POST(request: NextRequest) {
         statusText: response.statusText,
         error: errorText,
       });
-      
+
+      // Check for token-related errors
+      let errorObj: any = null;
+      try {
+        errorObj = JSON.parse(errorText);
+      } catch (e) {
+        // Ignore parse errors
+      }
+
+      // Handle invalid token errors
+      if (
+        response.status === 401 &&
+        errorObj &&
+        (errorObj.error === 'invalid_token' ||
+          (errorObj.error_description &&
+            (errorObj.error_description.includes('Token issued to another client') ||
+              errorObj.error_description.includes('Token malformed') ||
+              errorObj.error_description.includes('invalid_token'))))
+      ) {
+        console.warn('⚠️ [DATEV Cookie Organization] Invalid token detected, clearing cookie...');
+
+        // Clear the invalid token cookie
+        const cookieName = `datev_tokens_${finalCompanyId}`;
+        const response = NextResponse.json(
+          {
+            error: 'invalid_token',
+            message: 'DATEV-Token ungültig. Bitte authentifizieren Sie sich erneut.',
+            error_description: errorObj.error_description,
+          },
+          { status: 401 }
+        );
+
+        // Clear the cookie
+        response.cookies.set(cookieName, '', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 0, // Delete cookie
+          path: '/',
+        });
+
+        return response;
+      }
+
       return NextResponse.json(
-        { 
-          error: 'api_error', 
+        {
+          error: 'api_error',
           message: `DATEV API-Fehler: ${response.status} ${response.statusText}`,
-          details: errorText 
+          details: errorText,
         },
         { status: response.status }
       );
     }
 
     const organizationData = await response.json();
-    
+
     console.log('✅ [DATEV Cookie Organization] Userinfo fetched successfully:', {
       hasData: !!organizationData,
       dataKeys: Object.keys(organizationData || {}),
@@ -135,14 +189,13 @@ export async function POST(request: NextRequest) {
       data: organizationData,
       timestamp: Date.now(),
     });
-
   } catch (error) {
     console.error('❌ [DATEV Cookie Organization] Unexpected error:', error);
     return NextResponse.json(
-      { 
-        error: 'internal_server_error', 
+      {
+        error: 'internal_server_error',
         message: 'Unerwarteter Serverfehler',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -155,7 +208,7 @@ export async function POST(request: NextRequest) {
 async function refreshTokens(companyId: string, refreshToken: string) {
   try {
     const config = getDatevConfig();
-    
+
     const refreshData = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -167,19 +220,23 @@ async function refreshTokens(companyId: string, refreshToken: string) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
+        Accept: 'application/json',
+        Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
       },
       body: refreshData.toString(),
     });
 
     if (!response.ok) {
-      console.error('❌ [DATEV Cookie Organization] Token refresh failed:', response.status, response.statusText);
+      console.error(
+        '❌ [DATEV Cookie Organization] Token refresh failed:',
+        response.status,
+        response.statusText
+      );
       return { success: false };
     }
 
     const newTokenData = await response.json();
-    
+
     // Update cookie with new tokens
     const fullTokenData = {
       ...newTokenData,
@@ -193,12 +250,11 @@ async function refreshTokens(companyId: string, refreshToken: string) {
     // Note: In a real server route, we'd need to set the cookie in the response
     // For now, we just return the new token data
     console.log('✅ [DATEV Cookie Organization] Tokens refreshed successfully');
-    
-    return { 
-      success: true, 
-      tokenData: fullTokenData 
-    };
 
+    return {
+      success: true,
+      tokenData: fullTokenData,
+    };
   } catch (error) {
     console.error('❌ [DATEV Cookie Organization] Token refresh error:', error);
     return { success: false };
