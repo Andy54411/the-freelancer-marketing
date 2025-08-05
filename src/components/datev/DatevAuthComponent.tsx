@@ -47,6 +47,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const [connection, setConnection] = useState<DatevConnection | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
     // Check URL parameters for OAuth callback results
@@ -90,11 +91,17 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     }
 
     loadDatevConnection();
-  }, [companyId]);
+  }, [companyId, hasAttemptedLoad]);
 
   const loadDatevConnection = async () => {
+    if (hasAttemptedLoad) {
+      console.log('🚫 [DATEV Debug] Already attempted to load connection, skipping...');
+      return;
+    }
+
     try {
       setLoading(true);
+      setHasAttemptedLoad(true);
       console.log('🔍 [DATEV Debug] Loading connection for company:', companyId);
 
       // Check if we have stored tokens in Firestore for this company
@@ -163,6 +170,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
       // Validate the token by trying to fetch organizations
       try {
+        console.log('🔍 [DATEV Debug] Validating token by fetching organizations...');
         const organizations = await DatevService.getOrganizations();
 
         if (organizations && organizations.length > 0) {
@@ -197,11 +205,13 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       } catch (apiError) {
         console.error('DATEV API error during connection check:', apiError);
 
-        // If API call fails, the token is likely invalid
+        // If API call fails, the token is likely invalid - don't retry
         if (apiError instanceof Error && apiError.message.includes('authentication')) {
+          console.log('🚫 [DATEV Debug] Authentication failed, clearing tokens');
           DatevTokenManager.clearUserToken();
           toast.error('DATEV-Authentifizierung abgelaufen. Bitte erneut verbinden.');
         } else {
+          console.error('🚫 [DATEV Debug] API error during validation:', apiError);
           toast.error('Fehler beim Überprüfen der DATEV-Verbindung');
         }
 
@@ -209,7 +219,14 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       }
     } catch (error) {
       console.error('DATEV connection check failed:', error);
-      handleAuthError(error instanceof Error ? error.message : 'Unbekannter Fehler');
+      // Don't show error toast for expected authentication failures
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      if (!errorMessage.includes('authentication')) {
+        handleAuthError(errorMessage);
+      } else {
+        console.log('🚫 [DATEV Debug] Expected authentication failure, no error shown');
+        handleAuthError('Keine DATEV-Authentifizierung gefunden');
+      }
     } finally {
       setLoading(false);
     }
@@ -230,6 +247,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const handleConnect = async () => {
     try {
       setConnecting(true);
+      setHasAttemptedLoad(false); // Reset flag for retry
 
       // Generate OAuth URL via API route to avoid environment variable issues on client side
       const state = `company:${companyId}:${Date.now()}`;
