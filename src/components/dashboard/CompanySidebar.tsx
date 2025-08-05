@@ -227,6 +227,11 @@ const navigationItems: NavigationItem[] = [
     subItems: [
       {
         label: 'Dashboard',
+        value: 'datev-main',
+        href: 'datev',
+      },
+      {
+        label: 'Übersicht',
         value: 'datev-overview',
         href: 'datev/overview',
       },
