@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 import { DatevAuthComponent } from '@/components/datev/DatevAuthComponent';
 import { DatevSandboxTest } from '@/components/datev/DatevSandboxTest';
+import { DatevFlowTest } from '@/components/datev/DatevFlowTest';
 
 interface DatevSetupPageProps {
   params: Promise<{
@@ -156,6 +157,9 @@ export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
         </CardHeader>
         <CardContent>
           <DatevSandboxTest companyId={uid} />
+          <div className="mt-6 pt-6 border-t">
+            <DatevFlowTest companyId={uid} />
+          </div>
         </CardContent>
       </Card>
 

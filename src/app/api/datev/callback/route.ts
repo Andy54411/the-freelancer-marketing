@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
         : 'https://taskilo.de/dashboard/company/unknown/datev/setup';
 
+    console.log('🔄 [DATEV Callback] Initial redirect URL:', redirectUrl);
+
     // Log detailed callback information for debugging
     console.log('DATEV OpenID Connect Callback received:', {
       code: code ? `${code.substring(0, 10)}...` : null,
@@ -101,6 +103,8 @@ export async function GET(request: NextRequest) {
         ? `http://localhost:3000/dashboard/company/${companyId}/datev/setup`
         : `https://taskilo.de/dashboard/company/${companyId}/datev/setup`;
 
+    console.log('🔄 [DATEV Callback] Final redirect URL:', redirectUrl);
+
     // Validate state timestamp (should not be older than 10 minutes)
     const stateTime = parseInt(timestamp);
     const now = Date.now();
@@ -137,7 +141,11 @@ export async function GET(request: NextRequest) {
 
       console.log('DATEV token exchange successful for company:', companyId);
 
-      return NextResponse.redirect(`${redirectUrl}?datev_auth=success&company=${companyId}`);
+      // IMPORTANT: Use a more specific success URL with clear parameters
+      const successUrl = `${redirectUrl}?datev_auth=success&company=${companyId}&timestamp=${Date.now()}`;
+      console.log('🔄 [DATEV Callback] Redirecting to:', successUrl);
+
+      return NextResponse.redirect(successUrl);
     } catch (tokenError) {
       console.error('Token exchange failed:', tokenError);
       return NextResponse.redirect(

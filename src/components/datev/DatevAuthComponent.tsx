@@ -54,10 +54,28 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     const authStatus = urlParams.get('datev_auth');
     const errorMessage = urlParams.get('message');
     const errorType = urlParams.get('error');
+    const callbackCompany = urlParams.get('company');
+
+    console.log('🔍 [DATEV Auth] Checking callback params:', {
+      authStatus,
+      errorType,
+      callbackCompany,
+      currentCompanyId: companyId,
+      currentPath: window.location.pathname,
+    });
 
     // Handle OAuth callback results
     if (authStatus === 'success') {
-      toast.success('DATEV-Authentifizierung erfolgreich abgeschlossen!');
+      // Verify that the callback is for the correct company
+      if (callbackCompany === companyId) {
+        toast.success('DATEV-Authentifizierung erfolgreich abgeschlossen!');
+        console.log('✅ [DATEV Auth] Successful auth for correct company');
+      } else {
+        console.warn('⚠️ [DATEV Auth] Company ID mismatch in callback:', {
+          expected: companyId,
+          received: callbackCompany,
+        });
+      }
       // Clean the URL parameters
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
