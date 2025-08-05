@@ -68,6 +68,13 @@ export class FinAPISDKService {
       return this.clientToken;
     }
 
+    // HINZUGEFÜGT: Überprüfung der Anmeldeinformationen zur Laufzeit, um Build-Fehler zu vermeiden
+    if (!this.config.credentials.clientId || !this.config.credentials.clientSecret) {
+      throw new Error(
+        `finAPI ${this.config.environment} credentials are not configured. Please set the required environment variables.`
+      );
+    }
+
     console.log('🔑 Getting new finAPI client token...');
 
     const authApi = this.getAuthApi();
@@ -91,6 +98,13 @@ export class FinAPISDKService {
    */
   async getUserToken(userId: string, password: string): Promise<string> {
     console.log('👤 Getting finAPI user token for:', userId);
+
+    // HINZUGEFÜGT: Überprüfung der Anmeldeinformationen zur Laufzeit
+    if (!this.config.credentials.clientId || !this.config.credentials.clientSecret) {
+      throw new Error(
+        `finAPI ${this.config.environment} credentials are not configured. Please set the required environment variables.`
+      );
+    }
 
     const authApi = this.getAuthApi();
     const tokenResponse = await authApi.getToken(
@@ -356,15 +370,12 @@ export function createFinAPIService(
   let credentials: FinAPICredentials;
 
   if (environment === 'sandbox') {
-    const clientId = process.env.FINAPI_SANDBOX_CLIENT_ID?.trim();
-    const clientSecret = process.env.FINAPI_SANDBOX_CLIENT_SECRET?.trim();
+    const clientId = process.env.FINAPI_SANDBOX_CLIENT_ID?.trim() || '';
+    const clientSecret = process.env.FINAPI_SANDBOX_CLIENT_SECRET?.trim() || '';
     const dataDecryptionKey = process.env.FINAPI_SANDBOX_DATA_DECRYPTION_KEY?.trim();
 
-    if (!clientId || !clientSecret) {
-      throw new Error(
-        'finAPI Sandbox credentials are not configured. Please set FINAPI_SANDBOX_CLIENT_ID and FINAPI_SANDBOX_CLIENT_SECRET in environment variables.'
-      );
-    }
+    // ENTFERNT: Fehler wird jetzt zur Laufzeit in den API-Methoden ausgelöst, nicht beim Build.
+    // Die Überprüfung findet jetzt in `getClientToken` und `getUserToken` statt.
 
     credentials = {
       clientId,
@@ -372,15 +383,11 @@ export function createFinAPIService(
       dataDecryptionKey,
     };
   } else {
-    const clientId = process.env.FINAPI_PRODUCTION_CLIENT_ID?.trim();
-    const clientSecret = process.env.FINAPI_PRODUCTION_CLIENT_SECRET?.trim();
+    const clientId = process.env.FINAPI_PRODUCTION_CLIENT_ID?.trim() || '';
+    const clientSecret = process.env.FINAPI_PRODUCTION_CLIENT_SECRET?.trim() || '';
     const dataDecryptionKey = process.env.FINAPI_PRODUCTION_DATA_DECRYPTION_KEY?.trim();
 
-    if (!clientId || !clientSecret) {
-      throw new Error(
-        'finAPI Production credentials are not configured. Please set FINAPI_PRODUCTION_CLIENT_ID and FINAPI_PRODUCTION_CLIENT_SECRET in environment variables.'
-      );
-    }
+    // ENTFERNT: Fehler wird jetzt zur Laufzeit in den API-Methoden ausgelöst, nicht beim Build.
 
     credentials = {
       clientId,
@@ -401,15 +408,11 @@ export function createFinAPIAdminService(
   let credentials: FinAPICredentials;
 
   if (environment === 'sandbox') {
-    const clientId = process.env.FINAPI_ADMIN_CLIENT_ID?.trim();
-    const clientSecret = process.env.FINAPI_ADMIN_CLIENT_SECRET?.trim();
+    const clientId = process.env.FINAPI_ADMIN_CLIENT_ID?.trim() || '';
+    const clientSecret = process.env.FINAPI_ADMIN_CLIENT_SECRET?.trim() || '';
     const dataDecryptionKey = process.env.FINAPI_ADMIN_DATA_DECRYPTION_KEY?.trim();
 
-    if (!clientId || !clientSecret) {
-      throw new Error(
-        'finAPI Admin credentials are not configured. Please set FINAPI_ADMIN_CLIENT_ID and FINAPI_ADMIN_CLIENT_SECRET in environment variables.'
-      );
-    }
+    // ENTFERNT: Fehler wird jetzt zur Laufzeit in den API-Methoden ausgelöst, nicht beim Build.
 
     credentials = {
       clientId,
@@ -417,15 +420,11 @@ export function createFinAPIAdminService(
       dataDecryptionKey,
     };
   } else {
-    const clientId = process.env.FINAPI_ADMIN_PRODUCTION_CLIENT_ID?.trim();
-    const clientSecret = process.env.FINAPI_ADMIN_PRODUCTION_CLIENT_SECRET?.trim();
+    const clientId = process.env.FINAPI_ADMIN_PRODUCTION_CLIENT_ID?.trim() || '';
+    const clientSecret = process.env.FINAPI_ADMIN_PRODUCTION_CLIENT_SECRET?.trim() || '';
     const dataDecryptionKey = process.env.FINAPI_ADMIN_PRODUCTION_DATA_DECRYPTION_KEY?.trim();
 
-    if (!clientId || !clientSecret) {
-      throw new Error(
-        'finAPI Admin Production credentials are not configured. Please set FINAPI_ADMIN_PRODUCTION_CLIENT_ID and FINAPI_ADMIN_PRODUCTION_CLIENT_SECRET in environment variables.'
-      );
-    }
+    // ENTFERNT: Fehler wird jetzt zur Laufzeit in den API-Methoden ausgelöst, nicht beim Build.
 
     credentials = {
       clientId,
