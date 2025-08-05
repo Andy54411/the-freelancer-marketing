@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig } from '@/lib/datev-config';
-import { retrievePKCEData } from '@/lib/pkce-storage';
-import { DatevCookieManager } from '@/lib/datev-cookie-manager';
 
 /**
  * DATEV OAuth Callback Handler - Cookie Based
@@ -84,22 +82,40 @@ export async function GET(request: NextRequest) {
         expiresIn: tokenData.expires_in,
       });
 
-      // Store tokens in cookies
-      DatevCookieManager.setTokens(companyId, {
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_at: Date.now() + tokenData.expires_in * 1000,
-        scope: tokenData.scope || '',
-        token_type: tokenData.token_type || 'Bearer',
+      // Store tokens in cookies using NextResponse
+      const response = NextResponse.redirect(
+        `${redirectUrl}?datev_auth=success&company=${companyId}&timestamp=${Date.now()}`
+      );
+
+      // Create secure cookie value
+      const fullTokenData = {
+        ...tokenData,
+        connected_at: Date.now(),
+        company_id: companyId,
+      };
+
+      // Encode token data as base64 for safe cookie storage
+      const encodedData = Buffer.from(JSON.stringify(fullTokenData)).toString('base64');
+      const cookieName = `datev_tokens_${companyId}`;
+
+      // Set secure HTTP-only cookie
+      response.cookies.set(cookieName, encodedData, {
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true, // Server-only for security
       });
 
-      console.log('✅ [DATEV Cookie Callback] Tokens stored in cookies for company:', companyId);
+      console.log('✅ [DATEV Cookie Callback] Tokens stored in HTTP-only cookie for company:', companyId, {
+        cookieName,
+        dataSize: encodedData.length,
+        expiresIn: tokenData.expires_in,
+        scope: tokenData.scope || '',
+      });
 
-      // Redirect to success page
-      const successUrl = `${redirectUrl}?datev_auth=success&company=${companyId}&timestamp=${Date.now()}`;
-      console.log('🔄 [DATEV Cookie Callback] Redirecting to:', successUrl);
-
-      return NextResponse.redirect(successUrl);
+      console.log('🔄 [DATEV Cookie Callback] Redirecting to success page...');
+      return response;
     } catch (tokenError) {
       console.error('❌ [DATEV Cookie Callback] Token exchange failed:', tokenError);
       return NextResponse.redirect(
@@ -125,26 +141,88 @@ export async function GET(request: NextRequest) {
  */
 async function exchangeCodeForTokens(code: string, codeVerifier: string) {
   const config = getDatevConfig();
+  
+  // Use same redirect_uri as in auth request - DATEV Sandbox Requirement  
+  // WICHTIG: Port 80 Proxy für DATEV Sandbox Compliance
+  const cookieRedirectUri = process.env.NODE_ENV === 'development'
+    ? 'http://localhost'  // DATEV Sandbox: Port 80 Proxy Server
+    : 'https://taskilo.de/api/datev/callback';
 
+  // DATEV PKCE Flow - Try with HTTP Basic Auth only (remove client_secret from body)
   const tokenRequestData = new URLSearchParams({
     grant_type: 'authorization_code',
     code: code,
-    redirect_uri: config.redirectUri,
+    redirect_uri: cookieRedirectUri,
     client_id: config.clientId,
-    client_secret: config.clientSecret,
     code_verifier: codeVerifier,
+    // No client_secret in body when using Basic Auth
   });
 
-  console.log('🔄 [DATEV Cookie Callback] Exchanging code for tokens...');
+  // First try without client_secret (standard PKCE)
+  console.log('🔄 [DATEV Cookie Callback] Exchanging code for tokens (PKCE-only)...', {
+    redirectUri: cookieRedirectUri,
+    hasCode: !!code,
+    hasVerifier: !!codeVerifier,
+    clientId: config.clientId,
+    tokenUrl: config.tokenUrl,
+    requestBody: Object.fromEntries(tokenRequestData.entries()),
+  });
+
+  console.log('🌐 [DATEV Debug] Sending token request to:', config.tokenUrl);
 
   const response = await fetch(config.tokenUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
+      // Try HTTP Basic Auth for DATEV client authentication
+      Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
     },
     body: tokenRequestData.toString(),
   });
+
+  // If PKCE-only fails with invalid_client, try with client_secret
+  if (!response.ok && response.status === 401) {
+    console.log('⚠️ [DATEV Cookie Callback] PKCE-only failed, trying with client_secret...');
+    
+    const tokenRequestDataWithSecret = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: cookieRedirectUri,
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      code_verifier: codeVerifier,
+    });
+
+    const responseWithSecret = await fetch(config.tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        // Try HTTP Basic Auth for client authentication
+        Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
+      },
+      body: tokenRequestDataWithSecret.toString(),
+    });
+
+    if (!responseWithSecret.ok) {
+      const errorText = await responseWithSecret.text();
+      console.error('Token exchange failed (both attempts):', {
+        pkceOnlyStatus: response.status,
+        withSecretStatus: responseWithSecret.status,
+        error: errorText,
+      });
+      throw new Error(`Token exchange failed: ${responseWithSecret.status} ${responseWithSecret.statusText}`);
+    }
+
+    const tokenData = await responseWithSecret.json();
+    
+    if (!tokenData.access_token) {
+      throw new Error('No access token received');
+    }
+
+    return tokenData;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

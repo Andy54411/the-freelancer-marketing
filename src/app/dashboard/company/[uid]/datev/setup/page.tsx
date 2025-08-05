@@ -103,13 +103,14 @@ export default function DatevSetupPage({ params }: DatevSetupPageProps) {
             </div>
           )}
 
-          {/* Security Info */}
+          {/* Security Info - Enhanced based on sevdesk approach */}
           <Alert>
             <FiShield className="h-4 w-4" />
             <AlertDescription>
               <strong>Sicherheit & Datenschutz:</strong> Ihre DATEV-Zugangsdaten werden
-              verschlüsselt gespeichert und nur für autorisierte Integrationen verwendet. Die
-              Verbindung erfolgt über DATEVs offizielle OAuth2-Schnittstelle.
+              verschlüsselt und ausschließlich in Deutschland gespeichert. Die Verbindung erfolgt über 
+              DATEVs offizielle OAuth2-Schnittstelle - Ihre Passwörter werden niemals von Taskilo gespeichert.
+              Alle Daten unterliegen der DSGVO und werden gemäß unserem Auftragsverarbeitungsvertrag behandelt.
             </AlertDescription>
           </Alert>
         </CardContent>

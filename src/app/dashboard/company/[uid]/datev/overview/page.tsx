@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { use } from 'react';
 import { DatevDashboard } from '@/components/datev/DatevDashboard';
 
 interface DatevOverviewPageProps {
@@ -9,8 +9,8 @@ interface DatevOverviewPageProps {
   }>;
 }
 
-export default async function DatevOverviewPage({ params }: DatevOverviewPageProps) {
-  const { uid } = await params;
+export default function DatevOverviewPage({ params }: DatevOverviewPageProps) {
+  const { uid } = use(params);
 
   return (
     <div className="space-y-6">

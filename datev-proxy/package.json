@@ -1,0 +1,12 @@
+{
+  "name": "datev-proxy-server",
+  "version": "1.0.0",
+  "description": "DATEV OAuth Proxy Server for localhost:80 to localhost:3000",
+  "main": "datev-proxy.js",
+  "scripts": {
+    "start": "node datev-proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

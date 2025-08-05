@@ -1,6 +1,3 @@
-'use client';
-
-import React from 'react';
 import { SteuerberaterPortal } from '@/components/datev/SteuerberaterPortal';
 
 interface SteuerberaterPageProps {
@@ -11,21 +8,21 @@ interface SteuerberaterPageProps {
 
 export default async function SteuerberaterPage({ params }: SteuerberaterPageProps) {
   const { uid } = await params;
-
+  
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Steuerberater-Portal</h1>
-          <p className="text-gray-600 mt-1">
-            Kollaboration und Datenaustausch mit Ihrem Steuerberater
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Steuerberater-Kollaboration
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Arbeiten Sie sicher und effizient mit Ihrem Steuerberater zusammen
           </p>
         </div>
+        
+        <SteuerberaterPortal companyId={uid} />
       </div>
-
-      {/* Portal Component */}
-      <SteuerberaterPortal companyId={uid} />
     </div>
   );
 }

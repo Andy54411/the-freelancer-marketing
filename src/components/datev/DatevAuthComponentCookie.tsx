@@ -99,7 +99,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ company_id: companyId }),
+        body: JSON.stringify({ companyId: companyId }),
       });
 
       if (response.ok) {
@@ -120,7 +120,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     }
   };
 
-  const loadConnectionStatus = () => {
+  const loadConnectionStatus = async () => {
     try {
       console.log('🔍 [DATEV Cookie Auth] Loading connection status for company:', companyId);
 
@@ -139,22 +139,38 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         return;
       }
 
-      const status = DatevCookieManager.getConnectionStatus(companyId);
-
-      console.log('📊 [DATEV Cookie Auth] Connection status:', status);
-
-      setConnection({
-        isConnected: status.isConnected,
-        organization: status.organization,
-        connectedAt: status.connectedAt,
-        expiresAt: status.expiresAt,
-        features: {
-          accountingData: status.isConnected,
-          documents: status.isConnected,
-          masterData: status.isConnected,
-          cashRegister: status.isConnected,
+      // Call server-side status API
+      const response = await fetch('/api/datev/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ companyId: companyId }),
       });
+
+      if (response.ok) {
+        const status = await response.json();
+        console.log('📊 [DATEV Cookie Auth] Connection status:', status);
+
+        setConnection({
+          isConnected: status.isConnected,
+          organization: status.organization,
+          connectedAt: status.connectedAt,
+          expiresAt: status.expiresAt,
+          features: status.features,
+        });
+      } else {
+        console.error('❌ [DATEV Cookie Auth] Failed to fetch connection status');
+        setConnection({
+          isConnected: false,
+          features: {
+            accountingData: false,
+            documents: false,
+            masterData: false,
+            cashRegister: false,
+          },
+        });
+      }
     } catch (error) {
       console.error('❌ [DATEV Cookie Auth] Error loading connection status:', error);
       setConnection({
@@ -418,12 +434,17 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         <div className="text-sm text-gray-600 space-y-2">
           <div className="flex items-center justify-center gap-2">
             <FiShield className="w-4 h-4 text-green-600" />
-            <span>Sichere OAuth2-Authentifizierung</span>
+            <span>Sichere OAuth2-Authentifizierung nach sevdesk-Standard</span>
           </div>
           <p>
-            Sie werden zu DATEV weitergeleitet, um sich sicher anzumelden. Ihre Zugangsdaten werden
-            nie von Taskilo gespeichert.
+            Sie werden zu DATEV weitergeleitet, um sich sicher anzumelden. Ihre Zugangsdaten
+            werden nie von Taskilo gespeichert. Alle Daten werden DSGVO-konform und 
+            ausschließlich in Deutschland verarbeitet.
           </p>
+          <div className="text-xs text-gray-500 mt-2">
+            🇩🇪 Datenschutz: Nach deutschem Recht • 🔒 Verschlüsselt • 
+            📋 Auftragsverarbeitungsvertrag verfügbar
+          </div>
         </div>
       </div>
     </div>

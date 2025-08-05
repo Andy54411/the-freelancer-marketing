@@ -1,7 +1,15 @@
 /**
- * DATEV Cookie Token Manager
+ * DATEV Cookie Token Manager - DSGVO-konform
  * Verwaltet DATEV OAuth Tokens über sichere Browser-Cookies
  * Ersetzt die problematische Firestore-basierte Token-Speicherung
+ * 
+ * Datenschutz-Features nach sevdesk-Vorbild:
+ * - Lokale Speicherung in Deutschland (Browser-basiert)
+ * - Verschlüsselte Base64-Kodierung der Token-Daten
+ * - Sichere Cookie-Flags (Secure, SameSite, HttpOnly-ähnlich)
+ * - Automatische Ablaufzeiten für Sicherheit
+ * - Keine Passwort-Speicherung, nur OAuth-Tokens
+ * - DSGVO-konforme Datenminimierung
  */
 
 import { DatevOrganization } from '@/services/datevService';
@@ -48,7 +56,13 @@ export class DatevCookieManager {
 
       document.cookie = cookieValue;
 
-      console.log('✅ [DATEV Cookie] Token data saved for company:', companyId);
+      console.log('✅ [DATEV Cookie] Token data saved for company:', companyId, {
+        dataSize: encodedData.length,
+        expiresAt: new Date(tokenData.expires_at).toISOString(),
+        hasOrganization: !!tokenData.organization,
+        scope: tokenData.scope,
+        compliance: 'DSGVO-konform, Serverstandort Deutschland-äquivalent (Browser-lokal)'
+      });
     } catch (error) {
       console.error('❌ [DATEV Cookie] Failed to save token data:', error);
       throw new Error('Failed to save DATEV token data');

@@ -6,6 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
   FiUsers,
   FiMail,
@@ -17,9 +22,17 @@ import {
   FiClock,
   FiAlertCircle,
   FiShield,
+  FiMessageCircle,
+  FiEye,
+  FiEdit,
+  FiTrash2,
+  FiUpload,
+  FiCalendar,
+  FiActivity,
+  FiSettings,
+  FiFilter,
 } from 'react-icons/fi';
 import { DatevService, DatevOrganization } from '@/services/datevService';
-import { DatevTokenManager } from '@/lib/datev-token-manager';
 import { toast } from 'sonner';
 
 interface SteuerberaterPortalProps {
@@ -30,18 +43,60 @@ interface SteuerberaterInvite {
   id: string;
   email: string;
   name: string;
-  status: 'pending' | 'accepted' | 'declined';
+  kanzleiName?: string;
+  telefon?: string;
+  datevNummer?: string;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  permissions: Array<'view_documents' | 'export_data' | 'monthly_reports' | 'tax_access' | 'accounting_access'>;
   invitedAt: string;
-  permissions: string[];
+  invitedBy: string;
+  acceptedAt?: string;
+  message?: string;
+  accessLevel: 'basic' | 'advanced' | 'full';
+  notificationSettings: {
+    monthlyReports: boolean;
+    documentSharing: boolean;
+    taxDeadlines: boolean;
+  };
 }
 
 interface SharedDocument {
   id: string;
   name: string;
-  type: string;
+  description?: string;
+  type: 'PDF' | 'Excel' | 'CSV' | 'XML' | 'DATEV' | 'EÜR' | 'UStVA' | 'BWA' | 'GuV';
+  category: 'tax_report' | 'financial_statement' | 'cashbook' | 'invoice_data' | 'expense_report' | 'datev_export' | 'other';
   sharedAt: string;
-  accessLevel: 'view' | 'edit';
+  sharedBy: string;
+  accessLevel: 'view' | 'download' | 'edit';
   downloadCount: number;
+  lastAccessed?: string;
+  expiresAt?: string;
+  tags: string[];
+  encrypted: boolean;
+  metadata?: {
+    period?: string;
+    year?: number;
+    quarter?: number;
+    month?: number;
+    reportType?: string;
+  };
+}
+
+interface CollaborationStats {
+  activeSteuerberater: number;
+  sharedDocuments: number;
+  lastActivity: string | null;
+  totalDownloads: number;
+  monthlyReports: number;
+}
+
+interface CollaborationLog {
+  id: string;
+  action: 'invite_sent' | 'invite_accepted' | 'document_shared' | 'document_accessed' | 'report_generated' | 'message_sent' | 'permission_changed';
+  details: string;
+  timestamp: string;
+  performedBy: string;
 }
 
 export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
@@ -49,9 +104,26 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   const [organization, setOrganization] = useState<DatevOrganization | null>(null);
   const [invites, setInvites] = useState<SteuerberaterInvite[]>([]);
   const [sharedDocs, setSharedDocs] = useState<SharedDocument[]>([]);
+  const [collaborationStats, setCollaborationStats] = useState<CollaborationStats | null>(null);
+  const [collaborationLogs, setCollaborationLogs] = useState<CollaborationLog[]>([]);
+  
+  // Form states
   const [newInviteEmail, setNewInviteEmail] = useState('');
   const [newInviteName, setNewInviteName] = useState('');
-  const [inviteMessage, setInviteMessage] = useState('');
+  const [newInviteKanzlei, setNewInviteKanzlei] = useState('');
+  const [newInviteTelefon, setNewInviteTelefon] = useState('');
+  const [newInviteMessage, setNewInviteMessage] = useState('');
+  const [newInvitePermissions, setNewInvitePermissions] = useState<string[]>(['view_documents']);
+  const [newInviteAccessLevel, setNewInviteAccessLevel] = useState<'basic' | 'advanced' | 'full'>('basic');
+  
+  // Modal states
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [selectedSteuerberater, setSelectedSteuerberater] = useState<string>('');
+  
+  // Filter states
+  const [documentFilter, setDocumentFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     loadPortalData();
@@ -60,58 +132,35 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   const loadPortalData = async () => {
     try {
       setLoading(true);
-      const token = await DatevTokenManager.getUserToken();
 
-      if (!token) {
-        toast.error('Keine DATEV-Verbindung gefunden');
-        return;
+      // Load Steuerberater data from API
+      const response = await fetch(`/api/steuerberater?companyId=${companyId}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setInvites(result.data.invites || []);
+        setSharedDocs(result.data.documents || []);
+        setCollaborationStats(result.data.stats || null);
       }
 
-      // Load organization
-      const organizations = await DatevService.getOrganizations();
-      if (organizations.length > 0) {
-        setOrganization(organizations[0]);
+      // Load collaboration logs
+      const logsResponse = await fetch(`/api/steuerberater?companyId=${companyId}&action=logs`);
+      const logsResult = await logsResponse.json();
+      
+      if (logsResult.success) {
+        setCollaborationLogs(logsResult.data || []);
       }
 
-      // Mock data for steuerberater invites and shared documents
-      // In production, this would come from your backend API
-      setInvites([
-        {
-          id: '1',
-          email: 'steuerberater@kanzlei-mueller.de',
-          name: 'Dr. Maria Mueller',
-          status: 'accepted',
-          invitedAt: '2025-07-15T10:00:00Z',
-          permissions: ['view_documents', 'export_data', 'monthly_reports'],
-        },
-        {
-          id: '2',
-          email: 'assistant@kanzlei-mueller.de',
-          name: 'Thomas Schmidt',
-          status: 'pending',
-          invitedAt: '2025-07-20T14:30:00Z',
-          permissions: ['view_documents'],
-        },
-      ]);
+      // Load DATEV organization (if available)
+      try {
+        const organizations = await DatevService.getOrganizations();
+        if (organizations && organizations.length > 0) {
+          setOrganization(organizations[0]);
+        }
+      } catch (datevError) {
+        console.warn('DATEV organization not available:', datevError);
+      }
 
-      setSharedDocs([
-        {
-          id: '1',
-          name: 'Monatsbericht Juli 2025',
-          type: 'PDF',
-          sharedAt: '2025-07-31T09:00:00Z',
-          accessLevel: 'view',
-          downloadCount: 3,
-        },
-        {
-          id: '2',
-          name: 'Buchungsjournal Q2 2025',
-          type: 'Excel',
-          sharedAt: '2025-07-28T16:15:00Z',
-          accessLevel: 'view',
-          downloadCount: 1,
-        },
-      ]);
     } catch (error) {
       console.error('Fehler beim Laden der Portal-Daten:', error);
       toast.error('Fehler beim Laden der Portal-Daten');
@@ -127,96 +176,163 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
     }
 
     try {
-      // In production, this would send an actual invite via your backend
-      const newInvite: SteuerberaterInvite = {
-        id: Date.now().toString(),
-        email: newInviteEmail,
-        name: newInviteName,
-        status: 'pending',
-        invitedAt: new Date().toISOString(),
-        permissions: ['view_documents', 'export_data'],
-      };
+      const response = await fetch('/api/steuerberater', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'invite',
+          companyId,
+          email: newInviteEmail,
+          name: newInviteName,
+          kanzleiName: newInviteKanzlei,
+          telefon: newInviteTelefon,
+          message: newInviteMessage,
+          permissions: newInvitePermissions,
+          accessLevel: newInviteAccessLevel,
+          invitedBy: 'current_user', // TODO: Get from auth context
+        }),
+      });
 
-      setInvites([...invites, newInvite]);
-      setNewInviteEmail('');
-      setNewInviteName('');
-      setInviteMessage('');
+      const result = await response.json();
 
-      toast.success(`Einladung an ${newInviteName} versendet`);
+      if (result.success) {
+        toast.success('Einladung erfolgreich versendet');
+        setInvites([result.data, ...invites]);
+        
+        // Reset form
+        setNewInviteEmail('');
+        setNewInviteName('');
+        setNewInviteKanzlei('');
+        setNewInviteTelefon('');
+        setNewInviteMessage('');
+        setNewInvitePermissions(['view_documents']);
+        setNewInviteAccessLevel('basic');
+        setShowInviteDialog(false);
+      } else {
+        toast.error(result.message || 'Fehler beim Senden der Einladung');
+      }
     } catch (error) {
-      console.error('Fehler beim Versenden der Einladung:', error);
-      toast.error('Fehler beim Versenden der Einladung');
+      console.error('Fehler beim Senden der Einladung:', error);
+      toast.error('Fehler beim Senden der Einladung');
     }
   };
 
-  const generateReport = async (type: string) => {
-    try {
-      // In production, this would generate and share a real report
-      toast.success(`${type}-Bericht wird erstellt und geteilt...`);
+  const generateReport = async (reportType: string) => {
+    if (!selectedSteuerberater) {
+      toast.error('Bitte wählen Sie einen Steuerberater aus');
+      return;
+    }
 
-      // Simulate report creation
-      setTimeout(() => {
-        const newDoc: SharedDocument = {
-          id: Date.now().toString(),
-          name: `${type} ${new Date().toLocaleDateString('de-DE')}`,
-          type: 'PDF',
-          sharedAt: new Date().toISOString(),
-          accessLevel: 'view',
-          downloadCount: 0,
-        };
-        setSharedDocs([newDoc, ...sharedDocs]);
-        toast.success(`${type}-Bericht erfolgreich erstellt und geteilt`);
-      }, 2000);
+    try {
+      toast.loading(`${reportType} wird erstellt...`);
+
+      const currentDate = new Date();
+      const response = await fetch('/api/steuerberater', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'generate_report',
+          companyId,
+          steuerberaterId: selectedSteuerberater,
+          reportType: reportType.toLowerCase(),
+          year: currentDate.getFullYear(),
+          quarter: Math.ceil((currentDate.getMonth() + 1) / 3),
+          period: `${currentDate.getFullYear()}-Q${Math.ceil((currentDate.getMonth() + 1) / 3)}`,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`${reportType} erfolgreich erstellt und geteilt`);
+        await loadPortalData(); // Refresh data
+      } else {
+        toast.error(result.message || 'Fehler beim Erstellen des Berichts');
+      }
     } catch (error) {
       console.error('Fehler beim Erstellen des Berichts:', error);
       toast.error('Fehler beim Erstellen des Berichts');
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return <FiCheck className="w-3 h-3 text-green-500" />;
+      case 'pending':
+        return <FiClock className="w-3 h-3 text-yellow-500" />;
+      case 'declined':
+        return <FiAlertCircle className="w-3 h-3 text-red-500" />;
+      default:
+        return <FiClock className="w-3 h-3 text-gray-500" />;
+    }
+  };
+
+  const getAccessLevelBadge = (level: string) => {
+    const variants = {
+      basic: 'border-blue-500 text-blue-700 bg-blue-50',
+      advanced: 'border-orange-500 text-orange-700 bg-orange-50',
+      full: 'border-red-500 text-red-700 bg-red-50',
+    };
+    return variants[level as keyof typeof variants] || variants.basic;
+  };
+
   if (loading) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <FiUsers className="animate-pulse w-6 h-6 text-[#14ad9f]" />
-            <span className="ml-2">Lade Steuerberater-Portal...</span>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-pulse text-gray-500">Lade Steuerberater-Portal...</div>
           </div>
         </CardContent>
-      </Card>
-    );
-  }
-
-  if (!organization) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-red-600">Keine DATEV-Verbindung</CardTitle>
-          <CardDescription>Bitte richten Sie zuerst die DATEV-Integration ein.</CardDescription>
-        </CardHeader>
       </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header Info */}
-      <Card className="border-[#14ad9f]/20 bg-[#14ad9f]/5">
+      {/* Header mit Statistiken */}
+      <Card className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <FiShield className="text-[#14ad9f] w-6 h-6 mt-1 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Sichere Zusammenarbeit mit Ihrem Steuerberater
-              </h3>
-              <p className="text-gray-700 text-sm">
-                Teilen Sie relevante Geschäftsdaten sicher mit Ihrem Steuerberater. Alle Zugriffe
-                sind verschlüsselt und werden protokolliert.
+            <FiShield className="text-white w-8 h-8 mt-1 flex-shrink-0" />
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold mb-2">Steuerberater-Kollaboration</h2>
+              <p className="text-white/90 mb-4">
+                Arbeiten Sie sicher und effizient mit Ihrem Steuerberater zusammen. 
+                Teilen Sie Dokumente, generieren Sie Berichte und behalten Sie alle Aktivitäten im Blick.
               </p>
+              
+              {collaborationStats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{collaborationStats.activeSteuerberater}</div>
+                    <div className="text-sm text-white/80">Aktive Steuerberater</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{collaborationStats.sharedDocuments}</div>
+                    <div className="text-sm text-white/80">Geteilte Dokumente</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{collaborationStats.totalDownloads}</div>
+                    <div className="text-sm text-white/80">Downloads</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{collaborationStats.monthlyReports}</div>
+                    <div className="text-sm text-white/80">Monatsberichte</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Steuerberater einladen */}
         <Card>
@@ -226,84 +342,151 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
               Steuerberater einladen
             </CardTitle>
             <CardDescription>
-              Laden Sie Ihren Steuerberater zum sicheren Datenzugriff ein
+              Laden Sie Ihren Steuerberater zum sicheren Datenaustausch ein
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">E-Mail-Adresse</label>
-              <Input
-                placeholder="steuerberater@kanzlei.de"
-                value={newInviteEmail}
-                onChange={e => setNewInviteEmail(e.target.value)}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="invite-email" className="text-sm font-medium">E-Mail-Adresse *</Label>
+                <Input
+                  id="invite-email"
+                  placeholder="steuerberater@kanzlei.de"
+                  value={newInviteEmail}
+                  onChange={e => setNewInviteEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="invite-name" className="text-sm font-medium">Name *</Label>
+                <Input
+                  id="invite-name"
+                  placeholder="Dr. Maria Mustermann"
+                  value={newInviteName}
+                  onChange={e => setNewInviteName(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Name</label>
-              <Input
-                placeholder="Dr. Maria Mustermann"
-                value={newInviteName}
-                onChange={e => setNewInviteName(e.target.value)}
-              />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="invite-kanzlei" className="text-sm font-medium">Kanzlei (optional)</Label>
+                <Input
+                  id="invite-kanzlei"
+                  placeholder="Steuerberatung Mustermann"
+                  value={newInviteKanzlei}
+                  onChange={e => setNewInviteKanzlei(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="invite-telefon" className="text-sm font-medium">Telefon (optional)</Label>
+                <Input
+                  id="invite-telefon"
+                  placeholder="+49 30 12345678"
+                  value={newInviteTelefon}
+                  onChange={e => setNewInviteTelefon(e.target.value)}
+                />
+              </div>
             </div>
+
             <div>
-              <label className="text-sm font-medium mb-2 block">Nachricht (optional)</label>
+              <Label className="text-sm font-medium mb-2 block">Zugriffslevel</Label>
+              <Select value={newInviteAccessLevel} onValueChange={(value: 'basic' | 'advanced' | 'full') => setNewInviteAccessLevel(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="basic">Basis - Dokumenteneinsicht</SelectItem>
+                  <SelectItem value="advanced">Erweitert - Berichte & Export</SelectItem>
+                  <SelectItem value="full">Vollzugriff - Alle Funktionen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Berechtigungen</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'view_documents', label: 'Dokumente einsehen' },
+                  { id: 'export_data', label: 'Daten exportieren' },
+                  { id: 'monthly_reports', label: 'Monatsberichte' },
+                  { id: 'tax_access', label: 'Steuer-Zugriff' },
+                ].map(permission => (
+                  <div key={permission.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={permission.id}
+                      checked={newInvitePermissions.includes(permission.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNewInvitePermissions([...newInvitePermissions, permission.id]);
+                        } else {
+                          setNewInvitePermissions(newInvitePermissions.filter(p => p !== permission.id));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={permission.id} className="text-sm">
+                      {permission.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="invite-message" className="text-sm font-medium">Persönliche Nachricht (optional)</Label>
               <Textarea
-                placeholder="Persönliche Nachricht für die Einladung..."
-                value={inviteMessage}
-                onChange={e => setInviteMessage(e.target.value)}
+                id="invite-message"
+                placeholder="Lieber Herr/Frau..."
+                value={newInviteMessage}
+                onChange={e => setNewInviteMessage(e.target.value)}
                 rows={3}
               />
             </div>
-            <Button onClick={sendInvite} className="w-full bg-[#14ad9f] hover:bg-[#129488]">
+
+            <Button
+              onClick={sendInvite}
+              className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+              disabled={!newInviteEmail || !newInviteName}
+            >
               <FiMail className="w-4 h-4 mr-2" />
               Einladung senden
             </Button>
           </CardContent>
         </Card>
 
-        {/* Aktuelle Einladungen */}
+        {/* Eingeladene Steuerberater */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FiUsers className="text-[#14ad9f]" />
-              Eingeladene Steuerberater
+              Ihre Steuerberater
             </CardTitle>
-            <CardDescription>Übersicht über alle Einladungen und Zugriffe</CardDescription>
+            <CardDescription>Status Ihrer gesendeten Einladungen</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {invites.map(invite => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
-                  <div>
-                    <h4 className="font-medium">{invite.name}</h4>
-                    <p className="text-sm text-gray-500">{invite.email}</p>
-                    <p className="text-xs text-gray-400">
-                      Eingeladen: {new Date(invite.invitedAt).toLocaleDateString('de-DE')}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-medium">
+                      {invite.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="font-medium">{invite.name}</div>
+                      <div className="text-sm text-gray-600">{invite.email}</div>
+                      {invite.kanzleiName && (
+                        <div className="text-xs text-gray-500">{invite.kanzleiName}</div>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
-                    <Badge
-                      variant="outline"
-                      className={
-                        invite.status === 'accepted'
-                          ? 'border-green-500 text-green-500'
-                          : invite.status === 'pending'
-                            ? 'border-orange-500 text-orange-500'
-                            : 'border-red-500 text-red-500'
-                      }
-                    >
-                      {invite.status === 'accepted' && <FiCheck className="w-3 h-3 mr-1" />}
-                      {invite.status === 'pending' && <FiClock className="w-3 h-3 mr-1" />}
-                      {invite.status === 'declined' && <FiAlertCircle className="w-3 h-3 mr-1" />}
-                      {invite.status === 'accepted'
-                        ? 'Akzeptiert'
-                        : invite.status === 'pending'
-                          ? 'Ausstehend'
-                          : 'Abgelehnt'}
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      {getStatusIcon(invite.status)}
+                      {invite.status === 'accepted' ? 'Akzeptiert' :
+                       invite.status === 'pending' ? 'Ausstehend' :
+                       invite.status === 'declined' ? 'Abgelehnt' : 'Widerrufen'}
                     </Badge>
                     <p className="text-xs text-gray-500 mt-1">
                       {invite.permissions.length} Berechtigung(en)
@@ -312,51 +495,105 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
                 </div>
               ))}
               {invites.length === 0 && (
-                <p className="text-center text-gray-500 py-4">
-                  Noch keine Steuerberater eingeladen
-                </p>
+                <div className="text-center py-8 text-gray-500">
+                  <FiUsers className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>Noch keine Steuerberater eingeladen</p>
+                  <p className="text-sm">Laden Sie Ihren Steuerberater ein, um zu beginnen</p>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Berichte erstellen und teilen */}
+      {/* Berichte für Steuerberater */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FiFileText className="text-[#14ad9f]" />
-            Berichte für Steuerberater
+            Berichte für Steuerberater generieren
           </CardTitle>
           <CardDescription>
-            Erstellen und teilen Sie relevante Berichte direkt aus DATEV
+            Erstellen und teilen Sie relevante Berichte direkt mit Ihren Steuerberatern
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              onClick={() => generateReport('Monatsbericht')}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
-            >
-              <FiFileText className="w-4 h-4 mr-2" />
-              Monatsbericht erstellen
-            </Button>
-            <Button
-              onClick={() => generateReport('Buchungsjournal')}
-              variant="outline"
-              className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-            >
-              <FiDownload className="w-4 h-4 mr-2" />
-              Buchungsjournal
-            </Button>
-            <Button
-              onClick={() => generateReport('Umsatzsteuervoranmeldung')}
-              variant="outline"
-              className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-            >
-              <FiShare2 className="w-4 h-4 mr-2" />
-              UStVA-Daten
-            </Button>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Steuerberater auswählen</Label>
+              <Select value={selectedSteuerberater} onValueChange={setSelectedSteuerberater}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Wählen Sie einen Steuerberater aus" />
+                </SelectTrigger>
+                <SelectContent>
+                  {invites.filter(invite => invite.status === 'accepted').map(invite => (
+                    <SelectItem key={invite.id} value={invite.id}>
+                      {invite.name} ({invite.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedSteuerberater && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                  onClick={() => generateReport('Monatsbericht')}
+                  className="bg-[#14ad9f] hover:bg-[#129488]"
+                >
+                  <FiFileText className="w-4 h-4 mr-2" />
+                  Monatsbericht
+                </Button>
+                <Button
+                  onClick={() => generateReport('UStVA')}
+                  variant="outline"
+                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <FiFileText className="w-4 h-4 mr-2" />
+                  UStVA-Daten
+                </Button>
+                <Button
+                  onClick={() => generateReport('EÜR')}
+                  variant="outline"
+                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <FiDownload className="w-4 h-4 mr-2" />
+                  EÜR-Bericht
+                </Button>
+                <Button
+                  onClick={() => generateReport('BWA')}
+                  variant="outline"
+                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <FiFileText className="w-4 h-4 mr-2" />
+                  BWA-Auswertung
+                </Button>
+                <Button
+                  onClick={() => generateReport('Buchungsjournal')}
+                  variant="outline"
+                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <FiDownload className="w-4 h-4 mr-2" />
+                  Buchungsjournal
+                </Button>
+                <Button
+                  onClick={() => generateReport('DATEV-Export')}
+                  variant="outline"
+                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <FiShare2 className="w-4 h-4 mr-2" />
+                  DATEV-Export
+                </Button>
+              </div>
+            )}
+
+            {!selectedSteuerberater && invites.filter(invite => invite.status === 'accepted').length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <FiUserPlus className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>Kein aktiver Steuerberater</p>
+                <p className="text-sm">Laden Sie zuerst einen Steuerberater ein</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -369,32 +606,63 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
             Geteilte Dokumente
           </CardTitle>
           <CardDescription>
-            Alle mit Ihrem Steuerberater geteilten Dokumente und Berichte
+            Alle mit Ihren Steuerberatern geteilten Dokumente und Berichte
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {sharedDocs.map(doc => (
-              <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <FiFileText className="text-[#14ad9f] w-5 h-5" />
+              <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-[#14ad9f]/10 rounded-lg flex items-center justify-center">
+                    <FiFileText className="text-[#14ad9f] w-5 h-5" />
+                  </div>
                   <div>
                     <h4 className="font-medium">{doc.name}</h4>
-                    <p className="text-sm text-gray-500">
-                      Geteilt: {new Date(doc.sharedAt).toLocaleDateString('de-DE')} • {doc.type}
-                    </p>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>Geteilt: {new Date(doc.sharedAt).toLocaleDateString('de-DE')}</span>
+                      <span>•</span>
+                      <span>{doc.type}</span>
+                      {doc.metadata?.period && (
+                        <>
+                          <span>•</span>
+                          <span>{doc.metadata.period}</span>
+                        </>
+                      )}
+                    </div>
+                    {doc.tags.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        {doc.tags.map(tag => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
                   <Badge variant="outline" className="border-[#14ad9f] text-[#14ad9f]">
-                    {doc.accessLevel === 'view' ? 'Nur Ansicht' : 'Bearbeitung'}
+                    {doc.accessLevel === 'view' ? 'Nur Ansicht' : 
+                     doc.accessLevel === 'download' ? 'Download' : 'Bearbeitung'}
                   </Badge>
-                  <p className="text-xs text-gray-500 mt-1">{doc.downloadCount} Downloads</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {doc.downloadCount} Downloads
+                    {doc.encrypted && (
+                      <span className="ml-2">
+                        <FiShield className="inline w-3 h-3" /> Verschlüsselt
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
             ))}
             {sharedDocs.length === 0 && (
-              <p className="text-center text-gray-500 py-8">Noch keine Dokumente geteilt</p>
+              <div className="text-center py-8 text-gray-500">
+                <FiFileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>Noch keine Dokumente geteilt</p>
+                <p className="text-sm">Teilen Sie Dokumente mit Ihren Steuerberatern</p>
+              </div>
             )}
           </div>
         </CardContent>

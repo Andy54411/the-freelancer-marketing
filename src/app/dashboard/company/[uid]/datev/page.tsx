@@ -98,7 +98,7 @@ export default function DatevMainPage() {
   };
 
   const handleSteuerberaterPortal = () => {
-    router.push(`/dashboard/company/${uid}/datev/steuerberater`);
+    router.push(`/dashboard/company/${uid}/steuerberater`);
   };
 
   // Autorisierung prüfen

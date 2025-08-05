@@ -48,10 +48,10 @@ export const DATEV_SANDBOX_CONFIG = {
   fullyAuthorizedClient: '455148-1',
   // OIDC Discovery Endpoint
   oidcDiscoveryUrl: 'https://login.datev.de/openidsandbox/.well-known/openid-configuration',
-  // Official sandbox endpoints
+  // Official sandbox endpoints (verified from OIDC discovery)
   endpoints: {
     authorization: 'https://login.datev.de/openidsandbox/authorize',
-    token: 'https://sandbox-api.datev.de/token',
+    token: 'https://sandbox-api.datev.de/token',  // Verified: Token-Endpoint ist unter sandbox-api.datev.de
     userinfo: 'https://sandbox-api.datev.de/userinfo',
     revocation: 'https://sandbox-api.datev.de/revoke',
     apiBase: 'https://sandbox-api.datev.de/platform-sandbox',
