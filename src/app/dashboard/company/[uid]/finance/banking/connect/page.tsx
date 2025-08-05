@@ -7,15 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Loader2, 
-  AlertCircle, 
-  Building2, 
-  CreditCard, 
+import {
+  Loader2,
+  AlertCircle,
+  Building2,
+  CreditCard,
   Search,
   ArrowLeft,
   Zap,
-  Shield
+  Shield,
+  FlaskConical,
 } from 'lucide-react';
 
 interface Bank {
@@ -49,9 +50,10 @@ export default function ConnectBankPage() {
 
   useEffect(() => {
     if (searchTerm.length > 0) {
-      const filtered = availableBanks.filter(bank =>
-        bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = availableBanks.filter(
+        bank =>
+          bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredBanks(filtered.slice(0, 10)); // Limit to 10 results
     } else {
@@ -69,75 +71,28 @@ export default function ConnectBankPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/finapi/banks');
-      
+      // Load banks with test banks for sandbox environment
+      const response = await fetch('/api/finapi/banks?includeTestBanks=true&perPage=50');
+
       if (!response.ok) {
         throw new Error(`Failed to load banks: ${response.status}`);
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.data && Array.isArray(data.data.banks)) {
         setAvailableBanks(data.data.banks);
       } else if (data.banks && Array.isArray(data.banks)) {
         // Fallback for direct banks array
         setAvailableBanks(data.banks);
       } else {
-        // Fallback with mock data for development
-        console.warn('⚠️ No banks data received, using fallback mock data');
-        setAvailableBanks([
-          {
-            id: 280,
-            name: 'Deutsche Bank AG',
-            blz: '37040044',
-            city: 'Düsseldorf',
-            popularity: 85,
-            interfaces: []
-          },
-          {
-            id: 10090,
-            name: 'Sparkasse KölnBonn',
-            blz: '37050198',
-            city: 'Köln',
-            popularity: 78,
-            interfaces: []
-          },
-          {
-            id: 12030,
-            name: 'Commerzbank AG',
-            blz: '37040044',
-            city: 'Frankfurt am Main',
-            popularity: 72,
-            interfaces: []
-          },
-          {
-            id: 4950,
-            name: 'ING-DiBa AG',
-            blz: '50010517',
-            city: 'Frankfurt am Main',
-            popularity: 88,
-            interfaces: []
-          },
-          {
-            id: 10040,
-            name: 'Postbank AG',
-            blz: '37010050',
-            city: 'Bonn',
-            popularity: 65,
-            interfaces: []
-          }
-        ]);
+        throw new Error('Invalid response format - no banks data received');
       }
-    } catch (err: unknown) {
-      console.error('Failed to load banks:', err);
-      const error = err as Error;
-      if (error.message.includes('404')) {
-        setError('finAPI Service nicht verfügbar. Bitte versuchen Sie es später erneut.');
-      } else if (error.message.includes('Invalid response format')) {
-        setError('Unerwartete API-Antwort. Bitte kontaktieren Sie den Support.');
-      } else {
-        setError(error.message || 'Fehler beim Laden der Banken');
-      }
+    } catch (error) {
+      console.error('Error loading banks:', error);
+      setError(
+        'Die Bankliste konnte nicht geladen werden. Bitte prüfen Sie die finAPI Sandbox-Konfiguration.'
+      );
     } finally {
       setLoading(false);
     }
@@ -145,7 +100,7 @@ export default function ConnectBankPage() {
 
   const handleConnectBank = async (bank: Bank) => {
     if (connecting) return;
-    
+
     setConnecting(true);
     setSelectedBank(bank);
     setError(null);
@@ -230,12 +185,30 @@ export default function ConnectBankPage() {
                 WebForm 2.0 - Sichere Bankverbindung
               </h3>
               <p className="text-green-700 text-sm">
-                Moderne, verschlüsselte Verbindung direkt zu Ihrer Bank ohne Speicherung von Zugangsdaten
+                Moderne, verschlüsselte Verbindung direkt zu Ihrer Bank ohne Speicherung von
+                Zugangsdaten
               </p>
             </div>
             <div className="flex items-center gap-2 text-green-600">
               <Shield className="h-5 w-5" />
               <span className="text-sm font-medium">PSD2 konform</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sandbox Info */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FlaskConical className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-blue-900">finAPI Sandbox-Umgebung</h4>
+              <p className="text-blue-700 text-sm">
+                Dies ist eine Test-Umgebung mit Demo-Banken. Keine echten Bankdaten erforderlich.
+              </p>
             </div>
           </div>
         </CardContent>
@@ -270,7 +243,7 @@ export default function ConnectBankPage() {
               type="text"
               placeholder="Bank suchen (z.B. Deutsche Bank, Sparkasse...)"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -286,7 +259,7 @@ export default function ConnectBankPage() {
                   {searchTerm ? 'Keine Banken gefunden' : 'Keine Banken verfügbar'}
                 </div>
               ) : (
-                filteredBanks.map((bank) => (
+                filteredBanks.map(bank => (
                   <div
                     key={bank.id}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -318,7 +291,7 @@ export default function ConnectBankPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         {selectedBank?.id === bank.id && connecting ? (
                           <div className="flex items-center gap-2 text-blue-600">
