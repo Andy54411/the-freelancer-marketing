@@ -3,18 +3,9 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  FiShield,
-  FiCheck,
-  FiArrowRight,
-  FiInfo,
-  FiUsers,
-  FiFileText,
-  FiDatabase,
-} from 'react-icons/fi';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FiShield, FiArrowRight, FiFileText, FiDatabase, FiUsers } from 'react-icons/fi';
 import { DatevAuthComponent } from '@/components/datev/DatevAuthComponent';
-import { DatevSandboxTest } from '@/components/datev/DatevSandboxTest';
-import { DatevFlowTest } from '@/components/datev/DatevFlowTest';
 
 interface DatevSetupPageProps {
   params: Promise<{
@@ -22,166 +13,111 @@ interface DatevSetupPageProps {
   }>;
 }
 
-export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
-  const { uid } = await params;
+export default function DatevSetupPage({ params }: DatevSetupPageProps) {
+  const [uid, setUid] = React.useState<string>('');
+
+  React.useEffect(() => {
+    params.then(resolvedParams => {
+      setUid(resolvedParams.uid);
+    });
+  }, [params]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">DATEV Integration einrichten</h1>
-          <p className="text-gray-600 mt-1">
-            Verbinden Sie Ihr DATEV-Konto für professionelle Buchhaltung
-          </p>
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Clean Header */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-3">
+          <div className="p-3 bg-[#14ad9f]/10 rounded-full">
+            <FiDatabase className="w-8 h-8 text-[#14ad9f]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">DATEV Integration</h1>
+          </div>
         </div>
-        <Badge className="bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20">
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Verbinden Sie Ihr DATEV-Konto für automatische Buchhaltung und nahtlose Zusammenarbeit mit
+          Ihrem Steuerberater
+        </p>
+        <Badge className="bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20 px-4 py-1">
+          <FiShield className="w-4 h-4 mr-2" />
           Sicher & DSGVO-konform
         </Badge>
       </div>
 
-      {/* Setup Steps */}
+      {/* Main Benefits - Simple Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border-[#14ad9f]/20">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-[#14ad9f]/10 rounded-full flex-shrink-0">
+                <FiFileText className="w-6 h-6 text-[#14ad9f]" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Automatischer Rechnungsexport</h3>
+                <p className="text-gray-600">
+                  Alle Taskilo-Rechnungen werden automatisch zu DATEV übertragen
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#14ad9f]/20">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-[#14ad9f]/10 rounded-full flex-shrink-0">
+                <FiUsers className="w-6 h-6 text-[#14ad9f]" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Steuerberater-Zugang</h3>
+                <p className="text-gray-600">
+                  Direkter Zugriff für Ihren Steuerberater auf alle relevanten Geschäftsdaten
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Connection Status & Action */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FiInfo className="text-[#14ad9f]" />
-            Setup-Schritte
-          </CardTitle>
-          <CardDescription>
-            Folgen Sie diesen Schritten für eine erfolgreiche DATEV-Integration
-          </CardDescription>
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl">DATEV-Verbindung einrichten</CardTitle>
+          <CardDescription>Melden Sie sich sicher mit Ihrem DATEV-Konto an</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 border rounded-lg bg-green-50 border-green-200">
-              <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <FiCheck className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h4 className="font-medium text-green-900">DATEV-Konto vorbereiten</h4>
-                <p className="text-sm text-green-700 mt-1">
-                  Stellen Sie sicher, dass Sie ein aktives DATEV-Konto haben und die erforderlichen
-                  Berechtigungen besitzen.
-                </p>
-              </div>
-            </div>
+        <CardContent className="space-y-6">
+          {/* Connection Component */}
+          <DatevAuthComponent
+            companyId={uid}
+            onAuthSuccess={organization => {
+              // TODO: Redirect to overview page
+            }}
+          />
 
-            <div className="flex items-start gap-4 p-4 border rounded-lg">
-              <div className="flex-shrink-0 w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                2
-              </div>
-              <div>
-                <h4 className="font-medium">DATEV-Verbindung herstellen</h4>
-                <p className="text-sm text-gray-600 mt-1">
-                  Authentifizieren Sie sich sicher über OAuth2 mit Ihrem DATEV-Konto.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 border rounded-lg">
-              <div className="flex-shrink-0 w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                3
-              </div>
-              <div>
-                <h4 className="font-medium">Synchronisation konfigurieren</h4>
-                <p className="text-sm text-gray-600 mt-1">
-                  Wählen Sie aus, welche Daten automatisch synchronisiert werden sollen.
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Security Info */}
+          <Alert>
+            <FiShield className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Sicherheit & Datenschutz:</strong> Ihre DATEV-Zugangsdaten werden
+              verschlüsselt gespeichert und nur für autorisierte Integrationen verwendet. Die
+              Verbindung erfolgt über DATEVs offizielle OAuth2-Schnittstelle.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
-      {/* Benefits */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Vorteile der DATEV-Integration</CardTitle>
-          <CardDescription>Was Sie mit der DATEV-Anbindung erreichen können</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start gap-3 p-4 border rounded-lg">
-              <FiFileText className="text-[#14ad9f] w-5 h-5 mt-1 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium mb-1">Automatischer Rechnungsexport</h4>
-                <p className="text-sm text-gray-600">
-                  Taskilo-Rechnungen werden automatisch zu DATEV übertragen
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 border rounded-lg">
-              <FiDatabase className="text-[#14ad9f] w-5 h-5 mt-1 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium mb-1">Buchungssynchronisation</h4>
-                <p className="text-sm text-gray-600">
-                  Echtzeit-Synchronisation aller Geschäftsbuchungen
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 border rounded-lg">
-              <FiUsers className="text-[#14ad9f] w-5 h-5 mt-1 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium mb-1">Steuerberater-Zugang</h4>
-                <p className="text-sm text-gray-600">
-                  Direkter Zugriff für Ihren Steuerberater auf relevante Daten
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 border rounded-lg">
-              <FiShield className="text-[#14ad9f] w-5 h-5 mt-1 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium mb-1">Maximale Sicherheit</h4>
-                <p className="text-sm text-gray-600">
-                  Ende-zu-Ende-Verschlüsselung und DSGVO-Compliance
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* DATEV Sandbox Debug Tools */}
-      <Card className="border-orange-200 bg-orange-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-800">
-            <FiInfo className="text-orange-600" />
-            DATEV Sandbox Debug-Tools
-          </CardTitle>
-          <CardDescription className="text-orange-700">
-            Diagnose-Tools für die DATEV Sandbox-Integration
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DatevSandboxTest companyId={uid} />
-          <div className="mt-6 pt-6 border-t">
-            <DatevFlowTest companyId={uid} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Authentication Component */}
-      <DatevAuthComponent
-        companyId={uid}
-        onAuthSuccess={organization => {
-          console.log('DATEV setup successful for:', organization);
-          // TODO: Redirect to overview page
-        }}
-      />
-
-      {/* Next Steps */}
-      <Card className="border-[#14ad9f]/20">
+      {/* Simple Next Steps */}
+      <Card className="bg-gradient-to-r from-[#14ad9f]/5 to-[#14ad9f]/10 border-[#14ad9f]/20">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <FiArrowRight className="text-[#14ad9f] w-6 h-6" />
+            <div className="p-2 bg-[#14ad9f] rounded-full">
+              <FiArrowRight className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Nach erfolgreicher Verbindung</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Sie werden automatisch zum DATEV-Dashboard weitergeleitet, wo Sie alle Funktionen
-                verwalten und Ihre Buchhaltungsdaten einsehen können.
+              <h3 className="font-semibold text-gray-900 mb-1">Nach erfolgreicher Verbindung</h3>
+              <p className="text-gray-600">
+                Sie können alle DATEV-Funktionen im Dashboard verwalten und Ihre Buchhaltungsdaten
+                einsehen.
               </p>
             </div>
           </div>
