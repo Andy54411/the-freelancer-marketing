@@ -13,6 +13,7 @@ import {
   FiDatabase,
 } from 'react-icons/fi';
 import { DatevAuthComponent } from '@/components/datev/DatevAuthComponent';
+import { DatevSandboxTest } from '@/components/datev/DatevSandboxTest';
 
 interface DatevSetupPageProps {
   params: Promise<{
@@ -139,6 +140,22 @@ export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* DATEV Sandbox Debug Tools */}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-orange-800">
+            <FiInfo className="text-orange-600" />
+            DATEV Sandbox Debug-Tools
+          </CardTitle>
+          <CardDescription className="text-orange-700">
+            Diagnose-Tools für die DATEV Sandbox-Integration
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DatevSandboxTest companyId={uid} />
         </CardContent>
       </Card>
 
