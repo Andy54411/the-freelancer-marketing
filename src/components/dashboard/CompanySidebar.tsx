@@ -151,9 +151,14 @@ const navigationItems: NavigationItem[] = [
         value: 'finance-banking',
         subItems: [
           {
-            label: 'Setup',
-            value: 'finance-banking-setup',
-            href: 'finance/banking/setup',
+            label: 'Dashboard',
+            value: 'finance-banking-overview',
+            href: 'finance/banking',
+          },
+          {
+            label: 'Bank verbinden',
+            value: 'finance-banking-connect',
+            href: 'finance/banking/connect',
           },
           {
             label: 'Konten',

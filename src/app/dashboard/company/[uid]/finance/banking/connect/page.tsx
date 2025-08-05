@@ -3,7 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, AlertCircle, Building2, CreditCard, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Loader2, 
+  AlertCircle, 
+  Building2, 
+  CreditCard, 
+  Search,
+  ArrowLeft,
+  Zap,
+  Shield
+} from 'lucide-react';
 
 interface Bank {
   id: number;
@@ -23,35 +36,109 @@ export default function ConnectBankPage() {
   const uid = params.uid as string;
 
   const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableBanks, setAvailableBanks] = useState<Bank[]>([]);
   const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && uid) {
-      loadAvailableBanks();
-    }
-  }, [user, uid]);
+    loadAvailableBanks();
+  }, []);
 
-  // Filter banks based on search term
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredBanks(availableBanks);
-    } else {
-      const filtered = availableBanks.filter(
-        bank =>
-          bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          bank.blz?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
+    if (searchTerm.length > 0) {
+      const filtered = availableBanks.filter(bank =>
+        bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredBanks(filtered);
+      setFilteredBanks(filtered.slice(0, 10)); // Limit to 10 results
+    } else {
+      // Show popular banks by default
+      const popular = availableBanks
+        .filter(bank => bank.popularity && bank.popularity > 50)
+        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+        .slice(0, 15);
+      setFilteredBanks(popular);
     }
-  }, [availableBanks, searchTerm]);
+  }, [searchTerm, availableBanks]);
+
+  const loadAvailableBanks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/finapi/banks');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load banks: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.banks && Array.isArray(data.banks)) {
+        setAvailableBanks(data.banks);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (err: unknown) {
+      console.error('Failed to load banks:', err);
+      const error = err as Error;
+      setError(error.message || 'Fehler beim Laden der Banken');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnectBank = async (bank: Bank) => {
+    if (connecting) return;
+    
+    setConnecting(true);
+    setSelectedBank(bank);
+    setError(null);
+
+    try {
+      console.log('🔗 Connecting to bank with WebForm 2.0:', bank.name);
+
+      // Use new WebForm 2.0 API
+      const response = await fetch('/api/finapi/connect-bank', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bankId: bank.id,
+          bankName: bank.name,
+          userId: uid,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Verbindung zur Bank fehlgeschlagen');
+      }
+
+      if (result.webForm && result.webForm.url) {
+        console.log('✅ WebForm 2.0 URL received, redirecting...');
+        // Redirect to WebForm 2.0
+        window.location.href = result.webForm.url;
+      } else {
+        throw new Error('Keine WebForm URL erhalten');
+      }
+    } catch (err: unknown) {
+      console.error('❌ Bank connection failed:', err);
+      const error = err as Error;
+      setError(error.message || 'Unbekannter Fehler bei der Bankverbindung');
+      setConnecting(false);
+      setSelectedBank(null);
+    }
+  };
+
+  const handleGoBack = () => {
+    router.push(`/dashboard/company/${uid}/finance/banking`);
+  };
 
   if (!user || user.uid !== uid) {
     return (
@@ -64,205 +151,143 @@ export default function ConnectBankPage() {
     );
   }
 
-  const loadAvailableBanks = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Use the updated finAPI Banks API (no userId needed - public endpoint)
-      const response = await fetch('/api/finapi/banks?perPage=50&includeTestBanks=true');
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.details || 'Banken konnten nicht geladen werden.');
-      }
-      const data = await response.json();
-      // Extract banks from the new API response structure
-      const banks = data.success ? data.data.banks : [];
-      setAvailableBanks(banks);
-      setFilteredBanks(banks);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ein unbekannter Fehler ist aufgetreten.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnectBank = async () => {
-    if (!selectedBank) return;
-
-    setIsConnecting(true);
-    setConnectionStatus('idle');
-    setConnectionError(null);
-
-    try {
-      // This API route needs to be created.
-      // It will take the userId and bankId and initiate the bank connection process.
-      const response = await fetch('/api/finapi/connect-bank', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: uid, bankId: selectedBank.id }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.details || 'Die Bankverbindung konnte nicht hergestellt werden.');
-      }
-
-      if (data.redirectUrl) {
-        // Redirect to finAPI's secure web form for credentials
-        window.location.href = data.redirectUrl;
-      } else {
-        // Handle cases where no redirect is needed (less common)
-        setConnectionStatus('success');
-      }
-    } catch (err) {
-      setConnectionError(
-        err instanceof Error ? err.message : 'Ein unbekannter Fehler ist aufgetreten.'
-      );
-      setConnectionStatus('error');
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 text-[#14ad9f] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Lade verfügbare Banken...</p>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-900">Fehler</h3>
-          <p className="text-red-600 mt-2 mb-6">{error}</p>
-          <button
-            onClick={loadAvailableBanks}
-            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700"
-          >
-            Erneut versuchen
-          </button>
-        </div>
-      );
-    }
-
-    if (connectionStatus === 'success') {
-      return (
-        <div className="text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Verbindung erfolgreich!</h2>
-          <p className="text-gray-600 mb-6">
-            Ihre Bank wurde erfolgreich verbunden. Sie können nun Ihre Konten synchronisieren.
-          </p>
-          <button
-            onClick={() => router.push(`/dashboard/company/${uid}/finance/banking/accounts`)}
-            className="w-full max-w-xs mx-auto bg-[#14ad9f] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#129488]"
-          >
-            Zur Kontenübersicht
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <CreditCard className="h-12 w-12 text-[#14ad9f] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900">Bankverbindung herstellen</h2>
-          <p className="text-gray-600 mt-2">
-            Wählen Sie Ihre Bank aus, um die Verbindung über finAPI sicher herzustellen.
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 border-b border-gray-200 pb-4">
+        <Button variant="ghost" onClick={handleGoBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Zurück
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bank verbinden</h1>
+          <p className="text-gray-600 mt-1">
+            Wählen Sie Ihre Bank aus und verbinden Sie sie sicher mit WebForm 2.0
           </p>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Bank suchen</label>
-            <input
+      {/* WebForm 2.0 Info */}
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-100 rounded-lg">
+              <Zap className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-green-900 mb-1">
+                WebForm 2.0 - Sichere Bankverbindung
+              </h3>
+              <p className="text-green-700 text-sm">
+                Moderne, verschlüsselte Verbindung direkt zu Ihrer Bank ohne Speicherung von Zugangsdaten
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-green-600">
+              <Shield className="h-5 w-5" />
+              <span className="text-sm font-medium">PSD2 konform</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <h4 className="font-medium text-red-800">Verbindungsfehler</h4>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-[#14ad9f]" />
+            Bank auswählen
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
               type="text"
+              placeholder="Bank suchen (z.B. Deutsche Bank, Sparkasse...)"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Bank Name, BLZ oder Stadt eingeben..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Verfügbare Banken ({filteredBanks.length})
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-              {filteredBanks.map(bank => (
-                <div
-                  key={bank.id}
-                  onClick={() => setSelectedBank(bank)}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedBank?.id === bank.id
-                      ? 'border-[#14ad9f] bg-teal-50 ring-2 ring-[#14ad9f]'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <h3 className="font-medium text-gray-900">{bank.name}</h3>
-                  {bank.blz && <p className="text-sm text-gray-600 mt-1">BLZ: {bank.blz}</p>}
-                  {bank.city && <p className="text-sm text-gray-600">📍 {bank.city}</p>}
-                  {bank.isTestBank && (
-                    <span className="inline-block mt-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                      Test-Bank
-                    </span>
-                  )}
-                </div>
-              ))}
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
-
-            {filteredBanks.length === 0 && searchTerm && (
-              <div className="text-center py-8 text-gray-500">
-                <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>Keine Banken gefunden für &ldquo;{searchTerm}&rdquo;</p>
-                <p className="text-sm mt-1">Versuchen Sie einen anderen Suchbegriff</p>
-              </div>
-            )}
-          </div>
-
-          {connectionStatus === 'error' && (
-            <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-md">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-red-700">{connectionError}</span>
+          ) : (
+            <div className="space-y-3">
+              {filteredBanks.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {searchTerm ? 'Keine Banken gefunden' : 'Keine Banken verfügbar'}
+                </div>
+              ) : (
+                filteredBanks.map((bank) => (
+                  <div
+                    key={bank.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedBank?.id === bank.id && connecting
+                        ? 'border-blue-300 bg-blue-50'
+                        : 'hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                    onClick={() => handleConnectBank(bank)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Building2 className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">{bank.name}</h3>
+                          <div className="flex items-center gap-3 mt-1">
+                            {bank.city && (
+                              <span className="text-sm text-gray-600">{bank.city}</span>
+                            )}
+                            {bank.blz && (
+                              <span className="text-sm text-gray-600">BLZ: {bank.blz}</span>
+                            )}
+                            {bank.isTestBank && (
+                              <Badge variant="secondary" className="text-xs">
+                                Test Bank
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {selectedBank?.id === bank.id && connecting ? (
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Verbinde...</span>
+                          </div>
+                        ) : (
+                          <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488]">
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Verbinden
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
-
-          <button
-            onClick={handleConnectBank}
-            disabled={!selectedBank || isConnecting}
-            className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-md hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
-          >
-            {isConnecting ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                <span>Verbindung wird hergestellt...</span>
-              </>
-            ) : (
-              'Bank verbinden'
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Bankverbindung</h1>
-        <p className="text-gray-600 mt-1">Stellen Sie eine Verbindung zu Ihrem Bankkonto her.</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-8 min-h-[400px] flex items-center justify-center">
-        {renderContent()}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
