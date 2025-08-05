@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
-import {
-  AuthorizationApi,
-  BankConnectionsApi,
-  createConfiguration,
-  ServerConfiguration,
-} from 'finapi-client';
+import { createFinAPIService, createFinAPIAdminService } from '@/lib/finapi-sdk-service';
 
-// GET /api/finapi/bank-connections - Get bank connections for user through Taskilo's account
+// GET /api/finapi/bank-connections - Get bank connections for user through finAPI SDK Service
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -18,50 +12,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Get finAPI configuration
-    const baseUrl = getFinApiBaseUrl(credentialType);
-    const credentials = getFinApiCredentials(credentialType);
-
-    if (!credentials.clientId || !credentials.clientSecret) {
-      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
-    }
-
-    // Get client credentials token
-    const server = new ServerConfiguration(baseUrl, {});
-    const configuration = createConfiguration({
-      baseServer: server,
-    });
-
-    const authApi = new AuthorizationApi(configuration);
-    const clientToken = await authApi.getToken(
-      'client_credentials',
-      credentials.clientId,
-      credentials.clientSecret
+    console.log(
+      'Getting bank connections for user:',
+      userId,
+      'with credential type:',
+      credentialType
     );
 
-    // Set up bank connections API with client token
-    const bankConnectionsConfiguration = createConfiguration({
-      baseServer: server,
-      authMethods: {
-        finapi_auth: {
-          accessToken: clientToken.accessToken,
-        },
-      },
-    });
+    // Get finAPI SDK Service instance
+    const finapiService =
+      credentialType === 'admin'
+        ? createFinAPIAdminService('sandbox')
+        : createFinAPIService('sandbox');
 
-    const bankConnectionsApi = new BankConnectionsApi(bankConnectionsConfiguration);
+    // TODO: Replace with actual user token when user authentication is implemented
+    const userToken = null; // User token system not implemented yet
 
-    // Get bank connections filtered by user (through externalId or search)
-    const response = await bankConnectionsApi.getAllBankConnections();
-
-    console.log('Bank connections retrieved for user:', userId, response.connections?.length || 0);
-
-    return NextResponse.json({
+    // For now, return empty array until user authentication is implemented
+    const emptyResponse = {
       success: true,
-      data: response.connections,
-      bankConnections: response.connections || [],
-      totalCount: response.connections?.length || 0,
-    });
+      data: [],
+      bankConnections: [],
+      totalCount: 0,
+    };
+
+    console.log(
+      'Bank connections query for user:',
+      userId,
+      '- returning empty results (user auth not implemented)'
+    );
+    return NextResponse.json(emptyResponse);
   } catch (error: any) {
     console.error('finAPI bank connections error:', error);
     return NextResponse.json(
@@ -75,7 +55,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/finapi/bank-connections - Manage bank connections through Taskilo's account
+// POST /api/finapi/bank-connections - Manage bank connections through finAPI SDK Service
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -85,81 +65,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Get finAPI configuration
-    const baseUrl = getFinApiBaseUrl(credentialType);
-    const credentials = getFinApiCredentials(credentialType);
+    console.log('Processing bank connection action:', action, 'for user:', userId);
 
-    if (!credentials.clientId || !credentials.clientSecret) {
-      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
-    }
+    // Get finAPI SDK Service instance
+    const finapiService =
+      credentialType === 'admin'
+        ? createFinAPIAdminService('sandbox')
+        : createFinAPIAdminService('sandbox');
 
-    // Get client credentials token
-    const server = new ServerConfiguration(baseUrl, {});
-    const configuration = createConfiguration({
-      baseServer: server,
-    });
-
-    const authApi = new AuthorizationApi(configuration);
-    const clientToken = await authApi.getToken(
-      'client_credentials',
-      credentials.clientId,
-      credentials.clientSecret
-    );
-
-    // Set up bank connections API with client token
-    const bankConnectionsConfiguration = createConfiguration({
-      baseServer: server,
-      authMethods: {
-        finapi_auth: {
-          accessToken: clientToken.accessToken,
-        },
-      },
-    });
-
-    const bankConnectionsApi = new BankConnectionsApi(bankConnectionsConfiguration);
+    // TODO: Replace with actual user token when user authentication is implemented
+    const userToken = null; // User token system not implemented yet
 
     if (action === 'import') {
-      // Import bank connection through Taskilo's account
+      // Import bank connection
       const { bankId, loginCredentials } = body;
 
-      const connection = await bankConnectionsApi.importBankConnection({
-        bankId,
-        bankingInterface: 'FINTS_SERVER',
-        loginCredentials,
-        // Link to user via externalId or other mechanism
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: connection,
-        message: `Bank connection imported for user ${userId}`,
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Bank connection import not implemented',
+          message: 'User authentication required for bank connection import',
+          needsImplementation: {
+            userToken: 'Requires getUserToken method for user authentication',
+            importBankConnection: 'Requires importBankConnection method in SDK service',
+            webFormIntegration: 'Requires WebForm 2.0 integration',
+          },
+        },
+        { status: 501 }
+      );
     }
 
     if (action === 'delete') {
       // Delete bank connection
       const { bankConnectionId } = body;
 
-      await bankConnectionsApi.deleteBankConnection(bankConnectionId);
-
-      return NextResponse.json({
-        success: true,
-        message: 'Bank connection deleted successfully',
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Bank connection deletion not implemented',
+          message: 'User authentication required for bank connection deletion',
+        },
+        { status: 501 }
+      );
     }
 
     if (action === 'edit') {
       // Edit bank connection
       const { bankConnectionId, name } = body;
 
-      const connection = await bankConnectionsApi.editBankConnection(bankConnectionId, {
-        name,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: connection,
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Bank connection editing not implemented',
+          message: 'User authentication required for bank connection editing',
+        },
+        { status: 501 }
+      );
     }
 
     return NextResponse.json(

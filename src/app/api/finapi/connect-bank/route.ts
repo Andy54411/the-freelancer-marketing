@@ -1,32 +1,64 @@
 // src/app/api/finapi/connect-bank/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserTokenForTaskiloUser, importBankConnection } from '@/lib/finapi-server-utils';
+import { createFinAPIService, createFinAPIAdminService } from '@/lib/finapi-sdk-service';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, bankId } = await req.json();
+    const { userId, bankId, credentialType = 'sandbox' } = await req.json();
 
     if (!userId || !bankId) {
       return NextResponse.json({ error: 'Benutzer-ID oder Bank-ID fehlt.' }, { status: 400 });
     }
 
-    // 1. Benutzer-Token für den Taskilo-Benutzer abrufen
-    const userToken = await getUserTokenForTaskiloUser(userId);
+    console.log(
+      'Connecting bank for user:',
+      userId,
+      'bank:',
+      bankId,
+      'credential type:',
+      credentialType
+    );
 
-    // 2. Redirect-URL für nach dem finAPI Web-Formular definieren
+    // Get finAPI SDK Service instance
+    const finapiService =
+      credentialType === 'admin'
+        ? createFinAPIAdminService('sandbox')
+        : createFinAPIService('sandbox');
+
+    // Test credentials first
+    const credentialTest = await finapiService.testCredentials();
+    if (!credentialTest.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'finAPI credentials test failed',
+          details: credentialTest.error,
+        },
+        { status: 500 }
+      );
+    }
+
+    // Define redirect URL for after finAPI Web Form
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const redirectUrl = `${baseUrl}/dashboard/company/${userId}/finance/banking/callback`;
 
-    // 3. Bankverbindungsprozess bei finAPI starten
-    const importData = await importBankConnection(userToken, bankId, redirectUrl);
-
-    // 4. Token für das Web-Formular an den Client zurückgeben
-    // Der Client muss dann zu `https://webform.finapi.io/token/{web_form_token}` weiterleiten
-    return NextResponse.json({
-      success: true,
-      webFormToken: importData.token,
-      redirectUrl: `https://webform.finapi.io/?token=${importData.token}`,
-    });
+    // For now, return not implemented due to user authentication requirements
+    // TODO: Implement bank connection when user authentication system is ready
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Bank connection not implemented',
+        message: 'User authentication system required for bank connections',
+        needsImplementation: {
+          userToken: 'Requires getUserToken method for user authentication',
+          webFormIntegration: 'Requires WebForm 2.0 integration for bank connection',
+          bankConnectionAPI: 'Requires bank connection creation via SDK service',
+        },
+        redirectUrl: redirectUrl, // Return for reference
+        bankId: bankId,
+      },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Fehler beim Starten der Bankverbindung:', error);
     const errorMessage =

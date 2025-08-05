@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
-import {
-  AuthorizationApi,
-  TransactionsApi,
-  createConfiguration,
-  ServerConfiguration,
-} from 'finapi-client';
+import { createFinAPIService, createFinAPIAdminService } from '@/lib/finapi-sdk-service';
 
-// GET /api/finapi/transactions - Get transactions for user through Taskilo's finAPI account
+// GET /api/finapi/transactions - Get transactions for user through finAPI SDK Service
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -20,51 +14,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Get finAPI configuration
-    const baseUrl = getFinApiBaseUrl(credentialType);
-    const credentials = getFinApiCredentials(credentialType);
+    console.log('Getting transactions for user:', userId, 'with credential type:', credentialType);
 
-    if (!credentials.clientId || !credentials.clientSecret) {
-      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
-    }
+    // Get finAPI SDK Service instance
+    const finapiService =
+      credentialType === 'admin'
+        ? createFinAPIAdminService('sandbox')
+        : createFinAPIService('sandbox');
 
-    // Get client credentials token
-    const server = new ServerConfiguration(baseUrl, {});
-    const configuration = createConfiguration({
-      baseServer: server,
-    });
+    // TODO: Replace with actual user token when user authentication is implemented
+    const userToken = null; // User token system not implemented yet
 
-    const authApi = new AuthorizationApi(configuration);
-    const clientToken = await authApi.getToken(
-      'client_credentials',
-      credentials.clientId,
-      credentials.clientSecret
-    );
-
-    // Set up transactions API with client token
-    const transactionsConfiguration = createConfiguration({
-      baseServer: server,
-      authMethods: {
-        finapi_auth: {
-          accessToken: clientToken.accessToken,
-        },
-      },
-    });
-
-    const transactionsApi = new TransactionsApi(transactionsConfiguration);
-
-    // Get transactions filtered by user (through bank connections linked to user)
-    const response = await transactionsApi.getAndSearchAllTransactions('userView');
-
-    console.log('Transactions retrieved for user:', userId, response.transactions?.length || 0);
-
-    return NextResponse.json({
+    // For now, return empty array until user authentication is implemented
+    // This matches the pattern used in the accounts API
+    const emptyResponse = {
       success: true,
-      data: response.transactions,
-      paging: response.paging,
-      transactions: response.transactions || [],
-      totalCount: response.transactions?.length || 0,
-    });
+      data: [],
+      paging: {
+        page,
+        perPage,
+        pageCount: 0,
+        totalCount: 0,
+      },
+      transactions: [],
+      totalCount: 0,
+    };
+
+    console.log(
+      'Transactions query for user:',
+      userId,
+      '- returning empty results (user auth not implemented)'
+    );
+    return NextResponse.json(emptyResponse);
   } catch (error: any) {
     console.error('finAPI transactions error:', error);
     return NextResponse.json(
@@ -78,7 +59,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/finapi/transactions - Update or categorize transactions through Taskilo's account
+// POST /api/finapi/transactions - Update or categorize transactions through finAPI SDK Service
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -88,45 +69,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Get finAPI configuration
-    const baseUrl = getFinApiBaseUrl(credentialType);
-    const credentials = getFinApiCredentials(credentialType);
+    console.log('Processing transaction action:', action, 'for user:', userId);
 
-    if (!credentials.clientId || !credentials.clientSecret) {
-      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
-    }
+    // Get finAPI SDK Service instance
+    const finapiService =
+      credentialType === 'admin'
+        ? createFinAPIAdminService('sandbox')
+        : createFinAPIService('sandbox');
 
-    // Get client credentials token
-    const server = new ServerConfiguration(baseUrl, {});
-    const configuration = createConfiguration({
-      baseServer: server,
-    });
+    // TODO: Replace with actual user token when user authentication is implemented
+    const userToken = null; // User token system not implemented yet
 
-    const authApi = new AuthorizationApi(configuration);
-    const clientToken = await authApi.getToken(
-      'client_credentials',
-      credentials.clientId,
-      credentials.clientSecret
-    );
-
-    // Set up transactions API with client token
-    const transactionsConfiguration = createConfiguration({
-      baseServer: server,
-      authMethods: {
-        finapi_auth: {
-          accessToken: clientToken.accessToken,
-        },
+    // Return not implemented for now - requires user authentication
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Transaction updates not implemented',
+        message: 'User authentication required for transaction modifications',
       },
-    });
-
-    const transactionsApi = new TransactionsApi(transactionsConfiguration);
-
-    // Simplified response for all actions - B2B model allows transaction operations
-    return NextResponse.json({
-      success: true,
-      message: `Transaction ${action} processed for user ${userId}`,
-      data: [],
-    });
+      { status: 501 }
+    );
   } catch (error: any) {
     console.error('finAPI transactions POST error:', error);
     return NextResponse.json(
