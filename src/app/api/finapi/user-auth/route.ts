@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiUserAuth } from '@/lib/finapi-user-auth-service';
+import { finapiUserAuthServer } from '@/lib/finapi-user-auth-service-server';
 import { auth as adminAuth } from '@/firebase/server';
 
 export async function POST(request: NextRequest) {
@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        const finapiUser = await finapiUserAuth.getOrCreateFinAPIUser(decodedToken.uid, email);
+        const finapiUser = await finapiUserAuthServer.getOrCreateFinAPIUser(
+          decodedToken.uid,
+          email
+        );
 
         if (finapiUser) {
           return NextResponse.json({
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'get-token': {
-        const accessToken = await finapiUserAuth.getUserAccessToken(decodedToken.uid);
+        const accessToken = await finapiUserAuthServer.getUserAccessToken(decodedToken.uid);
 
         if (accessToken) {
           return NextResponse.json({
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'get-status': {
-        const status = await finapiUserAuth.getUserStatus(decodedToken.uid);
+        const status = await finapiUserAuthServer.getUserStatus(decodedToken.uid);
 
         return NextResponse.json({
           success: true,
@@ -67,15 +70,15 @@ export async function POST(request: NextRequest) {
                 hasToken: !!status.accessToken,
                 tokenExpired: status.tokenExpiresAt ? Date.now() > status.tokenExpiresAt : true,
                 status: status.status,
-                createdAt: status.createdAt.toDate().toISOString(),
-                updatedAt: status.updatedAt.toDate().toISOString(),
+                createdAt: new Date(status.createdAt as any).toISOString(),
+                updatedAt: new Date(status.updatedAt as any).toISOString(),
               }
             : null,
         });
       }
 
       case 'deactivate': {
-        const success = await finapiUserAuth.deactivateFinAPIUser(decodedToken.uid);
+        const success = await finapiUserAuthServer.deactivateFinAPIUser(decodedToken.uid);
 
         return NextResponse.json({
           success,
