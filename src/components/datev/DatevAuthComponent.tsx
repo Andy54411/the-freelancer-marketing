@@ -91,7 +91,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     }
 
     loadDatevConnection();
-  }, [companyId, hasAttemptedLoad]);
+  }, [companyId]);
 
   const loadDatevConnection = async () => {
     if (hasAttemptedLoad) {

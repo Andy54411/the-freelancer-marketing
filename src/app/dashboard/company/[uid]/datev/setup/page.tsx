@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FiShield, FiArrowRight, FiFileText, FiDatabase, FiUsers } from 'react-icons/fi';
-import { DatevAuthComponent } from '@/components/datev/DatevAuthComponent';
+import { DatevAuthComponent } from '@/components/datev/DatevAuthComponentCookie';
 
 interface DatevSetupPageProps {
   params: Promise<{
