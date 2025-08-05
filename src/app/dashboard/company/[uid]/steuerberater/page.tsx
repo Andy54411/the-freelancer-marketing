@@ -1,4 +1,4 @@
-import { SteuerberaterPortal } from '@/components/datev/SteuerberaterPortal';
+import { SteuerberaterPortal } from '@/components/steuerberater/SteuerberaterPortal';
 
 interface SteuerberaterPageProps {
   params: Promise<{
@@ -8,7 +8,7 @@ interface SteuerberaterPageProps {
 
 export default async function SteuerberaterPage({ params }: SteuerberaterPageProps) {
   const { uid } = await params;
-  
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
@@ -20,7 +20,7 @@ export default async function SteuerberaterPage({ params }: SteuerberaterPagePro
             Arbeiten Sie sicher und effizient mit Ihrem Steuerberater zusammen
           </p>
         </div>
-        
+
         <SteuerberaterPortal companyId={uid} />
       </div>
     </div>

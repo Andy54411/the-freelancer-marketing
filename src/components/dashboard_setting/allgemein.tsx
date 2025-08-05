@@ -4,7 +4,7 @@
 import React from 'react';
 // KORREKTUR 1: GoogleMap und Circle bleiben, aber useJsApiLoader wird nicht mehr gebraucht.
 import { GoogleMap, Circle } from '@react-google-maps/api';
-import { UserDataForSettings } from '@/components/SettingsPage';
+import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
 
 // KORREKTUR 2: Wir importieren unseren eigenen Hook.
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';

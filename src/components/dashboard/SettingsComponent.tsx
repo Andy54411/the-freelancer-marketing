@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db, app as firebaseApp } from '../firebase/clients';
+import { db, app as firebaseApp } from '../../firebase/clients';
 import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';

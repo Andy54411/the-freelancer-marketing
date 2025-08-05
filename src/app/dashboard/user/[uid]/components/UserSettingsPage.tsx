@@ -11,7 +11,7 @@ import {
 } from 'firebase/storage'; // NEU: Firebase Storage Imports
 import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin } from 'react-icons/fi';
 import { toast } from 'sonner';
-import { RawFirestoreUserData } from '../../../../../components/SettingsPage'; // Wiederverwenden des Typs
+import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent'; // Wiederverwenden des Typs
 
 // Interne Datenstruktur für das User-Einstellungsformular
 import {

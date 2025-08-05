@@ -20,7 +20,7 @@ import {
   FiUpload,
   FiCamera,
 } from 'react-icons/fi';
-import { UserDataForSettings } from '../SettingsPage';
+import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { Gemini } from '@/components/logos';

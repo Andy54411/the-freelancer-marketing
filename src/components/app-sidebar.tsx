@@ -37,7 +37,7 @@ import {
   SidebarMenuItem,
   SidebarProvider, // Dies ist der tatsächliche Kontext-Provider
 } from '@/components/ui/sidebar';
-import { RawFirestoreUserData } from './SettingsPage'; // Import the type
+import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent'; // Import the type
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   setView?: (view: 'dashboard' | 'settings') => void;
@@ -105,12 +105,7 @@ export function AppSidebar({
   }, []);
 
   if (loading) return <div>Laden...</div>;
-  if (error)
-    return (
-      <div>
-        Fehler: {error}
-      </div>
-    );
+  if (error) return <div>Fehler: {error}</div>;
 
   const firstName = userData?.step1?.firstName || 'Unbekannt';
   const lastName = userData?.step1?.lastName || 'Unbekannt';

@@ -16,6 +16,9 @@ import {
   ChevronDown as FiChevronDown,
   ChevronRight as FiChevronRight,
   Menu as FiMenu,
+  Bot as FiBot,
+  TrendingUp as FiTrendingUp,
+  UserCheck as FiUserCheck,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -29,7 +32,8 @@ interface NavigationItem {
 interface NavigationSubItem {
   label: string;
   value: string;
-  href: string;
+  href?: string;
+  subItems?: NavigationSubItem[];
 }
 
 interface CompanyMobileSidebarProps {
@@ -149,7 +153,38 @@ const navigationItems: NavigationItem[] = [
       {
         label: 'Banking',
         value: 'finance-banking',
-        href: 'finance/banking',
+        subItems: [
+          {
+            label: 'Dashboard',
+            value: 'finance-banking-overview',
+            href: 'finance/banking',
+          },
+          {
+            label: 'Bank verbinden',
+            value: 'finance-banking-connect',
+            href: 'finance/banking/connect',
+          },
+          {
+            label: 'Konten',
+            value: 'finance-banking-accounts',
+            href: 'finance/banking/accounts',
+          },
+          {
+            label: 'Transaktionen',
+            value: 'finance-banking-transactions',
+            href: 'finance/banking/transactions',
+          },
+          {
+            label: 'Import',
+            value: 'finance-banking-import',
+            href: 'finance/banking/import',
+          },
+          {
+            label: 'Abgleich',
+            value: 'finance-banking-reconciliation',
+            href: 'finance/banking/reconciliation',
+          },
+        ],
       },
       {
         label: 'Zeiterfassung',
@@ -184,10 +219,50 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'Google Ads',
+    icon: FiTrendingUp,
+    value: 'google-ads',
+    href: 'google-ads',
+  },
+  {
+    label: 'Steuerberater',
+    icon: FiUserCheck,
+    value: 'steuerberater',
+    href: 'steuerberater',
+  },
+  {
+    label: 'DATEV Integration',
+    icon: FiDollarSign,
+    value: 'datev-overview',
+    subItems: [
+      {
+        label: 'Dashboard',
+        value: 'datev-main',
+        href: 'datev',
+      },
+      {
+        label: 'Übersicht',
+        value: 'datev-overview',
+        href: 'datev/overview',
+      },
+      {
+        label: 'Einrichtung',
+        value: 'datev-setup',
+        href: 'datev/setup',
+      },
+    ],
+  },
+  {
     label: 'Bewertungen',
     icon: FiMessageSquare,
     value: 'reviews',
     href: 'reviews',
+  },
+  {
+    label: 'KI-Assistent',
+    icon: FiBot,
+    value: 'ai-assistant',
+    href: 'ai-assistant',
   },
   {
     label: 'Profil',

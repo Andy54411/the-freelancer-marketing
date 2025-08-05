@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserDataForSettings } from '@/components/SettingsPage';
+import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
 
 // ANPASSUNG: 'export' wurde hinzugefügt
 export interface BankFormProps {

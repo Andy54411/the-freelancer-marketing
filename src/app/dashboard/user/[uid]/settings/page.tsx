@@ -8,7 +8,8 @@ import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
 import UserHeader from '@/components/UserHeader'; // Importiere die UserHeader-Komponente als Standard-Export
 import { doc, getDoc } from 'firebase/firestore';
 import { db, app } from '@/firebase/clients';
-import CompanySettingsPage, { RawFirestoreUserData } from '@/components/SettingsPage'; // Umbenannt für Klarheit
+import SettingsComponent from '@/components/dashboard/SettingsComponent'; // Import SettingsComponent
+import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent'; // Import Interface
 import UserSettingsPage from '@/app/dashboard/user/[uid]/components/UserSettingsPage'; // NEU: Import für User-Einstellungen‚
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 
@@ -96,7 +97,7 @@ export default function UserSettingsDashboardPage() {
         {' '}
         {/* Hauptinhaltsbereich, der scrollbar ist, mit Padding */}
         {userData?.user_type === 'firma' ? (
-          <CompanySettingsPage userData={userData} onDataSaved={handleDataSaved} />
+          <SettingsComponent userData={userData} onDataSaved={handleDataSaved} />
         ) : userData?.user_type === 'kunde' ? (
           <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
         ) : null}
