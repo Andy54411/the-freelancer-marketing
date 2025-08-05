@@ -6,18 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Building2, 
-  Settings, 
-  Users, 
-  FileText, 
-  TrendingUp, 
+import {
+  Building2,
+  Settings,
+  Users,
+  FileText,
+  TrendingUp,
   RefreshCw,
   CheckCircle,
   AlertTriangle,
   Zap,
   Shield,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 
 interface DatevConnection {
@@ -31,36 +31,62 @@ interface DatevConnection {
 export default function DatevMainPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
   const uid = params.uid as string;
 
   const [loading, setLoading] = useState(true);
   const [connections, setConnections] = useState<DatevConnection[]>([]);
 
   useEffect(() => {
-    if (!user || user.uid !== uid) return;
+    if (!user || user.uid !== uid || !firebaseUser) return;
     loadDatevConnections();
-  }, [uid, user]);
+  }, [uid, user, firebaseUser]);
 
   const loadDatevConnections = async () => {
     try {
       setLoading(true);
-      // TODO: Load real DATEV connections
-      // Für jetzt Mock-Daten
-      setTimeout(() => {
-        setConnections([
-          {
-            id: 'datev_1',
-            organizationName: 'Muster Steuerberatung GmbH',
-            status: 'connected',
-            accountCount: 5,
-            lastSync: '2025-08-05T10:30:00Z'
-          }
-        ]);
-        setLoading(false);
-      }, 1000);
+
+      if (!firebaseUser) {
+        console.warn('No Firebase user available for DATEV API call');
+        setConnections([]);
+        return;
+      }
+
+      // Verwende echte DATEV Organizations API
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch('/api/datev/organizations', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-company-id': uid,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('DATEV API not available or not configured:', response.status);
+        setConnections([]);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.organizations) {
+        const datevConnections: DatevConnection[] = data.organizations.map((org: any) => ({
+          id: org.id,
+          organizationName: org.name,
+          status: org.status === 'active' ? 'connected' : 'error',
+          accountCount: org.accountCount || 0,
+          lastSync: new Date().toISOString(), // Real sync time würde aus org.lastSync kommen
+        }));
+
+        setConnections(datevConnections);
+      } else {
+        console.log('No DATEV organizations found');
+        setConnections([]);
+      }
     } catch (error) {
       console.error('Failed to load DATEV connections:', error);
+      setConnections([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -98,9 +124,7 @@ export default function DatevMainPage() {
             Professionelle Buchhaltung und Steuerberatung mit DATEV
           </p>
         </div>
-        <Badge className="bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20">
-          DSGVO-konform
-        </Badge>
+        <Badge className="bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20">DSGVO-konform</Badge>
       </div>
 
       {/* DATEV Integration Banner */}
@@ -115,7 +139,8 @@ export default function DatevMainPage() {
                 DATEV Professional Integration
               </h3>
               <p className="text-blue-700 text-sm">
-                Nahtlose Anbindung an Ihr DATEV-System für automatisierte Buchhaltung und Steuerberatung
+                Nahtlose Anbindung an Ihr DATEV-System für automatisierte Buchhaltung und
+                Steuerberatung
               </p>
             </div>
             <div className="flex items-center gap-2 text-blue-600">
@@ -138,7 +163,7 @@ export default function DatevMainPage() {
         </Card>
       ) : connections.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {connections.map((connection) => (
+          {connections.map(connection => (
             <Card key={connection.id} className="border-l-4 border-l-green-500">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -195,7 +220,10 @@ export default function DatevMainPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleViewOverview}>
+        <Card
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={handleViewOverview}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-[#14ad9f]/10 rounded-lg">
@@ -203,16 +231,17 @@ export default function DatevMainPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">Dashboard</h3>
-                <p className="text-sm text-gray-600">
-                  Übersicht und Buchungsverwaltung
-                </p>
+                <p className="text-sm text-gray-600">Übersicht und Buchungsverwaltung</p>
               </div>
               <ArrowRight className="h-5 w-5 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleSetupDatev}>
+        <Card
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={handleSetupDatev}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -220,16 +249,17 @@ export default function DatevMainPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">Einrichtung</h3>
-                <p className="text-sm text-gray-600">
-                  DATEV-Integration konfigurieren
-                </p>
+                <p className="text-sm text-gray-600">DATEV-Integration konfigurieren</p>
               </div>
               <ArrowRight className="h-5 w-5 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleSteuerberaterPortal}>
+        <Card
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={handleSteuerberaterPortal}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -237,9 +267,7 @@ export default function DatevMainPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">Steuerberater</h3>
-                <p className="text-sm text-gray-600">
-                  Kollaboration und Datenaustausch
-                </p>
+                <p className="text-sm text-gray-600">Kollaboration und Datenaustausch</p>
               </div>
               <ArrowRight className="h-5 w-5 text-gray-400" />
             </div>
@@ -260,33 +288,25 @@ export default function DatevMainPage() {
             <div className="text-center p-4 border rounded-lg">
               <FileText className="h-8 w-8 text-[#14ad9f] mx-auto mb-2" />
               <h4 className="font-medium text-gray-900">Rechnungsexport</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Automatischer Export zu DATEV
-              </p>
+              <p className="text-sm text-gray-600 mt-1">Automatischer Export zu DATEV</p>
             </div>
-            
+
             <div className="text-center p-4 border rounded-lg">
               <RefreshCw className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <h4 className="font-medium text-gray-900">Live-Synchronisation</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Echtzeit-Buchungsabgleich
-              </p>
+              <p className="text-sm text-gray-600 mt-1">Echtzeit-Buchungsabgleich</p>
             </div>
-            
+
             <div className="text-center p-4 border rounded-lg">
               <Users className="h-8 w-8 text-purple-600 mx-auto mb-2" />
               <h4 className="font-medium text-gray-900">Steuerberater-Zugang</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Direkter Datenzugriff für Berater
-              </p>
+              <p className="text-sm text-gray-600 mt-1">Direkter Datenzugriff für Berater</p>
             </div>
-            
+
             <div className="text-center p-4 border rounded-lg">
               <Shield className="h-8 w-8 text-green-600 mx-auto mb-2" />
               <h4 className="font-medium text-gray-900">Maximale Sicherheit</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                OAuth2 & DSGVO-konform
-              </p>
+              <p className="text-sm text-gray-600 mt-1">OAuth2 & DSGVO-konform</p>
             </div>
           </div>
         </CardContent>
