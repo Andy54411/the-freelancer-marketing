@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
             tokenUrl: config.tokenUrl,
             scopes: config.scopes,
           },
-          environment: {
+          environment: `${process.env.NODE_ENV} (Vercel: ${process.env.VERCEL_ENV || 'local'})`,
+          environmentDetails: {
             NODE_ENV: process.env.NODE_ENV,
             hasClientId: !!process.env.DATEV_CLIENT_ID,
             hasClientSecret: !!process.env.DATEV_CLIENT_SECRET,

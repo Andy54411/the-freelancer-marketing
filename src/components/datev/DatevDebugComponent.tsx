@@ -29,6 +29,13 @@ interface DatevDebugInfo {
   };
   endpoints: Record<string, string>;
   environment: string;
+  environmentDetails?: {
+    NODE_ENV: string;
+    hasClientId: boolean;
+    hasClientSecret: boolean;
+    isVercelDeployment: boolean;
+    vercelEnv: string;
+  };
   timestamp: string;
 }
 
@@ -350,7 +357,7 @@ export function DatevDebugComponent() {
                   className="flex justify-between items-center p-2 bg-gray-50 rounded"
                 >
                   <span className="font-medium">{name}:</span>
-                  <span className="text-gray-600">{endpoint}</span>
+                  <span className="text-gray-600">{String(endpoint)}</span>
                 </div>
               ))}
             </div>
