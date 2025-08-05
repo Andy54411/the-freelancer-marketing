@@ -15,7 +15,7 @@ import {
   ChevronRight as FiChevronRight,
   Bot as FiBot,
   TrendingUp as FiTrendingUp,
-  UserCheck as FiUserCheck,
+  Shield as FiShield,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -222,12 +222,6 @@ const navigationItems: NavigationItem[] = [
     href: 'google-ads',
   },
   {
-    label: 'Steuerberater',
-    icon: FiUserCheck,
-    value: 'steuerberater',
-    href: 'steuerberater',
-  },
-  {
     label: 'DATEV Integration',
     icon: FiDollarSign,
     value: 'datev-overview',
@@ -248,6 +242,12 @@ const navigationItems: NavigationItem[] = [
         href: 'datev/setup',
       },
     ],
+  },
+  {
+    label: 'Steuerportal',
+    icon: FiShield,
+    value: 'steuerportal',
+    href: 'steuerportal',
   },
   {
     label: 'Bewertungen',
@@ -333,10 +333,8 @@ export default function CompanySidebar({
               if (item.value === 'google-ads') {
                 return pathname?.endsWith('/google-ads') || pathname?.endsWith('/google-ads/');
               }
-              if (item.value === 'steuerberater') {
-                return (
-                  pathname?.endsWith('/steuerberater') || pathname?.endsWith('/steuerberater/')
-                );
+              if (item.value === 'steuerportal') {
+                return pathname?.endsWith('/steuerportal') || pathname?.endsWith('/steuerportal/');
               }
               if (item.value === 'datev-overview') {
                 // DATEV ist ein spezieller Fall - hier soll das Hauptmenü aktiv sein wenn man in datev/ ist
@@ -355,7 +353,7 @@ export default function CompanySidebar({
                   !pathname?.includes('/calendar') &&
                   !pathname?.includes('/reviews') &&
                   !pathname?.includes('/google-ads') &&
-                  !pathname?.includes('/steuerberater') &&
+                  !pathname?.includes('/steuerportal') &&
                   !pathname?.includes('/datev') &&
                   !pathname?.includes('/provider')
                 );

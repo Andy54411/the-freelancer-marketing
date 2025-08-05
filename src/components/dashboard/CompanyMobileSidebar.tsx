@@ -18,7 +18,7 @@ import {
   Menu as FiMenu,
   Bot as FiBot,
   TrendingUp as FiTrendingUp,
-  UserCheck as FiUserCheck,
+  Shield as FiShield,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -225,10 +225,10 @@ const navigationItems: NavigationItem[] = [
     href: 'google-ads',
   },
   {
-    label: 'Steuerberater',
-    icon: FiUserCheck,
-    value: 'steuerberater',
-    href: 'steuerberater',
+    label: 'Steuerportal',
+    icon: FiShield,
+    value: 'steuerportal',
+    href: 'steuerportal',
   },
   {
     label: 'DATEV Integration',
@@ -338,6 +338,9 @@ export default function CompanyMobileSidebar({
                 if (item.value === 'reviews') {
                   return pathname?.includes('/reviews');
                 }
+                if (item.value === 'steuerportal') {
+                  return pathname?.includes('/steuerportal');
+                }
                 if (item.value === 'dashboard') {
                   // Dashboard ist nur aktiv wenn KEIN anderer spezifischer Pfad aktiv ist
                   return (
@@ -349,7 +352,8 @@ export default function CompanyMobileSidebar({
                     !pathname?.includes('/settings') &&
                     !pathname?.includes('/ai-assistant') &&
                     !pathname?.includes('/calendar') &&
-                    !pathname?.includes('/reviews')
+                    !pathname?.includes('/reviews') &&
+                    !pathname?.includes('/steuerportal')
                   );
                 }
                 // Fallback für currentView
