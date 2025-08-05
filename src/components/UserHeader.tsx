@@ -163,7 +163,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       isSubscriptionActive = false;
       unsubscribe();
     };
-  }, []);
+  }, []); // auth und db sind stabile Referenzen und müssen nicht in die deps
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
     if (!uid) {
@@ -251,7 +251,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentUid, router]); // Removed loadFirestoreUserData dependency to prevent loop
+  }, [currentUid, router, loadFirestoreUserData]);
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {
@@ -266,7 +266,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       setNotifications([]);
       setUnreadNotificationsCount(0);
     }
-  }, [currentUser?.uid, currentUid]); // Removed subscribeToNotifications dependency to prevent loop
+  }, [currentUser?.uid, currentUid, subscribeToNotifications]);
 
   useEffect(() => {
     const handleProfileUpdate = (event: Event) => {
@@ -283,7 +283,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     };
     window.addEventListener('profileUpdated', handleProfileUpdate);
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
-  }, [currentUser?.uid]); // Removed function dependencies to prevent loop
+  }, [currentUser?.uid, loadProfilePictureFromStorage, loadFirestoreUserData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -306,7 +306,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isProfileDropdownOpen, isSearchDropdownOpen]); // Removed ref dependencies to prevent loop
+  }, [isProfileDropdownOpen, isSearchDropdownOpen]);
 
   const handleSubcategorySelect = () => {
     setIsSearchDropdownOpen(false);

@@ -14,7 +14,6 @@ import {
   setDatevTokenCookies,
 } from '@/lib/datev-server-utils';
 import { db } from '@/firebase/server';
-import { getDatevUserToken, validateDatevUserExists } from '@/services/datev-user-auth-service';
 import { getAuth } from 'firebase-admin/auth';
 
 export async function GET(request: NextRequest) {
@@ -44,23 +43,40 @@ export async function GET(request: NextRequest) {
 
     // 1. Try new DATEV auth middleware if Firebase user is available
     if (firebaseUserId) {
-      console.log('[DATEV Organizations] Using new DATEV auth middleware');
+      console.log('[DATEV Organizations] Using new Firebase-based DATEV auth');
 
-      // Validate DATEV user exists
-      const userValidation = await validateDatevUserExists(firebaseUserId);
+      try {
+        const tokenRef = db.collection('datev_tokens').doc(firebaseUserId);
+        const tokenDoc = await tokenRef.get();
 
-      if (userValidation.exists && userValidation.isActive) {
-        // Get DATEV token from Firestore via new service
-        const tokenResult = await getDatevUserToken(firebaseUserId);
+        if (tokenDoc.exists) {
+          const tokenData = tokenDoc.data() as any;
+          const expiresAt = tokenData.expiresAt?.toDate?.() || new Date(tokenData.expiresAt || 0);
 
-        if (tokenResult.success && tokenResult.token) {
-          accessToken = tokenResult.token.accessToken;
-          console.log('[DATEV Organizations] Using token from new auth service');
-        } else {
-          console.log('[DATEV Organizations] New auth service token failed:', tokenResult.error);
+          if (expiresAt && expiresAt.getTime() > Date.now() + 300000) {
+            accessToken = tokenData.accessToken;
+            console.log('[DATEV Organizations] Using valid token from datev_tokens collection.');
+          } else if (tokenData.refreshToken) {
+            console.log(
+              '[DATEV Organizations] Token from datev_tokens expired, attempting refresh...'
+            );
+            const newTokenData = await refreshDatevAccessToken(tokenData.refreshToken);
+            accessToken = newTokenData.access_token;
+            console.log('[DATEV Organizations] Token refresh successful.');
+
+            // Asynchronously update cookies and Firestore
+            setDatevTokenCookies(newTokenData);
+            const newExpiresAt = new Date(Date.now() + (newTokenData.expires_in || 3600) * 1000);
+            tokenRef.update({
+              accessToken: newTokenData.access_token,
+              refreshToken: newTokenData.refresh_token || tokenData.refreshToken,
+              expiresAt: newExpiresAt,
+              updatedAt: new Date(),
+            });
+          }
         }
-      } else {
-        console.log("[DATEV Organizations] DATEV user not active or doesn't exist");
+      } catch (e) {
+        console.error('[DATEV Organizations] Error fetching token from datev_tokens:', e);
       }
     }
 
@@ -69,14 +85,14 @@ export async function GET(request: NextRequest) {
       const cookieToken: ServerDatevToken | null = await getDatevTokenFromCookies();
       if (cookieToken?.access_token) {
         accessToken = cookieToken.access_token;
-        console.log('[DATEV Organizations] Using valid token from cookie (fallback)');
+        console.log('[DATEV Organizations] Using valid token from cookie (primary fallback)');
       }
     }
 
     // 3. Fallback: Check Firestore for company-based tokens (legacy)
     if (!accessToken && companyId) {
       console.log(
-        '[DATEV Organizations] No auth token found. Checking legacy Firestore for company:',
+        '[DATEV Organizations] No auth token found. Checking legacy Firestore path for company:',
         companyId
       );
       try {
@@ -94,9 +110,8 @@ export async function GET(request: NextRequest) {
 
           // Check if token is still valid
           if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData?.access_token) {
-            // Token is valid (with 5-minute buffer)
             accessToken = tokenData.access_token;
-            console.log('[DATEV Organizations] Using valid token from Firestore.');
+            console.log('[DATEV Organizations] Using valid token from legacy Firestore path.');
           } else if (tokenData?.refresh_token) {
             // Token is expired, try to refresh it
             console.log('[DATEV Organizations] Firestore token expired, attempting refresh...');
@@ -129,7 +144,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. Check if we have valid authentication - if not, return auth required error
+    // 4. Final check: If no token was found after all checks, return auth required error
     if (!accessToken) {
       console.warn('[DATEV Organizations] No valid DATEV authentication token found');
 

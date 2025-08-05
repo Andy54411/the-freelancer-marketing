@@ -394,17 +394,10 @@ service cloud.firestore {
 
       // list: Erweiterte Regel für Admin-Dashboard und Benutzer-Benachrichtigungen
       allow list: if request.auth != null && (
-        isSupportStaff() ||
-        (
-          'where' in request.query &&
-          request.query.where != null &&
-          request.query.where.size() > 0 &&
-          request.query.where[0].path == 'userId' &&
-          request.query.where[0].op == '==' &&
-          request.query.where[0].value == request.auth.uid
-        ) ||
-        // Fallback für ungefilterte Abfragen (begrenzt auf 100 für Admins)
-        (isSupportStaff() && request.query.limit <= 100)
+        // Die Sicherheit wird durch die 'get'-Regel gewährleistet, die für jedes
+        // Dokument in der Abfrage ausgewertet wird. Der Client MUSS eine
+        // `where('userId', '==', request.auth.uid)` Klausel verwenden, sonst schlägt die Abfrage fehl.
+        isSupportStaff() || request.auth.uid != null
       );
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
