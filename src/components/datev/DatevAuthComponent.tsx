@@ -99,12 +99,26 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       return;
     }
 
+    // Validate companyId before attempting to load
+    if (!companyId || companyId.trim() === '') {
+      console.log('🚫 [DATEV Debug] No valid company ID provided, skipping connection load');
+      setLoading(false);
+      setConnection({
+        isConnected: false,
+        features: {
+          accountingData: false,
+          documents: false,
+          masterData: false,
+          cashRegister: false,
+        },
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       setHasAttemptedLoad(true);
-      console.log('🔍 [DATEV Debug] Loading connection for company:', companyId);
-
-      // Check if we have stored tokens in Firestore for this company
+      console.log('🔍 [DATEV Debug] Loading connection for company:', companyId); // Check if we have stored tokens in Firestore for this company
       const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
       console.log(
         '🔍 [DATEV Debug] Checking document path:',

@@ -87,12 +87,21 @@ export default function DatevSetupPage({ params }: DatevSetupPageProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Connection Component */}
-          <DatevAuthComponent
-            companyId={uid}
-            onAuthSuccess={organization => {
-              // TODO: Redirect to overview page
-            }}
-          />
+          {uid ? (
+            <DatevAuthComponent
+              companyId={uid}
+              onAuthSuccess={organization => {
+                // TODO: Redirect to overview page
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 border-2 border-[#14ad9f] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-gray-600">Lade DATEV-Integration...</p>
+              </div>
+            </div>
+          )}
 
           {/* Security Info */}
           <Alert>
