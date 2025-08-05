@@ -86,19 +86,47 @@ export interface DatevExportJob {
 export class DatevService {
   /**
    * Make API call to our backend API routes (bypasses CORS)
+   * INCLUDES Firebase Authorization header for token authentication
    */
   private static async makeBackendApiCall<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     try {
+      // Get Firebase Auth token for backend authentication
+      let authToken: string | null = null;
+      try {
+        // Try to get Firebase Auth instance
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+
+        if (auth.currentUser) {
+          authToken = await auth.currentUser.getIdToken();
+          console.log('🔑 [DATEV Service] Firebase auth token obtained for API call');
+        } else {
+          console.warn('⚠️ [DATEV Service] No authenticated Firebase user found');
+        }
+      } catch (authError) {
+        console.error('❌ [DATEV Service] Failed to get Firebase auth token:', authError);
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...((options.headers as Record<string, string>) || {}),
+      };
+
+      // Add Authorization header if we have an auth token
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+        console.log('🔑 [DATEV Service] Adding Authorization header to request');
+      } else {
+        console.warn('⚠️ [DATEV Service] Making request without Authorization header');
+      }
+
       const response = await fetch(`/api/datev${endpoint}`, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       if (!response.ok) {

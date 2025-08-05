@@ -745,5 +745,12 @@ service cloud.firestore {
       // Aktualisieren/Löschen: Niemals erlaubt (Audit-Trail ist unveränderlich)
       allow update, delete: if false;
     }
+
+    // --- DATEV Tokens Collection (für neue Firebase-basierte DATEV Auth) ---
+    match /datev_tokens/{userId} {
+      // DATEV-Tokens können nur vom eigenen Benutzer oder Support-Staff gelesen/geschrieben werden
+      allow read, write: if request.auth != null && 
+                           (request.auth.uid == userId || isSupportStaff());
+    }
   }
 }
