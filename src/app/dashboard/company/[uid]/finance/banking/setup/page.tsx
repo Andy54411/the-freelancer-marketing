@@ -3,7 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle, AlertCircle, Loader2, Building2, ArrowRight } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, Building2, ArrowRight, Bug } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import FinApiDebugComponent from '@/components/finapi/FinApiDebugComponent';
 
 export default function FinAPISetupPage() {
   const params = useParams();
@@ -163,9 +167,28 @@ export default function FinAPISetupPage() {
         <p className="text-gray-600 mt-1">Sichere Verbindung zu finAPI herstellen</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-8 min-h-[300px] flex items-center justify-center">
-        {renderContent()}
-      </div>
+      <Tabs defaultValue="setup" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="setup" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Banking Setup
+          </TabsTrigger>
+          <TabsTrigger value="debug" className="flex items-center gap-2">
+            <Bug className="h-4 w-4" />
+            finAPI Debug
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="setup" className="mt-6">
+          <div className="bg-white rounded-lg shadow p-8 min-h-[300px] flex items-center justify-center">
+            {renderContent()}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="debug" className="mt-6">
+          <FinApiDebugComponent />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
