@@ -27,27 +27,36 @@ export interface ServerDatevToken {
  * Server-only function to retrieve a valid DATEV token object from cookies.
  * This function can only be used in Server Components and API Routes
  */
-export async function getDatevTokenFromCookies(): Promise<ServerDatevToken | null> {
+export async function getDatevTokenFromCookies(
+  companyId: string
+): Promise<ServerDatevToken | null> {
   const cookieStore = await cookies();
-  const tokenCookie = cookieStore.get('datev_session_token');
+  const cookieName = `datev_tokens_${companyId}`;
+  const tokenCookie = cookieStore.get(cookieName);
 
   if (!tokenCookie?.value) {
+    console.log(`[datev-server-utils] No token cookie found for company ${companyId}`);
     return null;
   }
 
   try {
-    const tokenData: ServerDatevToken = JSON.parse(tokenCookie.value);
+    // Decode Base64 encoded token data
+    const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
+    const tokenData: ServerDatevToken = JSON.parse(decodedData);
 
     // Check if token is expired (with 5-minute buffer)
     if (Date.now() >= tokenData.expires_at - 300000) {
-      console.log('[datev-server-utils] Cookie token is expired.');
+      console.log(`[datev-server-utils] Cookie token is expired for company ${companyId}.`);
       // Hier könnte man eine Token-Refresh-Logik einbauen, wenn ein Refresh-Token vorhanden ist.
       return null;
     }
 
     return tokenData;
   } catch (error) {
-    console.error('[datev-server-utils] Failed to parse token from cookie:', error);
+    console.error(
+      `[datev-server-utils] Failed to parse token from cookie for company ${companyId}:`,
+      error
+    );
     return null;
   }
 }
