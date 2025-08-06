@@ -53,30 +53,35 @@ export async function getDatevTokenFromCookies(): Promise<ServerDatevToken | nul
 }
 
 /**
- * Server-only function to set DATEV tokens in cookies
+ * Server-only function to set DATEV tokens in cookies for a specific company
  */
-export async function setDatevTokenCookies(tokenData: {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-  token_type: string;
-  scope: string;
-}): Promise<void> {
+export async function setDatevTokenCookies(
+  tokenData: {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    token_type: string;
+    scope: string;
+  },
+  companyId: string
+): Promise<void> {
   const cookieStore = await cookies();
   const isProduction = process.env.NODE_ENV === 'production';
 
-  const cookieName = 'datev_session_token';
+  const cookieName = `datev_tokens_${companyId}`;
   const expiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000;
 
-  const cookieValue = JSON.stringify({
-    access_token: tokenData.access_token,
-    refresh_token: tokenData.refresh_token,
-    token_type: tokenData.token_type,
-    expires_at: expiresAt,
-    scope: tokenData.scope,
-  });
+  const cookieValue = Buffer.from(
+    JSON.stringify({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_type: tokenData.token_type,
+      expires_at: expiresAt,
+      scope: tokenData.scope,
+    })
+  ).toString('base64');
 
-  // Set a single cookie with the full token object
+  // Set a single cookie with the full token object (base64 encoded)
   cookieStore.set(cookieName, cookieValue, {
     httpOnly: true,
     secure: isProduction,
@@ -84,6 +89,8 @@ export async function setDatevTokenCookies(tokenData: {
     maxAge: tokenData.expires_in || 3600,
     path: '/',
   });
+
+  console.log(`✅ [setDatevTokenCookies] Cookie set for company ${companyId}: ${cookieName}`);
 }
 
 /**

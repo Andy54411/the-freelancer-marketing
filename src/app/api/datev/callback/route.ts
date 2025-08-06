@@ -275,9 +275,9 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     console.log('✅ [DATEV Callback] Token document created successfully');
 
     // 2. Store tokens in httpOnly cookies (for current session API calls)
-    await setDatevTokenCookies(tokenData);
+    await setDatevTokenCookies(tokenData, companyId);
 
-    console.log('✅ [DATEV Callback] Tokens stored in cookies');
+    console.log('✅ [DATEV Callback] Tokens stored in cookies for company:', companyId);
 
     // 3. Also store connection status in company document (using Admin SDK)
     const companyDocRef = db.collection('companies').doc(companyId);
