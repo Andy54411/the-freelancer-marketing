@@ -22,8 +22,8 @@ const nextConfig = {
     optimizePackageImports: ['react-icons'],
   },
 
-  // Server external packages
-  serverExternalPackages: ['firebase-admin', 'stripe'],
+  // Server external packages (only server-only packages)
+  serverExternalPackages: ['firebase-admin'],
 
   // Headers für bessere Performance
   async headers() {

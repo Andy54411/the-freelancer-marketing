@@ -14,6 +14,8 @@ interface DatevSetupPageProps {
 export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
   const { uid } = await params;
 
+  console.log('📋 [DATEV Setup Page] Rendering with UID:', uid, 'Type:', typeof uid);
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Clean Header */}

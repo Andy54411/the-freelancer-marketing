@@ -42,7 +42,16 @@ export async function getDatevTokenFromCookies(
   try {
     // Decode Base64 encoded token data
     const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
-    const tokenData: ServerDatevToken = JSON.parse(decodedData);
+    const rawTokenData = JSON.parse(decodedData);
+
+    // Extract only the needed token structure, ignore additional metadata
+    const tokenData: ServerDatevToken = {
+      access_token: rawTokenData.access_token,
+      refresh_token: rawTokenData.refresh_token,
+      token_type: rawTokenData.token_type || 'Bearer',
+      expires_at: rawTokenData.expires_at,
+      scope: rawTokenData.scope || '',
+    };
 
     // Check if token is expired (with 5-minute buffer)
     if (Date.now() >= tokenData.expires_at - 300000) {

@@ -1,0 +1,9 @@
+{
+  "fee_settings": {
+    "id": "fee_settings",
+    "feeRate": 0.045,
+    "isActive": true,
+    "createdAt": 1752418718,
+    "updatedAt": 1752418718
+  }
+}

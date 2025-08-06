@@ -190,6 +190,12 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const loadConnectionStatus = async () => {
     try {
       console.log('🔍 [DATEV Cookie Auth] Loading connection status for company:', companyId);
+      console.log(
+        '🔍 [DATEV Cookie Auth] Company ID type:',
+        typeof companyId,
+        'Value:',
+        JSON.stringify(companyId)
+      );
 
       if (!companyId || companyId.trim() === '') {
         console.log('🚫 [DATEV Cookie Auth] No valid company ID provided');

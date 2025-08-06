@@ -1,0 +1,656 @@
+{
+  "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1": {
+    "companyRegisterForBackend": null,
+    "lastName": "staudinger",
+    "companyName": "Mietkoch Andy",
+    "selectedSubcategory": "Mietkoch",
+    "bankCountry": "DE",
+    "accountHolder": "Andy Staudinger",
+    "uid": "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+    "createdAt": {
+      "_seconds": 1753375778,
+      "_nanoseconds": 329000000
+    },
+    "companyPostalCodeForBackend": "18586",
+    "identityFrontFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fidentity_document_078e1afc-ce2a-4920-ab16-7859409bb605_IMG_9934.jpeg",
+    "user_type": "firma",
+    "companyCountryForBackend": "DE",
+    "taxNumberForBackend": null,
+    "vatIdForBackend": "DE123456789",
+    "lat": 54.3703519,
+    "email": "a.staudinger32@icloud.com",
+    "lng": 13.7028588,
+    "isManagingDirectorOwner": true,
+    "dateOfBirth": "1984-02-01",
+    "personalCountry": "DE",
+    "companyCityForBackend": "Sellin",
+    "legalForm": "Einzelunternehmen",
+    "firstName": "andy",
+    "radiusKm": 30,
+    "profilePictureFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fbusiness_icon_f847b98f-0b7d-4720-b8f6-a043bba5b4ba_AdobeStock_163577338.jpg",
+    "phoneNumber": "+491605979000",
+    "businessLicenseFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fadditional_verification_0a042675-5e91-43d2-8dd9-b5d11b3cb0ef_identity_document_a7512e86-04b0-4ec6-82af-ec4899d0f558_2025-05-18%2010_54_37-Dokument1%20-%20Word%20(1).png",
+    "identityBackFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fidentity_document_74963d22-8f01-4be7-90c1-d697a62cf2b6_IMG_9935%202.jpeg",
+    "profilePictureStripeFileId": "file_1RoSKUD5Lvjon30apjMz8AhK",
+    "actualRepresentativeTitle": null,
+    "companyAddressLine1ForBackend": "Siedlung am Wald 6",
+    "masterCraftsmanCertificateFirebaseUrl": null,
+    "hourlyRate": 41,
+    "stripeAccountId": "acct_1RoSL4DlTKEWRrRh",
+    "stripeAccountChargesEnabled": true,
+    "stripeAccountCreationDate": {
+      "_seconds": 1753375793,
+      "_nanoseconds": 504000000
+    },
+    "stripeAccountPayoutsEnabled": false,
+    "common": {
+      "registrationCompletedAt": "2025-07-24T16:49:38.167Z",
+      "tosAcceptanceUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "tosAcceptanceIp": "85.199.68.45",
+      "createdByCallable": "true",
+      "stripeVerificationStatus": "pending"
+    },
+    "stripeAccountDetailsSubmitted": false,
+    "profilePictureURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fbusiness_icon_f847b98f-0b7d-4720-b8f6-a043bba5b4ba_AdobeStock_163577338.jpg",
+    "stripePayoutsEnabled": false,
+    "stripeDetailsSubmitted": false,
+    "stripeChargesEnabled": false,
+    "businessLicense": "",
+    "personalCity": "Sellin",
+    "identityFrontUrlStripeId": null,
+    "businessLicenseStripeId": null,
+    "industryMcc": "5812",
+    "responseTimeGuarantee": 24,
+    "servicePackages": [],
+    "identityBackUrlStripeId": null,
+    "companyPhoneNumber": "+491605979000",
+    "personalStreet": "Siedlung am Wald 6",
+    "workingHours": [],
+    "personalHouseNumber": "",
+    "profileBannerImage": "",
+    "personalPostalCode": "18586",
+    "companyPhoneNumberForBackend": "+491605979000",
+    "certifications": [],
+    "step1": {
+      "personalCity": "Sellin",
+      "isManagingDirectorOwner": true,
+      "personalPostalCode": "18586",
+      "dateOfBirth": "1984-02-01",
+      "personalCountry": "DE",
+      "phoneNumber": "+491605979000",
+      "isActualDirector": null,
+      "actualRepresentativeTitle": null,
+      "isActualExecutive": null,
+      "isActualOwner": null,
+      "personalStreet": "Siedlung am Wald 6",
+      "actualOwnershipPercentage": null,
+      "ownershipPercentage": null,
+      "firstName": "andy",
+      "lastName": "staudinger",
+      "email": "a.staudinger32@icloud.com",
+      "personalHouseNumber": ""
+    },
+    "faqs": [],
+    "instantBooking": false,
+    "masterCraftsmanCertificateStripeId": null,
+    "selectedCategory": "Hotel & Gastronomie",
+    "skills": [
+      "Deutsche Küche",
+      "Fine dish"
+    ],
+    "education": [],
+    "languages": [
+      {
+        "language": "Englisch",
+        "proficiency": "Fortgeschritten"
+      }
+    ],
+    "portfolio": [],
+    "responseTime": 24,
+    "specialties": [],
+    "companyWebsiteForBackend": "https//mietkoch.de",
+    "publicDescription": "",
+    "step2": {
+      "companyName": "Mietkoch Andy",
+      "legalForm": "Einzelunternehmen",
+      "city": "Sellin",
+      "country": "DE",
+      "address": "Siedlung am Wald 6",
+      "languages": "",
+      "postalCode": "18586",
+      "houseNumber": "",
+      "description": "",
+      "industry": "Hotel & Gastronomie",
+      "industryMcc": "5812",
+      "street": "Siedlung am Wald 6",
+      "fax": "",
+      "companyPhoneNumber": "+491605979000",
+      "website": "https//mietkoch.de",
+      "employees": "3"
+    },
+    "step3": {
+      "profilePictureURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fbusiness_icon_f847b98f-0b7d-4720-b8f6-a043bba5b4ba_AdobeStock_163577338.jpg",
+      "vatId": "DE123456789",
+      "hourlyRate": "41",
+      "identityBackUrl": null,
+      "masterCraftsmanCertificateURL": null,
+      "businessLicenseURL": null,
+      "taxNumber": "",
+      "identityFrontUrl": null,
+      "companyRegister": "RE4329816294z128"
+    },
+    "step4": {
+      "accountHolder": "Andy Staudinger",
+      "bankCountry": "DE",
+      "iban": "DE89370400440532013000"
+    },
+    "iban": "DE89370400440532013000",
+    "preferredInvoiceTemplate": "german-standard",
+    "updatedAt": {
+      "_seconds": 1754329120,
+      "_nanoseconds": 770000000
+    }
+  },
+  "1fqeoqGgDVfC8TnH5BgH4XW2r5g2": {
+    "uid": "1fqeoqGgDVfC8TnH5BgH4XW2r5g2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753386680,
+      "_nanoseconds": 813000000
+    },
+    "updatedAt": {
+      "_seconds": 1753386680,
+      "_nanoseconds": 813000000
+    },
+    "stripeCustomerId": "cus_Sjz97wU2UvD2LF"
+  },
+  "8dKB4by5auZLbbh18tiknTLKIke2": {
+    "uid": "8dKB4by5auZLbbh18tiknTLKIke2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753377511,
+      "_nanoseconds": 351000000
+    },
+    "updatedAt": {
+      "_seconds": 1753377511,
+      "_nanoseconds": 351000000
+    }
+  },
+  "9TR1lW7rSqZh92Mf9ly7u43wmys1": {
+    "uid": "9TR1lW7rSqZh92Mf9ly7u43wmys1",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753377423,
+      "_nanoseconds": 21000000
+    },
+    "updatedAt": {
+      "_seconds": 1753377423,
+      "_nanoseconds": 21000000
+    }
+  },
+  "CC0Mm90rHJebansbD7LIhgV7irw1": {
+    "uid": "CC0Mm90rHJebansbD7LIhgV7irw1",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753384592,
+      "_nanoseconds": 892000000
+    },
+    "updatedAt": {
+      "_seconds": 1753384592,
+      "_nanoseconds": 892000000
+    },
+    "stripeCustomerId": "cus_Sjyad2qDnPkBRF"
+  },
+  "EsWjlTeIKxVH4vSET30xIWQSsA33": {
+    "uid": "EsWjlTeIKxVH4vSET30xIWQSsA33",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753387696,
+      "_nanoseconds": 515000000
+    },
+    "updatedAt": {
+      "_seconds": 1753387696,
+      "_nanoseconds": 515000000
+    },
+    "stripeCustomerId": "cus_SjzQeBJSyMykpW"
+  },
+  "FtrGvy3XmiXn0cSmA4iFhsNaiPF2": {
+    "uid": "FtrGvy3XmiXn0cSmA4iFhsNaiPF2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753386077,
+      "_nanoseconds": 489000000
+    },
+    "updatedAt": {
+      "_seconds": 1753386077,
+      "_nanoseconds": 489000000
+    },
+    "stripeCustomerId": "cus_SjyzLVTZTD4SVT"
+  },
+  "MTYN89XbrVhxQ8hCFWOmG8avG7m1": {
+    "uid": "MTYN89XbrVhxQ8hCFWOmG8avG7m1",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753379607,
+      "_nanoseconds": 733000000
+    },
+    "updatedAt": {
+      "_seconds": 1753379607,
+      "_nanoseconds": 733000000
+    },
+    "stripeCustomerId": "cus_SjxFEBDzLRUnUm"
+  },
+  "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3": {
+    "companyRegisterForBackend": null,
+    "lastName": "Staudinger",
+    "personalCity": null,
+    "companyName": "The Freelancer Marketing Ldt.",
+    "identityFrontUrlStripeId": "file_1RqDkaD5Lvjon30a6qHEGskI",
+    "selectedSubcategory": "Mietkoch",
+    "businessLicenseStripeId": "file_1RqDkVD5Lvjon30a8AdvhrEj",
+    "bankCountry": "DE",
+    "accountHolder": "Andy Staudinger",
+    "industryMcc": "5999",
+    "uid": "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3",
+    "createdAt": {
+      "_seconds": 1753796381,
+      "_nanoseconds": 975000000
+    },
+    "companyPostalCodeForBackend": "18586",
+    "identityFrontFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fidentity_document_83fbde0d-4b75-4da4-9f64-492c5ac61528_IMG_9934.jpeg",
+    "user_type": "firma",
+    "companyWebsiteForBackend": null,
+    "companyCountryForBackend": "DE",
+    "taxNumberForBackend": null,
+    "vatIdForBackend": "DE123456789",
+    "identityBackUrlStripeId": "file_1RqDklD5Lvjon30aLXi7Uq1l",
+    "personalStreet": null,
+    "lat": 54.3703519,
+    "email": "info@the-freelancer-marketing.de",
+    "personalHouseNumber": null,
+    "lng": 13.7028588,
+    "isManagingDirectorOwner": true,
+    "personalPostalCode": null,
+    "dateOfBirth": "1984-02-01",
+    "companyPhoneNumberForBackend": null,
+    "personalCountry": "DE",
+    "companyCityForBackend": "Sellin",
+    "legalForm": "Einzelunternehmen",
+    "firstName": "Andy",
+    "radiusKm": 30,
+    "profilePictureFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fbusiness_icon_e0b587cf-dfdc-4993-850e-e163f3a947ea_tasko_icon_512x512.jpg",
+    "phoneNumber": "+4901605979000",
+    "businessLicenseFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fadditional_verification_4d0d57b5-7a08-438d-85b9-51ee5caedc04_492652331_687611007465438_8722411313785036254_n.jpg",
+    "identityBackFirebaseUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fidentity_document_45399a32-7a3a-405a-b00c-ee7755f07f9f_IMG_9935.jpeg",
+    "iban": "DE89370400440532013000",
+    "profilePictureStripeFileId": "file_1RqDkTD5Lvjon30aYzJE8QFC",
+    "selectedCategory": "",
+    "actualRepresentativeTitle": null,
+    "companyAddressLine1ForBackend": "Siedlung am Wald 6",
+    "masterCraftsmanCertificateFirebaseUrl": null,
+    "stripeAccountId": "acct_1RqDkqDQHCYn2bzR",
+    "step4": {
+      "accountHolder": "Andy Staudinger",
+      "iban": "****3000"
+    },
+    "stripeAccountChargesEnabled": true,
+    "stripeAccountCreationDate": {
+      "_seconds": 1753796388,
+      "_nanoseconds": 425000000
+    },
+    "step1": {
+      "personalCity": "Sellin",
+      "isManagingDirectorOwner": true,
+      "personalPostalCode": "18586",
+      "dateOfBirth": "1984-02-01",
+      "personalCountry": "DE",
+      "phoneNumber": "+4901605979000",
+      "isActualDirector": null,
+      "actualRepresentativeTitle": null,
+      "isActualExecutive": null,
+      "isActualOwner": null,
+      "personalStreet": "Siedlung am Wald 6",
+      "actualOwnershipPercentage": null,
+      "ownershipPercentage": null,
+      "personalHouseNumber": null
+    },
+    "stripeAccountPayoutsEnabled": false,
+    "common": {
+      "registrationCompletedAt": "2025-07-29T13:39:41.816Z",
+      "tosAcceptanceUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "tosAcceptanceIp": "85.199.68.45",
+      "createdByCallable": "true",
+      "stripeVerificationStatus": "pending"
+    },
+    "stripeAccountDetailsSubmitted": false,
+    "profilePictureURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fbusiness_icon_e0b587cf-dfdc-4993-850e-e163f3a947ea_tasko_icon_512x512.jpg",
+    "stripePayoutsEnabled": false,
+    "stripeDetailsSubmitted": false,
+    "stripeChargesEnabled": false,
+    "step2": {
+      "industryMcc": "5999",
+      "website": null,
+      "companyName": "The Freelancer Marketing Ldt.",
+      "legalForm": "Einzelunternehmen",
+      "city": "Sellin"
+    },
+    "hourlyRate": 42,
+    "step3": {
+      "profilePictureURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fbusiness_icon_e0b587cf-dfdc-4993-850e-e163f3a947ea_tasko_icon_512x512.jpg",
+      "identityBackUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fidentity_document_45399a32-7a3a-405a-b00c-ee7755f07f9f_IMG_9935.jpeg",
+      "businessLicenseURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fadditional_verification_4d0d57b5-7a08-438d-85b9-51ee5caedc04_492652331_687611007465438_8722411313785036254_n.jpg",
+      "vatId": "DE123456789",
+      "taxNumber": null,
+      "companyRegister": null,
+      "identityFrontUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fidentity_document_83fbde0d-4b75-4da4-9f64-492c5ac61528_IMG_9934.jpeg",
+      "hourlyRate": "42"
+    },
+    "updatedAt": {
+      "_seconds": 1753800759,
+      "_nanoseconds": 873000000
+    }
+  },
+  "RZaeRiO6pqPEG0jkt8U5Zvi4HsL2": {
+    "uid": "RZaeRiO6pqPEG0jkt8U5Zvi4HsL2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753383893,
+      "_nanoseconds": 199000000
+    },
+    "updatedAt": {
+      "_seconds": 1753383893,
+      "_nanoseconds": 199000000
+    }
+  },
+  "Y8W77wO31LbQ4k90NzwNYgksFqw2": {
+    "uid": "Y8W77wO31LbQ4k90NzwNYgksFqw2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753383723,
+      "_nanoseconds": 419000000
+    },
+    "updatedAt": {
+      "_seconds": 1753383723,
+      "_nanoseconds": 419000000
+    },
+    "stripeCustomerId": "cus_SjyLVhUxLijtEI"
+  },
+  "bvezM8R0E3TaRotUPkLBw05b6vs2": {
+    "uid": "bvezM8R0E3TaRotUPkLBw05b6vs2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753379726,
+      "_nanoseconds": 735000000
+    },
+    "updatedAt": {
+      "_seconds": 1753379726,
+      "_nanoseconds": 735000000
+    },
+    "stripeCustomerId": "cus_SjxIL3Vzg4dXEo"
+  },
+  "clVGa7XwdtTmZDhf3SFYPXfM4Fc2": {
+    "uid": "clVGa7XwdtTmZDhf3SFYPXfM4Fc2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753380544,
+      "_nanoseconds": 807000000
+    },
+    "updatedAt": {
+      "_seconds": 1753380544,
+      "_nanoseconds": 807000000
+    },
+    "stripeCustomerId": "cus_SjxULnFtau3Eyi"
+  },
+  "dY47a0KlWygCtlusuQ9yNhHnWZ22": {
+    "uid": "dY47a0KlWygCtlusuQ9yNhHnWZ22",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753382737,
+      "_nanoseconds": 771000000
+    },
+    "updatedAt": {
+      "_seconds": 1753382737,
+      "_nanoseconds": 771000000
+    },
+    "stripeCustomerId": "cus_Sjy5lhmLMeUBwf"
+  },
+  "nuDT1yd6BcdI6YX8D0lZphOWdxK2": {
+    "uid": "nuDT1yd6BcdI6YX8D0lZphOWdxK2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753378323,
+      "_nanoseconds": 9000000
+    },
+    "updatedAt": {
+      "_seconds": 1753378323,
+      "_nanoseconds": 9000000
+    }
+  },
+  "okH6SMs8o0OGIRpPk6gFVNFLO6F3": {
+    "uid": "okH6SMs8o0OGIRpPk6gFVNFLO6F3",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753382497,
+      "_nanoseconds": 332000000
+    },
+    "updatedAt": {
+      "_seconds": 1753382497,
+      "_nanoseconds": 332000000
+    },
+    "stripeCustomerId": "cus_Sjy1VtTYt73XkD"
+  },
+  "rl1J9nhZPUhRpP93voHkM9Ad0yW2": {
+    "uid": "rl1J9nhZPUhRpP93voHkM9Ad0yW2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753380457,
+      "_nanoseconds": 680000000
+    },
+    "updatedAt": {
+      "_seconds": 1753380457,
+      "_nanoseconds": 680000000
+    },
+    "stripeCustomerId": "cus_SjxTe2z3rhIGfs"
+  },
+  "t3fPX32ziqdJJBmzp4CH9hkuwcF2": {
+    "uid": "t3fPX32ziqdJJBmzp4CH9hkuwcF2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753379825,
+      "_nanoseconds": 957000000
+    },
+    "updatedAt": {
+      "_seconds": 1753379825,
+      "_nanoseconds": 957000000
+    },
+    "stripeCustomerId": "cus_SjxIK0nWOa5lcn"
+  },
+  "tlw8d8UFoESfjw66zsgcBsHMp903": {
+    "uid": "tlw8d8UFoESfjw66zsgcBsHMp903",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753382592,
+      "_nanoseconds": 557000000
+    },
+    "updatedAt": {
+      "_seconds": 1753382592,
+      "_nanoseconds": 557000000
+    },
+    "stripeCustomerId": "cus_Sjy2j2RJ9y7PIY"
+  },
+  "ugWRNqK7JNhC5jnwOEYLPLlqTpm2": {
+    "uid": "ugWRNqK7JNhC5jnwOEYLPLlqTpm2",
+    "user_type": "kunde",
+    "email": "a.staudinger32@gmail.com",
+    "firstName": "andy",
+    "lastName": "staudinger",
+    "phoneNumber": "+4901605979000",
+    "postalCode": "18586",
+    "street": "Siedlung am Wald 6",
+    "city": "Sellin",
+    "country": "DE",
+    "agreesToNewsletter": false,
+    "createdAt": {
+      "_seconds": 1753381438,
+      "_nanoseconds": 266000000
+    },
+    "updatedAt": {
+      "_seconds": 1753381438,
+      "_nanoseconds": 266000000
+    },
+    "stripeCustomerId": "cus_Sjxxt2RBYCJEvu"
+  }
+}

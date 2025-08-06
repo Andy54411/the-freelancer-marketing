@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
     try {
       // Exchange authorization code for tokens
       const tokenData = await exchangeCodeForTokens(code, codeVerifier);
+      const config = getDatevConfig(); // Get config for metadata
 
       console.log('✅ [DATEV Cookie Callback] Token exchange successful:', {
         hasAccessToken: !!tokenData.access_token,
@@ -87,11 +88,23 @@ export async function GET(request: NextRequest) {
         `${redirectUrl}?datev_auth=success&company=${companyId}&timestamp=${Date.now()}`
       );
 
-      // Create secure cookie value
+      // Create secure cookie value with consistent structure for datev-server-utils.ts
+      const expiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000;
+
       const fullTokenData = {
-        ...tokenData,
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        token_type: tokenData.token_type || 'Bearer',
+        expires_at: expiresAt, // Convert expires_in to expires_at timestamp
+        expires_in: tokenData.expires_in, // Keep original expires_in for calculations
+        scope: tokenData.scope || '',
+        // Additional metadata
         connected_at: Date.now(),
         company_id: companyId,
+        // Environment metadata for hybrid setup
+        environment: process.env.NODE_ENV,
+        client_id: config.clientId,
+        api_base_url: config.apiBaseUrl,
       };
 
       // Encode token data as base64 for safe cookie storage
@@ -107,12 +120,16 @@ export async function GET(request: NextRequest) {
         httpOnly: true, // Server-only for security
       });
 
-      console.log('✅ [DATEV Cookie Callback] Tokens stored in HTTP-only cookie for company:', companyId, {
-        cookieName,
-        dataSize: encodedData.length,
-        expiresIn: tokenData.expires_in,
-        scope: tokenData.scope || '',
-      });
+      console.log(
+        '✅ [DATEV Cookie Callback] Tokens stored in HTTP-only cookie for company:',
+        companyId,
+        {
+          cookieName,
+          dataSize: encodedData.length,
+          expiresIn: tokenData.expires_in,
+          scope: tokenData.scope || '',
+        }
+      );
 
       console.log('🔄 [DATEV Cookie Callback] Redirecting to success page...');
       return response;
@@ -141,12 +158,13 @@ export async function GET(request: NextRequest) {
  */
 async function exchangeCodeForTokens(code: string, codeVerifier: string) {
   const config = getDatevConfig();
-  
-  // Use same redirect_uri as in auth request - DATEV Sandbox Requirement  
+
+  // Use same redirect_uri as in auth request - DATEV Sandbox Requirement
   // WICHTIG: Port 80 Proxy für DATEV Sandbox Compliance
-  const cookieRedirectUri = process.env.NODE_ENV === 'development'
-    ? 'http://localhost'  // DATEV Sandbox: Port 80 Proxy Server
-    : 'https://taskilo.de/api/datev/callback';
+  const cookieRedirectUri =
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost' // DATEV Sandbox: Port 80 Proxy Server
+      : 'https://taskilo.de/api/datev/callback';
 
   // DATEV PKCE Flow - Try with HTTP Basic Auth only (remove client_secret from body)
   const tokenRequestData = new URLSearchParams({
@@ -184,7 +202,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
   // If PKCE-only fails with invalid_client, try with client_secret
   if (!response.ok && response.status === 401) {
     console.log('⚠️ [DATEV Cookie Callback] PKCE-only failed, trying with client_secret...');
-    
+
     const tokenRequestDataWithSecret = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
@@ -212,11 +230,13 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
         withSecretStatus: responseWithSecret.status,
         error: errorText,
       });
-      throw new Error(`Token exchange failed: ${responseWithSecret.status} ${responseWithSecret.statusText}`);
+      throw new Error(
+        `Token exchange failed: ${responseWithSecret.status} ${responseWithSecret.statusText}`
+      );
     }
 
     const tokenData = await responseWithSecret.json();
-    
+
     if (!tokenData.access_token) {
       throw new Error('No access token received');
     }

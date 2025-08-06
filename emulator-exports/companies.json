@@ -1,0 +1,135 @@
+{
+  "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1": {
+    "companyCity": "Sellin",
+    "companyName": "Mietkoch Andy",
+    "companyHouseNumber": "6",
+    "selectedSubcategory": "Mietkoch",
+    "legalForm": "Einzelunternehmen",
+    "radiusKm": 30,
+    "uid": "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+    "companyWebsite": null,
+    "hourlyRate": 41,
+    "companyPhoneNumber": null,
+    "taskiloProfileUrl": "https://taskilo-zh8k.vercel.app/profile/0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+    "createdAt": {
+      "_seconds": 1753375789,
+      "_nanoseconds": 244000000
+    },
+    "stripePayoutsEnabled": false,
+    "companyPostalCodeForBackend": "18586",
+    "user_type": "firma",
+    "stripeDetailsSubmitted": false,
+    "geohash": "u39trcf47b",
+    "stripeChargesEnabled": false,
+    "stripeAccountId": "acct_1RoSL4DlTKEWRrRh",
+    "industryMcc": "5812",
+    "selectedCategory": "Hotel & Gastronomie",
+    "platformHoldBalance": 1306820,
+    "businessLicense": "",
+    "education": [],
+    "publicDescription": "Mietkoch Andy – Ihr Partner für unvergessliche kulinarische Erlebnisse in Sellin und Umgebung.  Wir bieten professionelle Kochleistungen für private Feiern, Firmenevents und besondere Anlässe, die durch ein exquisites Menü unverwechselbar werden sollen.\n\nUnser erfahrener Küchenchef Andy verfügt über langjährige Erfahrung in der gehobenen Gastronomie und verbindet handwerkliches Können mit kreativer Leidenschaft.  Er legt größten Wert auf die Verwendung frischer, regionaler Zutaten und entwickelt individuelle Menüs, die exakt auf Ihre Wünsche und Vorstellungen abgestimmt sind.  Dabei orientieren wir uns flexibel an Ihren Vorlieben – ob klassisch-elegant oder modern-kreativ.\n\nWir übernehmen die komplette Organisation Ihres kulinarischen Events:  Von der detaillierten Menüplanung und der Beratung bei der Auswahl der Zutaten über die sorgfältige Zubereitung und das stilvolle Servieren bis hin zur anschließenden Reinigung.  Sie können sich entspannt zurücklehnen und Ihre Feier in vollen Zügen genießen, während wir für einen reibungslosen Ablauf sorgen.  Unser umfassender Service garantiert höchste Qualität und Zuverlässigkeit.\n\nMit Mietkoch Andy profitieren Sie von einer persönlichen Beratung und individueller Betreuung, die Ihr Event zu einem kulinarischen Highlight macht.  Wir unterstützen Sie bei der Gestaltung eines Menüs, das sowohl Ihren Geschmack als auch den Ihrer Gäste trifft und Ihren Anlass perfekt unterstreicht.  Überzeugen Sie sich von unserer Expertise und der Liebe zum Detail, die in jedem unserer Gerichte zum Ausdruck kommt.\n",
+    "companyStreet": "",
+    "skills": [
+      "Deutsche Küche",
+      "Fine dish"
+    ],
+    "lastUpdated": {
+      "_seconds": 1754117196,
+      "_nanoseconds": 339000000
+    },
+    "specialties": [
+      "Deutsch"
+    ],
+    "portfolio": [],
+    "responseTimeGuarantee": 24,
+    "companyCountry": "Deutschland",
+    "servicePackages": [],
+    "companyPostalCode": "",
+    "workingHours": [],
+    "languages": [
+      {
+        "language": "Englisch",
+        "proficiency": "Fortgeschritten"
+      }
+    ],
+    "companyLogo": "",
+    "profileBannerImage": "",
+    "certifications": [],
+    "faqs": [],
+    "instantBooking": false,
+    "fullAddress": "",
+    "profilePictureURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fbusiness_icon_f847b98f-0b7d-4720-b8f6-a043bba5b4ba_AdobeStock_163577338.jpg",
+    "lng": 13.7028588,
+    "postalCode": "18586",
+    "description": null,
+    "lat": 54.3703519,
+    "profileLastUpdatedAt": {
+      "_seconds": 1754329123,
+      "_nanoseconds": 794000000
+    },
+    "updatedAt": {
+      "_seconds": 1754329123,
+      "_nanoseconds": 794000000
+    },
+    "datev": {
+      "connected": true,
+      "status": "active",
+      "connected_at": {
+        "_seconds": 1754382823,
+        "_nanoseconds": 848000000
+      }
+    }
+  },
+  "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3": {
+    "profilePictureURL": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fbusiness_icon_e0b587cf-dfdc-4993-850e-e163f3a947ea_tasko_icon_512x512.jpg",
+    "companyCity": "Sellin",
+    "lng": 13.7028588,
+    "companyName": "The Freelancer Marketing Ldt.",
+    "postalCode": "18586",
+    "companyHouseNumber": "6",
+    "selectedSubcategory": "Mietkoch",
+    "legalForm": "Einzelunternehmen",
+    "companyStreet": "Siedlung am Wald",
+    "industryMcc": "5999",
+    "radiusKm": 30,
+    "uid": "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3",
+    "companyCountry": "DE",
+    "companyPostalCode": "18586",
+    "companyWebsite": null,
+    "companyPhoneNumber": null,
+    "lat": 54.3703519,
+    "taskiloProfileUrl": "https://taskilo.de/profile/NAZB6lKiD2SGU7V6rjb1LT0Ca3D3",
+    "createdAt": {
+      "_seconds": 1753796384,
+      "_nanoseconds": 932000000
+    },
+    "stripePayoutsEnabled": false,
+    "companyPostalCodeForBackend": "18586",
+    "user_type": "firma",
+    "stripeDetailsSubmitted": false,
+    "geohash": "u39trcf47b",
+    "description": null,
+    "selectedCategory": null,
+    "stripeChargesEnabled": false,
+    "stripeAccountId": "acct_1RqDkqDQHCYn2bzR",
+    "hourlyRate": 42,
+    "profileLastUpdatedAt": {
+      "_seconds": 1753800760,
+      "_nanoseconds": 114000000
+    },
+    "updatedAt": {
+      "_seconds": 1753800760,
+      "_nanoseconds": 114000000
+    }
+  },
+  "unknown": {
+    "datev": {
+      "connected": true,
+      "status": "active",
+      "connected_at": {
+        "_seconds": 1754381699,
+        "_nanoseconds": 159000000
+      }
+    }
+  }
+}

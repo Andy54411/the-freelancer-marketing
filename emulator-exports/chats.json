@@ -1,0 +1,57 @@
+{
+  "4bMTQQzVWsHyKhkbkRRu": {
+    "isLocked": false,
+    "users": [
+      "EsWjlTeIKxVH4vSET30xIWQSsA33",
+      "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1"
+    ],
+    "lastUpdated": {
+      "_seconds": 1753692176,
+      "_nanoseconds": 597000000
+    },
+    "lastMessage": {
+      "senderId": "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+      "isRead": false,
+      "text": "Hallo",
+      "timestamp": {
+        "_seconds": 1753692176,
+        "_nanoseconds": 597000000
+      }
+    },
+    "userDetails": {
+      "EsWjlTeIKxVH4vSET30xIWQSsA33": {
+        "id": "EsWjlTeIKxVH4vSET30xIWQSsA33",
+        "name": "andy staudinger",
+        "avatarUrl": null
+      },
+      "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1": {
+        "id": "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+        "name": "Mietkoch Andy",
+        "avatarUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fbusiness_icon_f847b98f-0b7d-4720-b8f6-a043bba5b4ba_AdobeStock_163577338.jpg"
+      }
+    }
+  },
+  "order_1753966421013_wmmsy298f": {
+    "lastUpdated": {
+      "_seconds": 1754018545,
+      "_nanoseconds": 482000000
+    },
+    "isLocked": false,
+    "users": [
+      "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+      "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3"
+    ],
+    "userDetails": {
+      "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3": {
+        "id": "NAZB6lKiD2SGU7V6rjb1LT0Ca3D3",
+        "name": "The Freelancer Marketing Ldt.",
+        "avatarUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FNAZB6lKiD2SGU7V6rjb1LT0Ca3D3%2Fbusiness_icon_e0b587cf-dfdc-4993-850e-e163f3a947ea_tasko_icon_512x512.jpg"
+      },
+      "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1": {
+        "id": "0Rj5vGkBjeXrzZKBr4cFfV0jRuw1",
+        "name": "Mietkoch Andy",
+        "avatarUrl": "https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2F0Rj5vGkBjeXrzZKBr4cFfV0jRuw1%2Fbusiness_icon_f847b98f-0b7d-4720-b8f6-a043bba5b4ba_AdobeStock_163577338.jpg"
+      }
+    }
+  }
+}
