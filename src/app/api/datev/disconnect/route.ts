@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getDatevCookieName } from '@/lib/datev-server-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Clear the HTTP-only token cookie
     const cookieStore = await cookies();
-    const cookieName = `datev_tokens_${companyId}`;
+    const cookieName = getDatevCookieName(companyId);
 
     const response = NextResponse.json({
       success: true,

@@ -1,6 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+
+// Client-side environment helper
+const getEnvironment = () => {
+  return process.env.NODE_ENV || 'development';
+};
+
+const getDatevClientCookieName = (companyId: string) => {
+  return `datev_tokens_${getEnvironment()}_${companyId}`;
+};
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +51,25 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
+    // Early return if companyId is invalid
+    if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
+      console.log(
+        '🚫 [DATEV Cookie Auth] Invalid company ID provided, skipping initialization:',
+        companyId
+      );
+      setConnection({
+        isConnected: false,
+        features: {
+          accountingData: false,
+          documents: false,
+          masterData: false,
+          cashRegister: false,
+        },
+      });
+      setLoading(false);
+      return;
+    }
+
     // Check URL parameters for OAuth callback results
     const urlParams = new URLSearchParams(window.location.search);
     const authStatus = urlParams.get('datev_auth');
@@ -147,7 +176,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           // Clear from localStorage if present
           if (typeof window !== 'undefined') {
             localStorage.removeItem(`datev_connection_${companyId}`);
-            localStorage.removeItem(`datev_tokens_${companyId}`);
+            localStorage.removeItem(getDatevClientCookieName(companyId));
           }
 
           // Show user-friendly message based on error type
@@ -197,8 +226,11 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         JSON.stringify(companyId)
       );
 
-      if (!companyId || companyId.trim() === '') {
-        console.log('🚫 [DATEV Cookie Auth] No valid company ID provided');
+      if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
+        console.log(
+          '🚫 [DATEV Cookie Auth] No valid company ID provided (empty or unknown):',
+          companyId
+        );
         setConnection({
           isConnected: false,
           features: {
@@ -273,7 +305,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           // Clear from localStorage if present (but HTTP-only cookies are cleared server-side)
           if (typeof window !== 'undefined') {
             localStorage.removeItem(`datev_connection_${companyId}`);
-            localStorage.removeItem(`datev_tokens_${companyId}`);
+            localStorage.removeItem(getDatevClientCookieName(companyId));
           }
         }
 
@@ -305,6 +337,13 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   };
 
   const handleConnect = async () => {
+    // Validate companyId before connecting
+    if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
+      console.error('❌ [DATEV Cookie Auth] Cannot connect - invalid company ID:', companyId);
+      toast.error('Ungültige Firmen-ID - kann keine DATEV-Verbindung herstellen');
+      return;
+    }
+
     try {
       setConnecting(true);
       console.log('🔗 [DATEV Cookie Auth] Starting OAuth flow for company:', companyId);
@@ -326,7 +365,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       // Clear stored tokens from localStorage (HTTP-only cookies are server-managed)
       if (typeof window !== 'undefined') {
         localStorage.removeItem(`datev_connection_${companyId}`);
-        localStorage.removeItem(`datev_tokens_${companyId}`);
+        localStorage.removeItem(getDatevClientCookieName(companyId));
       }
 
       // Call server to clear HTTP-only cookies

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getDatevCookieName } from '@/lib/datev-server-utils';
 
 /**
  * DATEV Connection Status API Route - Server-Side Cookie Handling
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Get tokens from HTTP-only cookies (Server-Side)
     const cookieStore = await cookies();
-    const cookieName = `datev_tokens_${companyId}`;
+    const cookieName = getDatevCookieName(companyId);
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
@@ -44,11 +45,13 @@ export async function POST(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-      
+
       console.log('✅ [DATEV Cookie Status] Token data found:', {
         hasAccessToken: !!tokenData.access_token,
         hasRefreshToken: !!tokenData.refresh_token,
-        connectedAt: tokenData.connected_at ? new Date(tokenData.connected_at).toISOString() : 'unknown'
+        connectedAt: tokenData.connected_at
+          ? new Date(tokenData.connected_at).toISOString()
+          : 'unknown',
       });
     } catch (parseError) {
       console.error('❌ [DATEV Cookie Status] Failed to parse token cookie:', parseError);
@@ -68,9 +71,9 @@ export async function POST(request: NextRequest) {
 
     // Check if tokens are expired
     const now = Date.now();
-    const expiresAt = tokenData.connected_at + (tokenData.expires_in * 1000);
+    const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
     const isExpired = now >= expiresAt;
-    
+
     console.log('🔍 [DATEV Cookie Status] Token expiration check:', {
       now: new Date(now).toISOString(),
       expiresAt: new Date(expiresAt).toISOString(),
@@ -89,7 +92,6 @@ export async function POST(request: NextRequest) {
         cashRegister: !isExpired,
       },
     });
-
   } catch (error) {
     console.error('❌ [DATEV Cookie Status] Unexpected error:', error);
     return NextResponse.json({

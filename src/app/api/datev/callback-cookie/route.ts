@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig } from '@/lib/datev-config';
+import { getDatevCookieName } from '@/lib/datev-server-utils';
 
 /**
  * DATEV OAuth Callback Handler - Cookie Based
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
 
       // Encode token data as base64 for safe cookie storage
       const encodedData = Buffer.from(JSON.stringify(fullTokenData)).toString('base64');
-      const cookieName = `datev_tokens_${companyId}`;
+      const cookieName = getDatevCookieName(companyId);
 
       // Set secure HTTP-only cookie
       response.cookies.set(cookieName, encodedData, {

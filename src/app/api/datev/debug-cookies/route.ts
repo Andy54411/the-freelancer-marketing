@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getDatevCookieName } from '@/lib/datev-server-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Wenn eine spezielle companyId angefragt wird, zeige Details
     if (companyId) {
-      const cookieName = `datev_tokens_${companyId}`;
+      const cookieName = getDatevCookieName(companyId);
       const specificCookie = cookieStore.get(cookieName);
 
       debugInfo.specificCookie = {

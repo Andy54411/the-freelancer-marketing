@@ -5,7 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getDatevConfig } from '@/lib/datev-config';
+import { getDatevCookieName } from '@/lib/datev-server-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     // Encode token data as base64
     const encodedData = Buffer.from(JSON.stringify(fullTokenData)).toString('base64');
-    const cookieName = `datev_tokens_${companyId}`;
+    const cookieName = getDatevCookieName(companyId);
 
     // Create response with cookie
     const response = NextResponse.json({

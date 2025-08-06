@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getDatevConfig } from '@/lib/datev-config';
+import { getDatevCookieName } from '@/lib/datev-server-utils';
 
 // DATEV API Endpoints
 const DATEV_ENDPOINTS = {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     // Get tokens from HTTP-only cookies with retry logic
     const cookieStore = await cookies();
-    const cookieName = `datev_tokens_${companyId}`;
+    const cookieName = getDatevCookieName(companyId);
     let tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {

@@ -7,6 +7,14 @@ import { cookies } from 'next/headers';
 import { db } from '@/firebase/server';
 import { getDatevConfig } from './datev-config';
 
+/**
+ * Generate environment-specific cookie name for DATEV tokens
+ */
+export function getDatevCookieName(companyId: string): string {
+  const environment = process.env.NODE_ENV || 'development';
+  return `datev_tokens_${environment}_${companyId}`;
+}
+
 // DATEV Sandbox URLs (unterschiedlich von Production!)
 const DATEV_API_BASE =
   process.env.NODE_ENV === 'production' ? 'https://api.datev.de' : 'https://sandbox-api.datev.de';
@@ -31,7 +39,7 @@ export async function getDatevTokenFromCookies(
   companyId: string
 ): Promise<ServerDatevToken | null> {
   const cookieStore = await cookies();
-  const cookieName = `datev_tokens_${companyId}`;
+  const cookieName = getDatevCookieName(companyId);
   const tokenCookie = cookieStore.get(cookieName);
 
   if (!tokenCookie?.value) {
@@ -86,7 +94,7 @@ export async function setDatevTokenCookies(
   const cookieStore = await cookies();
   const isProduction = process.env.NODE_ENV === 'production';
 
-  const cookieName = `datev_tokens_${companyId}`;
+  const cookieName = getDatevCookieName(companyId);
   const expiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000;
 
   const cookieValue = Buffer.from(
