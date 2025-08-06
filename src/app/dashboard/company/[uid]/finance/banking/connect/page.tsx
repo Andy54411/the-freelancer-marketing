@@ -173,7 +173,14 @@ export default function ConnectBankPage() {
   const handleWebFormError = (error: string) => {
     console.error('❌ WebForm error:', error);
     setIsWebFormModalOpen(false);
-    setError(`Bankverbindung fehlgeschlagen: ${error}`);
+
+    // If it's a sandbox connection error, offer alternative
+    if (error.includes('Sandbox-Verbindung') || error.includes('Verbindung abgelehnt')) {
+      setError(`finAPI Sandbox-Problem: ${error} - Sie können das WebForm auch direkt öffnen.`);
+    } else {
+      setError(`Bankverbindung fehlgeschlagen: ${error}`);
+    }
+
     setIsConnecting(false);
     setSelectedBank(null);
   };

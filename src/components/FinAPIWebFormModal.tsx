@@ -97,12 +97,36 @@ export default function FinAPIWebFormModal({
         console.log('Iframe loaded (cross-origin restrictions apply)');
       }
     }
+
+    // Additional check for connection issues
+    setTimeout(() => {
+      if (iframeRef.current && iframeRef.current.contentDocument) {
+        try {
+          const doc = iframeRef.current.contentDocument;
+          const body = doc.body;
+          if (
+            body &&
+            (body.innerText.includes('Verbindung abgelehnt') ||
+              body.innerText.includes('Connection refused') ||
+              body.innerText.includes("This site can't be reached"))
+          ) {
+            setError(
+              'finAPI Sandbox-Verbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.'
+            );
+          }
+        } catch (e) {
+          // Expected for cross-origin
+        }
+      }
+    }, 2000);
   };
 
   // Handle iframe error
   const handleIframeError = () => {
     setIsLoading(false);
-    setError('WebForm konnte nicht geladen werden');
+    setError(
+      'finAPI Sandbox-Verbindung fehlgeschlagen. Die Sandbox-Umgebung ist möglicherweise temporär nicht verfügbar.'
+    );
   };
 
   const handleClose = () => {
@@ -164,27 +188,61 @@ export default function FinAPIWebFormModal({
                 <FiAlertCircle className="mx-auto mb-4 text-red-500" size={48} />
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">WebForm-Fehler</h3>
                 <p className="text-gray-600 mb-4">{error}</p>
-                <div className="flex gap-3 justify-center">
-                  <button
-                    onClick={() => {
-                      setError(null);
-                      setIsLoading(true);
-                      // Reload iframe
-                      if (iframeRef.current) {
-                        iframeRef.current.src = webFormUrl;
-                      }
-                    }}
-                    className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
-                  >
-                    Erneut versuchen
-                  </button>
-                  <button
-                    onClick={handleClose}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                  >
-                    Abbrechen
-                  </button>
-                </div>
+                {error.includes('Sandbox-Verbindung') || error.includes('Verbindung abgelehnt') ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                      <p className="font-medium">finAPI Sandbox-Problem erkannt</p>
+                      <p>Die finAPI Sandbox ist temporär nicht verfügbar.</p>
+                    </div>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => {
+                          // Try direct finAPI URL in new tab as fallback
+                          window.open(webFormUrl, '_blank', 'noopener,noreferrer');
+                          onClose();
+                        }}
+                        className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                      >
+                        In neuem Tab öffnen
+                      </button>
+                      <button
+                        onClick={() => {
+                          setError(null);
+                          setIsLoading(true);
+                          // Reload iframe
+                          if (iframeRef.current) {
+                            iframeRef.current.src = webFormUrl;
+                          }
+                        }}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                      >
+                        Erneut versuchen
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setIsLoading(true);
+                        // Reload iframe
+                        if (iframeRef.current) {
+                          iframeRef.current.src = webFormUrl;
+                        }
+                      }}
+                      className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                    >
+                      Erneut versuchen
+                    </button>
+                    <button
+                      onClick={handleClose}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
