@@ -54,16 +54,6 @@ export async function POST(req: NextRequest) {
       } catch (error: any) {
         console.log(`FAILED: UUID attempt ${attempts}:`, error.message);
 
-        // If user creation succeeded but token failed, continue with WebForm using client token
-        if (error.message.includes('User was created successfully but token retrieval failed')) {
-          console.log(`INFO: User created but token failed, continuing with client token fallback`);
-          userResult = {
-            user: { id: uniqueUserId },
-            userToken: '', // Empty string instead of null for TypeScript
-          };
-          break;
-        }
-
         // Wenn selbst UUID-User existieren, ist die Sandbox sehr verschmutzt
         if (error.message.includes('exists but authentication failed')) {
           console.log(`WARNING: UUID collision on attempt ${attempts} - trying next UUID...`);
@@ -104,10 +94,7 @@ export async function POST(req: NextRequest) {
 
     // WebForm 2.0 für Bankverbindung erstellen
     console.log('Creating WebForm 2.0 for bank connection...');
-    const webFormToken =
-      userResult && userResult.userToken && userResult.userToken.trim() ? userResult.userToken : '';
-
-    const webForm = await finapiServiceFixed.createBankImportWebForm(webFormToken || 'fallback', {
+    const webForm = await finapiServiceFixed.createBankImportWebForm(userResult.userToken, {
       bankId: parseInt(bankId),
       redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/company/${userId}/finance/banking/success`,
       callbacks: {

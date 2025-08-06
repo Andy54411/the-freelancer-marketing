@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
 import {
   Loader2,
   AlertCircle,
@@ -37,12 +38,17 @@ export default function ConnectBankPage() {
   const uid = params.uid as string;
 
   const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableBanks, setAvailableBanks] = useState<Bank[]>([]);
   const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
+
+  // WebForm Modal States
+  const [isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
+  const [webFormUrl, setWebFormUrl] = useState<string>('');
+  const [webFormBankName, setWebFormBankName] = useState<string>('');
 
   useEffect(() => {
     loadAvailableBanks();
@@ -99,9 +105,9 @@ export default function ConnectBankPage() {
   };
 
   const handleConnectBank = async (bank: Bank) => {
-    if (connecting) return;
+    if (isConnecting) return;
 
-    setConnecting(true);
+    setIsConnecting(true);
     setSelectedBank(bank);
     setError(null);
 
@@ -128,9 +134,15 @@ export default function ConnectBankPage() {
       }
 
       if (result.webForm && result.webForm.url) {
-        console.log('✅ WebForm 2.0 URL received, redirecting...');
-        // Redirect to WebForm 2.0
-        window.location.href = result.webForm.url;
+        console.log('✅ WebForm 2.0 URL received, opening modal...');
+
+        // Open WebForm in Modal instead of redirecting
+        setWebFormUrl(result.webForm.url);
+        setWebFormBankName(bank.name);
+        setIsWebFormModalOpen(true);
+
+        // Reset connecting state since modal is now open
+        setIsConnecting(false);
       } else {
         throw new Error('Keine WebForm URL erhalten');
       }
@@ -138,13 +150,39 @@ export default function ConnectBankPage() {
       console.error('❌ Bank connection failed:', err);
       const error = err as Error;
       setError(error.message || 'Unbekannter Fehler bei der Bankverbindung');
-      setConnecting(false);
+      setIsConnecting(false);
       setSelectedBank(null);
     }
   };
 
   const handleGoBack = () => {
     router.push(`/dashboard/company/${uid}/finance/banking`);
+  };
+
+  const handleWebFormSuccess = (bankConnectionId?: string) => {
+    console.log('🎉 Bank connection successful:', bankConnectionId);
+    setIsWebFormModalOpen(false);
+    setSelectedBank(null);
+
+    // Redirect to banking dashboard with success message
+    router.push(
+      `/dashboard/company/${uid}/finance/banking?connection=success&bank=${encodeURIComponent(webFormBankName)}`
+    );
+  };
+
+  const handleWebFormError = (error: string) => {
+    console.error('❌ WebForm error:', error);
+    setIsWebFormModalOpen(false);
+    setError(`Bankverbindung fehlgeschlagen: ${error}`);
+    setIsConnecting(false);
+    setSelectedBank(null);
+  };
+
+  const handleWebFormClose = () => {
+    console.log('WebForm modal closed by user');
+    setIsWebFormModalOpen(false);
+    setIsConnecting(false);
+    setSelectedBank(null);
   };
 
   if (!user || user.uid !== uid) {
@@ -263,7 +301,7 @@ export default function ConnectBankPage() {
                   <div
                     key={bank.id}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedBank?.id === bank.id && connecting
+                      selectedBank?.id === bank.id && isConnecting
                         ? 'border-blue-300 bg-blue-50'
                         : 'hover:border-gray-300 hover:bg-gray-50'
                     }`}
@@ -293,7 +331,7 @@ export default function ConnectBankPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {selectedBank?.id === bank.id && connecting ? (
+                        {selectedBank?.id === bank.id && isConnecting ? (
                           <div className="flex items-center gap-2 text-blue-600">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span className="text-sm">Verbinde...</span>
@@ -313,6 +351,17 @@ export default function ConnectBankPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* finAPI WebForm Modal */}
+      <FinAPIWebFormModal
+        isOpen={isWebFormModalOpen}
+        onClose={handleWebFormClose}
+        onSuccess={handleWebFormSuccess}
+        onError={handleWebFormError}
+        webFormUrl={webFormUrl}
+        bankName={webFormBankName}
+        title={`${webFormBankName} verbinden`}
+      />
     </div>
   );
 }
