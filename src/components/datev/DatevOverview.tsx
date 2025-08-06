@@ -57,43 +57,39 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
         return;
       }
 
-      // Load organization
-      const organizations = await DatevService.getOrganizations();
-      if (organizations.length > 0) {
-        const org = organizations[0];
-        setOrganization(org);
+      // Load organization - Organizations not needed for Taskilo  
+      console.log('✅ DATEV connection verified via UserInfo API');
 
-        // Load accounts and calculate stats
-        const accounts = await DatevService.getAccounts();
+      // Load accounts and calculate stats
+      const accounts = await DatevService.getAccounts();
 
-        // Temporarily disable transactions until backend route exists
-        // const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        //   .toISOString()
-        //   .split('T')[0];
-        // const dateTo = new Date().toISOString().split('T')[0];
-        // const transactions = await DatevService.getTransactions(dateFrom, dateTo, org.id);
+      // Temporarily disable transactions until backend route exists
+      // const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      //   .toISOString()
+      //   .split('T')[0];
+      // const dateTo = new Date().toISOString().split('T')[0];
+      // const transactions = await DatevService.getTransactions(dateFrom, dateTo, org.id);
 
-        // Calculate overview statistics (using placeholder data temporarily)
-        const transactions: any[] = []; // Empty array until backend route exists
-        const revenue = transactions
-          .filter(t => t.amount > 0)
-          .reduce((sum, t) => sum + t.amount, 0);
+      // Calculate overview statistics (using placeholder data temporarily)
+      const transactions: any[] = []; // Empty array until backend route exists
+      const revenue = transactions
+        .filter(t => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
 
-        const expenses = transactions
-          .filter(t => t.amount < 0)
-          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const expenses = transactions
+        .filter(t => t.amount < 0)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-        const accountBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+      const accountBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
-        setStats({
-          totalRevenue: revenue,
-          totalExpenses: expenses,
-          openInvoices: transactions.filter(t => t.status === 'draft').length,
-          paidInvoices: transactions.filter(t => t.status === 'posted').length,
-          monthlyGrowth: 12.5, // Mock data - in production calculate from historical data
-          accountBalance,
-        });
-      }
+      setStats({
+        totalRevenue: revenue,
+        totalExpenses: expenses,
+        openInvoices: transactions.filter(t => t.status === 'draft').length,
+        paidInvoices: transactions.filter(t => t.status === 'posted').length,
+        monthlyGrowth: 12.5, // Mock data - in production calculate from historical data
+        accountBalance,
+      });
     } catch (error) {
       console.error('Fehler beim Laden der Overview-Daten:', error);
       toast.error('Fehler beim Laden der Übersichtsdaten');

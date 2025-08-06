@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     // Sammle Chat-Historie für Auftragserkennung
-    const chatHistory = history.map((msg: any) => msg.parts[0].text);
+    const chatHistory = history.map((msg: { parts: Array<{ text: string }> }) => msg.parts[0].text);
 
     // KORREKTUR: Verwende die geteilte Funktion und übergebe die aktuelle Nachricht und Historie
     const systemInstruction = await getSystemInstruction(db, console.error, message, chatHistory);
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
                 isReadBySupport: false,
               },
               // Chat-Historie für Kontext mitgeben
-              chatHistory: history.map((msg: any) => ({
+              chatHistory: history.map((msg: { parts: Array<{ text: string }>; role: string }) => ({
                 text: msg.parts[0].text,
                 role: msg.role,
                 timestamp: new Date(),

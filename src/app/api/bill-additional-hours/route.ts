@@ -155,7 +155,13 @@ export async function POST(request: NextRequest) {
 
     // Finde genehmigte zusätzliche Zeiteinträge (customer_approved ODER billing_pending)
     const approvedEntries = orderData.timeTracking.timeEntries.filter(
-      (entry: any) =>
+      (entry: {
+        id: string;
+        category: string;
+        status: string;
+        billableAmount?: number;
+        hours: number;
+      }) =>
         approvedEntryIds.includes(entry.id) &&
         entry.category === 'additional' &&
         (entry.status === 'customer_approved' || entry.status === 'billing_pending')
@@ -170,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     // Berechne Gesamtbetrag
     const totalAmount = approvedEntries.reduce(
-      (sum: number, entry: any) => sum + (entry.billableAmount || 0),
+      (sum: number, entry: { billableAmount?: number }) => sum + (entry.billableAmount || 0),
       0
     );
 
@@ -211,7 +217,7 @@ export async function POST(request: NextRequest) {
         entryIds: approvedEntryIds.join(','),
         providerStripeAccountId, // Für späteren Transfer
         totalHours: approvedEntries
-          .reduce((sum: number, entry: any) => sum + entry.hours, 0)
+          .reduce((sum: number, entry: { hours: number }) => sum + entry.hours, 0)
           .toString(),
         originalOrderAmount: orderData.jobCalculatedPriceInCents?.toString() || '0',
         additionalAmount: totalAmount.toString(),
@@ -234,7 +240,7 @@ export async function POST(request: NextRequest) {
       customerPays: totalAmount, // Kunde zahlt vollen Betrag
       companyReceives: companyAmount, // Company erhält Betrag minus Plattformgebühr
       platformFee: platformFee,
-      additionalHours: approvedEntries.reduce((sum: number, entry: any) => sum + entry.hours, 0),
+      additionalHours: approvedEntries.reduce((sum: number, entry: { hours: number }) => sum + entry.hours, 0),
       platformHoldEnabled: true,
       message:
         'Platform Hold PaymentIntent für zusätzliche Stunden erfolgreich erstellt. Geld wird nach Projektabschluss übertragen.',

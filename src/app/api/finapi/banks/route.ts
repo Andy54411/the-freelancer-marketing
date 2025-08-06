@@ -18,7 +18,60 @@ export async function GET(request: NextRequest) {
     console.log('🏦 Fetching banks via finAPI SDK Service...');
     console.log('Search params:', { search, page, perPage, includeTestBanks });
 
-    // Use the finAPI SDK Service to get banks
+    // Test finAPI credentials first
+    const credentialTest = await finapiService.testCredentials();
+    
+    if (!credentialTest.success) {
+      console.warn('⚠️ FinAPI credentials not working, returning mock banks');
+      
+      // Return mock banks for development
+      const mockBanks = [
+        {
+          id: 280700240,
+          name: 'Deutsche Bank',
+          blz: '28070024',
+          city: 'Berlin',
+          isTestBank: false,
+          popularity: 90
+        },
+        {
+          id: 370500000,
+          name: 'Sparkasse Köln/Bonn',
+          blz: '37050000',
+          city: 'Köln',
+          isTestBank: false,
+          popularity: 85
+        },
+        {
+          id: 12345678,
+          name: 'Test Bank (Sandbox)',
+          blz: '12345678',
+          city: 'Test City',
+          isTestBank: true,
+          popularity: 50
+        }
+      ].filter(bank => {
+        if (!includeTestBanks && bank.isTestBank) return false;
+        if (search && !bank.name.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          banks: mockBanks,
+          totalResults: mockBanks.length,
+          page,
+          perPage,
+          hasMore: false,
+        },
+        mode: 'mock',
+        source: 'Mock Banks (FinAPI Credentials Invalid)',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Use the finAPI SDK Service to get banks (only if credentials work)
     const banks = await finapiService.listBanks(
       search || undefined,
       undefined, // location - not used in current implementation
@@ -45,6 +98,7 @@ export async function GET(request: NextRequest) {
         perPage,
         hasMore: filteredBanks.length === perPage,
       },
+      mode: 'live',
       source: 'finAPI SDK Service v1.0.3',
       timestamp: new Date().toISOString(),
     });

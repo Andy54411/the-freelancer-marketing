@@ -102,9 +102,10 @@ export async function GET(request: NextRequest) {
         // Additional metadata
         connected_at: Date.now(),
         company_id: companyId,
-        // Environment metadata for hybrid setup
+        // Environment metadata for hybrid setup - FORCE CLIENT ID CONSISTENCY
         environment: process.env.NODE_ENV,
-        client_id: config.clientId,
+        client_id: '6111ad8e8cae82d1a805950f2ae4adc4', // FORCE CONSISTENT SANDBOX CLIENT ID
+        original_client_id: config.clientId, // Store original for debugging
         api_base_url: config.apiBaseUrl,
       };
 
@@ -167,12 +168,12 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
       ? 'http://localhost' // DATEV Sandbox: Port 80 Proxy Server
       : 'https://taskilo.de/api/datev/callback';
 
-  // DATEV PKCE Flow - Try with HTTP Basic Auth only (remove client_secret from body)
+  // DATEV PKCE Flow - Try with consistent client ID for sandbox compliance
   const tokenRequestData = new URLSearchParams({
     grant_type: 'authorization_code',
     code: code,
     redirect_uri: cookieRedirectUri,
-    client_id: config.clientId,
+    client_id: '6111ad8e8cae82d1a805950f2ae4adc4', // FORCE CONSISTENT SANDBOX CLIENT ID
     code_verifier: codeVerifier,
     // No client_secret in body when using Basic Auth
   });
@@ -208,7 +209,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
       grant_type: 'authorization_code',
       code: code,
       redirect_uri: cookieRedirectUri,
-      client_id: config.clientId,
+      client_id: '6111ad8e8cae82d1a805950f2ae4adc4', // CONSISTENT SANDBOX CLIENT ID
       client_secret: config.clientSecret,
       code_verifier: codeVerifier,
     });

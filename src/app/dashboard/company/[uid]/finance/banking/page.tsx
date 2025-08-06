@@ -37,34 +37,75 @@ export default function BankingPage() {
   useEffect(() => {
     if (!user || user.uid !== uid) return;
     loadBankConnections();
+    
+    // Check for success callback from WebForm
+    const urlParams = new URLSearchParams(window.location.search);
+    const connectionStatus = urlParams.get('connection');
+    const mode = urlParams.get('mode');
+    const bankId = urlParams.get('bank');
+    
+    if (connectionStatus === 'success') {
+      if (mode === 'mock') {
+        console.log('🎭 Mock bank connection successful for bank:', bankId);
+        // Show success message and reload connections
+        setTimeout(() => {
+          loadBankConnections();
+        }, 1000);
+      } else {
+        console.log('✅ Real bank connection successful');
+        setTimeout(() => {
+          loadBankConnections();
+        }, 1000);
+      }
+      
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, [uid, user]);
 
   const loadBankConnections = async () => {
     try {
       setLoading(true);
-      // TODO: Load real bank connections from finAPI
-      // Für jetzt Mock-Daten
-      setTimeout(() => {
-        setConnections([
-          {
-            id: 'conn_1',
-            bankName: 'Deutsche Bank',
-            status: 'connected',
-            accountCount: 2,
-            lastSync: '2024-08-05T10:30:00Z'
+      
+      // Load real bank connections from finAPI
+      const response = await fetch(
+        `/api/finapi/bank-connections?userId=${encodeURIComponent(uid)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          {
-            id: 'conn_2', 
-            bankName: 'Sparkasse',
-            status: 'error',
-            accountCount: 1,
-            lastSync: '2024-08-04T15:45:00Z'
-          }
-        ]);
-        setLoading(false);
-      }, 1000);
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to load bank connections: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform finAPI bank connections to our format
+        const transformedConnections: BankConnection[] = data.bankConnections.map((conn: any) => ({
+          id: conn.id.toString(),
+          bankName: conn.name || `Bank ${conn.bankId}`,
+          status: conn.updateStatus === 'IN_PROGRESS' ? 'pending' : 
+                 conn.updateStatus === 'READY' ? 'connected' : 'error',
+          accountCount: conn.accountIds?.length || 0,
+          lastSync: conn.lastManualUpdate?.timestamp || conn.lastAutoUpdate?.timestamp,
+        }));
+
+        setConnections(transformedConnections);
+        console.log('✅ Bank connections loaded:', transformedConnections.length);
+      } else {
+        console.error('Failed to load bank connections:', data.error);
+        setConnections([]);
+      }
     } catch (error) {
       console.error('Failed to load bank connections:', error);
+      // Set empty connections on error
+      setConnections([]);
+    } finally {
       setLoading(false);
     }
   };

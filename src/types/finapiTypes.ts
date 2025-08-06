@@ -24,7 +24,7 @@ export interface FinapiUserCredentials {
    * Abruf des Benutzer-Access-Tokens zu verwenden. Es wird im Klartext gespeichert,
    * da finAPI es für die Authentifizierung benötigt.
    */
-  finapiUserPassword;
+  finapiUserPassword: string;
 
   /**
    * Der Zeitstempel, an dem die Anmeldeinformationen erstellt wurden.

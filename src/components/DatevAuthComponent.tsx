@@ -108,7 +108,7 @@ export default function DatevAuthComponent({
     try {
       console.log('🔍 Checking DATEV authentication status');
 
-      const response = await fetch('/api/datev/organizations', {
+      const response = await fetch('/api/datev/userinfo-test', {
         headers: {
           Authorization: `Bearer ${firebaseToken}`,
         },

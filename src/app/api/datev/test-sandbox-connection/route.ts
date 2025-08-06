@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
     const expectedUnauthorized = userinfoResponse.status === 401;
 
     // Test 5: Test Organizations endpoint (should also fail without token)
-    console.log('🏢 Testing organizations endpoint...');
-    const orgResponse = await fetch(`${config.baseUrl}/v1/organizations`);
+    console.log('🏢 Testing userinfo endpoint...');
+    const orgResponse = await fetch(`${config.baseUrl}/v1/userinfo`);
     const orgUnauthorized = orgResponse.status === 401;
 
     return NextResponse.json({
@@ -79,7 +79,6 @@ export async function GET(request: NextRequest) {
         },
         apiAccess: {
           userinfoUnauthorized: expectedUnauthorized,
-          organizationsUnauthorized: orgUnauthorized,
           message:
             'These should be 401 (unauthorized) without a valid token - this is expected behavior',
         },

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { 
   collection, 
   addDoc, 
@@ -10,10 +9,7 @@ import {
   getDoc, 
   query, 
   where, 
-  orderBy,
-  arrayUnion,
-  arrayRemove,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
@@ -31,12 +27,12 @@ interface SteuerberaterInvite {
   telefon?: string;
   datevNummer?: string;
   status: 'pending' | 'accepted' | 'declined' | 'revoked';
-  permissions: Array<'view_documents' | 'export_data' | 'monthly_reports' | 'tax_access' | 'accounting_access'>;
+  permissions: string[];
   invitedAt: Date;
   invitedBy: string;
   acceptedAt?: Date;
   message?: string;
-  accessLevel: 'basic' | 'advanced' | 'full';
+  accessLevel: string;
   notificationSettings: {
     monthlyReports: boolean;
     documentSharing: boolean;
@@ -50,14 +46,14 @@ interface SharedDocument {
   steuerberaterId: string;
   name: string;
   description?: string;
-  type: 'PDF' | 'Excel' | 'CSV' | 'XML' | 'DATEV' | 'EÜR' | 'UStVA' | 'BWA' | 'GuV';
-  category: 'tax_report' | 'financial_statement' | 'cashbook' | 'invoice_data' | 'expense_report' | 'datev_export' | 'other';
+  type: string;
+  category: string;
   fileUrl?: string;
   filePath?: string;
   fileSize?: number;
   sharedAt: Date;
   sharedBy: string;
-  accessLevel: 'view' | 'download' | 'edit';
+  accessLevel: string;
   downloadCount: number;
   lastAccessed?: Date;
   expiresAt?: Date;
@@ -76,7 +72,7 @@ interface CollaborationLog {
   id?: string;
   companyId: string;
   steuerberaterId: string;
-  action: 'invite_sent' | 'invite_accepted' | 'document_shared' | 'document_accessed' | 'report_generated' | 'message_sent' | 'permission_changed';
+  action: string;
   details: string;
   timestamp: Date;
   performedBy: string;
@@ -371,7 +367,16 @@ async function getOverview(companyId: string) {
   });
 }
 
-async function sendInvite(companyId: string, data: any) {
+async function sendInvite(companyId: string, data: {
+  email: string;
+  name: string;
+  kanzleiName?: string;
+  telefon?: string;
+  permissions?: string[];
+  message?: string;
+  accessLevel?: string;
+  invitedBy?: string;
+}) {
   const { email, name, kanzleiName, telefon, permissions = ['view_documents'], message, accessLevel = 'basic', invitedBy } = data;
 
   if (!email || !name) {
@@ -430,7 +435,21 @@ async function sendInvite(companyId: string, data: any) {
   });
 }
 
-async function shareDocument(companyId: string, data: any) {
+async function shareDocument(companyId: string, data: {
+  steuerberaterId: string;
+  name: string;
+  description?: string;
+  type: string;
+  category?: string;
+  fileUrl?: string;
+  filePath?: string;
+  fileSize?: number;
+  accessLevel?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  sharedBy?: string;
+  expiresAt?: string;
+}) {
   const { 
     steuerberaterId, 
     name, 
@@ -487,7 +506,14 @@ async function shareDocument(companyId: string, data: any) {
   });
 }
 
-async function generateReportForSteuerberater(companyId: string, data: any) {
+async function generateReportForSteuerberater(companyId: string, data: {
+  steuerberaterId: string;
+  reportType: string;
+  period?: string;
+  year?: number;
+  quarter?: number;
+  month?: number;
+}) {
   const { steuerberaterId, reportType, period, year, quarter, month } = data;
 
   if (!steuerberaterId || !reportType) {
@@ -515,9 +541,9 @@ async function generateReportForSteuerberater(companyId: string, data: any) {
     type: 'PDF',
     category: 'tax_report',
     accessLevel: 'download',
-    tags: [reportType, period || year.toString()],
+    tags: [reportType, period || year?.toString() || 'unknown'],
     metadata: {
-      period: period || year.toString(),
+      period: period || year?.toString() || 'unknown',
       year,
       quarter,
       month,
@@ -536,7 +562,11 @@ async function generateReportForSteuerberater(companyId: string, data: any) {
   });
 }
 
-async function sendMessage(companyId: string, data: any) {
+async function sendMessage(companyId: string, data: {
+  steuerberaterId: string;
+  message: string;
+  sender?: string;
+}) {
   const { steuerberaterId, message, sender } = data;
 
   if (!steuerberaterId || !message) {
@@ -557,7 +587,7 @@ async function sendMessage(companyId: string, data: any) {
   });
 }
 
-async function acceptInvite(inviteId: string, data: any) {
+async function acceptInvite(inviteId: string, data: Record<string, unknown>) {
   const docRef = doc(db, 'steuerberater_invites', inviteId);
   
   await updateDoc(docRef, {
@@ -580,7 +610,7 @@ async function acceptInvite(inviteId: string, data: any) {
   });
 }
 
-async function declineInvite(inviteId: string, data: any) {
+async function declineInvite(inviteId: string, data: Record<string, unknown>) {
   const docRef = doc(db, 'steuerberater_invites', inviteId);
   
   await updateDoc(docRef, {
@@ -596,7 +626,10 @@ async function declineInvite(inviteId: string, data: any) {
   });
 }
 
-async function updatePermissions(inviteId: string, data: any) {
+async function updatePermissions(inviteId: string, data: {
+  permissions: string[];
+  accessLevel: string;
+}) {
   const { permissions, accessLevel } = data;
   const docRef = doc(db, 'steuerberater_invites', inviteId);
   
@@ -651,7 +684,7 @@ async function deleteSharedDocument(documentId: string) {
 async function logCollaborationActivity(
   companyId: string, 
   steuerberaterId: string, 
-  action: CollaborationLog['action'], 
+  action: string, 
   details: string, 
   performedBy: string
 ) {

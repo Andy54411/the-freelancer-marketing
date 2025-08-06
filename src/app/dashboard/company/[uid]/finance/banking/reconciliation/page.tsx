@@ -181,7 +181,7 @@ export default function BankingReconciliationPage() {
   const handleApplyRules = () => {
     // Mock implementation of applying rules
     const updatedTransactions = unreconciledTransactions.map(transaction => {
-      let updated = { ...transaction };
+      const updated = { ...transaction };
       
       reconciliationRules.forEach(rule => {
         if (!rule.isActive) return;

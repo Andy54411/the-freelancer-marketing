@@ -186,37 +186,6 @@ export class DatevService {
   }
 
   /**
-   * Get user organizations (including consultant info)
-   */
-  static async getOrganizations(): Promise<DatevOrganization[]> {
-    try {
-      const data = await this.makeBackendApiCall<{ organizations: DatevOrganization[] }>(
-        '/organizations'
-      );
-      return data.organizations || [];
-    } catch (error) {
-      console.error('Error fetching DATEV organizations:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get current organization details
-   */
-  static async getCurrentOrganization(): Promise<DatevOrganization | null> {
-    try {
-      const orgId = DatevTokenManager.getCurrentOrganizationId();
-      if (!orgId) return null;
-
-      const organizations = await this.getOrganizations();
-      return organizations.find(org => org.id === orgId) || null;
-    } catch (error) {
-      console.error('Error fetching current organization:', error);
-      return null;
-    }
-  }
-
-  /**
    * Get client accounts/data
    */
   static async getAccounts(): Promise<DatevAccount[]> {

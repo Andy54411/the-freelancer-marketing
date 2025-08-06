@@ -173,44 +173,6 @@ export async function exchangeCodeForTokens(code: string) {
 }
 
 /**
- * SANDBOX: Fetches organizations from the DATEV Sandbox API using a valid access token.
- * @param accessToken The DATEV sandbox access token.
- * @returns A list of DATEV organizations from sandbox.
- */
-export async function fetchDatevOrganizations(accessToken: string) {
-  const orgUrl = `${DATEV_API_BASE}/platform/v1/clients`;
-
-  console.log('🔄 Fetching DATEV Sandbox organizations from:', orgUrl);
-
-  const response = await fetch(orgUrl, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (response.status === 401) {
-    console.error('❌ DATEV Sandbox: 401 Unauthorized - Token expired or invalid');
-    throw new Error('DATEV sandbox access token is invalid or expired.');
-  }
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Failed to fetch DATEV sandbox organizations:', {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorText,
-    });
-    throw new Error(`Failed to fetch DATEV sandbox organizations: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  console.log('✅ DATEV Sandbox organizations fetched:', data);
-  return data;
-}
-
-/**
  * SANDBOX: Saves DATEV tokens securely to the user's document in Firestore.
  * @param userId The Firebase user ID.
  * @param tokens The token data from DATEV sandbox.
@@ -260,6 +222,7 @@ export async function refreshDatevAccessToken(refreshToken: string) {
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
+      client_id: '6111ad8e8cae82d1a805950f2ae4adc4', // FORCE CONSISTENT SANDBOX CLIENT ID
     }),
   });
 

@@ -43,9 +43,9 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
     try {
       setLoading(true);
 
-      // Test DATEV connection by calling organizations API directly
+      // Test DATEV connection by calling userinfo-test API (guaranteed working)
       const response = await fetch(
-        `/api/datev/organizations?companyId=${encodeURIComponent(companyId)}`,
+        `/api/datev/userinfo-test?companyId=${encodeURIComponent(companyId)}`,
         {
           method: 'GET',
           headers: {
@@ -57,7 +57,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
       if (!response.ok) {
         if (response.status === 401) {
           const errorData = await response.json();
-          if (errorData.clearTokens || errorData.requiresAuth) {
+          if (errorData.error === 'no_tokens' || errorData.error === 'invalid_token') {
             toast.error('DATEV-Verbindung erforderlich - bitte authentifizieren Sie sich zuerst');
           } else {
             toast.error('DATEV-Token abgelaufen - erneute Authentifizierung erforderlich');
@@ -70,8 +70,21 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
 
       const result = await response.json();
 
-      if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
-        const org = result.data[0]; // Use first organization
+      if (result.success && result.userInfo) {
+        // Transform UserInfo response to organization format
+        const org = {
+          id: result.userInfo.account_id || result.userInfo.sub || 'unknown',
+          name: result.userInfo.name || result.userInfo.preferred_username || 'DATEV User',
+          email: result.userInfo.email,
+          type: 'client' as const,
+          status: 'active' as const,
+          address: {
+            street: 'N/A',
+            city: 'N/A',
+            zipCode: 'N/A',
+            country: 'DE',
+          },
+        };
         setOrganization(org);
 
         // TODO: Load accounts and transactions once those APIs are implemented

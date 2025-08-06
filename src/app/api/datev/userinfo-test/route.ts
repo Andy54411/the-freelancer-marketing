@@ -1,0 +1,125 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { getDatevConfig } from '@/lib/datev-config';
+
+interface DatevTokenData {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  scope: string;
+  connected_at: number;
+  company_id: string;
+  environment: string;
+  client_id: string;
+  api_base_url: string;
+}
+
+function getDatevCookieName(companyId: string): string {
+  const environment = process.env.NODE_ENV || 'development';
+  return `datev_tokens_${environment}_${companyId}`;
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+
+    if (!companyId) {
+      return NextResponse.json({ error: 'Missing companyId parameter' }, { status: 400 });
+    }
+
+    console.log('[DATEV UserInfo Test] Testing DATEV /userinfo endpoint for company:', companyId);
+
+    // Get stored tokens from HTTP-only cookie
+    const cookieStore = await cookies();
+    const cookieName = getDatevCookieName(companyId);
+    const tokenCookie = cookieStore.get(cookieName);
+
+    if (!tokenCookie?.value) {
+      console.log('❌ [DATEV UserInfo Test] No token cookie found');
+      return NextResponse.json(
+        {
+          error: 'no_tokens',
+          message: 'Keine DATEV-Token gefunden. Bitte authentifizieren Sie sich zuerst.',
+        },
+        { status: 401 }
+      );
+    }
+
+    // Decode and parse token data
+    let tokenData: DatevTokenData;
+    try {
+      const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
+      tokenData = JSON.parse(decodedData);
+    } catch (error) {
+      console.error('❌ [DATEV UserInfo Test] Failed to parse token data:', error);
+      return NextResponse.json({ error: 'Invalid token data' }, { status: 401 });
+    }
+
+    console.log('🔍 [DATEV UserInfo Test] Token Analysis:', {
+      environment: tokenData.environment,
+      client_id: tokenData.client_id,
+      api_base_url: tokenData.api_base_url,
+      hasAccessToken: !!tokenData.access_token,
+      connected_at: new Date(tokenData.connected_at).toISOString(),
+      expires_in: tokenData.expires_in,
+    });
+
+    // Use correct OIDC userinfo endpoint (not platform API)
+    const { DATEV_SANDBOX_CONFIG } = await import('@/lib/datev-config');
+    const apiUrl = DATEV_SANDBOX_CONFIG.endpoints.userinfo;
+
+    console.log('🔧 [DATEV UserInfo Test] Testing OIDC UserInfo endpoint:', apiUrl);
+
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Accept: 'application/json',
+        'User-Agent': 'Taskilo-DATEV-Integration/1.0',
+        'X-Client-ID': '6111ad8e8cae82d1a805950f2ae4adc4', // Explicitly pass sandbox client ID
+      },
+    });
+
+    const responseText = await response.text();
+    
+    console.log('📊 [DATEV UserInfo Test] API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      body: responseText,
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({
+        error: 'api_request_failed',
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText,
+        apiUrl,
+      }, { status: response.status });
+    }
+
+    // Try to parse JSON response
+    let userData;
+    try {
+      userData = JSON.parse(responseText);
+    } catch (error) {
+      userData = responseText;
+    }
+
+    return NextResponse.json({
+      success: true,
+      userInfo: userData,
+      apiUrl,
+      tokenEnvironment: tokenData.environment,
+    });
+
+  } catch (error) {
+    console.error('❌ [DATEV UserInfo Test] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}

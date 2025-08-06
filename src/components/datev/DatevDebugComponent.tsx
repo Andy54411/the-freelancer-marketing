@@ -79,8 +79,8 @@ export function DatevDebugComponent() {
     setNewAuthMessage('Testing new DATEV authentication middleware...');
 
     try {
-      // Test if organizations API works with new middleware
-      const response = await fetch('/api/datev/organizations', {
+      // Test if userinfo API works with new middleware
+      const response = await fetch('/api/datev/userinfo-test', {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -90,7 +90,7 @@ export function DatevDebugComponent() {
 
       if (response.ok) {
         setNewAuthStatus('success');
-        setNewAuthMessage('✅ New auth middleware working - organizations API accessible');
+        setNewAuthMessage('✅ New auth middleware working - userinfo API accessible');
       } else if (result.requiresAuth) {
         setNewAuthStatus('error');
         setNewAuthMessage('🔐 New auth middleware detected - DATEV authentication required');

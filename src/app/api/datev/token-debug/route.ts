@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
         const endpoints = [
           { name: 'userInfo', url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}` },
           {
-            name: 'organizations',
-            url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.organizations}`,
+            name: 'userinfo',
+            url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.userInfo}`,
           },
           { name: 'clients', url: `${testConfig.apiBaseUrl}${DATEV_ENDPOINTS.clients}` },
         ];

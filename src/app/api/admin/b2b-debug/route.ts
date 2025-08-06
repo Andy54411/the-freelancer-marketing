@@ -1,7 +1,7 @@
 // /api/admin/b2b-debug - Debug B2B Payment Status im Admin Dashboard
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/firebase/clients';
-import { collection, getDocs, doc, getDoc, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 interface B2BProviderDebugInfo {
   id: string;
@@ -38,7 +38,7 @@ interface B2BPaymentDebugInfo {
   };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('[B2B Debug API] Fetching B2B payment debug data...');
 
@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
           totalPayments: 0,
         });
       });
-    } catch (firmaError) {
-      console.log('[B2B Debug API] Firma collection query failed:', firmaError);
+    } catch (_firmaError) {
+      console.log('[B2B Debug API] Firma collection query failed:', _firmaError);
       // No firma fallback data needed - focus on users collection with real providers
     }
 
@@ -96,8 +96,8 @@ export async function GET(request: NextRequest) {
           });
         }
       });
-    } catch (userError) {
-      console.log('[B2B Debug API] User collection query failed:', userError);
+    } catch (_userError) {
+      console.log('[B2B Debug API] User collection query failed:', _userError);
       // Fallback: Query failed, return empty providers array
     }
 
@@ -137,8 +137,8 @@ export async function GET(request: NextRequest) {
           customerInfo,
         });
       }
-    } catch (error) {
-      console.log('[B2B Debug API] B2B payments collection query failed:', error);
+    } catch (_error) {
+      console.log('[B2B Debug API] B2B payments collection query failed:', _error);
       // Show empty state for B2B payments if no access - no demo data needed
     }
 
@@ -185,12 +185,12 @@ export async function GET(request: NextRequest) {
         payments: b2bPaymentDebugInfo,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[B2B Debug API] Error:', error);
     return NextResponse.json(
       {
         error: 'B2B Debug data fetch failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

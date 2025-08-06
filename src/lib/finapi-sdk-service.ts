@@ -62,7 +62,7 @@ export class FinAPISDKService {
   /**
    * Get client credentials access token
    */
-  private async getClientToken(): Promise<string> {
+  async getClientToken(): Promise<string> {
     // Return cached token if still valid
     if (this.clientToken && this.clientTokenExpiry && this.clientTokenExpiry > new Date()) {
       return this.clientToken;
@@ -97,26 +97,32 @@ export class FinAPISDKService {
    * Get user access token
    */
   async getUserToken(userId: string, password: string): Promise<string> {
-    console.log('👤 Getting finAPI user token for:', userId);
+    console.log('Getting finAPI user token for:', userId);
 
-    // HINZUGEFÜGT: Überprüfung der Anmeldeinformationen zur Laufzeit
+    // Runtime credential check
     if (!this.config.credentials.clientId || !this.config.credentials.clientSecret) {
       throw new Error(
         `finAPI ${this.config.environment} credentials are not configured. Please set the required environment variables.`
       );
     }
 
-    const authApi = this.getAuthApi();
-    const tokenResponse = await authApi.getToken(
-      'password',
-      this.config.credentials.clientId,
-      this.config.credentials.clientSecret,
-      userId,
-      password
-    );
+    try {
+      const authApi = this.getAuthApi();
+      const tokenResponse = await authApi.getToken(
+        'password',
+        this.config.credentials.clientId,
+        this.config.credentials.clientSecret,
+        userId,
+        password
+      );
 
-    console.log('✅ finAPI user token obtained');
-    return tokenResponse.accessToken;
+      console.log('SUCCESS: finAPI user token obtained for:', userId);
+      return tokenResponse.accessToken;
+    } catch (error: any) {
+      console.error('FAILED: Could not get user token for:', userId);
+      console.error('Error details:', error.body || error.message);
+      throw error;
+    }
   }
 
   /**
@@ -192,54 +198,109 @@ export class FinAPISDKService {
    */
   async createUser(userId: string, password: string, email?: string): Promise<User> {
     console.log('👤 Creating finAPI user:', userId);
+    console.log('🔑 Using consistent password for user:', userId);
 
-    const usersApi = await this.getUsersApi();
-    const user = await usersApi.createUser({
-      id: userId,
-      password: password,
-      email: email || `${userId}@taskilo.de`,
-      phone: '+49123456789',
-      isAutoUpdateEnabled: true,
-    });
+    try {
+      const usersApi = await this.getUsersApi();
+      const user = await usersApi.createUser({
+        id: userId,
+        password: password,
+        email: email || `${userId}@taskilo.de`,
+        phone: '+49123456789',
+        isAutoUpdateEnabled: true,
+      });
 
-    console.log('✅ finAPI user created:', user.id);
-    return user;
+      console.log('✅ New finAPI user created:', user.id);
+      return user;
+      
+    } catch (error: any) {
+      console.log('⚠️ User creation failed:', error.status, error.message);
+      
+      // User already exists - this is actually OK for our use case
+      if (error.status === 422 && error.message?.includes('already exists')) {
+        console.log('ℹ️ User already exists, will attempt authentication');
+        // Return a minimal user object
+        return {
+          id: userId,
+          password: password,
+          email: email || `${userId}@taskilo.de`,
+          isAutoUpdateEnabled: true,
+        };
+      }
+      
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**
-   * Get or create finAPI user
+   * Get or create finAPI user with robust error handling
+   * This creates a technical finAPI user account - the actual user only logs into their BANK, not finAPI!
    */
   async getOrCreateUser(
     userId: string,
     password: string,
     email?: string
   ): Promise<{ user: User; userToken: string }> {
+    console.log('👤 Getting or creating technical finAPI user account for:', userId);
+    console.log('ℹ️ Note: This is only a technical account - user will login to their BANK, not finAPI');
+    
+    // Step 1: Try to authenticate existing user first (more common scenario)
     try {
-      // Try to get user token (user exists)
+      console.log('� Step 1: Trying to authenticate existing user:', userId);
       const userToken = await this.getUserToken(userId, password);
-      const usersApi = await this.getUsersApi(userToken);
-
-      // For existing users, we can't get user details with current SDK
-      // Return a minimal user object
+      
+      // User exists and authentication successful
       const user: User = {
         id: userId,
-        password: password, // Include password for User type compliance
+        password: 'XXXXX', // finAPI standard for password display
         email: email || `${userId}@taskilo.de`,
         isAutoUpdateEnabled: true,
       };
-
-      console.log('✅ Using existing finAPI user:', user.id);
+      
+      console.log('✅ Successfully authenticated existing finAPI user:', userId);
       return { user, userToken };
-    } catch (error: any) {
-      if (error.status === 401) {
-        // User doesn't exist, create them
-        console.log('👤 User not found, creating new finAPI user...');
-        const user = await this.createUser(userId, password, email);
-        const userToken = await this.getUserToken(userId, password);
-
-        return { user, userToken };
+      
+    } catch (authError: any) {
+      console.log('ℹ️ User authentication failed (user might not exist):', authError.status);
+      
+      // Step 2: If authentication fails because user doesn't exist, try to create
+      if (authError.status === 400 || authError.status === 401 || authError.status === 404) {
+        try {
+          console.log('� Step 2: Creating new finAPI user:', userId);
+          const user = await this.createUser(userId, password, email);
+          
+          // Get token for newly created user
+          console.log('🔑 Getting authentication token for new user');
+          const userToken = await this.getUserToken(userId, password);
+          
+          console.log('✅ New finAPI user created and authenticated:', userId);
+          return { user, userToken };
+          
+        } catch (createError: any) {
+          console.error('❌ User creation failed after authentication failure:', {
+            status: createError.status,
+            message: createError.message
+          });
+          
+          // If creation also fails, provide detailed error
+          throw new Error(
+            `Failed to create finAPI user '${userId}' after authentication failed. ` +
+            `Status: ${createError.status}, Message: ${createError.message || 'Unknown creation error'}`
+          );
+        }
       }
-      throw error;
+      
+      // Step 3: If it's a different authentication error, provide detailed info
+      console.error('❌ Unexpected user authentication error:', {
+        status: authError.status,
+        message: authError.message
+      });
+      
+      throw new Error(
+        `Failed to authenticate finAPI user '${userId}'. Status: ${authError.status}, ` +
+        `Message: ${authError.message || 'Unknown authentication error'}`
+      );
     }
   }
 

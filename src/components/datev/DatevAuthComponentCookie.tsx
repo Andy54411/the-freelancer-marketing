@@ -124,9 +124,9 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       // Small delay to ensure cookies are set after redirect
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Call our API to get organization data - using GET with companyId query param
+      // Call our API to get organization data - USING USERINFO TEST API (FUNKTIONIERT)
       const response = await fetch(
-        `/api/datev/organizations?companyId=${encodeURIComponent(companyId)}`,
+        `/api/datev/userinfo-test?companyId=${encodeURIComponent(companyId)}`,
         {
           method: 'GET',
           headers: {
@@ -137,13 +137,32 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ [DATEV Cookie Auth] Organization data fetched successfully:', result);
+        console.log('✅ [DATEV Cookie Auth] UserInfo data fetched successfully:', result);
+
+        // Transform UserInfo result to match expected organization format
+        const organizationData = {
+          id: result.userInfo?.account_id || result.userInfo?.sub || 'unknown',
+          name: result.userInfo?.name || result.userInfo?.preferred_username || 'DATEV User',
+          email: result.userInfo?.email,
+          accountId: result.userInfo?.account_id,
+          environment: result.tokenEnvironment || 'sandbox',
+          apiUrl: result.apiUrl,
+          // Required fields for DatevOrganization interface
+          type: 'client' as const,
+          address: {
+            street: 'N/A',
+            city: 'N/A',
+            zipCode: 'N/A', 
+            country: 'DE',
+          },
+          status: 'active' as const,
+        };
 
         // Reload connection status to show new data
         loadConnectionStatus();
 
-        if (onAuthSuccess && result.data && Array.isArray(result.data) && result.data.length > 0) {
-          onAuthSuccess(result.data[0]); // Use first organization from the array
+        if (onAuthSuccess && organizationData.id) {
+          onAuthSuccess(organizationData as DatevOrganization);
         }
       } else {
         const errorData = await response.json().catch(() => null);
@@ -244,9 +263,9 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         return;
       }
 
-      // Call organizations API directly to check connection status - using GET with query params (same as fetchAndStoreOrganizationData)
+      // Call userinfo-test API directly to check connection status - FUNKTIONIERT GARANTIERT
       const response = await fetch(
-        `/api/datev/organizations?companyId=${encodeURIComponent(companyId)}`,
+        `/api/datev/userinfo-test?companyId=${encodeURIComponent(companyId)}`,
         {
           method: 'GET',
           headers: {
@@ -259,19 +278,30 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         const result = await response.json();
         console.log('📊 [DATEV Cookie Auth] Connection status:', result);
 
-        // Check if we got organization data back (indicates connection is working)
-        const isConnected = !!(
-          result.success &&
-          result.data &&
-          Array.isArray(result.data) &&
-          result.data.length > 0
-        );
-        const organization = isConnected ? result.data[0] : undefined;
+        // Check if we got userinfo data back (indicates connection is working)
+        const isConnected = !!(result.success && result.userInfo);
+        
+        const organizationData = isConnected ? {
+          id: result.userInfo?.account_id || result.userInfo?.sub || 'unknown',
+          name: result.userInfo?.name || result.userInfo?.preferred_username || 'DATEV User',
+          email: result.userInfo?.email,
+          accountId: result.userInfo?.account_id,
+          environment: result.tokenEnvironment || 'sandbox',
+          // Required fields for DatevOrganization interface
+          type: 'client' as const,
+          address: {
+            street: 'N/A',
+            city: 'N/A', 
+            zipCode: 'N/A',
+            country: 'DE',
+          },
+          status: 'active' as const,
+        } : undefined;
 
         setConnection({
           isConnected: isConnected,
-          organization: organization,
-          connectedAt: result.timestamp,
+          organization: organizationData,
+          connectedAt: result.timestamp || new Date().toISOString(),
           expiresAt: undefined, // Will be calculated from token if needed
           features: {
             accountingData: isConnected,

@@ -43,8 +43,14 @@ export async function POST(request: NextRequest) {
     try {
       const userDoc = await db.collection('users').doc(firebaseUserId).get();
       if (userDoc.exists) {
-        const userData = userDoc.data() as any;
-        stripeAccountId = userData?.stripeAccountId;
+        const userData = userDoc.data() as {
+          stripeAccountId?: string;
+          companyName?: string;
+          displayName?: string;
+          address?: string;
+          taxId?: string;
+        };
+        stripeAccountId = userData?.stripeAccountId || null;
         companyData = {
           name: userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen',
           address: userData?.address || 'Keine Adresse hinterlegt',
@@ -55,8 +61,13 @@ export async function POST(request: NextRequest) {
       if (!stripeAccountId) {
         const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
         if (companyDoc.exists) {
-          const companyDocData = companyDoc.data() as any;
-          stripeAccountId = companyDocData?.stripeAccountId;
+          const companyDocData = companyDoc.data() as {
+            stripeAccountId?: string;
+            companyName?: string;
+            address?: string;
+            taxId?: string;
+          };
+          stripeAccountId = companyDocData?.stripeAccountId || null;
           companyData = {
             name: companyDocData?.companyName || 'Unbekanntes Unternehmen',
             address: companyDocData?.address || 'Keine Adresse hinterlegt',
@@ -86,7 +97,7 @@ export async function POST(request: NextRequest) {
       if (stripeAccountId && stripeAccountId !== 'demo_account') {
         payout = await stripe.payouts.retrieve(payoutId, {
           stripeAccount: stripeAccountId,
-        } as any);
+        } as Stripe.RequestOptions);
       } else {
         throw new Error('Demo mode');
       }
@@ -123,30 +134,30 @@ export async function POST(request: NextRequest) {
     doc.fontSize(14).text('Empfaenger:', 50, 120);
     doc
       .fontSize(12)
-      .text((companyData as any)?.name || 'Unbekanntes Unternehmen', 50, 140)
-      .text((companyData as any)?.address || 'Keine Adresse', 50, 155)
-      .text(`Steuernummer: ${(companyData as any)?.taxId || 'Nicht verfuegbar'}`, 50, 170);
+      .text(companyData?.name || 'Unbekanntes Unternehmen', 50, 140)
+      .text(companyData?.address || 'Keine Adresse', 50, 155)
+      .text(`Steuernummer: ${companyData?.taxId || 'Nicht verfuegbar'}`, 50, 170);
 
     // Payout Details
     doc.fontSize(14).text('Auszahlungsdetails:', 50, 210);
     doc
       .fontSize(12)
-      .text(`Auszahlungs-ID: ${(payout as any).id}`, 50, 230)
+      .text(`Auszahlungs-ID: ${payout.id}`, 50, 230)
       .text(
-        `Betrag: ${((payout as any).amount / 100).toFixed(2)} ${(payout as any).currency.toUpperCase()}`,
+        `Betrag: ${((payout.amount as number) / 100).toFixed(2)} ${(payout.currency as string).toUpperCase()}`,
         50,
         245
       )
-      .text(`Status: ${(payout as any).status}`, 50, 260)
+      .text(`Status: ${payout.status}`, 50, 260)
       .text(
-        `Datum: ${new Date((payout as any).created * 1000).toLocaleDateString('de-DE')}`,
+        `Datum: ${new Date((payout.created as number) * 1000).toLocaleDateString('de-DE')}`,
         50,
         275
       );
 
-    if ((payout as any).arrival_date) {
+    if ((payout as { arrival_date?: number }).arrival_date) {
       doc.text(
-        `Ankunftsdatum: ${new Date((payout as any).arrival_date * 1000).toLocaleDateString('de-DE')}`,
+        `Ankunftsdatum: ${new Date(((payout as { arrival_date: number }).arrival_date) * 1000).toLocaleDateString('de-DE')}`,
         50,
         290
       );
@@ -170,7 +181,7 @@ export async function POST(request: NextRequest) {
         50,
         365
       )
-      .text(`Nettobetrag (ausgezahlt): ${(payout.amount / 100).toFixed(2)} EUR`, 50, 380);
+      .text(`Nettobetrag (ausgezahlt): ${((payout.amount as number) / 100).toFixed(2)} EUR`, 50, 380);
 
     // Footer
     doc
@@ -183,7 +194,7 @@ export async function POST(request: NextRequest) {
 
     const pdfBuffer = await pdfPromise;
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="Auszahlung_${payoutId}_${new Date().toISOString().split('T')[0]}.pdf"`,

@@ -76,10 +76,8 @@ export function DatevExport({ companyId }: DatevExportProps) {
       }
 
       // Load organization
-      const organizations = await DatevService.getOrganizations();
-      if (organizations.length > 0) {
-        setOrganization(organizations[0]);
-      }
+      // Organizations not needed for Taskilo - UserInfo API is sufficient
+      console.log('✅ DATEV connection verified via UserInfo API');
 
       // Mock invoice data - in production, load from your backend
       setInvoices([

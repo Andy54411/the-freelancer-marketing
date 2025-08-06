@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig, validateSandboxClientPermissions } from '@/lib/datev-config';
-import { retrievePKCEData } from '@/lib/pkce-storage';
+import { retrievePKCEData, PKCEData } from '@/lib/pkce-storage';
 import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { setDatevTokenCookies } from '@/lib/datev-server-utils';
@@ -67,35 +67,99 @@ export async function GET(request: NextRequest) {
     let companyId: string;
     let timestamp: string;
     let randomPart: string;
+    let stateData: any = null;
+    
     try {
-      const stateParts = state.split(':');
-      if (stateParts.length >= 4 && stateParts[0] === 'company') {
-        companyId = stateParts[1];
-        timestamp = stateParts[2];
-        randomPart = stateParts[3];
-      } else {
-        throw new Error('Invalid state format');
+      // Try to parse as Base64-encoded JSON first (new format)
+      try {
+        const decodedState = Buffer.from(state, 'base64').toString('utf-8');
+        stateData = JSON.parse(decodedState);
+        
+        if (stateData.companyId && stateData.timestamp) {
+          companyId = stateData.companyId;
+          timestamp = stateData.timestamp.toString();
+          randomPart = 'json_state'; // Placeholder for JSON format
+          console.log('✅ [DATEV Callback] JSON State parsed successfully:', { 
+            companyId, 
+            timestamp, 
+            hasCodeVerifier: !!stateData.codeVerifier 
+          });
+        } else {
+          throw new Error('Invalid JSON state format: missing companyId or timestamp');
+        }
+      } catch (jsonError) {
+        // Fallback to colon-separated format (old format)
+        const stateParts = state.split(':');
+        console.log('🔍 [DATEV Callback] Parsing colon state:', { state, stateParts, length: stateParts.length });
+        
+        if (stateParts.length >= 4 && stateParts[0] === 'company') {
+          companyId = stateParts[1];
+          timestamp = stateParts[2];
+          randomPart = stateParts[3];
+          console.log('✅ [DATEV Callback] Colon State parsed successfully:', { companyId, timestamp, randomPart: randomPart.substring(0, 8) + '...' });
+        } else if (stateParts.length >= 3 && stateParts[0] === 'state') {
+          // Fallback für state ohne companyId
+          companyId = 'unknown';
+          timestamp = stateParts[1];
+          randomPart = stateParts[2];
+          console.log('⚠️ [DATEV Callback] Using fallback parsing:', { companyId, timestamp, randomPart: randomPart.substring(0, 8) + '...' });
+        } else {
+          throw new Error(`Invalid state format: expected Base64 JSON or 'company:id:timestamp:random', got ${stateParts.length} colon parts`);
+        }
       }
     } catch (error) {
-      console.error('Invalid state parameter:', state);
+      console.error('❌ [DATEV Callback] State parsing failed:', { state, error: error instanceof Error ? error.message : error });
       return NextResponse.redirect(
-        `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter format')}`
+        `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter format: ' + state)}`
       );
     }
 
-    // Retrieve codeVerifier and nonce from secure storage using state
-    const storedAuthData = retrievePKCEData(state);
+    // Retrieve codeVerifier and nonce from secure storage or JSON state
+    let storedAuthData: PKCEData | null = null;
+    let codeVerifier: string | undefined = undefined;
+    let nonce: string | undefined = undefined;
 
-    if (!storedAuthData) {
-      console.error('No stored auth data found for state:', state);
-      return NextResponse.redirect(
-        `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Authentifizierungs-Session nicht gefunden oder abgelaufen')}`
-      );
+    // If we have JSON state data, use it directly
+    if (stateData && stateData.codeVerifier) {
+      codeVerifier = stateData.codeVerifier;
+      nonce = stateData.nonce; // May be undefined for some flows
+      companyId = stateData.companyId || companyId;
+      console.log('🔑 [DATEV Callback] Using JSON State Data:', { 
+        companyId,
+        hasCodeVerifier: !!codeVerifier,
+        hasNonce: !!nonce,
+        timestamp: stateData.timestamp
+      });
+    } else {
+      // Fallback to PKCE storage for colon-format states
+      const pkceData = retrievePKCEData(state);
+      storedAuthData = pkceData;
+      console.log('🔑 [DATEV Callback] PKCE Data Retrieval:', { 
+        stateKey: state, 
+        hasStoredData: !!storedAuthData,
+        storedCompanyId: storedAuthData?.companyId,
+        timestamp: storedAuthData?.timestamp
+      });
+
+      if (!storedAuthData) {
+        console.error('❌ [DATEV Callback] No stored auth data found for state:', state);
+        return NextResponse.redirect(
+          `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Authentifizierungs-Session nicht gefunden oder abgelaufen')}`
+        );
+      }
+
+      codeVerifier = storedAuthData.codeVerifier;
+      nonce = storedAuthData.nonce;
+      companyId = storedAuthData.companyId || companyId;
     }
 
-    const codeVerifier = storedAuthData.codeVerifier;
-    const nonce = storedAuthData.nonce;
-    companyId = storedAuthData.companyId || companyId;
+    // Validate that we have a codeVerifier
+    if (!codeVerifier) {
+      console.error('❌ [DATEV Callback] No code verifier found in state or storage');
+      return NextResponse.redirect(
+        `${redirectUrl}?error=missing_verifier&message=${encodeURIComponent('Code verifier nicht gefunden - bitte versuchen Sie es erneut')}`
+      );
+    }
 
     // Update redirectUrl with correct companyId
     redirectUrl =

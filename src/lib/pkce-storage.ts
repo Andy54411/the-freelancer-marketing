@@ -1,7 +1,10 @@
 /**
- * Temporary PKCE Storage for Development
- * In production, this should be replaced with Redis or a database
+ * Persistent PKCE Storage for Development
+ * Uses file system for persistence across server restarts
  */
+
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
 
 export interface PKCEData {
   codeVerifier: string;
@@ -10,11 +13,44 @@ export interface PKCEData {
   companyId?: string;
 }
 
-// In-memory storage for development (use Redis/Database in production)
-const pkceStore = new Map<string, PKCEData>();
+// File-based storage for development (persistent across restarts)
+const STORAGE_DIR = join(process.cwd(), '.datev-storage');
+const STORAGE_FILE = join(STORAGE_DIR, 'pkce-store.json');
+
+// Ensure storage directory exists
+if (!existsSync(STORAGE_DIR)) {
+  mkdirSync(STORAGE_DIR, { recursive: true });
+}
+
+// Load existing data or initialize empty store
+function loadPKCEStore(): Map<string, PKCEData> {
+  try {
+    if (existsSync(STORAGE_FILE)) {
+      const data = readFileSync(STORAGE_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      return new Map(Object.entries(parsed));
+    }
+  } catch (error) {
+    console.error('Error loading PKCE store:', error);
+  }
+  return new Map();
+}
+
+// Save store to file
+function savePKCEStore(store: Map<string, PKCEData>): void {
+  try {
+    const data = Object.fromEntries(store);
+    writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Error saving PKCE store:', error);
+  }
+}
+
+// Initialize store from file
+const pkceStore = loadPKCEStore();
 
 /**
- * Store PKCE data temporarily (10 minutes max)
+ * Store PKCE data persistently (10 minutes max)
  */
 export function storePKCEData(state: string, data: PKCEData): void {
   // Clean expired entries first
@@ -26,17 +62,27 @@ export function storePKCEData(state: string, data: PKCEData): void {
     timestamp: Date.now(),
   });
 
-  console.log('Stored PKCE data for state:', state.substring(0, 20) + '...');
+  // Save to file for persistence
+  savePKCEStore(pkceStore);
+
+  console.log('✅ [PKCE Storage] Stored data for state:', state.substring(0, 20) + '...', {
+    companyId: data.companyId,
+    timestamp: new Date(data.timestamp).toISOString(),
+    totalStored: pkceStore.size
+  });
 }
 
 /**
  * Retrieve and remove PKCE data
  */
 export function retrievePKCEData(state: string): PKCEData | null {
-  const data = pkceStore.get(state);
+  // Reload store from file to get latest data
+  const freshStore = loadPKCEStore();
+  const data = freshStore.get(state);
 
   if (!data) {
-    console.error('PKCE data not found for state:', state.substring(0, 20) + '...');
+    console.error('❌ [PKCE Storage] Data not found for state:', state.substring(0, 20) + '...');
+    console.log('🔍 [PKCE Storage] Available states:', Array.from(freshStore.keys()).map(s => s.substring(0, 20) + '...'));
     return null;
   }
 
@@ -45,15 +91,20 @@ export function retrievePKCEData(state: string): PKCEData | null {
   const maxAge = 10 * 60 * 1000; // 10 minutes
 
   if (now - data.timestamp > maxAge) {
-    console.error('PKCE data expired for state:', state.substring(0, 20) + '...');
-    pkceStore.delete(state);
+    console.error('⏰ [PKCE Storage] Data expired for state:', state.substring(0, 20) + '...');
+    freshStore.delete(state);
+    savePKCEStore(freshStore);
     return null;
   }
 
-  // Remove after retrieval (one-time use)
-  pkceStore.delete(state);
+  // Remove after retrieval (one-time use) and save
+  freshStore.delete(state);
+  savePKCEStore(freshStore);
 
-  console.log('Retrieved PKCE data for state:', state.substring(0, 20) + '...');
+  console.log('✅ [PKCE Storage] Retrieved data for state:', state.substring(0, 20) + '...', {
+    companyId: data.companyId,
+    age: Math.round((now - data.timestamp) / 1000) + 's'
+  });
   return data;
 }
 
@@ -63,22 +114,30 @@ export function retrievePKCEData(state: string): PKCEData | null {
 function cleanExpiredEntries(): void {
   const now = Date.now();
   const maxAge = 10 * 60 * 1000; // 10 minutes
+  let cleaned = 0;
 
   for (const [state, data] of pkceStore.entries()) {
     if (now - data.timestamp > maxAge) {
       pkceStore.delete(state);
+      cleaned++;
     }
+  }
+
+  if (cleaned > 0) {
+    savePKCEStore(pkceStore);
+    console.log(`🧹 [PKCE Storage] Cleaned ${cleaned} expired entries`);
   }
 }
 
 /**
  * Get current storage stats (for debugging)
  */
-export function getPKCEStorageStats(): { total: number; states: string[] } {
+export function getPKCEStorageStats(): { total: number; states: string[]; file: string } {
   cleanExpiredEntries();
 
   return {
     total: pkceStore.size,
     states: Array.from(pkceStore.keys()).map(state => state.substring(0, 20) + '...'),
+    file: STORAGE_FILE,
   };
 }

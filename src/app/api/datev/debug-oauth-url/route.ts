@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const scopes = [
       'accounting-data:read',
       'accounting-data:write',
-      'organizations:read',
+      'userinfo:read',
       'user:read',
     ];
     const scope = scopes.join(' ');

@@ -1,6 +1,7 @@
-// src/app/api/finapi/connect-bank/route.ts
+// src/app/api/finapi/connect-bank/route-fixed.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
+import { finapiServiceFixed } from '@/lib/finapi-sdk-service-fixed';
+import { randomUUID } from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,64 +11,134 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Benutzer-ID oder Bank-ID fehlt.' }, { status: 400 });
     }
 
-    console.log('🏦 Creating bank connection for user:', userId, 'bank:', bankId);
-
-    // Step 1: Create or get finAPI user
-    const password = `taskilo_${userId}_${Date.now()}`; // Generate secure password
-    const userResult = await finapiService.getOrCreateUser(userId, password);
-
-    if (!userResult.user) {
-      throw new Error('Failed to create finAPI user');
+    console.log('Testing finAPI client credentials...');
+    const credentialTest = await finapiServiceFixed.testCredentials();
+    if (!credentialTest.success) {
+      return NextResponse.json({ 
+        error: 'finAPI Credentials ungültig.',
+        details: credentialTest.error 
+      }, { status: 500 });
     }
 
-    console.log('✅ finAPI user ready:', userResult.user.id);
+    console.log('SUCCESS: finAPI credentials valid, creating user...');
 
-    // Step 2: Create WebForm 2.0 for bank import
-    const webForm = await finapiService.createBankImportWebForm(userResult.userToken, {
+    // LÖSUNG für Sandbox-Verschmutzung: Echte UUIDs verwenden
+    function generateUniqueUserId(): string {
+      // Verwende echte UUIDs statt vorhersagbare IDs
+      const uuid = randomUUID().replace(/-/g, '').substring(0, 16);
+      return `taskilo_uuid_${uuid}`;
+    }
+
+    console.log('INFO: Creating clean finAPI technical user');
+    console.log('INFO: User will only login to their BANK, not to finAPI!');
+
+    let userResult: { user: any; userToken: string } | null = null;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    // Mehrfach-Versuch mit verschiedenen UUIDs
+    while (!userResult && attempts < maxAttempts) {
+      attempts++;
+      const uniqueUserId = generateUniqueUserId();
+      const securePassword = `secure_${uniqueUserId}_${Date.now()}`;
+      
+      console.log(`ATTEMPT ${attempts}/${maxAttempts}: Trying UUID user: ${uniqueUserId}`);
+      
+      try {
+        userResult = await finapiServiceFixed.getOrCreateUser(uniqueUserId, securePassword);
+        console.log(`SUCCESS: UUID user created on attempt ${attempts}:`, uniqueUserId);
+        break;
+      } catch (error: any) {
+        console.log(`FAILED: UUID attempt ${attempts}:`, error.message);
+        
+        // If user creation succeeded but token failed, continue with WebForm using client token
+        if (error.message.includes('User was created successfully but token retrieval failed')) {
+          console.log(`INFO: User created but token failed, continuing with client token fallback`);
+          userResult = { 
+            user: { id: uniqueUserId }, 
+            userToken: null // We'll use client token instead
+          };
+          break;
+        }
+        
+        // Wenn selbst UUID-User existieren, ist die Sandbox sehr verschmutzt
+        if (error.message.includes('exists but authentication failed')) {
+          console.log(`WARNING: UUID collision on attempt ${attempts} - trying next UUID...`);
+          
+          // Bei letztem Versuch detaillierten Error geben
+          if (attempts === maxAttempts) {
+            console.error('CRITICAL: All UUID attempts failed - Sandbox critically polluted');
+            return NextResponse.json({
+              error: 'finAPI Sandbox ist überlastet mit Test-Benutzern.',
+              solution: 'Bitte versuchen Sie es in einigen Minuten erneut.',
+              technical: {
+                issue: 'UUID collision after multiple attempts',
+                attempts: attempts,
+                recommendation: 'Contact finAPI support for sandbox cleanup'
+              }
+            }, { status: 503 });
+          }
+          continue;
+        }
+        
+        // Andere Fehler sofort weiterwerfen
+        throw error;
+      }
+    }
+
+    if (!userResult) {
+      return NextResponse.json({
+        error: 'Technischer Fehler bei finAPI User-Erstellung.',
+        technical: 'Max UUID attempts exceeded'
+      }, { status: 500 });
+    }
+
+    // WebForm 2.0 für Bankverbindung erstellen
+    console.log('Creating WebForm 2.0 for bank connection...');
+    let webFormToken = userResult && userResult.userToken ? userResult.userToken : null;
+    
+    const webForm = await finapiServiceFixed.createBankImportWebForm(webFormToken, {
       bankId: parseInt(bankId),
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/company/${userId}/finance/banking/success`,
       callbacks: {
-        successCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/webform/success`,
-        errorCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/webform/error`,
+        successCallback: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/finapi/callback/success`,
+        errorCallback: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/finapi/callback/error`,
       },
-      redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/finance/banking`,
     });
 
-    console.log('✅ WebForm 2.0 created:', webForm.url);
+    console.log('SUCCESS: WebForm 2.0 created:', webForm.url);
 
     return NextResponse.json({
       success: true,
-      message: 'WebForm 2.0 für Bankverbindung erstellt',
+      message: 'Bankverbindung erfolgreich initialisiert',
       redirectUrl: webForm.url,
-      webForm: {
-        id: webForm.id,
-        url: webForm.url,
-        expiresAt: webForm.expiresAt,
-      },
+      webForm: webForm,
       finapiUserId: userResult.user.id,
+      mode: 'production',
       instructions: {
-        step: 'redirect_to_webform',
-        description: 'User wird zur sicheren finAPI WebForm weitergeleitet',
+        step: 'webform_redirect',
+        description: 'Sie werden zu Ihrer Bank weitergeleitet, um die Kontodaten sicher zu verbinden',
         next_steps: [
-          '1. Automatische Weiterleitung zur WebForm URL',
-          '2. User authentifiziert sich sicher bei seiner Bank',
-          '3. Bankverbindung wird automatisch erstellt',
-          '4. Callback erfolgt nach Abschluss',
+          '1. Weiterleitung zu finAPI WebForm 2.0',
+          '2. Auswahl und Anmeldung bei Ihrer Bank',
+          '3. Sichere Übertragung der Kontodaten',
+          '4. Rückkehr zu Taskilo mit verbundenem Konto',
         ],
       },
     });
-  } catch (error) {
-    console.error('❌ Fehler beim Starten der Bankverbindung:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Verbinden der Bank.',
-        details: errorMessage,
-        suggestion: 'Bitte überprüfen Sie die finAPI Sandbox-Konfiguration.',
+  } catch (error: any) {
+    console.error('ERROR: Bank connection failed:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: 'Fehler beim Starten der Bankverbindung',
+      message: error.message,
+      technical: {
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        stack: error.stack?.substring(0, 500), // Truncated stack trace
       },
-      { status: 500 }
-    );
+    }, { status: 500 });
   }
 }

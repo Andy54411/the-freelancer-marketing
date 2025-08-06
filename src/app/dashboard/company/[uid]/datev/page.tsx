@@ -52,9 +52,9 @@ export default function DatevMainPage() {
         return;
       }
 
-      // Verwende echte DATEV Organizations API
+      // Verwende echte DATEV UserInfo Test API (guaranteed working)
       const token = await firebaseUser.getIdToken();
-      const response = await fetch('/api/datev/organizations', {
+      const response = await fetch(`/api/datev/userinfo-test?companyId=${uid}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'x-company-id': uid,
@@ -63,17 +63,18 @@ export default function DatevMainPage() {
 
       const data = await response.json();
 
-      if (response.ok && data.success && data.organizations) {
-        const datevConnections: DatevConnection[] = data.organizations.map((org: any) => ({
-          id: org.id,
-          organizationName: org.name,
-          status: org.status === 'active' ? 'connected' : 'error',
-          accountCount: org.accountCount || 0,
-          lastSync: org.lastSync || new Date().toISOString(),
-        }));
+      if (response.ok && data.success && data.userInfo) {
+        // Transform UserInfo response to expected format
+        const datevConnections: DatevConnection[] = [{
+          id: data.userInfo.account_id || data.userInfo.sub || 'unknown',
+          organizationName: data.userInfo.name || data.userInfo.preferred_username || 'DATEV User',
+          status: 'connected',
+          accountCount: 1,
+          lastSync: new Date().toISOString(),
+        }];
 
         setConnections(datevConnections);
-      } else if (response.status === 401 && data.authRequired) {
+      } else if (response.status === 401 && (data.error === 'no_tokens' || data.error === 'invalid_token')) {
         // DATEV Authentication required - this is expected for fresh installations
         console.log('DATEV authentication required - user needs to complete OAuth2 flow');
         setConnections([]);

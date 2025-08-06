@@ -1,3 +1,4 @@
+
 /**
  * DATEV Callback Simulator
  * Simuliert einen erfolgreichen OAuth Callback für Testzwecke
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
         secure: process.env.NODE_ENV !== 'development',
       },
       nextSteps: {
-        test: 'Call /api/datev/organizations?companyId=' + companyId + ' to test token usage',
+        test: 'Call /api/datev/userinfo-test?companyId=' + companyId + ' to test token usage',
         debug: 'Call /api/datev/debug-cookies?companyId=' + companyId + ' to inspect cookie',
         setup: 'Go to /dashboard/company/' + companyId + '/datev/setup to see UI',
       },

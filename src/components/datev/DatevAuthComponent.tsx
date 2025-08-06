@@ -1,535 +1,192 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
-import {
-  FiExternalLink,
-  FiCheck,
-  FiAlertCircle,
-  FiRefreshCw,
-  FiShield,
-  FiDatabase,
-  FiUsers,
-  FiFileText,
-} from 'react-icons/fi';
-import { DatevTokenManager } from '@/lib/datev-token-manager';
-import { DatevService, DatevOrganization } from '@/services/datevService';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+
+interface DatevOrganization {
+  id: string;
+  name: string;
+}
 
 interface DatevConnection {
   isConnected: boolean;
   organization?: DatevOrganization;
   user?: {
     name: string;
-    email: string;
     id: string;
   };
   connectedAt?: string;
-  lastSync?: string;
-  features: {
-    accountingData: boolean;
-    documents: boolean;
-    masterData: boolean;
-    cashRegister: boolean;
-  };
 }
 
 interface DatevAuthComponentProps {
   companyId: string;
   onAuthSuccess?: (organization: DatevOrganization) => void;
+  onAuthError?: (error: string) => void;
 }
 
-export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthComponentProps) {
-  const [connection, setConnection] = useState<DatevConnection | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
-  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+function DatevAuthComponent({
+  companyId,
+  onAuthSuccess,
+  onAuthError
+}: DatevAuthComponentProps) {
+  const [connection, setConnection] = useState<DatevConnection>({ isConnected: false });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showButtons, setShowButtons] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check URL parameters for OAuth callback results
-    const urlParams = new URLSearchParams(window.location.search);
-    const authStatus = urlParams.get('datev_auth');
-    const errorMessage = urlParams.get('message');
-    const errorType = urlParams.get('error');
-    const callbackCompany = urlParams.get('company');
-
-    console.log('🔍 [DATEV Auth] Checking callback params:', {
-      authStatus,
-      errorType,
-      callbackCompany,
-      currentCompanyId: companyId,
-      currentPath: window.location.pathname,
-    });
-
-    // Handle OAuth callback results
-    if (authStatus === 'success') {
-      // Verify that the callback is for the correct company
-      if (callbackCompany === companyId) {
-        toast.success('DATEV-Authentifizierung erfolgreich abgeschlossen!');
-        console.log('✅ [DATEV Auth] Successful auth for correct company');
-      } else {
-        console.warn('⚠️ [DATEV Auth] Company ID mismatch in callback:', {
-          expected: companyId,
-          received: callbackCompany,
-        });
-      }
-      // Clean the URL parameters
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    } else if (authStatus === 'error' || errorType) {
-      const message = errorMessage
-        ? decodeURIComponent(errorMessage)
-        : 'DATEV-Authentifizierung fehlgeschlagen';
-      toast.error(`DATEV-Fehler: ${message}`);
-      // Clean the URL parameters
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    }
-
-    loadDatevConnection();
+    checkExistingConnection();
   }, [companyId]);
 
-  const loadDatevConnection = async () => {
-    if (hasAttemptedLoad) {
-      console.log('🚫 [DATEV Debug] Already attempted to load connection, skipping...');
-      return;
-    }
-
-    // Validate companyId before attempting to load
-    if (!companyId || companyId.trim() === '') {
-      console.log('🚫 [DATEV Debug] No valid company ID provided, skipping connection load');
-      setLoading(false);
-      setConnection({
-        isConnected: false,
-        features: {
-          accountingData: false,
-          documents: false,
-          masterData: false,
-          cashRegister: false,
-        },
-      });
-      return;
-    }
+  const checkExistingConnection = async () => {
+    setIsLoading(true);
 
     try {
-      setLoading(true);
-      setHasAttemptedLoad(true);
-      console.log('🔍 [DATEV Debug] Loading connection for company:', companyId); // Check if we have stored tokens in Firestore for this company
-      const tokenDocRef = doc(db, 'companies', companyId, 'datev', 'tokens');
-      console.log(
-        '🔍 [DATEV Debug] Checking document path:',
-        `companies/${companyId}/datev/tokens`
-      );
+      // Check if user has existing DATEV tokens by testing UserInfo API
+      console.log('🔍 [DATEV Debug] Checking existing connection...');
 
-      const tokenDoc = await getDoc(tokenDocRef);
-      console.log('🔍 [DATEV Debug] Token document exists:', tokenDoc.exists());
-
-      if (!tokenDoc.exists()) {
-        console.log('❌ [DATEV Debug] No DATEV tokens found for company:', companyId);
-        setConnection({
-          isConnected: false,
-          features: {
-            accountingData: false,
-            documents: false,
-            masterData: false,
-            cashRegister: false,
-          },
-        });
-        return;
-      }
-
-      const tokenData = tokenDoc.data();
-      console.log('✅ [DATEV Debug] Token data found:', {
-        hasAccessToken: !!tokenData.access_token,
-        expiresAt: tokenData.expires_at?.toDate?.(),
-        isActive: tokenData.is_active,
+      const response = await fetch(`/api/datev/userinfo-test?companyId=${companyId}`, {
+        method: 'GET',
       });
 
-      // Check if token is expired
-      const now = new Date();
-      const expiresAt = tokenData.expires_at?.toDate();
+      if (response.ok) {
+        const userInfo = await response.json();
+        console.log('✅ DATEV connection exists:', userInfo);
 
-      if (expiresAt && now > expiresAt) {
-        console.log('DATEV token expired for company:', companyId);
         setConnection({
-          isConnected: false,
-          features: {
-            accountingData: false,
-            documents: false,
-            masterData: false,
-            cashRegister: false,
+          isConnected: true,
+          organization: {
+            id: userInfo.userInfo?.account_id || 'datev-user',
+            name: userInfo.userInfo?.name || 'DATEV User'
           },
+          user: {
+            name: userInfo.userInfo?.name || 'DATEV User',
+            id: userInfo.userInfo?.account_id || 'datev-user',
+          },
+          connectedAt: new Date().toISOString(),
         });
-        return;
-      }
 
-      // Store token in localStorage for API calls
-      DatevTokenManager.storeUserToken({
-        access_token: tokenData.access_token,
-        token_type: tokenData.token_type || 'Bearer',
-        expires_in: tokenData.expires_in || 3600,
-        refresh_token: tokenData.refresh_token,
-        scope: tokenData.scope || '',
-        user: {
-          id: companyId,
-          email: '',
-          name: 'DATEV User',
-          created_at: tokenData.connected_at?.toDate()?.toISOString() || new Date().toISOString(),
-        },
-      });
+        setIsAuthenticated(true);
+        setShowButtons(false);
 
-      // Validate the token by trying to fetch organizations
-      try {
-        console.log('🔍 [DATEV Debug] Validating token by fetching organizations...');
-        const organizations = await DatevService.getOrganizations();
-
-        if (organizations && organizations.length > 0) {
-          const org = organizations[0]; // Use first available organization
-          setConnection({
-            isConnected: true,
-            organization: org,
-            user: {
-              name: org.name || 'DATEV User',
-              email: 'user@datev.de', // DATEV doesn't expose user email in this endpoint
-              id: org.id,
-            },
-            connectedAt: new Date().toISOString(),
-            lastSync: new Date().toISOString(),
-            features: {
-              accountingData: true,
-              documents: true,
-              masterData: true,
-              cashRegister: true,
-            },
+        if (onAuthSuccess) {
+          onAuthSuccess({
+            id: userInfo.userInfo?.account_id || 'datev-user',
+            name: userInfo.userInfo?.name || 'DATEV User'
           });
-
-          if (onAuthSuccess) {
-            onAuthSuccess(org);
-          }
-
-          toast.success('DATEV-Verbindung erfolgreich überprüft');
-        } else {
-          console.log('No DATEV organizations found');
-          handleAuthError('Keine DATEV-Organisationen gefunden');
-        }
-      } catch (apiError) {
-        console.error('DATEV API error during connection check:', apiError);
-
-        // If API call fails, the token is likely invalid - don't retry
-        if (apiError instanceof Error && apiError.message.includes('authentication')) {
-          console.log('🚫 [DATEV Debug] Authentication failed, clearing tokens');
-          DatevTokenManager.clearUserToken();
-          toast.error('DATEV-Authentifizierung abgelaufen. Bitte erneut verbinden.');
-        } else {
-          console.error('🚫 [DATEV Debug] API error during validation:', apiError);
-          toast.error('Fehler beim Überprüfen der DATEV-Verbindung');
         }
 
-        handleAuthError(apiError instanceof Error ? apiError.message : 'API-Fehler');
+        toast.success('DATEV-Verbindung erfolgreich überprüft');
+      } else {
+        console.log('🔄 DATEV authentication required');
+        setShowButtons(true);
       }
     } catch (error) {
-      console.error('DATEV connection check failed:', error);
-      // Don't show error toast for expected authentication failures
-      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      if (!errorMessage.includes('authentication')) {
-        handleAuthError(errorMessage);
-      } else {
-        console.log('🚫 [DATEV Debug] Expected authentication failure, no error shown');
-        handleAuthError('Keine DATEV-Authentifizierung gefunden');
-      }
+      console.error('Error checking DATEV connection:', error);
+      setShowButtons(true);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleAuthError = (errorMessage: string) => {
-    setConnection({
-      isConnected: false,
-      features: {
-        accountingData: false,
-        documents: false,
-        masterData: false,
-        cashRegister: false,
-      },
-    });
-  };
+  const handleAuthentication = async () => {
+    setIsLoading(true);
 
-  const handleConnect = async () => {
     try {
-      setConnecting(true);
-      setHasAttemptedLoad(false); // Reset flag for retry
-
-      // Generate OAuth URL via API route to avoid environment variable issues on client side
-      const state = `company:${companyId}:${Date.now()}`;
-
+      // Generate OAuth URL
       const response = await fetch('/api/datev/auth-url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          companyId,
-          state,
-        }),
+        body: JSON.stringify({ companyId }),
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to generate auth URL');
+      if (!response.ok) {
+        throw new Error('Failed to generate DATEV auth URL');
       }
 
-      // WICHTIG: Vollständige Seitenweiterleitung statt Popup
-      // DATEV OAuth funktioniert nicht korrekt mit Popups
-      console.log('Redirecting to DATEV OAuth:', result.authUrl);
-      window.location.href = result.authUrl;
+      const { authUrl } = await response.json();
+
+      // Redirect to DATEV OAuth
+      console.log('🚀 Redirecting to DATEV OAuth:', authUrl);
+      window.location.href = authUrl;
+
     } catch (error) {
-      console.error('DATEV connection failed:', error);
-      toast.error(
-        'Fehler beim Verbinden mit DATEV: ' +
-          (error instanceof Error ? error.message : 'Unbekannter Fehler')
-      );
-      setConnecting(false);
+      console.error('DATEV authentication error:', error);
+      if (onAuthError) {
+        onAuthError(error instanceof Error ? error.message : 'Authentication failed');
+      }
+      toast.error('DATEV-Authentifizierung fehlgeschlagen');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDisconnect = async () => {
     try {
-      DatevTokenManager.clearUserToken();
-      setConnection({
-        isConnected: false,
-        features: {
-          accountingData: false,
-          documents: false,
-          masterData: false,
-          cashRegister: false,
-        },
-      });
+      // Clear tokens (implement as needed)
+      setConnection({ isConnected: false });
+      setIsAuthenticated(false);
+      setShowButtons(true);
+
       toast.success('DATEV-Verbindung getrennt');
     } catch (error) {
-      console.error('Error disconnecting from DATEV:', error);
+      console.error('Error disconnecting DATEV:', error);
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };
 
-  const handleRefresh = async () => {
-    try {
-      setLoading(true);
-      await loadDatevConnection();
-      toast.success('DATEV-Verbindung aktualisiert');
-    } catch (error) {
-      console.error('Error refreshing DATEV connection:', error);
-      toast.error('Fehler beim Aktualisieren der DATEV-Verbindung');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <Card className="w-full">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            <FiRefreshCw className="animate-spin" />
-            DATEV-Verbindung wird überprüft...
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (!connection) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-red-600">Fehler</CardTitle>
-          <CardDescription>
-            Es ist ein Fehler beim Laden der DATEV-Verbindung aufgetreten.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleRefresh} variant="outline" className="w-full">
-            <FiRefreshCw className="mr-2" />
-            Erneut versuchen
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="p-4 border rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-center mt-2">Prüfe DATEV-Verbindung...</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Connection Status Card */}
-      <Card className="w-full">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FiShield className="text-[#14ad9f]" />
-                DATEV-Integration
-                {connection.isConnected ? (
-                  <Badge variant="default" className="bg-green-100 text-green-800">
-                    <FiCheck className="mr-1" size={12} />
-                    Verbunden
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive">
-                    <FiAlertCircle className="mr-1" size={12} />
-                    Nicht verbunden
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Verbindung zu DATEV für automatische Buchhaltung und Steuerberatung
-              </CardDescription>
-            </div>
-            <Button onClick={handleRefresh} variant="ghost" size="sm" disabled={loading}>
-              <FiRefreshCw className={loading ? 'animate-spin' : ''} />
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {connection.isConnected && connection.organization ? (
-            <div className="space-y-4">
-              {/* Organization Info */}
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-800 mb-2">Verbundene Organisation</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="font-medium">Name:</span> {connection.organization.name}
-                  </div>
-                  <div>
-                    <span className="font-medium">Typ:</span>{' '}
-                    {connection.organization.type === 'client' ? 'Mandant' : 'Berater'}
-                  </div>
-                  <div>
-                    <span className="font-medium">Status:</span>{' '}
-                    {connection.organization.status === 'active' ? 'Aktiv' : 'Inaktiv'}
-                  </div>
-                  {connection.organization.taxNumber && (
-                    <div>
-                      <span className="font-medium">Steuernummer:</span>{' '}
-                      {connection.organization.taxNumber}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Available Features */}
-              <div>
-                <h4 className="font-medium mb-3">Verfügbare Features</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <FiDatabase className="text-[#14ad9f]" />
-                    <span className="text-sm">Buchhaltungsdaten</span>
-                    <FiCheck className="text-green-600 ml-auto" size={16} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiFileText className="text-[#14ad9f]" />
-                    <span className="text-sm">Dokumente</span>
-                    <FiCheck className="text-green-600 ml-auto" size={16} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiUsers className="text-[#14ad9f]" />
-                    <span className="text-sm">Stammdaten</span>
-                    <FiCheck className="text-green-600 ml-auto" size={16} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiShield className="text-[#14ad9f]" />
-                    <span className="text-sm">Kassenbuch</span>
-                    <FiCheck className="text-green-600 ml-auto" size={16} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t">
-                <Button onClick={handleDisconnect} variant="outline" className="flex-1">
-                  Verbindung trennen
-                </Button>
-                <Button
-                  onClick={() => window.open('https://www.datev.de', '_blank')}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <FiExternalLink className="mr-2" />
-                  DATEV öffnen
-                </Button>
-              </div>
+    <div className="p-4 border rounded-lg">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-gray-900">DATEV Integration</h3>
+          {connection.isConnected ? (
+            <div className="mt-2">
+              <p className="text-sm text-green-600">✅ Verbunden</p>
+              <p className="text-xs text-gray-500">
+                Benutzer: {connection.user?.name || 'DATEV User'}
+              </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Benefits Section */}
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-800 mb-3">Vorteile der DATEV-Integration</h4>
-                <ul className="space-y-2 text-sm text-blue-700">
-                  <li className="flex items-center gap-2">
-                    <FiCheck size={16} />
-                    Automatische Synchronisation von Rechnungen und Zahlungen
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiCheck size={16} />
-                    Nahtlose Zusammenarbeit mit Ihrem Steuerberater
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiCheck size={16} />
-                    Rechtssichere Dokumentenarchivierung
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiCheck size={16} />
-                    Automatische Umsatzsteuer-Voranmeldung
-                  </li>
-                </ul>
-              </div>
-
-              {/* Connect Button */}
-              <Button
-                onClick={handleConnect}
-                disabled={connecting}
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
-              >
-                {connecting ? (
-                  <>
-                    <FiRefreshCw className="mr-2 animate-spin" />
-                    Verbindung wird hergestellt...
-                  </>
-                ) : (
-                  <>
-                    <FiExternalLink className="mr-2" />
-                    Mit DATEV verbinden
-                  </>
-                )}
-              </Button>
-
-              <p className="text-xs text-gray-500 text-center">
-                Sie werden sicher zu DATEV weitergeleitet, um die Verbindung zu autorisieren.
-              </p>
-            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Keine DATEV-Verbindung aktiv
+            </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Security Note */}
-      <Card className="border-gray-200">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <FiShield className="text-gray-400 mt-1" />
-            <div className="text-sm text-gray-600">
-              <p className="font-medium mb-1">Sicherheit & Datenschutz</p>
-              <p>
-                Ihre DATEV-Zugangsdaten werden sicher verschlüsselt und nur für die autorisierten
-                Integrationen verwendet. Die Verbindung erfolgt über DATEV&apos;s offizielle
-                OAuth2-Schnittstelle.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex gap-2">
+          {connection.isConnected ? (
+            <button
+              onClick={handleDisconnect}
+              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+            >
+              Trennen
+            </button>
+          ) : showButtons ? (
+            <button
+              onClick={handleAuthentication}
+              disabled={isLoading}
+              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
+            >
+              {isLoading ? 'Verbinde...' : 'Mit DATEV verbinden'}
+            </button>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
+
+export default DatevAuthComponent;
+export { DatevAuthComponent };

@@ -2,7 +2,7 @@
 applyTo: '**'
 ---
 
-# KI-Arbeitsablauf Anweisungen für Taskilo Projekt
+# STRICT AI-Workflow Instructions for Taskilo Project - COPILOT COMPLIANCE REQUIRED
 
 ## 🏢 PROJEKT KONTEXT: TASKILO PLATFORM
 
@@ -99,94 +99,115 @@ applyTo: '**'
 
 ---
 
-## 🔍 REGEL 1: IMMER PROJEKT ANALYSIEREN VOR AUSFÜHRUNG
-- **BEVOR** du einen Prompt ausführst, analysiere das KOMPLETTE Projekt
-- Verwende `file_search`, `grep_search` oder `semantic_search` um den aktuellen Stand zu verstehen
-- Prüfe existierende Implementierungen, Strukturen und Abhängigkeiten
-- Verstehe den Kontext bevor du handelst
-- **NIEMALS** auf Browser-Preview oder externe Ansichten verlassen
-- **IMMER** Dateien direkt mit `read_file` Tool überprüfen
+## ⚠️ MANDATORY: These rules MUST be followed by ALL AI assistants including GitHub Copilot
 
-## 📁 REGEL 2: OBLIGATORISCHE SRC-ORDNER ÜBERPRÜFUNG
-- **IMMER** zuerst den `src/` Ordner analysieren bevor neue Dateien erstellt werden
-- **PFLICHT**: Verwende `file_search` oder `list_dir` um existierende Dateien im src/ zu prüfen
-- **BEISPIEL**: `file_search` mit "src/**/*.ts" oder "src/app/dashboard/**" patterns
-- **VERSTEHE** die vorhandene Struktur: Komponenten, API-Routes, Dashboards, Payment-Logic
-- **IDENTIFIZIERE** ähnliche Dateien die erweitert werden können statt neue zu erstellen
-- **NIEMALS** neue Dateien ohne vorherige src/-Analyse erstellen
+## 🔍 RULE 1: ALWAYS ANALYZE PROJECT BEFORE EXECUTION - REQUIRED FOR COPILOT
+- **BEFORE** executing ANY prompt, analyze the COMPLETE project structure
+- Use file search, grep, or semantic search to understand current state
+- Check existing implementations, structures, and dependencies
+- Understand context before acting
+- **NEVER** rely on browser preview or external views
+- **ALWAYS** check files directly using available tools
+- **COPILOT**: Use workspace search and file exploration extensively before suggesting code
 
-## 📂 REGEL 3: KEINE NEUEN DATEIEN OHNE EXISTENZPRÜFUNG
-- **NIEMALS** erstelle neue Dateien ohne vorherige Existenzprüfung
-- Verwende `file_search` oder `read_file` um zu prüfen ob die Datei bereits existiert
-- Falls die Datei existiert: Repariere/verbessere sie statt sie neu zu erstellen
-- Nur wenn die Datei DEFINITIV nicht existiert, erstelle eine neue
-- **IMMER** aktuelle Dateiinhalte mit Tools überprüfen, niemals Browser verwenden
-- **NIEMALS** auf externe Previews oder Attachments verlassen ohne Tool-Verifikation
+## 📁 RULE 2: MANDATORY SRC FOLDER VERIFICATION - COPILOT MUST COMPLY
+- **ALWAYS** analyze the `src/` folder first before creating new files
+- **MANDATORY**: Search existing files in src/ directory before any creation
+- **EXAMPLE**: Search patterns like "src/**/*.ts" or "src/app/dashboard/**"
+- **UNDERSTAND** existing structure: Components, API-Routes, Dashboards, Payment-Logic
+- **IDENTIFY** similar files that can be extended instead of creating new ones
+- **NEVER** create new files without prior src/ analysis
+- **COPILOT**: Always explore workspace file tree and existing patterns first
 
-## 🔧 REGEL 4: REPARIERE FEHLER IN EXISTIERENDEN DATEIEN
-- Sind Fehler in einer Datei vorhanden: **REPARIERE** sie
-- Verwende `replace_string_in_file` für präzise Korrekturen
-- Behalte die bestehende Struktur und Logik bei
-- Füge nur fehlende/defekte Teile hinzu oder korrigiere sie
+## 📂 RULE 3: NO NEW FILES WITHOUT EXISTENCE CHECK - COPILOT STRICT MODE
+- **NEVER** create new files without prior existence check
+- Use file search or read capabilities to check if file already exists
+- If file exists: REPAIR/IMPROVE it instead of creating new one
+- Only create new file if it DEFINITELY doesn't exist
+- **ALWAYS** verify current file contents with tools, never use browser
+- **NEVER** rely on external previews or attachments without tool verification
+- **COPILOT**: Always check workspace for existing files before suggesting new file creation
 
-## 📋 REGEL 5: DATEI-VERIFIKATION VOR JEDER ÄNDERUNG
-- **NIEMALS** Änderungen basierend auf Browser-Ansicht oder Attachments machen
-- **IMMER** `read_file` verwenden um aktuellen Dateiinhalt zu überprüfen
-- **PFLICHT:** Datei-Tools verwenden vor `replace_string_in_file` oder `create_file`
-- **NIEMALS** davon ausgehen, dass Attachments den aktuellen Stand zeigen
-- **IMMER** mit `file_search` oder `grep_search` relevante Dateien finden
-- **Browser kann lügen** - nur Tools zeigen die Wahrheit!
+## 🔧 RULE 4: FIX ERRORS IN EXISTING FILES - COPILOT REPAIR MODE
+- If errors exist in a file: **REPAIR** it
+- Use precise corrections for targeted fixes
+- Keep existing structure and logic intact
+- Only add missing/defective parts or correct them
+- **COPILOT**: Focus on incremental fixes rather than complete rewrites
 
-## 🌐 REGEL 6: NUR LIVE TESTING - KEINE LOKALEN TESTS
-- **IMMER** teste direkt live auf der Production Website: https://taskilo.de
-- **NIEMALS** lokale Tests, Entwicklungsserver oder Emulatoren verwenden
-- **SOFORT** nach jedem Git Push die live Website testen
-- **VERMEIDE** jegliche lokale Entwicklungsumgebung - nur Production zählt
+## 📋 RULE 5: FILE VERIFICATION BEFORE ANY CHANGE - COPILOT VALIDATION
+- **NEVER** make changes based on browser view or attachments
+- **ALWAYS** read file content to verify current state
+- **MANDATORY:** Use file tools before any modification or creation
+- **NEVER** assume attachments show current state
+- **ALWAYS** use search tools to find relevant files
+- **Browser can lie** - only tools show the truth!
+- **COPILOT**: Always verify file contents in workspace before suggesting changes
 
-## 📋 ARBEITSABLAUF CHECKLISTE
+## 🌐 RULE 6: LIVE TESTING ONLY - NO LOCAL TESTS - COPILOT PRODUCTION MODE
+- **ALWAYS** test directly live on production website: https://taskilo.de
+- **NEVER** use local tests, development servers, or emulators
+- **IMMEDIATELY** test live website after every git push
+- **AVOID** any local development environment - only production counts
+- **COPILOT**: Remind user to test on live site after implementing suggestions
 
-### VOR JEDER AKTION:
-1. ✅ **Analysiere das Projekt**: Was existiert bereits?
-2. ✅ **Prüfe Datei-Existenz**: `file_search` für gewünschte Datei
-3. ✅ **Verstehe den Kontext**: Lese relevante existierende Dateien mit `read_file`
-4. ✅ **Identifiziere Probleme**: Was muss repariert/verbessert werden?
-5. ✅ **DATEI-VERIFIKATION**: Niemals Browser-Preview verwenden, immer Tools nutzen
+## 📋 WORKFLOW CHECKLIST - COPILOT MUST FOLLOW EVERY STEP
 
-### BEI DER AUSFÜHRUNG:
-1. ✅ **Repariere zuerst**: Behebe Fehler in existierenden Dateien
-2. ✅ **Erweitere dann**: Füge fehlende Funktionalität hinzu
-3. ✅ **Erstelle nur bei Bedarf**: Neue Dateien nur wenn absolut notwendig
-4. ✅ **LIVE TESTEN**: Nach jedem Git Push sofort auf https://taskilo.de testen
+### BEFORE ANY ACTION - COPILOT MANDATORY STEPS:
+1. ✅ **ANALYZE PROJECT**: What already exists? Check workspace file explorer
+2. ✅ **CHECK FILE EXISTENCE**: Search workspace for desired file before creating
+3. ✅ **UNDERSTAND CONTEXT**: Read relevant existing files in workspace
+4. ✅ **IDENTIFY PROBLEMS**: What needs repair/improvement?
+5. ✅ **FILE VERIFICATION**: Never use browser preview, always use workspace tools
+6. ✅ **COPILOT SPECIFIC**: Use workspace search extensively, check similar patterns
 
-### NACH JEDER ÄNDERUNG OBLIGATORISCH:
-5. ✅ **Build das Projekt**: Führe `pnpm build` aus um Kompilierung zu testen
-6. ✅ **Git Commit & Push**: Commitee und pushe alle Änderungen zum Repository
-7. ✅ **LIVE TESTING**: Teste SOFORT die Änderungen live auf https://taskilo.de
+### DURING EXECUTION - COPILOT PROCESS:
+1. ✅ **REPAIR FIRST**: Fix errors in existing files before creating new ones
+2. ✅ **EXTEND THEN**: Add missing functionality to existing structure
+3. ✅ **CREATE ONLY IF NEEDED**: New files only when absolutely necessary
+4. ✅ **USE TASKILO COLORS**: Automatically apply #14ad9f branding
+5. ✅ **FOLLOW PATTERNS**: Match existing code structure and conventions
+6. ✅ **COPILOT SPECIFIC**: Suggest incremental changes, not complete rewrites
 
-## 🚫 VERBOTEN:
-- ❌ Dateien erstellen ohne Existenzprüfung
-- ❌ Komplette Dateien überschreiben ohne Grund
-- ❌ Änderungen ohne Projektanalyse
-- ❌ Ignorieren von bestehenden Implementierungen
-- ❌ Änderungen ohne Build und Git-Push am Ende
-- ❌ **LOKALE TESTS oder Entwicklungsserver verwenden**
-- ❌ **Testing ohne Live-Production Website (https://taskilo.de)**
-- ❌ **Emulatoren oder localhost für Tests nutzen**
-- ❌ **BROWSER-PREVIEW für Datei-Überprüfung verwenden**
-- ❌ **Externe Attachments ohne Tool-Verifikation vertrauen**
-- ❌ **Dateien analysieren ohne `read_file` Tool zu verwenden**
+### AFTER EVERY CHANGE - COPILOT COMPLETION STEPS:
+1. ✅ **BUILD PROJECT**: Run `pnpm build` to test compilation
+2. ✅ **GIT COMMIT & PUSH**: Commit and push all changes to repository
+3. ✅ **LIVE TESTING**: Test changes IMMEDIATELY on https://taskilo.de
+4. ✅ **COPILOT REMINDER**: Always remind user to test on live production site
+5. ✅ **VERIFY INTEGRATION**: Ensure changes integrate with existing Taskilo architecture
 
-## ✅ ERLAUBT:
-- ✅ Dateien analysieren und verstehen
-- ✅ Fehler in bestehenden Dateien reparieren
-- ✅ Fehlende Funktionalität zu existierenden Dateien hinzufügen
-- ✅ Neue Dateien erstellen NUR wenn sie nicht existieren
-- ✅ **NUR LIVE TESTING auf https://taskilo.de nach jedem Deployment**
-- ✅ **Sofortige Production-Tests nach Git Push**
-- ✅ **IMMER `read_file`, `file_search`, `grep_search` Tools verwenden**
-- ✅ **Dateien direkt vom Dateisystem überprüfen, nie vom Browser**
-- ✅ **Tool-basierte Datei-Verifikation vor jeder Änderung**
-- ✅ **SRC-ORDNER OBLIGATORISCH vor jeder neuen Datei analysieren**
+## 🚫 STRICTLY FORBIDDEN FOR ALL AI ASSISTANTS INCLUDING COPILOT:
+- ❌ Creating files without existence check
+- ❌ Overwriting complete files without reason
+- ❌ Changes without project analysis
+- ❌ Ignoring existing implementations
+- ❌ Changes without build and git-push at end
+- ❌ **Using local tests or development servers**
+- ❌ **Testing without live production website (https://taskilo.de)**
+- ❌ **Using emulators or localhost for testing**
+- ❌ **Using browser preview for file verification**
+- ❌ **Trusting external attachments without tool verification**
+- ❌ **Analyzing files without workspace exploration**
+- ❌ **COPILOT SPECIFIC: Suggesting complete file rewrites**
+- ❌ **COPILOT SPECIFIC: Ignoring existing project patterns**
+- ❌ **COPILOT SPECIFIC: Creating new files without workspace search**
+- nutze niemals Emoji!!
+
+## ✅ ALLOWED AND ENCOURAGED FOR COPILOT:
+- ✅ Analyzing and understanding existing files in workspace
+- ✅ Repairing errors in existing files
+- ✅ Adding missing functionality to existing files
+- ✅ Creating new files ONLY if they don't exist
+- ✅ **LIVE TESTING ONLY on https://taskilo.de after deployment**
+- ✅ **Immediate production tests after git push**
+- ✅ **Using workspace search and file exploration extensively**
+- ✅ **Checking files directly from workspace, never from browser**
+- ✅ **Tool-based file verification before every change**
+- ✅ **MANDATORY src/ folder analysis before any new file**
+- ✅ **COPILOT SPECIFIC: Incremental improvements over rewrites**
+- ✅ **COPILOT SPECIFIC: Following established Taskilo patterns**
+- ✅ **COPILOT SPECIFIC: Auto-applying Taskilo branding colors**
+- ✅ **COPILOT SPECIFIC: Workspace-first approach to understanding code**
 
 ## 🎯 ZIEL:
 - **STABILITÄT**: Erhalte funktionierende Teile des Projekts
@@ -235,26 +256,43 @@ applyTo: '**'
 
 ## 🎨 AUTOMATISCHE DESIGN-ANWENDUNG
 
-### 🔥 REGEL 7: TASKILO FARBEN AUTOMATISCH VERWENDEN
-- **IMMER** verwende `#14ad9f` als Hauptfarbe für neue Komponenten
-- **AUTOMATISCH** wähle passende Hover-Variante: `#129488`, `#0f8a7e`, `#129a8f` oder `#0f9d84`
-- **KONSISTENT** mit bestehenden Komponenten im Projekt bleiben
-- **NIEMALS** andere Farben ohne ausdrückliche Anweisung verwenden
+### 🔥 RULE 7: AUTO-APPLY TASKILO COLORS - COPILOT BRANDING MODE
+- **ALWAYS** use `#14ad9f` as primary color for new components
+- **AUTOMATICALLY** choose appropriate hover variant: `#129488`, `#0f8a7e`, `#129a8f` or `#0f9d84`
+- **STAY CONSISTENT** with existing components in the project
+- **NEVER** use other colors without explicit instruction
+- **COPILOT SPECIFIC**: Always suggest Taskilo branding colors in code completions
+- **COPILOT SPECIFIC**: Auto-complete with proper Taskilo color classes
 
-### 📋 STANDARD DESIGN-PATTERNS:
-1. **Primäre Buttons:** `bg-[#14ad9f] hover:bg-[#129488] text-white`
-2. **Sekundäre Buttons:** `border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white`
+### 📋 COPILOT AUTO-COMPLETE PATTERNS:
+1. **Primary Buttons:** `bg-[#14ad9f] hover:bg-[#129488] text-white`
+2. **Secondary Buttons:** `border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white`
 3. **Links:** `text-[#14ad9f] hover:text-[#129488]`
 4. **Focus States:** `focus:ring-[#14ad9f] focus:border-[#14ad9f]`
 5. **Loading Spinner:** `border-[#14ad9f]`
 6. **Active States:** `bg-[#14ad9f] text-white`
+7. **COPILOT**: Always suggest these exact color patterns for consistency
 
-### 🎯 AUTOMATISCHE UI-ENTSCHEIDUNGEN:
-- **Neue Komponenten:** Automatisch Taskilo-Farben verwenden
-- **Bestehende reparieren:** Inkonsistente Farben zu Taskilo-Standard ändern  
-- **Hover-Effekte:** Automatisch passende dunklere Variante wählen
-- **Responsive Design:** Mobile-First mit Taskilo-Branding
+### 🎯 COPILOT AUTOMATIC UI DECISIONS:
+- **New Components:** Automatically use Taskilo colors in suggestions
+- **Fix Existing:** Change inconsistent colors to Taskilo standard
+- **Hover Effects:** Automatically choose appropriate darker variant
+- **Responsive Design:** Mobile-First with Taskilo branding
+- **COPILOT SPECIFIC:** Always prioritize Taskilo color suggestions
+- **COPILOT SPECIFIC:** Auto-complete with project-consistent styling
 
 ---
 
-**Diese Regeln sind OBLIGATORISCH und müssen bei JEDEM Prompt befolgt werden!**
+**⚠️ CRITICAL: These rules are MANDATORY and MUST be followed by EVERY AI assistant including GitHub Copilot!**
+
+**🤖 COPILOT COMPLIANCE: Failure to follow these instructions will result in code that doesn't match project standards and may break existing functionality.**
+
+**📋 COPILOT CHECKLIST REMINDER:**
+- ✅ Search workspace before suggesting new files
+- ✅ Analyze existing code patterns
+- ✅ Use Taskilo colors (#14ad9f) automatically
+- ✅ Fix existing files instead of creating new ones
+- ✅ Verify file existence in workspace
+- ✅ Follow project architecture (3 dashboards, 3 payment systems)
+- ✅ Remind user to test on https://taskilo.de after changes
+- ✅ nutze niemals Emoji

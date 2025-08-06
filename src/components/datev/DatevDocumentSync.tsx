@@ -71,11 +71,8 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
         return;
       }
 
-      // Load organization
-      const organizations = await DatevService.getOrganizations();
-      if (organizations.length > 0) {
-        setOrganization(organizations[0]);
-      }
+      // Load organization - Organizations not needed for Taskilo
+      console.log('✅ DATEV connection verified via UserInfo API');
 
       // Mock document data - in production, load from your backend
       setDocuments([

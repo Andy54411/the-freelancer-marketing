@@ -1,7 +1,6 @@
 // Saubere Admin Newsletter API mit Resend und Firestore
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
 
 // Resend-Client lazy initialisieren - NUR zur Runtime mit dynamic import
 async function getResendClient() {
@@ -14,7 +13,7 @@ async function getResendClient() {
 }
 
 // Admin-Authentifizierung prüfen
-async function verifyAdminAuth(request: NextRequest) {
+async function verifyAdminAuth(_request: NextRequest) {
   try {
     // TEMPORÄR: Da wir noch kein vollständiges Admin-Auth-System haben,
     // verwenden wir einen einfachen API-Key-Check über Headers oder Environment
@@ -85,7 +84,7 @@ export async function GET(request: NextRequest) {
         console.error('❌ Newsletter API: Error Details:', {
           name: error instanceof Error ? error.name : 'Unknown',
           message: error instanceof Error ? error.message : String(error),
-          code: (error as any)?.code,
+          code: error && typeof error === 'object' && 'code' in error ? (error as { code: unknown }).code : undefined,
           stack: error instanceof Error ? error.stack : 'No stack',
         });
         return NextResponse.json({
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest) {
           error: `Fehler beim Laden der Abonnenten: ${error instanceof Error ? error.message : String(error)}`,
           debug: {
             errorType: error instanceof Error ? error.constructor.name : typeof error,
-            errorCode: (error as any)?.code || 'no-code',
+            errorCode: error && typeof error === 'object' && 'code' in error ? (error as { code: string }).code : 'no-code',
           },
         });
       }

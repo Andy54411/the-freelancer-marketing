@@ -24,7 +24,27 @@ export async function GET(req: NextRequest) {
     const transferId = searchParams.get('transferId') || 'yYE0eWLf'; // Default zu Ihrem Transfer
     const action = searchParams.get('action'); // 'analyze', 'fix', 'retry'
 
-    const debugInfo: any = {
+    const debugInfo: {
+      transferId: string;
+      action: string | null;
+      analysis: {
+        failedTransfer?: any;
+        connectAccount?: any;
+        transferAnalysis?: any;
+        platformBalance?: {
+          available: any;
+          pending: any;
+          total_available_eur: number;
+        };
+        order?: any;
+        connectAccountError?: string;
+        platformBalanceError?: string;
+        orderError?: string;
+      };
+      solutions: Array<Record<string, unknown>>;
+      timestamp: string;
+      actionTaken?: Record<string, unknown>;
+    } = {
       transferId,
       action,
       analysis: {},
@@ -89,8 +109,8 @@ export async function GET(req: NextRequest) {
             canTransfer: availableEurCents >= transferAmountCents,
             deficit: Math.max(0, transferAmountCents - availableEurCents),
           };
-        } catch (accountError: any) {
-          debugInfo.analysis.connectAccountError = accountError.message;
+        } catch (accountError: unknown) {
+          debugInfo.analysis.connectAccountError = accountError instanceof Error ? accountError.message : String(accountError);
         }
       }
 
@@ -104,8 +124,8 @@ export async function GET(req: NextRequest) {
             .filter(bal => bal.currency === 'eur')
             .reduce((sum, bal) => sum + bal.amount, 0),
         };
-      } catch (balanceError: any) {
-        debugInfo.analysis.platformBalanceError = balanceError.message;
+      } catch (balanceError: unknown) {
+        debugInfo.analysis.platformBalanceError = balanceError instanceof Error ? balanceError.message : String(balanceError);
       }
 
       // 1.5 Order Information
@@ -123,8 +143,8 @@ export async function GET(req: NextRequest) {
               currency: orderData.currency,
             };
           }
-        } catch (orderError: any) {
-          debugInfo.analysis.orderError = orderError.message;
+        } catch (orderError: unknown) {
+          debugInfo.analysis.orderError = orderError instanceof Error ? orderError.message : String(orderError);
         }
       }
 
@@ -229,7 +249,20 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, transferId = 'yYE0eWLf', ...params } = body;
 
-    let result: any = {
+    let result: {
+      action: string;
+      transferId: string;
+      success: boolean;
+      timestamp: string;
+      newTransferId?: string;
+      message?: string;
+      error?: string;
+      testCard?: string;
+      requiredAmount?: number;
+      connectAccount?: string;
+      note?: string;
+      availableActions?: string[];
+    } = {
       action,
       transferId,
       success: false,
@@ -274,10 +307,10 @@ export async function POST(req: NextRequest) {
               newTransferId: newTransfer.id,
               message: 'Transfer successfully retried',
             };
-          } catch (retryError: any) {
+          } catch (retryError: unknown) {
             result = {
               ...result,
-              error: retryError.message,
+              error: retryError instanceof Error ? retryError.message : String(retryError),
               message: 'Transfer retry failed',
             };
           }
@@ -299,10 +332,10 @@ export async function POST(req: NextRequest) {
             connectAccount: connectAccountId,
             note: 'Use Stripe Dashboard or test environment for actual test payments',
           };
-        } catch (testError: any) {
+        } catch (testError: unknown) {
           result = {
             ...result,
-            error: testError.message,
+            error: testError instanceof Error ? testError.message : String(testError),
           };
         }
         break;

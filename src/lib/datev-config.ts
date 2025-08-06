@@ -54,7 +54,7 @@ export const DATEV_SANDBOX_CONFIG = {
     token: 'https://sandbox-api.datev.de/token',  // Verified: Token-Endpoint ist unter sandbox-api.datev.de
     userinfo: 'https://sandbox-api.datev.de/userinfo',
     revocation: 'https://sandbox-api.datev.de/revoke',
-    apiBase: 'https://sandbox-api.datev.de/platform-sandbox',
+    apiBase: 'https://sandbox-api.datev.de',  // KORRIGIERT: Ohne /platform-sandbox suffix
   },
 } as const;
 
@@ -227,7 +227,6 @@ export function generateDatevAuthUrl(companyId?: string): {
 export const DATEV_ENDPOINTS = {
   // OpenID Connect & User Management
   userInfo: '/userinfo',
-  organizations: '/platform/v1/organizations',
   clients: '/platform/v1/clients', // For client permission verification
 
   // Rechnungsdatenservice 1.0 (use client 455148-1 for full permissions)

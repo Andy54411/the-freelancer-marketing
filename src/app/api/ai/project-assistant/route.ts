@@ -3,17 +3,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getFirestore,
-  doc,
   collection,
   addDoc,
-  updateDoc,
-  getDoc,
   query,
   where,
   getDocs,
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { db } from '@/firebase/clients';
 
 interface ProjectAssistantRequest {
@@ -63,7 +58,15 @@ class TaskiloAIAssistant {
     nextStep?: string;
     suggestions?: string[];
     orderData?: Partial<OrderData>;
-    providerMatches?: any[];
+    providerMatches?: Array<{
+      id: string;
+      name: string;
+      rating: number;
+      price: number;
+      distance: number;
+      experience: string;
+      availability: string;
+    }>;
   }> {
     const { message, currentStep, orderData = {}, userId } = request;
 
@@ -275,7 +278,7 @@ Ich analysiere Bewertungen, Verfügbarkeit und Preise!`,
 
 ${providers
   .map(
-    (provider, index) => `
+    (provider, _index) => `
 ⭐ **${provider.name}** (${provider.rating}/5)
 💰 Ab ${provider.price}€ | 📍 ${provider.distance}km entfernt
 ✅ ${provider.experience} | 📅 ${provider.availability}
@@ -430,7 +433,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
     return cityProviders[city.toLowerCase()] || 15;
   }
 
-  private static estimateBudget(category?: string, description?: string) {
+  private static estimateBudget(category?: string, _description?: string) {
     const baseBudgets: Record<string, { min: number; mid: number; max: number }> = {
       handwerk: { min: 150, mid: 400, max: 800 },
       reinigung: { min: 50, mid: 120, max: 250 },
@@ -458,7 +461,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
     }
   }
 
-  private static async findMatchingProviders(orderData: Partial<OrderData>) {
+  private static async findMatchingProviders(_orderData: Partial<OrderData>) {
     // Mock-Dienstleister Matching
     return [
       {

@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err: any) {
-    console.error('[B2B Webhook] Webhook-Signatur-Verifizierung fehlgeschlagen:', err.message);
+  } catch (err: unknown) {
+    console.error('[B2B Webhook] Webhook-Signatur-Verifizierung fehlgeschlagen:', err instanceof Error ? err.message : 'Unknown error');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[B2B Webhook] Error processing webhook:', error);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
@@ -77,8 +77,8 @@ async function handleB2BPaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     customerFirebaseId,
     providerFirebaseId,
     grossAmount,
-    platformFeeAmount,
-    providerAmount,
+    platformFeeAmount: _platformFeeAmount,
+    providerAmount: _providerAmount,
   } = metadata;
 
   try {
@@ -104,7 +104,11 @@ async function handleB2BPaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
         // Update milestones if applicable
         let updatedMilestones = project.milestones || [];
         if (milestoneId) {
-          updatedMilestones = updatedMilestones.map((milestone: any) =>
+          updatedMilestones = updatedMilestones.map((milestone: {
+            id: string;
+            status: string;
+            [key: string]: unknown;
+          }) =>
             milestone.id === milestoneId
               ? {
                   ...milestone,
@@ -144,7 +148,7 @@ async function handleB2BPaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     console.log('[B2B Webhook] B2B payment confirmation sent to customer:', customerFirebaseId);
 
     console.log('[B2B Webhook] B2B payment processing completed successfully');
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[B2B Webhook] Error processing B2B payment success:', error);
     throw error;
   }
@@ -172,7 +176,7 @@ async function handleB2BPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     console.log('[B2B Webhook] B2B payment failure notification sent');
 
     console.log('[B2B Webhook] B2B payment failure processing completed');
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[B2B Webhook] Error processing B2B payment failure:', error);
     throw error;
   }
@@ -196,7 +200,7 @@ async function handleB2BTransferCreated(transfer: Stripe.Transfer) {
     await updateDoc(doc(db, 'b2b_transfers', transfer.id), transferData);
 
     console.log('[B2B Webhook] B2B transfer logged successfully');
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[B2B Webhook] Error logging B2B transfer:', error);
     throw error;
   }
@@ -207,7 +211,7 @@ async function handleB2BAccountUpdated(account: Stripe.Account) {
 
   try {
     // Update provider account status in our database
-    const accountUpdate = {
+    const _accountUpdate = {
       stripeAccountId: account.id,
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
@@ -220,7 +224,7 @@ async function handleB2BAccountUpdated(account: Stripe.Account) {
     // Note: This is a simplified approach - in production, you'd want to maintain
     // a mapping between Stripe accounts and Firebase user IDs
     console.log('[B2B Webhook] B2B account status updated for:', account.id);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[B2B Webhook] Error updating B2B account status:', error);
     throw error;
   }

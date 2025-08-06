@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
           endpoints: {
             'OAuth & User': {
               userInfo: `${config.baseUrl}/userinfo`,
-              organizations: `${config.baseUrl}/platform/v1/organizations`,
+              userinfo: `${config.baseUrl}/platform/v1/userinfo`,
             },
             'Accounting APIs': {
               clients: `${config.baseUrl}/accounting/v1/clients`,
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
 
         // Test a simple API call
         try {
-          const response = await fetch(`${config.baseUrl}/platform/v1/organizations`, {
+          const response = await fetch(`${config.baseUrl}/platform/v1/userinfo`, {
             headers: {
               Authorization: `Bearer ${testToken}`,
               Accept: 'application/json',
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
             status: response.status,
             message: response.ok ? 'API test successful' : 'API test failed',
             data,
-            endpoint: 'organizations',
+            endpoint: 'userinfo',
           });
         } catch (error) {
           return NextResponse.json(

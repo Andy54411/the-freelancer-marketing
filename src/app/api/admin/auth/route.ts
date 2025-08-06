@@ -105,7 +105,7 @@ async function validateSessionToken(token: string) {
       iat?: number;
       exp?: number;
     };
-  } catch (error) {
+  } catch (_error) {
     return null; // Invalid or expired token
   }
 }
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/admin/auth - Verify session
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get('taskilo_admin_session')?.value;
