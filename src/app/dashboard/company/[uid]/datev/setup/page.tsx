@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,14 +11,8 @@ interface DatevSetupPageProps {
   }>;
 }
 
-export default function DatevSetupPage({ params }: DatevSetupPageProps) {
-  const [uid, setUid] = React.useState<string>('');
-
-  React.useEffect(() => {
-    params.then(resolvedParams => {
-      setUid(resolvedParams.uid);
-    });
-  }, [params]);
+export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
+  const { uid } = await params;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -88,12 +80,7 @@ export default function DatevSetupPage({ params }: DatevSetupPageProps) {
         <CardContent className="space-y-6">
           {/* Connection Component */}
           {uid ? (
-            <DatevAuthComponent
-              companyId={uid}
-              onAuthSuccess={organization => {
-                // TODO: Redirect to overview page
-              }}
-            />
+            <DatevAuthComponent companyId={uid} />
           ) : (
             <div className="flex items-center justify-center py-8">
               <div className="text-center space-y-2">
@@ -108,9 +95,10 @@ export default function DatevSetupPage({ params }: DatevSetupPageProps) {
             <FiShield className="h-4 w-4" />
             <AlertDescription>
               <strong>Sicherheit & Datenschutz:</strong> Ihre DATEV-Zugangsdaten werden
-              verschlüsselt und ausschließlich in Deutschland gespeichert. Die Verbindung erfolgt über 
-              DATEVs offizielle OAuth2-Schnittstelle - Ihre Passwörter werden niemals von Taskilo gespeichert.
-              Alle Daten unterliegen der DSGVO und werden gemäß unserem Auftragsverarbeitungsvertrag behandelt.
+              verschlüsselt und ausschließlich in Deutschland gespeichert. Die Verbindung erfolgt
+              über DATEVs offizielle OAuth2-Schnittstelle - Ihre Passwörter werden niemals von
+              Taskilo gespeichert. Alle Daten unterliegen der DSGVO und werden gemäß unserem
+              Auftragsverarbeitungsvertrag behandelt.
             </AlertDescription>
           </Alert>
         </CardContent>

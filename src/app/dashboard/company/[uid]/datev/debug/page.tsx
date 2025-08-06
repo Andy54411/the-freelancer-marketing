@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,14 +12,8 @@ interface DatevDebugPageProps {
   }>;
 }
 
-export default function DatevDebugPage({ params }: DatevDebugPageProps) {
-  const [uid, setUid] = React.useState<string>('');
-
-  React.useEffect(() => {
-    params.then(resolvedParams => {
-      setUid(resolvedParams.uid);
-    });
-  }, [params]);
+export default async function DatevDebugPage({ params }: DatevDebugPageProps) {
+  const { uid } = await params;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">

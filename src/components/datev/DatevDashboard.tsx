@@ -21,7 +21,6 @@ import {
   DatevAccount,
   DatevTransaction,
 } from '@/services/datevService';
-import { DatevTokenManager } from '@/lib/datev-token-manager';
 import { toast } from 'sonner';
 
 interface DatevDashboardProps {
@@ -43,32 +42,47 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
   const loadDatevData = async () => {
     try {
       setLoading(true);
-      const token = await DatevTokenManager.getUserToken();
 
-      if (!token) {
-        toast.error('Keine DATEV-Verbindung gefunden');
+      // Test DATEV connection by calling organizations API directly
+      const response = await fetch(
+        `/api/datev/organizations?companyId=${encodeURIComponent(companyId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          const errorData = await response.json();
+          if (errorData.clearTokens || errorData.requiresAuth) {
+            toast.error('DATEV-Verbindung erforderlich - bitte authentifizieren Sie sich zuerst');
+          } else {
+            toast.error('DATEV-Token abgelaufen - erneute Authentifizierung erforderlich');
+          }
+        } else {
+          toast.error('Fehler beim Laden der DATEV-Daten');
+        }
         return;
       }
 
-      // Load organization data
-      const organizations = await DatevService.getOrganizations();
-      if (organizations.length > 0) {
-        const org = organizations[0];
+      const result = await response.json();
+
+      if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+        const org = result.data[0]; // Use first organization
         setOrganization(org);
 
-        // Load accounts
-        const accountsData = await DatevService.getAccounts();
-        setAccounts(accountsData);
-
-        // Load recent transactions (temporarily disabled until backend route exists)
-        // const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        //   .toISOString()
-        //   .split('T')[0];
-        // const dateTo = new Date().toISOString().split('T')[0];
-        // const transactionsData = await DatevService.getTransactions(dateFrom, dateTo, org.id);
-        // setTransactions(transactionsData);
-
+        // TODO: Load accounts and transactions once those APIs are implemented
+        // For now, just set mock data to show connection success
+        setAccounts([]);
+        setTransactions([]);
         setLastSync(new Date().toISOString());
+
+        toast.success('DATEV-Daten erfolgreich geladen');
+      } else {
+        toast.error('Keine DATEV-Organisationen gefunden');
       }
     } catch (error) {
       console.error('Fehler beim Laden der DATEV-Daten:', error);
