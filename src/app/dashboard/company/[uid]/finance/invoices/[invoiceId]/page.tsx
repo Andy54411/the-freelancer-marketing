@@ -359,14 +359,14 @@ export default function InvoiceDetailPage() {
               </>
             )}
 
-            {invoice.status === 'finalized' && (
+            {(invoice.status === 'finalized' || invoice.status === 'sent') && (
               <Button
                 variant="outline"
                 className="border-blue-500 text-blue-600 hover:bg-blue-50"
                 onClick={() => setSendDialogOpen(true)}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Senden
+                {invoice.status === 'sent' ? 'Erneut senden' : 'Senden'}
               </Button>
             )}
 

@@ -114,7 +114,7 @@ ${companyName}`);
             </Label>
             <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
               <div className="font-medium">{companyName}</div>
-              <div>noreply@taskilo.de</div>
+              <div>Ihre persönliche E-Mail-Adresse</div>
             </div>
           </div>
 

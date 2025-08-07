@@ -6,6 +6,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
+    // Prüfe Resend API Key
+    if (!process.env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY nicht gefunden');
+      return NextResponse.json(
+        {
+          error: 'E-Mail-Service nicht konfiguriert - API Key fehlt',
+        },
+        { status: 500 }
+      );
+    }
+
     const { invoiceId, recipientEmail, recipientName, subject, message, senderName } =
       await request.json();
 
@@ -30,31 +41,118 @@ export async function POST(request: NextRequest) {
 
     const invoice = { id: invoiceDoc.id, ...invoiceDoc.data() } as any; // Typisierung für Firestore-Daten
 
-    // PDF generieren
-    console.log('🔄 Generiere PDF für E-Mail-Anhang...');
-    const pdfResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/api/generate-invoice-pdf`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ invoiceId }),
-      }
-    );
+    console.log('📋 Rechnung geladen:', {
+      id: invoice.id,
+      companyId: invoice.companyId,
+      createdBy: invoice.createdBy,
+      senderName: senderName,
+    });
 
-    if (!pdfResponse.ok) {
-      throw new Error('PDF-Generierung fehlgeschlagen');
+    // Benutzer-E-Mail-Adresse aus Firestore laden
+    console.log('🔄 Lade Benutzer-E-Mail-Adresse...');
+    let senderEmail = 'noreply@taskilo.de'; // Fallback
+
+    try {
+      // Bestimme die User-ID für die E-Mail-Suche
+      const userId = invoice.companyId || invoice.createdBy;
+      console.log('🔍 Suche E-Mail für User-ID:', userId);
+
+      // Versuche User-Daten zu laden ZUERST (da dort meist die echte E-Mail steht)
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData?.email && userData.email !== 'noreply@taskilo.de') {
+          senderEmail = userData.email;
+          console.log('� User-E-Mail gefunden:', senderEmail);
+        }
+      }
+
+      // Falls keine User-E-Mail oder nur Fallback, versuche Company-Daten
+      if (senderEmail === 'noreply@taskilo.de') {
+        const companyDoc = await db.collection('companies').doc(userId).get();
+        if (companyDoc.exists) {
+          const companyData = companyDoc.data();
+          const companyEmailFound = companyData?.email || companyData?.companyEmail;
+          if (companyEmailFound && companyEmailFound !== 'noreply@taskilo.de') {
+            senderEmail = companyEmailFound;
+            console.log('🏢 Company-E-Mail gefunden:', senderEmail);
+          }
+        }
+      }
+
+      console.log('✅ Finale Sender-E-Mail:', senderEmail);
+    } catch (emailError) {
+      console.warn('⚠️ Konnte Benutzer-E-Mail nicht laden, verwende Fallback:', emailError.message);
     }
 
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
+    // Validiere E-Mail-Format - nur wenn nicht Fallback
+    if (senderEmail && senderEmail !== 'noreply@taskilo.de') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(senderEmail)) {
+        console.warn('⚠️ Ungültige E-Mail-Adresse gefunden:', senderEmail, '- verwende Fallback');
+        senderEmail = 'noreply@taskilo.de';
+      }
+    }
 
-    console.log('✅ PDF erfolgreich generiert, Größe:', pdfBuffer.byteLength, 'bytes');
+    // PDF generieren mit Fallback-Strategie
+    console.log('🔄 Generiere PDF für E-Mail-Anhang...');
+    const attachments: any[] = [];
+    let downloadLinkMessage = '';
 
-    // E-Mail mit Resend senden
-    const emailResponse = await resend.emails.send({
-      from: `${senderName} <noreply@taskilo.de>`,
+    try {
+      const pdfResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/api/generate-invoice-pdf`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ invoiceData: invoice }),
+        }
+      );
+
+      if (pdfResponse.ok) {
+        const contentType = pdfResponse.headers.get('content-type');
+
+        if (contentType && contentType.includes('application/pdf')) {
+          // PDF wurde erfolgreich generiert
+          const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+          const pdfBase64 = Buffer.from(pdfArrayBuffer).toString('base64');
+
+          attachments.push({
+            filename: `Rechnung_${invoice.invoiceNumber || invoice.number || 'invoice'}.pdf`,
+            content: pdfBase64,
+            type: 'application/pdf',
+            disposition: 'attachment',
+          });
+
+          console.log(
+            '✅ PDF erfolgreich generiert und als Anhang hinzugefügt, Größe:',
+            pdfArrayBuffer.byteLength,
+            'bytes'
+          );
+        } else {
+          // Fallback: JSON Response mit Print-URL
+          const responseData = await pdfResponse.json();
+          const printUrl =
+            responseData.printUrl ||
+            `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/print/invoice/${invoiceId}`;
+          downloadLinkMessage = `\n\nSie können Ihre Rechnung hier herunterladen: ${printUrl}`;
+          console.log('🔗 PDF-Service nicht verfügbar, verwende Download-Link:', printUrl);
+        }
+      } else {
+        throw new Error(`PDF-Service Fehler: ${pdfResponse.status}`);
+      }
+    } catch (pdfError) {
+      console.warn('⚠️ PDF-Generierung fehlgeschlagen:', pdfError.message);
+      const printUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/print/invoice/${invoiceId}`;
+      downloadLinkMessage = `\n\nSie können Ihre Rechnung hier herunterladen: ${printUrl}`;
+      console.log('🔄 Sende E-Mail ohne PDF-Anhang, aber mit Download-Link...');
+    }
+
+    // E-Mail-Konfiguration mit dynamischen Attachments und individueller Sender-Adresse
+    const emailConfig: any = {
+      from: `${senderName} <${senderEmail}>`,
       to: [recipientEmail],
       subject: subject,
       html: `
@@ -92,23 +190,22 @@ export async function POST(request: NextRequest) {
               margin: 0; 
             }
             .content { 
-              white-space: pre-line; 
-              font-size: 16px; 
-              line-height: 1.6; 
+              margin: 20px 0; 
             }
-            .invoice-info { 
-              background-color: #f3f4f6; 
+            .invoice-details { 
+              background: #f8fafc; 
               padding: 20px; 
               border-radius: 6px; 
               margin: 20px 0; 
+              border-left: 4px solid #14ad9f; 
             }
             .footer { 
-              margin-top: 40px; 
+              text-align: center; 
+              margin-top: 30px; 
               padding-top: 20px; 
               border-top: 1px solid #e5e7eb; 
               font-size: 14px; 
               color: #6b7280; 
-              text-align: center; 
             }
             .taskilo-link { 
               color: #14ad9f; 
@@ -120,15 +217,19 @@ export async function POST(request: NextRequest) {
           <div class="container">
             <div class="header">
               <h1 class="logo">Taskilo</h1>
-              <p style="margin: 0; color: #6b7280;">Professionelle Rechnungsstellung</p>
+              <p>Ihre Rechnung von ${senderName}</p>
             </div>
             
-            <div class="content">${message}</div>
+            <div class="content">
+              <p>Hallo,</p>
+              <p>anbei erhalten Sie Ihre Rechnung von ${senderName}.</p>
+              ${downloadLinkMessage ? `<p style="color: #14ad9f; font-weight: 500;">${downloadLinkMessage}</p>` : ''}
+            </div>
             
-            <div class="invoice-info">
-              <h3 style="margin: 0 0 10px 0; color: #374151;">📄 Rechnungsdetails</h3>
+            <div class="invoice-details">
+              <h3 style="margin-top: 0; color: #14ad9f;">Rechnungsdetails</h3>
               <p style="margin: 5px 0;"><strong>Rechnungsnummer:</strong> ${invoice.invoiceNumber || invoice.number}</p>
-              <p style="margin: 5px 0;"><strong>Rechnungsdatum:</strong> ${new Date(invoice.date).toLocaleDateString('de-DE')}</p>
+              <p style="margin: 5px 0;"><strong>Rechnungsdatum:</strong> ${new Date(invoice.invoiceDate || invoice.createdAt.toDate()).toLocaleDateString('de-DE')}</p>
               <p style="margin: 5px 0;"><strong>Fälligkeitsdatum:</strong> ${new Date(invoice.dueDate).toLocaleDateString('de-DE')}</p>
               <p style="margin: 5px 0;"><strong>Gesamtbetrag:</strong> ${invoice.total.toFixed(2)} €</p>
             </div>
@@ -141,18 +242,37 @@ export async function POST(request: NextRequest) {
         </body>
         </html>
       `,
-      attachments: [
-        {
-          filename: `Rechnung_${invoice.invoiceNumber || invoice.number}.pdf`,
-          content: pdfBase64,
-          contentType: 'application/pdf',
-        },
-      ],
+    };
+
+    // Attachments nur hinzufügen wenn PDF erfolgreich generiert wurde
+    if (attachments.length > 0) {
+      emailConfig.attachments = attachments;
+    }
+
+    // E-Mail mit Resend senden
+    console.log('📤 Sende E-Mail mit Resend...', {
+      from: `${senderName} <${senderEmail}>`,
+      to: recipientEmail,
+      subject: subject,
+      hasAttachments: attachments.length > 0,
     });
 
+    const emailResponse = await resend.emails.send(emailConfig);
+
     if (emailResponse.error) {
-      console.error('❌ Resend Fehler:', emailResponse.error);
-      throw new Error(`E-Mail-Versendung fehlgeschlagen: ${emailResponse.error.message}`);
+      console.error('❌ Resend Fehler:', {
+        error: emailResponse.error,
+        message: emailResponse.error?.message,
+        name: emailResponse.error?.name,
+      });
+      throw new Error(
+        `E-Mail-Versendung fehlgeschlagen: ${emailResponse.error.message || 'Unbekannter Resend-Fehler'}`
+      );
+    }
+
+    if (!emailResponse.data?.id) {
+      console.error('❌ Resend Response ohne Message ID:', emailResponse);
+      throw new Error('E-Mail-Versendung fehlgeschlagen: Keine Message ID erhalten');
     }
 
     console.log('✅ E-Mail erfolgreich gesendet:', emailResponse.data?.id);
@@ -170,15 +290,44 @@ export async function POST(request: NextRequest) {
       success: true,
       messageId: emailResponse.data?.id,
       message: 'Rechnung erfolgreich per E-Mail versendet',
+      hasAttachment: attachments.length > 0,
+      downloadLinkProvided: !!downloadLinkMessage,
     });
   } catch (error) {
-    console.error('❌ Fehler beim Senden der Rechnung per E-Mail:', error);
+    console.error('❌ Fehler beim Versenden der Rechnung:', error);
+
+    // Mehr detaillierte Fehlerbehandlung
+    let errorMessage = 'Unbekannter Fehler beim Versenden der Rechnung';
+    let errorCode = 500;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      console.error('❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.substring(0, 500),
+      });
+    }
+
+    // Spezifische Fehlerbehandlung
+    if (error.message?.includes('Resend')) {
+      errorMessage = 'E-Mail-Service nicht verfügbar. Bitte versuchen Sie es später erneut.';
+      errorCode = 503;
+    } else if (error.message?.includes('not found')) {
+      errorMessage = 'Rechnung nicht gefunden';
+      errorCode = 404;
+    } else if (error.message?.includes('RESEND_API_KEY')) {
+      errorMessage = 'E-Mail-Service nicht konfiguriert';
+      errorCode = 500;
+    }
 
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler beim E-Mail-Versand',
+        error: errorMessage,
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: errorCode }
     );
   }
 }
