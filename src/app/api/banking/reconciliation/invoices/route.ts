@@ -33,49 +33,53 @@ export async function GET(request: NextRequest) {
 
   try {
     // Debug: Hole erst alle Rechnungen ohne Filter
-    const allInvoicesSnapshot = await db.collection('invoices')
+    const allInvoicesSnapshot = await db
+      .collection('invoices')
       .where('companyId', '==', companyId)
       .orderBy('createdAt', 'desc')
       .get();
 
-    console.log(`📊 Debug: Found ${allInvoicesSnapshot.size} total invoices for companyId: ${companyId}`);
+    console.log(
+      `📊 Debug: Found ${allInvoicesSnapshot.size} total invoices for companyId: ${companyId}`
+    );
 
     const invoices: InvoiceForReconciliation[] = [];
     const debugInfo: any[] = [];
 
-    allInvoicesSnapshot.forEach((doc) => {
+    allInvoicesSnapshot.forEach(doc => {
       const data = doc.data();
-      
+
       debugInfo.push({
         id: doc.id,
         status: data.status,
         invoiceNumber: data.invoiceNumber || data.number,
         total: data.total,
-        companyId: data.companyId
+        companyId: data.companyId,
       });
 
-      // Erweitere Filter: Akzeptiere 'finalized', 'paid', oder 'sent' Status
-      if (data.status === 'finalized' || data.status === 'paid' || data.status === 'sent') {
-        invoices.push({
-          id: doc.id,
-          invoiceNumber: data.invoiceNumber || data.number,
-          amount: data.amount || 0,
-          total: data.total || 0,
-          status: data.status,
-          issueDate: data.issueDate || data.date,
-          dueDate: data.dueDate,
-          customerName: data.customerName,
-          customerEmail: data.customerEmail,
-          description: data.description,
-          isReconciled: data.isReconciled || false,
-          reconciledTransactionId: data.reconciledTransactionId,
-          reconciledAt: data.reconciledAt,
-        });
-      }
+      // Erweiterte Filter: Akzeptiere ALLE Rechnungen unabhängig vom Status
+      // Damit alle 10 Rechnungen aus der Datenbank angezeigt werden
+      invoices.push({
+        id: doc.id,
+        invoiceNumber: data.invoiceNumber || data.number,
+        amount: data.amount || 0,
+        total: data.total || 0,
+        status: data.status,
+        issueDate: data.issueDate || data.date,
+        dueDate: data.dueDate,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        description: data.description,
+        isReconciled: data.isReconciled || false,
+        reconciledTransactionId: data.reconciledTransactionId,
+        reconciledAt: data.reconciledAt,
+      });
     });
 
     console.log('📋 Debug Invoice Status Summary:', debugInfo);
-    console.log(`✅ Filtered ${invoices.length} eligible invoices (finalized/paid/sent) from ${allInvoicesSnapshot.size} total`);
+    console.log(
+      `✅ Loading ALL ${invoices.length} invoices from ${allInvoicesSnapshot.size} total (no status filter applied)`
+    );
 
     // Filter nach Status wenn gewünscht
     let filteredInvoices = invoices;
@@ -85,7 +89,9 @@ export async function GET(request: NextRequest) {
       filteredInvoices = invoices.filter(inv => inv.isReconciled);
     }
 
-    console.log(`✅ Loaded ${filteredInvoices.length} invoices for reconciliation (status: ${status})`);
+    console.log(
+      `✅ Loaded ${filteredInvoices.length} invoices for reconciliation (status: ${status})`
+    );
 
     return NextResponse.json({
       success: true,
@@ -94,7 +100,6 @@ export async function GET(request: NextRequest) {
       unreconciled: invoices.filter(inv => !inv.isReconciled).length,
       reconciled: invoices.filter(inv => inv.isReconciled).length,
     });
-
   } catch (error: any) {
     console.error('❌ Error loading invoices for reconciliation:', error);
     return NextResponse.json(
@@ -110,7 +115,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { invoiceId, transactionId, companyId, action } = body;
 
-    console.log('🔄 Invoice reconciliation action:', { invoiceId, transactionId, companyId, action });
+    console.log('🔄 Invoice reconciliation action:', {
+      invoiceId,
+      transactionId,
+      companyId,
+      action,
+    });
 
     if (!invoiceId || !companyId) {
       return NextResponse.json(
@@ -120,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     const invoiceRef = db.collection('invoices').doc(invoiceId);
-    
+
     if (action === 'reconcile') {
       // Rechnung mit Transaktion abgleichen
       if (!transactionId) {
@@ -145,7 +155,6 @@ export async function POST(request: NextRequest) {
         invoiceId,
         transactionId,
       });
-
     } else if (action === 'unreconcile') {
       // Abgleich rückgängig machen
       await invoiceRef.update({
@@ -162,14 +171,12 @@ export async function POST(request: NextRequest) {
         message: 'Abgleich erfolgreich rückgängig gemacht',
         invoiceId,
       });
-
     } else {
       return NextResponse.json(
         { success: false, error: 'Ungültige Aktion. Verwende "reconcile" oder "unreconcile"' },
         { status: 400 }
       );
     }
-
   } catch (error: any) {
     console.error('❌ Error in invoice reconciliation:', error);
     return NextResponse.json(
