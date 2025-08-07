@@ -752,5 +752,20 @@ service cloud.firestore {
       allow read, write: if request.auth != null && 
                            (request.auth.uid == userId || isSupportStaff());
     }
+
+    // Banking Import Settings - Nur der eigene Benutzer kann seine Einstellungen verwalten
+    match /banking_import_settings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Banking Daten - Nur der eigene Benutzer kann seine Banking-Daten lesen
+    match /banking_data/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Banking Verbindungen - Nur der eigene Benutzer kann seine Verbindungen verwalten
+    match /banking_connections/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }

@@ -77,8 +77,7 @@ const navigationItems: NavigationItem[] = [
     icon: FiBanknote,
     value: 'banking',
     subItems: [
-      { label: 'Übersicht', value: 'banking-overview', href: 'banking' },
-      { label: 'Bank verbinden', value: 'banking-connect', href: 'banking/connect' },
+      { label: 'Dashboard', value: 'banking-overview', href: 'banking' },
       { label: 'Konten', value: 'banking-accounts', href: 'banking/accounts' },
       { label: 'Transaktionen', value: 'banking-transactions', href: 'banking/transactions' },
       { label: 'Import & Sync', value: 'banking-import', href: 'banking/import' },

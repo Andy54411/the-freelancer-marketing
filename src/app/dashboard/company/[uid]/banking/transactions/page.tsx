@@ -71,6 +71,9 @@ export default function TransactionsPage() {
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dateRange, setDateRange] = useState('30');
+  const [customDate, setCustomDate] = useState('');
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   // Load Transactions from finAPI and local storage
   const loadTransactions = async () => {
@@ -164,7 +167,35 @@ export default function TransactionsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    if (!dateString || dateString === 'null' || dateString === 'undefined') {
+      return 'Kein Datum';
+    }
+    
+    // Handle different date formats from finAPI
+    let date: Date;
+    
+    // Check if it's already a valid date string
+    if (dateString.includes('-')) {
+      date = new Date(dateString);
+    } else if (dateString.includes('/')) {
+      date = new Date(dateString);
+    } else if (dateString.length === 8) {
+      // Handle YYYYMMDD format
+      const year = dateString.substring(0, 4);
+      const month = dateString.substring(4, 6);
+      const day = dateString.substring(6, 8);
+      date = new Date(`${year}-${month}-${day}`);
+    } else {
+      // Try parsing as-is
+      date = new Date(dateString);
+    }
+    
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date format:', dateString);
+      return 'Ungültiges Datum';
+    }
+    
+    return date.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -189,16 +220,113 @@ export default function TransactionsPage() {
     const matchesAccount = selectedAccount === 'all' || transaction.accountId === selectedAccount;
     const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
 
-    return matchesSearch && matchesAccount && matchesCategory;
+    // Date range filtering
+    let matchesDateRange = true;
+    if (dateRange !== 'all') {
+      const transactionDateStr = transaction.bookingDate || transaction.valueDate;
+      if (transactionDateStr) {
+        const transactionDate = new Date(transactionDateStr);
+        
+        if (!isNaN(transactionDate.getTime())) {
+          const today = new Date();
+          const currentYear = today.getFullYear();
+          
+          if (dateRange === '365') {
+            // "Letztes Jahr" = komplettes vorheriges Jahr (z.B. 2024)
+            const lastYear = currentYear - 1;
+            const yearStart = new Date(lastYear, 0, 1); // 1. Januar des letzten Jahres
+            const yearEnd = new Date(lastYear, 11, 31, 23, 59, 59); // 31. Dezember des letzten Jahres
+            
+            // Debug logging for first transaction
+            if (transaction.id === transactions[0]?.id) {
+              const debugData = {
+                dateRange: `Letztes Jahr (${lastYear})`,
+                currentYear: currentYear,
+                lastYear: lastYear,
+                yearStart: yearStart.toDateString(),
+                yearEnd: yearEnd.toDateString(),
+                transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
+                transactionYear: isNaN(transactionDate.getTime()) ? 'Invalid' : transactionDate.getFullYear(),
+                isInRange: !isNaN(transactionDate.getTime()) && transactionDate >= yearStart && transactionDate <= yearEnd,
+                logic: `Aktuelles Jahr: ${currentYear} → Letztes Jahr: ${lastYear}`,
+                totalTransactions: transactions.length,
+                yearTransactions: transactions.filter(t => {
+                  const td = new Date(t.bookingDate || t.valueDate);
+                  return !isNaN(td.getTime()) && td >= yearStart && td <= yearEnd;
+                }).length
+              };
+              console.log('🔍 Date filter debug:', debugData);
+            }
+            
+            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(yearStart.getTime()) && !isNaN(yearEnd.getTime()) && 
+                              transactionDate >= yearStart && transactionDate <= yearEnd;
+          } else if (dateRange === 'custom' && customDate) {
+            // Benutzerdefiniertes Datum: Exakt an diesem Tag
+            const selectedDate = new Date(customDate);
+            const dayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0);
+            const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
+            
+            // Debug logging for first transaction
+            if (transaction.id === transactions[0]?.id) {
+              const debugData = {
+                dateRange: `Benutzerdefiniert (${customDate})`,
+                selectedDate: isNaN(selectedDate.getTime()) ? 'Invalid Date' : selectedDate.toDateString(),
+                dayStart: isNaN(dayStart.getTime()) ? 'Invalid Date' : dayStart.toDateString(),
+                dayEnd: isNaN(dayEnd.getTime()) ? 'Invalid Date' : dayEnd.toDateString(),
+                transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
+                isExactDay: !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) && 
+                           transactionDate >= dayStart && transactionDate <= dayEnd,
+                totalTransactions: transactions.length,
+                dayTransactions: transactions.filter(t => {
+                  const td = new Date(t.bookingDate || t.valueDate);
+                  return !isNaN(td.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) && 
+                         td >= dayStart && td <= dayEnd;
+                }).length
+              };
+              console.log('🔍 Date filter debug:', debugData);
+            }
+            
+            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) && 
+                              transactionDate >= dayStart && transactionDate <= dayEnd;
+          } else {
+            // Andere Filter: Letzte X Tage vom heutigen Datum
+            const days = parseInt(dateRange);
+            const cutoffDate = new Date(today);
+            cutoffDate.setDate(today.getDate() - days);
+            
+            // Debug logging for first transaction
+            if (transaction.id === transactions[0]?.id) {
+              const debugData = {
+                dateRange: `Letzte ${days} Tage`,
+                today: isNaN(today.getTime()) ? 'Invalid Date' : today.toDateString(),
+                cutoffDate: isNaN(cutoffDate.getTime()) ? 'Invalid Date' : cutoffDate.toDateString(),
+                transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
+                isAfterCutoff: !isNaN(transactionDate.getTime()) && !isNaN(cutoffDate.getTime()) && transactionDate >= cutoffDate,
+                totalTransactions: transactions.length,
+                dateRangeTransactions: transactions.filter(t => {
+                  const td = new Date(t.bookingDate || t.valueDate);
+                  return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
+                }).length
+              };
+              console.log('🔍 Date filter debug:', debugData);
+            }
+            
+            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(cutoffDate.getTime()) && transactionDate >= cutoffDate;
+          }
+        }
+      }
+    }
+
+    return matchesSearch && matchesAccount && matchesCategory && matchesDateRange;
   });
 
   // Get unique categories
   const categories = [...new Set(transactions.map(t => t.category).filter(Boolean))];
 
-  // Calculate summary statistics
-  const totalIncome = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+  // Calculate summary statistics from filtered transactions
+  const totalIncome = filteredTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
 
-  const totalExpenses = transactions
+  const totalExpenses = filteredTransactions
     .filter(t => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
@@ -243,7 +371,10 @@ export default function TransactionsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Transaktionen</h1>
-            <p className="text-gray-600 mt-1">Übersicht über alle Kontobewegungen</p>
+            <p className="text-gray-600 mt-1">
+              Übersicht über alle Kontobewegungen 
+              ({filteredTransactions.length} von {transactions.length} angezeigt)
+            </p>
           </div>
           <div className="flex space-x-3">
             <button
@@ -367,16 +498,73 @@ export default function TransactionsPage() {
           {/* Date Range */}
           <select
             value={dateRange}
-            onChange={e => setDateRange(e.target.value)}
+            onChange={e => {
+              setDateRange(e.target.value);
+              setShowCustomDate(e.target.value === 'custom');
+              if (e.target.value !== 'custom') {
+                setCustomDate('');
+              }
+            }}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           >
             <option value="7">Letzte 7 Tage</option>
             <option value="30">Letzte 30 Tage</option>
             <option value="90">Letzte 90 Tage</option>
             <option value="365">Letztes Jahr</option>
+            <option value="custom">Benutzerdefiniert</option>
             <option value="all">Alle</option>
           </select>
         </div>
+
+        {/* Custom Date Input */}
+        {showCustomDate && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value={customDate ? formatDate(customDate) : ''}
+                readOnly
+                onClick={() => setShowCalendarModal(true)}
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] w-full cursor-pointer bg-white"
+                placeholder="Datum auswählen..."
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  setCustomDate(today.toISOString().split('T')[0]);
+                }}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              >
+                Heute
+              </button>
+              <button
+                onClick={() => {
+                  const yesterday = new Date();
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  setCustomDate(yesterday.toISOString().split('T')[0]);
+                }}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              >
+                Gestern
+              </button>
+              {customDate && (
+                <button
+                  onClick={() => {
+                    setCustomDate('');
+                    setDateRange('30');
+                    setShowCustomDate(false);
+                  }}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                >
+                  Zurücksetzen
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Transactions Table */}
@@ -704,6 +892,122 @@ ID: ${selectedTransaction.id}
               >
                 <Copy className="h-4 w-4 mr-2 inline" />
                 Kopieren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Modal */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Datum auswählen</h3>
+              <button
+                onClick={() => setShowCalendarModal(false)}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Calendar Content */}
+            <div className="p-6">
+              <div className="space-y-4">
+                {/* Date Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Datum eingeben
+                  </label>
+                  <input
+                    type="date"
+                    value={customDate}
+                    onChange={e => setCustomDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                  />
+                </div>
+
+                {/* Quick Date Buttons */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Schnellauswahl
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        setCustomDate(today.toISOString().split('T')[0]);
+                      }}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                    >
+                      Heute
+                    </button>
+                    <button
+                      onClick={() => {
+                        const yesterday = new Date();
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        setCustomDate(yesterday.toISOString().split('T')[0]);
+                      }}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                    >
+                      Gestern
+                    </button>
+                    <button
+                      onClick={() => {
+                        const lastWeek = new Date();
+                        lastWeek.setDate(lastWeek.getDate() - 7);
+                        setCustomDate(lastWeek.toISOString().split('T')[0]);
+                      }}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                    >
+                      Vor 1 Woche
+                    </button>
+                    <button
+                      onClick={() => {
+                        const lastMonth = new Date();
+                        lastMonth.setMonth(lastMonth.getMonth() - 1);
+                        setCustomDate(lastMonth.toISOString().split('T')[0]);
+                      }}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                    >
+                      Vor 1 Monat
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Date Preview */}
+                {customDate && (
+                  <div className="p-3 bg-[#14ad9f]/10 rounded-md border border-[#14ad9f]/20">
+                    <p className="text-sm text-[#14ad9f] font-medium">
+                      Ausgewähltes Datum: {formatDate(customDate)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => setShowCalendarModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => {
+                  setShowCalendarModal(false);
+                  if (!customDate) {
+                    setDateRange('30');
+                    setShowCustomDate(false);
+                  }
+                }}
+                disabled={!customDate}
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anwenden
               </button>
             </div>
           </div>

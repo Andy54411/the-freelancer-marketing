@@ -121,7 +121,8 @@ export async function GET(request: NextRequest) {
         purpose: transaction.purpose || 'Keine Beschreibung',
         counterpartName: transaction.counterpartName,
         counterpartIban: transaction.counterpartIban,
-        bookingDate: transaction.bookingDate,
+        // Use bookingDate if available, otherwise fall back to valueDate
+        bookingDate: transaction.bookingDate || transaction.valueDate,
         valueDate: transaction.valueDate,
         transactionType: transaction.amount >= 0 ? 'CREDIT' : 'DEBIT',
         category: transaction.category?.name,

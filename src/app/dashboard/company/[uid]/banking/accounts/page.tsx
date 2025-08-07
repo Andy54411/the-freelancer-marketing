@@ -202,10 +202,6 @@ export default function BankingAccountsPage() {
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Aktualisiere...' : 'Aktualisieren'}
             </button>
-            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Konto hinzufügen
-            </button>
           </div>
         </div>
       </div>
@@ -422,17 +418,8 @@ export default function BankingAccountsPage() {
             <PlusCircle className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankkonten verbunden</h3>
             <p className="text-gray-600 mb-6">
-              Verbinden Sie Ihre ersten Bankkonten über unser Banking-Setup.
+                                    Verwenden Sie &ldquo;Banking → Verbinden&rdquo; um Bankkonten hinzuzufügen.
             </p>
-            <button
-              onClick={() =>
-                (window.location.href = `/dashboard/company/${uid}/finance/banking/setup`)
-              }
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Bankkonten verbinden
-            </button>
           </div>
         </div>
       )}
