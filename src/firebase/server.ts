@@ -10,7 +10,7 @@ if (!admin.apps.length) {
       storageBucket: 'tilvo-f142f.firebasestorage.app',
       databaseURL:
         process.env.FIREBASE_DATABASE_URL ||
-        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app/',
+        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     };
 
     // ROBUST CREDENTIAL HANDLING für Vercel und lokale Entwicklung
