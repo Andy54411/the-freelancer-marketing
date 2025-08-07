@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  CheckCircle, 
-  Search, 
-  RefreshCw, 
-  FileText, 
-  AlertTriangle, 
+import {
+  CheckCircle,
+  Search,
+  RefreshCw,
+  FileText,
+  AlertTriangle,
   CreditCard,
   Calendar,
   ArrowUpRight,
@@ -18,7 +18,7 @@ import {
   Unlink,
   Clock,
   Check,
-  X
+  X,
 } from 'lucide-react';
 
 interface BankTransaction {
@@ -80,13 +80,13 @@ export default function BankingReconciliationPage() {
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [showReconciled, setShowReconciled] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
-  
+
   // Reconciliation State
   const [reconcilingInvoice, setReconcilingInvoice] = useState<string | null>(null);
 
@@ -94,13 +94,19 @@ export default function BankingReconciliationPage() {
   const loadInvoices = async () => {
     setLoadingInvoices(true);
     try {
-      const response = await fetch(`/api/banking/reconciliation/invoices?companyId=${uid}&status=${showReconciled ? 'all' : 'unreconciled'}`);
+      // Lade ALLE Rechnungen aus der Datenbank ohne Status-Filter
+      const response = await fetch(
+        `/api/banking/reconciliation/invoices?companyId=${uid}&status=all`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
+        console.log(`🔍 API Response:`, data);
+        console.log(`📊 Total invoices received: ${data.invoices.length}`);
         setInvoices(data.invoices);
         console.log(`✅ Loaded ${data.invoices.length} invoices for reconciliation`);
       } else {
+        console.error('❌ API Error:', data.error);
         setError(data.error || 'Fehler beim Laden der Rechnungen');
       }
     } catch (err: any) {
@@ -115,9 +121,11 @@ export default function BankingReconciliationPage() {
   const loadTransactions = async () => {
     setLoadingTransactions(true);
     try {
-      const response = await fetch(`/api/finapi/transactions?userId=${uid}&credentialType=sandbox&page=1&perPage=100`);
+      const response = await fetch(
+        `/api/finapi/transactions?userId=${uid}&credentialType=sandbox&page=1&perPage=100`
+      );
       const data = await response.json();
-      
+
       if (data.success && data.transactions) {
         setTransactions(data.transactions);
         console.log(`✅ Loaded ${data.transactions.length} transactions for reconciliation`);
@@ -136,12 +144,12 @@ export default function BankingReconciliationPage() {
   // Reconcile Invoice with Transaction
   const reconcileInvoice = async (invoiceId: string, transactionId: string) => {
     if (!selectedInvoice || !selectedTransaction) return;
-    
+
     setReconcilingInvoice(invoiceId);
     try {
       const invoice = invoices.find(inv => inv.id === invoiceId);
       const transaction = transactions.find(txn => txn.id === transactionId);
-      
+
       if (!invoice || !transaction) {
         throw new Error('Rechnung oder Transaktion nicht gefunden');
       }
@@ -158,7 +166,7 @@ export default function BankingReconciliationPage() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         console.log('✅ Successfully reconciled invoice:', invoiceId);
         // Refresh data
@@ -190,7 +198,7 @@ export default function BankingReconciliationPage() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         console.log('✅ Successfully undid reconciliation for invoice:', invoiceId);
         await loadInvoices();
@@ -207,10 +215,9 @@ export default function BankingReconciliationPage() {
   useEffect(() => {
     if (uid) {
       setLoading(true);
-      Promise.all([loadInvoices(), loadTransactions()])
-        .finally(() => setLoading(false));
+      Promise.all([loadInvoices(), loadTransactions()]).finally(() => setLoading(false));
     }
-  }, [uid, showReconciled]);
+  }, [uid]); // Entferne showReconciled Dependency, da wir alle Rechnungen laden
 
   // Utility Functions
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
@@ -232,20 +239,23 @@ export default function BankingReconciliationPage() {
 
   // Filter functions
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = 
+    const matchesSearch =
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
+
+    // Zeige abgeglichene Rechnungen nur wenn showReconciled aktiviert ist
+    const matchesReconcileFilter = showReconciled || !invoice.isReconciled;
+
+    return matchesSearch && matchesReconcileFilter;
   });
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = 
+    const matchesSearch =
       transaction.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.counterpartName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.amount.toString().includes(searchTerm);
-    
+
     // Only show credit transactions (incoming payments) for reconciliation
     return matchesSearch && transaction.transactionType === 'CREDIT';
   });
@@ -269,9 +279,7 @@ export default function BankingReconciliationPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Banking Reconciliation</h1>
-            <p className="text-gray-600 mt-1">
-              Gleiche deine Rechnungen mit Banktransaktionen ab
-            </p>
+            <p className="text-gray-600 mt-1">Gleiche deine Rechnungen mit Banktransaktionen ab</p>
           </div>
           <div className="flex space-x-3">
             <button
@@ -279,7 +287,9 @@ export default function BankingReconciliationPage() {
               disabled={loadingInvoices || loadingTransactions}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${(loadingInvoices || loadingTransactions) ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${loadingInvoices || loadingTransactions ? 'animate-spin' : ''}`}
+              />
               Aktualisieren
             </button>
           </div>
@@ -319,9 +329,7 @@ export default function BankingReconciliationPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Offene Rechnungen
-                  </dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Offene Rechnungen</dt>
                   <dd className="text-lg font-medium text-gray-900">
                     {invoices.filter(inv => !inv.isReconciled).length}
                   </dd>
@@ -379,9 +387,7 @@ export default function BankingReconciliationPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Offener Betrag
-                  </dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Offener Betrag</dt>
                   <dd className="text-lg font-medium text-gray-900">
                     {formatCurrency(
                       invoices
@@ -451,7 +457,9 @@ export default function BankingReconciliationPage() {
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
               <FileText className="h-5 w-5 mr-2 text-blue-500" />
               Rechnungen
-              {loadingInvoices && <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />}
+              {loadingInvoices && (
+                <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />
+              )}
             </h3>
           </div>
           <div className="max-h-96 overflow-y-auto">
@@ -463,22 +471,20 @@ export default function BankingReconciliationPage() {
                     selectedInvoice === invoice.id
                       ? 'border-[#14ad9f] bg-[#14ad9f]/5'
                       : invoice.isReconciled
-                      ? 'border-green-400'
-                      : 'border-transparent'
+                        ? 'border-green-400'
+                        : 'border-transparent'
                   }`}
-                  onClick={() => setSelectedInvoice(selectedInvoice === invoice.id ? null : invoice.id)}
+                  onClick={() =>
+                    setSelectedInvoice(selectedInvoice === invoice.id ? null : invoice.id)
+                  }
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {invoice.invoiceNumber}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {invoice.customerName}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {formatDate(invoice.issueDate)}
-                      </p>
+                      <p className="text-sm text-gray-500 truncate">{invoice.customerName}</p>
+                      <p className="text-xs text-gray-400">{formatDate(invoice.issueDate)}</p>
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
                       <p className="text-sm font-semibold text-gray-900">
@@ -500,7 +506,7 @@ export default function BankingReconciliationPage() {
                   {invoice.isReconciled && (
                     <div className="mt-2 flex justify-end">
                       <button
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           undoReconciliation(invoice.id);
                         }}
@@ -516,9 +522,7 @@ export default function BankingReconciliationPage() {
             </ul>
           </div>
           {filteredInvoices.length === 0 && (
-            <div className="px-6 py-8 text-center text-gray-500">
-              Keine Rechnungen gefunden
-            </div>
+            <div className="px-6 py-8 text-center text-gray-500">Keine Rechnungen gefunden</div>
           )}
         </div>
 
@@ -528,7 +532,9 @@ export default function BankingReconciliationPage() {
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
               <CreditCard className="h-5 w-5 mr-2 text-green-500" />
               Transaktionen (Eingänge)
-              {loadingTransactions && <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />}
+              {loadingTransactions && (
+                <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />
+              )}
             </h3>
           </div>
           <div className="max-h-96 overflow-y-auto">
@@ -541,7 +547,11 @@ export default function BankingReconciliationPage() {
                       ? 'border-[#14ad9f] bg-[#14ad9f]/5'
                       : 'border-transparent'
                   }`}
-                  onClick={() => setSelectedTransaction(selectedTransaction === transaction.id ? null : transaction.id)}
+                  onClick={() =>
+                    setSelectedTransaction(
+                      selectedTransaction === transaction.id ? null : transaction.id
+                    )
+                  }
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -551,9 +561,7 @@ export default function BankingReconciliationPage() {
                       <p className="text-sm text-gray-500 truncate">
                         {transaction.counterpartName || 'Unbekannter Absender'}
                       </p>
-                      <p className="text-xs text-gray-400">
-                        {formatDate(transaction.bookingDate)}
-                      </p>
+                      <p className="text-xs text-gray-400">{formatDate(transaction.bookingDate)}</p>
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
                       <p className="text-sm font-semibold text-green-600">
@@ -584,22 +592,24 @@ export default function BankingReconciliationPage() {
               <CheckCircle className="h-5 w-5 text-blue-400" />
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-blue-800">
-                Ausgewählt für Abgleich
-              </h3>
+              <h3 className="text-sm font-medium text-blue-800">Ausgewählt für Abgleich</h3>
               <div className="mt-2 text-sm text-blue-700">
                 {selectedInvoice && (
                   <p>
-                    <strong>Rechnung:</strong> {invoices.find(inv => inv.id === selectedInvoice)?.invoiceNumber}
+                    <strong>Rechnung:</strong>{' '}
+                    {invoices.find(inv => inv.id === selectedInvoice)?.invoiceNumber}
                     {' - '}
                     {formatCurrency(invoices.find(inv => inv.id === selectedInvoice)?.total || 0)}
                   </p>
                 )}
                 {selectedTransaction && (
                   <p>
-                    <strong>Transaktion:</strong> {transactions.find(txn => txn.id === selectedTransaction)?.purpose}
+                    <strong>Transaktion:</strong>{' '}
+                    {transactions.find(txn => txn.id === selectedTransaction)?.purpose}
                     {' - '}
-                    {formatCurrency(transactions.find(txn => txn.id === selectedTransaction)?.amount || 0)}
+                    {formatCurrency(
+                      transactions.find(txn => txn.id === selectedTransaction)?.amount || 0
+                    )}
                   </p>
                 )}
               </div>
@@ -613,9 +623,7 @@ export default function BankingReconciliationPage() {
         <div className="text-center py-12">
           <div className="flex flex-col items-center">
             <CreditCard className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Keine Daten verfügbar
-            </h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Daten verfügbar</h3>
             <p className="text-gray-600 mb-6">
               Verbinden Sie zuerst ein Bankkonto und erstellen Sie Rechnungen.
             </p>
