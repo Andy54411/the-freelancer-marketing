@@ -13,7 +13,7 @@ export default function BankingAccountsPage() {
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showBalances, setShowBalances] = useState(false);
+  const [showBalances, setShowBalances] = useState(true); // Show balances by default
   const [refreshing, setRefreshing] = useState(false);
 
   // Load accounts on component mount - no token needed for B2B architecture

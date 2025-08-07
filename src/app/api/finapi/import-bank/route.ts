@@ -35,114 +35,135 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 1: Get Client Credentials Token
-    const server = new ServerConfiguration(baseUrl, {});
-    const authConfig = createConfiguration({ baseServer: server });
-    const authApi = new AuthorizationApi(authConfig);
-
-    let clientToken;
-    try {
-      clientToken = await authApi.getToken(
-        'client_credentials',
-        taskiloCredentials.clientId,
-        taskiloCredentials.clientSecret
-      );
-      console.log('✅ Client credentials token obtained');
-    } catch (authError: any) {
-      console.error('❌ Client authentication failed:', authError?.body || authError.message);
-      return NextResponse.json(
-        {
-          error: 'finAPI Client authentication failed',
-          details: authError?.body?.errors?.[0]?.message || authError.message,
-        },
-        { status: 401 }
-      );
-    }
-
-    // Step 2: Create or get finAPI user for this specific Taskilo user
-    const configuration = createConfiguration({
-      baseServer: server,
-      authMethods: {
-        finapi_auth: {
-          accessToken: clientToken.accessToken,
-        },
+    // Step 1: Get Client Credentials Token (Raw Fetch - getestet und funktioniert)
+    const tokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: taskiloCredentials.clientId,
+        client_secret: taskiloCredentials.clientSecret,
+      }),
     });
 
-    const usersApi = new UsersApi(configuration);
-
-    // Use Firebase UID as finAPI user ID with prefix to ensure uniqueness
-    const finapiUserId = `taskilo_${userId}`;
-    const userCredentials = {
-      id: finapiUserId,
-      password: `taskilo_secure_${userId}`, // Fixed password per user - consistent for repeated access
-      email: `user_${userId}@taskilo.de`,
-      phone: '+49123456789',
-      isAutoUpdateEnabled: true,
-    };
-
-    let userAccessToken;
-    try {
-      // First try to get access token for existing user
-      try {
-        const userTokenResponse = await authApi.getToken(
-          'password',
-          taskiloCredentials.clientId,
-          taskiloCredentials.clientSecret,
-          userCredentials.id,
-          userCredentials.password
-        );
-
-        userAccessToken = userTokenResponse.accessToken;
-        console.log('✅ User access token obtained for existing user:', finapiUserId);
-      } catch (loginError: any) {
-        // User doesn't exist, create them
-        if (loginError.status === 401) {
-          console.log('🔄 Creating new finAPI user for Taskilo user:', finapiUserId);
-          const createUserResponse = await usersApi.createUser(userCredentials);
-          console.log('✅ finAPI user created:', createUserResponse.id);
-
-          // Now get token for the newly created user
-          const userTokenResponse = await authApi.getToken(
-            'password',
-            taskiloCredentials.clientId,
-            taskiloCredentials.clientSecret,
-            userCredentials.id,
-            userCredentials.password
-          );
-
-          userAccessToken = userTokenResponse.accessToken;
-          console.log('✅ User access token obtained for new user:', finapiUserId);
-        } else {
-          throw loginError;
-        }
-      }
-    } catch (userError: any) {
-      console.error('❌ User authentication failed:', userError?.body || userError.message);
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('❌ Client token request failed:', errorText);
       return NextResponse.json(
-        {
-          error: 'finAPI User authentication failed',
-          details: userError?.body?.errors?.[0]?.message || userError.message,
-        },
+        { error: 'Client authentication failed', details: errorText },
         { status: 401 }
       );
     }
+
+    const clientTokenData = await tokenResponse.json();
+    console.log('✅ Client credentials token obtained');
+
+    // Step 2: Create or get finAPI user (FIXED - persistent user ID and password)
+    // Use Firebase UID as finAPI user ID with consistent format (max 36 chars)
+    const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36); // Consistent ID without timestamp
+    const userPassword = `TaskiloPass_${userId.slice(0, 10)}!2024`; // Consistent password based on userId
+
+    let userAccessToken;
+
+    // Try to get token for existing user first with consistent credentials
+    const userTokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'password',
+        username: finapiUserId,
+        password: userPassword,
+        client_id: taskiloCredentials.clientId,
+        client_secret: taskiloCredentials.clientSecret,
+      }),
+    });
+
+    if (!userTokenResponse.ok) {
+      // User doesn't exist, create them
+      console.log('🔄 Creating new finAPI user:', finapiUserId);
+
+      const createUserResponse = await fetch(`${baseUrl}/api/v2/users`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${clientTokenData.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: finapiUserId,
+          password: userPassword,
+          email: `${finapiUserId}@taskilo.de`,
+        }),
+      });
+
+      if (!createUserResponse.ok) {
+        const errorText = await createUserResponse.text();
+        console.error('❌ User creation failed:', errorText);
+        return NextResponse.json(
+          { error: 'User creation failed', details: errorText },
+          { status: 500 }
+        );
+      }
+
+      console.log('✅ finAPI user created:', finapiUserId);
+
+      // Now get token for the newly created user
+      const newUserTokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'password',
+          username: finapiUserId,
+          password: userPassword,
+          client_id: taskiloCredentials.clientId,
+          client_secret: taskiloCredentials.clientSecret,
+        }),
+      });
+
+      if (!newUserTokenResponse.ok) {
+        const errorText = await newUserTokenResponse.text();
+        return NextResponse.json(
+          { error: 'User token request failed', details: errorText },
+          { status: 401 }
+        );
+      }
+
+      const newUserTokenData = await newUserTokenResponse.json();
+      userAccessToken = newUserTokenData.access_token;
+    } else {
+      const userTokenData = await userTokenResponse.json();
+      userAccessToken = userTokenData.access_token;
+    }
+
+    console.log('✅ User access token obtained for:', finapiUserId);
 
     // Step 3: Generate Web Form for Bank Connection Import
     try {
-      // Use raw fetch since finapi-client might not have WebForm 2.0 support
+      // Web Form 2.0 API Request (korrigierte Struktur basierend auf Tests)
       const webFormRequest = {
-        bankId: bankId || undefined, // Optional - let user choose if not provided
-        accountTypes: ['CHECKING', 'SAVINGS'], // Focus on main account types
-        callbacks: {
-          successCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/webhooks?type=success&userId=${userId}`,
-          errorCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/finapi/webhooks?type=error&userId=${userId}`,
+        bank: {
+          id: parseInt(bankId), // finAPI erwartet Integer, nicht String
         },
-        profileId: undefined, // Use default profile
-        redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/finance/banking/accounts?import=success`,
+        bankConnectionName: `Taskilo Connection ${new Date().toLocaleDateString('de-DE')}`,
+        allowedInterfaces: ['XS2A', 'FINTS_SERVER', 'WEB_SCRAPER'],
+        callbacks: {
+          finalised: `https://taskilo.de/api/finapi/webform/success?userId=${userId}`,
+        },
+        allowTestBank: true,
       };
 
-      const webFormResponse = await fetch(`${baseUrl}/api/webForms/bankConnectionImport`, {
+      // Verwende webform-sandbox.finapi.io für Web Form 2.0 (getestet und funktioniert)
+      const webFormEndpoint =
+        credentialType === 'sandbox'
+          ? 'https://webform-sandbox.finapi.io/api/webForms/bankConnectionImport'
+          : 'https://webform.finapi.io/api/webForms/bankConnectionImport';
+
+      const webFormResponse = await fetch(webFormEndpoint, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${userAccessToken}`,
@@ -152,9 +173,24 @@ export async function POST(req: NextRequest) {
       });
 
       if (!webFormResponse.ok) {
-        const errorData = await webFormResponse.json();
-        throw new Error(
-          `WebForm creation failed: ${errorData.errors?.[0]?.message || 'Unknown error'}`
+        const errorText = await webFormResponse.text();
+        console.error('❌ Web Form Response Error:', {
+          status: webFormResponse.status,
+          statusText: webFormResponse.statusText,
+          error: errorText,
+        });
+
+        return NextResponse.json(
+          {
+            error: 'Web Form Erstellung fehlgeschlagen',
+            status: webFormResponse.status,
+            details: errorText,
+            debug: {
+              endpoint: webFormEndpoint,
+              request: webFormRequest,
+            },
+          },
+          { status: 500 }
         );
       }
 

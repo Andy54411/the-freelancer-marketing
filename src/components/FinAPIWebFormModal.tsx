@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiLoader, FiAlertCircle, FiCheckCircle, FiCreditCard } from 'react-icons/fi';
 
@@ -23,10 +23,9 @@ export default function FinAPIWebFormModal({
   bankName,
   title = 'Bank verbinden',
 }: FinAPIWebFormModalProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Client-side mounting guard
   useEffect(() => {
@@ -79,53 +78,54 @@ export default function FinAPIWebFormModal({
     }
   }, [isOpen, onSuccess, onError, onClose]);
 
-  // Handle iframe load
-  const handleIframeLoad = () => {
-    setIsLoading(false);
+  // Handle popup window for WebForm (CSP workaround)
+  const handleOpenWebFormPopup = () => {
+    setIsLoading(true);
     setError(null);
 
-    // Check if iframe loaded successfully
-    if (iframeRef.current) {
-      try {
-        // Try to access iframe content to detect errors
-        const iframeDoc = iframeRef.current.contentDocument;
-        if (iframeDoc && iframeDoc.title?.includes('404')) {
-          setError('WebForm konnte nicht geladen werden (404)');
-        }
-      } catch (e) {
-        // Cross-origin restriction is expected for finAPI
-        console.log('Iframe loaded (cross-origin restrictions apply)');
-      }
+    // Open WebForm in popup window to avoid CSP frame-ancestors issues
+    const popup = window.open(
+      webFormUrl,
+      'finapi-webform',
+      'width=800,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=yes,status=no'
+    );
+
+    if (!popup) {
+      setError(
+        'Popup wurde blockiert. Bitte erlauben Sie Popups für diese Website und versuchen Sie es erneut.'
+      );
+      setIsLoading(false);
+      return;
     }
 
-    // Additional check for connection issues
-    setTimeout(() => {
-      if (iframeRef.current && iframeRef.current.contentDocument) {
-        try {
-          const doc = iframeRef.current.contentDocument;
-          const body = doc.body;
-          if (
-            body &&
-            (body.innerText.includes('Verbindung abgelehnt') ||
-              body.innerText.includes('Connection refused') ||
-              body.innerText.includes("This site can't be reached"))
-          ) {
-            setError(
-              'finAPI Sandbox-Verbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.'
-            );
-          }
-        } catch (e) {
-          // Expected for cross-origin
-        }
+    // Monitor popup
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        setIsLoading(false);
+        // Popup was closed - assume cancelled unless we got a success message
+        console.log('WebForm popup was closed');
       }
-    }, 2000);
+    }, 1000);
+
+    // Timeout after 10 minutes
+    setTimeout(() => {
+      if (!popup.closed) {
+        clearInterval(checkClosed);
+        popup.close();
+        setError('WebForm-Timeout erreicht. Bitte versuchen Sie es erneut.');
+        setIsLoading(false);
+      }
+    }, 600000); // 10 minutes
+
+    setIsLoading(false);
   };
 
-  // Handle iframe error
+  // Handle iframe error (fallback)
   const handleIframeError = () => {
     setIsLoading(false);
     setError(
-      'finAPI Sandbox-Verbindung fehlgeschlagen. Die Sandbox-Umgebung ist möglicherweise temporär nicht verfügbar.'
+      'finAPI kann nicht in einem iframe geladen werden (CSP). Verwenden Sie die Popup-Option.'
     );
   };
 
@@ -173,67 +173,26 @@ export default function FinAPIWebFormModal({
 
         {/* Content */}
         <div className="flex-1 relative overflow-hidden">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <FiLoader className="animate-spin mx-auto mb-4 text-[#14ad9f]" size={32} />
-                <p className="text-gray-600">WebForm wird geladen...</p>
-              </div>
-            </div>
-          )}
-
           {error ? (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
               <div className="text-center max-w-md p-6">
                 <FiAlertCircle className="mx-auto mb-4 text-red-500" size={48} />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">WebForm-Fehler</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">WebForm-Problem</h3>
                 <p className="text-gray-600 mb-4">{error}</p>
-                {error.includes('Sandbox-Verbindung') || error.includes('Verbindung abgelehnt') ? (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                      <p className="font-medium">finAPI Sandbox-Problem erkannt</p>
-                      <p>Die finAPI Sandbox ist temporär nicht verfügbar.</p>
-                    </div>
-                    <div className="flex gap-3 justify-center">
-                      <button
-                        onClick={() => {
-                          // Try direct finAPI URL in new tab as fallback
-                          window.open(webFormUrl, '_blank', 'noopener,noreferrer');
-                          onClose();
-                        }}
-                        className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
-                      >
-                        In neuem Tab öffnen
-                      </button>
-                      <button
-                        onClick={() => {
-                          setError(null);
-                          setIsLoading(true);
-                          // Reload iframe
-                          if (iframeRef.current) {
-                            iframeRef.current.src = webFormUrl;
-                          }
-                        }}
-                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                      >
-                        Erneut versuchen
-                      </button>
-                    </div>
+                <div className="space-y-3">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                    <p className="font-medium">finAPI CSP-Einschränkung</p>
+                    <p>
+                      finAPI kann nicht in einem iframe geladen werden. Verwenden Sie das
+                      Popup-Fenster.
+                    </p>
                   </div>
-                ) : (
                   <div className="flex gap-3 justify-center">
                     <button
-                      onClick={() => {
-                        setError(null);
-                        setIsLoading(true);
-                        // Reload iframe
-                        if (iframeRef.current) {
-                          iframeRef.current.src = webFormUrl;
-                        }
-                      }}
+                      onClick={handleOpenWebFormPopup}
                       className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
                     >
-                      Erneut versuchen
+                      In Popup öffnen
                     </button>
                     <button
                       onClick={handleClose}
@@ -242,19 +201,48 @@ export default function FinAPIWebFormModal({
                       Abbrechen
                     </button>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ) : (
-            <iframe
-              ref={iframeRef}
-              src={webFormUrl}
-              className="w-full h-full border-0"
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              title="finAPI WebForm"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
-            />
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+              <div className="text-center max-w-md p-6">
+                <FiCreditCard className="mx-auto mb-4 text-[#14ad9f]" size={48} />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Bank-Verbindung starten
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Aufgrund von Sicherheitsrichtlinien öffnet sich das finAPI WebForm in einem
+                  separaten Fenster.
+                </p>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                    <p className="font-medium">Sicher und PSD2-konform</p>
+                    <p>Das WebForm wird direkt von finAPI bereitgestellt.</p>
+                  </div>
+                  <button
+                    onClick={handleOpenWebFormPopup}
+                    disabled={isLoading}
+                    className="w-full px-6 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <FiLoader className="animate-spin" />
+                        WebForm wird geöffnet...
+                      </>
+                    ) : (
+                      <>
+                        <FiCreditCard />
+                        WebForm öffnen
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-500">
+                    Falls ein Popup-Blocker aktiv ist, erlauben Sie bitte Popups für diese Website.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

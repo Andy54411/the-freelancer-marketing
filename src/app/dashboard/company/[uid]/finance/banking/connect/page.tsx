@@ -114,16 +114,16 @@ export default function ConnectBankPage() {
     try {
       console.log('🔗 Connecting to bank with WebForm 2.0:', bank.name);
 
-      // Use new WebForm 2.0 API
-      const response = await fetch('/api/finapi/connect-bank', {
+      // Use import-bank API for proper Web Form 2.0 integration
+      const response = await fetch('/api/finapi/import-bank', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          bankId: bank.id,
-          bankName: bank.name,
+          bankId: bank.id.toString(), // Convert to string for API
           userId: uid,
+          credentialType: 'sandbox', // Explicit sandbox for testing
         }),
       });
 
