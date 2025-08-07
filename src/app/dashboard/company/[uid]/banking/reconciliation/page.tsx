@@ -10,15 +10,11 @@ import {
   FileText,
   AlertTriangle,
   CreditCard,
-  Calendar,
   ArrowUpRight,
-  ArrowDownRight,
   DollarSign,
   Link,
   Unlink,
   Clock,
-  Check,
-  X,
 } from 'lucide-react';
 
 interface BankTransaction {
@@ -70,7 +66,6 @@ interface Invoice {
 
 export default function BankingReconciliationPage() {
   const params = useParams();
-  const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   // State Management
@@ -83,7 +78,7 @@ export default function BankingReconciliationPage() {
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
-  const [showReconciled, setShowReconciled] = useState(false);
+  const [showReconciled, setShowReconciled] = useState(true); // Standardmäßig alle Rechnungen anzeigen
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
 
@@ -94,24 +89,44 @@ export default function BankingReconciliationPage() {
   const loadInvoices = async () => {
     setLoadingInvoices(true);
     try {
+      console.log(`🔍 Loading invoices for companyId: ${uid}`);
+
       // Lade ALLE Rechnungen aus der Datenbank ohne Status-Filter
       const response = await fetch(
         `/api/banking/reconciliation/invoices?companyId=${uid}&status=all`
       );
       const data = await response.json();
 
+      console.log(`🔍 Full API Response:`, data);
+      console.log(`� API Success: ${data.success}`);
+      console.log(`📊 Total invoices received: ${data.invoices?.length || 0}`);
+
       if (data.success) {
-        console.log(`🔍 API Response:`, data);
-        console.log(`📊 Total invoices received: ${data.invoices.length}`);
-        setInvoices(data.invoices);
-        console.log(`✅ Loaded ${data.invoices.length} invoices for reconciliation`);
+        setInvoices(data.invoices || []);
+        console.log(
+          `✅ Successfully loaded ${data.invoices?.length || 0} invoices for reconciliation`
+        );
+
+        // Debug: Log each invoice
+        data.invoices?.forEach((invoice: Invoice, index: number) => {
+          console.log(`📄 Invoice ${index + 1}:`, {
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            total: invoice.total,
+            status: invoice.status,
+            companyId: invoice.companyId,
+          });
+        });
       } else {
         console.error('❌ API Error:', data.error);
         setError(data.error || 'Fehler beim Laden der Rechnungen');
+        setInvoices([]); // Ensure invoices array is empty on error
       }
-    } catch (err: any) {
-      console.error('Error loading invoices:', err);
-      setError('Fehler beim Laden der Rechnungen');
+    } catch (err: unknown) {
+      console.error('❌ Network/Parse Error loading invoices:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Fehler beim Laden der Rechnungen: ' + errorMessage);
+      setInvoices([]); // Ensure invoices array is empty on error
     } finally {
       setLoadingInvoices(false);
     }
@@ -133,7 +148,7 @@ export default function BankingReconciliationPage() {
         console.log('No transactions found or user not connected to finAPI');
         setTransactions([]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading transactions:', err);
       setTransactions([]);
     } finally {
@@ -176,9 +191,10 @@ export default function BankingReconciliationPage() {
       } else {
         setError(data.error || 'Fehler beim Abgleich');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error reconciling:', err);
-      setError('Fehler beim Abgleich: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Fehler beim Abgleich: ' + errorMessage);
     } finally {
       setReconcilingInvoice(null);
     }
@@ -205,9 +221,10 @@ export default function BankingReconciliationPage() {
       } else {
         setError(data.error || 'Fehler beim Rückgängigmachen');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error undoing reconciliation:', err);
-      setError('Fehler beim Rückgängigmachen: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Fehler beim Rückgängigmachen: ' + errorMessage);
     }
   };
 
@@ -217,7 +234,7 @@ export default function BankingReconciliationPage() {
       setLoading(true);
       Promise.all([loadInvoices(), loadTransactions()]).finally(() => setLoading(false));
     }
-  }, [uid]); // Entferne showReconciled Dependency, da wir alle Rechnungen laden
+  }, [uid, loadInvoices, loadTransactions]); // Entferne showReconciled Dependency, da wir alle Rechnungen laden
 
   // Utility Functions
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
@@ -244,7 +261,9 @@ export default function BankingReconciliationPage() {
       invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Zeige abgeglichene Rechnungen nur wenn showReconciled aktiviert ist
+    // Standardmäßig alle Rechnungen anzeigen, nur verstecken wenn explizit ausgeschaltet
+    // showReconciled = true: Zeige alle (auch abgeglichene)
+    // showReconciled = false: Zeige nur offene (nicht abgeglichene)
     const matchesReconcileFilter = showReconciled || !invoice.isReconciled;
 
     return matchesSearch && matchesReconcileFilter;
@@ -427,7 +446,7 @@ export default function BankingReconciliationPage() {
               className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
             />
             <label htmlFor="show-reconciled" className="ml-2 block text-sm text-gray-900">
-              Abgeglichene anzeigen
+              Abgeglichene Rechnungen anzeigen
             </label>
           </div>
 
@@ -522,7 +541,19 @@ export default function BankingReconciliationPage() {
             </ul>
           </div>
           {filteredInvoices.length === 0 && (
-            <div className="px-6 py-8 text-center text-gray-500">Keine Rechnungen gefunden</div>
+            <div className="px-6 py-8 text-center text-gray-500">
+              <div className="space-y-2">
+                <p>Keine Rechnungen gefunden</p>
+                <div className="text-xs bg-gray-100 p-2 rounded">
+                  <p>🔍 Debug Info:</p>
+                  <p>Company ID: {uid}</p>
+                  <p>Total Invoices Loaded: {invoices.length}</p>
+                  <p>Loading: {loadingInvoices ? 'Ja' : 'Nein'}</p>
+                  <p>Show Reconciled: {showReconciled ? 'Ja' : 'Nein'}</p>
+                  <p>Search Term: &quot;{searchTerm}&quot;</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
