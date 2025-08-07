@@ -112,24 +112,62 @@ export async function GET(request: NextRequest) {
     const accountsData = await accountsResponse.json();
     console.log('✅ Retrieved accounts:', accountsData.accounts?.length || 0);
 
+    // Step 4: Get bank connections to get correct bank names
+    const connectionsResponse = await fetch(`${baseUrl}/api/v2/bankConnections`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${userAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const bankConnectionsMap: Record<string, any> = {};
+
+    if (connectionsResponse.ok) {
+      const connectionsData = await connectionsResponse.json();
+      console.log('✅ Retrieved bank connections:', connectionsData.connections?.length || 0);
+
+      // Create a map of connection ID to bank info
+      (connectionsData.connections || []).forEach((conn: any) => {
+        bankConnectionsMap[conn.id.toString()] = {
+          bankName: conn.name || `Bank ${conn.bankId}`,
+          bankId: conn.bankId,
+          bankCode: conn.bankCode,
+          bic: conn.bic,
+        };
+      });
+    } else {
+      console.warn('⚠️ Could not load bank connections, using account bank names');
+    }
+
     // Transform finAPI accounts to Taskilo format for dashboard
-    const transformedAccounts = (accountsData.accounts || []).map((account: any) => ({
-      id: account.id,
-      accountName: account.accountName || 'Unbekanntes Konto',
-      iban: account.iban,
-      balance: account.balance || 0,
-      availableBalance: account.balance || 0, // finAPI uses balance for both
-      currency: account.currency || 'EUR',
-      accountType: mapFinAPIAccountType(account.accountType),
-      bankName: account.bankName || 'Unbekannte Bank',
-      isDefault: false, // finAPI doesn't have default concept, we can set first as default
-      bankConnectionId: account.bankConnectionId,
-      accountNumber: account.accountNumber,
-      subAccountNumber: account.subAccountNumber,
-      isSeized: account.isSeized || false,
-      lastSuccessfulUpdate: account.lastSuccessfulUpdate,
-      lastUpdateAttempt: account.lastUpdateAttempt,
-    }));
+    const transformedAccounts = (accountsData.accounts || []).map((account: any) => {
+      const connectionId = account.bankConnectionId?.toString();
+      const bankInfo = bankConnectionsMap[connectionId] || {
+        bankName: account.bankName || 'Unbekannte Bank',
+        bankId: 'unknown',
+        bankCode: '',
+        bic: '',
+      };
+
+      return {
+        id: account.id,
+        accountName: account.accountName || 'Unbekanntes Konto',
+        iban: account.iban,
+        balance: account.balance || 0,
+        availableBalance: account.balance || 0, // finAPI uses balance for both
+        currency: account.currency || 'EUR',
+        accountType: mapFinAPIAccountType(account.accountType),
+        bankName: bankInfo.bankName, // Use bank name from connection
+        isDefault: false, // finAPI doesn't have default concept, we can set first as default
+        bankConnectionId: account.bankConnectionId,
+        accountNumber: account.accountNumber,
+        subAccountNumber: account.subAccountNumber,
+        isSeized: account.isSeized || false,
+        lastSuccessfulUpdate: account.lastSuccessfulUpdate,
+        lastUpdateAttempt: account.lastUpdateAttempt,
+      };
+    });
 
     // Set first account as default if any exist
     if (transformedAccounts.length > 0) {

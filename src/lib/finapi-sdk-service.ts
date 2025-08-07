@@ -212,10 +212,9 @@ export class FinAPISDKService {
 
       console.log('✅ New finAPI user created:', user.id);
       return user;
-      
     } catch (error: any) {
       console.log('⚠️ User creation failed:', error.status, error.message);
-      
+
       // User already exists - this is actually OK for our use case
       if (error.status === 422 && error.message?.includes('already exists')) {
         console.log('ℹ️ User already exists, will attempt authentication');
@@ -227,7 +226,7 @@ export class FinAPISDKService {
           isAutoUpdateEnabled: true,
         };
       }
-      
+
       // Re-throw other errors
       throw error;
     }
@@ -243,13 +242,15 @@ export class FinAPISDKService {
     email?: string
   ): Promise<{ user: User; userToken: string }> {
     console.log('👤 Getting or creating technical finAPI user account for:', userId);
-    console.log('ℹ️ Note: This is only a technical account - user will login to their BANK, not finAPI');
-    
+    console.log(
+      'ℹ️ Note: This is only a technical account - user will login to their BANK, not finAPI'
+    );
+
     // Step 1: Try to authenticate existing user first (more common scenario)
     try {
       console.log('� Step 1: Trying to authenticate existing user:', userId);
       const userToken = await this.getUserToken(userId, password);
-      
+
       // User exists and authentication successful
       const user: User = {
         id: userId,
@@ -257,49 +258,47 @@ export class FinAPISDKService {
         email: email || `${userId}@taskilo.de`,
         isAutoUpdateEnabled: true,
       };
-      
+
       console.log('✅ Successfully authenticated existing finAPI user:', userId);
       return { user, userToken };
-      
     } catch (authError: any) {
       console.log('ℹ️ User authentication failed (user might not exist):', authError.status);
-      
+
       // Step 2: If authentication fails because user doesn't exist, try to create
       if (authError.status === 400 || authError.status === 401 || authError.status === 404) {
         try {
           console.log('� Step 2: Creating new finAPI user:', userId);
           const user = await this.createUser(userId, password, email);
-          
+
           // Get token for newly created user
           console.log('🔑 Getting authentication token for new user');
           const userToken = await this.getUserToken(userId, password);
-          
+
           console.log('✅ New finAPI user created and authenticated:', userId);
           return { user, userToken };
-          
         } catch (createError: any) {
           console.error('❌ User creation failed after authentication failure:', {
             status: createError.status,
-            message: createError.message
+            message: createError.message,
           });
-          
+
           // If creation also fails, provide detailed error
           throw new Error(
             `Failed to create finAPI user '${userId}' after authentication failed. ` +
-            `Status: ${createError.status}, Message: ${createError.message || 'Unknown creation error'}`
+              `Status: ${createError.status}, Message: ${createError.message || 'Unknown creation error'}`
           );
         }
       }
-      
+
       // Step 3: If it's a different authentication error, provide detailed info
       console.error('❌ Unexpected user authentication error:', {
         status: authError.status,
-        message: authError.message
+        message: authError.message,
       });
-      
+
       throw new Error(
         `Failed to authenticate finAPI user '${userId}'. Status: ${authError.status}, ` +
-        `Message: ${authError.message || 'Unknown authentication error'}`
+          `Message: ${authError.message || 'Unknown authentication error'}`
       );
     }
   }
@@ -367,11 +366,28 @@ export class FinAPISDKService {
   }
 
   /**
+   * Get single bank connection by ID
+   */
+  async getBankConnection(userToken: string, connectionId: string): Promise<BankConnection | null> {
+    const connectionsApi = await this.getBankConnectionsApi(userToken);
+    try {
+      const connection = await connectionsApi.getBankConnection(parseInt(connectionId));
+      return connection;
+    } catch (error) {
+      console.error('❌ Failed to get bank connection:', connectionId, error);
+      return null;
+    }
+  }
+
+  /**
    * Get accounts for user
    */
-  async getAccounts(userToken: string): Promise<Account[]> {
+  async getAccounts(userToken: string, accountIds?: number[]): Promise<Account[]> {
     const accountsApi = await this.getAccountsApi(userToken);
-    const response = await accountsApi.getAndSearchAllAccounts();
+    const response = await accountsApi.getAndSearchAllAccounts(
+      undefined, // view
+      accountIds ? accountIds.join(',') : undefined // ids filter
+    );
 
     return response.accounts || [];
   }

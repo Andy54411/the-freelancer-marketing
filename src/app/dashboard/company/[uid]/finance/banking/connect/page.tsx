@@ -42,17 +42,43 @@ export default function ConnectBankPage() {
   const [error, setError] = useState<string | null>(null);
   const [availableBanks, setAvailableBanks] = useState<Bank[]>([]);
   const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
+  const [connectedBanks, setConnectedBanks] = useState<{ [bankId: string]: boolean }>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
+  const [preSelectedBankId, setPreSelectedBankId] = useState<string | null>(null);
 
   // WebForm Modal States
   const [isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
   const [webFormUrl, setWebFormUrl] = useState<string>('');
   const [webFormBankName, setWebFormBankName] = useState<string>('');
 
+  // Check for bank parameter from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bankId = urlParams.get('bankId');
+    const bankName = urlParams.get('bankName');
+
+    if (bankId) {
+      setPreSelectedBankId(bankId);
+      console.log('🎯 Pre-selected bank from URL:', { bankId, bankName });
+    }
+  }, []);
+
   useEffect(() => {
     loadAvailableBanks();
+    loadConnectedBanks();
   }, []);
+
+  // Auto-connect if bank is pre-selected from URL
+  useEffect(() => {
+    if (preSelectedBankId && availableBanks.length > 0 && !isConnecting) {
+      const bank = availableBanks.find(b => b.id.toString() === preSelectedBankId);
+      if (bank && !connectedBanks[bank.id.toString()]) {
+        console.log('🚀 Auto-connecting to pre-selected bank:', bank.name);
+        handleConnectBank(bank);
+      }
+    }
+  }, [preSelectedBankId, availableBanks, connectedBanks, isConnecting]);
 
   useEffect(() => {
     if (searchTerm.length > 0) {
@@ -104,8 +130,75 @@ export default function ConnectBankPage() {
     }
   };
 
+  const loadConnectedBanks = async () => {
+    try {
+      if (!user?.uid) return;
+
+      console.log('🔍 Loading connected banks for user:', user.uid);
+
+      // SCHRITT 1: Versuche zuerst lokale Daten zu laden
+      const response = await fetch(
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=sandbox`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.accounts && data.accounts.length > 0) {
+          const connected: { [bankId: string]: boolean } = {};
+          data.accounts.forEach((account: any) => {
+            if (account.bankId) {
+              connected[account.bankId] = true;
+            }
+          });
+          setConnectedBanks(connected);
+          console.log('✅ Loaded connected banks from local storage:', Object.keys(connected));
+          return;
+        }
+      }
+
+      // SCHRITT 2: Falls keine lokalen Daten, versuche finAPI-Sync
+      console.log('🔄 No local data found, syncing existing finAPI connections...');
+      const syncResponse = await fetch('/api/finapi/sync-existing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          credentialType: 'sandbox',
+        }),
+      });
+
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        if (syncData.success && syncData.found && syncData.accounts) {
+          const connected: { [bankId: string]: boolean } = {};
+          syncData.accounts.forEach((account: any) => {
+            if (account.bankId) {
+              connected[account.bankId] = true;
+            }
+          });
+          setConnectedBanks(connected);
+          console.log('✅ Synced and loaded existing finAPI connections:', Object.keys(connected));
+        } else {
+          console.log('ℹ️ No existing finAPI connections found');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading connected banks:', error);
+    }
+  };
+
   const handleConnectBank = async (bank: Bank) => {
     if (isConnecting) return;
+
+    // Check if bank is already connected
+    if (connectedBanks[bank.id.toString()]) {
+      setError(
+        `${bank.name} ist bereits verbunden. Sie können diese Bank in Ihren Konten verwalten.`
+      );
+      return;
+    }
 
     setIsConnecting(true);
     setSelectedBank(bank);
@@ -130,6 +223,12 @@ export default function ConnectBankPage() {
       const result = await response.json();
 
       if (!response.ok) {
+        // Spezielle Behandlung für "Bank not supported" Fehler
+        if (result.error && result.error.includes('BANK_NOT_SUPPORTED')) {
+          throw new Error(
+            `${bank.name} unterstützt keine Kontoinformationen in der Sandbox. Bitte wählen Sie eine andere Bank.`
+          );
+        }
         throw new Error(result.error || 'Verbindung zur Bank fehlgeschlagen');
       }
 
@@ -159,15 +258,36 @@ export default function ConnectBankPage() {
     router.push(`/dashboard/company/${uid}/finance/banking`);
   };
 
-  const handleWebFormSuccess = (bankConnectionId?: string) => {
+  const handleWebFormSuccess = async (bankConnectionId?: string) => {
     console.log('🎉 Bank connection successful:', bankConnectionId);
     setIsWebFormModalOpen(false);
     setSelectedBank(null);
 
-    // Redirect to banking dashboard with success message
-    router.push(
-      `/dashboard/company/${uid}/finance/banking?connection=success&bank=${encodeURIComponent(webFormBankName)}`
+    // Update connected banks state
+    if (selectedBank) {
+      setConnectedBanks(prev => ({
+        ...prev,
+        [selectedBank.id.toString()]: true,
+      }));
+    }
+
+    // Wait a moment for data to be processed
+    setTimeout(() => {
+      // Reload connected banks to get fresh data
+      loadConnectedBanks();
+    }, 1000);
+
+    // Show success message
+    setError(
+      `✅ ${webFormBankName} wurde erfolgreich verbunden! Ihre Kontodaten werden verarbeitet...`
     );
+
+    // Redirect to banking accounts page with success message after brief delay
+    setTimeout(() => {
+      router.push(
+        `/dashboard/company/${uid}/finance/banking/accounts?connection=success&bank=${encodeURIComponent(webFormBankName)}`
+      );
+    }, 2000);
   };
 
   const handleWebFormError = (error: string) => {
@@ -213,7 +333,9 @@ export default function ConnectBankPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bank verbinden</h1>
           <p className="text-gray-600 mt-1">
-            Wählen Sie Ihre Bank aus und verbinden Sie sie sicher mit WebForm 2.0
+            {preSelectedBankId
+              ? 'Verbindung zur ausgewählten Bank wird hergestellt...'
+              : 'Wählen Sie Ihre Bank aus und verbinden Sie sie sicher mit WebForm 2.0'}
           </p>
         </div>
       </div>
@@ -252,7 +374,8 @@ export default function ConnectBankPage() {
             <div className="flex-1">
               <h4 className="font-medium text-blue-900">finAPI Sandbox-Umgebung</h4>
               <p className="text-blue-700 text-sm">
-                Dies ist eine Test-Umgebung mit Demo-Banken. Keine echten Bankdaten erforderlich.
+                Dies ist eine Test-Umgebung mit Demo-Banken. Nur Banken mit &quot;Demo&quot; oder
+                &quot;Test&quot; im Namen unterstützen Kontoinformationen.
               </p>
             </div>
           </div>
@@ -304,55 +427,84 @@ export default function ConnectBankPage() {
                   {searchTerm ? 'Keine Banken gefunden' : 'Keine Banken verfügbar'}
                 </div>
               ) : (
-                filteredBanks.map(bank => (
-                  <div
-                    key={bank.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedBank?.id === bank.id && isConnecting
-                        ? 'border-blue-300 bg-blue-50'
-                        : 'hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={() => handleConnectBank(bank)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Building2 className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">{bank.name}</h3>
-                          <div className="flex items-center gap-3 mt-1">
-                            {bank.city && (
-                              <span className="text-sm text-gray-600">{bank.city}</span>
-                            )}
-                            {bank.blz && (
-                              <span className="text-sm text-gray-600">BLZ: {bank.blz}</span>
-                            )}
-                            {bank.isTestBank && (
-                              <Badge variant="secondary" className="text-xs">
-                                Test Bank
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                filteredBanks.map(bank => {
+                  const isConnected = connectedBanks[bank.id.toString()];
+                  const isPreSelected = preSelectedBankId === bank.id.toString();
 
-                      <div className="flex items-center gap-2">
-                        {selectedBank?.id === bank.id && isConnecting ? (
-                          <div className="flex items-center gap-2 text-blue-600">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span className="text-sm">Verbinde...</span>
+                  return (
+                    <div
+                      key={bank.id}
+                      className={`p-4 border rounded-lg transition-colors ${
+                        isConnected
+                          ? 'border-green-300 bg-green-50 cursor-default'
+                          : isPreSelected
+                            ? 'border-[#14ad9f] bg-[#14ad9f]/10 cursor-pointer shadow-md'
+                            : selectedBank?.id === bank.id && isConnecting
+                              ? 'border-blue-300 bg-blue-50 cursor-pointer'
+                              : 'hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                      onClick={() => !isConnected && handleConnectBank(bank)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Building2 className="h-5 w-5 text-blue-600" />
                           </div>
-                        ) : (
-                          <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488]">
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Verbinden
-                          </Button>
-                        )}
+                          <div>
+                            <h3 className="font-medium text-gray-900">{bank.name}</h3>
+                            <div className="flex items-center gap-3 mt-1">
+                              {bank.city && (
+                                <span className="text-sm text-gray-600">{bank.city}</span>
+                              )}
+                              {bank.blz && (
+                                <span className="text-sm text-gray-600">BLZ: {bank.blz}</span>
+                              )}
+                              {bank.isTestBank && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Test Bank
+                                </Badge>
+                              )}
+                              {isConnected && (
+                                <Badge
+                                  variant="default"
+                                  className="text-xs bg-green-600 text-white"
+                                >
+                                  Verbunden
+                                </Badge>
+                              )}
+                              {isPreSelected && !isConnected && (
+                                <Badge
+                                  variant="default"
+                                  className="text-xs bg-[#14ad9f] text-white"
+                                >
+                                  Ausgewählt
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {isConnected ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <span className="text-sm font-medium">Bereits verbunden</span>
+                            </div>
+                          ) : selectedBank?.id === bank.id && isConnecting ? (
+                            <div className="flex items-center gap-2 text-blue-600">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span className="text-sm">Verbinde...</span>
+                            </div>
+                          ) : (
+                            <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488]">
+                              <CreditCard className="mr-2 h-4 w-4" />
+                              Verbinden
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}

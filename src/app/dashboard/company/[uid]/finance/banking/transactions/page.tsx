@@ -16,6 +16,9 @@ import {
   ArrowDownRight,
   DollarSign,
   AlertCircle,
+  X,
+  Eye,
+  Copy,
 } from 'lucide-react';
 
 interface Transaction {
@@ -59,13 +62,17 @@ export default function TransactionsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Modal State
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dateRange, setDateRange] = useState('30');
 
-  // Load Transactions from finAPI
+  // Load Transactions from finAPI and local storage
   const loadTransactions = async () => {
     setLoading(true);
     setError(null);
@@ -77,9 +84,22 @@ export default function TransactionsPage() {
         return;
       }
 
-      console.log('Loading finAPI transactions for user:', user.uid);
+      console.log('Loading transactions for user:', user.uid);
 
-      // Use new B2B API endpoint with user ID parameter
+      // First try to load from enhanced accounts API (includes local storage)
+      const accountsResponse = await fetch(
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=sandbox`
+      );
+
+      if (accountsResponse.ok) {
+        const accountsData = await accountsResponse.json();
+        if (accountsData.success && accountsData.accounts) {
+          setAccounts(accountsData.accounts);
+          console.log(`Loaded ${accountsData.accounts.length} accounts (${accountsData.source})`);
+        }
+      }
+
+      // Then load transactions from finAPI
       const transactionsResponse = await fetch(
         `/api/finapi/transactions?userId=${user.uid}&credentialType=sandbox&page=1&perPage=100`
       );
@@ -97,20 +117,9 @@ export default function TransactionsPage() {
       } else {
         console.log('No transactions found or user not connected to finAPI');
         setTransactions([]);
-        setError(
-          data.message || 'Keine Transaktionen gefunden. Bitte verbinden Sie zuerst ein Bankkonto.'
-        );
-      }
-
-      // Also load accounts for filtering
-      const accountsResponse = await fetch(
-        `/api/finapi/accounts?userId=${user.uid}&credentialType=sandbox`
-      );
-
-      if (accountsResponse.ok) {
-        const accountsData = await accountsResponse.json();
-        if (accountsData.success && accountsData.accounts) {
-          setAccounts(accountsData.accounts);
+        // Don't set error for "no user found" message - this is normal
+        if (data.message && !data.message.includes('please connect a bank first')) {
+          setError(data.message);
         }
       }
     } catch (err: any) {
@@ -127,6 +136,17 @@ export default function TransactionsPage() {
     setRefreshing(true);
     await loadTransactions();
     setRefreshing(false);
+  };
+
+  // Modal functions
+  const openTransactionDetails = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  const closeTransactionDetails = () => {
+    setSelectedTransaction(null);
+    setIsModalOpen(false);
   };
 
   useEffect(() => {
@@ -415,6 +435,13 @@ export default function TransactionsPage() {
                       </p>
                       {transaction.isPending && <p className="text-xs text-gray-500">Ausstehend</p>}
                     </div>
+                    <button
+                      onClick={() => openTransactionDetails(transaction)}
+                      className="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Details
+                    </button>
                   </div>
                 </div>
               </li>
@@ -424,16 +451,261 @@ export default function TransactionsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredTransactions.length === 0 && (
+      {filteredTransactions.length === 0 && !error && (
         <div className="text-center py-12">
           <div className="flex flex-col items-center">
-            <Search className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Transaktionen gefunden</h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm || selectedAccount !== 'all' || selectedCategory !== 'all'
-                ? 'Versuchen Sie andere Filterkriterien.'
-                : 'Es sind noch keine Transaktionen vorhanden.'}
-            </p>
+            {accounts.length === 0 ? (
+              <>
+                <CreditCard className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bank verbunden</h3>
+                <p className="text-gray-600 mb-6">
+                  Verbinden Sie zuerst ein Bankkonto, um Transaktionen zu sehen.
+                </p>
+                <button
+                  onClick={() =>
+                    (window.location.href = `/dashboard/company/${uid}/finance/banking/import`)
+                  }
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                >
+                  Bank verbinden
+                </button>
+              </>
+            ) : (
+              <>
+                <Search className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Keine Transaktionen gefunden
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {searchTerm || selectedAccount !== 'all' || selectedCategory !== 'all'
+                    ? 'Versuchen Sie andere Filterkriterien.'
+                    : 'Es sind noch keine Transaktionen vorhanden.'}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {isModalOpen && selectedTransaction && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Transaktionsdetails</h3>
+              <button
+                onClick={closeTransactionDetails}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Transaction Overview */}
+                <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    {getTransactionIcon(
+                      selectedTransaction.transactionType,
+                      selectedTransaction.amount
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {selectedTransaction.purpose}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {selectedTransaction.counterpartName || 'Unbekannter Empfänger'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className={`text-xl font-bold ${
+                        selectedTransaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {selectedTransaction.amount >= 0 ? '+' : ''}
+                      {formatCurrency(selectedTransaction.amount, selectedTransaction.currency)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Transaction Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Transaktions-ID
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm text-gray-900 font-mono">{selectedTransaction.id}</p>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(selectedTransaction.id)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Konto</label>
+                      <p className="text-sm text-gray-900">
+                        {accounts.find(a => a.id === selectedTransaction.accountId)?.accountName ||
+                          'Unbekanntes Konto'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Buchungsdatum
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {formatDate(selectedTransaction.bookingDate)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Wertstellungsdatum
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {formatDate(selectedTransaction.valueDate)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedTransaction.transactionType === 'CREDIT'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {selectedTransaction.transactionType === 'CREDIT' ? 'Einnahme' : 'Ausgabe'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    {selectedTransaction.counterpartName && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Gegenstelle
+                        </label>
+                        <p className="text-sm text-gray-900">
+                          {selectedTransaction.counterpartName}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.counterpartIban && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          IBAN der Gegenstelle
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm text-gray-900 font-mono">
+                            {selectedTransaction.counterpartIban}
+                          </p>
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(
+                                selectedTransaction.counterpartIban || ''
+                              )
+                            }
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Währung
+                      </label>
+                      <p className="text-sm text-gray-900">{selectedTransaction.currency}</p>
+                    </div>
+
+                    {selectedTransaction.category && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Kategorie
+                        </label>
+                        <p className="text-sm text-gray-900">{selectedTransaction.category}</p>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <div className="flex space-x-2">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedTransaction.isReconciled
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {selectedTransaction.isReconciled ? 'Abgeglichen' : 'Offen'}
+                        </span>
+                        {selectedTransaction.isPending && (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Ausstehend
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Full Purpose Text */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Verwendungszweck
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                      {selectedTransaction.purpose}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={closeTransactionDetails}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              >
+                Schließen
+              </button>
+              <button
+                onClick={() => {
+                  const details = `
+Transaktion: ${selectedTransaction.purpose}
+Betrag: ${formatCurrency(selectedTransaction.amount, selectedTransaction.currency)}
+Datum: ${formatDate(selectedTransaction.bookingDate)}
+Gegenstelle: ${selectedTransaction.counterpartName || 'Unbekannt'}
+IBAN: ${selectedTransaction.counterpartIban || 'Nicht verfügbar'}
+ID: ${selectedTransaction.id}
+                  `.trim();
+                  navigator.clipboard.writeText(details);
+                }}
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              >
+                <Copy className="h-4 w-4 mr-2 inline" />
+                Kopieren
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -7,9 +7,10 @@ import { getFinApiCredentials, getFinApiBaseUrl } from '@/lib/finapi-config';
  * Retrieves details for a specific task by ID.
  * API Reference: https://docs.finapi.io/#get-/api/tasks/{id}
  */
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const taskId = params.id;
+    const resolvedParams = await params;
+    const taskId = resolvedParams.id;
     const { searchParams } = new URL(req.url);
     const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
 
@@ -129,13 +130,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Task details error:', error);
+    const resolvedParams = await params;
     return NextResponse.json(
       {
         error: 'Internal server error',
-        taskId: params.id,
-        details: error.message,
+        taskId: resolvedParams.id,
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -145,9 +147,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 /**
  * Cancel a specific task (DELETE)
  */
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const taskId = params.id;
+    const resolvedParams = await params;
+    const taskId = resolvedParams.id;
     const { searchParams } = new URL(req.url);
     const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
 
@@ -226,13 +229,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Task cancellation error:', error);
+    const resolvedParams = await params;
     return NextResponse.json(
       {
         error: 'Internal server error',
-        taskId: params.id,
-        details: error.message,
+        taskId: resolvedParams.id,
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -283,7 +287,7 @@ function getTaskStatusInfo(status: string) {
 /**
  * Helper function to calculate task progress percentage
  */
-function calculateTaskProgress(task: any): number {
+function calculateTaskProgress(task: { status?: string }): number {
   switch (task.status) {
     case 'NOT_YET_STARTED':
       return 0;
@@ -302,7 +306,7 @@ function calculateTaskProgress(task: any): number {
 /**
  * Helper function to estimate completion time
  */
-function estimateCompletionTime(task: any): string | null {
+function estimateCompletionTime(task: { status?: string; createdAt?: string }): string | null {
   if (task.status === 'COMPLETED' || task.status === 'COMPLETED_WITH_ERROR') {
     return null; // Already completed
   }

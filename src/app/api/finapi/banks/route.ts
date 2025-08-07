@@ -18,60 +18,7 @@ export async function GET(request: NextRequest) {
     console.log('🏦 Fetching banks via finAPI SDK Service...');
     console.log('Search params:', { search, page, perPage, includeTestBanks });
 
-    // Test finAPI credentials first
-    const credentialTest = await finapiService.testCredentials();
-    
-    if (!credentialTest.success) {
-      console.warn('⚠️ FinAPI credentials not working, returning mock banks');
-      
-      // Return mock banks for development
-      const mockBanks = [
-        {
-          id: 280700240,
-          name: 'Deutsche Bank',
-          blz: '28070024',
-          city: 'Berlin',
-          isTestBank: false,
-          popularity: 90
-        },
-        {
-          id: 370500000,
-          name: 'Sparkasse Köln/Bonn',
-          blz: '37050000',
-          city: 'Köln',
-          isTestBank: false,
-          popularity: 85
-        },
-        {
-          id: 12345678,
-          name: 'Test Bank (Sandbox)',
-          blz: '12345678',
-          city: 'Test City',
-          isTestBank: true,
-          popularity: 50
-        }
-      ].filter(bank => {
-        if (!includeTestBanks && bank.isTestBank) return false;
-        if (search && !bank.name.toLowerCase().includes(search.toLowerCase())) return false;
-        return true;
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          banks: mockBanks,
-          totalResults: mockBanks.length,
-          page,
-          perPage,
-          hasMore: false,
-        },
-        mode: 'mock',
-        source: 'Mock Banks (FinAPI Credentials Invalid)',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Use the finAPI SDK Service to get banks (only if credentials work)
+    // Get banks directly from finAPI SDK Service - no mock data
     const banks = await finapiService.listBanks(
       search || undefined,
       undefined, // location - not used in current implementation
@@ -82,12 +29,36 @@ export async function GET(request: NextRequest) {
     console.log(`✅ Found ${banks.length} banks via SDK`);
 
     // Filter test banks if needed
-    const filteredBanks = includeTestBanks
+    let filteredBanks = includeTestBanks
       ? banks
       : banks.filter(
           bank =>
             !bank.name?.toLowerCase().includes('test') && !bank.name?.toLowerCase().includes('demo')
         );
+
+    // In sandbox environment, prioritize working test banks
+    filteredBanks = filteredBanks.filter(bank => {
+      // For test environment, show only banks with working AIS interfaces
+      const hasWorkingAIS = bank.interfaces?.some(
+        (iface: any) =>
+          (iface.bankingInterface === 'XS2A' || iface.bankingInterface === 'FINTS_SERVER') &&
+          iface.isAisSupported === true &&
+          iface.health &&
+          iface.health > 0
+      );
+
+      // Special handling for known working finAPI test banks
+      const knownTestBankIds = [280001, 280002, 26579]; // finAPI Test Bank, finAPI Test Redirect Bank, B+S Demobank
+      if (knownTestBankIds.includes(bank.id)) {
+        return true; // Always include known working test banks
+      }
+
+      return hasWorkingAIS;
+    });
+
+    console.log(
+      `✅ Found ${filteredBanks.length} AIS-compatible banks (filtered from ${banks.length} total)`
+    );
 
     return NextResponse.json({
       success: true,
@@ -99,7 +70,7 @@ export async function GET(request: NextRequest) {
         hasMore: filteredBanks.length === perPage,
       },
       mode: 'live',
-      source: 'finAPI SDK Service v1.0.3',
+      source: 'finAPI SDK Service v1.0.3 (AIS-filtered)',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

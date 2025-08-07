@@ -6,15 +6,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Building2, 
-  CreditCard, 
-  Plus, 
-  Settings, 
+import {
+  Building2,
+  CreditCard,
+  Plus,
+  Settings,
   ArrowRight,
   Zap,
   Shield,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 
 interface BankConnection {
@@ -37,13 +37,13 @@ export default function BankingPage() {
   useEffect(() => {
     if (!user || user.uid !== uid) return;
     loadBankConnections();
-    
+
     // Check for success callback from WebForm
     const urlParams = new URLSearchParams(window.location.search);
     const connectionStatus = urlParams.get('connection');
     const mode = urlParams.get('mode');
     const bankId = urlParams.get('bank');
-    
+
     if (connectionStatus === 'success') {
       if (mode === 'mock') {
         console.log('🎭 Mock bank connection successful for bank:', bankId);
@@ -57,7 +57,7 @@ export default function BankingPage() {
           loadBankConnections();
         }, 1000);
       }
-      
+
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -66,43 +66,51 @@ export default function BankingPage() {
   const loadBankConnections = async () => {
     try {
       setLoading(true);
-      
-      // Load real bank connections from finAPI
-      const response = await fetch(
-        `/api/finapi/bank-connections?userId=${encodeURIComponent(uid)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+
+      console.log('📊 Loading stored banking data for user:', uid);
+
+      // Load stored banking data from Firestore
+      const response = await fetch(`/api/banking/stored-data?userId=${encodeURIComponent(uid)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to load bank connections: ${response.statusText}`);
+        throw new Error(`Failed to load banking data: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
+      console.log('📊 Banking data response:', data);
+
       if (data.success) {
-        // Transform finAPI bank connections to our format
-        const transformedConnections: BankConnection[] = data.bankConnections.map((conn: any) => ({
-          id: conn.id.toString(),
-          bankName: conn.name || `Bank ${conn.bankId}`,
-          status: conn.updateStatus === 'IN_PROGRESS' ? 'pending' : 
-                 conn.updateStatus === 'READY' ? 'connected' : 'error',
-          accountCount: conn.accountIds?.length || 0,
-          lastSync: conn.lastManualUpdate?.timestamp || conn.lastAutoUpdate?.timestamp,
+        // Transform stored connections to our format
+        const transformedConnections: BankConnection[] = data.connections.map((conn: any) => ({
+          id: conn.id,
+          bankName: conn.bankName,
+          status:
+            conn.status === 'ready' ? 'connected' : conn.status === 'pending' ? 'pending' : 'error',
+          accountCount: data.stats.totalAccounts || conn.accountsCount || 0, // Use total accounts from stats
+          lastSync: conn.lastSync,
         }));
 
         setConnections(transformedConnections);
-        console.log('✅ Bank connections loaded:', transformedConnections.length);
+        console.log('✅ Banking connections loaded from storage:', transformedConnections.length);
+
+        if (transformedConnections.length > 0) {
+          console.log(
+            '🏦 Connected banks:',
+            transformedConnections.map(c => c.bankName)
+          );
+        }
       } else {
-        console.error('Failed to load bank connections:', data.error);
+        console.error('Failed to load banking data:', data.error);
         setConnections([]);
       }
     } catch (error) {
-      console.error('Failed to load bank connections:', error);
+      console.error('Failed to load banking data:', error);
       // Set empty connections on error
       setConnections([]);
     } finally {
@@ -136,16 +144,30 @@ export default function BankingPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'connected': return 'bg-green-100 text-green-800';
-      case 'error': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'connected':
+        return 'bg-green-100 text-green-800';
+      case 'error':
+        return 'bg-red-100 text-red-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const formatLastSync = (dateString?: string) => {
-    if (!dateString) return 'Nie';
-    const date = new Date(dateString);
+  const formatLastSync = (timestamp?: any) => {
+    if (!timestamp) return 'Nie';
+
+    // Handle Firestore timestamp objects
+    if (timestamp && typeof timestamp === 'object' && timestamp._seconds) {
+      const date = new Date(timestamp._seconds * 1000);
+      return date.toLocaleString('de-DE');
+    }
+
+    // Handle regular date strings
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'Ungültiges Datum';
+
     return date.toLocaleString('de-DE');
   };
 
@@ -201,11 +223,7 @@ export default function BankingPage() {
             <p className="text-sm text-gray-600 mb-4">
               Alle verknüpften Bankkonten anzeigen und verwalten
             </p>
-            <Button 
-              onClick={handleViewAccounts}
-              variant="outline" 
-              className="w-full"
-            >
+            <Button onClick={handleViewAccounts} variant="outline" className="w-full">
               Konten anzeigen
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -223,11 +241,7 @@ export default function BankingPage() {
             <p className="text-sm text-gray-600 mb-4">
               Transaktionen importieren und synchronisieren
             </p>
-            <Button 
-              onClick={handleImportTransactions}
-              variant="outline" 
-              className="w-full"
-            >
+            <Button onClick={handleImportTransactions} variant="outline" className="w-full">
               Transaktionen
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -242,13 +256,8 @@ export default function BankingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
-              Banking-Einstellungen und Automatisierung
-            </p>
-            <Button 
-              variant="outline" 
-              className="w-full"
-            >
+            <p className="text-sm text-gray-600 mb-4">Banking-Einstellungen und Automatisierung</p>
+            <Button variant="outline" className="w-full">
               Konfiguration
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -272,9 +281,7 @@ export default function BankingPage() {
           ) : connections.length === 0 ? (
             <div className="text-center py-8">
               <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Keine Bankverbindungen
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankverbindungen</h3>
               <p className="text-gray-600 mb-6">
                 Verbinden Sie Ihre erste Bank, um mit dem Banking zu beginnen.
               </p>
@@ -285,8 +292,8 @@ export default function BankingPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {connections.map((connection) => (
-                <div 
+              {connections.map(connection => (
+                <div
                   key={connection.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
@@ -295,18 +302,20 @@ export default function BankingPage() {
                       <Building2 className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">
-                        {connection.bankName}
-                      </h4>
+                      <h4 className="font-medium text-gray-900">{connection.bankName}</h4>
                       <p className="text-sm text-gray-600">
-                        {connection.accountCount} Konto(s) • Letzte Sync: {formatLastSync(connection.lastSync)}
+                        {connection.accountCount} Konto(s) • Letzte Sync:{' '}
+                        {formatLastSync(connection.lastSync)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className={getStatusColor(connection.status)}>
-                      {connection.status === 'connected' ? 'Verbunden' : 
-                       connection.status === 'error' ? 'Fehler' : 'Ausstehend'}
+                      {connection.status === 'connected'
+                        ? 'Verbunden'
+                        : connection.status === 'error'
+                          ? 'Fehler'
+                          : 'Ausstehend'}
                     </Badge>
                     <Button variant="ghost" size="sm">
                       <Settings className="h-4 w-4" />

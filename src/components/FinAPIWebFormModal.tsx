@@ -109,7 +109,7 @@ export default function FinAPIWebFormModal({
     }, 1000);
 
     // Timeout after 10 minutes
-    setTimeout(() => {
+    const timeoutTimer = setTimeout(() => {
       if (!popup.closed) {
         clearInterval(checkClosed);
         popup.close();
@@ -118,7 +118,7 @@ export default function FinAPIWebFormModal({
       }
     }, 600000); // 10 minutes
 
-    setIsLoading(false);
+    // Loading bleibt aktiv bis das Popup geschlossen wird oder Success/Error Message kommt
   };
 
   // Handle iframe error (fallback)

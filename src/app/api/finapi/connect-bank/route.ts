@@ -117,6 +117,17 @@ async function tryWebFormApi(bankId: number, userId: string) {
       return { success: false, error: 'User creation failed' };
     }
 
+    if (!finApiUser.username || !finApiUser.password) {
+      throw new Error('finAPI user credentials not configured');
+    }
+
+    const clientId = process.env.FINAPI_SANDBOX_CLIENT_ID;
+    const clientSecret = process.env.FINAPI_SANDBOX_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      throw new Error('finAPI client credentials not configured');
+    }
+
     // Schritt 2: Hole USER ACCESS TOKEN für WebForm 2.0
     const userTokenResponse = await fetch('https://sandbox.finapi.io/api/v2/oauth/token', {
       method: 'POST',
@@ -127,8 +138,8 @@ async function tryWebFormApi(bankId: number, userId: string) {
         grant_type: 'password',
         username: finApiUser.username,
         password: finApiUser.password,
-        client_id: process.env.FINAPI_SANDBOX_CLIENT_ID || 'NOT_CONFIGURED',
-        client_secret: process.env.FINAPI_SANDBOX_CLIENT_SECRET || 'NOT_CONFIGURED',
+        client_id: clientId,
+        client_secret: clientSecret,
       }),
     });
 
@@ -210,8 +221,8 @@ function createWebFormFallback(bankId: number, userId: string) {
 
   // Add callback parameters
   const params = new URLSearchParams({
-    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/finapi/webform/callback`,
-    redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?webform=success&userId=${userId}`,
+    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/finapi/callback?userId=${userId}`,
+    redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${userId}/finance/banking/accounts?success=bank_connected`,
     bankId: bankId.toString(),
     mode: 'bankConnectionImport',
   });
