@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Search,
   Filter,
@@ -15,7 +17,6 @@ import {
   DollarSign,
   AlertCircle,
 } from 'lucide-react';
-import { FinAPITokenManager } from '@/lib/finapi-token-manager';
 
 interface Transaction {
   id: string;
@@ -47,6 +48,10 @@ interface BankAccount {
 }
 
 export default function TransactionsPage() {
+  const params = useParams();
+  const { user } = useAuth();
+  const uid = typeof params?.uid === 'string' ? params.uid : '';
+
   // State Management
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -66,86 +71,53 @@ export default function TransactionsPage() {
     setError(null);
 
     try {
-      if (!FinAPITokenManager.isUserAuthenticated()) {
-        setError('Sie sind nicht bei finAPI angemeldet. Bitte verbinden Sie zuerst Ihr Bankkonto.');
+      if (!user?.uid) {
+        console.log('No user found, cannot load transactions');
+        setTransactions([]);
         return;
       }
 
-      // Load Transactions from finAPI
-      const authHeader = FinAPITokenManager.getAuthHeader();
-      if (!authHeader) {
-        throw new Error('Keine Authentifizierung gefunden');
-      }
+      console.log('Loading finAPI transactions for user:', user.uid);
 
-      const transactionsResponse = await fetch('/api/finapi/transactions', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-        },
-      });
+      // Use new B2B API endpoint with user ID parameter
+      const transactionsResponse = await fetch(
+        `/api/finapi/transactions?userId=${user.uid}&credentialType=sandbox&page=1&perPage=100`
+      );
 
       if (!transactionsResponse.ok) {
-        throw new Error(`Fehler beim Laden der Transaktionen: ${transactionsResponse.status}`);
+        const errorData = await transactionsResponse.json();
+        throw new Error(`finAPI API Error: ${errorData.error || transactionsResponse.statusText}`);
       }
 
-      const transactionsData = await transactionsResponse.json();
-      console.log('finAPI Transactions Response:', transactionsData);
+      const data = await transactionsResponse.json();
 
-      // Load Accounts from finAPI
-      const accountsResponse = await fetch('/api/finapi/accounts', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-        },
-      });
-
-      if (!accountsResponse.ok) {
-        throw new Error(`Fehler beim Laden der Konten: ${accountsResponse.status}`);
+      if (data.success && data.transactions) {
+        console.log(`Loaded ${data.transactions.length} finAPI transactions`);
+        setTransactions(data.transactions);
+      } else {
+        console.log('No transactions found or user not connected to finAPI');
+        setTransactions([]);
+        setError(
+          data.message || 'Keine Transaktionen gefunden. Bitte verbinden Sie zuerst ein Bankkonto.'
+        );
       }
 
-      const accountsData = await accountsResponse.json();
-      console.log('finAPI Accounts Response:', accountsData);
+      // Also load accounts for filtering
+      const accountsResponse = await fetch(
+        `/api/finapi/accounts?userId=${user.uid}&credentialType=sandbox`
+      );
 
-      // Transform finAPI data to our interface
-      const convertedTransactions: Transaction[] =
-        transactionsData.transactions?.map((tx: any) => ({
-          id: tx.id?.toString() || `tx_${Date.now()}_${Math.random()}`,
-          accountId: tx.accountId?.toString() || '',
-          amount: tx.amount || 0,
-          currency: tx.currency || 'EUR',
-          purpose: tx.purpose || tx.transactionCode || 'Keine Beschreibung',
-          counterpartName: tx.counterpartName || tx.counterpart?.name || 'Unbekannt',
-          counterpartIban: tx.counterpartIban || tx.counterpart?.iban || '',
-          bookingDate:
-            tx.bankBookingDate || tx.finapiBookingDate || new Date().toISOString().split('T')[0],
-          valueDate: tx.valueDate || tx.bankBookingDate || new Date().toISOString().split('T')[0],
-          transactionType: (tx.amount || 0) >= 0 ? 'CREDIT' : 'DEBIT',
-          category: tx.category?.name || tx.mcCategory || 'Sonstige',
-          isReconciled: tx.isAdjustingEntry === false,
-          isPending: tx.isPending || false,
-        })) || [];
-
-      const convertedAccounts: BankAccount[] =
-        accountsData.accounts?.map((acc: any) => ({
-          id: acc.id?.toString() || `acc_${Date.now()}_${Math.random()}`,
-          accountName: acc.accountName || acc.name || `Konto ${acc.accountNumber || acc.iban}`,
-          iban: acc.iban || '',
-          bankName: acc.bankName || 'Unbekannte Bank',
-          accountNumber: acc.accountNumber || '',
-          balance: acc.balance || 0,
-          availableBalance: acc.availableFunds || acc.balance || 0,
-          currency: acc.accountCurrency || 'EUR',
-          accountType: 'CHECKING',
-          isDefault: false,
-        })) || [];
-
-      setTransactions(convertedTransactions);
-      setAccounts(convertedAccounts);
-    } catch (error) {
-      console.error('Fehler beim Laden der Transaktionen:', error);
-      setError('Fehler beim Laden der finAPI Daten. Bitte versuchen Sie es später erneut.');
+      if (accountsResponse.ok) {
+        const accountsData = await accountsResponse.json();
+        if (accountsData.success && accountsData.accounts) {
+          setAccounts(accountsData.accounts);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error loading finAPI data:', err);
+      setError(err.message || 'Fehler beim Laden der Daten');
+      setTransactions([]);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -158,8 +130,10 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
-    loadTransactions();
-  }, []);
+    if (user?.uid) {
+      loadTransactions();
+    }
+  }, [user]);
 
   // Utility Functions
   const formatCurrency = (amount: number, currency: string = 'EUR') => {

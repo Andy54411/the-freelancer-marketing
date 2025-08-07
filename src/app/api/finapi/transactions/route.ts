@@ -77,8 +77,10 @@ export async function GET(request: NextRequest) {
     const userAccessToken = userTokenData.access_token;
 
     // Step 3: Get transactions from finAPI
+    // finAPI requires 'view' parameter - use 'userView' to get all user transactions
+    // Also add includeChildTransactions to get complete transaction data
     const transactionsResponse = await fetch(
-      `${baseUrl}/api/v2/transactions?page=${page}&perPage=${perPage}`,
+      `${baseUrl}/api/v2/transactions?view=userView&page=${page}&perPage=${perPage}&includeChildTransactions=true`,
       {
         method: 'GET',
         headers: {
@@ -99,6 +101,15 @@ export async function GET(request: NextRequest) {
 
     const transactionsData = await transactionsResponse.json();
     console.log('✅ Retrieved transactions:', transactionsData.transactions?.length || 0);
+    console.log('📊 Raw finAPI response keys:', Object.keys(transactionsData));
+
+    // Log first transaction for debugging if any exist
+    if (transactionsData.transactions && transactionsData.transactions.length > 0) {
+      console.log(
+        '🔍 First transaction sample:',
+        JSON.stringify(transactionsData.transactions[0], null, 2)
+      );
+    }
 
     // Transform finAPI transactions to Taskilo format for dashboard
     const transformedTransactions = (transactionsData.transactions || []).map(
