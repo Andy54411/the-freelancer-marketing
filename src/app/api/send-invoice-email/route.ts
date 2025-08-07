@@ -151,8 +151,14 @@ export async function POST(request: NextRequest) {
     }
 
     // E-Mail-Konfiguration mit dynamischen Attachments und individueller Sender-Adresse
+    // WICHTIG: Resend erlaubt nur E-Mails von verifizierten Domains
+    // Wir verwenden eine verifizierte Domain aber den echten Namen
+    const verifiedSenderEmail = 'noreply@taskilo.de'; // Muss eine verifizierte Domain sein
+    const replyToEmail = senderEmail !== 'noreply@taskilo.de' ? senderEmail : undefined;
+
     const emailConfig: any = {
-      from: `${senderName} <${senderEmail}>`,
+      from: `${senderName} <${verifiedSenderEmail}>`,
+      replyTo: replyToEmail, // Antworten gehen an die echte E-Mail-Adresse
       to: [recipientEmail],
       subject: subject,
       html: `
@@ -251,7 +257,8 @@ export async function POST(request: NextRequest) {
 
     // E-Mail mit Resend senden
     console.log('📤 Sende E-Mail mit Resend...', {
-      from: `${senderName} <${senderEmail}>`,
+      from: `${senderName} <${verifiedSenderEmail}>`,
+      replyTo: replyToEmail,
       to: recipientEmail,
       subject: subject,
       hasAttachments: attachments.length > 0,
