@@ -472,7 +472,8 @@ export default function TimeTrackingManager({
               {(showAllEntries ? timeEntries : timeEntries.slice(0, 5)).map(entry => (
                 <div
                   key={entry.id}
-                  className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${entry.status === 'paid'
+                  className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+                    entry.status === 'paid'
                       ? 'border-emerald-200 bg-emerald-50'
                       : entry.status === 'approved'
                         ? 'border-green-200 bg-green-50'
@@ -483,7 +484,7 @@ export default function TimeTrackingManager({
                             : entry.category === 'additional'
                               ? 'border-orange-200 bg-orange-50'
                               : 'border-gray-200 bg-white'
-                    }`}
+                  }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -493,15 +494,17 @@ export default function TimeTrackingManager({
                           {entry.startTime} - {entry.endTime}
                         </span>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${entry.category === 'additional'
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            entry.category === 'additional'
                               ? 'bg-orange-100 text-orange-800'
                               : 'bg-blue-100 text-blue-800'
-                            }`}
+                          }`}
                         >
                           {entry.category === 'additional' ? 'Zusätzlich' : 'Geplant'}
                         </span>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${entry.status === 'paid'
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            entry.status === 'paid'
                               ? 'bg-emerald-100 text-emerald-800'
                               : entry.status === 'approved'
                                 ? 'bg-green-100 text-green-800'
@@ -510,7 +513,7 @@ export default function TimeTrackingManager({
                                   : entry.status === 'rejected'
                                     ? 'bg-red-100 text-red-800'
                                     : 'bg-gray-100 text-gray-800'
-                            }`}
+                          }`}
                         >
                           {entry.status === 'paid'
                             ? 'Bezahlt'
@@ -622,7 +625,7 @@ export default function TimeTrackingManager({
 
       {/* Add/Edit Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6">

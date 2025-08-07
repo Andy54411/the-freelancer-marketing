@@ -239,7 +239,7 @@ const RepresentativePersonalDataModal: React.FC<RepresentativePersonalDataModalP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[100] p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex justify-center items-center z-[100] p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100">

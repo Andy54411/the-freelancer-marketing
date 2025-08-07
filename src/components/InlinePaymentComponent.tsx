@@ -76,11 +76,11 @@ function CheckoutForm({
             address:
               data.street && data.city && data.postalCode
                 ? {
-                  line1: data.street,
-                  city: data.city,
-                  postal_code: data.postalCode,
-                  country: data.country || 'DE',
-                }
+                    line1: data.street,
+                    city: data.city,
+                    postal_code: data.postalCode,
+                    country: data.country || 'DE',
+                  }
                 : undefined,
           });
         }
@@ -139,16 +139,16 @@ function CheckoutForm({
             phone: customerData?.phone || undefined,
             address: customerData?.address
               ? {
-                line1: customerData.address.line1,
-                city: customerData.address.city,
-                postal_code: customerData.address.postal_code,
-                state: '', // Erforderlich für Stripe, leer da nicht in DE verwendet
-                country: customerData.address.country,
-              }
+                  line1: customerData.address.line1,
+                  city: customerData.address.city,
+                  postal_code: customerData.address.postal_code,
+                  state: '', // Erforderlich für Stripe, leer da nicht in DE verwendet
+                  country: customerData.address.country,
+                }
               : {
-                country: 'DE',
-                state: '', // Erforderlich für Stripe
-              },
+                  country: 'DE',
+                  state: '', // Erforderlich für Stripe
+                },
           },
         },
       };
@@ -280,10 +280,11 @@ function CheckoutForm({
       {/* Status Message */}
       {message && (
         <div
-          className={`flex items-center text-sm p-3 rounded-lg ${message.includes('erfolgreich')
+          className={`flex items-center text-sm p-3 rounded-lg ${
+            message.includes('erfolgreich')
               ? 'bg-green-50 text-green-800 border border-green-200'
               : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
+          }`}
         >
           {message.includes('erfolgreich') ? (
             <FiCheckCircle className="mr-2 flex-shrink-0" />
@@ -366,7 +367,7 @@ export default function InlinePaymentComponent({
   // Modal Content erstellen
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center p-4"
       style={{
         zIndex: 2147483647, // Max z-index value
         position: 'fixed',

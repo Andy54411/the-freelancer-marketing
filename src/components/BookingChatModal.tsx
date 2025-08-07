@@ -12,13 +12,12 @@ interface BookingChatModalProps {
 }
 
 export function BookingChatModal({ auftrag, onClose }: BookingChatModalProps) {
-
   // Hier würdest du später die Logik zum Laden und Senden von Nachrichten implementieren
   // und den Chat-Verlauf in einem State speichern.
 
   return (
-    // Das Modal-Overlay und der Container
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+    // Das Modal-Overlay und der Container (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Modal Header */}
         <div className="flex justify-between items-center p-4 border-b">
