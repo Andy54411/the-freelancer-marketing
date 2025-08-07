@@ -144,10 +144,13 @@ export async function POST(request: NextRequest) {
         isReconciled: true,
         reconciledTransactionId: transactionId,
         reconciledAt: new Date().toISOString(),
+        status: 'paid', // ✅ Status auf "bezahlt" setzen
         updatedAt: new Date(),
       });
 
-      console.log(`✅ Invoice ${invoiceId} reconciled with transaction ${transactionId}`);
+      console.log(
+        `✅ Invoice ${invoiceId} reconciled with transaction ${transactionId} and marked as PAID`
+      );
 
       return NextResponse.json({
         success: true,
@@ -161,10 +164,11 @@ export async function POST(request: NextRequest) {
         isReconciled: false,
         reconciledTransactionId: null,
         reconciledAt: null,
+        status: 'open', // ✅ Status zurück auf "offen" setzen
         updatedAt: new Date(),
       });
 
-      console.log(`✅ Invoice ${invoiceId} unreconciled`);
+      console.log(`✅ Invoice ${invoiceId} unreconciled and marked as OPEN`);
 
       return NextResponse.json({
         success: true,

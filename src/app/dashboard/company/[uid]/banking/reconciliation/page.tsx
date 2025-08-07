@@ -20,14 +20,14 @@ import {
 interface BankTransaction {
   id: string;
   accountId?: string;
-  amount: number;
+  amount?: number;
   currency?: string;
   purpose?: string;
   counterpartName?: string;
   counterpartIban?: string;
   bookingDate?: string;
   valueDate?: string;
-  transactionType: 'CREDIT' | 'DEBIT';
+  transactionType?: 'CREDIT' | 'DEBIT';
   category?: string;
   isReconciled?: boolean;
   isPending?: boolean;
@@ -201,6 +201,19 @@ export default function BankingReconciliationPage() {
         throw new Error('Rechnung oder Transaktion nicht gefunden');
       }
 
+      // Betragsvalidierung: Rechnung und Transaktion müssen übereinstimmen
+      const invoiceAmount = invoice.total || 0;
+      const transactionAmount = transaction.amount || 0;
+      const difference = Math.abs(invoiceAmount - transactionAmount);
+      const tolerance = 0.01; // 1 Cent Toleranz für Rundungsfehler
+
+      if (difference > tolerance) {
+        const errorMessage = `Beträge stimmen nicht überein!\n\nRechnung: ${formatCurrency(invoiceAmount)}\nTransaktion: ${formatCurrency(transactionAmount)}\n\nDifferenz: ${formatCurrency(difference)}\n\nBitte wählen Sie eine Transaktion mit dem passenden Betrag aus.`;
+        alert(errorMessage);
+        setReconcilingInvoice(null);
+        return;
+      }
+
       const response = await fetch('/api/banking/reconciliation/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -317,7 +330,7 @@ export default function BankingReconciliationPage() {
     const matchesSearch =
       (transaction.purpose || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (transaction.counterpartName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.amount.toString().includes(searchTerm);
+      (transaction.amount || 0).toString().includes(searchTerm);
 
     // Only show credit transactions (incoming payments) for reconciliation
     return matchesSearch && transaction.transactionType === 'CREDIT';
@@ -496,18 +509,44 @@ export default function BankingReconciliationPage() {
 
           {/* Action Button */}
           <div className="flex justify-end">
-            <button
-              onClick={() => {
-                if (selectedInvoice && selectedTransaction) {
-                  reconcileInvoice(selectedInvoice, selectedTransaction);
-                }
-              }}
-              disabled={!selectedInvoice || !selectedTransaction || reconcilingInvoice !== null}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Link className="h-4 w-4 mr-2" />
-              {reconcilingInvoice ? 'Gleiche ab...' : 'Abgleichen'}
-            </button>
+            {(() => {
+              // Prüfe ob Beträge übereinstimmen
+              let amountsMatch = true;
+              if (selectedInvoice && selectedTransaction) {
+                const invoice = invoices.find(inv => inv.id === selectedInvoice);
+                const transaction = transactions.find(txn => txn.id === selectedTransaction);
+                const invoiceAmount = invoice?.total || 0;
+                const transactionAmount = transaction?.amount || 0;
+                const difference = Math.abs(invoiceAmount - transactionAmount);
+                const tolerance = 0.01;
+                amountsMatch = difference <= tolerance;
+              }
+
+              const isDisabled =
+                !selectedInvoice ||
+                !selectedTransaction ||
+                reconcilingInvoice !== null ||
+                !amountsMatch;
+
+              return (
+                <button
+                  onClick={() => {
+                    if (selectedInvoice && selectedTransaction) {
+                      reconcileInvoice(selectedInvoice, selectedTransaction);
+                    }
+                  }}
+                  disabled={isDisabled}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Link className="h-4 w-4 mr-2" />
+                  {reconcilingInvoice
+                    ? 'Gleiche ab...'
+                    : amountsMatch
+                      ? 'Abgleichen'
+                      : 'Beträge stimmen nicht überein'}
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -644,7 +683,7 @@ export default function BankingReconciliationPage() {
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
                       <p className="text-sm font-semibold text-green-600">
-                        +{formatCurrency(transaction.amount, transaction.currency || 'EUR')}
+                        +{formatCurrency(transaction.amount || 0, transaction.currency || 'EUR')}
                       </p>
                       {transaction.category && (
                         <p className="text-xs text-gray-500">{transaction.category}</p>
@@ -691,6 +730,30 @@ export default function BankingReconciliationPage() {
                     )}
                   </p>
                 )}
+                {selectedInvoice &&
+                  selectedTransaction &&
+                  (() => {
+                    const invoice = invoices.find(inv => inv.id === selectedInvoice);
+                    const transaction = transactions.find(txn => txn.id === selectedTransaction);
+                    const invoiceAmount = invoice?.total || 0;
+                    const transactionAmount = transaction?.amount || 0;
+                    const difference = Math.abs(invoiceAmount - transactionAmount);
+                    const tolerance = 0.01;
+
+                    if (difference > tolerance) {
+                      return (
+                        <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded">
+                          <p className="text-red-800 text-xs font-medium">
+                            ⚠️ Warnung: Beträge stimmen nicht überein!
+                          </p>
+                          <p className="text-red-700 text-xs">
+                            Differenz: {formatCurrency(difference)}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
               </div>
             </div>
           </div>
