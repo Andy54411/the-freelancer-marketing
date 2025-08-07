@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const { to, subject, message } = await request.json();
+
+    if (!to || !subject || !message) {
+      return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
+    }
+
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    console.log('🧪 Teste einfache E-Mail mit Resend...');
+    console.log('🧪 Teste einfache E-Mail mit Resend...', { to, subject });
 
     const emailResponse = await resend.emails.send({
-      from: 'Mietkoch Andy <noreply@taskilo.de>',
-      replyTo: 'a.staudinger32@icloud.com',
-      to: ['a.staudinger32@icloud.com'],
-      subject: 'Taskilo E-Mail Test',
+      from: 'Test <noreply@taskilo.de>',
+      to: [to],
+      subject: subject,
       html: `
         <h1>Test E-Mail</h1>
-        <p>Dies ist ein Test der Resend E-Mail-Funktionalität.</p>
-        <p>Von: Mietkoch Andy</p>
-        <p>Reply-To: a.staudinger32@icloud.com</p>
+        <p>${message}</p>
         <p>Zeitstempel: ${new Date().toISOString()}</p>
       `,
     });
