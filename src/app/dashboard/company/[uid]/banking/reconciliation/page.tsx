@@ -19,31 +19,31 @@ import {
 
 interface BankTransaction {
   id: string;
-  accountId: string;
+  accountId?: string;
   amount: number;
-  currency: string;
-  purpose: string;
+  currency?: string;
+  purpose?: string;
   counterpartName?: string;
   counterpartIban?: string;
-  bookingDate: string;
-  valueDate: string;
+  bookingDate?: string;
+  valueDate?: string;
   transactionType: 'CREDIT' | 'DEBIT';
   category?: string;
-  isReconciled: boolean;
-  isPending: boolean;
+  isReconciled?: boolean;
+  isPending?: boolean;
 }
 
 interface Invoice {
   id: string;
-  invoiceNumber: string;
-  amount: number;
+  invoiceNumber?: string;
+  amount?: number;
   total: number;
-  status: string;
-  issueDate: string;
-  dueDate: string;
-  customerName: string;
-  customerEmail: string;
-  description: string;
+  status?: string;
+  issueDate?: string;
+  dueDate?: string;
+  customerName?: string;
+  customerEmail?: string;
+  description?: string;
   createdAt?: string;
   finalizedAt?: string;
   companyId?: string;
@@ -85,30 +85,62 @@ export default function BankingReconciliationPage() {
   // Reconciliation State
   const [reconcilingInvoice, setReconcilingInvoice] = useState<string | null>(null);
 
-  // Load Invoices from Firestore
+  // Load Invoices from Firestore - ULTIMATE CACHE BREAK VERSION
   const loadInvoices = async () => {
     setLoadingInvoices(true);
     try {
-      console.log(`🔍 Loading invoices for companyId: ${uid}`);
+      console.log(`� ULTIMATE CACHE BREAK - Loading invoices for companyId: ${uid}`);
 
-      // Lade ALLE Rechnungen aus der Datenbank ohne Status-Filter
-      const response = await fetch(
-        `/api/banking/reconciliation/invoices?companyId=${uid}&status=all`
-      );
-      const data = await response.json();
+      // NUCLEAR OPTION: Komplett neue URL mit Random String
+      const randomCacheBuster = Math.random().toString(36).substring(7);
+      const timestamp = new Date().getTime();
+      const apiUrl = `/api/banking/reconciliation/invoices?companyId=${uid}&v=${timestamp}&r=${randomCacheBuster}&force=true`;
+      console.log(`� NUCLEAR CACHE BUST URL: ${apiUrl}`);
+
+      // ALLE Cache-Breaking Methoden gleichzeitig
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-Cache-Bust': timestamp.toString(),
+        },
+      });
+
+      console.log(`� NUCLEAR Response Status: ${response.status}`);
+      console.log(`� NUCLEAR Response URL: ${response.url}`);
+      console.log(`🚨 NUCLEAR Response Headers:`, Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`🚨 NUCLEAR Error Response Text:`, errorText.substring(0, 200));
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const responseText = await response.text();
+      console.log(`🚨 NUCLEAR Raw Response:`, responseText.substring(0, 200));
+
+      const data = JSON.parse(responseText);
 
       console.log(`🔍 Full API Response:`, data);
-      console.log(`� API Success: ${data.success}`);
+      console.log(`📊 API Success: ${data.success}`);
       console.log(`📊 Total invoices received: ${data.invoices?.length || 0}`);
 
-      if (data.success) {
-        setInvoices(data.invoices || []);
-        console.log(
-          `✅ Successfully loaded ${data.invoices?.length || 0} invoices for reconciliation`
-        );
+      if (data.success && data.invoices) {
+        // Die API gibt bereits das korrekte Format zurück
+        setInvoices(data.invoices);
+        console.log(`✅ Successfully loaded ${data.invoices.length} invoices for reconciliation`);
+        console.log(`📊 Reconciliation Stats:`, {
+          total: data.total,
+          unreconciled: data.unreconciled,
+          reconciled: data.reconciled,
+        });
 
         // Debug: Log each invoice
-        data.invoices?.forEach((invoice: Invoice, index: number) => {
+        data.invoices.forEach((invoice: Invoice, index: number) => {
           console.log(`📄 Invoice ${index + 1}:`, {
             id: invoice.id,
             invoiceNumber: invoice.invoiceNumber,
@@ -234,7 +266,7 @@ export default function BankingReconciliationPage() {
       setLoading(true);
       Promise.all([loadInvoices(), loadTransactions()]).finally(() => setLoading(false));
     }
-  }, [uid, loadInvoices, loadTransactions]); // Entferne showReconciled Dependency, da wir alle Rechnungen laden
+  }, [uid]); // Entferne Dependencies um Endlosschleifen zu vermeiden
 
   // Utility Functions
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
@@ -256,10 +288,16 @@ export default function BankingReconciliationPage() {
 
   // Filter functions
   const filteredInvoices = invoices.filter(invoice => {
+    // Sicherheitscheck: Invoice muss existieren
+    if (!invoice || typeof invoice !== 'object') {
+      console.warn('Invalid invoice object:', invoice);
+      return false;
+    }
+
     const matchesSearch =
-      invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (invoice.invoiceNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.description || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     // Standardmäßig alle Rechnungen anzeigen, nur verstecken wenn explizit ausgeschaltet
     // showReconciled = true: Zeige alle (auch abgeglichene)
@@ -270,9 +308,15 @@ export default function BankingReconciliationPage() {
   });
 
   const filteredTransactions = transactions.filter(transaction => {
+    // Sicherheitscheck: Transaction muss existieren
+    if (!transaction || typeof transaction !== 'object') {
+      console.warn('Invalid transaction object:', transaction);
+      return false;
+    }
+
     const matchesSearch =
-      transaction.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.counterpartName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.purpose || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.counterpartName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.amount.toString().includes(searchTerm);
 
     // Only show credit transactions (incoming payments) for reconciliation
@@ -370,7 +414,7 @@ export default function BankingReconciliationPage() {
                     Abgeglichene Rechnungen
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {invoices.filter(inv => inv.isReconciled).length}
+                    {invoices.filter(inv => inv && inv.isReconciled).length}
                   </dd>
                 </dl>
               </div>
@@ -410,8 +454,8 @@ export default function BankingReconciliationPage() {
                   <dd className="text-lg font-medium text-gray-900">
                     {formatCurrency(
                       invoices
-                        .filter(inv => !inv.isReconciled)
-                        .reduce((sum, inv) => sum + inv.total, 0)
+                        .filter(inv => inv && !inv.isReconciled)
+                        .reduce((sum, inv) => sum + (inv.total || 0), 0)
                     )}
                   </dd>
                 </dl>
@@ -500,14 +544,16 @@ export default function BankingReconciliationPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {invoice.invoiceNumber}
+                        {invoice.invoiceNumber || 'Keine Nummer'}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{invoice.customerName}</p>
-                      <p className="text-xs text-gray-400">{formatDate(invoice.issueDate)}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {invoice.customerName || 'Unbekannter Kunde'}
+                      </p>
+                      <p className="text-xs text-gray-400">{formatDate(invoice.issueDate || '')}</p>
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
                       <p className="text-sm font-semibold text-gray-900">
-                        {formatCurrency(invoice.total)}
+                        {formatCurrency(invoice.total || 0)}
                       </p>
                       {invoice.isReconciled ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -587,16 +633,18 @@ export default function BankingReconciliationPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {transaction.purpose}
+                        {transaction.purpose || 'Kein Verwendungszweck'}
                       </p>
                       <p className="text-sm text-gray-500 truncate">
                         {transaction.counterpartName || 'Unbekannter Absender'}
                       </p>
-                      <p className="text-xs text-gray-400">{formatDate(transaction.bookingDate)}</p>
+                      <p className="text-xs text-gray-400">
+                        {formatDate(transaction.bookingDate || '')}
+                      </p>
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
                       <p className="text-sm font-semibold text-green-600">
-                        +{formatCurrency(transaction.amount, transaction.currency)}
+                        +{formatCurrency(transaction.amount, transaction.currency || 'EUR')}
                       </p>
                       {transaction.category && (
                         <p className="text-xs text-gray-500">{transaction.category}</p>
