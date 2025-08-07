@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankAccount } from '@/types';
@@ -13,20 +13,18 @@ export default function BankingAccountsPage() {
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [accountsByBank, setAccountsByBank] = useState<{ [bankName: string]: BankAccount[] }>({});
-  const [bankingOverview, setBankingOverview] = useState<any>(null);
+  const [bankingOverview, setBankingOverview] = useState<{
+    totalBanks: number;
+    totalAccounts: number;
+    source: string;
+    lastSync: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(true); // Show balances by default
   const [refreshing, setRefreshing] = useState(false);
   const [expandedBanks, setExpandedBanks] = useState<{ [bankName: string]: boolean }>({});
 
-  // Load accounts on component mount - no token needed for B2B architecture
-  useEffect(() => {
-    if (user?.uid) {
-      loadFinAPIAccounts();
-    }
-  }, [user]);
-
-  const loadFinAPIAccounts = async () => {
+  const loadFinAPIAccounts = useCallback(async () => {
     try {
       if (!user?.uid) {
         console.log('No user found, cannot load accounts');
@@ -78,7 +76,7 @@ export default function BankingAccountsPage() {
           console.log('✅ Accounts refreshed from finAPI');
         }
       } else {
-        console.log('No accounts found:', data.message || 'Unknown reason');
+        console.warn('finAPI returned no accounts or failed');
         setAccounts([]);
         setAccountsByBank({});
         setBankingOverview(null);
@@ -89,26 +87,20 @@ export default function BankingAccountsPage() {
       setAccountsByBank({});
       setBankingOverview(null);
     }
-  };
+  }, [user?.uid, refreshing]);
 
-  const loadAccounts = async () => {
-    setLoading(true);
-    await loadFinAPIAccounts();
-    setLoading(false);
-  };
+  // Load accounts on component mount - no token needed for B2B architecture
+  useEffect(() => {
+    if (user?.uid) {
+      loadFinAPIAccounts();
+    }
+  }, [user, loadFinAPIAccounts]);
 
   const refreshAccounts = async () => {
     setRefreshing(true);
     await loadFinAPIAccounts();
     setRefreshing(false);
   };
-
-  // Load accounts when component mounts or user changes
-  useEffect(() => {
-    if (user?.uid) {
-      loadFinAPIAccounts();
-    }
-  }, [user]);
 
   // Set loading to false after first load attempt
   useEffect(() => {

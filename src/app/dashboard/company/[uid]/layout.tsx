@@ -18,6 +18,7 @@ import {
   DollarSign as FiDollarSign,
   Mail as FiMail,
   ClipboardList as FiClipboardList,
+  Banknote as FiBanknote,
 } from 'lucide-react';
 
 const isNonEmptyString = (val: unknown): val is string =>
@@ -41,8 +42,11 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // Auto-expand Finance section when on finance pages
   useEffect(() => {
-    if (pathname?.includes('/finance') && !expandedItems.includes('finance')) {
+    if (pathname?.includes('/finance') && !pathname?.includes('/banking') && !expandedItems.includes('finance')) {
       setExpandedItems(prev => [...prev, 'finance']);
+    }
+    if (pathname?.includes('/finance/banking') && !expandedItems.includes('banking')) {
+      setExpandedItems(prev => [...prev, 'banking']);
     }
   }, [pathname, expandedItems]);
 
@@ -51,6 +55,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // Bestimme den aktuellen Pfad für die Navigation
   const getCurrentView = useCallback(() => {
+    if (pathname?.includes('/banking')) return 'banking';
     if (pathname?.includes('/finance')) return 'finance';
     if (pathname?.includes('/payouts')) return 'finance';
     if (pathname?.includes('/orders')) return 'orders';
@@ -123,6 +128,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return FiMail;
       case 'calendar':
         return FiCalendar;
+      case 'banking':
+        return FiBanknote;
       case 'finance':
         return FiDollarSign;
       case 'reviews':
@@ -145,6 +152,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return 'Posteingang';
       case 'calendar':
         return 'Kalender';
+      case 'banking':
+        return 'Banking';
       case 'finance':
         return 'Finanzen';
       case 'reviews':

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankConnection, BankImportSettings } from '@/types';
@@ -22,22 +22,10 @@ export default function BankingImportPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
+  // finAPI Service initialisieren  
+  const _finAPIService = new FinAPIService();
 
-  // finAPI Service initialisieren
-  const finAPIService = new FinAPIService();
-
-  const loadConnections = async () => {
+  const loadConnections = useCallback(async () => {
     try {
       setLoading(true);
       // Mock data for demonstration
@@ -70,7 +58,14 @@ export default function BankingImportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Alle Hooks müssen vor frühen Returns aufgerufen werden
+  useEffect(() => {
+    if (user && user.uid === uid) {
+      loadConnections();
+    }
+  }, [user, uid, loadConnections]);
 
   const syncConnection = async (connectionId: string) => {
     setSyncing(connectionId);
@@ -91,9 +86,17 @@ export default function BankingImportPage() {
     }
   };
 
-  useEffect(() => {
-    loadConnections();
-  }, []);
+  // Autorisierung prüfen
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {

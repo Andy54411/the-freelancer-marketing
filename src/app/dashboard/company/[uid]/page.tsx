@@ -279,6 +279,24 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       case 'finance':
         return <>{uid && <FinanceComponent companyUid={uid} />}</>;
 
+      case 'banking':
+        return (
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Banking Übersicht</h2>
+              <p className="text-gray-600 mt-2">
+                Verwalten Sie Ihre Bankverbindungen und Transaktionen
+              </p>
+            </div>
+            <div className="text-center py-12">
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Banking Dashboard</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Banking-Funktionen werden hier verfügbar sein
+              </p>
+            </div>
+          </div>
+        );
+
       case 'reviews':
         return (
           <div className="bg-white rounded-lg shadow-sm border p-6">

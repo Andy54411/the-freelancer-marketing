@@ -22,7 +22,7 @@ export function useCompanyDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [view, setView] = useState<
-    'dashboard' | 'calendar' | 'finance' | 'reviews' | 'profile' | 'settings'
+    'dashboard' | 'calendar' | 'finance' | 'banking' | 'reviews' | 'profile' | 'settings'
   >('dashboard');
   const [showPopup, setShowPopup] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);

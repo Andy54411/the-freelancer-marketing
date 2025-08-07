@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankTransaction, ReconciliationRule } from '@/types';
-import { FinAPIService } from '@/lib/finapi';
-import { CheckCircle, X, Search, Filter, Settings, Plus, Zap, FileText, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Search, Settings, Zap, FileText, AlertTriangle } from 'lucide-react';
 
 export default function BankingReconciliationPage() {
   const params = useParams();
@@ -18,6 +17,81 @@ export default function BankingReconciliationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showRulesModal, setShowRulesModal] = useState(false);
+
+  const loadUnreconciledTransactions = async () => {
+    try {
+      setLoading(true);
+      // Mock data for unreconciled transactions
+      setUnreconciledTransactions([
+        {
+          id: 'txn_001',
+          accountId: 'acc_001',
+          amount: -250.00,
+          currency: 'EUR',
+          purpose: 'Büromaterial Amazon Business',
+          counterpartName: 'Amazon Business',
+          counterpartIban: 'DE12 3456 7890 1234 5678 90',
+          bookingDate: '2025-08-01',
+          valueDate: '2025-08-01',
+          transactionType: 'DEBIT',
+          category: 'Büroausstattung',
+        },
+        {
+          id: 'txn_002',
+          accountId: 'acc_001',
+          amount: 1500.00,
+          currency: 'EUR',
+          purpose: 'Rechnung #2024-001 - Website Entwicklung',
+          counterpartName: 'Max Mustermann GmbH',
+          counterpartIban: 'DE98 7654 3210 9876 5432 10',
+          bookingDate: '2025-08-01',
+          valueDate: '2025-08-01',
+          transactionType: 'CREDIT',
+          category: 'Einnahmen',
+        },
+        {
+          id: 'txn_003',
+          accountId: 'acc_002',
+          amount: -89.99,
+          currency: 'EUR',
+          purpose: 'Office 365 Business Premium',
+          counterpartName: 'Microsoft',
+          counterpartIban: 'DE44 1234 5678 9012 3456 78',
+          bookingDate: '2025-07-31',
+          valueDate: '2025-07-31',
+          transactionType: 'DEBIT',
+          category: 'Software',
+        },
+      ]);
+
+      setReconciliationRules([
+        {
+          id: 'rule_001',
+          name: 'Amazon Business Kategorie',
+          condition: { counterpartName: 'Amazon Business' },
+          action: { category: 'Büroausstattung' },
+          isActive: true,
+        },
+        {
+          id: 'rule_002',
+          name: 'Microsoft Software',
+          condition: { counterpartName: 'Microsoft' },
+          action: { category: 'Software' },
+          isActive: true,
+        },
+      ]);
+    } catch (error) {
+      console.error('Fehler beim Laden der Transaktionen:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && user.uid === uid) {
+      loadUnreconciledTransactions();
+    }
+  }, [user, uid]);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
