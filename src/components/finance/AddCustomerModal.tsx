@@ -285,7 +285,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto w-[90vw]">
         <DialogHeader>
           <DialogTitle>Neuen Kunden hinzufügen</DialogTitle>
           <DialogDescription>

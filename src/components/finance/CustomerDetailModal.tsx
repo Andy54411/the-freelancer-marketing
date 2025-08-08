@@ -25,20 +25,33 @@ import {
   Star,
   Edit,
   Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { Customer } from './AddCustomerModal';
 import { InvoiceData, InvoiceStatusHelper } from '@/types/invoiceTypes';
 import { toast } from 'sonner';
+import { updateCustomerStats } from '@/utils/customerStatsUtils';
 
 interface CustomerDetailModalProps {
   customer: Customer | null;
   isOpen: boolean;
   onClose: () => void;
+  onCustomerUpdated?: () => void;
 }
 
-export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetailModalProps) {
+export function CustomerDetailModal({
+  customer,
+  isOpen,
+  onClose,
+  onCustomerUpdated,
+}: CustomerDetailModalProps) {
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncingStats, setSyncingStats] = useState(false);
+  const [calculatedStats, setCalculatedStats] = useState<{
+    totalAmount: number;
+    totalInvoices: number;
+  }>({ totalAmount: 0, totalInvoices: 0 });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
@@ -53,6 +66,43 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
       month: '2-digit',
       year: 'numeric',
     });
+  };
+
+  // Berechne Statistiken basierend auf geladenen Rechnungen
+  const calculateCustomerStats = (invoiceList: InvoiceData[]) => {
+    // Nur finalisierte/gesendete Rechnungen für Umsatzberechnung
+    const validInvoices = invoiceList.filter(
+      invoice =>
+        invoice.status === 'finalized' || invoice.status === 'sent' || invoice.status === 'paid'
+    );
+
+    const totalAmount = validInvoices.reduce((sum, invoice) => {
+      // Berücksichtige Storno-Rechnungen (negative Beträge)
+      const amount = invoice.isStorno ? -invoice.total : invoice.total;
+      return sum + amount;
+    }, 0);
+
+    setCalculatedStats({
+      totalAmount,
+      totalInvoices: validInvoices.length,
+    });
+  };
+
+  // Synchronisiere Kundenstatistiken in der Datenbank
+  const handleSyncStats = async () => {
+    if (!customer) return;
+
+    try {
+      setSyncingStats(true);
+      await updateCustomerStats(customer.id, calculatedStats);
+      toast.success('Kundenstatistiken erfolgreich synchronisiert');
+      onCustomerUpdated?.();
+    } catch (error) {
+      console.error('Fehler beim Synchronisieren der Statistiken:', error);
+      toast.error('Fehler beim Synchronisieren der Statistiken');
+    } finally {
+      setSyncingStats(false);
+    }
   };
 
   // Rechnungshistorie laden
@@ -81,6 +131,7 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
       });
 
       setInvoices(loadedInvoices);
+      calculateCustomerStats(loadedInvoices);
     } catch (error) {
       console.error('Fehler beim Laden der Rechnungshistorie:', error);
       toast.error('Fehler beim Laden der Rechnungshistorie');
@@ -102,15 +153,40 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-none max-h-[90vh] overflow-y-auto w-[98vw] mx-2">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-[#14ad9f]" />
-            {customer.name}
-          </DialogTitle>
-          <DialogDescription>
-            Kunde {customer.customerNumber} - Detailansicht und Rechnungshistorie
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-[#14ad9f]" />
+                {customer.name}
+              </DialogTitle>
+              <DialogDescription>
+                Kunde {customer.customerNumber} - Detailansicht und Rechnungshistorie
+              </DialogDescription>
+            </div>
+            {(customer.totalAmount !== calculatedStats.totalAmount ||
+              customer.totalInvoices !== calculatedStats.totalInvoices) && (
+              <Button
+                onClick={handleSyncStats}
+                disabled={syncingStats}
+                size="sm"
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              >
+                {syncingStats ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                    Sync...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Stats sync
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -160,12 +236,20 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
                 <div>
                   <span className="font-medium text-gray-700">Gesamtumsatz:</span>
                   <div className="text-lg font-semibold text-[#14ad9f]">
-                    {formatCurrency(customer.totalAmount)}
+                    {formatCurrency(calculatedStats.totalAmount)}
                   </div>
+                  {customer.totalAmount !== calculatedStats.totalAmount && (
+                    <div className="text-xs text-gray-500">
+                      (DB: {formatCurrency(customer.totalAmount)})
+                    </div>
+                  )}
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Rechnungen:</span>
-                  <div className="text-lg font-semibold">{customer.totalInvoices}</div>
+                  <div className="text-lg font-semibold">{calculatedStats.totalInvoices}</div>
+                  {customer.totalInvoices !== calculatedStats.totalInvoices && (
+                    <div className="text-xs text-gray-500">(DB: {customer.totalInvoices})</div>
+                  )}
                 </div>
               </div>
 

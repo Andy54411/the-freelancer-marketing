@@ -31,6 +31,7 @@ interface CustomerSelectProps {
   selectedCustomer?: Customer | null;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpenRequest?: () => void; // NEU: Callback für Öffnungsanfrage
 }
 
 export function CustomerSelect({
@@ -39,6 +40,7 @@ export function CustomerSelect({
   selectedCustomer,
   isOpen = false,
   onClose,
+  onOpenRequest, // NEU
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,10 @@ export function CustomerSelect({
   };
 
   const handleOpen = () => {
-    if (isOpen === undefined) {
+    if (onOpenRequest) {
+      // External control - request parent to open dialog
+      onOpenRequest();
+    } else {
       setInternalOpen(true);
     }
   };
@@ -82,22 +87,37 @@ export function CustomerSelect({
           customerNumber: data.customerNumber || 'KD-000',
           name: data.name || '',
           email: data.email || '',
-          phone: data.phone,
+          phone: data.phone || '',
           address: data.address || '',
-          taxNumber: data.taxNumber,
-          vatId: data.vatId,
+          street: data.street || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          country: data.country || '',
+          taxNumber: data.taxNumber || '',
+          vatId: data.vatId || '',
           totalInvoices: data.totalInvoices || 0,
           totalAmount: data.totalAmount || 0,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          createdAt:
+            data.createdAt?.toDate?.()?.toISOString() ||
+            data.createdAt?.toISOString?.() ||
+            new Date().toISOString(),
           contactPersons: data.contactPersons || [],
           companyId: data.companyId || companyId,
         });
       });
 
       setCustomers(loadedCustomers);
+      console.log(`✅ Loaded ${loadedCustomers.length} customers for company ${companyId}`);
     } catch (error) {
-      console.error('Fehler beim Laden der Kunden:', error);
-      toast.error('Fehler beim Laden der Kundendaten');
+      console.error('❌ Fehler beim Laden der Kunden:', error);
+      console.log(`🔍 Debugging info: Attempting to load customers for companyId: ${companyId}`);
+
+      if (error.code === 'permission-denied') {
+        toast.error('Keine Berechtigung zum Laden der Kundendaten. Überprüfen Sie Ihre Anmeldung.');
+        console.log('🛡️ Permission denied - check Firestore rules and authentication');
+      } else {
+        toast.error('Fehler beim Laden der Kundendaten');
+      }
     } finally {
       setLoading(false);
     }
@@ -148,7 +168,7 @@ export function CustomerSelect({
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[800px] w-[90vw]">
             <DialogHeader>
               <DialogTitle>Kunde auswählen</DialogTitle>
               <DialogDescription>
@@ -175,8 +195,28 @@ export function CustomerSelect({
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
                   </div>
                 ) : filteredCustomers.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
-                    {searchTerm ? 'Keine Kunden gefunden' : 'Keine Kunden vorhanden'}
+                  <div className="text-center py-8">
+                    <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {searchTerm ? 'Keine Kunden gefunden' : 'Keine Kunden vorhanden'}
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      {searchTerm
+                        ? 'Versuchen Sie einen anderen Suchbegriff oder erstellen Sie einen neuen Kunden.'
+                        : 'Erstellen Sie zunächst Kunden in der Kundenverwaltung, um sie hier auswählen zu können.'}
+                    </p>
+                    <Button
+                      onClick={() => {
+                        window.open(
+                          '/dashboard/company/' + companyId + '/finance/customers',
+                          '_blank'
+                        );
+                      }}
+                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Kunden erstellen
+                    </Button>
                   </div>
                 ) : (
                   filteredCustomers.map(customer => (

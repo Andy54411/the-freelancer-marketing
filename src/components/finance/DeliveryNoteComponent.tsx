@@ -774,7 +774,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       {/* Modal für neuen Lieferschein */}
       {showCreateModal && (
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Neuer Lieferschein</DialogTitle>
               <DialogDescription>
@@ -1092,21 +1092,14 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       )}
 
       {/* Customer Selection Modal (NEU für Phase 1) */}
-      {showCustomerSelect && (
-        <Dialog open={showCustomerSelect} onOpenChange={setShowCustomerSelect}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>Kunde auswählen</DialogTitle>
-              <DialogDescription>Wählen Sie einen Kunden aus Ihrer Datenbank aus</DialogDescription>
-            </DialogHeader>
-            <CustomerSelect
-              companyId={companyId}
-              onCustomerSelect={handleCustomerSelect}
-              selectedCustomer={selectedCustomer}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <CustomerSelect
+        companyId={companyId}
+        onCustomerSelect={handleCustomerSelect}
+        selectedCustomer={selectedCustomer}
+        isOpen={showCustomerSelect}
+        onClose={() => setShowCustomerSelect(false)}
+        onOpenRequest={() => setShowCustomerSelect(true)}
+      />
     </div>
   );
 }

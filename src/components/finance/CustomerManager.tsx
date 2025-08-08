@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { AddCustomerModal, Customer } from './AddCustomerModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
 import { EditCustomerModal } from './EditCustomerModal';
+import { calculateCustomerStats, updateCustomerStats } from '@/utils/customerStatsUtils';
 
 interface CustomerManagerProps {
   companyId: string;
@@ -54,6 +55,41 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
     const highestNumber = Math.max(...numbers, 0);
     return `KD-${String(highestNumber + 1).padStart(3, '0')}`;
+  };
+
+  // Aktualisiere Kundenstatistiken im Hintergrund
+  const updateCustomerStatsInBackground = async (customerList: Customer[]) => {
+    try {
+      console.log('🔄 Aktualisiere Kundenstatistiken im Hintergrund...');
+
+      for (const customer of customerList) {
+        try {
+          const stats = await calculateCustomerStats(companyId, customer.name);
+
+          // Nur aktualisieren, wenn sich die Werte geändert haben
+          if (
+            stats.totalAmount !== customer.totalAmount ||
+            stats.totalInvoices !== customer.totalInvoices
+          ) {
+            await updateCustomerStats(customer.id, stats);
+            console.log(`✅ Statistiken für ${customer.name} aktualisiert:`, stats);
+
+            // Aktualisiere lokalen State
+            setCustomers(prev =>
+              prev.map(c =>
+                c.id === customer.id
+                  ? { ...c, totalAmount: stats.totalAmount, totalInvoices: stats.totalInvoices }
+                  : c
+              )
+            );
+          }
+        } catch (error) {
+          console.error(`❌ Fehler beim Aktualisieren von ${customer.name}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren der Kundenstatistiken:', error);
+    }
   };
 
   // Load customers from Firestore
@@ -97,6 +133,9 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       setCustomers(loadedCustomers);
       setNextCustomerNumber(generateNextCustomerNumber(loadedCustomers));
+
+      // Aktualisiere Kundenstatistiken im Hintergrund
+      updateCustomerStatsInBackground(loadedCustomers);
     } catch (error) {
       console.error('Fehler beim Laden der Kunden:', error);
       toast.error('Fehler beim Laden der Kundendaten');
@@ -478,6 +517,10 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         onClose={() => {
           setShowDetailModal(false);
           setSelectedCustomer(null);
+        }}
+        onCustomerUpdated={() => {
+          // Lade die Kunden neu, um aktualisierte Statistiken zu zeigen
+          loadCustomers();
         }}
       />
 
