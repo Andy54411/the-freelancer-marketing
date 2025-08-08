@@ -247,15 +247,6 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
             <option value="Tiere & Pflanzen">Tiere & Pflanzen</option>
           </select>
         </div>
-        <div className="flex flex-col col-span-2">
-          <label className="block mb-1 font-medium">Beschreibung des Unternehmens</label>
-          <textarea
-            value={step2.description || ''}
-            onChange={e => handleChange('step2.description', e.target.value)}
-            className="input min-h-[120px] dark:bg-gray-800 dark:text-white dark:border-gray-700"
-            placeholder="Beschreiben Sie Ihr Unternehmen..."
-          />
-        </div>
         <div className="grid grid-cols-2 gap-4 col-span-2">
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">Mitarbeiterzahl</label>
