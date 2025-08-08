@@ -1,24 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Package,
   Plus,
   Search,
-  Filter,
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
   Edit,
   Trash2,
   Eye,
   BarChart3,
-  ShoppingCart,
   AlertCircle,
   CheckCircle,
-  History,
   Download,
-  Upload,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -74,6 +68,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -105,11 +101,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     type: 'adjustment',
   });
 
-  useEffect(() => {
-    loadData();
-  }, [companyId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [itemsData, statsData, movementsData, categoriesData] = await Promise.all([
@@ -128,7 +120,11 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAddItem = async () => {
     try {
@@ -175,6 +171,31 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     } catch (error) {
       console.error('Fehler beim Anpassen des Bestands:', error);
     }
+  };
+
+  // Handler für Detail-Ansicht
+  const handleViewDetails = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setShowDetailDialog(true);
+  };
+
+  // Handler für Artikel löschen
+  const handleDeleteItem = async () => {
+    if (!selectedItem) return;
+
+    try {
+      await InventoryService.deleteInventoryItem(selectedItem.id);
+      await loadData();
+      setShowDeleteDialog(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Fehler beim Löschen des Artikels:', error);
+    }
+  };
+
+  const handleConfirmDelete = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setShowDeleteDialog(true);
   };
 
   const filteredItems = items.filter(item => {
@@ -568,10 +589,21 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewDetails(item)}
+                              title="Details anzeigen"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleConfirmDelete(item)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Artikel löschen"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -739,6 +771,203 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
               disabled={!stockAdjustment.reason}
             >
               Bestand anpassen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail-Ansicht Modal */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-none w-95vw max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Artikel-Details: {selectedItem?.name}</DialogTitle>
+            <DialogDescription>Vollständige Informationen zum Artikel</DialogDescription>
+          </DialogHeader>
+
+          {selectedItem && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Grunddaten</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="font-medium">Name:</Label>
+                      <p className="text-gray-900">{selectedItem.name}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">SKU/Artikelnummer:</Label>
+                      <p className="text-gray-900">{selectedItem.sku}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Beschreibung:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.description || 'Keine Beschreibung'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Kategorie:</Label>
+                      <p className="text-gray-900">{selectedItem.category}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Status:</Label>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          selectedItem.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : selectedItem.status === 'inactive'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {selectedItem.status === 'active'
+                          ? 'Aktiv'
+                          : selectedItem.status === 'inactive'
+                            ? 'Inaktiv'
+                            : 'Eingestellt'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Bestand & Preise</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="font-medium">Aktueller Bestand:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.currentStock} {selectedItem.unit}
+                        <span
+                          className={`ml-2 px-2 py-1 rounded text-xs ${getStockStatus(selectedItem).color}`}
+                        >
+                          {getStockStatus(selectedItem).text}
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Mindestbestand:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.minStock} {selectedItem.unit}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Maximalbestand:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.maxStock || 'Nicht festgelegt'} {selectedItem.unit}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Einkaufspreis:</Label>
+                      <p className="text-gray-900">{formatCurrency(selectedItem.purchasePrice)}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Verkaufspreis:</Label>
+                      <p className="text-gray-900">{formatCurrency(selectedItem.sellingPrice)}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Lagerwert:</Label>
+                      <p className="text-gray-900 font-semibold">
+                        {formatCurrency(selectedItem.stockValue)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Lieferant</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="font-medium">Lieferant:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.supplierName || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Kontakt:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.supplierContact || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Lager & Zusätzliches</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="font-medium">Lagerort:</Label>
+                      <p className="text-gray-900">{selectedItem.location || 'Nicht angegeben'}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Barcode:</Label>
+                      <p className="text-gray-900">{selectedItem.barcode || 'Nicht angegeben'}</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">Gewicht:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.weight ? `${selectedItem.weight} kg` : 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    {selectedItem.notes && (
+                      <div>
+                        <Label className="font-medium">Notizen:</Label>
+                        <p className="text-gray-900">{selectedItem.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Zeitstempel</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-medium">Erstellt:</Label>
+                    <p className="text-gray-900">
+                      {new Date(selectedItem.createdAt).toLocaleString('de-DE')}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Zuletzt geändert:</Label>
+                    <p className="text-gray-900">
+                      {new Date(selectedItem.updatedAt).toLocaleString('de-DE')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
+              Schließen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lösch-Bestätigung Modal */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Artikel löschen</DialogTitle>
+            <DialogDescription>
+              Sind Sie sicher, dass Sie den Artikel &quot;{selectedItem?.name}&quot; löschen
+              möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteItem}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Artikel löschen
             </Button>
           </div>
         </DialogContent>
