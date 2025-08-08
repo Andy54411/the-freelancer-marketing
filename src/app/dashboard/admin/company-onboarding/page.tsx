@@ -1,0 +1,551 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { collection, query, getDocs, doc, updateDoc, serverTimestamp, where, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, Clock, AlertTriangle, Users, Building, TrendingUp, Download } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { formatDistanceToNow, format } from 'date-fns';
+import { de } from 'date-fns/locale';
+
+interface CompanyOnboardingOverview {
+  uid: string;
+  companyName: string;
+  email: string;
+  registrationDate: Date;
+  onboardingStatus: 'pending_onboarding' | 'in_progress' | 'completed' | 'approved' | 'rejected' | 'grandfathered';
+  currentStep: number;
+  completionPercentage: number;
+  lastActivity: Date;
+  stepsCompleted: number[];
+  requiresApproval: boolean;
+  adminNotes?: string;
+  isLegacyCompany?: boolean;
+  registrationMethod?: string;
+}
+
+interface OnboardingStats {
+  totalCompanies: number;
+  pendingOnboarding: number;
+  inProgress: number;
+  awaitingApproval: number;
+  approved: number;
+  grandfathered: number;
+  avgCompletionTime: number;
+  completionRate: number;
+}
+
+export default function CompanyOnboardingDashboard() {
+  const [companies, setCompanies] = useState<CompanyOnboardingOverview[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<CompanyOnboardingOverview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<OnboardingStats>({
+    totalCompanies: 0,
+    pendingOnboarding: 0,
+    inProgress: 0,
+    awaitingApproval: 0,
+    approved: 0,
+    grandfathered: 0,
+    avgCompletionTime: 0,
+    completionRate: 0
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadCompaniesWithOnboardingStatus();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [companies, searchTerm, statusFilter]);
+
+  const loadCompaniesWithOnboardingStatus = async () => {
+    try {
+      setLoading(true);
+      
+      // Lade alle Companies (basierend auf bestehender users collection)
+      const usersQuery = query(collection(db, 'users'), where('user_type', '==', 'firma'));
+      const usersSnapshot = await getDocs(usersQuery);
+      
+      const companiesData: CompanyOnboardingOverview[] = [];
+      
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        
+        // Lade Onboarding Status aus Sub-Collection
+        // Get onboarding status
+        let onboardingData: any = null;
+        try {
+          const onboardingDoc = await getDoc(doc(db, 'users', userDoc.id, 'onboarding', 'progress'));
+          if (onboardingDoc.exists()) {
+            onboardingData = onboardingDoc.data();
+          }
+        } catch (error) {
+          console.log('No onboarding data for company:', userDoc.id);
+        }
+        
+        // Berechne Legacy Status für bestehende Companies
+        const isLegacyCompany = !onboardingData || onboardingData?.registrationMethod === 'existing_grandfathered';
+        const registrationDate = userData.createdAt?.toDate() || new Date();
+        
+        // Default Onboarding Status für Legacy Companies
+        const defaultOnboardingStatus = isLegacyCompany ? 'grandfathered' : 'pending_onboarding';
+        
+        companiesData.push({
+          uid: userDoc.id,
+          companyName: userData.companyName || 'Unbekanntes Unternehmen',
+          email: userData.email || '',
+          registrationDate,
+          onboardingStatus: onboardingData?.status || defaultOnboardingStatus,
+          currentStep: onboardingData?.currentStep || 0,
+          completionPercentage: onboardingData?.completionPercentage || 0,
+          lastActivity: onboardingData?.lastAutoSave?.toDate() || registrationDate,
+          stepsCompleted: onboardingData?.stepsCompleted || [],
+          requiresApproval: (onboardingData?.status === 'completed'),
+          adminNotes: onboardingData?.adminNotes || '',
+          isLegacyCompany,
+          registrationMethod: onboardingData?.registrationMethod || (isLegacyCompany ? 'existing_grandfathered' : 'new_registration')
+        });
+      }
+      
+      // Sortiere nach Registrierungsdatum (neueste zuerst)
+      companiesData.sort((a, b) => b.registrationDate.getTime() - a.registrationDate.getTime());
+      
+      setCompanies(companiesData);
+      calculateStats(companiesData);
+      
+    } catch (error) {
+      console.error('Error loading companies with onboarding status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (companiesData: CompanyOnboardingOverview[]) => {
+    const stats: OnboardingStats = {
+      totalCompanies: companiesData.length,
+      pendingOnboarding: companiesData.filter(c => c.onboardingStatus === 'pending_onboarding').length,
+      inProgress: companiesData.filter(c => c.onboardingStatus === 'in_progress').length,
+      awaitingApproval: companiesData.filter(c => c.onboardingStatus === 'completed').length,
+      approved: companiesData.filter(c => c.onboardingStatus === 'approved').length,
+      grandfathered: companiesData.filter(c => c.onboardingStatus === 'grandfathered').length,
+      avgCompletionTime: 0, // TODO: Calculate based on timestamps
+      completionRate: companiesData.length > 0 ? 
+        (companiesData.filter(c => c.onboardingStatus === 'approved' || c.onboardingStatus === 'grandfathered').length / companiesData.length) * 100 : 0
+    };
+    
+    setStats(stats);
+  };
+
+  const applyFilters = () => {
+    let filtered = companies;
+    
+    // Search Filter
+    if (searchTerm) {
+      filtered = filtered.filter(company => 
+        company.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Status Filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(company => company.onboardingStatus === statusFilter);
+    }
+    
+    setFilteredCompanies(filtered);
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedCompanies.length === 0) return;
+    
+    try {
+      for (const companyUid of selectedCompanies) {
+        await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
+          status: 'approved',
+          approvedAt: serverTimestamp(),
+          approvedBy: 'admin_bulk_action'
+        });
+      }
+      
+      setSelectedCompanies([]);
+      loadCompaniesWithOnboardingStatus();
+      alert(`${selectedCompanies.length} Unternehmen erfolgreich genehmigt.`);
+    } catch (error) {
+      console.error('Error in bulk approve:', error);
+      alert('Fehler beim Genehmigen der Unternehmen.');
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedCompanies.length === 0) return;
+    
+    const reason = prompt('Grund für Ablehnung:');
+    if (!reason) return;
+    
+    try {
+      for (const companyUid of selectedCompanies) {
+        await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
+          status: 'rejected',
+          rejectedAt: serverTimestamp(),
+          rejectedBy: 'admin_bulk_action',
+          rejectionReason: reason
+        });
+      }
+      
+      setSelectedCompanies([]);
+      loadCompaniesWithOnboardingStatus();
+      alert(`${selectedCompanies.length} Unternehmen abgelehnt.`);
+    } catch (error) {
+      console.error('Error in bulk reject:', error);
+      alert('Fehler beim Ablehnen der Unternehmen.');
+    }
+  };
+
+  const handleSingleApprove = async (companyUid: string) => {
+    try {
+      await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
+        status: 'approved',
+        approvedAt: serverTimestamp(),
+        approvedBy: 'admin_single_action'
+      });
+      
+      loadCompaniesWithOnboardingStatus();
+      alert('Unternehmen erfolgreich genehmigt.');
+    } catch (error) {
+      console.error('Error approving company:', error);
+      alert('Fehler beim Genehmigen des Unternehmens.');
+    }
+  };
+
+  const handleSingleReject = async (companyUid: string) => {
+    const reason = prompt('Grund für Ablehnung:');
+    if (!reason) return;
+    
+    try {
+      await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
+        status: 'rejected',
+        rejectedAt: serverTimestamp(),
+        rejectedBy: 'admin_single_action',
+        rejectionReason: reason
+      });
+      
+      loadCompaniesWithOnboardingStatus();
+      alert('Unternehmen abgelehnt.');
+    } catch (error) {
+      console.error('Error rejecting company:', error);
+      alert('Fehler beim Ablehnen des Unternehmens.');
+    }
+  };
+
+  const exportToCSV = () => {
+    const csvData = filteredCompanies.map(company => ({
+      'Firmenname': company.companyName,
+      'E-Mail': company.email,
+      'Registrierung': format(company.registrationDate, 'dd.MM.yyyy', { locale: de }),
+      'Onboarding Status': getStatusLabel(company.onboardingStatus),
+      'Aktueller Schritt': `${company.currentStep}/5`,
+      'Fortschritt %': company.completionPercentage,
+      'Letzte Aktivität': format(company.lastActivity, 'dd.MM.yyyy HH:mm', { locale: de }),
+      'Typ': company.isLegacyCompany ? 'Legacy' : 'Neu'
+    }));
+    
+    const csvContent = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `company-onboarding-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+  };
+
+  const getStatusBadge = (status: string) => {
+    const config = {
+      'pending_onboarding': { label: 'Ausstehend', className: 'bg-yellow-100 text-yellow-800' },
+      'in_progress': { label: 'In Bearbeitung', className: 'bg-blue-100 text-blue-800' },
+      'completed': { label: 'Wartet auf Freigabe', className: 'bg-purple-100 text-purple-800' },
+      'approved': { label: 'Genehmigt', className: 'bg-green-100 text-green-800' },
+      'rejected': { label: 'Abgelehnt', className: 'bg-red-100 text-red-800' },
+      'grandfathered': { label: 'Legacy (Bestandsschutz)', className: 'bg-gray-100 text-gray-800' }
+    };
+    
+    const { label, className } = config[status as keyof typeof config] || config['pending_onboarding'];
+    
+    return (
+      <Badge className={className}>
+        {label}
+      </Badge>
+    );
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels = {
+      'pending_onboarding': 'Ausstehend',
+      'in_progress': 'In Bearbeitung',
+      'completed': 'Wartet auf Freigabe',
+      'approved': 'Genehmigt',
+      'rejected': 'Abgelehnt',
+      'grandfathered': 'Legacy (Bestandsschutz)'
+    };
+    
+    return labels[status as keyof typeof labels] || status;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Company Onboarding Übersicht</h1>
+        <Button onClick={exportToCSV} variant="outline">
+          <Download className="w-4 h-4 mr-2" />
+          CSV Export
+        </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gesamt Unternehmen</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Warten auf Start</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingOnboarding}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Warten auf Freigabe</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{stats.awaitingApproval}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Erfolgsquote</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.completionRate.toFixed(1)}%</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filter & Suche</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Suche</label>
+              <Input
+                placeholder="Firmenname oder E-Mail..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Status Filter</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Status</SelectItem>
+                  <SelectItem value="pending_onboarding">Ausstehend</SelectItem>
+                  <SelectItem value="in_progress">In Bearbeitung</SelectItem>
+                  <SelectItem value="completed">Wartet auf Freigabe</SelectItem>
+                  <SelectItem value="approved">Genehmigt</SelectItem>
+                  <SelectItem value="rejected">Abgelehnt</SelectItem>
+                  <SelectItem value="grandfathered">Legacy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-end">
+              <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>
+                Filter zurücksetzen
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bulk Actions */}
+      {selectedCompanies.length > 0 && (
+        <Card className="mb-6 border-[#14ad9f]">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                {selectedCompanies.length} Unternehmen ausgewählt
+              </span>
+              <div className="flex space-x-2">
+                <Button onClick={handleBulkApprove} className="bg-green-600 hover:bg-green-700">
+                  Alle genehmigen
+                </Button>
+                <Button onClick={handleBulkReject} variant="destructive">
+                  Alle ablehnen
+                </Button>
+                <Button onClick={() => setSelectedCompanies([])} variant="outline">
+                  Auswahl aufheben
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Companies Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Unternehmen ({filteredCompanies.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedCompanies.length === filteredCompanies.length && filteredCompanies.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCompanies(filteredCompanies.map(c => c.uid));
+                        } else {
+                          setSelectedCompanies([]);
+                        }
+                      }}
+                    />
+                  </th>
+                  <th className="text-left p-2">Unternehmen</th>
+                  <th className="text-left p-2">Registrierung</th>
+                  <th className="text-left p-2">Status</th>
+                  <th className="text-left p-2">Fortschritt</th>
+                  <th className="text-left p-2">Letzte Aktivität</th>
+                  <th className="text-left p-2">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCompanies.map((company) => (
+                  <tr key={company.uid} className="border-b hover:bg-gray-50">
+                    <td className="p-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedCompanies.includes(company.uid)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCompanies([...selectedCompanies, company.uid]);
+                          } else {
+                            setSelectedCompanies(selectedCompanies.filter(id => id !== company.uid));
+                          }
+                        }}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <div>
+                        <div className="font-medium">{company.companyName}</div>
+                        <div className="text-sm text-gray-500">{company.email}</div>
+                      </div>
+                    </td>
+                    <td className="p-2 text-sm">
+                      {format(company.registrationDate, 'dd.MM.yyyy', { locale: de })}
+                    </td>
+                    <td className="p-2">
+                      {getStatusBadge(company.onboardingStatus)}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Schritt {company.currentStep}/5</span>
+                            <span className="font-medium">{company.completionPercentage}%</span>
+                          </div>
+                          <div className="mt-1 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-[#14ad9f] h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${company.completionPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-2 text-sm">
+                      {formatDistanceToNow(company.lastActivity, { addSuffix: true, locale: de })}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          Details
+                        </Button>
+                        {company.onboardingStatus === 'completed' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleSingleApprove(company.uid)}
+                            >
+                              Genehmigen
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => handleSingleReject(company.uid)}
+                            >
+                              Ablehnen
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {filteredCompanies.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                Keine Unternehmen gefunden.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

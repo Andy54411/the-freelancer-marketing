@@ -984,16 +984,75 @@ export default function Step5CompanyPage() {
         };
         await updateDoc(doc(db, 'users', currentAuthUserUID), { ...userUpdateAfterStripe });
 
-        setCurrentStepMessage('Weiterleitung zum Dashboard...');
+        setCurrentStepMessage('Onboarding-System wird vorbereitet...');
+        
+        // NEU: Onboarding Status in Firestore setzen (nach Dokumentation)
+        await setDoc(doc(db, 'users', currentAuthUserUID, 'onboarding', 'progress'), {
+          status: 'pending_onboarding',
+          completedSteps: [],
+          currentStep: 1,
+          completionPercentage: 0,
+          startedAt: serverTimestamp(),
+          registrationCompletedAt: serverTimestamp(),
+          registrationMethod: 'new_registration',
+          isLegacyCompany: false,
+          stepData: {},
+          stepCompletionData: {
+            step1: {
+              personalDataComplete: false,
+              addressComplete: false,
+              phoneVerified: false,
+              directorDataComplete: false,
+              tosAccepted: false
+            },
+            step2: {
+              companyDataComplete: false,
+              legalFormSet: false,
+              websiteProvided: false,
+              accountingSetup: false,
+              bankingComplete: false
+            },
+            step3: {
+              profilePictureUploaded: false,
+              publicDescriptionComplete: false,
+              skillsAdded: false,
+              portfolioAdded: false,
+              servicePackagesCreated: false,
+              hourlyRateSet: false,
+              faqsCreated: false
+            },
+            step4: {
+              categoriesSelected: false,
+              workingHoursSet: false,
+              instantBookingConfigured: false,
+              responseTimeSet: false,
+              locationConfigured: false
+            },
+            step5: {
+              allDataComplete: false,
+              documentsUploaded: false,
+              stripeAccountCreated: false,
+              verificationSubmitted: false,
+              readyForApproval: false
+            }
+          },
+          stepsCompleted: [],
+          stepValidations: {},
+          lastAutoSave: serverTimestamp(),
+          stepCompletedAt: {}
+        });
+
+        setCurrentStepMessage('Weiterleitung zum Onboarding...');
         setIsRedirecting(true);
 
         // Kurze Verzögerung bevor Weiterleitung für bessere UX
         setTimeout(() => {
           alert(
-            'Registrierung fast abgeschlossen! Bitte überprüfe dein Dashboard für den Status deines Zahlungskontos.'
+            'Registrierung abgeschlossen! Sie werden nun durch unser Onboarding-System geführt, um Ihr Firmenprofil zu vervollständigen.'
           );
           if (resetRegistrationData) resetRegistrationData();
-          router.push(`/dashboard/company/${currentAuthUserUID}`);
+          // NEU: Redirect zum Onboarding anstatt Dashboard (nach Dokumentation)
+          router.push(`/dashboard/company/${currentAuthUserUID}/onboarding/welcome`);
         }, 1500);
       } else {
         setFormError(
