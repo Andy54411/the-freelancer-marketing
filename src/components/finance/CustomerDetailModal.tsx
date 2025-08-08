@@ -71,10 +71,25 @@ export function CustomerDetailModal({
 
   // Berechne Statistiken basierend auf geladenen Rechnungen
   const calculateCustomerStats = (invoiceList: InvoiceData[]) => {
-    // Nur finalisierte/gesendete Rechnungen für Umsatzberechnung
+    console.log(
+      '🔍 Calculating stats for invoices:',
+      invoiceList.map(inv => ({
+        number: inv.invoiceNumber || inv.number,
+        status: inv.status,
+        total: inv.total,
+      }))
+    );
+
+    // Alle Rechnungen außer draft/cancelled für Umsatzberechnung
     const validInvoices = invoiceList.filter(
-      invoice =>
-        invoice.status === 'finalized' || invoice.status === 'sent' || invoice.status === 'paid'
+      invoice => invoice.status !== 'draft' && invoice.status !== 'cancelled'
+    );
+
+    console.log(
+      '✅ Valid invoices for calculation:',
+      validInvoices.length,
+      'of',
+      invoiceList.length
     );
 
     const totalAmount = validInvoices.reduce((sum, invoice) => {
@@ -82,6 +97,8 @@ export function CustomerDetailModal({
       const amount = invoice.isStorno ? -invoice.total : invoice.total;
       return sum + amount;
     }, 0);
+
+    console.log('💰 Calculated total amount:', totalAmount);
 
     setCalculatedStats({
       totalAmount,
