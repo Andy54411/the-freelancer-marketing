@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { FiLoader } from 'react-icons/fi';
 import { toast } from 'sonner';
-import ProfileImageUpload from './ProfileImageUpload';
 import { ProfileTabProps } from './types';
 import { Gemini } from '@/components/logos';
 
@@ -50,11 +49,6 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
         <p className="text-sm text-gray-600">
           Verwalte deine grundlegenden Unternehmensinformationen und Kontaktdaten.
         </p>
-      </div>
-
-      {/* Profilbild Upload */}
-      <div className="bg-gray-50 p-6 rounded-lg">
-        <ProfileImageUpload profile={profile} setProfile={setProfile} />
       </div>
 
       {/* Grundinformationen */}
