@@ -5,7 +5,16 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { Upload, Image as ImageIcon, Star, MapPin, Plus, Globe, CheckCircle, FileImage } from 'lucide-react';
+import {
+  Upload,
+  Image as ImageIcon,
+  Star,
+  MapPin,
+  Plus,
+  Globe,
+  CheckCircle,
+  FileImage,
+} from 'lucide-react';
 
 interface OnboardingStep3Props {
   companyUid: string;
@@ -15,13 +24,13 @@ interface Step3Data {
   // Images
   companyLogo: string;
   profileBannerImage: string;
-  
+
   // Basic Info
   publicDescription: string;
   hourlyRate: string;
   instantBooking: boolean;
   responseTimeGuarantee: number;
-  
+
   // Skills & Languages
   skills: string[];
   languages: Array<{
@@ -29,7 +38,7 @@ interface Step3Data {
     proficiency: string;
   }>;
   specialties: string[];
-  
+
   // Working Hours
   workingHours: Array<{
     day: string;
@@ -37,7 +46,7 @@ interface Step3Data {
     start: string;
     end: string;
   }>;
-  
+
   // Services (basic)
   servicePackages: Array<{
     title: string;
@@ -45,14 +54,14 @@ interface Step3Data {
     price: number;
     duration: string;
   }>;
-  
+
   // Portfolio (minimal)
   portfolio: Array<{
     title: string;
     description: string;
     imageUrl: string;
   }>;
-  
+
   // FAQ (minimal)
   faqs: Array<{
     question: string;
@@ -81,11 +90,11 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
       { day: 'Donnerstag', enabled: true, start: '09:00', end: '17:00' },
       { day: 'Freitag', enabled: true, start: '09:00', end: '17:00' },
       { day: 'Samstag', enabled: false, start: '09:00', end: '17:00' },
-      { day: 'Sonntag', enabled: false, start: '09:00', end: '17:00' }
+      { day: 'Sonntag', enabled: false, start: '09:00', end: '17:00' },
     ],
     servicePackages: [],
     portfolio: [],
-    faqs: []
+    faqs: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -98,9 +107,10 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          
+
           setFormData({
-            companyLogo: userData.step3?.profilePictureURL || userData.profilePictureFirebaseUrl || '',
+            companyLogo:
+              userData.step3?.profilePictureURL || userData.profilePictureFirebaseUrl || '',
             profileBannerImage: userData.profileBannerImage || '',
             publicDescription: userData.publicDescription || '',
             hourlyRate: userData.step3?.hourlyRate || '',
@@ -112,7 +122,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
             workingHours: userData.workingHours || formData.workingHours,
             servicePackages: userData.servicePackages || [],
             portfolio: userData.portfolio || [],
-            faqs: userData.faqs || []
+            faqs: userData.faqs || [],
           });
         }
 
@@ -138,19 +148,19 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
 
   // Validation function to check what's missing
   const getValidationStatus = () => {
-    const missing = [];
+    const missing: string[] = [];
     if (!formData.companyLogo) missing.push('Firmenlogo');
     if (!formData.publicDescription || formData.publicDescription.length < 200) {
       missing.push('Beschreibung (mind. 200 Zeichen)');
     }
     if (!formData.hourlyRate || Number(formData.hourlyRate) <= 0) missing.push('Stundensatz');
-    
+
     return {
       isValid: missing.length === 0,
       missing: missing,
-      completed: ['Firmenlogo', 'Beschreibung', 'Stundensatz'].filter(item => 
-        !missing.some(m => m.includes(item.toLowerCase()))
-      )
+      completed: ['Firmenlogo', 'Beschreibung', 'Stundensatz'].filter(
+        item => !missing.some(m => m.includes(item.toLowerCase()))
+      ),
     };
   };
 
@@ -172,13 +182,13 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
       title: '',
       description: '',
       price: 0,
-      duration: '1 Stunde'
+      duration: '1 Stunde',
     };
     handleChange('servicePackages', [...formData.servicePackages, newPackage]);
   };
 
   const updateServicePackage = (index: number, field: string, value: any) => {
-    const updatedPackages = formData.servicePackages.map((pkg, i) => 
+    const updatedPackages = formData.servicePackages.map((pkg, i) =>
       i === index ? { ...pkg, [field]: value } : pkg
     );
     handleChange('servicePackages', updatedPackages);
@@ -190,7 +200,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
   };
 
   const updateFAQ = (index: number, field: string, value: string) => {
-    const updatedFAQs = formData.faqs.map((faq, i) => 
+    const updatedFAQs = formData.faqs.map((faq, i) =>
       i === index ? { ...faq, [field]: value } : faq
     );
     handleChange('faqs', updatedFAQs);
@@ -201,7 +211,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
     { id: 'basic', label: 'Grunddaten', icon: Globe, required: true },
     { id: 'skills', label: 'Fähigkeiten', icon: Star, required: true },
     { id: 'services', label: 'Services', icon: CheckCircle, required: false },
-    { id: 'faqs', label: 'FAQ', icon: FileImage, required: false }
+    { id: 'faqs', label: 'FAQ', icon: FileImage, required: false },
   ];
 
   const getTabCompletion = (tabId: string) => {
@@ -234,9 +244,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Öffentliches Profil
-        </h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Öffentliches Profil</h3>
         <p className="text-sm text-gray-600 mb-6">
           Erstellen Sie Ihr professionelles Profil, das Kunden sehen werden.
         </p>
@@ -245,10 +253,10 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-4 justify-center">
-          {tabs.map((tab) => {
+          {tabs.map(tab => {
             const completion = getTabCompletion(tab.id);
             const isActive = activeTab === tab.id;
-            
+
             return (
               <button
                 key={tab.id}
@@ -261,16 +269,16 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
               >
                 <tab.icon className="w-4 h-4 mr-2" />
                 {tab.label}
-                {tab.required && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-                <div className={`ml-2 w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                  completion === 100 
-                    ? 'bg-green-100 text-green-600' 
-                    : completion > 0 
-                      ? 'bg-yellow-100 text-yellow-600'
-                      : 'bg-gray-100 text-gray-400'
-                }`}>
+                {tab.required && <span className="ml-1 text-red-500">*</span>}
+                <div
+                  className={`ml-2 w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                    completion === 100
+                      ? 'bg-green-100 text-green-600'
+                      : completion > 0
+                        ? 'bg-yellow-100 text-yellow-600'
+                        : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
                   {completion === 100 ? '✓' : Math.round(completion)}
                 </div>
               </button>
@@ -280,13 +288,17 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
       </div>
 
       {/* Validation Status */}
-      <div className={`p-4 rounded-lg border ${
-        validationStatus.isValid 
-          ? 'bg-green-50 border-green-200' 
-          : 'bg-yellow-50 border-yellow-200'
-      }`}>
+      <div
+        className={`p-4 rounded-lg border ${
+          validationStatus.isValid
+            ? 'bg-green-50 border-green-200'
+            : 'bg-yellow-50 border-yellow-200'
+        }`}
+      >
         <div className="flex items-start">
-          <div className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}>
+          <div
+            className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}
+          >
             {validationStatus.isValid ? (
               <CheckCircle className="h-5 w-5" />
             ) : (
@@ -296,10 +308,14 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
             )}
           </div>
           <div className="ml-3">
-            <h4 className={`text-sm font-medium ${
-              validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
-            }`}>
-              {validationStatus.isValid ? 'Alle Pflichtfelder ausgefüllt!' : 'Noch nicht vollständig'}
+            <h4
+              className={`text-sm font-medium ${
+                validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
+              }`}
+            >
+              {validationStatus.isValid
+                ? 'Alle Pflichtfelder ausgefüllt!'
+                : 'Noch nicht vollständig'}
             </h4>
             {!validationStatus.isValid && (
               <p className="mt-1 text-sm text-yellow-700">
@@ -320,18 +336,16 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
         {activeTab === 'images' && (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                Firmenlogo *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-4">Firmenlogo *</label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 {formData.companyLogo ? (
                   <div className="space-y-4">
-                    <img 
-                      src={formData.companyLogo} 
-                      alt="Logo" 
+                    <img
+                      src={formData.companyLogo}
+                      alt="Logo"
                       className="w-32 h-32 object-cover mx-auto rounded-lg"
                     />
-                    <button 
+                    <button
                       onClick={() => handleChange('companyLogo', '')}
                       className="text-red-600 hover:text-red-800 text-sm"
                     >
@@ -341,14 +355,12 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 ) : (
                   <div className="space-y-2">
                     <Upload className="w-12 h-12 text-gray-400 mx-auto" />
-                    <div className="text-sm text-gray-600">
-                      Logo hochladen (max. 5MB)
-                    </div>
+                    <div className="text-sm text-gray-600">Logo hochladen (max. 5MB)</div>
                     <input
                       type="file"
                       accept="image/*"
                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#14ad9f] file:text-white hover:file:bg-[#129488]"
-                      onChange={(e) => {
+                      onChange={e => {
                         const file = e.target.files?.[0];
                         if (file) {
                           // Create temporary URL for preview
@@ -371,11 +383,11 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const reader = new FileReader();
-                      reader.onload = (e) => {
+                      reader.onload = e => {
                         const result = e.target?.result as string;
                         handleChange('profileBannerImage', result);
                       };
@@ -388,8 +400,8 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 <label htmlFor="banner-upload" className="cursor-pointer">
                   {formData.profileBannerImage ? (
                     <div className="space-y-2">
-                      <img 
-                        src={formData.profileBannerImage} 
+                      <img
+                        src={formData.profileBannerImage}
                         alt="Banner Preview"
                         className="max-h-32 mx-auto rounded-lg object-cover"
                       />
@@ -421,16 +433,16 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
               </label>
               <textarea
                 value={formData.publicDescription}
-                onChange={(e) => handleChange('publicDescription', e.target.value)}
+                onChange={e => handleChange('publicDescription', e.target.value)}
                 rows={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 placeholder="Beschreiben Sie Ihr Unternehmen und Ihre Dienstleistungen..."
               />
               <div className="text-sm text-gray-500 mt-1">
                 {formData.publicDescription.length}/200 Zeichen
-                {formData.publicDescription.length >= 200 && 
+                {formData.publicDescription.length >= 200 && (
                   <span className="text-green-600 ml-2">✓ Mindestlänge erreicht</span>
-                }
+                )}
               </div>
             </div>
 
@@ -442,7 +454,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 <input
                   type="number"
                   value={formData.hourlyRate}
-                  onChange={(e) => handleChange('hourlyRate', e.target.value)}
+                  onChange={e => handleChange('hourlyRate', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                   placeholder="z.B. 50"
                   min="0"
@@ -456,7 +468,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 </label>
                 <select
                   value={formData.responseTimeGuarantee}
-                  onChange={(e) => handleChange('responseTimeGuarantee', parseInt(e.target.value))}
+                  onChange={e => handleChange('responseTimeGuarantee', parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 >
                   <option value={1}>1 Stunde</option>
@@ -495,7 +507,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 type="text"
                 placeholder="Fähigkeit hinzufügen..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                onKeyPress={(e) => {
+                onKeyPress={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     addSkill((e.target as HTMLInputElement).value);
@@ -505,9 +517,9 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
               />
               <div className="text-sm text-gray-500 mt-1">
                 {formData.skills.length}/3 Fähigkeiten
-                {formData.skills.length >= 3 && 
+                {formData.skills.length >= 3 && (
                   <span className="text-green-600 ml-2">✓ Mindestanzahl erreicht</span>
-                }
+                )}
               </div>
             </div>
           </div>
@@ -526,19 +538,19 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 Paket hinzufügen
               </button>
             </div>
-            
+
             {formData.servicePackages.map((pkg, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
                 <input
                   type="text"
                   value={pkg.title}
-                  onChange={(e) => updateServicePackage(index, 'title', e.target.value)}
+                  onChange={e => updateServicePackage(index, 'title', e.target.value)}
                   placeholder="Service-Titel"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 />
                 <textarea
                   value={pkg.description}
-                  onChange={(e) => updateServicePackage(index, 'description', e.target.value)}
+                  onChange={e => updateServicePackage(index, 'description', e.target.value)}
                   placeholder="Beschreibung des Services"
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
@@ -547,14 +559,14 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                   <input
                     type="number"
                     value={pkg.price}
-                    onChange={(e) => updateServicePackage(index, 'price', parseFloat(e.target.value))}
+                    onChange={e => updateServicePackage(index, 'price', parseFloat(e.target.value))}
                     placeholder="Preis (€)"
                     className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                   />
                   <input
                     type="text"
                     value={pkg.duration}
-                    onChange={(e) => updateServicePackage(index, 'duration', e.target.value)}
+                    onChange={e => updateServicePackage(index, 'duration', e.target.value)}
                     placeholder="Dauer"
                     className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                   />
@@ -577,19 +589,19 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 FAQ hinzufügen
               </button>
             </div>
-            
+
             {formData.faqs.map((faq, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
                 <input
                   type="text"
                   value={faq.question}
-                  onChange={(e) => updateFAQ(index, 'question', e.target.value)}
+                  onChange={e => updateFAQ(index, 'question', e.target.value)}
                   placeholder="Frage"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 />
                 <textarea
                   value={faq.answer}
-                  onChange={(e) => updateFAQ(index, 'answer', e.target.value)}
+                  onChange={e => updateFAQ(index, 'answer', e.target.value)}
                   placeholder="Antwort"
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
@@ -606,7 +618,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
           Schritt 3 von 5 - Profil-Vervollständigung
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-          {tabs.map((tab) => {
+          {tabs.map(tab => {
             const completion = getTabCompletion(tab.id);
             return (
               <div key={tab.id} className="flex items-center justify-between">

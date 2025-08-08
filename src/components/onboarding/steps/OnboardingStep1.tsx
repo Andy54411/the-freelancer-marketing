@@ -59,7 +59,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     website: '',
     legalForm: '',
     employees: '',
-    termsAccepted: false
+    termsAccepted: false,
   });
   const [loading, setLoading] = useState(true);
   const [showManagerModal, setShowManagerModal] = useState(false);
@@ -73,7 +73,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     street: '',
     city: '',
     postalCode: '',
-    country: 'DE'
+    country: 'DE',
   });
 
   // Load existing data on mount
@@ -85,7 +85,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          
+
           // Map existing company data to form
           setFormData({
             companyName: userData.companyName || '',
@@ -102,9 +102,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             legalForm: userData.step2?.legalForm || '',
             employees: userData.step2?.employees || '',
             termsAccepted: !!userData.tosAcceptanceIp,
-            managerData: userData.managerData || undefined
+            managerData: userData.managerData || undefined,
           });
-          
+
           // Load manager data if exists
           if (userData.managerData) {
             setManagerData(userData.managerData);
@@ -129,7 +129,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
     updateStepData(1, newData);
-    
+
     // Check if manager data is required for certain legal forms
     if (field === 'legalForm' && requiresManager(value)) {
       setShowManagerModal(true);
@@ -153,33 +153,48 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
   // Validation function to check what's missing
   const getValidationStatus = () => {
-    const missing = [];
-    if (!formData.companyName || formData.companyName.length < 2) missing.push('Firmenname (mind. 2 Zeichen)');
-    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) missing.push('Gültige E-Mail-Adresse');
-    if (!formData.phone || formData.phone.length < 10) missing.push('Telefonnummer (mind. 10 Zeichen)');
+    const missing: string[] = [];
+    if (!formData.companyName || formData.companyName.length < 2)
+      missing.push('Firmenname (mind. 2 Zeichen)');
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      missing.push('Gültige E-Mail-Adresse');
+    if (!formData.phone || formData.phone.length < 10)
+      missing.push('Telefonnummer (mind. 10 Zeichen)');
     if (!formData.address) missing.push('Adresse');
     if (!formData.businessType) missing.push('Geschäftsbereich');
-    
+
     // Check if manager data is required but missing
     if (requiresManager(formData.legalForm) && !formData.managerData) {
       missing.push('Geschäftsführer-Daten');
     }
-    
+
     return {
       isValid: missing.length === 0,
       missing: missing,
-      completed: ['Firmenname', 'E-Mail', 'Telefon', 'Adresse', 'Geschäftsbereich'].filter(item => 
-        !missing.some(m => m.includes(item.toLowerCase()))
-      )
+      completed: ['Firmenname', 'E-Mail', 'Telefon', 'Adresse', 'Geschäftsbereich'].filter(
+        item => !missing.some(m => m.includes(item.toLowerCase()))
+      ),
     };
   };
 
   const validationStatus = getValidationStatus();
 
   const businessTypes = [
-    { value: 'b2b', label: 'B2B - Geschäftskunden', description: 'Dienstleistungen für Unternehmen' },
-    { value: 'b2c', label: 'B2C - Privatkunden', description: 'Dienstleistungen für Privatpersonen' },
-    { value: 'hybrid', label: 'Hybrid - Beide', description: 'Sowohl Geschäfts- als auch Privatkunden' }
+    {
+      value: 'b2b',
+      label: 'B2B - Geschäftskunden',
+      description: 'Dienstleistungen für Unternehmen',
+    },
+    {
+      value: 'b2c',
+      label: 'B2C - Privatkunden',
+      description: 'Dienstleistungen für Privatpersonen',
+    },
+    {
+      value: 'hybrid',
+      label: 'Hybrid - Beide',
+      description: 'Sowohl Geschäfts- als auch Privatkunden',
+    },
   ];
 
   const industries = [
@@ -193,7 +208,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     'Transport & Logistik',
     'Reinigung & Haushalt',
     'Event & Entertainment',
-    'Andere'
+    'Andere',
   ];
 
   const legalForms = [
@@ -204,7 +219,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     'KG',
     'OHG',
     'Freiberufler',
-    'Andere'
+    'Andere',
   ];
 
   if (loading) {
@@ -230,13 +245,17 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
       </div>
 
       {/* Validation Status */}
-      <div className={`p-4 rounded-lg border ${
-        validationStatus.isValid 
-          ? 'bg-green-50 border-green-200' 
-          : 'bg-yellow-50 border-yellow-200'
-      }`}>
+      <div
+        className={`p-4 rounded-lg border ${
+          validationStatus.isValid
+            ? 'bg-green-50 border-green-200'
+            : 'bg-yellow-50 border-yellow-200'
+        }`}
+      >
         <div className="flex items-start">
-          <div className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}>
+          <div
+            className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}
+          >
             {validationStatus.isValid ? (
               <CheckCircle className="h-5 w-5" />
             ) : (
@@ -246,10 +265,14 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             )}
           </div>
           <div className="ml-3">
-            <h4 className={`text-sm font-medium ${
-              validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
-            }`}>
-              {validationStatus.isValid ? 'Alle Pflichtfelder ausgefüllt!' : 'Noch nicht vollständig'}
+            <h4
+              className={`text-sm font-medium ${
+                validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
+              }`}
+            >
+              {validationStatus.isValid
+                ? 'Alle Pflichtfelder ausgefüllt!'
+                : 'Noch nicht vollständig'}
             </h4>
             {!validationStatus.isValid && (
               <p className="mt-1 text-sm text-yellow-700">
@@ -267,13 +290,11 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Company Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Firmenname *
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Firmenname *</label>
         <input
           type="text"
           value={formData.companyName}
-          onChange={(e) => handleChange('companyName', e.target.value)}
+          onChange={e => handleChange('companyName', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           placeholder="z.B. Mustermann GmbH"
           required
@@ -282,11 +303,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Business Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Geschäftstyp *
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-3">Geschäftstyp *</label>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {businessTypes.map((type) => (
+          {businessTypes.map(type => (
             <div
               key={type.value}
               className={`relative cursor-pointer rounded-lg border p-4 transition-colors ${
@@ -304,12 +323,8 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                   className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f]"
                 />
                 <div className="ml-3">
-                  <div className="text-sm font-medium text-gray-900">
-                    {type.label}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {type.description}
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">{type.label}</div>
+                  <div className="text-xs text-gray-500">{type.description}</div>
                 </div>
               </div>
             </div>
@@ -319,17 +334,15 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Industry */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Branche *
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Branche *</label>
         <select
           value={formData.industry}
-          onChange={(e) => handleChange('industry', e.target.value)}
+          onChange={e => handleChange('industry', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           required
         >
           <option value="">Branche auswählen</option>
-          {industries.map((industry) => (
+          {industries.map(industry => (
             <option key={industry} value={industry}>
               {industry}
             </option>
@@ -339,15 +352,13 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Address */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Geschäftsadresse *
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Geschäftsadresse *</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <input
               type="text"
               value={formData.street}
-              onChange={(e) => handleChange('street', e.target.value)}
+              onChange={e => handleChange('street', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="Straße und Hausnummer"
               required
@@ -357,7 +368,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <input
               type="text"
               value={formData.postalCode}
-              onChange={(e) => handleChange('postalCode', e.target.value)}
+              onChange={e => handleChange('postalCode', e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="PLZ"
               required
@@ -365,7 +376,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <input
               type="text"
               value={formData.city}
-              onChange={(e) => handleChange('city', e.target.value)}
+              onChange={e => handleChange('city', e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="Stadt"
               required
@@ -377,26 +388,22 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
       {/* Contact Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Telefon *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Telefon *</label>
           <input
             type="tel"
             value={formData.phone}
-            onChange={(e) => handleChange('phone', e.target.value)}
+            onChange={e => handleChange('phone', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
             placeholder="+49 123 456789"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            E-Mail *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">E-Mail *</label>
           <input
             type="email"
             value={formData.email}
-            onChange={(e) => handleChange('email', e.target.value)}
+            onChange={e => handleChange('email', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
             placeholder="kontakt@unternehmen.de"
             required
@@ -406,13 +413,11 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Website */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Website (optional)
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Website (optional)</label>
         <input
           type="url"
           value={formData.website}
-          onChange={(e) => handleChange('website', e.target.value)}
+          onChange={e => handleChange('website', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           placeholder="https://www.unternehmen.de"
         />
@@ -421,23 +426,21 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
       {/* Legal Form and Employees */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Rechtsform *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Rechtsform *</label>
           <select
             value={formData.legalForm}
-            onChange={(e) => handleChange('legalForm', e.target.value)}
+            onChange={e => handleChange('legalForm', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
             required
           >
             <option value="">Rechtsform auswählen</option>
-            {legalForms.map((form) => (
+            {legalForms.map(form => (
               <option key={form} value={form}>
                 {form}
               </option>
             ))}
           </select>
-          
+
           {/* Manager Data Button for Legal Forms requiring it */}
           {formData.legalForm && requiresManager(formData.legalForm) && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -447,7 +450,8 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                     Geschäftsführer-Daten erforderlich
                   </p>
                   <p className="text-xs text-yellow-600 mt-1">
-                    Für die Rechtsform &quot;{formData.legalForm}&quot; sind zusätzliche Angaben nötig
+                    Für die Rechtsform &quot;{formData.legalForm}&quot; sind zusätzliche Angaben
+                    nötig
                   </p>
                 </div>
                 <button
@@ -455,27 +459,23 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                   onClick={() => setShowManagerModal(true)}
                   className="px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] text-sm font-medium"
                 >
-                  {formData.managerData?.firstName ? 
-                    'Daten bearbeiten' :
-                    'Daten eingeben'
-                  }
+                  {formData.managerData?.firstName ? 'Daten bearbeiten' : 'Daten eingeben'}
                 </button>
               </div>
               {formData.managerData?.firstName && (
                 <div className="mt-2 text-xs text-green-600">
-                  ✓ Geschäftsführer: {formData.managerData.firstName} {formData.managerData.lastName}
+                  ✓ Geschäftsführer: {formData.managerData.firstName}{' '}
+                  {formData.managerData.lastName}
                 </div>
               )}
             </div>
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Anzahl Mitarbeiter
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Anzahl Mitarbeiter</label>
           <select
             value={formData.employees}
-            onChange={(e) => handleChange('employees', e.target.value)}
+            onChange={e => handleChange('employees', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           >
             <option value="">Anzahl wählen</option>
@@ -494,18 +494,26 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
           <input
             type="checkbox"
             checked={formData.termsAccepted}
-            onChange={(e) => handleChange('termsAccepted', e.target.checked)}
+            onChange={e => handleChange('termsAccepted', e.target.checked)}
             className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded mt-1"
             required
           />
           <div className="ml-3">
             <label className="text-sm text-gray-700">
               Ich akzeptiere die{' '}
-              <a href="/terms" target="_blank" className="text-[#14ad9f] hover:text-[#129488] underline">
+              <a
+                href="/terms"
+                target="_blank"
+                className="text-[#14ad9f] hover:text-[#129488] underline"
+              >
                 Allgemeinen Geschäftsbedingungen
               </a>{' '}
               und{' '}
-              <a href="/privacy" target="_blank" className="text-[#14ad9f] hover:text-[#129488] underline">
+              <a
+                href="/privacy"
+                target="_blank"
+                className="text-[#14ad9f] hover:text-[#129488] underline"
+              >
                 Datenschutzerklärung
               </a>{' '}
               von Taskilo. *
@@ -516,11 +524,10 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Progress indicator */}
       <div className="bg-gray-50 rounded-lg p-4 mt-6">
-        <div className="text-sm text-gray-600 mb-2">
-          Schritt 1 von 5 - Grunddaten
-        </div>
+        <div className="text-sm text-gray-600 mb-2">Schritt 1 von 5 - Grunddaten</div>
         <div className="text-xs text-gray-500">
-          Ihre Daten werden automatisch gespeichert. Sie können jederzeit pausieren und später fortfahren.
+          Ihre Daten werden automatisch gespeichert. Sie können jederzeit pausieren und später
+          fortfahren.
         </div>
       </div>
 
@@ -530,9 +537,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[75vh] overflow-hidden flex flex-col mt-12">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Geschäftsführer-Daten
-                </h3>
+                <h3 className="text-lg font-medium text-gray-900">Geschäftsführer-Daten</h3>
                 <button
                   onClick={() => setShowManagerModal(false)}
                   className="text-gray-400 hover:text-gray-600 text-xl leading-none"
@@ -556,7 +561,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                     <input
                       type="text"
                       value={managerData.firstName}
-                      onChange={(e) => setManagerData({ ...managerData, firstName: e.target.value })}
+                      onChange={e => setManagerData({ ...managerData, firstName: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                       required
                     />
@@ -568,7 +573,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                     <input
                       type="text"
                       value={managerData.lastName}
-                      onChange={(e) => setManagerData({ ...managerData, lastName: e.target.value })}
+                      onChange={e => setManagerData({ ...managerData, lastName: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                       required
                     />
@@ -577,26 +582,22 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
                 {/* Contact */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    E-Mail *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail *</label>
                   <input
                     type="email"
                     value={managerData.email}
-                    onChange={(e) => setManagerData({ ...managerData, email: e.target.value })}
+                    onChange={e => setManagerData({ ...managerData, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Telefon *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
                   <input
                     type="tel"
                     value={managerData.phone}
-                    onChange={(e) => setManagerData({ ...managerData, phone: e.target.value })}
+                    onChange={e => setManagerData({ ...managerData, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                     required
                   />
@@ -610,7 +611,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                   <input
                     type="date"
                     value={managerData.dateOfBirth}
-                    onChange={(e) => setManagerData({ ...managerData, dateOfBirth: e.target.value })}
+                    onChange={e => setManagerData({ ...managerData, dateOfBirth: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                     required
                   />
@@ -624,7 +625,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                   <input
                     type="text"
                     value={managerData.street}
-                    onChange={(e) => setManagerData({ ...managerData, street: e.target.value })}
+                    onChange={e => setManagerData({ ...managerData, street: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                     placeholder="Musterstraße 123"
                     required
@@ -633,26 +634,22 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      PLZ *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PLZ *</label>
                     <input
                       type="text"
                       value={managerData.postalCode}
-                      onChange={(e) => setManagerData({ ...managerData, postalCode: e.target.value })}
+                      onChange={e => setManagerData({ ...managerData, postalCode: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                       placeholder="12345"
                       required
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Stadt *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stadt *</label>
                     <input
                       type="text"
                       value={managerData.city}
-                      onChange={(e) => setManagerData({ ...managerData, city: e.target.value })}
+                      onChange={e => setManagerData({ ...managerData, city: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                       placeholder="Musterstadt"
                       required
@@ -661,12 +658,10 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Land *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Land *</label>
                   <select
                     value={managerData.country}
-                    onChange={(e) => setManagerData({ ...managerData, country: e.target.value })}
+                    onChange={e => setManagerData({ ...managerData, country: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                     required
                   >

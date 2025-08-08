@@ -129,7 +129,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     useCompanyDashboard();
 
   // NEU: Onboarding-Status prüfen für bestehende Firmen
-  const onboardingStatus = useCompanyOnboardingCheck(uid);
+  const onboardingStatus = useCompanyOnboardingCheck(uid ?? null);
 
   // NEU: Direkter Zugriff auf Auth-Context für Debugging
   const { user: authUser, firebaseUser } = useAuth();
@@ -263,7 +263,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 error={onboardingStatus.error}
               />
             )}
-            
+
             <SectionCards />
             {uid && <ChartAreaInteractive companyUid={uid} />}
 
