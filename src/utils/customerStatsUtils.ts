@@ -1,6 +1,14 @@
 'use client';
 
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceData } from '@/types/invoiceTypes';
 
@@ -65,15 +73,28 @@ export async function calculateCustomerStats(
  * Aktualisiert die Kundenstatistiken in der Datenbank
  * @param customerId - Die Kunden-ID
  * @param stats - Die neuen Statistiken
+ * @param userId - Die User-ID für lastModifiedBy (optional)
  */
-export async function updateCustomerStats(customerId: string, stats: CustomerStats): Promise<void> {
+export async function updateCustomerStats(
+  customerId: string,
+  stats: CustomerStats,
+  userId?: string
+): Promise<void> {
   try {
     const customerRef = doc(db, 'customers', customerId);
-    await updateDoc(customerRef, {
+    const updateData: any = {
       totalAmount: stats.totalAmount,
       totalInvoices: stats.totalInvoices,
       lastStatsUpdate: new Date(),
-    });
+      updatedAt: serverTimestamp(),
+    };
+
+    // Nur lastModifiedBy setzen, wenn userId übergeben wurde
+    if (userId) {
+      updateData.lastModifiedBy = userId;
+    }
+
+    await updateDoc(customerRef, updateData);
   } catch (error) {
     console.error('Fehler beim Aktualisieren der Kundenstatistiken:', error);
     throw error;

@@ -40,6 +40,9 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerStats, setCustomerStats] = useState<{
+    [customerId: string]: { totalAmount: number; totalInvoices: number };
+  }>({});
 
   // Generate next customer number
   const generateNextCustomerNumber = (existingCustomers: Customer[]) => {
@@ -57,8 +60,50 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     return `KD-${String(highestNumber + 1).padStart(3, '0')}`;
   };
 
+  // Lade Kundenstatistiken im Hintergrund (ohne DB-Update)
+  const loadCustomerStatsInBackground = async (customerList: Customer[]) => {
+    try {
+      console.log('🔄 Lade Kundenstatistiken...');
+      const stats: { [customerId: string]: { totalAmount: number; totalInvoices: number } } = {};
+
+      for (const customer of customerList) {
+        try {
+          const customerStats = await calculateCustomerStats(companyId, customer.name);
+          stats[customer.id] = customerStats;
+          console.log(`✅ Statistiken für ${customer.name} geladen:`, customerStats);
+
+          // SOFORTIGE UPDATE in der Datenbank für künftige Ladevorgänge
+          if (
+            user?.uid &&
+            (customerStats.totalAmount !== customer.totalAmount ||
+              customerStats.totalInvoices !== customer.totalInvoices)
+          ) {
+            try {
+              await updateCustomerStats(customer.id, customerStats, user.uid);
+              console.log(`🔄 DB aktualisiert für ${customer.name}`);
+            } catch (error) {
+              console.warn(`⚠️ DB-Update fehlgeschlagen für ${customer.name}:`, error);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Fehler beim Laden von ${customer.name}:`, error);
+          stats[customer.id] = { totalAmount: 0, totalInvoices: 0 };
+        }
+      }
+
+      setCustomerStats(stats);
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Kundenstatistiken:', error);
+    }
+  };
+
   // Aktualisiere Kundenstatistiken im Hintergrund
   const updateCustomerStatsInBackground = async (customerList: Customer[]) => {
+    if (!user?.uid) {
+      console.log('⚠️ User not available for stats update, skipping...');
+      return;
+    }
+
     try {
       console.log('🔄 Aktualisiere Kundenstatistiken im Hintergrund...');
 
@@ -71,7 +116,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             stats.totalAmount !== customer.totalAmount ||
             stats.totalInvoices !== customer.totalInvoices
           ) {
-            await updateCustomerStats(customer.id, stats);
+            await updateCustomerStats(customer.id, stats, user.uid);
             console.log(`✅ Statistiken für ${customer.name} aktualisiert:`, stats);
 
             // Aktualisiere lokalen State
@@ -134,8 +179,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       setCustomers(loadedCustomers);
       setNextCustomerNumber(generateNextCustomerNumber(loadedCustomers));
 
-      // Aktualisiere Kundenstatistiken im Hintergrund
-      updateCustomerStatsInBackground(loadedCustomers);
+      // Lade die korrekten Statistiken für jeden Kunden
+      loadCustomerStatsInBackground(loadedCustomers);
     } catch (error) {
       console.error('Fehler beim Laden der Kunden:', error);
       toast.error('Fehler beim Laden der Kundendaten');
@@ -474,10 +519,13 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
                     <div className="text-right ml-4">
                       <div className="font-semibold text-lg text-gray-900 mb-1">
-                        {formatCurrency(customer.totalAmount)}
+                        {formatCurrency(
+                          customerStats[customer.id]?.totalAmount || customer.totalAmount
+                        )}
                       </div>
                       <div className="text-sm text-gray-500 mb-2">
-                        {customer.totalInvoices} Rechnungen
+                        {customerStats[customer.id]?.totalInvoices || customer.totalInvoices}{' '}
+                        Rechnungen
                       </div>
                       <div className="text-xs text-gray-400">
                         Seit {formatDate(customer.createdAt)}

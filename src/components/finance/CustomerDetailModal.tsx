@@ -31,6 +31,7 @@ import { Customer } from './AddCustomerModal';
 import { InvoiceData, InvoiceStatusHelper } from '@/types/invoiceTypes';
 import { toast } from 'sonner';
 import { updateCustomerStats } from '@/utils/customerStatsUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerDetailModalProps {
   customer: Customer | null;
