@@ -803,5 +803,43 @@ service cloud.firestore {
                            isSupportStaff();
       allow list: if request.auth != null && (isCompany() || isSupportStaff());
     }
+
+    // Inventar/Lagerbestand
+    match /inventory/{itemId} {
+      // Lesen: Firmen können nur ihre eigenen Artikel lesen, Support kann alles lesen
+      allow read: if request.auth != null && 
+                    (isCompany() && resource.data.companyId == request.auth.uid) ||
+                    isSupportStaff();
+      
+      // Schreiben: Firmen können nur ihre eigenen Artikel erstellen/bearbeiten
+      allow write: if request.auth != null && 
+                     (isCompany() && 
+                      (resource == null && request.resource.data.companyId == request.auth.uid) ||
+                      (resource != null && resource.data.companyId == request.auth.uid)) ||
+                     isSupportStaff();
+      
+      // Collection-Queries für eigene Inventar-Artikel erlauben
+      allow list: if request.auth != null && 
+                    (isCompany() || isSupportStaff());
+    }
+
+    // Lagerbewegungen
+    match /stockMovements/{movementId} {
+      // Lesen: Firmen können nur ihre eigenen Bewegungen lesen, Support kann alles lesen
+      allow read: if request.auth != null && 
+                    (isCompany() && resource.data.companyId == request.auth.uid) ||
+                    isSupportStaff();
+      
+      // Schreiben: Firmen können nur ihre eigenen Bewegungen erstellen
+      allow write: if request.auth != null && 
+                     (isCompany() && 
+                      (resource == null && request.resource.data.companyId == request.auth.uid) ||
+                      (resource != null && resource.data.companyId == request.auth.uid)) ||
+                     isSupportStaff();
+      
+      // Collection-Queries für eigene Lagerbewegungen erlauben
+      allow list: if request.auth != null && 
+                    (isCompany() || isSupportStaff());
+    }
   }
 }

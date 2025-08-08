@@ -182,9 +182,17 @@ export class InventoryService {
     >
   ): Promise<string> {
     try {
+      // Berechnete Felder hinzufügen
+      const stockValue = itemData.currentStock * itemData.purchasePrice;
+      const isLowStock = itemData.currentStock <= itemData.minStock;
+      const isOutOfStock = itemData.currentStock === 0;
+
       const newItem = {
         ...itemData,
         companyId,
+        stockValue,
+        isLowStock,
+        isOutOfStock,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };

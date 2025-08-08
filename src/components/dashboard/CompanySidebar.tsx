@@ -96,7 +96,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Angebote', value: 'finance-quotes', href: 'finance/quotes' },
       { label: 'Gutschriften', value: 'finance-credits', href: 'finance/credits' },
       { label: 'Mahnungen', value: 'finance-reminders', href: 'finance/reminders' },
-      { label: 'CRM', value: 'finance-customers', href: 'finance/customers' },
+      { label: 'Kunden', value: 'finance-customers', href: 'finance/customers' },
       { label: 'Ausgaben', value: 'finance-expenses', href: 'finance/expenses' },
       { label: 'Zahlungen', value: 'finance-payments', href: 'finance/payments' },
       { label: 'Zeiterfassung', value: 'finance-time-tracking', href: 'finance/time-tracking' },
@@ -170,45 +170,48 @@ export default function CompanySidebar({
   const isItemActive = (item: NavigationItem) => {
     // Finance aktiv nur wenn Finance ohne Banking
     if (item.value === 'finance') {
-      return (pathname?.includes('/finance') && !pathname?.includes('/banking'));
+      return pathname?.includes('/finance') && !pathname?.includes('/banking');
     }
-    
+
     // Banking aktiv wenn Banking-Pfad
     if (item.value === 'banking') {
       return pathname?.includes('/banking');
     }
-    
+
     // Orders aktiv wenn Orders-Pfad
     if (item.value === 'orders') {
       return pathname?.includes('/orders');
     }
-    
+
     // DATEV aktiv wenn DATEV-Pfad
     if (item.value === 'datev-overview') {
       return pathname?.includes('/datev');
     }
-    
+
     // Dashboard aktiv wenn Hauptseite oder keine anderen Pfade
     if (item.value === 'dashboard') {
-      return !pathname || pathname === '/' || 
-             (!pathname.includes('/finance') &&
-              !pathname.includes('/orders') &&
-              !pathname.includes('/inbox') &&
-              !pathname.includes('/profile') &&
-              !pathname.includes('/settings') &&
-              !pathname.includes('/ai-assistant') &&
-              !pathname.includes('/calendar') &&
-              !pathname.includes('/reviews') &&
-              !pathname.includes('/google-ads') &&
-              !pathname.includes('/steuerportal') &&
-              !pathname.includes('/datev'));
+      return (
+        !pathname ||
+        pathname === '/' ||
+        (!pathname.includes('/finance') &&
+          !pathname.includes('/orders') &&
+          !pathname.includes('/inbox') &&
+          !pathname.includes('/profile') &&
+          !pathname.includes('/settings') &&
+          !pathname.includes('/ai-assistant') &&
+          !pathname.includes('/calendar') &&
+          !pathname.includes('/reviews') &&
+          !pathname.includes('/google-ads') &&
+          !pathname.includes('/steuerportal') &&
+          !pathname.includes('/datev'))
+      );
     }
-    
+
     // Standard href Check
     if (item.href) {
       return pathname?.includes(`/${item.href}`);
     }
-    
+
     return getCurrentView() === item.value;
   };
 
@@ -274,7 +277,7 @@ export default function CompanySidebar({
                   <div className="ml-6 mt-1 space-y-1">
                     {item.subItems?.map(subItem => {
                       const isSubActive = isSubItemActive(subItem);
-                      
+
                       return (
                         <button
                           key={subItem.value}
