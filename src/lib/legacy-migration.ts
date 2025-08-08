@@ -7,6 +7,7 @@
 import { 
   collection, 
   getDocs, 
+  getDoc,
   doc, 
   setDoc, 
   query, 
@@ -483,4 +484,81 @@ export async function runMigrationFromAdmin(): Promise<string> {
   } catch (error) {
     return `Migration failed: ${error}`;
   }
+}
+
+/**
+ * Check completion status for a specific company in real-time
+ * This function checks existing companies and determines if they need onboarding
+ */
+export async function checkCompanyOnboardingStatus(companyUid: string): Promise<{
+  needsOnboarding: boolean;
+  completionPercentage: number;
+  currentStep: number;
+  onboardingProgress?: OnboardingProgress;
+}> {
+  try {
+    // First check if they already have onboarding progress
+    const onboardingRef = doc(db, 'companies', companyUid, 'onboarding', 'progress');
+    const onboardingSnap = await getDoc(onboardingRef);
+    
+    if (onboardingSnap.exists()) {
+      const onboardingData = onboardingSnap.data() as OnboardingProgress;
+      return {
+        needsOnboarding: onboardingData.completionPercentage < 100,
+        completionPercentage: onboardingData.completionPercentage,
+        currentStep: findNextIncompleteStep(onboardingData),
+        onboardingProgress: onboardingData
+      };
+    }
+    
+    // If no onboarding progress exists, check their legacy data
+    const userRef = doc(db, 'users', companyUid);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      return {
+        needsOnboarding: true,
+        completionPercentage: 0,
+        currentStep: 1
+      };
+    }
+    
+    const userData = userSnap.data() as ExistingCompanyUser;
+    
+    // Calculate completion based on existing data
+    const calculatedProgress = calculateRealCompletion(userData);
+    
+    // Auto-create onboarding progress if it doesn't exist
+    await setDoc(onboardingRef, calculatedProgress);
+    
+    return {
+      needsOnboarding: calculatedProgress.completionPercentage < 100,
+      completionPercentage: calculatedProgress.completionPercentage,
+      currentStep: findNextIncompleteStep(calculatedProgress),
+      onboardingProgress: calculatedProgress
+    };
+    
+  } catch (error) {
+    console.error(`❌ Error checking onboarding status for ${companyUid}:`, error);
+    return {
+      needsOnboarding: true,
+      completionPercentage: 0,
+      currentStep: 1
+    };
+  }
+}
+
+/**
+ * Find the next incomplete step based on completion data
+ */
+function findNextIncompleteStep(progress: OnboardingProgress): number {
+  const steps = [1, 2, 3, 4, 5];
+  
+  for (const step of steps) {
+    if (!progress.stepsCompleted.includes(step)) {
+      return step;
+    }
+  }
+  
+  return 1; // Default to step 1 if all steps are marked as complete
 }

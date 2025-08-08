@@ -30,7 +30,7 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/favicon.svg" alt="Taskilo" className="h-8" />
@@ -44,7 +44,7 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 pb-32">
+      <div className={`max-w-7xl mx-auto px-4 py-8 ${currentStep === 5 ? 'pb-8' : 'pb-32'}`}>
         {/* Step Header */}
         <div className="mb-8">
           <div className="text-sm text-gray-600 mb-2">
@@ -62,29 +62,31 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <OnboardingRouter currentStep={currentStep} companyUid={companyUid} />
         </div>
       </div>
 
-      {/* Progress Footer */}
-      <OnboardingProgressBar
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        completionPercentage={completionPercentage}
-        stepsData={stepsData.map(step => ({
-          step: step.step,
-          title: step.title,
-          isCompleted: step.isCompleted || false,
-          isOptional: !step.isRequired
-        }))}
-        canGoNext={canGoNext()}
-        canGoBack={canGoBack()}
-        onNext={goToNextStep}
-        onBack={goToPreviousStep}
-        isSaving={isSaving}
-        lastSaved={lastSaved}
-      />
+      {/* Progress Footer - Hidden in Step 5 */}
+      {currentStep !== 5 && (
+        <OnboardingProgressBar
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          completionPercentage={completionPercentage}
+          stepsData={stepsData.map(step => ({
+            step: step.step,
+            title: step.title,
+            isCompleted: step.isCompleted || false,
+            isOptional: !step.isRequired
+          }))}
+          canGoNext={canGoNext()}
+          canGoBack={canGoBack()}
+          onNext={goToNextStep}
+          onBack={goToPreviousStep}
+          isSaving={isSaving}
+          lastSaved={lastSaved}
+        />
+      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { Upload, Image as ImageIcon, Star, Clock, Globe, CheckCircle, FileImage } from 'lucide-react';
+import { Upload, Image as ImageIcon, Star, MapPin, Plus, Globe, CheckCircle, FileImage } from 'lucide-react';
 
 interface OnboardingStep3Props {
   companyUid: string;
@@ -136,6 +136,26 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
     updateStepData(3, newData);
   };
 
+  // Validation function to check what's missing
+  const getValidationStatus = () => {
+    const missing = [];
+    if (!formData.companyLogo) missing.push('Firmenlogo');
+    if (!formData.publicDescription || formData.publicDescription.length < 200) {
+      missing.push('Beschreibung (mind. 200 Zeichen)');
+    }
+    if (!formData.hourlyRate || Number(formData.hourlyRate) <= 0) missing.push('Stundensatz');
+    
+    return {
+      isValid: missing.length === 0,
+      missing: missing,
+      completed: ['Firmenlogo', 'Beschreibung', 'Stundensatz'].filter(item => 
+        !missing.some(m => m.includes(item.toLowerCase()))
+      )
+    };
+  };
+
+  const validationStatus = getValidationStatus();
+
   const addSkill = (skill: string) => {
     if (skill.trim() && !formData.skills.includes(skill.trim())) {
       handleChange('skills', [...formData.skills, skill.trim()]);
@@ -180,7 +200,6 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
     { id: 'images', label: 'Bilder', icon: ImageIcon, required: true },
     { id: 'basic', label: 'Grunddaten', icon: Globe, required: true },
     { id: 'skills', label: 'Fähigkeiten', icon: Star, required: true },
-    { id: 'hours', label: 'Arbeitszeiten', icon: Clock, required: true },
     { id: 'services', label: 'Services', icon: CheckCircle, required: false },
     { id: 'faqs', label: 'FAQ', icon: FileImage, required: false }
   ];
@@ -194,9 +213,6 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
         return (basicFields.filter(Boolean).length / basicFields.length) * 100;
       case 'skills':
         return formData.skills.length >= 3 ? 100 : (formData.skills.length / 3) * 100;
-      case 'hours':
-        const enabledHours = formData.workingHours.filter(h => h.enabled);
-        return enabledHours.length > 0 ? 100 : 0;
       case 'services':
         return formData.servicePackages.length >= 1 ? 100 : 0;
       case 'faqs':
@@ -228,7 +244,7 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-4 justify-center">
           {tabs.map((tab) => {
             const completion = getTabCompletion(tab.id);
             const isActive = activeTab === tab.id;
@@ -261,6 +277,42 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
             );
           })}
         </nav>
+      </div>
+
+      {/* Validation Status */}
+      <div className={`p-4 rounded-lg border ${
+        validationStatus.isValid 
+          ? 'bg-green-50 border-green-200' 
+          : 'bg-yellow-50 border-yellow-200'
+      }`}>
+        <div className="flex items-start">
+          <div className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}>
+            {validationStatus.isValid ? (
+              <CheckCircle className="h-5 w-5" />
+            ) : (
+              <div className="h-5 w-5 rounded-full border-2 border-current flex items-center justify-center">
+                <span className="text-xs font-bold">!</span>
+              </div>
+            )}
+          </div>
+          <div className="ml-3">
+            <h4 className={`text-sm font-medium ${
+              validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
+            }`}>
+              {validationStatus.isValid ? 'Alle Pflichtfelder ausgefüllt!' : 'Noch nicht vollständig'}
+            </h4>
+            {!validationStatus.isValid && (
+              <p className="mt-1 text-sm text-yellow-700">
+                Zum Fortfahren zu Schritt 4 fehlen noch: {validationStatus.missing.join(', ')}
+              </p>
+            )}
+            {validationStatus.completed.length > 0 && (
+              <p className="mt-1 text-sm text-green-700">
+                ✓ Erledigt: {validationStatus.completed.join(', ')}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -297,8 +349,13 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                       accept="image/*"
                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#14ad9f] file:text-white hover:file:bg-[#129488]"
                       onChange={(e) => {
-                        // Placeholder for file upload logic
-                        console.log('File upload:', e.target.files?.[0]);
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Create temporary URL for preview
+                          const url = URL.createObjectURL(file);
+                          handleChange('companyLogo', url);
+                          console.log('Logo file selected:', file);
+                        }
                       }}
                     />
                   </div>
@@ -310,11 +367,47 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
               <label className="block text-sm font-medium text-gray-700 mb-4">
                 Profil-Banner (optional)
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">
-                  Banner-Bild hochladen (1200x400px empfohlen)
-                </div>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#14ad9f] transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        const result = e.target?.result as string;
+                        handleChange('profileBannerImage', result);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="hidden"
+                  id="banner-upload"
+                />
+                <label htmlFor="banner-upload" className="cursor-pointer">
+                  {formData.profileBannerImage ? (
+                    <div className="space-y-2">
+                      <img 
+                        src={formData.profileBannerImage} 
+                        alt="Banner Preview"
+                        className="max-h-32 mx-auto rounded-lg object-cover"
+                      />
+                      <div className="text-sm text-green-600">Banner hochgeladen ✓</div>
+                      <div className="text-xs text-gray-500">Klicken zum Ändern</div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <div className="text-sm text-gray-600">
+                        Banner-Bild hochladen (1200x400px empfohlen)
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        Klicken oder Datei hierher ziehen
+                      </div>
+                    </div>
+                  )}
+                </label>
               </div>
             </div>
           </div>
@@ -373,18 +466,6 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 </select>
               </div>
             </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.instantBooking}
-                onChange={(e) => handleChange('instantBooking', e.target.checked)}
-                className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
-              />
-              <label className="ml-2 text-sm text-gray-700">
-                Sofortbuchung aktivieren (Kunden können direkt buchen ohne Anfrage)
-              </label>
-            </div>
           </div>
         )}
 
@@ -429,58 +510,6 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                 }
               </div>
             </div>
-          </div>
-        )}
-
-        {activeTab === 'hours' && (
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Arbeitszeiten *
-            </label>
-            {formData.workingHours.map((day, index) => (
-              <div key={day.day} className="flex items-center space-x-4 p-3 border border-gray-200 rounded-lg">
-                <div className="w-20">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={day.enabled}
-                      onChange={(e) => {
-                        const newHours = [...formData.workingHours];
-                        newHours[index].enabled = e.target.checked;
-                        handleChange('workingHours', newHours);
-                      }}
-                      className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
-                    />
-                    <span className="ml-2 text-sm font-medium">{day.day}</span>
-                  </label>
-                </div>
-                {day.enabled && (
-                  <div className="flex space-x-2">
-                    <input
-                      type="time"
-                      value={day.start}
-                      onChange={(e) => {
-                        const newHours = [...formData.workingHours];
-                        newHours[index].start = e.target.value;
-                        handleChange('workingHours', newHours);
-                      }}
-                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                    />
-                    <span className="text-gray-500">bis</span>
-                    <input
-                      type="time"
-                      value={day.end}
-                      onChange={(e) => {
-                        const newHours = [...formData.workingHours];
-                        newHours[index].end = e.target.value;
-                        handleChange('workingHours', newHours);
-                      }}
-                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         )}
 

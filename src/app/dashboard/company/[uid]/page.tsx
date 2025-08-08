@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { calculateCompanyMetrics, type CompanyMetrics } from '@/lib/companyMetrics';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import FinanceComponent from '@/components/FinanceComponent';
+import { useCompanyOnboardingCheck } from '@/hooks/useCompanyOnboardingCheck';
+import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
@@ -125,6 +127,9 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
   const { isChecking, isAuthorized, uid, view, setView, missingFields, userData } =
     useCompanyDashboard();
+
+  // NEU: Onboarding-Status prüfen für bestehende Firmen
+  const onboardingStatus = useCompanyOnboardingCheck(uid);
 
   // NEU: Direkter Zugriff auf Auth-Context für Debugging
   const { user: authUser, firebaseUser } = useAuth();
@@ -247,6 +252,18 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       case 'dashboard':
         return (
           <div className="flex flex-col gap-4 md:gap-6">
+            {/* Onboarding Banner für bestehende Firmen */}
+            {uid && (
+              <OnboardingBanner
+                companyUid={uid}
+                needsOnboarding={onboardingStatus.needsOnboarding}
+                completionPercentage={onboardingStatus.completionPercentage}
+                currentStep={onboardingStatus.currentStep}
+                isLoading={onboardingStatus.isLoading}
+                error={onboardingStatus.error}
+              />
+            )}
+            
             <SectionCards />
             {uid && <ChartAreaInteractive companyUid={uid} />}
 

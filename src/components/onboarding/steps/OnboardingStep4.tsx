@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Plus, MapPin, Clock, Euro, CheckCircle, Tag } from 'lucide-react';
+import { categories } from '@/lib/categoriesData';
 
 interface OnboardingStep4Props {
   companyUid: string;
@@ -60,41 +61,11 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Categories data structure
-  const categories = {
-    'Handwerk & Technik': [
-      'Elektriker', 'Klempner', 'Maler', 'Schreiner', 'Heizung & Sanitär',
-      'Gartenbau & Landschaftspflege', 'Renovierung & Sanierung'
-    ],
-    'IT & Software': [
-      'Webentwicklung', 'App-Entwicklung', 'IT-Support', 'Netzwerk-Administration',
-      'Datenbank-Management', 'Cybersecurity', 'Cloud-Services'
-    ],
-    'Hotel & Gastronomie': [
-      'Mietkoch', 'Catering', 'Event-Service', 'Barkeeper',
-      'Restaurant-Service', 'Küchenberatung'
-    ],
-    'Gesundheit & Wellness': [
-      'Massage', 'Physiotherapie', 'Personal Training', 'Ernährungsberatung',
-      'Wellness-Coaching', 'Kosmetik'
-    ],
-    'Beratung & Consulting': [
-      'Unternehmensberatung', 'Steuerberatung', 'Rechtsberatung', 'HR-Beratung',
-      'Marketing-Beratung', 'Finanzberatung'
-    ],
-    'Reinigung & Haushalt': [
-      'Hausreinigung', 'Büroreinigung', 'Fensterreinigung', 'Teppichreinigung',
-      'Hausmeister-Service', 'Gartenpflege'
-    ],
-    'Transport & Logistik': [
-      'Umzugshilfe', 'Kurierdienst', 'Lieferservice', 'Möbeltransport',
-      'Lagerung', 'Entsorgung'
-    ],
-    'Event & Entertainment': [
-      'DJ', 'Fotograf', 'Videoerstellung', 'Event-Planung',
-      'Hochzeitsplanung', 'Animateur'
-    ]
-  };
+  // Use categories from registration data
+  const categoriesMap = categories.reduce((acc, cat) => {
+    acc[cat.title] = cat.subcategories;
+    return acc;
+  }, {} as Record<string, string[]>);
 
   // Load existing data on mount
   useEffect(() => {
@@ -150,6 +121,21 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
     handleChange('selectedSubcategory', ''); // Reset subcategory
   };
 
+  // Validation function to check what's missing
+  const getValidationStatus = () => {
+    const missing = [];
+    if (!formData.selectedCategory) missing.push('Hauptkategorie');
+    if (!formData.selectedSubcategory) missing.push('Unterkategorie');
+    
+    return {
+      isValid: missing.length === 0,
+      missing: missing,
+      completed: ['Hauptkategorie', 'Unterkategorie'].filter(item => !missing.includes(item))
+    };
+  };
+
+  const validationStatus = getValidationStatus();
+
   if (loading) {
     return (
       <div className="animate-pulse">
@@ -170,19 +156,55 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
         </p>
       </div>
 
+      {/* Validation Status */}
+      <div className={`p-4 rounded-lg border ${
+        validationStatus.isValid 
+          ? 'bg-green-50 border-green-200' 
+          : 'bg-yellow-50 border-yellow-200'
+      }`}>
+        <div className="flex items-start">
+          <div className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}>
+            {validationStatus.isValid ? (
+              <CheckCircle className="h-5 w-5" />
+            ) : (
+              <div className="h-5 w-5 rounded-full border-2 border-current flex items-center justify-center">
+                <span className="text-xs font-bold">!</span>
+              </div>
+            )}
+          </div>
+          <div className="ml-3">
+            <h4 className={`text-sm font-medium ${
+              validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
+            }`}>
+              {validationStatus.isValid ? 'Alle Pflichtfelder ausgefüllt!' : 'Noch nicht vollständig'}
+            </h4>
+            {!validationStatus.isValid && (
+              <p className="mt-1 text-sm text-yellow-700">
+                Zum Fortfahren zu Schritt 5 fehlen noch: {validationStatus.missing.join(', ')}
+              </p>
+            )}
+            {validationStatus.completed.length > 0 && (
+              <p className="mt-1 text-sm text-green-700">
+                ✓ Erledigt: {validationStatus.completed.join(', ')}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Category Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
           Hauptkategorie auswählen *
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.keys(categories).map((category) => (
+                    {Object.keys(categoriesMap).map((category) => (
             <div
               key={category}
-              className={`relative cursor-pointer rounded-lg border p-4 transition-colors ${
+              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                 formData.selectedCategory === category
-                  ? 'border-[#14ad9f] bg-[#14ad9f] bg-opacity-5 ring-2 ring-[#14ad9f] ring-opacity-20'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-[#14ad9f] bg-[#14ad9f]/5'
+                  : 'border-gray-200 hover:border-gray-300'
               }`}
               onClick={() => handleCategoryChange(category)}
             >
@@ -198,7 +220,7 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
                     {category}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {categories[category as keyof typeof categories].length} Unterkategorien
+                    {categoriesMap[category].length} Unterkategorien
                   </div>
                 </div>
               </div>
@@ -211,34 +233,38 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
       {formData.selectedCategory && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-4">
-            Unterkategorie auswählen *
+            Unterkategorie auswählen * 
+            {/* Debug: {formData.selectedCategory} hat {categoriesMap[formData.selectedCategory]?.length || 0} Unterkategorien */}
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categories[formData.selectedCategory as keyof typeof categories].map((subcategory) => (
-              <div
-                key={subcategory}
-                className={`relative cursor-pointer rounded-lg border p-3 transition-colors ${
-                  formData.selectedSubcategory === subcategory
-                    ? 'border-[#14ad9f] bg-[#14ad9f] bg-opacity-5'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onClick={() => handleChange('selectedSubcategory', subcategory)}
-              >
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={formData.selectedSubcategory === subcategory}
-                    onChange={() => handleChange('selectedSubcategory', subcategory)}
-                    className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                  <div className="ml-3">
-                    <div className="text-sm font-medium text-gray-900">
-                      {subcategory}
+            {categoriesMap[formData.selectedCategory]?.map((subcategory) => {
+              console.log('🔍 Rendering subcategory:', subcategory, 'for category:', formData.selectedCategory);
+              return (
+                <div
+                  key={subcategory}
+                  className={`relative cursor-pointer rounded-lg border p-3 transition-colors ${
+                    formData.selectedSubcategory === subcategory
+                      ? 'border-[#14ad9f] bg-[#14ad9f] bg-opacity-5'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  onClick={() => handleChange('selectedSubcategory', subcategory)}
+                >
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      checked={formData.selectedSubcategory === subcategory}
+                      onChange={() => handleChange('selectedSubcategory', subcategory)}
+                      className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f]"
+                    />
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-900">
+                        {subcategory}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -275,11 +301,15 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
             </label>
             <input
               type="number"
-              value={formData.maxTravelDistance}
-              onChange={(e) => handleChange('maxTravelDistance', parseInt(e.target.value))}
+              value={formData.maxTravelDistance || ''}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                handleChange('maxTravelDistance', isNaN(value) ? 0 : value);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               min="0"
               max="200"
+              placeholder="50"
             />
           </div>
         </div>
@@ -356,8 +386,11 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
           </label>
           <input
             type="number"
-            value={formData.basePrice}
-            onChange={(e) => handleChange('basePrice', parseFloat(e.target.value))}
+            value={formData.basePrice || ''}
+            onChange={(e) => {
+              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+              handleChange('basePrice', isNaN(value) ? 0 : value);
+            }}
             className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
             placeholder="z.B. 50"
             min="0"
@@ -392,8 +425,11 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
               </label>
               <input
                 type="number"
-                value={formData.travelCostPerKm}
-                onChange={(e) => handleChange('travelCostPerKm', parseFloat(e.target.value))}
+                value={formData.travelCostPerKm || ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                  handleChange('travelCostPerKm', isNaN(value) ? 0 : value);
+                }}
                 className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 placeholder="z.B. 0.50"
                 min="0"

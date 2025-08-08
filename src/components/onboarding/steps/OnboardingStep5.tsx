@@ -18,13 +18,20 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
     completionPercentage, 
     goToStep,
     completeOnboarding,
-    onboardingStatus 
+    onboardingStatus,
+    updateStepData
   } = useOnboarding();
   const { user } = useAuth();
   const [allData, setAllData] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [finalTermsAccepted, setFinalTermsAccepted] = useState(false);
+
+  // Handle terms acceptance and save to stepData
+  const handleTermsChange = (accepted: boolean) => {
+    setFinalTermsAccepted(accepted);
+    updateStepData(5, { finalTermsAccepted: accepted });
+  };
 
   // Load all data for review
   useEffect(() => {
@@ -39,6 +46,11 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
             ...userData,
             ...stepData
           });
+        }
+
+        // Load existing step 5 data
+        if (stepData[5]?.finalTermsAccepted) {
+          setFinalTermsAccepted(stepData[5].finalTermsAccepted);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -133,7 +145,25 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
   };
 
   const allStepsComplete = stepsData.every(step => step.isCompleted);
-  const readyForSubmission = allStepsComplete && finalTermsAccepted;
+  const readyForSubmission = finalTermsAccepted; // Only require checkbox, not all steps
+
+  // Validation function to check what's missing
+  const getValidationStatus = () => {
+    const missing = [];
+    if (!finalTermsAccepted) missing.push('Finale Bestätigung ankreuzen');
+    
+    // Only check previous steps (1-4), not step 5 itself
+    const incompleteSteps = stepsData.filter(step => step.step < 5 && !step.isCompleted).map(step => `Schritt ${step.step}`);
+    missing.push(...incompleteSteps);
+    
+    return {
+      isValid: missing.length === 0,
+      missing: missing,
+      completed: finalTermsAccepted ? ['Finale Bestätigung'] : []
+    };
+  };
+
+  const validationStatus = getValidationStatus();
 
   if (loading) {
     return (
@@ -321,6 +351,42 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
 
       {/* Final Terms */}
       <div className="border-t border-gray-200 pt-8">
+        {/* Validation Status */}
+        <div className={`p-4 rounded-lg border mb-6 ${
+          validationStatus.isValid 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-yellow-50 border-yellow-200'
+        }`}>
+          <div className="flex items-start">
+            <div className={`flex-shrink-0 ${validationStatus.isValid ? 'text-green-400' : 'text-yellow-400'}`}>
+              {validationStatus.isValid ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <div className="h-5 w-5 rounded-full border-2 border-current flex items-center justify-center">
+                  <span className="text-xs font-bold">!</span>
+                </div>
+              )}
+            </div>
+            <div className="ml-3">
+              <h4 className={`text-sm font-medium ${
+                validationStatus.isValid ? 'text-green-800' : 'text-yellow-800'
+              }`}>
+                {validationStatus.isValid ? 'Bereit zum Abschluss!' : 'Noch nicht vollständig'}
+              </h4>
+              {!validationStatus.isValid && (
+                <p className="mt-1 text-sm text-yellow-700">
+                  Zum Abschluss des Onboardings fehlen noch: {validationStatus.missing.join(', ')}
+                </p>
+              )}
+              {validationStatus.completed.length > 0 && (
+                <p className="mt-1 text-sm text-green-700">
+                  ✓ Erledigt: {validationStatus.completed.join(', ')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="text-lg font-medium text-gray-900 mb-4">
             Finale Bestätigung
@@ -331,7 +397,7 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
               <input
                 type="checkbox"
                 checked={finalTermsAccepted}
-                onChange={(e) => setFinalTermsAccepted(e.target.checked)}
+                onChange={(e) => handleTermsChange(e.target.checked)}
                 className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded mt-1"
               />
               <div className="ml-3">

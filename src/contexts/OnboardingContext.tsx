@@ -119,13 +119,23 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       }
     }
 
-    // Check minimum lengths
+    // Check minimum lengths (only for required fields or filled fields)
     if (rules.minLength) {
       for (const [field, minLength] of Object.entries(rules.minLength)) {
-        if (Array.isArray(data[field])) {
-          if (data[field].length < minLength) return false;
-        } else if (typeof data[field] === 'string') {
-          if (data[field].length < minLength) return false;
+        // Only validate minLength if field is required or has content
+        const isRequired = rules.required?.includes(field);
+        const hasContent = data[field] && (
+          Array.isArray(data[field]) ? data[field].length > 0 : 
+          typeof data[field] === 'string' ? data[field].length > 0 : 
+          true
+        );
+        
+        if (isRequired || hasContent) {
+          if (Array.isArray(data[field])) {
+            if (data[field].length < minLength) return false;
+          } else if (typeof data[field] === 'string') {
+            if (data[field].length < minLength) return false;
+          }
         }
       }
     }
@@ -179,12 +189,56 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     return false;
   }, [currentStep, totalSteps, canGoNext]);
 
+  // Helper function to serialize stepData for Firestore
+  const serializeStepData = useCallback((data: Record<number, any>) => {
+    const serialized: Record<string, any> = {};
+    
+    Object.entries(data).forEach(([stepKey, stepValue]) => {
+      if (stepValue && typeof stepValue === 'object') {
+        const cleanStepData: Record<string, any> = {};
+        
+        Object.entries(stepValue).forEach(([key, value]) => {
+          // Only include serializable values
+          if (value !== undefined && value !== null) {
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+              cleanStepData[key] = value;
+            } else if (Array.isArray(value)) {
+              // Filter out any non-serializable array items
+              cleanStepData[key] = value.filter(item => 
+                typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean' ||
+                (typeof item === 'object' && item !== null && !Array.isArray(item))
+              );
+            } else if (typeof value === 'object' && !Array.isArray(value)) {
+              // For objects, recursively clean them
+              const cleanObject: Record<string, any> = {};
+              Object.entries(value).forEach(([objKey, objValue]) => {
+                if (typeof objValue === 'string' || typeof objValue === 'number' || typeof objValue === 'boolean') {
+                  cleanObject[objKey] = objValue;
+                }
+              });
+              if (Object.keys(cleanObject).length > 0) {
+                cleanStepData[key] = cleanObject;
+              }
+            }
+          }
+        });
+        
+        if (Object.keys(cleanStepData).length > 0) {
+          serialized[`step${stepKey}`] = cleanStepData;
+        }
+      }
+    });
+    
+    return serialized;
+  }, []);
+
   const saveCurrentStep = useCallback(async (): Promise<void> => {
     if (!user || !companyId) return;
 
     setIsSaving(true);
     try {
       const newStatus: CompanyOnboardingStatus['status'] = getOverallCompletion() === 100 ? 'completed' : 'in_progress';
+      const serializedStepData = serializeStepData(stepData);
       
       const updatedStatus: CompanyOnboardingStatus = {
         ...onboardingStatus!,
@@ -196,7 +250,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       await updateDoc(doc(db, 'companies', companyId, 'onboarding', 'status'), {
         currentStep: currentStep.toString(),
-        stepData,
+        stepData: serializedStepData,
         completionPercentage: getOverallCompletion(),
         status: newStatus,
         lastUpdated: serverTimestamp()
@@ -209,7 +263,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     } finally {
       setIsSaving(false);
     }
-  }, [user, companyId, currentStep, stepData, onboardingStatus, getOverallCompletion]);
+  }, [user, companyId, currentStep, stepData, onboardingStatus, getOverallCompletion, serializeStepData]);
 
   const goToStep = useCallback((step: number): void => {
     if (canJumpToStep(step)) {
@@ -221,10 +275,82 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     if (!user || !companyId) return;
 
     try {
+      // Prepare all onboarding data for final save - ensure all values are serializable
+      const allOnboardingData = {
+        // Step 1: Basic company info
+        companyName: String(stepData[1]?.companyName || ''),
+        businessType: String(stepData[1]?.businessType || ''),
+        address: String(stepData[1]?.address || ''),
+        phone: String(stepData[1]?.phone || ''),
+        email: String(stepData[1]?.email || ''),
+        legalForm: String(stepData[1]?.legalForm || ''),
+        employees: String(stepData[1]?.employees || ''),
+        website: String(stepData[1]?.website || ''),
+        managerData: stepData[1]?.managerData ? {
+          firstName: String(stepData[1].managerData.firstName || ''),
+          lastName: String(stepData[1].managerData.lastName || ''),
+          position: String(stepData[1].managerData.position || ''),
+          email: String(stepData[1].managerData.email || ''),
+          phone: String(stepData[1].managerData.phone || '')
+        } : null,
+
+        // Step 2: Banking & Accounting
+        kleinunternehmer: Boolean(stepData[2]?.kleinunternehmer),
+        taxRate: Number(stepData[2]?.taxRate || 19),
+        iban: String(stepData[2]?.iban || ''),
+        accountHolder: String(stepData[2]?.accountHolder || ''),
+        currency: String(stepData[2]?.currency || 'EUR'),
+        
+        // Step 3: Public Profile
+        companyLogo: String(stepData[3]?.companyLogo || ''),
+        profileBannerImage: String(stepData[3]?.profileBannerImage || ''),
+        publicDescription: String(stepData[3]?.publicDescription || ''),
+        hourlyRate: Number(stepData[3]?.hourlyRate || 0),
+        skills: Array.isArray(stepData[3]?.skills) ? stepData[3].skills.map(String) : [],
+        languages: Array.isArray(stepData[3]?.languages) ? stepData[3].languages.map(String) : [],
+        specialties: Array.isArray(stepData[3]?.specialties) ? stepData[3].specialties.map(String) : [],
+        servicePackages: Array.isArray(stepData[3]?.servicePackages) ? stepData[3].servicePackages : [],
+        portfolio: Array.isArray(stepData[3]?.portfolio) ? stepData[3].portfolio : [],
+        faqs: Array.isArray(stepData[3]?.faqs) ? stepData[3].faqs : [],
+        
+        // Step 4: Services & Categories
+        selectedCategory: String(stepData[4]?.selectedCategory || ''),
+        selectedSubcategory: String(stepData[4]?.selectedSubcategory || ''),
+        additionalCategories: Array.isArray(stepData[4]?.additionalCategories) ? stepData[4].additionalCategories.map(String) : [],
+        lat: Number(stepData[4]?.lat || 0),
+        lng: Number(stepData[4]?.lng || 0),
+        radiusKm: Number(stepData[4]?.radiusKm || 25),
+        serviceAreas: Array.isArray(stepData[4]?.serviceAreas) ? stepData[4].serviceAreas.map(String) : [],
+        availabilityType: String(stepData[4]?.availabilityType || 'flexible'),
+        advanceBookingHours: Number(stepData[4]?.advanceBookingHours || 24),
+        pricingModel: String(stepData[4]?.pricingModel || 'hourly'),
+        basePrice: Number(stepData[4]?.basePrice || 0),
+        travelCosts: Boolean(stepData[4]?.travelCosts),
+        travelCostPerKm: Number(stepData[4]?.travelCostPerKm || 0),
+        maxTravelDistance: Number(stepData[4]?.maxTravelDistance || 50),
+        
+        // Step 5: Final confirmation
+        finalTermsAccepted: Boolean(stepData[5]?.finalTermsAccepted),
+        
+        // Onboarding completion metadata
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+        profileComplete: true,
+        profileStatus: 'pending_review'
+      };
+
+      // Update main user document with ALL onboarding data
+      await updateDoc(doc(db, 'users', user.uid), allOnboardingData);
+
+      // Serialize stepData for onboarding status document
+      const serializedStepData = serializeStepData(stepData);
+
+      // Update onboarding status document
       await updateDoc(doc(db, 'companies', companyId, 'onboarding', 'status'), {
         status: 'completed',
         completedAt: serverTimestamp(),
-        completionPercentage: 100
+        completionPercentage: 100,
+        stepData: serializedStepData // Save serialized step data for reference
       });
 
       // Update company document with onboarding completion
@@ -234,11 +360,13 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         profileComplete: true
       });
 
+      console.log('✅ Onboarding completed successfully - all data saved to users collection');
+
     } catch (error) {
       console.error('Error submitting onboarding:', error);
       throw error;
     }
-  }, [user, companyId]);
+  }, [user, companyId, stepData, serializeStepData]);
 
   // Helper functions
   const isStepCompleted = useCallback((step: number): boolean => {

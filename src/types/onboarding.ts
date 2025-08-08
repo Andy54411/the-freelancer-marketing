@@ -100,12 +100,9 @@ export const stepValidationRules: Record<number, ValidationRule> = {
     }
   },
   3: { // Public Profile
-    required: ['companyLogo', 'publicDescription', 'hourlyRate', 'workingHours'],
+    required: ['companyLogo', 'publicDescription', 'hourlyRate'],
     minLength: {
-      publicDescription: 200,
-      skills: 3,
-      portfolio: 1,
-      faqs: 3
+      publicDescription: 200
     },
     validators: {
       hourlyRate: (value: number) => !!(value && value > 0),
@@ -113,17 +110,16 @@ export const stepValidationRules: Record<number, ValidationRule> = {
     }
   },
   4: { // Services & Categories
-    required: ['categories', 'servicePackages'],
-    minLength: {
-      categories: 1,
-      servicePackages: 1
+    required: ['selectedCategory', 'selectedSubcategory'],
+    validators: {
+      selectedCategory: (value: string) => !!(value && value.length > 0),
+      selectedSubcategory: (value: string) => !!(value && value.length > 0)
     }
   },
   5: { // Verification & Review
-    required: ['agbAccepted', 'finalReview'],
+    required: ['finalTermsAccepted'],
     validators: {
-      agbAccepted: (value: boolean) => value === true,
-      finalReview: (value: boolean) => value === true
+      finalTermsAccepted: (value: boolean) => value === true
     }
   }
 };
