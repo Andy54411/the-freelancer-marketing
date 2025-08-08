@@ -28,8 +28,21 @@ import SkillsEducationTab from './profile/SkillsEducationTab';
 import { EditableCompanyProfile } from './profile/types';
 
 interface CompanyProfileManagerProps {
-  userData: EditableCompanyProfile;
-  companyMetrics?: CompanyMetrics | null;
+  userData: EditableCompanyProfile & {
+    // Extended fields from Firebase documents
+    personalCountry?: string;
+    personalCity?: string;
+    personalStreet?: string;
+    personalPostalCode?: string;
+    lat?: number;
+    lng?: number;
+    step1?: any;
+    step2?: any;
+    step3?: any;
+    step4?: any;
+    [key: string]: any; // Allow additional fields
+  };
+  companyMetrics?: CompanyMetrics;
   onDataSaved: () => void;
 }
 
@@ -62,13 +75,15 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         photoURL: userData.photoURL || '',
         companyLogo: userData.companyLogo || '',
         description: userData.description || '',
-        country: userData.country || '',
-        city: userData.city || '',
-        postalCode: userData.postalCode || '',
-        street: userData.street || '',
+        // Fix: Use personalCity/personalCountry or step2 data as fallback
+        country: userData.country || userData.personalCountry || userData.step2?.country || '',
+        city: userData.city || userData.personalCity || userData.step2?.city || '',
+        postalCode:
+          userData.postalCode || userData.personalPostalCode || userData.step2?.postalCode || '',
+        street: userData.street || userData.personalStreet || userData.step2?.street || '',
         fullAddress: userData.fullAddress || '',
-        latitude: userData.latitude || undefined,
-        longitude: userData.longitude || undefined,
+        latitude: userData.latitude || userData.lat || undefined,
+        longitude: userData.longitude || userData.lng || undefined,
         hourlyRate: userData.hourlyRate || 0,
         portfolio: userData.portfolio || [],
         languages: userData.languages || [],
@@ -93,8 +108,11 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
 
     setSaving(true);
     try {
+      // Update both companies and users collections for consistency
       const companyRef = doc(db, 'companies', profile.uid);
-      await updateDoc(companyRef, {
+      const userRef = doc(db, 'users', profile.uid);
+
+      const profileData = {
         // Grunddaten (Company Basis-Informationen)
         companyName: profile.companyName,
         description: profile.description,
@@ -140,6 +158,23 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
         updatedAt: new Date(),
         profileLastUpdatedAt: new Date(),
         lastUpdated: new Date(), // Backup für existierendes Feld
+      };
+
+      // Update companies collection
+      await updateDoc(companyRef, profileData);
+
+      // Update users collection with normalized field names
+      await updateDoc(userRef, {
+        ...profileData,
+        // Add normalized field names for profile access
+        city: profile.city,
+        country: profile.country,
+        street: profile.street,
+        // Keep existing field names for backward compatibility
+        personalCity: profile.city,
+        personalCountry: profile.country,
+        personalStreet: profile.street,
+        personalPostalCode: profile.postalCode,
       });
 
       toast.success('Company Profile wurde erfolgreich aktualisiert!');

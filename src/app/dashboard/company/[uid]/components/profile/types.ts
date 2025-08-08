@@ -17,7 +17,7 @@ export interface EditableCompanyProfile {
   longitude?: number;
   hourlyRate: number;
   portfolio: PortfolioItem[];
-  languages: { language: string; proficiency: string }[];
+  languages: { language: string; proficiency: string }[] | string[];
   skills: string[];
   education: { school: string; degree: string; year: string }[];
   certifications: { name: string; from: string; year: string }[];
@@ -31,6 +31,18 @@ export interface EditableCompanyProfile {
   faqs: FAQ[];
   profileBannerImage: string;
   businessLicense: string;
+
+  // Additional fields from database - for backward compatibility and data access
+  personalCountry?: string;
+  personalCity?: string;
+  personalStreet?: string;
+  personalPostalCode?: string;
+  lat?: number;
+  lng?: number;
+  step1?: any;
+  step2?: any;
+  step3?: any;
+  step4?: any;
 }
 
 export interface PortfolioItem {

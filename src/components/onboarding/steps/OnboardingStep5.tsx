@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { CheckCircle, AlertCircle, Edit3, Eye, FileText, Shield, Clock, Award } from 'lucide-react';
@@ -22,6 +23,7 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
     updateStepData,
   } = useOnboarding();
   const { user } = useAuth();
+  const router = useRouter();
   const [allData, setAllData] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -70,10 +72,14 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
 
     setSubmitting(true);
     try {
+      console.log('🚀 Starting onboarding completion...');
       await completeOnboarding();
-      // Success handled in context
+      console.log('✅ Onboarding completed successfully');
+
+      // Success - redirect to dashboard
+      router.push(`/dashboard/company/${companyUid}?onboarding=completed`);
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error completing onboarding:', error);
       alert('Fehler beim Abschließen des Onboardings. Bitte versuchen Sie es erneut.');
     } finally {
       setSubmitting(false);
@@ -330,7 +336,7 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
                 </p>
               )}
               {allData[3]?.publicDescription && (
-                <p className="text-sm text-gray-700 mt-3 line-clamp-3">
+                <p className="text-sm text-gray-700 mt-3 line-clamp-3 break-words overflow-wrap-anywhere">
                   {allData[3].publicDescription}
                 </p>
               )}

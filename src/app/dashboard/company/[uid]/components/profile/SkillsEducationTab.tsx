@@ -44,28 +44,40 @@ const SkillsEducationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
   const addLanguage = () => {
     if (!newLanguage.language.trim() || !profile) return;
 
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            languages: [...(prev.languages || []), { ...newLanguage }],
-          }
-        : null
-    );
+    setProfile(prev => {
+      if (!prev) return null;
+
+      // Ensure languages is always an object array
+      const currentLanguages = prev.languages || [];
+      const normalizedLanguages = currentLanguages.map(lang =>
+        typeof lang === 'string' ? { language: lang, proficiency: 'Grundkenntnisse' } : lang
+      ) as { language: string; proficiency: string }[];
+
+      return {
+        ...prev,
+        languages: [...normalizedLanguages, { ...newLanguage }],
+      };
+    });
     setNewLanguage({ language: '', proficiency: 'Grundkenntnisse' });
   };
 
   const removeLanguage = (index: number) => {
     if (!profile) return;
 
-    setProfile(prev =>
-      prev
-        ? {
-            ...prev,
-            languages: prev.languages?.filter((_, i) => i !== index) || [],
-          }
-        : null
-    );
+    setProfile(prev => {
+      if (!prev) return null;
+
+      // Ensure languages is always an object array
+      const currentLanguages = prev.languages || [];
+      const normalizedLanguages = currentLanguages.map(lang =>
+        typeof lang === 'string' ? { language: lang, proficiency: 'Grundkenntnisse' } : lang
+      ) as { language: string; proficiency: string }[];
+
+      return {
+        ...prev,
+        languages: normalizedLanguages.filter((_, i) => i !== index),
+      };
+    });
   };
 
   // Education Management
@@ -198,23 +210,29 @@ const SkillsEducationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
 
         {/* Languages list */}
         <div className="space-y-2">
-          {profile?.languages?.map((lang, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-            >
-              <div>
-                <span className="font-medium">{lang.language}</span>
-                <span className="ml-2 text-sm text-gray-600">({lang.proficiency})</span>
-              </div>
-              <button
-                onClick={() => removeLanguage(index)}
-                className="text-red-600 hover:text-red-800"
+          {profile?.languages?.map((lang, index) => {
+            // Handle both string and object formats
+            const languageData =
+              typeof lang === 'string' ? { language: lang, proficiency: 'Grundkenntnisse' } : lang;
+
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+                <div>
+                  <span className="font-medium">{languageData.language}</span>
+                  <span className="ml-2 text-sm text-gray-600">({languageData.proficiency})</span>
+                </div>
+                <button
+                  onClick={() => removeLanguage(index)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 

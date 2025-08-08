@@ -14,6 +14,7 @@ interface OnboardingStep1Props {
 interface ManagerData {
   firstName: string;
   lastName: string;
+  position: string;
   email: string;
   phone: string;
   dateOfBirth: string;
@@ -66,6 +67,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   const [managerData, setManagerData] = useState<ManagerData>({
     firstName: '',
     lastName: '',
+    position: '',
     email: '',
     phone: '',
     dateOfBirth: '',
@@ -128,6 +130,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   const handleChange = (field: keyof Step1Data, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
+    console.log('🔄 Updating Step1 data:', { field, value, newData });
     updateStepData(1, newData);
 
     // Check if manager data is required for certain legal forms
@@ -147,6 +150,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   const handleManagerSave = () => {
     const newData = { ...formData, managerData };
     setFormData(newData);
+    console.log('💼 Saving manager data:', { managerData, newData });
     updateStepData(1, newData);
     setShowManagerModal(false);
   };
@@ -163,9 +167,17 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     if (!formData.address) missing.push('Adresse');
     if (!formData.businessType) missing.push('Geschäftsbereich');
 
-    // Check if manager data is required but missing
-    if (requiresManager(formData.legalForm) && !formData.managerData) {
-      missing.push('Geschäftsführer-Daten');
+    // MANDATORY: Check if manager data is required but missing for certain legal forms
+    if (requiresManager(formData.legalForm)) {
+      if (!formData.managerData) {
+        missing.push('Geschäftsführer-Daten (Pflichtfeld für ' + formData.legalForm + ')');
+      } else if (
+        !formData.managerData.firstName ||
+        !formData.managerData.lastName ||
+        !formData.managerData.position
+      ) {
+        missing.push('Vollständige Geschäftsführer-Daten (Vorname, Nachname, Position)');
+      }
     }
 
     return {
@@ -466,6 +478,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                 <div className="mt-2 text-xs text-green-600">
                   ✓ Geschäftsführer: {formData.managerData.firstName}{' '}
                   {formData.managerData.lastName}
+                  {formData.managerData.position && ` (${formData.managerData.position})`}
                 </div>
               )}
             </div>
@@ -580,6 +593,21 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                   </div>
                 </div>
 
+                {/* Position */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Position im Unternehmen *
+                  </label>
+                  <input
+                    type="text"
+                    value={managerData.position}
+                    onChange={e => setManagerData({ ...managerData, position: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
+                    placeholder="z.B. Geschäftsführer, CEO, Inhaber"
+                    required
+                  />
+                </div>
+
                 {/* Contact */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail *</label>
@@ -684,7 +712,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                 </button>
                 <button
                   onClick={handleManagerSave}
-                  disabled={!managerData.firstName || !managerData.lastName || !managerData.email}
+                  disabled={
+                    !managerData.firstName ||
+                    !managerData.lastName ||
+                    !managerData.position ||
+                    !managerData.email
+                  }
                   className="px-4 py-2 bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
                   Speichern

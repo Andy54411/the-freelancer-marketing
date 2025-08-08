@@ -20,29 +20,29 @@ export interface OnboardingContextType {
   currentStep: number;
   totalSteps: number;
   completionPercentage: number;
-  
+
   // Navigation Control (Stripe-Style)
   canGoNext: () => boolean;
   canGoBack: () => boolean;
   canJumpToStep: (step: number) => boolean;
-  
+
   // Data Management
   stepData: Record<number, any>;
   allStepsValid: boolean;
-  
+
   // Auto-Save like Stripe
   autoSaveEnabled: boolean;
   lastSaved: Date | null;
   isSaving: boolean;
-  
+
   // Progress Tracking
   getStepCompletion: (step: number) => number; // 0-100%
   getOverallCompletion: () => number;
-  
+
   // Onboarding Management
   onboardingStatus: CompanyOnboardingStatus | null;
   stepsData: StepNavigationInfo[];
-  
+
   // Actions
   goToStep: (step: number) => void;
   goToNextStep: () => void;
@@ -84,44 +84,67 @@ export interface ValidationRule {
 }
 
 export const stepValidationRules: Record<number, ValidationRule> = {
-  1: { // General Settings
+  1: {
+    // General Settings
     required: ['companyName', 'businessType', 'address', 'phone', 'email'],
     validators: {
       companyName: (value: string) => !!(value && value.length >= 2),
       email: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-      phone: (value: string) => !!(value && value.length >= 10)
-    }
+      phone: (value: string) => !!(value && value.length >= 10),
+    },
+    conditional: {
+      managerData: (data: any) => {
+        // Manager data is required for certain legal forms
+        const formsWithManager = ['GmbH', 'UG (haftungsbeschränkt)', 'AG', 'KG', 'OHG'];
+        if (formsWithManager.includes(data.legalForm)) {
+          return !!(
+            data.managerData &&
+            data.managerData.firstName &&
+            data.managerData.lastName &&
+            data.managerData.position
+          );
+        }
+        return true; // Not required for other legal forms
+      },
+    },
   },
-  2: { // Accounting & Banking
+  2: {
+    // Accounting & Banking
     required: ['kleinunternehmer', 'taxRate', 'iban', 'accountHolder'],
     validators: {
-      iban: (value: string) => /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value?.replace(/\s/g, '') || ''),
-      accountHolder: (value: string) => !!(value && value.length >= 2)
-    }
+      iban: (value: string) =>
+        /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(
+          value?.replace(/\s/g, '') || ''
+        ),
+      accountHolder: (value: string) => !!(value && value.length >= 2),
+    },
   },
-  3: { // Public Profile
+  3: {
+    // Public Profile
     required: ['companyLogo', 'publicDescription', 'hourlyRate'],
     minLength: {
-      publicDescription: 200
+      publicDescription: 200,
     },
     validators: {
       hourlyRate: (value: number) => !!(value && value > 0),
-      publicDescription: (value: string) => !!(value && value.length >= 200)
-    }
+      publicDescription: (value: string) => !!(value && value.length >= 200),
+    },
   },
-  4: { // Services & Categories
+  4: {
+    // Services & Categories
     required: ['selectedCategory', 'selectedSubcategory'],
     validators: {
       selectedCategory: (value: string) => !!(value && value.length > 0),
-      selectedSubcategory: (value: string) => !!(value && value.length > 0)
-    }
+      selectedSubcategory: (value: string) => !!(value && value.length > 0),
+    },
   },
-  5: { // Verification & Review
+  5: {
+    // Verification & Review
     required: ['finalTermsAccepted'],
     validators: {
-      finalTermsAccepted: (value: boolean) => value === true
-    }
-  }
+      finalTermsAccepted: (value: boolean) => value === true,
+    },
+  },
 };
 
 export interface OnboardingProgressProps {
@@ -154,37 +177,37 @@ export interface StepNavigationInfo {
 export const onboardingSteps: StepNavigationInfo[] = [
   {
     step: 1,
-    title: "Allgemeine Einstellungen",
-    description: "Grundlegende Firmeninformationen und Kontaktdaten",
+    title: 'Allgemeine Einstellungen',
+    description: 'Grundlegende Firmeninformationen und Kontaktdaten',
     isRequired: true,
-    estimatedTime: "2-3 Minuten"
+    estimatedTime: '2-3 Minuten',
   },
   {
     step: 2,
-    title: "Buchhaltung & Steuern",
-    description: "Steuereinstellungen und Bankverbindung",
+    title: 'Buchhaltung & Steuern',
+    description: 'Steuereinstellungen und Bankverbindung',
     isRequired: true,
-    estimatedTime: "2-3 Minuten"
+    estimatedTime: '2-3 Minuten',
   },
   {
     step: 3,
-    title: "Öffentliches Profil",
-    description: "Profilbild, Beschreibung und Arbeitszeiten",
+    title: 'Öffentliches Profil',
+    description: 'Profilbild, Beschreibung und Arbeitszeiten',
     isRequired: true,
-    estimatedTime: "5-8 Minuten"
+    estimatedTime: '5-8 Minuten',
   },
   {
     step: 4,
-    title: "Services & Kategorien",
-    description: "Servicekategorien und Leistungspakete",
+    title: 'Services & Kategorien',
+    description: 'Servicekategorien und Leistungspakete',
     isRequired: true,
-    estimatedTime: "3-5 Minuten"
+    estimatedTime: '3-5 Minuten',
   },
   {
     step: 5,
-    title: "Überprüfung & Freischaltung",
-    description: "Finale Überprüfung und Profil-Aktivierung",
+    title: 'Überprüfung & Freischaltung',
+    description: 'Finale Überprüfung und Profil-Aktivierung',
     isRequired: true,
-    estimatedTime: "1-2 Minuten"
-  }
+    estimatedTime: '1-2 Minuten',
+  },
 ];

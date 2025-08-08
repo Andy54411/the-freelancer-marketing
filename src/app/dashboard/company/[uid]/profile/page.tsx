@@ -15,7 +15,7 @@ export default function CompanyProfilePage() {
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-  const [companyMetrics, setCompanyMetrics] = useState<CompanyMetrics | null>(null);
+  const [companyMetrics, setCompanyMetrics] = useState<CompanyMetrics | undefined>(undefined);
 
   useEffect(() => {
     const auth = getAuth();
@@ -30,10 +30,32 @@ export default function CompanyProfilePage() {
       if (!uid) return;
 
       try {
-        const userDoc = await getDoc(doc(db, 'users', uid));
+        // Load both user and company data
+        const [userDoc, companyDoc] = await Promise.all([
+          getDoc(doc(db, 'users', uid)),
+          getDoc(doc(db, 'companies', uid)),
+        ]);
+
+        let combinedData: any = { uid };
+
         if (userDoc.exists()) {
-          setUserData({ uid, ...userDoc.data() });
+          combinedData = { ...combinedData, ...userDoc.data() };
         }
+
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data();
+          // Company data takes precedence over user data for profile fields
+          combinedData = {
+            ...combinedData,
+            ...companyData,
+            // Keep user-specific fields from user document
+            email: combinedData.email || companyData.email,
+            photoURL: combinedData.photoURL || companyData.photoURL,
+          };
+        }
+
+        console.log('📊 Loaded combined user data:', combinedData);
+        setUserData(combinedData);
 
         // Automatische Metriken laden
         const metrics = await calculateCompanyMetrics(uid);
@@ -51,10 +73,31 @@ export default function CompanyProfilePage() {
   const handleDataSaved = async () => {
     // Aktualisiere die Daten nach dem Speichern
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
+      // Load both user and company data
+      const [userDoc, companyDoc] = await Promise.all([
+        getDoc(doc(db, 'users', uid)),
+        getDoc(doc(db, 'companies', uid)),
+      ]);
+
+      let combinedData: any = { uid };
+
       if (userDoc.exists()) {
-        setUserData({ uid, ...userDoc.data() });
+        combinedData = { ...combinedData, ...userDoc.data() };
       }
+
+      if (companyDoc.exists()) {
+        const companyData = companyDoc.data();
+        // Company data takes precedence over user data for profile fields
+        combinedData = {
+          ...combinedData,
+          ...companyData,
+          // Keep user-specific fields from user document
+          email: combinedData.email || companyData.email,
+          photoURL: combinedData.photoURL || companyData.photoURL,
+        };
+      }
+
+      setUserData(combinedData);
 
       // Metriken neu berechnen
       const metrics = await calculateCompanyMetrics(uid);
