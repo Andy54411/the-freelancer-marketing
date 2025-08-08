@@ -150,18 +150,26 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Sende E-Mail ohne PDF-Anhang, aber mit Download-Link...');
     }
 
-    // E-Mail-Konfiguration mit dynamischen Attachments und individueller Sender-Adresse
-    // WICHTIG: Resend erlaubt nur E-Mails von verifizierten Domains
-    // Wir verwenden eine verifizierte Domain aber den echten Namen
-    const verifiedSenderEmail = 'noreply@taskilo.de'; // Muss eine verifizierte Domain sein
-    const replyToEmail = senderEmail !== 'noreply@taskilo.de' ? senderEmail : undefined;
+    // E-Mail-Konfiguration mit individueller Sender-Adresse
+    const verifiedSenderEmail = 'noreply@taskilo.de'; // Fallback: verifizierte Domain
 
-    const emailConfig: any = {
-      from: `${senderName} <${verifiedSenderEmail}>`,
-      replyTo: replyToEmail, // Antworten gehen an die echte E-Mail-Adresse
-      to: [recipientEmail],
-      subject: subject,
-      html: `
+    // Versuche zunächst die echte E-Mail-Adresse zu verwenden
+    let finalSenderEmail = verifiedSenderEmail; // Fallback: verifizierte Domain
+    const replyToEmail = undefined;
+
+    // Wenn wir eine persönliche E-Mail haben, versuche sie als Sender zu verwenden
+    if (senderEmail !== 'noreply@taskilo.de') {
+      console.log('🔍 Versuche persönliche E-Mail als Sender zu verwenden:', senderEmail);
+
+      // Versuche direkt mit der persönlichen E-Mail - Resend wird uns sagen ob sie verifiziert ist
+      finalSenderEmail = senderEmail;
+      console.log('✅ Verwende persönliche E-Mail als Sender:', finalSenderEmail);
+    } else {
+      console.log('ℹ️ Keine persönliche E-Mail gefunden, verwende verifizierte Domain');
+    }
+
+    // HTML-Content für die E-Mail
+    const emailHTML = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -247,24 +255,84 @@ export async function POST(request: NextRequest) {
           </div>
         </body>
         </html>
-      `,
+      `;
+
+    // Finale E-Mail-Konfiguration
+    const emailConfig: any = {
+      from: `${senderName} <${finalSenderEmail}>`,
+      to: [recipientEmail],
+      subject: subject,
+      html: emailHTML,
     };
+
+    // ReplyTo nur hinzufügen wenn anders als Sender
+    if (replyToEmail && replyToEmail !== finalSenderEmail) {
+      emailConfig.replyTo = replyToEmail;
+    }
 
     // Attachments nur hinzufügen wenn PDF erfolgreich generiert wurde
     if (attachments.length > 0) {
       emailConfig.attachments = attachments;
     }
 
-    // E-Mail mit Resend senden
+    // E-Mail mit Resend senden - mit intelligentem Fallback
     console.log('📤 Sende E-Mail mit Resend...', {
-      from: `${senderName} <${verifiedSenderEmail}>`,
-      replyTo: replyToEmail,
+      from: `${senderName} <${finalSenderEmail}>`,
+      replyTo: emailConfig.replyTo,
       to: recipientEmail,
       subject: subject,
       hasAttachments: attachments.length > 0,
     });
 
-    const emailResponse = await resend.emails.send(emailConfig);
+    let emailResponse;
+    let fallbackUsed = false;
+
+    try {
+      // Versuche erst mit der gewünschten E-Mail-Adresse
+      emailResponse = await resend.emails.send(emailConfig);
+
+      if (emailResponse.error) {
+        console.error('⚠️ Erster Versuch fehlgeschlagen:', emailResponse.error);
+        throw new Error(emailResponse.error.message || 'Resend-Fehler');
+      }
+    } catch (firstAttemptError) {
+      console.log('🔄 Erster Versuch fehlgeschlagen, prüfe ob Fallback nötig ist...');
+
+      // Prüfe ob das ein Domain-/Verification-Problem ist
+      const errorMessage = firstAttemptError.message?.toLowerCase() || '';
+      const isVerificationError =
+        errorMessage.includes('not verified') ||
+        errorMessage.includes('domain') ||
+        errorMessage.includes('sender') ||
+        errorMessage.includes('verify');
+
+      if (isVerificationError && finalSenderEmail !== 'noreply@taskilo.de') {
+        console.log('🔄 Domain-Verifikationsproblem erkannt, verwende taskilo.de Fallback...');
+
+        // Verwende verifizierte Domain als Fallback
+        const fallbackConfig = {
+          ...emailConfig,
+          from: `${senderName} <noreply@taskilo.de>`,
+          replyTo: finalSenderEmail, // Antworten gehen an die ursprüngliche E-Mail
+        };
+
+        try {
+          emailResponse = await resend.emails.send(fallbackConfig);
+          fallbackUsed = true;
+          console.log('✅ Fallback erfolgreich, E-Mail gesendet von: noreply@taskilo.de');
+
+          if (emailResponse.error) {
+            throw new Error(emailResponse.error.message || 'Fallback-Fehler');
+          }
+        } catch (fallbackError) {
+          console.error('❌ Auch Fallback fehlgeschlagen:', fallbackError);
+          throw fallbackError;
+        }
+      } else {
+        // Anderer Fehler, nicht domain-related
+        throw firstAttemptError;
+      }
+    }
 
     if (emailResponse.error) {
       console.error('❌ Resend Fehler:', {
@@ -282,7 +350,12 @@ export async function POST(request: NextRequest) {
       throw new Error('E-Mail-Versendung fehlgeschlagen: Keine Message ID erhalten');
     }
 
-    console.log('✅ E-Mail erfolgreich gesendet:', emailResponse.data?.id);
+    console.log('✅ E-Mail erfolgreich gesendet:', {
+      messageId: emailResponse.data?.id,
+      senderUsed: fallbackUsed ? 'noreply@taskilo.de' : finalSenderEmail,
+      fallbackUsed: fallbackUsed,
+      replyToSet: fallbackUsed ? finalSenderEmail : emailConfig.replyTo,
+    });
 
     // Rechnungsstatus auf "sent" aktualisieren
     try {
@@ -299,6 +372,9 @@ export async function POST(request: NextRequest) {
       message: 'Rechnung erfolgreich per E-Mail versendet',
       hasAttachment: attachments.length > 0,
       downloadLinkProvided: !!downloadLinkMessage,
+      senderUsed: fallbackUsed ? 'noreply@taskilo.de' : finalSenderEmail,
+      fallbackUsed: fallbackUsed,
+      replyToEmail: fallbackUsed ? finalSenderEmail : emailConfig.replyTo,
     });
   } catch (error) {
     console.error('❌ Fehler beim Versenden der Rechnung:', error);
