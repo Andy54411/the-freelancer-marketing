@@ -45,12 +45,19 @@ import {
   DeliveryNoteItem,
   DeliveryNoteSettings,
 } from '@/services/deliveryNoteService';
+import { Customer } from '@/components/finance/AddCustomerModal';
+import { CustomerSelect } from '@/components/finance/CustomerSelect';
+import { WarehouseService } from '@/services/warehouseService';
+import { UserPreferencesService } from '@/lib/userPreferences';
+import { InvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DeliveryNoteComponentProps {
   companyId: string;
 }
 
 export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps) {
+  const { user } = useAuth();
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -65,8 +72,23 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
     thisMonth: 0,
   });
 
+  // Customer States (Phase 1)
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+
+  // Template States (NEU für Phase 2)
+  const [userTemplate, setUserTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
+  const [templateLoading, setTemplateLoading] = useState(false);
+
+  // Warehouse States (NEU für Phase 6)
+  const [warehouseEnabled, setWarehouseEnabled] = useState(true);
+  const [stockValidation, setStockValidation] = useState<{
+    [key: string]: { available: number; needed: number };
+  }>({});
+
   // Form State für neuen/bearbeiteten Lieferschein
   const [formData, setFormData] = useState<Partial<DeliveryNote>>({
+    customerId: '',
     customerName: '',
     customerEmail: '',
     customerAddress: '',
@@ -80,6 +102,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
     notes: '',
     shippingMethod: 'standard',
     warehouseUpdated: false,
+    template: DEFAULT_INVOICE_TEMPLATE, // NEU für Phase 2
   });
 
   const [newItem, setNewItem] = useState<Partial<DeliveryNoteItem>>({
@@ -92,7 +115,27 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
   useEffect(() => {
     loadDeliveryNotes();
     loadStats();
+    loadUserTemplate(); // NEU für Phase 2
   }, [companyId]);
+
+  // Template Loading (NEU für Phase 2)
+  const loadUserTemplate = async () => {
+    if (!user?.uid) return;
+
+    try {
+      setTemplateLoading(true);
+      const template = await UserPreferencesService.getPreferredTemplate(user.uid);
+      setUserTemplate(template);
+      setFormData(prev => ({ ...prev, template }));
+    } catch (error) {
+      console.error('Fehler beim Laden des Templates:', error);
+      // Fallback zu Default Template
+      setUserTemplate(DEFAULT_INVOICE_TEMPLATE);
+      setFormData(prev => ({ ...prev, template: DEFAULT_INVOICE_TEMPLATE }));
+    } finally {
+      setTemplateLoading(false);
+    }
+  };
 
   const loadDeliveryNotes = async () => {
     try {
@@ -123,7 +166,33 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         return;
       }
 
-      await DeliveryNoteService.createDeliveryNote({
+      // Phase 6: Warehouse-Integration - Lagerbestand prüfen vor Erstellung
+      if (warehouseEnabled && formData.items) {
+        const stockCheckResults = await Promise.all(
+          formData.items.map(async item => {
+            const warehouseItem = await WarehouseService.getWarehouseItemBySku(item.description); // Annahme: SKU in description
+            return {
+              item,
+              available: warehouseItem?.currentStock || 0,
+              sufficient: !warehouseItem || warehouseItem.currentStock >= item.quantity,
+            };
+          })
+        );
+
+        const insufficientStock = stockCheckResults.filter(result => !result.sufficient);
+        if (insufficientStock.length > 0) {
+          const stockMessage = insufficientStock
+            .map(
+              result =>
+                `${result.item.description}: Verfügbar ${result.available}, benötigt ${result.item.quantity}`
+            )
+            .join(', ');
+          toast.error(`Nicht genügend Lagerbestand: ${stockMessage}`);
+          return;
+        }
+      }
+
+      const deliveryNoteId = await DeliveryNoteService.createDeliveryNote({
         companyId,
         customerId: formData.customerId || '',
         customerName: formData.customerName,
@@ -139,8 +208,10 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         showPrices: formData.showPrices || false,
         status: 'draft',
         warehouseUpdated: false,
+        stockValidated: warehouseEnabled,
         shippingMethod: formData.shippingMethod,
         notes: formData.notes,
+        template: typeof userTemplate === 'string' ? userTemplate : 'professional',
         createdBy: companyId,
       });
 
@@ -272,8 +343,26 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
     }));
   };
 
+  // Customer Selection Handler (NEU für Phase 1)
+  const handleCustomerSelect = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setFormData(prev => ({
+      ...prev,
+      customerId: customer.id,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerAddress:
+        customer.street && customer.city && customer.postalCode
+          ? `${customer.street}\n${customer.postalCode} ${customer.city}\n${customer.country || 'Deutschland'}`
+          : customer.address || '',
+    }));
+    setShowCustomerSelect(false);
+    toast.success(`Kunde ${customer.name} ausgewählt`);
+  };
+
   const resetForm = () => {
     setFormData({
+      customerId: '',
       customerName: '',
       customerEmail: '',
       customerAddress: '',
@@ -287,6 +376,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       notes: '',
       shippingMethod: 'standard',
       warehouseUpdated: false,
+      template: userTemplate, // Use user's preferred template
     });
     setNewItem({
       description: '',
@@ -294,6 +384,69 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       unit: 'Stk',
       unitPrice: 0,
     });
+    setSelectedCustomer(null);
+  };
+
+  // E-Mail-Versand Funktion (Phase 5)
+  const handleSendEmail = async (deliveryNote: DeliveryNote) => {
+    try {
+      const recipientEmail = deliveryNote.customerEmail || prompt('E-Mail-Adresse des Empfängers:');
+      if (!recipientEmail) return;
+
+      const response = await fetch('/api/send-delivery-note-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deliveryNoteId: deliveryNote.id,
+          recipientEmail,
+          recipientName: deliveryNote.customerName,
+          subject: `Lieferschein ${deliveryNote.deliveryNoteNumber} - Taskilo`,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Lieferschein wurde per E-Mail versendet');
+        await loadDeliveryNotes(); // Reload to update email status
+      } else {
+        const error = await response.json();
+        toast.error(`E-Mail-Versand fehlgeschlagen: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Fehler beim E-Mail-Versand:', error);
+      toast.error('E-Mail konnte nicht gesendet werden');
+    }
+  };
+
+  // Warehouse-Bestand aktualisieren (Phase 6)
+  const handleProcessWarehouseStock = async (deliveryNote: DeliveryNote) => {
+    try {
+      const items = deliveryNote.items.map(item => ({
+        sku: item.description, // Annahme: SKU in description
+        name: item.description,
+        quantity: item.quantity,
+      }));
+
+      const result = await WarehouseService.processDeliveryNoteStock(
+        deliveryNote.id,
+        deliveryNote.deliveryNoteNumber,
+        items,
+        companyId
+      );
+
+      if (result.success) {
+        toast.success('Lagerbestand wurde aktualisiert');
+        await DeliveryNoteService.updateDeliveryNote(deliveryNote.id, {
+          ...deliveryNote,
+          warehouseUpdated: true,
+        });
+        await loadDeliveryNotes();
+      } else {
+        toast.error(`Lagerbestand konnte nicht aktualisiert werden: ${result.errors.join(', ')}`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren des Lagerbestands:', error);
+      toast.error('Lagerbestand konnte nicht aktualisiert werden');
+    }
   };
 
   const openEditModal = (note: DeliveryNote) => {
@@ -550,12 +703,35 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleUpdateInventory(note.id!)}
+                            onClick={() => handleProcessWarehouseStock(note)}
+                            className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                           >
                             <RefreshCw className="h-4 w-4 mr-1" />
-                            Lager
+                            Lager aktualisieren
                           </Button>
                         )}
+
+                        {note.customerEmail && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendEmail(note)}
+                            className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            E-Mail senden
+                          </Button>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`/print/delivery-note/${note.id}`, '_blank')}
+                          className="text-gray-600 hover:bg-gray-100"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Drucken
+                        </Button>
 
                         <Button
                           variant="outline"
@@ -608,42 +784,72 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
 
             <div className="space-y-6">
               {/* Kundendaten */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customerName">Kundenname *</Label>
-                  <Input
-                    id="customerName"
-                    value={formData.customerName}
-                    onChange={e => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                    placeholder="Firmenname oder Name"
-                  />
+                  <Label>Kunde auswählen *</Label>
+                  {selectedCustomer ? (
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">{selectedCustomer.name}</div>
+                          <div className="text-sm text-gray-600">{selectedCustomer.email}</div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {selectedCustomer.street && selectedCustomer.city
+                              ? `${selectedCustomer.street}, ${selectedCustomer.postalCode} ${selectedCustomer.city}`
+                              : selectedCustomer.address}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCustomerSelect(true)}
+                          className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                        >
+                          Ändern
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowCustomerSelect(true)}
+                      variant="outline"
+                      className="w-full h-20 border-dashed border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Kunde aus Datenbank auswählen
+                    </Button>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customerEmail">E-Mail</Label>
-                  <Input
-                    id="customerEmail"
-                    type="email"
-                    value={formData.customerEmail}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, customerEmail: e.target.value }))
-                    }
-                    placeholder="kunde@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="customerAddress">Kundenadresse *</Label>
-                <Textarea
-                  id="customerAddress"
-                  value={formData.customerAddress}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
-                  }
-                  placeholder="Straße&#10;PLZ Ort&#10;Land"
-                  rows={3}
-                />
+                {/* Zusätzliche Kundendaten-Anpassung (optional) */}
+                {selectedCustomer && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customerEmail">E-Mail (anpassen)</Label>
+                      <Input
+                        id="customerEmail"
+                        type="email"
+                        value={formData.customerEmail}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, customerEmail: e.target.value }))
+                        }
+                        placeholder="kunde@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customerAddress">Adresse (anpassen)</Label>
+                      <Textarea
+                        id="customerAddress"
+                        value={formData.customerAddress}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
+                        }
+                        placeholder="Straße&#10;PLZ Ort&#10;Land"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Lieferschein-Details */}
@@ -881,6 +1087,23 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Customer Selection Modal (NEU für Phase 1) */}
+      {showCustomerSelect && (
+        <Dialog open={showCustomerSelect} onOpenChange={setShowCustomerSelect}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Kunde auswählen</DialogTitle>
+              <DialogDescription>Wählen Sie einen Kunden aus Ihrer Datenbank aus</DialogDescription>
+            </DialogHeader>
+            <CustomerSelect
+              companyId={companyId}
+              onCustomerSelect={handleCustomerSelect}
+              selectedCustomer={selectedCustomer}
+            />
           </DialogContent>
         </Dialog>
       )}

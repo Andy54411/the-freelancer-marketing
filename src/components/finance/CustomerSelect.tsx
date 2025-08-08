@@ -29,17 +29,38 @@ interface CustomerSelectProps {
   companyId: string;
   onCustomerSelect: (customer: Customer) => void;
   selectedCustomer?: Customer | null;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export function CustomerSelect({
   companyId,
   onCustomerSelect,
   selectedCustomer,
+  isOpen = false,
+  onClose,
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use external open state if provided, otherwise use internal
+  const open = isOpen !== undefined ? isOpen : internalOpen;
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      setInternalOpen(false);
+    }
+  };
+
+  const handleOpen = () => {
+    if (isOpen === undefined) {
+      setInternalOpen(true);
+    }
+  };
 
   // Load customers from Firestore
   const loadCustomers = async () => {
@@ -92,7 +113,7 @@ export function CustomerSelect({
 
   const handleCustomerSelect = (customer: Customer) => {
     onCustomerSelect(customer);
-    setOpen(false);
+    handleClose();
     setSearchTerm('');
   };
 
@@ -113,15 +134,15 @@ export function CustomerSelect({
               <div className="font-medium">{selectedCustomer.name}</div>
               <div className="text-sm text-gray-600">{selectedCustomer.customerNumber}</div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+            <Button variant="outline" size="sm" onClick={handleOpen}>
               Ändern
             </Button>
           </div>
         </div>
       ) : (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={handleOpen}>
               <Building2 className="h-4 w-4 mr-2" />
               Kunde auswählen...
             </Button>

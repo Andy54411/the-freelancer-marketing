@@ -18,55 +18,46 @@ import {
 import { db } from '@/firebase/clients';
 
 export interface DeliveryNote {
-  id?: string;
-  companyId: string;
-  customerId: string;
-  customerName: string;
-  customerEmail?: string;
-  customerAddress: string;
-
-  // Lieferschein-Identifikation
+  id: string;
   deliveryNoteNumber: string;
-  sequentialNumber: number;
   date: string;
   deliveryDate: string;
-
-  // Referenzen
+  customerName: string;
+  customerAddress: string;
+  customerEmail?: string;
+  customerId?: string;
+  companyId?: string;
   orderNumber?: string;
-  customerOrderNumber?: string;
-  projectReference?: string;
-
-  // Artikel & Positionen
+  customerOrderNumber?: string; // Kunden-Bestellnummer
+  sequentialNumber?: number; // Fortlaufende Nummer
   items: DeliveryNoteItem[];
-
-  // Beträge (optional bei Lieferscheinen)
-  showPrices: boolean;
+  notes?: string;
+  specialInstructions?: string; // Besondere Anweisungen
+  shippingMethod?: string; // Versandmethode
+  status: 'draft' | 'sent' | 'delivered' | 'cancelled' | 'invoiced';
+  showPrices?: boolean;
   subtotal?: number;
   tax?: number;
   total?: number;
   vatRate?: number;
-
-  // Status & Workflow
-  status: 'draft' | 'sent' | 'delivered' | 'invoiced' | 'cancelled';
+  template?: string;
+  // E-Mail-Tracking Felder
+  emailSent?: boolean;
+  emailSentAt?: string;
+  emailSentTo?: string;
+  lastEmailId?: string;
+  // Versand-Tracking Felder
   sentAt?: Date;
   deliveredAt?: Date;
   invoicedAt?: Date;
-
-  // Verknüpfungen
-  invoiceId?: string; // Generierte Rechnung
-  warehouseUpdated: boolean; // Lagerbuchung durchgeführt
-
-  // Versanddetails
-  shippingMethod?: string;
   trackingNumber?: string;
-  shippingAddress?: string;
-  specialInstructions?: string;
-
-  // Metadaten
-  notes?: string;
-  internalNotes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  invoiceId?: string;
+  // Warehouse Integration
+  warehouseUpdated?: boolean;
+  stockValidated?: boolean;
+  // Erstellungsinfo
+  createdAt: string;
+  updatedAt: string;
   createdBy: string;
 }
 
@@ -155,7 +146,7 @@ export class DeliveryNoteService {
   ): Promise<string> {
     try {
       // Sequenznummer generieren
-      const settings = await this.getSettings(noteData.companyId);
+      const settings = await this.getSettings(noteData.companyId || '');
       const sequentialNumber = settings?.nextNumber || 1;
       const deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
 
@@ -169,7 +160,7 @@ export class DeliveryNoteService {
 
       // Nächste Nummer aktualisieren
       if (settings) {
-        await this.updateSettings(noteData.companyId, {
+        await this.updateSettings(noteData.companyId || '', {
           ...settings,
           nextNumber: sequentialNumber + 1,
         });
