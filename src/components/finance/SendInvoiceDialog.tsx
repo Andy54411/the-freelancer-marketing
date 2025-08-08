@@ -42,6 +42,23 @@ Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 Mit freundlichen Grüßen
 ${companyName}`);
 
+  // Funktion zur Konvertierung des Firmennamens in E-Mail-Format (gleiche Logik wie Backend)
+  const createEmailFromCompanyName = (companyName: string): string => {
+    return (
+      companyName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-') // Ersetze alle Nicht-Buchstaben/Zahlen mit -
+        .replace(/-+/g, '-') // Mehrfache - zu einem -
+        .replace(/^-|-$/g, '') // Entferne - am Anfang/Ende
+        .substring(0, 30) || // Maximal 30 Zeichen
+      'noreply'
+    ); // Fallback falls leer
+  };
+
+  // Personalisierte Sender-E-Mail berechnen
+  const personalizedEmailPrefix = createEmailFromCompanyName(companyName);
+  const personalizedSenderEmail = `${personalizedEmailPrefix}@taskilo.de`;
+
   const handleSendEmail = async () => {
     setSending(true);
 
@@ -114,7 +131,7 @@ ${companyName}`);
             </Label>
             <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
               <div className="font-medium">{companyName}</div>
-              <div>Ihre persönliche E-Mail-Adresse</div>
+              <div className="text-[#14ad9f]">{personalizedSenderEmail}</div>
             </div>
           </div>
 

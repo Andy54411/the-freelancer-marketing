@@ -39,83 +39,9 @@ export async function POST(request: NextRequest) {
 
     const invoice = { id: invoiceDoc.id, ...invoiceDoc.data() } as any;
 
-    // Funktion zur Konvertierung des Firmennamens in E-Mail-Format
-    const createEmailFromCompanyName = (companyName: string): string => {
-      return (
-        companyName
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '-') // Ersetze alle Nicht-Buchstaben/Zahlen mit -
-          .replace(/-+/g, '-') // Mehrfache - zu einem -
-          .replace(/^-|-$/g, '') // Entferne - am Anfang/Ende
-          .substring(0, 30) || // Maximal 30 Zeichen
-        'noreply'
-      ); // Fallback falls leer
-    };
-
-    // Personalisierte Sender-E-Mail erstellen
-    const personalizedEmailPrefix = createEmailFromCompanyName(senderName);
-    const personalizedSenderEmail = `${personalizedEmailPrefix}@taskilo.de`;
-
-    console.log('📧 Personalisierte Sender-E-Mail:', personalizedSenderEmail);
-
-    // PDF-Anhang generieren
-    let pdfAttachment: {
-      filename: string;
-      content: string;
-      type: string;
-      disposition: string;
-    } | null = null;
-    try {
-      console.log('📄 Generiere PDF-Anhang für Rechnung...');
-
-      // Interne PDF-Generation über unsere bestehende API
-      const pdfResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/api/generate-invoice-pdf`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            invoiceData: invoice,
-          }),
-        }
-      );
-
-      if (pdfResponse.ok) {
-        const contentType = pdfResponse.headers.get('content-type');
-
-        if (contentType && contentType.includes('application/pdf')) {
-          // Echtes PDF erhalten
-          const pdfBuffer = await pdfResponse.arrayBuffer();
-          const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
-
-          pdfAttachment = {
-            filename: `Rechnung_${invoice.invoiceNumber || invoice.number}.pdf`,
-            content: pdfBase64,
-            type: 'application/pdf',
-            disposition: 'attachment',
-          };
-
-          console.log('✅ PDF-Anhang erfolgreich generiert:', pdfAttachment.filename);
-        } else {
-          // JSON-Antwort (Fallback-Modus)
-          const result = await pdfResponse.json();
-          console.log('⚠️ PDF-Service im Fallback-Modus - Print-URL erhalten:', result.printUrl);
-          console.log('📧 E-Mail wird ohne PDF-Anhang gesendet');
-        }
-      } else {
-        console.warn('⚠️ PDF-Generation fehlgeschlagen - E-Mail wird ohne Anhang gesendet');
-      }
-    } catch (pdfError) {
-      console.warn('⚠️ PDF-Anhang konnte nicht generiert werden:', pdfError.message);
-    }
-
-    // E-Mail-Konfiguration mit optionalem PDF-Anhang
-    const invoiceUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/print/invoice/${invoice.id}`;
-
+    // Einfache E-Mail-Konfiguration ohne komplexe Fallback-Logik
     const emailConfig = {
-      from: `${senderName} <${personalizedSenderEmail}>`,
+      from: `${senderName} <noreply@taskilo.de>`, // Verwende erstmal nur die verifizierte Domain
       to: [recipientEmail],
       subject: subject,
       html: `
@@ -144,19 +70,6 @@ export async function POST(request: NextRequest) {
               font-size: 24px; 
               font-weight: bold; 
             }
-            .download-button {
-              display: inline-block;
-              background-color: #14ad9f;
-              color: white;
-              padding: 12px 24px;
-              text-decoration: none;
-              border-radius: 6px;
-              font-weight: bold;
-              margin: 10px 0;
-            }
-            .download-button:hover {
-              background-color: #129488;
-            }
           </style>
         </head>
         <body>
@@ -172,15 +85,6 @@ export async function POST(request: NextRequest) {
             <h3 style="color: #14ad9f;">Rechnungsdetails</h3>
             <p><strong>Rechnungsnummer:</strong> ${invoice.invoiceNumber || invoice.number}</p>
             <p><strong>Gesamtbetrag:</strong> ${invoice.total?.toFixed(2) || 'N/A'} €</p>
-            ${
-              !pdfAttachment
-                ? `
-            <div style="margin-top: 15px;">
-              <a href="${invoiceUrl}" class="download-button" target="_blank">📄 Rechnung als PDF anzeigen</a>
-            </div>
-            `
-                : ''
-            }
           </div>
           
           <p>Bei Fragen wenden Sie sich bitte direkt an ${senderName}.</p>
@@ -191,7 +95,6 @@ export async function POST(request: NextRequest) {
         </body>
         </html>
       `,
-      ...(pdfAttachment && { attachments: [pdfAttachment] }),
     };
 
     console.log('📤 Sende E-Mail mit Resend...');
@@ -221,11 +124,8 @@ export async function POST(request: NextRequest) {
       success: true,
       messageId: emailResponse.data.id,
       message: 'Rechnung erfolgreich per E-Mail versendet',
-      senderUsed: personalizedSenderEmail,
-      personalizedEmail: true,
+      senderUsed: 'noreply@taskilo.de',
       fallbackUsed: false,
-      pdfAttached: !!pdfAttachment,
-      attachmentFilename: pdfAttachment?.filename,
     });
   } catch (error: any) {
     console.error('❌ Fehler beim Versenden der Rechnung:', error);
