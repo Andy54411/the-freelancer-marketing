@@ -5,6 +5,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import type { CompanyListData as CompanyData } from '@/lib/companies-list-data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CompanyDebugDialog } from '@/components/admin/CompanyDebugDialog';
 
 export const columns: ColumnDef<CompanyData>[] = [
   {
@@ -54,8 +55,11 @@ function ActionCell({ company }: { company: any }) {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleViewDetails}>
-      Details ansehen
-    </Button>
+    <div className="flex space-x-2">
+      <Button variant="outline" size="sm" onClick={handleViewDetails}>
+        Details ansehen
+      </Button>
+      <CompanyDebugDialog companyId={company.id} companyName={company.companyName} />
+    </div>
   );
 }

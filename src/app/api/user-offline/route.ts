@@ -4,7 +4,19 @@ import { admin } from '@/firebase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    let userId: string;
+
+    // Unterstütze sowohl JSON als auch FormData (für sendBeacon)
+    const contentType = req.headers.get('content-type');
+
+    if (contentType?.includes('application/json')) {
+      const { userId: jsonUserId } = await req.json();
+      userId = jsonUserId;
+    } else {
+      // FormData (sendBeacon)
+      const formData = await req.formData();
+      userId = formData.get('userId') as string;
+    }
 
     if (!userId) {
       return NextResponse.json({ error: 'userId required' }, { status: 400 });
@@ -33,6 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[USER-OFFLINE ERROR]', error);
+    // Immer success zurückgeben, um Client-Fehler zu vermeiden
     return NextResponse.json(
       { success: true, warning: 'Offline status update failed' },
       { status: 200 }

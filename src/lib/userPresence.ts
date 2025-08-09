@@ -70,42 +70,47 @@ export class UserPresenceService {
     const handleVisibilityChange = async () => {
       if (!this.userId) return;
 
-      const userPresenceRef = ref(realtimeDb, `presence/${this.userId}`);
+      try {
+        const userPresenceRef = ref(realtimeDb, `presence/${this.userId}`);
 
-      if (document.hidden) {
-        // Seite ist nicht sichtbar - setze als "away"
-        await set(userPresenceRef, {
-          isOnline: true,
-          lastSeen: serverTimestamp(),
-          status: 'away',
-        });
-      } else {
-        // Seite ist wieder sichtbar - setze als "online"
-        await set(userPresenceRef, {
-          isOnline: true,
-          lastSeen: serverTimestamp(),
-          status: 'online',
-        });
+        if (document.hidden) {
+          // Seite ist nicht sichtbar - setze als "away"
+          await set(userPresenceRef, {
+            isOnline: true,
+            lastSeen: serverTimestamp(),
+            status: 'away',
+          });
+        } else {
+          // Seite ist wieder sichtbar - setze als "online"
+          await set(userPresenceRef, {
+            isOnline: true,
+            lastSeen: serverTimestamp(),
+            status: 'online',
+          });
+        }
+      } catch (error) {
+        console.warn('[UserPresence] Visibility change error:', error);
       }
     };
 
-    // NEU: Behandle auch Browser-Tab-Schließungen
-    const handleBeforeUnload = async () => {
+    // Vereinfachte beforeunload-Behandlung ohne API-Call
+    const handleBeforeUnload = () => {
       if (this.userId) {
-        const userPresenceRef = ref(realtimeDb, `presence/${this.userId}`);
-        // Synchroner call für beforeunload
-        navigator.sendBeacon('/api/user-offline', JSON.stringify({ userId: this.userId }));
-
-        // Auch sofortiger offline-Status
-        await set(userPresenceRef, {
-          isOnline: false,
-          lastSeen: serverTimestamp(),
-          status: 'offline',
-        });
+        try {
+          // Nur sendBeacon für einfache Offline-Markierung
+          const data = new FormData();
+          data.append('userId', this.userId);
+          navigator.sendBeacon('/api/user-offline', data);
+        } catch (error) {
+          // Ignoriere Beacon-Fehler, da es nur ein Backup ist
+          console.debug('[UserPresence] Beacon failed (normal on some browsers)');
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Vereinfachte beforeunload ohne async/await
     window.addEventListener('beforeunload', handleBeforeUnload);
   }
 
