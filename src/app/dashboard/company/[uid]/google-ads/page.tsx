@@ -17,12 +17,13 @@ interface GoogleAdsPageProps {
     success?: string;
     error?: string;
     accounts?: string;
+    details?: string;
   }>;
 }
 
 export default async function GoogleAdsPage({ params, searchParams }: GoogleAdsPageProps) {
   const { uid: companyId } = await params;
-  const { success, error, accounts } = await searchParams;
+  const { success, error, accounts, details } = await searchParams;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,14 +105,24 @@ export default async function GoogleAdsPage({ params, searchParams }: GoogleAdsP
                       'Laden der Google Ads Accounts fehlgeschlagen.'}
                     {error === 'save_failed' && 'Speichern der Konfiguration fehlgeschlagen.'}
                     {error === 'callback_failed' && 'Callback-Verarbeitung fehlgeschlagen.'}
+                    {error === 'invalid_company_id' && 'Ungültige Unternehmens-ID.'}
+                    {error === 'missing_developer_token' && 'Fehlender Developer Token.'}
                     {![
                       'missing_parameters',
                       'token_exchange_failed',
                       'fetch_customers_failed',
                       'save_failed',
                       'callback_failed',
+                      'invalid_company_id',
+                      'missing_developer_token',
                     ].includes(error) && `Unbekannter Fehler: ${error}`}
                   </p>
+                  {/* Show additional error details if available */}
+                  {details && (
+                    <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border">
+                      <strong>Details:</strong> {decodeURIComponent(details)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
