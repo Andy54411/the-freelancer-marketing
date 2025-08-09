@@ -1,30 +1,17 @@
 // ✅ Google Ads Analytics & Performance Page
 
-import { Metadata } from 'next';
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
 import { GoogleAdsAnalytics } from '@/components/google-ads/GoogleAdsAnalytics';
 
-export const metadata: Metadata = {
-  title: 'Google Ads Analytics - Taskilo',
-  description:
-    'Analysieren Sie die Performance Ihrer Google Ads Kampagnen mit detaillierten Metriken',
-};
+export default function GoogleAdsAnalyticsPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-interface GoogleAdsAnalyticsPageProps {
-  params: Promise<{
-    uid: string;
-  }>;
-  searchParams: Promise<{
-    period?: string;
-    campaign_id?: string;
-  }>;
-}
-
-export default async function GoogleAdsAnalyticsPage({
-  params,
-  searchParams,
-}: GoogleAdsAnalyticsPageProps) {
-  const { uid: companyId } = await params;
-  const { period = '30', campaign_id } = await searchParams;
+  const companyId = params.uid as string;
+  const period = searchParams.get('period') || '30';
+  const campaign_id = searchParams.get('campaign_id') || undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,30 +1,18 @@
 // ✅ Google Ads Einstellungen Page
 
-import { Metadata } from 'next';
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
 import { GoogleAdsSettings } from '@/components/google-ads/GoogleAdsSettings';
 
-export const metadata: Metadata = {
-  title: 'Google Ads Einstellungen - Taskilo',
-  description: 'Konfigurieren Sie Ihre Google Ads Integration und Kontoeinstellungen',
-};
+export default function GoogleAdsSettingsPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-interface GoogleAdsSettingsPageProps {
-  params: Promise<{
-    uid: string;
-  }>;
-  searchParams: Promise<{
-    success?: string;
-    error?: string;
-    tab?: string;
-  }>;
-}
-
-export default async function GoogleAdsSettingsPage({
-  params,
-  searchParams,
-}: GoogleAdsSettingsPageProps) {
-  const { uid: companyId } = await params;
-  const { success, error, tab = 'connection' } = await searchParams;
+  const companyId = params.uid as string;
+  const success = searchParams.get('success') || undefined;
+  const error = searchParams.get('error') || undefined;
+  const tab = searchParams.get('tab') || 'connection';
 
   return (
     <div className="min-h-screen bg-gray-50">

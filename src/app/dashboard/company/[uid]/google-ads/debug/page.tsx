@@ -1,29 +1,17 @@
 // ✅ Google Ads Debug & Test Page
 
-import { Metadata } from 'next';
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
 import { GoogleAdsDebug } from '@/components/google-ads/GoogleAdsDebug';
 
-export const metadata: Metadata = {
-  title: 'Google Ads Debug & Test - Taskilo',
-  description: 'Umfassende Debug- und Test-Tools für die Google Ads Client Library Integration',
-};
+export default function GoogleAdsDebugPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-interface GoogleAdsDebugPageProps {
-  params: Promise<{
-    uid: string;
-  }>;
-  searchParams: Promise<{
-    test?: string;
-    mode?: string;
-  }>;
-}
-
-export default async function GoogleAdsDebugPage({
-  params,
-  searchParams,
-}: GoogleAdsDebugPageProps) {
-  const { uid: companyId } = await params;
-  const { test, mode = 'all' } = await searchParams;
+  const companyId = params.uid as string;
+  const test = searchParams.get('test') || undefined;
+  const mode = searchParams.get('mode') || 'all';
 
   return (
     <div className="min-h-screen bg-gray-50">

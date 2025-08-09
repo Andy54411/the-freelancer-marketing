@@ -1,29 +1,20 @@
 // ✅ PHASE 1: Google Ads Dashboard Page
 // Hauptübersicht für Google Ads Integration
 
-import { Metadata } from 'next';
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
 import { GoogleAdsOverview } from '@/components/google-ads/GoogleAdsOverview';
 
-export const metadata: Metadata = {
-  title: 'Google Ads - Taskilo',
-  description: 'Verwalten Sie Ihre Google Ads Kampagnen direkt aus Ihrem Taskilo Dashboard',
-};
+export default function GoogleAdsPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-interface GoogleAdsPageProps {
-  params: Promise<{
-    uid: string;
-  }>;
-  searchParams: Promise<{
-    success?: string;
-    error?: string;
-    accounts?: string;
-    details?: string;
-  }>;
-}
-
-export default async function GoogleAdsPage({ params, searchParams }: GoogleAdsPageProps) {
-  const { uid: companyId } = await params;
-  const { success, error, accounts, details } = await searchParams;
+  const companyId = params.uid as string;
+  const success = searchParams.get('success') || undefined;
+  const error = searchParams.get('error') || undefined;
+  const accounts = searchParams.get('accounts') || undefined;
+  const details = searchParams.get('details') || undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">

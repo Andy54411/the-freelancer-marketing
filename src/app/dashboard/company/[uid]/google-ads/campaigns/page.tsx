@@ -1,30 +1,18 @@
 // ✅ Google Ads Kampagnen Management Page
 
-import { Metadata } from 'next';
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
 import { CampaignManagement } from '@/components/google-ads/CampaignManagement';
 
-export const metadata: Metadata = {
-  title: 'Google Ads Kampagnen - Taskilo',
-  description: 'Verwalten Sie Ihre Google Ads Kampagnen und überwachen Sie deren Performance',
-};
+export default function GoogleAdsCampaignsPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-interface GoogleAdsCampaignsPageProps {
-  params: Promise<{
-    uid: string;
-  }>;
-  searchParams: Promise<{
-    success?: string;
-    error?: string;
-    campaign_id?: string;
-  }>;
-}
-
-export default async function GoogleAdsCampaignsPage({
-  params,
-  searchParams,
-}: GoogleAdsCampaignsPageProps) {
-  const { uid: companyId } = await params;
-  const { success, error, campaign_id } = await searchParams;
+  const companyId = params.uid as string;
+  const success = searchParams.get('success') || undefined;
+  const error = searchParams.get('error') || undefined;
+  const campaign_id = searchParams.get('campaign_id') || undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">

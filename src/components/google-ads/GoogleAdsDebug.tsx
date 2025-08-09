@@ -89,15 +89,37 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
     addLog(`🚀 Starte Google Ads Client Library Tests (Modus: ${mode})`);
 
     try {
-      const response = await fetch(`/api/google-ads/test-all?companyId=${companyId}&mode=${mode}`);
+      const response = await fetch(
+        `/api/google-ads/test-all?companyId=${encodeURIComponent(companyId)}&mode=${encodeURIComponent(mode)}`
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const results = await response.json();
-      setTestResults(results);
 
+      // Sanitize results to avoid serialization issues
+      const sanitizedResults = {
+        ...results,
+        results: Object.fromEntries(
+          Object.entries(results.results || {}).map(([key, value]: [string, any]) => [
+            key,
+            {
+              test: value.test || 'Unknown Test',
+              success: Boolean(value.success),
+              data: value.data ? JSON.parse(JSON.stringify(value.data)) : null,
+              error:
+                typeof value.error === 'string'
+                  ? value.error
+                  : value.error?.message || 'Unknown error',
+              duration: typeof value.duration === 'number' ? value.duration : undefined,
+            },
+          ])
+        ),
+      };
+
+      setTestResults(sanitizedResults);
       addLog(
         `✅ Tests abgeschlossen: ${results.summary.passed}/${results.summary.total} erfolgreich`
       );
@@ -120,7 +142,7 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
 
     try {
       const response = await fetch(
-        `/api/google-ads/test-all?companyId=${companyId}&mode=${testName}`
+        `/api/google-ads/test-all?companyId=${encodeURIComponent(companyId)}&mode=${encodeURIComponent(testName)}`
       );
 
       if (!response.ok) {
@@ -130,9 +152,20 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
       const results = await response.json();
 
       // Update nur den spezifischen Test in den Ergebnissen
-      if (testResults) {
+      if (testResults && results.results) {
         const updatedResults = { ...testResults };
-        updatedResults.results[testName] = results.results[testName];
+        Object.entries(results.results).forEach(([key, value]: [string, any]) => {
+          updatedResults.results[key] = {
+            test: value.test || 'Unknown Test',
+            success: Boolean(value.success),
+            data: value.data ? JSON.parse(JSON.stringify(value.data)) : null,
+            error:
+              typeof value.error === 'string'
+                ? value.error
+                : value.error?.message || 'Unknown error',
+            duration: typeof value.duration === 'number' ? value.duration : undefined,
+          };
+        });
         setTestResults(updatedResults);
       }
 
@@ -198,10 +231,10 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
 
   // Automatischen Test bei Mount ausführen
   useEffect(() => {
-    if (initialTest) {
+    if (initialTest && typeof initialTest === 'string' && companyId) {
       runSingleTest(initialTest);
     }
-  }, [initialTest]);
+  }, [initialTest, companyId]);
 
   return (
     <div className="space-y-6">
@@ -312,7 +345,7 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
                       </div>
 
                       {/* Test Data */}
-                      {result.data && (
+                      {result.data && typeof result.data === 'object' && (
                         <div className="mt-3">
                           <details className="group">
                             <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-900">
@@ -329,7 +362,9 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
                       {result.error && (
                         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
                           <h4 className="font-medium text-red-800 mb-1">Fehler:</h4>
-                          <p className="text-sm text-red-700">{result.error}</p>
+                          <p className="text-sm text-red-700">
+                            {typeof result.error === 'string' ? result.error : 'Unbekannter Fehler'}
+                          </p>
                         </div>
                       )}
                     </div>
