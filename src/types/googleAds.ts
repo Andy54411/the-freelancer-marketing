@@ -94,6 +94,88 @@ export interface GoogleAdsApiResponse<T = any> {
   };
 }
 
+/**
+ * ✅ PHASE 2: Campaign Response Type
+ */
+export interface GoogleAdsCampaignResponse {
+  campaigns: GoogleAdsCampaign[];
+  totalCount?: number;
+  hasMore?: boolean;
+  nextPageToken?: string;
+}
+
+/**
+ * 🚀 PHASE 2: Campaign Creation Request
+ */
+export interface CreateCampaignRequest {
+  name: string;
+  budgetAmountMicros: number;
+  advertisingChannelType: string;
+  biddingStrategyType: string;
+  startDate?: string;
+  endDate?: string;
+  geoTargets?: string[];
+  languageTargets?: string[];
+  deviceTargets?: ('DESKTOP' | 'MOBILE' | 'TABLET')[];
+}
+
+/**
+ * 🚀 PHASE 2: Campaign Update Request
+ */
+export interface UpdateCampaignRequest {
+  name?: string;
+  status?: 'ENABLED' | 'PAUSED';
+  budgetAmountMicros?: number;
+  endDate?: string;
+}
+
+/**
+ * 🚀 PHASE 2: Performance Report Request
+ */
+export interface PerformanceReportRequest {
+  customerId: string;
+  campaignIds?: string[];
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  metrics: string[];
+  dimensions?: string[];
+  filters?: Array<{
+    field: string;
+    operator: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'LESS_THAN' | 'CONTAINS';
+    value: string;
+  }>;
+}
+
+/**
+ * 🚀 PHASE 2: Automation Rule
+ */
+export interface AutomationRule {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  trigger: {
+    type: 'METRIC_THRESHOLD' | 'TIME_BASED' | 'PERFORMANCE_DROP';
+    conditions: Array<{
+      metric: string;
+      operator: 'GREATER_THAN' | 'LESS_THAN' | 'EQUALS';
+      value: number;
+      period: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+    }>;
+  };
+  actions: Array<{
+    type: 'PAUSE_CAMPAIGN' | 'ADJUST_BUDGET' | 'MODIFY_BID' | 'SEND_ALERT';
+    parameters: {
+      [key: string]: any;
+    };
+  }>;
+  createdAt: Date;
+  lastExecuted?: Date;
+  executionCount: number;
+}
+
 export interface GoogleAdsTokenResponse {
   access_token: string;
   refresh_token: string;
@@ -104,10 +186,6 @@ export interface GoogleAdsTokenResponse {
 
 export interface GoogleAdsCustomerResponse {
   customers: GoogleAdsAccount[];
-}
-
-export interface GoogleAdsCampaignResponse {
-  campaigns: GoogleAdsCampaign[];
 }
 
 export interface GoogleAdsError {

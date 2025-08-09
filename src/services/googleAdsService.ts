@@ -294,6 +294,226 @@ class GoogleAdsService {
   }
 
   /**
+   * 🚀 PHASE 2: Campaign Management - Kampagnen abrufen
+   */
+  async getCampaigns(
+    config: GoogleAdsOAuthConfig,
+    customerId: string
+  ): Promise<GoogleAdsApiResponse<GoogleAdsCampaignResponse>> {
+    try {
+      const query = `
+        SELECT 
+          campaign.id,
+          campaign.name,
+          campaign.status,
+          campaign.advertising_channel_type,
+          campaign.start_date,
+          campaign.end_date,
+          campaign_budget.amount_micros,
+          campaign_budget.delivery_method,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.conversion_value_micros
+        FROM campaign 
+        WHERE campaign.status != 'REMOVED'
+        ORDER BY campaign.name
+      `;
+
+      const response = await this.makeApiRequest(
+        `/customers/${customerId}/googleAds:searchStream`,
+        'POST',
+        config,
+        { query }
+      );
+
+      if (!response.success) {
+        return response;
+      }
+
+      const campaigns: GoogleAdsCampaign[] =
+        response.data?.results?.map((result: any) => {
+          const campaign = result.campaign;
+          const metrics = result.metrics || {};
+          const budget = result.campaign_budget || {};
+
+          return {
+            id: campaign.id,
+            name: campaign.name,
+            status: campaign.status,
+            advertisingChannelType: campaign.advertising_channel_type,
+            startDate: campaign.start_date,
+            endDate: campaign.end_date,
+            budget: {
+              id: budget.id || '',
+              name: budget.name || '',
+              amountMicros: budget.amount_micros || 0,
+              deliveryMethod: budget.delivery_method || 'STANDARD',
+            },
+            biddingStrategy: {
+              type: 'MANUAL_CPC', // Default, könnte erweitert werden
+            },
+            metrics: {
+              impressions: metrics.impressions || 0,
+              clicks: metrics.clicks || 0,
+              cost: metrics.cost_micros || 0,
+              conversions: metrics.conversions || 0,
+              conversionValue: metrics.conversion_value_micros || 0,
+              costPerClick: metrics.clicks > 0 ? metrics.cost_micros / metrics.clicks : 0,
+              clickThroughRate:
+                metrics.impressions > 0 ? (metrics.clicks / metrics.impressions) * 100 : 0,
+              conversionRate: metrics.clicks > 0 ? (metrics.conversions / metrics.clicks) * 100 : 0,
+              returnOnAdSpend:
+                metrics.cost_micros > 0 ? metrics.conversion_value_micros / metrics.cost_micros : 0,
+              costPerConversion:
+                metrics.conversions > 0 ? metrics.cost_micros / metrics.conversions : 0,
+            },
+          };
+        }) || [];
+
+      return {
+        success: true,
+        data: { campaigns },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: 'Failed to fetch campaigns',
+          details: error,
+        },
+      };
+    }
+  }
+
+  /**
+   * ✅ PHASE 2: Neue Kampagne erstellen
+   */
+  async createCampaign(
+    config: GoogleAdsOAuthConfig,
+    customerId: string,
+    campaignData: {
+      name: string;
+      budgetAmountMicros: number;
+      advertisingChannelType: string;
+      startDate: string;
+      endDate?: string;
+      geoTargets?: string[];
+      languageTargets?: string[];
+    }
+  ): Promise<GoogleAdsApiResponse<{ campaignId: string }>> {
+    try {
+      // Erst Budget erstellen
+      const budgetOperation = {
+        create: {
+          name: `${campaignData.name} Budget`,
+          amount_micros: campaignData.budgetAmountMicros,
+          delivery_method: 'STANDARD',
+        },
+      };
+
+      const budgetResponse = await this.makeApiRequest(
+        `/customers/${customerId}/campaignBudgets:mutate`,
+        'POST',
+        config,
+        { operations: [budgetOperation] }
+      );
+
+      if (!budgetResponse.success) {
+        return budgetResponse;
+      }
+
+      const budgetResourceName = budgetResponse.data?.results?.[0]?.resourceName;
+
+      // Dann Kampagne erstellen
+      const campaignOperation = {
+        create: {
+          name: campaignData.name,
+          advertising_channel_type: campaignData.advertisingChannelType,
+          status: 'PAUSED', // Startet pausiert für Sicherheit
+          campaign_budget: budgetResourceName,
+          start_date: campaignData.startDate,
+          end_date: campaignData.endDate,
+          bidding_strategy: {
+            manual_cpc: {},
+          },
+        },
+      };
+
+      const campaignResponse = await this.makeApiRequest(
+        `/customers/${customerId}/campaigns:mutate`,
+        'POST',
+        config,
+        { operations: [campaignOperation] }
+      );
+
+      if (!campaignResponse.success) {
+        return campaignResponse;
+      }
+
+      const campaignId = campaignResponse.data?.results?.[0]?.resourceName?.split('/')?.pop();
+
+      return {
+        success: true,
+        data: { campaignId },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'CAMPAIGN_CREATION_FAILED',
+          message: 'Failed to create campaign',
+          details: error,
+        },
+      };
+    }
+  }
+
+  /**
+   * ✅ PHASE 2: Kampagne Status ändern (Pausieren/Aktivieren)
+   */
+  async updateCampaignStatus(
+    config: GoogleAdsOAuthConfig,
+    customerId: string,
+    campaignId: string,
+    status: 'ENABLED' | 'PAUSED'
+  ): Promise<GoogleAdsApiResponse<{ success: boolean }>> {
+    try {
+      const operation = {
+        update: {
+          resource_name: `customers/${customerId}/campaigns/${campaignId}`,
+          status: status,
+        },
+        update_mask: { paths: ['status'] },
+      };
+
+      const response = await this.makeApiRequest(
+        `/customers/${customerId}/campaigns:mutate`,
+        'POST',
+        config,
+        { operations: [operation] }
+      );
+
+      return {
+        success: response.success,
+        data: { success: response.success },
+        error: response.error,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'CAMPAIGN_UPDATE_FAILED',
+          message: 'Failed to update campaign status',
+          details: error,
+        },
+      };
+    }
+  }
+
+  /**
    * 🔧 Private Helper: API Request durchführen
    */
   private async makeApiRequest(

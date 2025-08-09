@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CampaignManagement } from '@/components/google-ads/CampaignManager';
 import {
   Loader2,
   ExternalLink,
@@ -19,6 +21,9 @@ import {
   Settings,
   TrendingUp,
   XCircle,
+  BarChart3,
+  Zap,
+  FileText,
 } from 'lucide-react';
 
 interface GoogleAdsOverviewProps {
@@ -597,6 +602,89 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PHASE 2: Campaign Management Tabs */}
+      {status?.status === 'CONNECTED' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <TrendingUp className="h-5 w-5 mr-2 text-[#14ad9f]" />
+              Google Ads Management
+            </CardTitle>
+            <CardDescription>
+              Verwalten Sie Ihre Kampagnen, analysieren Sie Performance und optimieren Sie Ihre Ads
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="campaigns" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="campaigns" className="flex items-center">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Kampagnen
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="flex items-center">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger value="automation" className="flex items-center">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Automation
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Reports
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="campaigns" className="mt-6">
+                <CampaignManagement
+                  customerId={status.accounts?.[0]?.customerId || ''}
+                  onCampaignUpdate={() => loadConnectionStatus()}
+                />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="mt-6">
+                <div className="text-center py-8">
+                  <TrendingUp className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Performance Analytics</h3>
+                  <p className="text-gray-600 mb-4">
+                    Detaillierte Analyse und Metriken werden hier angezeigt
+                  </p>
+                  <Badge variant="outline" className="text-[#14ad9f] border-[#14ad9f]">
+                    In Entwicklung
+                  </Badge>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="automation" className="mt-6">
+                <div className="text-center py-8">
+                  <Zap className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Automation Rules</h3>
+                  <p className="text-gray-600 mb-4">
+                    Automatisierte Regeln und Optimierungen werden hier konfiguriert
+                  </p>
+                  <Badge variant="outline" className="text-[#14ad9f] border-[#14ad9f]">
+                    In Entwicklung
+                  </Badge>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="reports" className="mt-6">
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Reporting System</h3>
+                  <p className="text-gray-600 mb-4">
+                    Exportierbare Reports und Dashboard-Integration
+                  </p>
+                  <Badge variant="outline" className="text-[#14ad9f] border-[#14ad9f]">
+                    In Entwicklung
+                  </Badge>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       )}
