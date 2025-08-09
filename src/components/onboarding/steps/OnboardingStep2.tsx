@@ -19,7 +19,7 @@ interface Step2Data {
   taxRate: string;
   taxNumber: string;
   vatId: string;
-  
+
   // Bankverbindung
   accountHolder: string;
   iban: string;
@@ -40,7 +40,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
     accountHolder: '',
     iban: '',
     bic: '',
-    bankName: ''
+    bankName: '',
   });
   const [loading, setLoading] = useState(true);
 
@@ -53,19 +53,24 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          
-          // Map existing data
+
+          // Map existing data - FIX: Use correct field names from registration
           setFormData({
-            kleinunternehmer: userData.step3?.ust === 'kleinunternehmer' ? 'ja' : 'nein',
+            kleinunternehmer:
+              userData.step3?.ust === 'kleinunternehmer'
+                ? 'ja'
+                : userData.kleinunternehmer
+                  ? 'ja'
+                  : 'nein',
             profitMethod: userData.step3?.profitMethod || 'euer',
             priceInput: userData.step3?.priceInput || 'netto',
-            taxRate: userData.step3?.taxRate || '19',
-            taxNumber: userData.step3?.taxNumber || '',
-            vatId: userData.step3?.vatId || '',
-            accountHolder: userData.step4?.accountHolder || '',
-            iban: userData.step4?.iban || '',
+            taxRate: userData.step3?.taxRate || userData.taxRate?.toString() || '19',
+            taxNumber: userData.step3?.taxNumber || userData.taxNumberForBackend || '',
+            vatId: userData.step3?.vatId || userData.vatIdForBackend || '',
+            accountHolder: userData.step4?.accountHolder || userData.accountHolder || '',
+            iban: userData.step4?.iban || userData.iban || '',
             bic: userData.step4?.bic || '',
-            bankName: userData.step4?.bankName || ''
+            bankName: userData.step4?.bankName || '',
           });
         }
 
@@ -85,7 +90,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
   const handleChange = (field: keyof Step2Data, value: any) => {
     let newData = { ...formData, [field]: value };
-    
+
     // Conditional logic für Kleinunternehmer
     if (field === 'kleinunternehmer') {
       if (value === 'ja') {
@@ -93,18 +98,18 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
           ...newData,
           profitMethod: 'euer',
           priceInput: 'brutto',
-          taxRate: '0'
+          taxRate: '0',
         };
       } else {
         newData = {
           ...newData,
           profitMethod: 'euer',
           priceInput: 'netto',
-          taxRate: '19'
+          taxRate: '19',
         };
       }
     }
-    
+
     setFormData(newData);
     updateStepData(2, newData);
   };
@@ -124,9 +129,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
     <div className="space-y-8">
       {/* Buchhaltung & Steuern Section */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Buchhaltung & Steuern
-        </h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Buchhaltung & Steuern</h3>
         <p className="text-sm text-gray-600 mb-6">
           Diese Einstellungen bestimmen, wie Ihre Rechnungen erstellt und Steuern berechnet werden.
         </p>
@@ -138,17 +141,17 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              { 
-                value: 'ja', 
+              {
+                value: 'ja',
                 label: 'Ja, ich nutze die Kleinunternehmerregelung',
-                description: 'Umsatz unter 22.000€ im Vorjahr, keine USt-Ausweisung'
+                description: 'Umsatz unter 22.000€ im Vorjahr, keine USt-Ausweisung',
               },
-              { 
-                value: 'nein', 
+              {
+                value: 'nein',
                 label: 'Nein, ich bin umsatzsteuerpflichtig',
-                description: 'Standard-Umsatzsteuer wird ausgewiesen'
-              }
-            ].map((option) => (
+                description: 'Standard-Umsatzsteuer wird ausgewiesen',
+              },
+            ].map(option => (
               <div
                 key={option.value}
                 className={`relative cursor-pointer rounded-lg border p-4 transition-colors ${
@@ -166,12 +169,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                     className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] mt-0.5"
                   />
                   <div className="ml-3">
-                    <div className="text-sm font-medium text-gray-900">
-                      {option.label}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {option.description}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                    <div className="text-xs text-gray-500 mt-1">{option.description}</div>
                   </div>
                 </div>
               </div>
@@ -205,17 +204,17 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  { 
-                    value: 'euer', 
+                  {
+                    value: 'euer',
                     label: 'EÜR (Einnahmen-Überschuss-Rechnung)',
-                    description: 'Für kleinere Unternehmen (Standard)'
+                    description: 'Für kleinere Unternehmen (Standard)',
                   },
-                  { 
-                    value: 'bilanz', 
+                  {
+                    value: 'bilanz',
                     label: 'Bilanzierung',
-                    description: 'Für größere Unternehmen (ab 60.000€ Gewinn)'
-                  }
-                ].map((option) => (
+                    description: 'Für größere Unternehmen (ab 60.000€ Gewinn)',
+                  },
+                ].map(option => (
                   <div
                     key={option.value}
                     className={`relative cursor-pointer rounded-lg border p-4 transition-colors ${
@@ -233,12 +232,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                         className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] mt-0.5"
                       />
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {option.label}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {option.description}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{option.description}</div>
                       </div>
                     </div>
                   </div>
@@ -248,22 +243,20 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
             {/* Preiseingabe */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Preiseingabe *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Preiseingabe *</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  { 
-                    value: 'netto', 
+                  {
+                    value: 'netto',
                     label: 'Netto-Preise (ohne USt)',
-                    description: 'USt wird automatisch hinzugerechnet'
+                    description: 'USt wird automatisch hinzugerechnet',
                   },
-                  { 
-                    value: 'brutto', 
+                  {
+                    value: 'brutto',
                     label: 'Brutto-Preise (inkl. USt)',
-                    description: 'USt ist bereits in Preisen enthalten'
-                  }
-                ].map((option) => (
+                    description: 'USt ist bereits in Preisen enthalten',
+                  },
+                ].map(option => (
                   <div
                     key={option.value}
                     className={`relative cursor-pointer rounded-lg border p-4 transition-colors ${
@@ -281,12 +274,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                         className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] mt-0.5"
                       />
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {option.label}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {option.description}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{option.description}</div>
                       </div>
                     </div>
                   </div>
@@ -301,7 +290,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               </label>
               <select
                 value={formData.taxRate}
-                onChange={(e) => handleChange('taxRate', e.target.value)}
+                onChange={e => handleChange('taxRate', e.target.value)}
                 className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               >
                 <option value="19">19% (Standard)</option>
@@ -315,13 +304,11 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
         {/* Tax Numbers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Steuernummer
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Steuernummer</label>
             <input
               type="text"
               value={formData.taxNumber}
-              onChange={(e) => handleChange('taxNumber', e.target.value)}
+              onChange={e => handleChange('taxNumber', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="z.B. 123/456/78901"
             />
@@ -333,7 +320,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <input
               type="text"
               value={formData.vatId}
-              onChange={(e) => handleChange('vatId', e.target.value)}
+              onChange={e => handleChange('vatId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="z.B. DE123456789"
             />
@@ -343,9 +330,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
       {/* Bankverbindung Section */}
       <div className="border-t border-gray-200 pt-8">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Bankverbindung
-        </h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Bankverbindung</h3>
         <p className="text-sm text-gray-600 mb-6">
           Für Auszahlungen und Rechnungsstellung benötigen wir Ihre Bankdaten.
         </p>
@@ -353,13 +338,11 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
         <div className="space-y-6">
           {/* Account Holder */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kontoinhaber *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Kontoinhaber *</label>
             <input
               type="text"
               value={formData.accountHolder}
-              onChange={(e) => handleChange('accountHolder', e.target.value)}
+              onChange={e => handleChange('accountHolder', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="Max Mustermann"
               required
@@ -369,13 +352,11 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
           {/* IBAN and BIC */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                IBAN *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">IBAN *</label>
               <input
                 type="text"
                 value={formData.iban}
-                onChange={(e) => handleChange('iban', e.target.value.toUpperCase())}
+                onChange={e => handleChange('iban', e.target.value.toUpperCase())}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] font-mono"
                 placeholder="DE89 3704 0044 0532 0130 00"
                 pattern="[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}"
@@ -383,13 +364,11 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                BIC *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">BIC *</label>
               <input
                 type="text"
                 value={formData.bic}
-                onChange={(e) => handleChange('bic', e.target.value.toUpperCase())}
+                onChange={e => handleChange('bic', e.target.value.toUpperCase())}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] font-mono"
                 placeholder="COBADEFFXXX"
                 pattern="[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?"
@@ -406,7 +385,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <input
               type="text"
               value={formData.bankName}
-              onChange={(e) => handleChange('bankName', e.target.value)}
+              onChange={e => handleChange('bankName', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               placeholder="z.B. Commerzbank AG"
             />

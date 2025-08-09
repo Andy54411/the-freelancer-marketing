@@ -88,21 +88,21 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
 
-          // Map existing company data to form
+          // Map existing company data to form - FIX: Use correct field names from registration
           setFormData({
             companyName: userData.companyName || '',
             businessType: userData.businessType || 'hybrid',
             industry: userData.step2?.industry || '',
-            address: userData.step2?.address || '',
-            street: userData.step2?.street || '',
-            city: userData.step2?.city || '',
-            postalCode: userData.step2?.postalCode || '',
-            country: userData.step2?.country || 'DE',
-            phone: userData.companyPhoneNumber || '',
+            address: userData.step2?.address || userData.companyAddressLine1ForBackend || '',
+            street: userData.step2?.street || userData.companyAddressLine1ForBackend || '',
+            city: userData.step2?.city || userData.companyCityForBackend || '',
+            postalCode: userData.step2?.postalCode || userData.companyPostalCodeForBackend || '',
+            country: userData.step2?.country || userData.companyCountryForBackend || 'DE',
+            phone: userData.companyPhoneNumber || userData.companyPhoneNumberForBackend || '',
             email: userData.email || '',
-            website: userData.step2?.website || '',
-            legalForm: userData.step2?.legalForm || '',
-            employees: userData.step2?.employees || '',
+            website: userData.step2?.website || userData.companyWebsiteForBackend || '',
+            legalForm: userData.step2?.legalForm || userData.legalForm || '',
+            employees: userData.step2?.employees || userData.employees || '',
             termsAccepted: !!userData.tosAcceptanceIp,
             managerData: userData.managerData || undefined,
           });

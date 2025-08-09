@@ -413,25 +413,53 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       console.log('🏢 Updating company document with profile data...');
       // Update company document with onboarding completion AND profile data
-      await updateDoc(doc(db, 'companies', companyId), {
+      // FIXED: Only update fields that are actually provided, preserve existing data
+      const companyUpdateData: any = {
         // Onboarding completion
         onboardingCompleted: true,
         onboardingCompletedAt: serverTimestamp(),
         profileComplete: true,
+      };
 
-        // Profile data for immediate use
-        companyName: allOnboardingData.companyName,
-        city: allOnboardingData.city,
-        country: allOnboardingData.country,
-        street: allOnboardingData.street,
-        postalCode: allOnboardingData.postalCode,
-        phone: allOnboardingData.phone,
-        email: allOnboardingData.email,
-        publicDescription: allOnboardingData.publicDescription,
-        hourlyRate: allOnboardingData.hourlyRate,
-        selectedCategory: allOnboardingData.selectedCategory,
-        selectedSubcategory: allOnboardingData.selectedSubcategory,
-      });
+      // Only add fields if they have values (don't overwrite with empty strings)
+      if (allOnboardingData.companyName) {
+        companyUpdateData.companyName = allOnboardingData.companyName;
+      }
+      if (allOnboardingData.city) {
+        companyUpdateData.city = allOnboardingData.city;
+      }
+      if (allOnboardingData.country) {
+        companyUpdateData.country = allOnboardingData.country;
+      }
+      if (allOnboardingData.street) {
+        companyUpdateData.street = allOnboardingData.street;
+      }
+      if (allOnboardingData.postalCode) {
+        companyUpdateData.postalCode = allOnboardingData.postalCode;
+      }
+      if (allOnboardingData.phone) {
+        companyUpdateData.phone = allOnboardingData.phone;
+      }
+      if (allOnboardingData.email) {
+        companyUpdateData.email = allOnboardingData.email;
+      }
+      if (allOnboardingData.publicDescription) {
+        companyUpdateData.publicDescription = allOnboardingData.publicDescription;
+      }
+      if (allOnboardingData.hourlyRate) {
+        companyUpdateData.hourlyRate = allOnboardingData.hourlyRate;
+      }
+      if (allOnboardingData.selectedCategory) {
+        companyUpdateData.selectedCategory = allOnboardingData.selectedCategory;
+      }
+      if (allOnboardingData.selectedSubcategory) {
+        companyUpdateData.selectedSubcategory = allOnboardingData.selectedSubcategory;
+      }
+      if (allOnboardingData.industry) {
+        companyUpdateData.industry = allOnboardingData.industry;
+      }
+
+      await updateDoc(doc(db, 'companies', companyId), companyUpdateData);
 
       // Serialize stepData for final save
       const serializedStepData = serializeStepData(stepData);
@@ -440,22 +468,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       // Update main user document with ALL onboarding data
       await updateDoc(doc(db, 'users', user.uid), allOnboardingData);
-
-      console.log('🏢 Updating company document with profile data...');
-      // Update company document with onboarding completion AND profile data
-      await updateDoc(doc(db, 'companies', companyId), {
-        // Onboarding completion
-        onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
-        profileComplete: true,
-        // Key profile data for search/listing
-        companyName: allOnboardingData.companyName,
-        industry: allOnboardingData.industry,
-        city: allOnboardingData.city,
-        hourlyRate: allOnboardingData.hourlyRate,
-        selectedCategory: allOnboardingData.selectedCategory,
-        selectedSubcategory: allOnboardingData.selectedSubcategory,
-      });
 
       // Final completion mit neuer Progress Library
       await completeOnboardingProcess(companyId);
