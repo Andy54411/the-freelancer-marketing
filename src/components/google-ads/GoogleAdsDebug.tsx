@@ -70,6 +70,8 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
   const [selectedTestMode, setSelectedTestMode] = useState(testMode);
   const [logs, setLogs] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('tests');
+  const [authDebugging, setAuthDebugging] = useState(false);
+  const [authDebugResult, setAuthDebugResult] = useState<any>(null);
 
   // Verfügbare Test-Modi
   const testModes = [
@@ -80,6 +82,64 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
     { value: 'campaigns', label: 'Kampagnen', description: 'Campaign Management Tests' },
     { value: 'metrics', label: 'Metriken', description: 'Performance Data Tests' },
   ];
+
+  // LIVE AUTH DEBUGGER - SOFORT SEHEN WAS SCHIEFGEHT!
+  const debugAuthFlow = async () => {
+    setAuthDebugging(true);
+    setAuthDebugResult(null);
+    addLog('🔥 STARTE LIVE AUTH DEBUGGING...');
+
+    try {
+      // 1. Test Auth Route
+      addLog('📡 1. Teste Auth Route...');
+      const authResponse = await fetch(`/api/google-ads/auth?companyId=${companyId}`);
+      const authData = await authResponse.json();
+
+      addLog(`   ✅ Auth Response: ${JSON.stringify(authData, null, 2)}`);
+
+      // 2. Test Status Route
+      addLog('📡 2. Teste Status Route...');
+      const statusResponse = await fetch(`/api/google-ads/status?companyId=${companyId}`);
+      const statusData = await statusResponse.json();
+
+      addLog(`   ✅ Status Response: ${JSON.stringify(statusData, null, 2)}`);
+
+      // 3. Test Real Customers
+      addLog('📡 3. Teste Customer Access...');
+      const realTestResponse = await fetch(
+        `/api/google-ads/real-test?companyId=${companyId}&test=customers`
+      );
+      const realTestData = await realTestResponse.json();
+
+      addLog(`   📊 Real Test Response: ${JSON.stringify(realTestData, null, 2)}`);
+
+      // 4. Analysiere das Problem
+      addLog('🔍 4. PROBLEMANALYSE:');
+      if (realTestData.configValidation?.isExpired) {
+        addLog('   🔴 PROBLEM GEFUNDEN: TOKEN IST ABGELAUFEN!');
+        addLog(`   ⏰ Token expired at: ${realTestData.configValidation.tokenExpiry}`);
+        addLog('   💡 LÖSUNG: Neue OAuth-Autorisierung erforderlich');
+        addLog(`   🔗 AUTH URL: ${authData.authUrl}`);
+      } else if (!realTestData.configValidation?.hasRefreshToken) {
+        addLog('   🔴 PROBLEM GEFUNDEN: KEIN REFRESH TOKEN!');
+        addLog('   💡 LÖSUNG: Erstmalige OAuth-Autorisierung erforderlich');
+      } else {
+        addLog('   ❓ UNBEKANNTES PROBLEM - Siehe Details oben');
+      }
+
+      setAuthDebugResult({
+        auth: authData,
+        status: statusData,
+        realTest: realTestData,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      addLog(`🔥 AUTH DEBUG FEHLER: ${error.message}`);
+      addLog(`📋 Stack: ${error.stack}`);
+    } finally {
+      setAuthDebugging(false);
+    }
+  };
 
   // Test-Suite ausführen
   const runTests = async (mode: string = selectedTestMode) => {
@@ -372,6 +432,21 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
                   {isRunning ? 'Tests laufen...' : 'Tests starten'}
                 </Button>
 
+                {/* LIVE AUTH DEBUGGER BUTTON */}
+                <Button
+                  onClick={debugAuthFlow}
+                  disabled={authDebugging}
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {authDebugging ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                  )}
+                  {authDebugging ? 'Auth Debug läuft...' : 'AUTH PROBLEM DEBUGGEN!'}
+                </Button>
+
                 {testResults && (
                   <Button variant="outline" onClick={exportResults}>
                     <Download className="w-4 h-4 mr-2" />
@@ -381,6 +456,128 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
               </div>
             </CardContent>
           </Card>
+
+          {/* AUTH DEBUG RESULTS - SOFORTIGE PROBLEMANALYSE */}
+          {authDebugResult && (
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-red-800">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>LIVE AUTH DEBUG ERGEBNISSE</span>
+                </CardTitle>
+                <CardDescription className="text-red-700">
+                  Detaillierte Analyse des Authentifizierungsproblems
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Token Status */}
+                {authDebugResult.realTest?.configValidation && (
+                  <div className="bg-white p-4 rounded border">
+                    <h4 className="font-bold text-red-800 mb-2">🔐 TOKEN STATUS:</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Refresh Token:</span>
+                        <span
+                          className={
+                            authDebugResult.realTest.configValidation.hasRefreshToken
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
+                          {authDebugResult.realTest.configValidation.hasRefreshToken
+                            ? '✅ Vorhanden'
+                            : '❌ Fehlt'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Access Token:</span>
+                        <span
+                          className={
+                            authDebugResult.realTest.configValidation.hasAccessToken
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
+                          {authDebugResult.realTest.configValidation.hasAccessToken
+                            ? '✅ Vorhanden'
+                            : '❌ Fehlt'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Token Expiry:</span>
+                        <span className="font-mono text-xs">
+                          {authDebugResult.realTest.configValidation.tokenExpiry}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Token Status:</span>
+                        <span
+                          className={
+                            !authDebugResult.realTest.configValidation.isExpired
+                              ? 'text-green-600'
+                              : 'text-red-600 font-bold'
+                          }
+                        >
+                          {!authDebugResult.realTest.configValidation.isExpired
+                            ? '✅ Gültig'
+                            : '🔴 ABGELAUFEN!'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Problem & Lösung */}
+                <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
+                  <h4 className="font-bold text-yellow-800 mb-2">💡 PROBLEM & LÖSUNG:</h4>
+                  {authDebugResult.realTest?.configValidation?.isExpired ? (
+                    <div className="space-y-2">
+                      <p className="text-yellow-800 font-medium">
+                        🔴 PROBLEM: OAuth Token ist abgelaufen!
+                      </p>
+                      <p className="text-yellow-700 text-sm">
+                        Der Refresh Token ist expired und kann keine neuen Access Tokens generieren.
+                      </p>
+                      <div className="mt-3">
+                        <p className="text-yellow-800 font-medium">
+                          ✅ LÖSUNG: Neue OAuth-Autorisierung
+                        </p>
+                        {authDebugResult.auth?.authUrl && (
+                          <div className="mt-2 p-3 bg-white rounded border">
+                            <p className="text-sm text-gray-700 mb-2">
+                              Klicke auf diesen Link für neue Autorisierung:
+                            </p>
+                            <a
+                              href={authDebugResult.auth.authUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline text-xs break-all"
+                            >
+                              {authDebugResult.auth.authUrl}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-yellow-800">
+                      Analyse läuft... Prüfe Debug Console für Details.
+                    </p>
+                  )}
+                </div>
+
+                {/* Raw Debug Data */}
+                <details className="bg-white p-4 rounded border">
+                  <summary className="font-medium text-gray-800 cursor-pointer">
+                    🔍 Vollständige Debug-Daten anzeigen
+                  </summary>
+                  <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-auto max-h-96">
+                    {JSON.stringify(authDebugResult, null, 2)}
+                  </pre>
+                </details>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Test Results */}
           {testResults && (
