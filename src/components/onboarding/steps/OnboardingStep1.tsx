@@ -88,11 +88,19 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
 
-          // Map existing company data to form - FIX: Use correct field names from registration
+          console.log('📊 Loading registration data for onboarding:', {
+            companyRegisterForBackend: userData.companyRegisterForBackend,
+            actualRepresentativeTitle: userData.actualRepresentativeTitle,
+            taxNumberForBackend: userData.taxNumberForBackend,
+            managerData: userData.managerData ? 'EXISTS' : 'NULL',
+            legalForm: userData.legalForm,
+          });
+
+          // Map existing company data to form - PRIORITY: Registration data first, then onboarding
           setFormData({
             companyName: userData.companyName || '',
             businessType: userData.businessType || 'hybrid',
-            industry: userData.step2?.industry || '',
+            industry: userData.step2?.industry || userData.industry || '',
             address: userData.step2?.address || userData.companyAddressLine1ForBackend || '',
             street: userData.step2?.street || userData.companyAddressLine1ForBackend || '',
             city: userData.step2?.city || userData.companyCityForBackend || '',
@@ -107,14 +115,36 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             managerData: userData.managerData || undefined,
           });
 
-          // Load manager data if exists
+          // Load manager data if exists from registration
           if (userData.managerData) {
+            console.log(
+              '✅ Loading existing manager data from registration:',
+              userData.managerData
+            );
             setManagerData(userData.managerData);
+          } else if (userData.actualRepresentativeTitle) {
+            // If we have representative title but no manager data, pre-fill with user info
+            console.log('🔄 Creating manager data from registration fields');
+            const inferredManagerData = {
+              firstName: userData.firstName || '',
+              lastName: userData.lastName || '',
+              position: userData.actualRepresentativeTitle || '',
+              email: userData.email || '',
+              phone: userData.phoneNumber || '',
+              dateOfBirth: userData.dateOfBirth || '',
+              address: userData.personalStreet || '',
+              street: userData.personalStreet || '',
+              city: userData.personalCity || '',
+              postalCode: userData.personalPostalCode || '',
+              country: userData.personalCountry || 'DE',
+            };
+            setManagerData(inferredManagerData);
           }
         }
 
-        // Load step data if exists
+        // Load step data if exists (onboarding data overrides registration where present)
         if (stepData[1]) {
+          console.log('🔄 Applying onboarding step data over registration data');
           setFormData(prev => ({ ...prev, ...stepData[1] }));
         }
       } catch (error) {

@@ -322,94 +322,137 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     try {
       console.log('📝 Submitting onboarding with stepData:', stepData);
 
-      // Prepare all onboarding data for final save - ensure all values are serializable
-      const allOnboardingData = {
-        // Step 1: Basic company info
-        companyName: String(stepData[1]?.companyName || ''),
-        businessType: String(stepData[1]?.businessType || ''),
-        industry: String(stepData[1]?.industry || ''),
-        address: String(stepData[1]?.address || ''),
-        street: String(stepData[1]?.street || ''),
-        city: String(stepData[1]?.city || ''),
-        postalCode: String(stepData[1]?.postalCode || ''),
-        country: String(stepData[1]?.country || 'DE'),
-        phone: String(stepData[1]?.phone || ''),
-        email: String(stepData[1]?.email || ''),
-        legalForm: String(stepData[1]?.legalForm || ''),
-        employees: String(stepData[1]?.employees || ''),
-        website: String(stepData[1]?.website || ''),
-        managerData: stepData[1]?.managerData
-          ? {
-              firstName: String(stepData[1].managerData.firstName || ''),
-              lastName: String(stepData[1].managerData.lastName || ''),
-              position: String(stepData[1].managerData.position || ''),
-              email: String(stepData[1].managerData.email || ''),
-              phone: String(stepData[1].managerData.phone || ''),
-              dateOfBirth: String(stepData[1].managerData.dateOfBirth || ''),
-              street: String(stepData[1].managerData.street || ''),
-              city: String(stepData[1].managerData.city || ''),
-              postalCode: String(stepData[1].managerData.postalCode || ''),
-              country: String(stepData[1].managerData.country || 'DE'),
-            }
-          : null,
+      // CRITICAL FIX: Load existing user data FIRST to preserve registration fields
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      const existingUserData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-        // Step 2: Banking & Accounting
-        kleinunternehmer: Boolean(stepData[2]?.kleinunternehmer),
-        taxRate: Number(stepData[2]?.taxRate || 19),
-        iban: String(stepData[2]?.iban || ''),
-        accountHolder: String(stepData[2]?.accountHolder || ''),
-        currency: String(stepData[2]?.currency || 'EUR'),
+      console.log('🔍 Loaded existing user data for preservation:', {
+        companyRegisterForBackend: existingUserData.companyRegisterForBackend,
+        actualRepresentativeTitle: existingUserData.actualRepresentativeTitle,
+        taxNumberForBackend: existingUserData.taxNumberForBackend,
+        companyPhoneNumberForBackend: existingUserData.companyPhoneNumberForBackend,
+        companyAddressLine1ForBackend: existingUserData.companyAddressLine1ForBackend,
+      });
 
-        // Step 3: Public Profile
-        companyLogo: String(stepData[3]?.companyLogo || ''),
-        profileBannerImage: String(stepData[3]?.profileBannerImage || ''),
-        publicDescription: String(stepData[3]?.publicDescription || ''),
-        hourlyRate: Number(stepData[3]?.hourlyRate || 0),
-        skills: Array.isArray(stepData[3]?.skills) ? stepData[3].skills.map(String) : [],
-        languages: Array.isArray(stepData[3]?.languages) ? stepData[3].languages.map(String) : [],
-        specialties: Array.isArray(stepData[3]?.specialties)
-          ? stepData[3].specialties.map(String)
-          : [],
-        servicePackages: Array.isArray(stepData[3]?.servicePackages)
-          ? stepData[3].servicePackages
-          : [],
-        portfolio: Array.isArray(stepData[3]?.portfolio) ? stepData[3].portfolio : [],
-        faqs: Array.isArray(stepData[3]?.faqs) ? stepData[3].faqs : [],
+      // Prepare onboarding data - ONLY SET FIELDS THAT HAVE VALUES
+      const onboardingUpdates: any = {};
 
-        // Step 4: Services & Categories
-        selectedCategory: String(stepData[4]?.selectedCategory || ''),
-        selectedSubcategory: String(stepData[4]?.selectedSubcategory || ''),
-        additionalCategories: Array.isArray(stepData[4]?.additionalCategories)
-          ? stepData[4].additionalCategories.map(String)
-          : [],
-        lat: Number(stepData[4]?.lat || 0),
-        lng: Number(stepData[4]?.lng || 0),
-        radiusKm: Number(stepData[4]?.radiusKm || 25),
-        serviceAreas: Array.isArray(stepData[4]?.serviceAreas)
-          ? stepData[4].serviceAreas.map(String)
-          : [],
-        availabilityType: String(stepData[4]?.availabilityType || 'flexible'),
-        advanceBookingHours: Number(stepData[4]?.advanceBookingHours || 24),
-        pricingModel: String(stepData[4]?.pricingModel || 'hourly'),
-        basePrice: Number(stepData[4]?.basePrice || 0),
-        travelCosts: Boolean(stepData[4]?.travelCosts),
-        travelCostPerKm: Number(stepData[4]?.travelCostPerKm || 0),
-        maxTravelDistance: Number(stepData[4]?.maxTravelDistance || 50),
+      // Step 1: Basic company info - Only add if values exist
+      if (stepData[1]?.companyName) onboardingUpdates.companyName = String(stepData[1].companyName);
+      if (stepData[1]?.businessType)
+        onboardingUpdates.businessType = String(stepData[1].businessType);
+      if (stepData[1]?.industry) onboardingUpdates.industry = String(stepData[1].industry);
+      if (stepData[1]?.address) onboardingUpdates.address = String(stepData[1].address);
+      if (stepData[1]?.street) onboardingUpdates.street = String(stepData[1].street);
+      if (stepData[1]?.city) onboardingUpdates.city = String(stepData[1].city);
+      if (stepData[1]?.postalCode) onboardingUpdates.postalCode = String(stepData[1].postalCode);
+      if (stepData[1]?.country) onboardingUpdates.country = String(stepData[1].country);
+      if (stepData[1]?.phone) onboardingUpdates.phone = String(stepData[1].phone);
+      if (stepData[1]?.email) onboardingUpdates.email = String(stepData[1].email);
+      if (stepData[1]?.legalForm) onboardingUpdates.legalForm = String(stepData[1].legalForm);
+      if (stepData[1]?.employees) onboardingUpdates.employees = String(stepData[1].employees);
+      if (stepData[1]?.website) onboardingUpdates.website = String(stepData[1].website);
 
-        // Step 5: Final confirmation
-        finalTermsAccepted: Boolean(stepData[5]?.finalTermsAccepted),
+      // CRITICAL: Only add managerData if it doesn't exist AND we have new data
+      if (stepData[1]?.managerData && !existingUserData.managerData) {
+        onboardingUpdates.managerData = {
+          firstName: String(stepData[1].managerData.firstName || ''),
+          lastName: String(stepData[1].managerData.lastName || ''),
+          position: String(stepData[1].managerData.position || ''),
+          email: String(stepData[1].managerData.email || ''),
+          phone: String(stepData[1].managerData.phone || ''),
+          dateOfBirth: String(stepData[1].managerData.dateOfBirth || ''),
+          street: String(stepData[1].managerData.street || ''),
+          city: String(stepData[1].managerData.city || ''),
+          postalCode: String(stepData[1].managerData.postalCode || ''),
+          country: String(stepData[1].managerData.country || 'DE'),
+        };
+      }
 
-        // Onboarding completion metadata
-        onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
-        profileComplete: true,
-        profileStatus: 'pending_review',
-      };
+      // Step 2: Banking & Accounting - Only if values exist
+      if (stepData[2]?.kleinunternehmer !== undefined)
+        onboardingUpdates.kleinunternehmer = Boolean(stepData[2].kleinunternehmer);
+      if (stepData[2]?.taxRate) onboardingUpdates.taxRate = Number(stepData[2].taxRate);
+      if (stepData[2]?.iban) onboardingUpdates.iban = String(stepData[2].iban);
+      if (stepData[2]?.accountHolder)
+        onboardingUpdates.accountHolder = String(stepData[2].accountHolder);
+      if (stepData[2]?.currency) onboardingUpdates.currency = String(stepData[2].currency);
 
-      console.log('💾 Saving allOnboardingData to users collection:', allOnboardingData);
+      // Step 3: Public Profile - Only if values exist
+      if (stepData[3]?.companyLogo) onboardingUpdates.companyLogo = String(stepData[3].companyLogo);
+      if (stepData[3]?.profileBannerImage)
+        onboardingUpdates.profileBannerImage = String(stepData[3].profileBannerImage);
+      if (stepData[3]?.publicDescription)
+        onboardingUpdates.publicDescription = String(stepData[3].publicDescription);
+      if (stepData[3]?.hourlyRate) onboardingUpdates.hourlyRate = Number(stepData[3].hourlyRate);
+      if (Array.isArray(stepData[3]?.skills) && stepData[3].skills.length > 0) {
+        onboardingUpdates.skills = stepData[3].skills.map(String);
+      }
+      if (Array.isArray(stepData[3]?.languages) && stepData[3].languages.length > 0) {
+        onboardingUpdates.languages = stepData[3].languages.map(String);
+      }
+      if (Array.isArray(stepData[3]?.specialties) && stepData[3].specialties.length > 0) {
+        onboardingUpdates.specialties = stepData[3].specialties.map(String);
+      }
+      if (Array.isArray(stepData[3]?.servicePackages) && stepData[3].servicePackages.length > 0) {
+        onboardingUpdates.servicePackages = stepData[3].servicePackages;
+      }
+      if (Array.isArray(stepData[3]?.portfolio) && stepData[3].portfolio.length > 0) {
+        onboardingUpdates.portfolio = stepData[3].portfolio;
+      }
+      if (Array.isArray(stepData[3]?.faqs) && stepData[3].faqs.length > 0) {
+        onboardingUpdates.faqs = stepData[3].faqs;
+      }
 
-      // Update main user document with ALL onboarding data
-      await updateDoc(doc(db, 'users', user.uid), allOnboardingData);
+      // Step 4: Services & Categories - Only if values exist
+      if (stepData[4]?.selectedCategory)
+        onboardingUpdates.selectedCategory = String(stepData[4].selectedCategory);
+      if (stepData[4]?.selectedSubcategory)
+        onboardingUpdates.selectedSubcategory = String(stepData[4].selectedSubcategory);
+      if (
+        Array.isArray(stepData[4]?.additionalCategories) &&
+        stepData[4].additionalCategories.length > 0
+      ) {
+        onboardingUpdates.additionalCategories = stepData[4].additionalCategories.map(String);
+      }
+      if (stepData[4]?.lat) onboardingUpdates.lat = Number(stepData[4].lat);
+      if (stepData[4]?.lng) onboardingUpdates.lng = Number(stepData[4].lng);
+      if (stepData[4]?.radiusKm) onboardingUpdates.radiusKm = Number(stepData[4].radiusKm);
+      if (Array.isArray(stepData[4]?.serviceAreas) && stepData[4].serviceAreas.length > 0) {
+        onboardingUpdates.serviceAreas = stepData[4].serviceAreas.map(String);
+      }
+      if (stepData[4]?.availabilityType)
+        onboardingUpdates.availabilityType = String(stepData[4].availabilityType);
+      if (stepData[4]?.advanceBookingHours)
+        onboardingUpdates.advanceBookingHours = Number(stepData[4].advanceBookingHours);
+      if (stepData[4]?.pricingModel)
+        onboardingUpdates.pricingModel = String(stepData[4].pricingModel);
+      if (stepData[4]?.basePrice) onboardingUpdates.basePrice = Number(stepData[4].basePrice);
+      if (stepData[4]?.travelCosts !== undefined)
+        onboardingUpdates.travelCosts = Boolean(stepData[4].travelCosts);
+      if (stepData[4]?.travelCostPerKm)
+        onboardingUpdates.travelCostPerKm = Number(stepData[4].travelCostPerKm);
+      if (stepData[4]?.maxTravelDistance)
+        onboardingUpdates.maxTravelDistance = Number(stepData[4].maxTravelDistance);
+
+      // Step 5: Final confirmation
+      if (stepData[5]?.finalTermsAccepted !== undefined)
+        onboardingUpdates.finalTermsAccepted = Boolean(stepData[5].finalTermsAccepted);
+
+      // Onboarding completion metadata - ALWAYS SET
+      onboardingUpdates.onboardingCompleted = true;
+      onboardingUpdates.onboardingCompletedAt = serverTimestamp();
+      onboardingUpdates.profileComplete = true;
+      onboardingUpdates.profileStatus = 'pending_review';
+
+      console.log(
+        '💾 Conditional onboarding updates (preserving existing data):',
+        onboardingUpdates
+      );
+
+      // Update main user document with ONLY the onboarding fields that have values
+      await updateDoc(userDocRef, onboardingUpdates);
 
       console.log('🏢 Updating company document with profile data...');
       // Update company document with onboarding completion AND profile data
@@ -421,58 +464,57 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         profileComplete: true,
       };
 
-      // Only add fields if they have values (don't overwrite with empty strings)
-      if (allOnboardingData.companyName) {
-        companyUpdateData.companyName = allOnboardingData.companyName;
+      // Only add fields if they have values in onboarding data (don't overwrite with empty strings)
+      if (onboardingUpdates.companyName) {
+        companyUpdateData.companyName = onboardingUpdates.companyName;
       }
-      if (allOnboardingData.city) {
-        companyUpdateData.city = allOnboardingData.city;
+      if (onboardingUpdates.city) {
+        companyUpdateData.city = onboardingUpdates.city;
       }
-      if (allOnboardingData.country) {
-        companyUpdateData.country = allOnboardingData.country;
+      if (onboardingUpdates.country) {
+        companyUpdateData.country = onboardingUpdates.country;
       }
-      if (allOnboardingData.street) {
-        companyUpdateData.street = allOnboardingData.street;
+      if (onboardingUpdates.street) {
+        companyUpdateData.street = onboardingUpdates.street;
       }
-      if (allOnboardingData.postalCode) {
-        companyUpdateData.postalCode = allOnboardingData.postalCode;
+      if (onboardingUpdates.postalCode) {
+        companyUpdateData.postalCode = onboardingUpdates.postalCode;
       }
-      if (allOnboardingData.phone) {
-        companyUpdateData.phone = allOnboardingData.phone;
+      if (onboardingUpdates.phone) {
+        companyUpdateData.phone = onboardingUpdates.phone;
       }
-      if (allOnboardingData.email) {
-        companyUpdateData.email = allOnboardingData.email;
+      if (onboardingUpdates.email) {
+        companyUpdateData.email = onboardingUpdates.email;
       }
-      if (allOnboardingData.publicDescription) {
-        companyUpdateData.publicDescription = allOnboardingData.publicDescription;
+      if (onboardingUpdates.publicDescription) {
+        companyUpdateData.publicDescription = onboardingUpdates.publicDescription;
       }
-      if (allOnboardingData.hourlyRate) {
-        companyUpdateData.hourlyRate = allOnboardingData.hourlyRate;
+      if (onboardingUpdates.hourlyRate) {
+        companyUpdateData.hourlyRate = onboardingUpdates.hourlyRate;
       }
-      if (allOnboardingData.selectedCategory) {
-        companyUpdateData.selectedCategory = allOnboardingData.selectedCategory;
+      if (onboardingUpdates.selectedCategory) {
+        companyUpdateData.selectedCategory = onboardingUpdates.selectedCategory;
       }
-      if (allOnboardingData.selectedSubcategory) {
-        companyUpdateData.selectedSubcategory = allOnboardingData.selectedSubcategory;
+      if (onboardingUpdates.selectedSubcategory) {
+        companyUpdateData.selectedSubcategory = onboardingUpdates.selectedSubcategory;
       }
-      if (allOnboardingData.industry) {
-        companyUpdateData.industry = allOnboardingData.industry;
+      if (onboardingUpdates.industry) {
+        companyUpdateData.industry = onboardingUpdates.industry;
       }
 
       await updateDoc(doc(db, 'companies', companyId), companyUpdateData);
 
-      // Serialize stepData for final save
-      const serializedStepData = serializeStepData(stepData);
-
-      console.log('💾 Saving allOnboardingData to users collection:', allOnboardingData);
-
-      // Update main user document with ALL onboarding data
-      await updateDoc(doc(db, 'users', user.uid), allOnboardingData);
-
       // Final completion mit neuer Progress Library
       await completeOnboardingProcess(companyId);
 
-      console.log('✅ Onboarding completed successfully - all data saved');
+      console.log(
+        '✅ Onboarding completed successfully - registration data preserved, onboarding data added'
+      );
+      console.log('🔍 PRESERVED FIELDS:', {
+        companyRegisterForBackend: existingUserData.companyRegisterForBackend,
+        actualRepresentativeTitle: existingUserData.actualRepresentativeTitle,
+        taxNumberForBackend: existingUserData.taxNumberForBackend,
+      });
     } catch (error) {
       console.error('Error submitting onboarding:', error);
       throw error;

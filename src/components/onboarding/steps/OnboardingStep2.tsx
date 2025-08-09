@@ -54,7 +54,17 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
 
-          // Map existing data - FIX: Use correct field names from registration
+          console.log('📊 Loading registration tax/banking data for onboarding:', {
+            taxNumberForBackend: userData.taxNumberForBackend,
+            vatIdForBackend: userData.vatIdForBackend,
+            companyRegisterForBackend: userData.companyRegisterForBackend,
+            legalForm: userData.legalForm,
+            kleinunternehmer: userData.kleinunternehmer,
+            iban: userData.iban,
+            accountHolder: userData.accountHolder,
+          });
+
+          // Map existing data - PRIORITY: Registration data first, then step data
           setFormData({
             kleinunternehmer:
               userData.step3?.ust === 'kleinunternehmer'
@@ -72,10 +82,18 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             bic: userData.step4?.bic || '',
             bankName: userData.step4?.bankName || '',
           });
+
+          console.log('✅ Registration data loaded successfully for Step 2:', {
+            hasRegistrationTaxNumber: !!userData.taxNumberForBackend,
+            hasRegistrationVatId: !!userData.vatIdForBackend,
+            hasRegistrationIban: !!userData.iban,
+            hasRegistrationAccountHolder: !!userData.accountHolder,
+          });
         }
 
-        // Load step data if exists
+        // Load step data if exists (onboarding data overrides registration where present)
         if (stepData[2]) {
+          console.log('🔄 Applying onboarding step data over registration data');
           setFormData(prev => ({ ...prev, ...stepData[2] }));
         }
       } catch (error) {
