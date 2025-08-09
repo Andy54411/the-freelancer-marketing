@@ -94,6 +94,9 @@ export default function CompanyOnboardingDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedCompanyDetails, setSelectedCompanyDetails] =
+    useState<CompanyOnboardingOverview | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     loadCompaniesWithOnboardingStatus();
@@ -197,6 +200,11 @@ export default function CompanyOnboardingDashboard() {
       console.error('Error in bulk reject:', error);
       alert('Fehler beim Ablehnen der Unternehmen.');
     }
+  };
+
+  const handleShowDetails = (company: CompanyOnboardingOverview) => {
+    setSelectedCompanyDetails(company);
+    setShowDetailsModal(true);
   };
 
   const handleSingleApprove = async (companyUid: string) => {
@@ -506,7 +514,11 @@ export default function CompanyOnboardingDashboard() {
                     </td>
                     <td className="p-2">
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleShowDetails(company)}
+                        >
                           Details
                         </Button>
                         {company.onboardingStatus === 'completed' && (
@@ -540,6 +552,164 @@ export default function CompanyOnboardingDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Company Details Modal */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Unternehmensdetails</DialogTitle>
+            <DialogDescription>Detaillierte Informationen zum Onboarding-Prozess</DialogDescription>
+          </DialogHeader>
+
+          {selectedCompanyDetails && (
+            <div className="space-y-6">
+              {/* Basic Company Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600 mb-2">Firmeninformationen</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="font-medium">Firmenname:</span>{' '}
+                      {selectedCompanyDetails.companyName}
+                    </div>
+                    <div>
+                      <span className="font-medium">E-Mail:</span> {selectedCompanyDetails.email}
+                    </div>
+                    <div>
+                      <span className="font-medium">UID:</span> {selectedCompanyDetails.uid}
+                    </div>
+                    <div>
+                      <span className="font-medium">Registrierungsdatum:</span>{' '}
+                      {format(selectedCompanyDetails.registrationDate, 'dd.MM.yyyy HH:mm', {
+                        locale: de,
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600 mb-2">Onboarding Status</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="font-medium">Status:</span>{' '}
+                      {getStatusBadge(selectedCompanyDetails.onboardingStatus)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Aktueller Schritt:</span>{' '}
+                      {selectedCompanyDetails.currentStep}/5
+                    </div>
+                    <div>
+                      <span className="font-medium">Fortschritt:</span>{' '}
+                      {selectedCompanyDetails.completionPercentage}%
+                    </div>
+                    <div>
+                      <span className="font-medium">Letzte Aktivität:</span>{' '}
+                      {format(selectedCompanyDetails.lastActivity, 'dd.MM.yyyy HH:mm', {
+                        locale: de,
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div>
+                <h3 className="font-semibold text-sm text-gray-600 mb-2">Fortschrittsstatus</h3>
+                <div className="bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-[#14ad9f] h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${selectedCompanyDetails.completionPercentage}%` }}
+                  />
+                </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  {selectedCompanyDetails.completionPercentage}% abgeschlossen
+                </div>
+              </div>
+
+              {/* Completed Steps */}
+              <div>
+                <h3 className="font-semibold text-sm text-gray-600 mb-2">
+                  Abgeschlossene Schritte
+                </h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map(step => {
+                    const isCompleted = selectedCompanyDetails.stepsCompleted.includes(step);
+                    const isCurrent = step === selectedCompanyDetails.currentStep;
+                    return (
+                      <div
+                        key={step}
+                        className={`p-3 rounded-lg text-center text-sm ${
+                          isCompleted
+                            ? 'bg-green-100 text-green-800'
+                            : isCurrent
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <div className="font-medium">Schritt {step}</div>
+                        <div className="text-xs mt-1">
+                          {isCompleted ? '✓ Abgeschlossen' : isCurrent ? 'Aktuell' : 'Ausstehend'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legacy Company Info */}
+              {selectedCompanyDetails.isLegacyCompany && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-amber-800 mb-2">Legacy Unternehmen</h3>
+                  <p className="text-sm text-amber-700">
+                    Dieses Unternehmen wurde vor der Einführung des Onboarding-Prozesses registriert
+                    und erhält automatisch Bestandsschutz.
+                  </p>
+                  <div className="mt-2">
+                    <span className="font-medium">Registrierungsmethode:</span>{' '}
+                    {selectedCompanyDetails.registrationMethod}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              {selectedCompanyDetails.adminNotes && (
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600 mb-2">Admin Notizen</h3>
+                  <div className="bg-gray-50 border rounded-lg p-3 text-sm">
+                    {selectedCompanyDetails.adminNotes}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {selectedCompanyDetails.onboardingStatus === 'completed' && (
+                <div className="flex space-x-3 pt-4 border-t">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      handleSingleApprove(selectedCompanyDetails.uid);
+                      setShowDetailsModal(false);
+                    }}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Genehmigen
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      handleSingleReject(selectedCompanyDetails.uid);
+                      setShowDetailsModal(false);
+                    }}
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Ablehnen
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
