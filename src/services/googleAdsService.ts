@@ -18,7 +18,8 @@ import {
 class GoogleAdsService {
   private readonly API_VERSION = 'v17';
   private readonly BASE_URL = `https://googleads.googleapis.com/${this.API_VERSION}`;
-  private readonly OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2';
+  private readonly AUTH_URL = 'https://accounts.google.com/o/oauth2/v2';
+  private readonly TOKEN_URL = 'https://oauth2.googleapis.com';
 
   // OAuth2 Konfiguration
   private readonly SCOPES = ['https://www.googleapis.com/auth/adwords'];
@@ -71,7 +72,7 @@ class GoogleAdsService {
       state: companyId, // Company ID für Zuordnung
     });
 
-    return `${this.OAUTH_URL}/auth?${params.toString()}`;
+    return `${this.AUTH_URL}/auth?${params.toString()}`;
   }
 
   /**
@@ -96,7 +97,7 @@ class GoogleAdsService {
         };
       }
 
-      const response = await fetch(`${this.OAUTH_URL}/token`, {
+      const response = await fetch(`${this.TOKEN_URL}/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -146,7 +147,7 @@ class GoogleAdsService {
     refreshToken: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsTokenResponse>> {
     try {
-      const response = await fetch(`${this.OAUTH_URL}/token`, {
+      const response = await fetch(`${this.TOKEN_URL}/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
