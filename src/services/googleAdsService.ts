@@ -282,30 +282,12 @@ class GoogleAdsService {
       );
 
       if (!response.success) {
-        console.warn(
-          'Initial customer list failed, returning minimal success for OAuth completion:',
-          response.error
-        );
+        console.error('Customer list API failed:', response.error);
 
-        // Return minimal success so OAuth can complete
-        // The customer list can be fetched later once the connection is established
+        // Return the actual error instead of falling back
         return {
-          success: true,
-          data: {
-            customers: [
-              {
-                id: 'pending-setup',
-                name: 'Google Ads Account (Setup Required)',
-                currency: 'EUR',
-                timeZone: 'Europe/Berlin',
-                customerId: 'pending-setup',
-                testAccount: false,
-                status: 'ENABLED' as const,
-                linked: true,
-                accessLevel: 'STANDARD' as const,
-              },
-            ],
-          },
+          success: false,
+          error: response.error as GoogleAdsError,
         };
       }
 
@@ -354,25 +336,14 @@ class GoogleAdsService {
         data: { customers },
       };
     } catch (error) {
-      console.warn('getCustomers failed, returning minimal success for OAuth completion:', error);
+      console.error('getCustomers failed with error:', error);
 
-      // Return minimal success so OAuth can complete
       return {
-        success: true,
-        data: {
-          customers: [
-            {
-              id: 'error-fallback',
-              name: 'Google Ads Account (Connection Established)',
-              currency: 'EUR',
-              timeZone: 'Europe/Berlin',
-              customerId: 'error-fallback',
-              testAccount: false,
-              status: 'ENABLED' as const,
-              linked: true,
-              accessLevel: 'STANDARD' as const,
-            },
-          ],
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: 'Failed to fetch customers',
+          details: error,
         },
       };
     }
@@ -401,43 +372,18 @@ class GoogleAdsService {
           },
         };
       } else {
-        // If API call fails but we have tokens, consider it connected with limited access
-        if (config.accessToken && config.refreshToken) {
-          return {
-            status: 'CONNECTED',
-            lastSync: new Date(),
-            accountsConnected: 1,
-            quotaUsage: {
-              daily: { used: 0, limit: 15000 },
-              monthly: { used: 0, limit: 100000 },
-            },
-          };
-        } else {
-          return {
-            status: 'ERROR',
-            error: response.error as GoogleAdsError,
-            accountsConnected: 0,
-            quotaUsage: {
-              daily: { used: 0, limit: 15000 },
-              monthly: { used: 0, limit: 100000 },
-            },
-          };
-        }
-      }
-    } catch (error) {
-      // If we have valid tokens, consider it connected even if API calls fail
-      if (config.accessToken && config.refreshToken) {
+        // Return the actual API error
         return {
-          status: 'CONNECTED',
-          lastSync: new Date(),
-          accountsConnected: 1,
+          status: 'ERROR',
+          error: response.error as GoogleAdsError,
+          accountsConnected: 0,
           quotaUsage: {
             daily: { used: 0, limit: 15000 },
             monthly: { used: 0, limit: 100000 },
           },
         };
       }
-
+    } catch (error) {
       return {
         status: 'DISCONNECTED',
         error: {
