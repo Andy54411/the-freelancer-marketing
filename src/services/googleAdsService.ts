@@ -202,18 +202,31 @@ class GoogleAdsService {
     config: GoogleAdsOAuthConfig
   ): Promise<GoogleAdsApiResponse<GoogleAdsCustomerResponse>> {
     try {
-      const response = await this.makeApiRequest(
-        '/customers:listAccessibleCustomers',
-        'GET',
-        config
-      );
+      // Use the correct Google Ads API endpoint format
+      const response = await fetch(`${this.BASE_URL}/customers:listAccessibleCustomers`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${config.accessToken}`,
+          'developer-token': config.developerToken,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (!response.success) {
-        return response;
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: {
+            code: data.error?.code || 'API_ERROR',
+            message: data.error?.message || 'Failed to fetch customers',
+            details: data,
+          },
+        };
       }
 
       const customers: GoogleAdsAccount[] =
-        response.data?.resourceNames?.map((resourceName: string) => {
+        data?.resourceNames?.map((resourceName: string) => {
           const customerId = resourceName.split('/')[1];
           return {
             id: customerId,
