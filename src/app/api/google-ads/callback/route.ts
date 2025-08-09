@@ -77,9 +77,17 @@ export async function GET(request: NextRequest) {
     try {
       const existingDoc = await getDoc(googleAdsDoc);
 
+      // Prepare data for Firestore (ensure all dates are Firestore Timestamps)
       const googleAdsData = {
         companyId,
-        accountConfig: oauthConfig,
+        accountConfig: {
+          clientId: oauthConfig.clientId,
+          clientSecret: oauthConfig.clientSecret,
+          refreshToken: oauthConfig.refreshToken,
+          accessToken: oauthConfig.accessToken,
+          tokenExpiry: oauthConfig.tokenExpiry, // Firestore will handle Date conversion
+          developerToken: oauthConfig.developerToken,
+        },
         linkedAccounts: customersResponse.data?.customers || [],
         lastSync: new Date(),
         syncFrequency: 'DAILY' as const,
