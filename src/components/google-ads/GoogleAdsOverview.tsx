@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { GoogleAdsConnectionStatus, GoogleAdsServiceStatus } from '@/types/googleAds';
+import { GoogleAdsSetupValidator } from '@/utils/googleAdsSetupValidator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
   CheckCircle2,
   Settings,
   TrendingUp,
+  XCircle,
 } from 'lucide-react';
 
 interface GoogleAdsOverviewProps {
@@ -28,11 +30,34 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [setupValidation, setSetupValidation] = useState<ReturnType<
+    typeof GoogleAdsSetupValidator.validateSetup
+  > | null>(null);
+  const [systemDiagnosis, setSystemDiagnosis] = useState<any>(null);
 
   // Status laden beim Component Mount
   useEffect(() => {
     loadConnectionStatus();
+    validateSetup();
+    runSystemDiagnosis();
   }, [companyId]);
+
+  const validateSetup = () => {
+    const validation = GoogleAdsSetupValidator.validateSetup();
+    setSetupValidation(validation);
+    console.log('Google Ads Setup Validation:', validation);
+  };
+
+  const runSystemDiagnosis = async () => {
+    try {
+      const response = await fetch('/api/google-ads/diagnose?detailed=true');
+      const data = await response.json();
+      setSystemDiagnosis(data);
+      console.log('Google Ads System Diagnosis:', data);
+    } catch (error) {
+      console.error('System diagnosis failed:', error);
+    }
+  };
 
   const loadConnectionStatus = async () => {
     try {
@@ -157,6 +182,49 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Setup Validation Warnings */}
+      {setupValidation && !setupValidation.valid && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-900">
+              <AlertCircle className="h-5 w-5" />
+              Konfiguration unvollständig
+            </CardTitle>
+            <CardDescription className="text-orange-700">
+              {GoogleAdsSetupValidator.getSetupSummary(setupValidation)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {setupValidation.errors.map((error, index) => (
+                <div key={index} className="flex items-start gap-2 text-sm">
+                  <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-red-700">{error}</span>
+                </div>
+              ))}
+
+              {setupValidation.warnings.map((warning, index) => (
+                <div key={index} className="flex items-start gap-2 text-sm">
+                  <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-orange-700">{warning}</span>
+                </div>
+              ))}
+
+              <div className="mt-4 p-3 bg-white rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-2">Setup-Anleitung:</h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  {GoogleAdsSetupValidator.generateSetupInstructions(setupValidation).map(
+                    (instruction, index) => (
+                      <div key={index}>{instruction}</div>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Connection Status Card */}
       <Card>
         <CardHeader>
@@ -427,6 +495,111 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* System Diagnosis */}
+      {systemDiagnosis && (
+        <Card
+          className={
+            systemDiagnosis.status === 'READY'
+              ? 'border-green-200 bg-green-50'
+              : systemDiagnosis.status === 'PARTIAL'
+                ? 'border-yellow-200 bg-yellow-50'
+                : 'border-red-200 bg-red-50'
+          }
+        >
+          <CardHeader>
+            <CardTitle
+              className={
+                systemDiagnosis.status === 'READY'
+                  ? 'text-green-900'
+                  : systemDiagnosis.status === 'PARTIAL'
+                    ? 'text-yellow-900'
+                    : 'text-red-900'
+              }
+            >
+              System-Diagnose
+            </CardTitle>
+            <CardDescription
+              className={
+                systemDiagnosis.status === 'READY'
+                  ? 'text-green-700'
+                  : systemDiagnosis.status === 'PARTIAL'
+                    ? 'text-yellow-700'
+                    : 'text-red-700'
+              }
+            >
+              {systemDiagnosis.description}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Empfohlene Aktionen:</h4>
+                <div className="space-y-1">
+                  {systemDiagnosis.actionItems?.map((action: string, index: number) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <div className="h-4 w-4 border border-gray-400 rounded-sm mt-0.5 flex-shrink-0" />
+                      <span>{action}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {systemDiagnosis.details && (
+                <div className="pt-3 border-t">
+                  <details className="text-sm">
+                    <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
+                      Technische Details anzeigen
+                    </summary>
+                    <div className="mt-2 space-y-2 text-xs">
+                      <div>
+                        <span className="font-medium">Environment:</span>
+                        <span
+                          className={
+                            systemDiagnosis.details.environment.valid
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
+                          {systemDiagnosis.details.environment.valid ? ' ✓ Valid' : ' ✗ Invalid'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Service:</span>
+                        <span
+                          className={
+                            systemDiagnosis.details.service.available
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
+                          {systemDiagnosis.details.service.available
+                            ? ' ✓ Available'
+                            : ' ✗ Unavailable'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">API:</span>
+                        <span
+                          className={
+                            systemDiagnosis.details.api.accessible
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
+                          {systemDiagnosis.details.api.accessible
+                            ? ' ✓ Accessible'
+                            : ' ✗ Inaccessible'}
+                        </span>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

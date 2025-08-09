@@ -43,13 +43,22 @@ export async function GET(request: NextRequest) {
     const tokens = tokenResponse.data;
 
     // Prepare OAuth config
+    const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN!;
+
+    if (!developerToken) {
+      console.error('Missing Google Ads Developer Token');
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${companyId}/google-ads?error=missing_developer_token`
+      );
+    }
+
     const oauthConfig: GoogleAdsOAuthConfig = {
       clientId: process.env.GOOGLE_ADS_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
       refreshToken: tokens.refresh_token,
       accessToken: tokens.access_token,
       tokenExpiry: new Date(Date.now() + tokens.expires_in * 1000),
-      developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
+      developerToken,
     };
 
     // Get accessible customers

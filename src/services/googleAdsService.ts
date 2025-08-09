@@ -24,11 +24,45 @@ class GoogleAdsService {
   private readonly SCOPES = ['https://www.googleapis.com/auth/adwords'];
 
   /**
+   * ✅ Validiert die Google Ads Konfiguration
+   */
+  validateConfig(): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!process.env.GOOGLE_ADS_CLIENT_ID) {
+      errors.push('GOOGLE_ADS_CLIENT_ID is not configured');
+    }
+
+    if (!process.env.GOOGLE_ADS_CLIENT_SECRET) {
+      errors.push('GOOGLE_ADS_CLIENT_SECRET is not configured');
+    }
+
+    if (!process.env.GOOGLE_ADS_DEVELOPER_TOKEN) {
+      errors.push('GOOGLE_ADS_DEVELOPER_TOKEN is not configured');
+    }
+
+    if (!process.env.NEXT_PUBLIC_BASE_URL) {
+      errors.push('NEXT_PUBLIC_BASE_URL is not configured');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
    * ✅ OAuth2 Flow starten - Account-Verknüpfung
    */
   generateAuthUrl(companyId: string, redirectUri: string): string {
+    const clientId = process.env.GOOGLE_ADS_CLIENT_ID!;
+
+    if (!clientId) {
+      throw new Error('Google Ads Client ID not configured');
+    }
+
     const params = new URLSearchParams({
-      client_id: process.env.GOOGLE_ADS_CLIENT_ID!,
+      client_id: clientId,
       redirect_uri: redirectUri,
       scope: this.SCOPES.join(' '),
       response_type: 'code',
@@ -48,14 +82,28 @@ class GoogleAdsService {
     redirectUri: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsTokenResponse>> {
     try {
+      const clientId = process.env.GOOGLE_ADS_CLIENT_ID!;
+      const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET!;
+
+      if (!clientId || !clientSecret) {
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_CREDENTIALS',
+            message: 'Google Ads Client ID or Secret not configured',
+            details: { clientId: !!clientId, clientSecret: !!clientSecret },
+          },
+        };
+      }
+
       const response = await fetch(`${this.OAUTH_URL}/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          client_id: process.env.GOOGLE_ADS_CLIENT_ID!,
-          client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
+          client_id: clientId,
+          client_secret: clientSecret,
           code,
           grant_type: 'authorization_code',
           redirect_uri: redirectUri,
@@ -255,9 +303,22 @@ class GoogleAdsService {
     body?: any
   ): Promise<GoogleAdsApiResponse> {
     try {
+      const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN!;
+
+      if (!developerToken) {
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_DEVELOPER_TOKEN',
+            message: 'Google Ads Developer Token not configured',
+            details: {},
+          },
+        };
+      }
+
       const headers: Record<string, string> = {
         Authorization: `Bearer ${config.accessToken}`,
-        'developer-token': config.developerToken,
+        'developer-token': developerToken,
         'Content-Type': 'application/json',
       };
 
