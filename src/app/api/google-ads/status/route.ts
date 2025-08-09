@@ -23,12 +23,33 @@ export async function GET(request: NextRequest) {
         .doc('googleAds');
       const googleAdsSnap = await googleAdsDocRef.get();
 
+      console.log('🔍 Debug Google Ads Status Check:', {
+        companyId,
+        docExists: googleAdsSnap.exists,
+        docPath: `companies/${companyId}/integrations/googleAds`,
+        timestamp: new Date().toISOString(),
+      });
+
       if (!googleAdsSnap.exists) {
+        // Debug: Check if company document exists
+        const companyDoc = await db.collection('companies').doc(companyId).get();
+        console.log('🔍 Company document exists:', companyDoc.exists);
+
+        // Debug: List all companies to see available IDs
+        const companiesSnapshot = await db.collection('companies').limit(5).get();
+        const availableCompanyIds = companiesSnapshot.docs.map(doc => doc.id);
+        console.log('🔍 Available company IDs:', availableCompanyIds);
+
         return NextResponse.json({
           success: true,
           status: 'SETUP_REQUIRED',
           connected: false,
           message: 'Google Ads integration not configured',
+          debug: {
+            companyExists: companyDoc.exists,
+            availableCompanyIds,
+            searchedCompanyId: companyId,
+          },
         });
       }
 
