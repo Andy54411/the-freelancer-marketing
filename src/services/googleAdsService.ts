@@ -275,6 +275,7 @@ class GoogleAdsService {
       });
 
       // Use real Google Ads API to get accessible customers
+      // The correct Google Ads API endpoint for listing accessible customers
       const response = await this.makeApiRequest(
         '/customers:listAccessibleCustomers',
         'GET',
@@ -648,11 +649,13 @@ class GoogleAdsService {
       let apiUrl = '';
 
       if (endpoint === '/customers:listAccessibleCustomers') {
-        // This is the correct endpoint for listing accessible customers
-        apiUrl = `${this.BASE_URL}/customers:listAccessibleCustomers`;
-      } else if (endpoint.includes('googleAds:searchStream')) {
+        // The Google Ads API endpoint is slightly different
+        // It's not the standard googleapis URL but googleads specific
+        apiUrl = 'https://googleads.googleapis.com/v17/customers:listAccessibleCustomers';
+      } else if (endpoint.includes('/googleAds:searchStream')) {
         // Extract customer ID and build the search stream endpoint
-        const customerId = endpoint.split('/')[2]; // Extract from "/customers/{customerId}/googleAds:searchStream"
+        const parts = endpoint.split('/');
+        const customerId = parts[2]; // Extract from "/customers/{customerId}/googleAds:searchStream"
         apiUrl = `${this.BASE_URL}/customers/${customerId}/googleAds:searchStream`;
       } else if (endpoint.includes('/campaigns')) {
         // Extract customer ID from endpoint or use a default
@@ -662,7 +665,6 @@ class GoogleAdsService {
         // Default behavior
         apiUrl = `${this.BASE_URL}${endpoint}`;
       }
-
       const headers: Record<string, string> = {
         Authorization: `Bearer ${config.accessToken}`,
         'developer-token': developerToken,
