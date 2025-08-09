@@ -91,9 +91,21 @@ export async function GET(request: NextRequest) {
       // 🔄 AUTOMATISCHES TOKEN REFRESH wenn abgelaufen
       let currentConfig = config;
 
-      // Prüfe ob Token abgelaufen ist
+      // Prüfe ob Token abgelaufen ist (mit Firestore Timestamp Handling)
       const now = new Date();
-      const tokenExpiry = config.tokenExpiry ? new Date(config.tokenExpiry) : new Date(0);
+      let tokenExpiry: Date;
+
+      if (config.tokenExpiry) {
+        // Handle Firestore Timestamp: { _seconds: number, _nanoseconds: number }
+        if (config.tokenExpiry._seconds) {
+          tokenExpiry = new Date(config.tokenExpiry._seconds * 1000);
+        } else {
+          tokenExpiry = new Date(config.tokenExpiry);
+        }
+      } else {
+        tokenExpiry = new Date(0);
+      }
+
       const isExpired = now >= tokenExpiry;
 
       console.log('🔍 Token Status:', {
