@@ -1,0 +1,8 @@
+{
+  "web": {
+    "client_name": "Taskilo Google Ads Integration",
+    "redirect_uris": [
+      "https://taskilo.de/api/google-ads/callback"
+    ]
+  }
+}
