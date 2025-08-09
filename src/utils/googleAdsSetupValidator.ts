@@ -91,7 +91,12 @@ export class GoogleAdsSetupValidator {
    */
   private static isValidClientId(clientId: string): boolean {
     // Format: 1022290879475-ca1lvf8o1sau2f1gakf4qro1ondrfpti.apps.googleusercontent.com
-    return /^\d+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/.test(clientId);
+    // Weniger strikte Validation für Production
+    return (
+      clientId.includes('.apps.googleusercontent.com') &&
+      clientId.includes('-') &&
+      clientId.length > 20
+    );
   }
 
   /**
