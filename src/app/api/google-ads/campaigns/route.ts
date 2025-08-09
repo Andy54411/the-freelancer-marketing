@@ -66,7 +66,11 @@ export async function GET(request: NextRequest) {
       console.log('🔍 No customerId provided, fetching available customers...');
       const customersResponse = await googleAdsService.getCustomers(config);
 
-      if (customersResponse.success && customersResponse.data?.customers?.length > 0) {
+      if (
+        customersResponse.success &&
+        customersResponse.data?.customers &&
+        customersResponse.data.customers.length > 0
+      ) {
         // Use the first customer ID (excluding fallback)
         const realCustomer = customersResponse.data.customers.find(c => c.id !== 'pending-setup');
         customerId = realCustomer?.id || customersResponse.data.customers[0].id;
