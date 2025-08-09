@@ -20,6 +20,8 @@ import {
   Webhook,
   Bug,
   BarChart,
+  UserPlus,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +31,8 @@ export default function Sidebar() {
   const navItems = [
     { href: '/dashboard/admin', label: 'Übersicht', icon: Home },
     { href: '/dashboard/admin/companies', label: 'Unternehmen', icon: Users },
+    { href: '/dashboard/admin/company-onboarding', label: 'Company Onboarding', icon: UserPlus },
+    { href: '/dashboard/admin/legacy-migration', label: 'Legacy Migration', icon: Database },
     { href: '/dashboard/admin/invites', label: 'Einladungen', icon: ShieldCheck },
 
     // Monitoring & Analytics Section
