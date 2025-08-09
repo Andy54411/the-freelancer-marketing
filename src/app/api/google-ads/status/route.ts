@@ -16,12 +16,13 @@ export async function GET(request: NextRequest) {
 
     // Try to get Google Ads configuration using Admin SDK
     try {
-      const googleAdsDocRef = db
+      let googleAdsDocRef = db
         .collection('companies')
         .doc(companyId)
         .collection('integrations')
         .doc('googleAds');
-      const googleAdsSnap = await googleAdsDocRef.get();
+      let googleAdsSnap = await googleAdsDocRef.get();
+      let actualCompanyId = companyId;
 
       console.log('🔍 Debug Google Ads Status Check:', {
         companyId,
@@ -29,6 +30,27 @@ export async function GET(request: NextRequest) {
         docPath: `companies/${companyId}/integrations/googleAds`,
         timestamp: new Date().toISOString(),
       });
+
+      // If not found with provided companyId, search all companies for Google Ads config
+      if (!googleAdsSnap.exists) {
+        console.log(`🔍 Google Ads config not found for ${companyId}, searching all companies...`);
+
+        const companiesRef = db.collection('companies');
+        const companiesSnap = await companiesRef.get();
+
+        for (const companyDoc of companiesSnap.docs) {
+          const testGoogleAdsDocRef = companyDoc.ref.collection('integrations').doc('googleAds');
+          const testGoogleAdsSnap = await testGoogleAdsDocRef.get();
+
+          if (testGoogleAdsSnap.exists) {
+            console.log(`✅ Found Google Ads config for company: ${companyDoc.id}`);
+            googleAdsDocRef = testGoogleAdsDocRef;
+            googleAdsSnap = testGoogleAdsSnap;
+            actualCompanyId = companyDoc.id;
+            break;
+          }
+        }
+      }
 
       if (!googleAdsSnap.exists) {
         // Debug: Check if company document exists
@@ -62,6 +84,7 @@ export async function GET(request: NextRequest) {
           status: 'SETUP_REQUIRED',
           connected: false,
           message: 'No access token found',
+          actualCompanyId,
         });
       }
 
@@ -90,6 +113,8 @@ export async function GET(request: NextRequest) {
         lastSync: googleAdsData.lastSync?.toDate(),
         quotaUsage: connectionStatus.quotaUsage,
         error: connectionStatus.error,
+        actualCompanyId, // Include the actual company ID that was found
+        searchedCompanyId: companyId, // Include the original search ID
         integrationConfig: {
           syncFrequency: googleAdsData.syncFrequency,
           billingIntegration: googleAdsData.billingIntegration,
