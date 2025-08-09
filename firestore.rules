@@ -111,6 +111,12 @@ service cloud.firestore {
         // Onboarding-Status kann nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
         allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
       }
+
+      // --- INTEGRATIONS Subcollection für API-Integrationen (Google Ads, etc.) ---
+      match /integrations/{integration} {
+        // API-Integrationen können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
+      }
     }
 
     // --- eInvoices Collection (E-Rechnungen) ---

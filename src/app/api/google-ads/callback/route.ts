@@ -3,8 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { googleAdsService } from '@/services/googleAdsService';
-import { db } from '@/firebase/clients';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase/server';
 import { GoogleAdsOAuthConfig } from '@/types/googleAds';
 
 export async function GET(request: NextRequest) {
@@ -85,11 +84,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Save Google Ads configuration to Firestore
-    const googleAdsDoc = doc(db, 'companies', companyId, 'integrations', 'googleAds');
+    // Save Google Ads configuration to Firestore (using Admin SDK)
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('integrations')
+      .doc('googleAds');
 
     try {
-      const existingDoc = await getDoc(googleAdsDoc);
+      const existingDoc = await googleAdsDocRef.get();
 
       // Prepare data for Firestore (only store non-sensitive data)
       const googleAdsData = {
@@ -117,11 +120,11 @@ export async function GET(request: NextRequest) {
         updatedAt: new Date(),
       };
 
-      if (existingDoc.exists()) {
-        await updateDoc(googleAdsDoc, googleAdsData);
+      if (existingDoc.exists) {
+        await googleAdsDocRef.update(googleAdsData);
         console.log('✅ Google Ads config updated for company:', companyId);
       } else {
-        await setDoc(googleAdsDoc, {
+        await googleAdsDocRef.set({
           ...googleAdsData,
           createdAt: new Date(),
         });
