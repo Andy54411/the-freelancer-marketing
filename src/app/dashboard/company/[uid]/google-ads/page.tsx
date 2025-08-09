@@ -31,17 +31,22 @@ export default async function GoogleAdsPage({ params, searchParams }: GoogleAdsP
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Google Ads</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Google Ads Marketing</h1>
               <p className="mt-2 text-gray-600">
-                Verwalten Sie Ihre Google Ads Kampagnen und analysieren Sie deren Performance
+                Erweitern Sie Ihre Reichweite und gewinnen Sie neue Kunden mit professionellen
+                Google Ads Kampagnen
               </p>
             </div>
 
-            {/* Status Badge */}
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                PHASE 1: Setup
+            <div className="flex items-center space-x-3">
+              {/* Google Ads Logo */}
+              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#34A853" />
+                  <path d="M2 7v10l10 5V12L2 7z" fill="#4285F4" />
+                  <path d="M22 7v10l-10 5V12l10-5z" fill="#EA4335" />
+                </svg>
+                <span className="text-sm font-medium text-gray-700">Google Ads</span>
               </div>
             </div>
           </div>

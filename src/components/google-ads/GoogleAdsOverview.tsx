@@ -259,13 +259,25 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 {status && getStatusIcon(status.status)}
-                Verbindungsstatus
+                Google Ads Marketing
               </CardTitle>
-              <CardDescription>Status Ihrer Google Ads Integration</CardDescription>
+              <CardDescription>
+                {status?.status === 'CONNECTED'
+                  ? 'Ihre Kampagnen sind aktiv und bereit für neue Kunden'
+                  : 'Starten Sie mit Google Ads Marketing und erreichen Sie mehr Kunden'}
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge className={getStatusColor(status?.status || 'SETUP_REQUIRED')}>
-                {status?.status || 'UNBEKANNT'}
+                {status?.status === 'CONNECTED'
+                  ? 'AKTIV'
+                  : status?.status === 'SETUP_REQUIRED'
+                    ? 'BEREIT ZUM START'
+                    : status?.status === 'ERROR'
+                      ? 'VERBINDUNG ERFORDERLICH'
+                      : status?.status === 'DISCONNECTED'
+                        ? 'GETRENNT'
+                        : 'UNBEKANNT'}
               </Badge>
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -275,63 +287,85 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
         </CardHeader>
         <CardContent>
           {status?.status === 'SETUP_REQUIRED' && (
-            <div className="space-y-4">
-              <Alert>
-                <Settings className="h-4 w-4" />
-                <AlertDescription>
-                  Google Ads ist noch nicht konfiguriert. Verbinden Sie Ihr Google Ads Account um zu
-                  beginnen.
-                </AlertDescription>
-              </Alert>
-
-              <Button
-                onClick={handleConnect}
-                disabled={connecting}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
-              >
-                {connecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verbinde...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Google Ads verbinden
-                  </>
-                )}
-              </Button>
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-[#14ad9f] rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <TrendingUp className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Bereit für Google Ads Marketing
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Verbinden Sie Ihr Google Ads Konto und starten Sie noch heute mit professionellen
+                  Werbekampagnen. Erreichen Sie neue Kunden genau dann, wenn sie Ihre Services
+                  suchen.
+                </p>
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  size="lg"
+                  className="bg-[#14ad9f] hover:bg-[#129488] px-8 py-3"
+                >
+                  {connecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Wird verbunden...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      Jetzt Google Ads verbinden
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 
           {status?.status === 'CONNECTED' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Success State */}
+              <div className="text-center py-6 bg-green-50 rounded-lg">
+                <div className="w-16 h-16 bg-green-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-green-900 mb-2">Google Ads ist aktiv!</h3>
+                <p className="text-green-700">
+                  Ihre Kampagnen sind bereit. Verwalten Sie hier Ihre Anzeigen und analysieren Sie
+                  die Performance.
+                </p>
+              </div>
+
+              {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="text-sm text-green-600 font-medium">Verbundene Accounts</div>
-                  <div className="text-2xl font-bold text-green-900">
-                    {status.accountsConnected}
+                <div className="bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg p-4">
+                  <div className="text-sm text-[#14ad9f] font-medium">Verbundene Accounts</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {status.accountsConnected || 0}
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="text-sm text-blue-600 font-medium">Letzte Synchronisation</div>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-25 border border-blue-200 rounded-lg p-4">
+                  <div className="text-sm text-blue-600 font-medium">Letzte Aktualisierung</div>
                   <div className="text-sm text-blue-900">
-                    {status.lastSync ? new Date(status.lastSync).toLocaleString('de-DE') : 'Nie'}
+                    {status.lastSync
+                      ? new Date(status.lastSync).toLocaleString('de-DE')
+                      : 'Gerade eben'}
                   </div>
                 </div>
 
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <div className="text-sm text-purple-600 font-medium">API Quota (Täglich)</div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-25 border border-purple-200 rounded-lg p-4">
+                  <div className="text-sm text-purple-600 font-medium">Tägliche Abfragen</div>
                   <div className="text-sm text-purple-900">
-                    {status.quotaUsage?.daily.used} / {status.quotaUsage?.daily.limit}
+                    {status.quotaUsage?.daily.used || 0} von{' '}
+                    {status.quotaUsage?.daily.limit || 'unlimitiert'}
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-4">
                 <Button variant="outline" onClick={handleTestConnection} size="sm">
-                  Verbindung testen
+                  Verbindung prüfen
                 </Button>
 
                 <Button variant="outline" onClick={() => loadConnectionStatus()} size="sm">
@@ -342,33 +376,33 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
           )}
 
           {status?.status === 'ERROR' && (
-            <div className="space-y-4">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Fehler:</strong>{' '}
-                  {status.error?.message || 'Unbekannter Fehler beim Laden des Verbindungsstatus'}
-                  <span className="block mt-1 text-sm">
-                    Verbinden Sie Ihr Google Ads Account um fortzufahren.
-                  </span>
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex gap-2">
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <AlertCircle className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Verbindung erforderlich
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Es gab ein Problem beim Laden Ihrer Google Ads Konfiguration. Bitte verbinden Sie
+                  Ihr Google Ads Konto erneut.
+                </p>
                 <Button
                   onClick={handleConnect}
-                  className="bg-[#14ad9f] hover:bg-[#129488]"
+                  size="lg"
+                  className="bg-[#14ad9f] hover:bg-[#129488] px-8 py-3"
                   disabled={connecting}
                 >
                   {connecting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verbinde...
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Wird verbunden...
                     </>
                   ) : (
                     <>
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Google Ads verbinden
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      Google Ads erneut verbinden
                     </>
                   )}
                 </Button>
@@ -382,49 +416,72 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
           )}
 
           {status?.status === 'DISCONNECTED' && (
-            <div className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Die Verbindung zu Google Ads wurde getrennt. Stellen Sie die Verbindung wieder her
-                  um fortzufahren.
-                </AlertDescription>
-              </Alert>
-
-              <Button onClick={handleConnect} className="bg-[#14ad9f] hover:bg-[#129488]">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Neu verbinden
-              </Button>
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-yellow-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <AlertCircle className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Verbindung unterbrochen
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Die Verbindung zu Ihrem Google Ads Account wurde getrennt. Stellen Sie die
+                  Verbindung wieder her, um Ihre Kampagnen zu verwalten.
+                </p>
+                <Button
+                  onClick={handleConnect}
+                  size="lg"
+                  className="bg-[#14ad9f] hover:bg-[#129488] px-8 py-3"
+                  disabled={connecting}
+                >
+                  {connecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Wird verbunden...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      Verbindung wiederherstellen
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 
           {!status && (
-            <div className="space-y-4">
-              <Alert>
-                <Settings className="h-4 w-4" />
-                <AlertDescription>
-                  Google Ads ist noch nicht konfiguriert. Verbinden Sie Ihr Google Ads Account um zu
-                  beginnen.
-                </AlertDescription>
-              </Alert>
-
-              <Button
-                onClick={handleConnect}
-                disabled={connecting}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
-              >
-                {connecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verbinde...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Google Ads verbinden
-                  </>
-                )}
-              </Button>
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-[#14ad9f] rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <TrendingUp className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Google Ads Marketing starten
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Verbinden Sie Ihr Google Ads Konto und erreichen Sie neue Kunden mit gezielten
+                  Werbekampagnen.
+                </p>
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  size="lg"
+                  className="bg-[#14ad9f] hover:bg-[#129488] px-8 py-3"
+                >
+                  {connecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Wird verbunden...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      Google Ads verbinden
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -529,147 +586,48 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
         </Card>
       )}
 
-      {/* Development Status */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="text-blue-900">Entwicklungsstatus</CardTitle>
-          <CardDescription className="text-blue-700">
-            PHASE 1: Grundlagen & API Setup
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span>Google Ads API Konfiguration</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span>OAuth2-Flow für Account-Verknüpfung</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span>Token-Management System</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span>Grundlegendes Dashboard</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <div className="h-4 w-4 border-2 border-gray-300 rounded-full" />
-              <span>Kampagnen-Management (PHASE 2)</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <div className="h-4 w-4 border-2 border-gray-300 rounded-full" />
-              <span>Performance Analytics (PHASE 2)</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* System Diagnosis */}
-      {systemDiagnosis && (
-        <Card
-          className={
-            systemDiagnosis.status === 'READY'
-              ? 'border-green-200 bg-green-50'
-              : systemDiagnosis.status === 'PARTIAL'
-                ? 'border-yellow-200 bg-yellow-50'
-                : 'border-red-200 bg-red-50'
-          }
-        >
-          <CardHeader>
-            <CardTitle
-              className={
-                systemDiagnosis.status === 'READY'
-                  ? 'text-green-900'
-                  : systemDiagnosis.status === 'PARTIAL'
-                    ? 'text-yellow-900'
-                    : 'text-red-900'
-              }
-            >
-              System-Diagnose
-            </CardTitle>
-            <CardDescription
-              className={
-                systemDiagnosis.status === 'READY'
-                  ? 'text-green-700'
-                  : systemDiagnosis.status === 'PARTIAL'
-                    ? 'text-yellow-700'
-                    : 'text-red-700'
-              }
-            >
-              {systemDiagnosis.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Empfohlene Aktionen:</h4>
-                <div className="space-y-1">
-                  {systemDiagnosis.actionItems?.map((action: string, index: number) => (
-                    <div key={index} className="flex items-start gap-2 text-sm">
-                      <div className="h-4 w-4 border border-gray-400 rounded-sm mt-0.5 flex-shrink-0" />
-                      <span>{action}</span>
-                    </div>
-                  ))}
-                </div>
+      {/* Marketing Benefits Overview - Only show when not connected */}
+      {(!status || status?.status !== 'CONNECTED') && (
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {/* Benefit 1 */}
+          <Card className="border-[#14ad9f]/20 bg-gradient-to-br from-[#14ad9f]/5 to-white">
+            <CardHeader className="pb-3">
+              <div className="w-12 h-12 bg-[#14ad9f] rounded-lg flex items-center justify-center mb-3">
+                <TrendingUp className="h-6 w-6 text-white" />
               </div>
+              <CardTitle className="text-lg">Mehr Kunden erreichen</CardTitle>
+              <CardDescription>
+                Zeigen Sie Ihre Services genau dann, wenn potenzielle Kunden danach suchen
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-              {systemDiagnosis.details && (
-                <div className="pt-3 border-t">
-                  <details className="text-sm">
-                    <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
-                      Technische Details anzeigen
-                    </summary>
-                    <div className="mt-2 space-y-2 text-xs">
-                      <div>
-                        <span className="font-medium">Environment:</span>
-                        <span
-                          className={
-                            systemDiagnosis.details.environment.valid
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }
-                        >
-                          {systemDiagnosis.details.environment.valid ? ' ✓ Valid' : ' ✗ Invalid'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Service:</span>
-                        <span
-                          className={
-                            systemDiagnosis.details.service.available
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }
-                        >
-                          {systemDiagnosis.details.service.available
-                            ? ' ✓ Available'
-                            : ' ✗ Unavailable'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-medium">API:</span>
-                        <span
-                          className={
-                            systemDiagnosis.details.api.accessible
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }
-                        >
-                          {systemDiagnosis.details.api.accessible
-                            ? ' ✓ Accessible'
-                            : ' ✗ Inaccessible'}
-                        </span>
-                      </div>
-                    </div>
-                  </details>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          {/* Benefit 2 */}
+          <Card className="border-[#14ad9f]/20 bg-gradient-to-br from-[#14ad9f]/5 to-white">
+            <CardHeader className="pb-3">
+              <div className="w-12 h-12 bg-[#14ad9f] rounded-lg flex items-center justify-center mb-3">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle className="text-lg">Messbare Ergebnisse</CardTitle>
+              <CardDescription>
+                Sehen Sie genau, wie viele Kunden durch Ihre Anzeigen gewonnen wurden
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Benefit 3 */}
+          <Card className="border-[#14ad9f]/20 bg-gradient-to-br from-[#14ad9f]/5 to-white">
+            <CardHeader className="pb-3">
+              <div className="w-12 h-12 bg-[#14ad9f] rounded-lg flex items-center justify-center mb-3">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle className="text-lg">Sofort starten</CardTitle>
+              <CardDescription>
+                Ihre Anzeigen können bereits heute live gehen und neue Aufträge generieren
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
       )}
 
       {/* PHASE 2: Campaign Management Tabs */}

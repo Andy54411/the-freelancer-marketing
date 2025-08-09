@@ -18,7 +18,7 @@ import {
 class GoogleAdsService {
   private readonly API_VERSION = 'v17';
   private readonly BASE_URL = `https://googleads.googleapis.com/${this.API_VERSION}`;
-  private readonly OAUTH_URL = 'https://oauth2.googleapis.com';
+  private readonly OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2';
 
   // OAuth2 Konfiguration
   private readonly SCOPES = ['https://www.googleapis.com/auth/adwords'];
