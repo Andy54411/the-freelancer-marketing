@@ -6,6 +6,23 @@ import { GoogleAdsSetupValidator } from '@/utils/googleAdsSetupValidator';
 
 export async function GET(request: NextRequest) {
   try {
+    // Environment-Variablen direkt auslesen für Debugging
+    const envVars = {
+      clientId: process.env.GOOGLE_ADS_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET,
+      developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+    };
+
+    console.log('Environment Variables:', {
+      hasClientId: !!envVars.clientId,
+      hasClientSecret: !!envVars.clientSecret,
+      hasDeveloperToken: !!envVars.developerToken,
+      hasBaseUrl: !!envVars.baseUrl,
+      clientIdLength: envVars.clientId?.length,
+      clientSecretPrefix: envVars.clientSecret?.substring(0, 8),
+    });
+
     // Setup validation durchführen
     const validation = GoogleAdsSetupValidator.validateSetup();
 
@@ -13,17 +30,20 @@ export async function GET(request: NextRequest) {
     const systemCheck = {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
-      hasClientId: !!process.env.GOOGLE_ADS_CLIENT_ID,
-      hasClientSecret: !!process.env.GOOGLE_ADS_CLIENT_SECRET,
-      hasDeveloperToken: !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
-      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
-      configuredCount: [
-        process.env.GOOGLE_ADS_CLIENT_ID,
-        process.env.GOOGLE_ADS_CLIENT_SECRET,
-        process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
-        process.env.NEXT_PUBLIC_BASE_URL,
-      ].filter(Boolean).length,
+      hasClientId: !!envVars.clientId,
+      hasClientSecret: !!envVars.clientSecret,
+      hasDeveloperToken: !!envVars.developerToken,
+      hasBaseUrl: !!envVars.baseUrl,
+      configuredCount: Object.values(envVars).filter(Boolean).length,
       totalRequired: 4,
+      envVarsDebug: {
+        clientIdFormat: envVars.clientId
+          ? /^\d+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/.test(envVars.clientId)
+          : false,
+        clientSecretFormat: envVars.clientSecret
+          ? envVars.clientSecret.startsWith('GOCSPX-')
+          : false,
+      },
     };
 
     return NextResponse.json({

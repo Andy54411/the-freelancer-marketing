@@ -90,6 +90,7 @@ export class GoogleAdsSetupValidator {
    * Validiert OAuth2 Client ID Format
    */
   private static isValidClientId(clientId: string): boolean {
+    // Format: 1022290879475-ca1lvf8o1sau2f1gakf4qro1ondrfpti.apps.googleusercontent.com
     return /^\d+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/.test(clientId);
   }
 
