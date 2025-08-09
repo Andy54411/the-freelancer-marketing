@@ -196,33 +196,124 @@ class GoogleAdsService {
   }
 
   /**
+   * ✅ Detaillierte Customer-Informationen abrufen
+   */
+  async getCustomerDetails(
+    config: GoogleAdsOAuthConfig,
+    customerId: string
+  ): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      const query = `
+        SELECT 
+          customer.id,
+          customer.descriptive_name,
+          customer.currency_code,
+          customer.time_zone,
+          customer.test_account,
+          customer.status
+        FROM customer 
+        WHERE customer.id = ${customerId}
+      `;
+
+      const response = await this.makeApiRequest(
+        `/customers/${customerId}/googleAds:search`,
+        'POST',
+        config,
+        { query }
+      );
+
+      if (!response.success) {
+        return response;
+      }
+
+      const customerData = response.data?.results?.[0]?.customer;
+
+      if (!customerData) {
+        return {
+          success: false,
+          error: {
+            code: 'CUSTOMER_NOT_FOUND',
+            message: `Customer ${customerId} not found`,
+            details: response.data,
+          },
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          id: customerData.id,
+          descriptiveName: customerData.descriptive_name,
+          currencyCode: customerData.currency_code,
+          timeZone: customerData.time_zone,
+          testAccount: customerData.test_account,
+          status: customerData.status,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'NETWORK_ERROR',
+          message: 'Failed to fetch customer details',
+          details: error,
+        },
+      };
+    }
+  }
+
+  /**
    * ✅ Verfügbare Google Ads Accounts abrufen
    */
   async getCustomers(
     config: GoogleAdsOAuthConfig
   ): Promise<GoogleAdsApiResponse<GoogleAdsCustomerResponse>> {
     try {
-      // Temporarily return mock data until we resolve the correct Google Ads API endpoint
-      // The actual Google Ads API endpoint seems to be different from documentation
       console.log('Getting customers for config:', {
         hasAccessToken: !!config.accessToken,
         hasDeveloperToken: !!config.developerToken,
       });
 
-      // Return mock data for now to prevent hanging
-      const customers: GoogleAdsAccount[] = [
-        {
-          id: 'test-customer-1',
-          name: 'Test Customer Account',
-          currency: 'EUR',
-          timeZone: 'Europe/Berlin',
-          customerId: 'test-customer-1',
-          testAccount: true,
-          status: 'ENABLED' as const,
-          linked: false,
-          accessLevel: 'STANDARD' as const,
-        },
-      ];
+      // Use real Google Ads API to get accessible customers
+      const response = await this.makeApiRequest(
+        '/customers:listAccessibleCustomers',
+        'GET',
+        config
+      );
+
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error as GoogleAdsError,
+        };
+      }
+
+      // Transform API response to our customer format
+      const customers: GoogleAdsAccount[] = [];
+
+      if (response.data?.resourceNames) {
+        for (const resourceName of response.data.resourceNames) {
+          // Extract customer ID from resource name (format: customers/1234567890)
+          const customerId = resourceName.split('/')[1];
+
+          // Get detailed customer information
+          const customerDetails = await this.getCustomerDetails(config, customerId);
+
+          if (customerDetails.success && customerDetails.data) {
+            customers.push({
+              id: customerId,
+              name: customerDetails.data.descriptiveName || `Customer ${customerId}`,
+              currency: customerDetails.data.currencyCode || 'EUR',
+              timeZone: customerDetails.data.timeZone || 'Europe/Berlin',
+              customerId: customerId,
+              testAccount: customerDetails.data.testAccount || false,
+              status: customerDetails.data.status || 'ENABLED',
+              linked: true,
+              accessLevel: 'STANDARD',
+            });
+          }
+        }
+      }
 
       return {
         success: true,
@@ -233,7 +324,7 @@ class GoogleAdsService {
         success: false,
         error: {
           code: 'NETWORK_ERROR',
-          message: 'Failed to fetch customers - using mock data',
+          message: 'Failed to fetch customers',
           details: error,
         },
       };
