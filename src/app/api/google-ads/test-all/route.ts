@@ -43,8 +43,20 @@ export async function GET(request: NextRequest) {
         else results.summary.failed++;
       } catch (error: any) {
         // EXTREM detaillierte Fehlererfassung
+        console.error('🔥 Service Status Error Details:', error);
+
+        // Bessere Fehlermeldung extrahieren
+        const primaryError =
+          error.message ||
+          error.error_description ||
+          error.description ||
+          error.details ||
+          (error.response && JSON.stringify(error.response)) ||
+          (typeof error === 'string' ? error : 'Service status check failed');
+
         const errorDetails = {
-          message: error.message || 'Unknown error',
+          message: primaryError,
+          originalMessage: error.message,
           stack: error.stack,
           name: error.name,
           code: error.code,
@@ -76,7 +88,7 @@ export async function GET(request: NextRequest) {
         results.results.serviceStatus = {
           test: 'Service Status Check',
           success: false,
-          error: error.message,
+          error: primaryError,
           data: {
             errorDetails,
             debug: {
@@ -90,7 +102,7 @@ export async function GET(request: NextRequest) {
         results.summary.total++;
         results.summary.failed++;
         results.summary.errors.push(
-          `Service Status: ${error.message} (${error.name || 'Unknown Type'})`
+          `Service Status: ${primaryError} (${error.name || 'Unknown Type'})`
         );
       }
     }
@@ -120,8 +132,20 @@ export async function GET(request: NextRequest) {
         results.summary.passed++;
       } catch (error: any) {
         // EXTREM detaillierte Fehlererfassung für Auth Flow
+        console.error('🔥 Auth Flow Error Details:', error);
+
+        // Bessere Fehlermeldung extrahieren
+        const primaryError =
+          error.message ||
+          error.error_description ||
+          error.description ||
+          error.details ||
+          (error.response && JSON.stringify(error.response)) ||
+          `OAuth URL generation failed: Missing environment variables or invalid configuration`;
+
         const errorDetails = {
-          message: error.message || 'Unknown error',
+          message: primaryError,
+          originalMessage: error.message,
           stack: error.stack,
           name: error.name,
           code: error.code,
@@ -146,7 +170,7 @@ export async function GET(request: NextRequest) {
         results.results.authFlow = {
           test: 'OAuth URL Generation',
           success: false,
-          error: error.message,
+          error: primaryError,
           data: {
             errorDetails,
             debug: {
@@ -165,9 +189,7 @@ export async function GET(request: NextRequest) {
         };
         results.summary.total++;
         results.summary.failed++;
-        results.summary.errors.push(
-          `Auth Flow: ${error.message} (${error.name || 'Unknown Type'})`
-        );
+        results.summary.errors.push(`Auth Flow: ${primaryError} (${error.name || 'Unknown Type'})`);
       }
     }
 
@@ -213,8 +235,18 @@ export async function GET(request: NextRequest) {
       else results.summary.failed++;
     } catch (error: any) {
       // EXTREM detaillierte Fehlererfassung für Stored Config
+      console.error('🔥 Stored Config Error Details:', error);
+
+      // Bessere Fehlermeldung extrahieren
+      const primaryError =
+        error.message ||
+        error.code ||
+        error.details ||
+        `Firebase configuration access failed for company ${companyId}`;
+
       const errorDetails = {
-        message: error.message || 'Unknown error',
+        message: primaryError,
+        originalMessage: error.message,
         stack: error.stack,
         name: error.name,
         code: error.code,
@@ -228,7 +260,7 @@ export async function GET(request: NextRequest) {
       results.results.storedConfig = {
         test: 'Stored Configuration Check',
         success: false,
-        error: error.message,
+        error: primaryError,
         data: {
           errorDetails,
           debug: {
@@ -242,7 +274,7 @@ export async function GET(request: NextRequest) {
       results.summary.total++;
       results.summary.failed++;
       results.summary.errors.push(
-        `Stored Config: ${error.message} (${error.name || 'Unknown Type'})`
+        `Stored Config: ${primaryError} (${error.name || 'Unknown Type'})`
       );
     }
 
@@ -275,8 +307,19 @@ export async function GET(request: NextRequest) {
         else results.summary.failed++;
       } catch (error: any) {
         // EXTREM detaillierte Fehlererfassung für Customer Access
+        console.error('🔥 Customer Access Error Details:', error);
+
+        // Bessere Fehlermeldung extrahieren
+        const primaryError =
+          error.message ||
+          error.error_description ||
+          error.details ||
+          (error.response && JSON.stringify(error.response)) ||
+          `Failed to fetch accessible customers - Token may be expired or invalid`;
+
         const errorDetails = {
-          message: error.message || 'Unknown error',
+          message: primaryError,
+          originalMessage: error.message,
           stack: error.stack,
           name: error.name,
           code: error.code,
@@ -310,7 +353,7 @@ export async function GET(request: NextRequest) {
         results.results.customerAccess = {
           test: 'Accessible Customers',
           success: false,
-          error: error.message,
+          error: primaryError,
           data: {
             errorDetails,
             debug: {
@@ -324,7 +367,7 @@ export async function GET(request: NextRequest) {
         results.summary.total++;
         results.summary.failed++;
         results.summary.errors.push(
-          `Customer Access: ${error.message} (${error.name || 'Unknown Type'})`
+          `Customer Access: ${primaryError} (${error.name || 'Unknown Type'})`
         );
       }
     }
