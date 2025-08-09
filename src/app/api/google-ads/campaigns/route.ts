@@ -12,31 +12,75 @@ import type { GoogleAdsOAuthConfig, CreateCampaignRequest } from '@/types/google
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const customerId = searchParams.get('customerId');
+    const companyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
+    const providedCustomerId = searchParams.get('customerId');
 
-    if (!customerId) {
-      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
-    }
+    console.log('🎯 Campaigns API called with:', { companyId, providedCustomerId });
 
-    // OAuth Config validieren
-    const configValidation = GoogleAdsSetupValidator.validateSetup();
-    if (!configValidation.valid) {
+    // Get real stored config from Firestore
+    const { db } = await import('@/firebase/server');
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('integrations')
+      .doc('googleAds');
+
+    const googleAdsSnap = await googleAdsDocRef.get();
+
+    if (!googleAdsSnap.exists) {
       return NextResponse.json(
         {
-          error: 'Google Ads configuration invalid',
-          details: configValidation.errors,
+          error: 'No Google Ads configuration found',
+          companyId,
+        },
+        { status: 404 }
+      );
+    }
+
+    const data = googleAdsSnap.data();
+    const accountConfig = data?.accountConfig;
+
+    if (!accountConfig?.accessToken) {
+      return NextResponse.json(
+        {
+          error: 'No access token found in configuration',
+          companyId,
         },
         { status: 400 }
       );
     }
 
-    // Environment Config laden
+    // Create real OAuth config from stored data
     const config = {
-      clientId: process.env.GOOGLE_ADS_CLIENT_ID!,
+      clientId: accountConfig.clientId,
       clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
-      refreshToken: '', // Wird beim ersten Auth gesetzt
-      developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
+      refreshToken: accountConfig.refreshToken,
+      accessToken: accountConfig.accessToken,
+      tokenExpiry: accountConfig.tokenExpiry?.toDate?.() || new Date(accountConfig.tokenExpiry),
+      developerToken: accountConfig.developerToken,
     } as GoogleAdsOAuthConfig;
+
+    // If no customerId provided, get the first available customer
+    let customerId = providedCustomerId;
+    if (!customerId) {
+      console.log('🔍 No customerId provided, fetching available customers...');
+      const customersResponse = await googleAdsService.getCustomers(config);
+
+      if (customersResponse.success && customersResponse.data?.customers?.length > 0) {
+        // Use the first customer ID (excluding fallback)
+        const realCustomer = customersResponse.data.customers.find(c => c.id !== 'pending-setup');
+        customerId = realCustomer?.id || customersResponse.data.customers[0].id;
+        console.log('🎯 Using auto-detected customerId:', customerId);
+      } else {
+        return NextResponse.json(
+          {
+            error: 'No customers found or failed to fetch customers',
+            details: customersResponse.error,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // Campaigns abrufen
     const result = await googleAdsService.getCampaigns(config, customerId);
