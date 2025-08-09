@@ -152,16 +152,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Check connection status with Client Library (mit aktuellen Token)
-      const connectionStatus = await googleAdsClientService.checkConnectionStatus(currentConfig);
+      // Bestimme Status basierend auf Firestore-Daten und Token-Gültigkeit
+      const isConnected = !!(currentConfig.refreshToken && currentConfig.accessToken && !isExpired);
+      const firestoreStatus = googleAdsData.status || 'SETUP_REQUIRED';
 
-      // Get basic account info if connected
+      // Get basic account info if available
       let accountsInfo = [];
-      if (
-        connectionStatus.success &&
-        connectionStatus.data?.connected &&
-        googleAdsData.linkedAccounts
-      ) {
+      if (googleAdsData.linkedAccounts) {
         accountsInfo = googleAdsData.linkedAccounts.map((account: any) => ({
           id: account.id,
           name: account.name,
@@ -172,15 +169,35 @@ export async function GET(request: NextRequest) {
         }));
       }
 
+      // Optional: Teste Google Ads API-Verbindung, aber verwende es nicht für Status
+      let connectionTest = null;
+      try {
+        connectionTest = await googleAdsClientService.checkConnectionStatus(currentConfig);
+      } catch (testError) {
+        console.log(
+          '📋 Google Ads API Test fehlgeschlagen (ignoriert für Status):',
+          testError.message
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        status: connectionStatus.data?.connected ? 'CONNECTED' : 'DISCONNECTED',
-        connected: connectionStatus.data?.connected,
-        accountsConnected: connectionStatus.data?.hasCustomerAccess,
+        status: isConnected ? 'CONNECTED' : 'DISCONNECTED',
+        connected: isConnected,
+        accountsConnected: accountsInfo.length > 0,
         accounts: accountsInfo,
-        lastSync: googleAdsData.lastSync?.toDate(),
-        lastChecked: connectionStatus.data?.lastChecked,
-        error: connectionStatus.data?.error,
+        lastSync: googleAdsData.lastSync?.toDate
+          ? googleAdsData.lastSync.toDate()
+          : googleAdsData.lastSync,
+        lastChecked: new Date().toISOString(),
+        firestoreStatus,
+        tokenStatus: {
+          hasRefreshToken: !!currentConfig.refreshToken,
+          hasAccessToken: !!currentConfig.accessToken,
+          isExpired,
+          tokenExpiry: tokenExpiry.toISOString(),
+        },
+        apiConnectionTest: connectionTest?.data || null,
         actualCompanyId, // Include the actual company ID that was found
         searchedCompanyId: companyId, // Include the original search ID
         integrationConfig: {
