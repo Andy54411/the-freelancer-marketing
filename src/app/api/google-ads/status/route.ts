@@ -15,61 +15,72 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
     }
 
-    // Get Google Ads configuration
-    const googleAdsDoc = doc(db, 'companies', companyId, 'integrations', 'googleAds');
-    const googleAdsSnap = await getDoc(googleAdsDoc);
+    // Try to get Google Ads configuration
+    try {
+      const googleAdsDoc = doc(db, 'companies', companyId, 'integrations', 'googleAds');
+      const googleAdsSnap = await getDoc(googleAdsDoc);
 
-    if (!googleAdsSnap.exists()) {
+      if (!googleAdsSnap.exists()) {
+        return NextResponse.json({
+          success: true,
+          status: 'SETUP_REQUIRED',
+          connected: false,
+          message: 'Google Ads integration not configured',
+        });
+      }
+
+      const googleAdsData = googleAdsSnap.data();
+      const config = googleAdsData?.accountConfig;
+
+      if (!config || !config.accessToken) {
+        return NextResponse.json({
+          success: true,
+          status: 'SETUP_REQUIRED',
+          connected: false,
+          message: 'No access token found',
+        });
+      }
+
+      // Check connection status
+      const connectionStatus = await googleAdsService.checkConnectionStatus(config);
+
+      // Get basic account info if connected
+      let accountsInfo = [];
+      if (connectionStatus.status === 'CONNECTED' && googleAdsData.linkedAccounts) {
+        accountsInfo = googleAdsData.linkedAccounts.map((account: any) => ({
+          id: account.id,
+          name: account.name,
+          currency: account.currency,
+          status: account.status,
+          linked: account.linked,
+          linkedAt: account.linkedAt,
+        }));
+      }
+
+      return NextResponse.json({
+        success: true,
+        status: connectionStatus.status,
+        connected: connectionStatus.status === 'CONNECTED',
+        accountsConnected: connectionStatus.accountsConnected,
+        accounts: accountsInfo,
+        lastSync: googleAdsData.lastSync?.toDate(),
+        quotaUsage: connectionStatus.quotaUsage,
+        error: connectionStatus.error,
+        integrationConfig: {
+          syncFrequency: googleAdsData.syncFrequency,
+          billingIntegration: googleAdsData.billingIntegration,
+        },
+      });
+    } catch (dbError) {
+      console.error('Firebase/Database Error:', dbError);
+      // Return setup required on database errors
       return NextResponse.json({
         success: true,
         status: 'SETUP_REQUIRED',
         connected: false,
-        message: 'Google Ads integration not configured',
+        message: 'Database connection error - please try connecting your Google Ads account',
       });
     }
-
-    const googleAdsData = googleAdsSnap.data();
-    const config = googleAdsData.accountConfig;
-
-    if (!config || !config.accessToken) {
-      return NextResponse.json({
-        success: true,
-        status: 'SETUP_REQUIRED',
-        connected: false,
-        message: 'No access token found',
-      });
-    }
-
-    // Check connection status
-    const connectionStatus = await googleAdsService.checkConnectionStatus(config);
-
-    // Get basic account info if connected
-    let accountsInfo = [];
-    if (connectionStatus.status === 'CONNECTED' && googleAdsData.linkedAccounts) {
-      accountsInfo = googleAdsData.linkedAccounts.map((account: any) => ({
-        id: account.id,
-        name: account.name,
-        currency: account.currency,
-        status: account.status,
-        linked: account.linked,
-        linkedAt: account.linkedAt,
-      }));
-    }
-
-    return NextResponse.json({
-      success: true,
-      status: connectionStatus.status,
-      connected: connectionStatus.status === 'CONNECTED',
-      accountsConnected: connectionStatus.accountsConnected,
-      accounts: accountsInfo,
-      lastSync: googleAdsData.lastSync?.toDate(),
-      quotaUsage: connectionStatus.quotaUsage,
-      error: connectionStatus.error,
-      integrationConfig: {
-        syncFrequency: googleAdsData.syncFrequency,
-        billingIntegration: googleAdsData.billingIntegration,
-      },
-    });
   } catch (error) {
     console.error('Google Ads Status Check Error:', error);
     return NextResponse.json({

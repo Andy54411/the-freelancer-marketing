@@ -341,26 +341,40 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
             </div>
           )}
 
-          {status?.status === 'ERROR' && status.error && (
+          {status?.status === 'ERROR' && (
             <div className="space-y-4">
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Fehler:</strong> {status.error.message}
-                  {status.error.retryable && (
-                    <span className="block mt-1 text-sm">
-                      Dieser Fehler kann möglicherweise durch einen erneuten Versuch behoben werden.
-                    </span>
-                  )}
+                  <strong>Fehler:</strong>{' '}
+                  {status.error?.message || 'Unbekannter Fehler beim Laden des Verbindungsstatus'}
+                  <span className="block mt-1 text-sm">
+                    Verbinden Sie Ihr Google Ads Account um fortzufahren.
+                  </span>
                 </AlertDescription>
               </Alert>
 
               <div className="flex gap-2">
-                <Button onClick={handleConnect} variant="outline" size="sm">
-                  Erneut verbinden
+                <Button
+                  onClick={handleConnect}
+                  className="bg-[#14ad9f] hover:bg-[#129488]"
+                  disabled={connecting}
+                >
+                  {connecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verbinde...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Google Ads verbinden
+                    </>
+                  )}
                 </Button>
 
-                <Button onClick={handleRefresh} variant="outline" size="sm">
+                <Button onClick={handleRefresh} variant="outline" size="sm" disabled={refreshing}>
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                   Status prüfen
                 </Button>
               </div>
@@ -380,6 +394,36 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
               <Button onClick={handleConnect} className="bg-[#14ad9f] hover:bg-[#129488]">
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Neu verbinden
+              </Button>
+            </div>
+          )}
+
+          {!status && (
+            <div className="space-y-4">
+              <Alert>
+                <Settings className="h-4 w-4" />
+                <AlertDescription>
+                  Google Ads ist noch nicht konfiguriert. Verbinden Sie Ihr Google Ads Account um zu
+                  beginnen.
+                </AlertDescription>
+              </Alert>
+
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="bg-[#14ad9f] hover:bg-[#129488]"
+              >
+                {connecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verbinde...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Google Ads verbinden
+                  </>
+                )}
               </Button>
             </div>
           )}
