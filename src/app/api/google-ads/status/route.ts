@@ -3,8 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { googleAdsService } from '@/services/googleAdsService';
-import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,12 +14,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
     }
 
-    // Try to get Google Ads configuration
+    // Try to get Google Ads configuration using Admin SDK
     try {
-      const googleAdsDoc = doc(db, 'companies', companyId, 'integrations', 'googleAds');
-      const googleAdsSnap = await getDoc(googleAdsDoc);
+      const googleAdsDocRef = db
+        .collection('companies')
+        .doc(companyId)
+        .collection('integrations')
+        .doc('googleAds');
+      const googleAdsSnap = await googleAdsDocRef.get();
 
-      if (!googleAdsSnap.exists()) {
+      if (!googleAdsSnap.exists) {
         return NextResponse.json({
           success: true,
           status: 'SETUP_REQUIRED',
@@ -101,14 +104,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
     }
 
-    const googleAdsDoc = doc(db, 'companies', companyId, 'integrations', 'googleAds');
-    const googleAdsSnap = await getDoc(googleAdsDoc);
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('integrations')
+      .doc('googleAds');
+    const googleAdsSnap = await googleAdsDocRef.get();
 
-    if (!googleAdsSnap.exists()) {
+    if (!googleAdsSnap.exists) {
       return NextResponse.json({ error: 'Google Ads integration not found' }, { status: 404 });
     }
 
     const googleAdsData = googleAdsSnap.data();
+
+    if (!googleAdsData) {
+      return NextResponse.json({ error: 'Google Ads configuration is empty' }, { status: 404 });
+    }
+
     const config = googleAdsData.accountConfig;
 
     switch (action) {
