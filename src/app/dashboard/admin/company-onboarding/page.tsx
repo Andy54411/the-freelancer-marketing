@@ -555,7 +555,7 @@ export default function CompanyOnboardingDashboard() {
 
       {/* Company Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Unternehmensdetails</DialogTitle>
             <DialogDescription>Detaillierte Informationen zum Onboarding-Prozess</DialogDescription>

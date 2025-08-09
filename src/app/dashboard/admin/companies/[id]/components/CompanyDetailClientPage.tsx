@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Briefcase as FiBriefcase,
   User as FiUser,
@@ -7,9 +8,13 @@ import {
   CheckCircle as FiCheckCircle,
   AlertCircle as FiAlertCircle,
   Shield as FiShield,
+  Clock,
+  TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DocumentViewer } from './DocumentViewer';
 import ActionButtons from './ActionButtons';
 import type { CompanyDetailData } from '../types';
@@ -42,7 +47,129 @@ interface CompanyDetailClientPageProps {
   data: CompanyDetailData;
 }
 
+interface OnboardingData {
+  status: string;
+  currentStep: number;
+  completionPercentage: number;
+  lastActivity: Date;
+  stepsCompleted: number[];
+  adminNotes?: string;
+  isLegacyCompany?: boolean;
+  registrationMethod?: string;
+}
+
 export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailClientPageProps) {
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [loadingOnboarding, setLoadingOnboarding] = useState(true);
+
+  // Lade Onboarding-Daten
+  useEffect(() => {
+    const loadOnboardingData = async () => {
+      try {
+        const response = await fetch('/api/admin/companies/onboarding', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            const company = result.companies.find((c: any) => c.uid === combinedData.id);
+            if (company) {
+              setOnboardingData({
+                status: company.onboardingStatus,
+                currentStep: company.currentStep,
+                completionPercentage: company.completionPercentage,
+                lastActivity: new Date(company.lastActivity),
+                stepsCompleted: company.stepsCompleted,
+                adminNotes: company.adminNotes,
+                isLegacyCompany: company.isLegacyCompany,
+                registrationMethod: company.registrationMethod,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading onboarding data:', error);
+      } finally {
+        setLoadingOnboarding(false);
+      }
+    };
+
+    loadOnboardingData();
+  }, [combinedData.id]);
+
+  // Genehmigen-Funktion
+  const handleApprove = async () => {
+    try {
+      const response = await fetch('/api/admin/companies/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId: combinedData.id }),
+      });
+
+      if (response.ok) {
+        // Onboarding-Daten neu laden
+        setOnboardingData(prev => (prev ? { ...prev, status: 'approved' } : null));
+        alert('Unternehmen erfolgreich genehmigt!');
+      } else {
+        alert('Fehler beim Genehmigen des Unternehmens.');
+      }
+    } catch (error) {
+      console.error('Error approving company:', error);
+      alert('Fehler beim Genehmigen des Unternehmens.');
+    }
+  };
+
+  // Ablehnen-Funktion
+  const handleReject = async () => {
+    const reason = prompt('Grund für die Ablehnung (optional):');
+    try {
+      const response = await fetch('/api/admin/companies/reject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId: combinedData.id,
+          reason: reason || 'Keine Begründung angegeben',
+        }),
+      });
+
+      if (response.ok) {
+        setOnboardingData(prev => (prev ? { ...prev, status: 'rejected' } : null));
+        alert('Unternehmen erfolgreich abgelehnt!');
+      } else {
+        alert('Fehler beim Ablehnen des Unternehmens.');
+      }
+    } catch (error) {
+      console.error('Error rejecting company:', error);
+      alert('Fehler beim Ablehnen des Unternehmens.');
+    }
+  };
+
+  // Status-Badge-Funktion
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800">Genehmigt</Badge>;
+      case 'completed':
+        return <Badge className="bg-blue-100 text-blue-800">Wartet auf Freigabe</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-yellow-100 text-yellow-800">In Bearbeitung</Badge>;
+      case 'pending_onboarding':
+        return <Badge className="bg-orange-100 text-orange-800">Warten auf Start</Badge>;
+      case 'grandfathered':
+        return <Badge className="bg-purple-100 text-purple-800">Legacy (Bestandsschutz)</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Abgelehnt</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
   const createdAt = combinedData.createdAt
     ? new Date(combinedData.createdAt).toLocaleDateString('de-DE', {
         day: '2-digit',
@@ -76,6 +203,144 @@ export function CompanyDetailClientPage({ data: combinedData }: CompanyDetailCli
           status={status}
         />
       </div>
+
+      {/* Onboarding Status Sektion */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Onboarding Status
+          </CardTitle>
+          <CardDescription>
+            Übersicht über den Onboarding-Fortschritt und Freigabe-Optionen
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingOnboarding ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+            </div>
+          ) : onboardingData ? (
+            <div className="space-y-6">
+              {/* Status Übersicht */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Status</div>
+                  <div>{getStatusBadge(onboardingData.status)}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Fortschritt</div>
+                  <div className="text-xl font-semibold">
+                    {onboardingData.completionPercentage}%
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Aktueller Schritt</div>
+                  <div className="text-xl font-semibold">{onboardingData.currentStep}/5</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Letzte Aktivität</div>
+                  <div className="text-sm">
+                    {new Date(onboardingData.lastActivity).toLocaleDateString('de-DE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Fortschrittsbalken */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Onboarding-Fortschritt</span>
+                  <span className="text-sm text-gray-500">
+                    {onboardingData.completionPercentage}%
+                  </span>
+                </div>
+                <div className="bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-[#14ad9f] h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${onboardingData.completionPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Schritte-Übersicht */}
+              <div>
+                <div className="text-sm font-medium mb-3">Onboarding-Schritte</div>
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map(step => {
+                    const isCompleted = onboardingData.stepsCompleted.includes(step);
+                    const isCurrent = step === onboardingData.currentStep;
+                    return (
+                      <div
+                        key={step}
+                        className={`p-3 rounded-lg text-center text-sm ${
+                          isCompleted
+                            ? 'bg-green-100 text-green-800'
+                            : isCurrent
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <div className="font-medium">Schritt {step}</div>
+                        <div className="text-xs mt-1">
+                          {isCompleted ? '✓ Abgeschlossen' : isCurrent ? 'Aktuell' : 'Ausstehend'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legacy Unternehmen Info */}
+              {onboardingData.isLegacyCompany && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-amber-800 mb-2">
+                    <FiShield className="w-4 h-4" />
+                    <span className="font-semibold">Legacy Unternehmen</span>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    Dieses Unternehmen wurde vor der Einführung des Onboarding-Prozesses registriert
+                    und erhält automatisch Bestandsschutz.
+                  </p>
+                  <div className="mt-2">
+                    <span className="font-medium">Registrierungsmethode:</span>{' '}
+                    {onboardingData.registrationMethod}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Notizen */}
+              {onboardingData.adminNotes && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="font-semibold text-blue-800 mb-2">Admin Notizen</div>
+                  <p className="text-sm text-blue-700">{onboardingData.adminNotes}</p>
+                </div>
+              )}
+
+              {/* Freigabe-Aktionen */}
+              {onboardingData.status === 'completed' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+                    <FiCheckCircle className="w-4 h-4 mr-2" />
+                    Unternehmen genehmigen
+                  </Button>
+                  <Button onClick={handleReject} variant="destructive">
+                    <FiAlertCircle className="w-4 h-4 mr-2" />
+                    Ablehnen
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">Keine Onboarding-Daten verfügbar</div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Haupt-Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
