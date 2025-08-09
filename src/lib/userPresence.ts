@@ -121,17 +121,35 @@ export class UserPresenceService {
       this.intervalId = null;
     }
 
-    // Setze den Benutzer SOFORT als offline
+    // Setze den Benutzer SOFORT als offline - aber nur wenn User noch authentifiziert ist
     const userPresenceRef = ref(realtimeDb, `presence/${this.userId}`);
     try {
-      await set(userPresenceRef, {
-        isOnline: false,
-        lastSeen: serverTimestamp(),
-        status: 'offline',
-      });
-      console.log(`[UserPresence] Successfully set user ${this.userId} offline`);
+      // Prüfe ob Firebase Auth noch verfügbar ist
+      const { auth } = await import('@/firebase/clients');
+      if (auth.currentUser) {
+        await set(userPresenceRef, {
+          isOnline: false,
+          lastSeen: serverTimestamp(),
+          status: 'offline',
+        });
+        console.log(`[UserPresence] Successfully set user ${this.userId} offline`);
+      } else {
+        console.log(`[UserPresence] User already logged out, skipping offline status update`);
+      }
     } catch (error) {
-      console.error('[UserPresence] Error setting user offline:', error);
+      // Ignoriere Permission-Fehler beim Cleanup nach Logout
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'PERMISSION_DENIED'
+      ) {
+        console.log(
+          `[UserPresence] Permission denied during cleanup (user likely logged out) - this is normal`
+        );
+      } else {
+        console.error('[UserPresence] Error setting user offline:', error);
+      }
     }
 
     this.isInitialized = false;
