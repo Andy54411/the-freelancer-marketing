@@ -111,7 +111,13 @@ const navigationItems: NavigationItem[] = [
     label: 'Google Ads',
     icon: FiTrendingUp,
     value: 'google-ads',
-    href: 'google-ads',
+    subItems: [
+      { label: 'Übersicht', value: 'google-ads-overview', href: 'google-ads' },
+      { label: 'Kampagnen', value: 'google-ads-campaigns', href: 'google-ads/campaigns' },
+      { label: 'Analytics', value: 'google-ads-analytics', href: 'google-ads/analytics' },
+      { label: 'Einstellungen', value: 'google-ads-settings', href: 'google-ads/settings' },
+      { label: 'Debug & Test', value: 'google-ads-debug', href: 'google-ads/debug' },
+    ],
   },
   {
     label: 'DATEV Integration',
