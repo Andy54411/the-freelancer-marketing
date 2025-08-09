@@ -1,16 +1,46 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, doc, updateDoc, serverTimestamp, where, getDoc } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  getDocs,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  where,
+  getDoc,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, Clock, AlertTriangle, Users, Building, TrendingUp, Download } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Users,
+  Building,
+  TrendingUp,
+  Download,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -19,7 +49,13 @@ interface CompanyOnboardingOverview {
   companyName: string;
   email: string;
   registrationDate: Date;
-  onboardingStatus: 'pending_onboarding' | 'in_progress' | 'completed' | 'approved' | 'rejected' | 'grandfathered';
+  onboardingStatus:
+    | 'pending_onboarding'
+    | 'in_progress'
+    | 'completed'
+    | 'approved'
+    | 'rejected'
+    | 'grandfathered';
   currentStep: number;
   completionPercentage: number;
   lastActivity: Date;
@@ -53,7 +89,7 @@ export default function CompanyOnboardingDashboard() {
     approved: 0,
     grandfathered: 0,
     avgCompletionTime: 0,
-    completionRate: 0
+    completionRate: 0,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -70,58 +106,26 @@ export default function CompanyOnboardingDashboard() {
   const loadCompaniesWithOnboardingStatus = async () => {
     try {
       setLoading(true);
-      
-      // Lade alle Companies (basierend auf bestehender users collection)
-      const usersQuery = query(collection(db, 'users'), where('user_type', '==', 'firma'));
-      const usersSnapshot = await getDocs(usersQuery);
-      
-      const companiesData: CompanyOnboardingOverview[] = [];
-      
-      for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data();
-        
-        // Lade Onboarding Status aus Sub-Collection
-        // Get onboarding status
-        let onboardingData: any = null;
-        try {
-          const onboardingDoc = await getDoc(doc(db, 'users', userDoc.id, 'onboarding', 'progress'));
-          if (onboardingDoc.exists()) {
-            onboardingData = onboardingDoc.data();
-          }
-        } catch (error) {
-          console.log('No onboarding data for company:', userDoc.id);
-        }
-        
-        // Berechne Legacy Status für bestehende Companies
-        const isLegacyCompany = !onboardingData || onboardingData?.registrationMethod === 'existing_grandfathered';
-        const registrationDate = userData.createdAt?.toDate() || new Date();
-        
-        // Default Onboarding Status für Legacy Companies
-        const defaultOnboardingStatus = isLegacyCompany ? 'grandfathered' : 'pending_onboarding';
-        
-        companiesData.push({
-          uid: userDoc.id,
-          companyName: userData.companyName || 'Unbekanntes Unternehmen',
-          email: userData.email || '',
-          registrationDate,
-          onboardingStatus: onboardingData?.status || defaultOnboardingStatus,
-          currentStep: onboardingData?.currentStep || 0,
-          completionPercentage: onboardingData?.completionPercentage || 0,
-          lastActivity: onboardingData?.lastAutoSave?.toDate() || registrationDate,
-          stepsCompleted: onboardingData?.stepsCompleted || [],
-          requiresApproval: (onboardingData?.status === 'completed'),
-          adminNotes: onboardingData?.adminNotes || '',
-          isLegacyCompany,
-          registrationMethod: onboardingData?.registrationMethod || (isLegacyCompany ? 'existing_grandfathered' : 'new_registration')
-        });
+
+      // Use admin API instead of direct Firestore queries
+      const response = await fetch('/api/admin/companies/onboarding', {
+        method: 'GET',
+        credentials: 'include', // Include admin session cookie
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
-      // Sortiere nach Registrierungsdatum (neueste zuerst)
-      companiesData.sort((a, b) => b.registrationDate.getTime() - a.registrationDate.getTime());
-      
-      setCompanies(companiesData);
-      calculateStats(companiesData);
-      
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load companies');
+      }
+
+      console.log('Loaded companies via API:', data.companies.length);
+      setCompanies(data.companies);
+      setStats(data.stats);
     } catch (error) {
       console.error('Error loading companies with onboarding status:', error);
     } finally {
@@ -129,53 +133,38 @@ export default function CompanyOnboardingDashboard() {
     }
   };
 
-  const calculateStats = (companiesData: CompanyOnboardingOverview[]) => {
-    const stats: OnboardingStats = {
-      totalCompanies: companiesData.length,
-      pendingOnboarding: companiesData.filter(c => c.onboardingStatus === 'pending_onboarding').length,
-      inProgress: companiesData.filter(c => c.onboardingStatus === 'in_progress').length,
-      awaitingApproval: companiesData.filter(c => c.onboardingStatus === 'completed').length,
-      approved: companiesData.filter(c => c.onboardingStatus === 'approved').length,
-      grandfathered: companiesData.filter(c => c.onboardingStatus === 'grandfathered').length,
-      avgCompletionTime: 0, // TODO: Calculate based on timestamps
-      completionRate: companiesData.length > 0 ? 
-        (companiesData.filter(c => c.onboardingStatus === 'approved' || c.onboardingStatus === 'grandfathered').length / companiesData.length) * 100 : 0
-    };
-    
-    setStats(stats);
-  };
-
   const applyFilters = () => {
     let filtered = companies;
-    
+
     // Search Filter
     if (searchTerm) {
-      filtered = filtered.filter(company => 
-        company.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.email.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        company =>
+          company.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     // Status Filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(company => company.onboardingStatus === statusFilter);
     }
-    
+
     setFilteredCompanies(filtered);
   };
 
   const handleBulkApprove = async () => {
     if (selectedCompanies.length === 0) return;
-    
+
     try {
       for (const companyUid of selectedCompanies) {
         await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
           status: 'approved',
           approvedAt: serverTimestamp(),
-          approvedBy: 'admin_bulk_action'
+          approvedBy: 'admin_bulk_action',
         });
       }
-      
+
       setSelectedCompanies([]);
       loadCompaniesWithOnboardingStatus();
       alert(`${selectedCompanies.length} Unternehmen erfolgreich genehmigt.`);
@@ -187,20 +176,20 @@ export default function CompanyOnboardingDashboard() {
 
   const handleBulkReject = async () => {
     if (selectedCompanies.length === 0) return;
-    
+
     const reason = prompt('Grund für Ablehnung:');
     if (!reason) return;
-    
+
     try {
       for (const companyUid of selectedCompanies) {
         await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
           status: 'rejected',
           rejectedAt: serverTimestamp(),
           rejectedBy: 'admin_bulk_action',
-          rejectionReason: reason
+          rejectionReason: reason,
         });
       }
-      
+
       setSelectedCompanies([]);
       loadCompaniesWithOnboardingStatus();
       alert(`${selectedCompanies.length} Unternehmen abgelehnt.`);
@@ -215,9 +204,9 @@ export default function CompanyOnboardingDashboard() {
       await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
         status: 'approved',
         approvedAt: serverTimestamp(),
-        approvedBy: 'admin_single_action'
+        approvedBy: 'admin_single_action',
       });
-      
+
       loadCompaniesWithOnboardingStatus();
       alert('Unternehmen erfolgreich genehmigt.');
     } catch (error) {
@@ -229,15 +218,15 @@ export default function CompanyOnboardingDashboard() {
   const handleSingleReject = async (companyUid: string) => {
     const reason = prompt('Grund für Ablehnung:');
     if (!reason) return;
-    
+
     try {
       await updateDoc(doc(db, 'users', companyUid, 'onboarding', 'progress'), {
         status: 'rejected',
         rejectedAt: serverTimestamp(),
         rejectedBy: 'admin_single_action',
-        rejectionReason: reason
+        rejectionReason: reason,
       });
-      
+
       loadCompaniesWithOnboardingStatus();
       alert('Unternehmen abgelehnt.');
     } catch (error) {
@@ -248,21 +237,21 @@ export default function CompanyOnboardingDashboard() {
 
   const exportToCSV = () => {
     const csvData = filteredCompanies.map(company => ({
-      'Firmenname': company.companyName,
+      Firmenname: company.companyName,
       'E-Mail': company.email,
-      'Registrierung': format(company.registrationDate, 'dd.MM.yyyy', { locale: de }),
+      Registrierung: format(company.registrationDate, 'dd.MM.yyyy', { locale: de }),
       'Onboarding Status': getStatusLabel(company.onboardingStatus),
       'Aktueller Schritt': `${company.currentStep}/5`,
       'Fortschritt %': company.completionPercentage,
       'Letzte Aktivität': format(company.lastActivity, 'dd.MM.yyyy HH:mm', { locale: de }),
-      'Typ': company.isLegacyCompany ? 'Legacy' : 'Neu'
+      Typ: company.isLegacyCompany ? 'Legacy' : 'Neu',
     }));
-    
+
     const csvContent = [
       Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
+      ...csvData.map(row => Object.values(row).join(',')),
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -272,33 +261,30 @@ export default function CompanyOnboardingDashboard() {
 
   const getStatusBadge = (status: string) => {
     const config = {
-      'pending_onboarding': { label: 'Ausstehend', className: 'bg-yellow-100 text-yellow-800' },
-      'in_progress': { label: 'In Bearbeitung', className: 'bg-blue-100 text-blue-800' },
-      'completed': { label: 'Wartet auf Freigabe', className: 'bg-purple-100 text-purple-800' },
-      'approved': { label: 'Genehmigt', className: 'bg-green-100 text-green-800' },
-      'rejected': { label: 'Abgelehnt', className: 'bg-red-100 text-red-800' },
-      'grandfathered': { label: 'Legacy (Bestandsschutz)', className: 'bg-gray-100 text-gray-800' }
+      pending_onboarding: { label: 'Ausstehend', className: 'bg-yellow-100 text-yellow-800' },
+      in_progress: { label: 'In Bearbeitung', className: 'bg-blue-100 text-blue-800' },
+      completed: { label: 'Wartet auf Freigabe', className: 'bg-purple-100 text-purple-800' },
+      approved: { label: 'Genehmigt', className: 'bg-green-100 text-green-800' },
+      rejected: { label: 'Abgelehnt', className: 'bg-red-100 text-red-800' },
+      grandfathered: { label: 'Legacy (Bestandsschutz)', className: 'bg-gray-100 text-gray-800' },
     };
-    
-    const { label, className } = config[status as keyof typeof config] || config['pending_onboarding'];
-    
-    return (
-      <Badge className={className}>
-        {label}
-      </Badge>
-    );
+
+    const { label, className } =
+      config[status as keyof typeof config] || config['pending_onboarding'];
+
+    return <Badge className={className}>{label}</Badge>;
   };
 
   const getStatusLabel = (status: string) => {
     const labels = {
-      'pending_onboarding': 'Ausstehend',
-      'in_progress': 'In Bearbeitung',
-      'completed': 'Wartet auf Freigabe',
-      'approved': 'Genehmigt',
-      'rejected': 'Abgelehnt',
-      'grandfathered': 'Legacy (Bestandsschutz)'
+      pending_onboarding: 'Ausstehend',
+      in_progress: 'In Bearbeitung',
+      completed: 'Wartet auf Freigabe',
+      approved: 'Genehmigt',
+      rejected: 'Abgelehnt',
+      grandfathered: 'Legacy (Bestandsschutz)',
     };
-    
+
     return labels[status as keyof typeof labels] || status;
   };
 
@@ -331,7 +317,7 @@ export default function CompanyOnboardingDashboard() {
             <div className="text-2xl font-bold">{stats.totalCompanies}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Warten auf Start</CardTitle>
@@ -341,7 +327,7 @@ export default function CompanyOnboardingDashboard() {
             <div className="text-2xl font-bold text-yellow-600">{stats.pendingOnboarding}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Warten auf Freigabe</CardTitle>
@@ -351,14 +337,16 @@ export default function CompanyOnboardingDashboard() {
             <div className="text-2xl font-bold text-purple-600">{stats.awaitingApproval}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Erfolgsquote</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completionRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.completionRate.toFixed(1)}%
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -375,10 +363,10 @@ export default function CompanyOnboardingDashboard() {
               <Input
                 placeholder="Firmenname oder E-Mail..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Status Filter</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -396,9 +384,14 @@ export default function CompanyOnboardingDashboard() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex items-end">
-              <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>
+              <Button
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                }}
+              >
                 Filter zurücksetzen
               </Button>
             </div>
@@ -443,8 +436,11 @@ export default function CompanyOnboardingDashboard() {
                   <th className="text-left p-2">
                     <input
                       type="checkbox"
-                      checked={selectedCompanies.length === filteredCompanies.length && filteredCompanies.length > 0}
-                      onChange={(e) => {
+                      checked={
+                        selectedCompanies.length === filteredCompanies.length &&
+                        filteredCompanies.length > 0
+                      }
+                      onChange={e => {
                         if (e.target.checked) {
                           setSelectedCompanies(filteredCompanies.map(c => c.uid));
                         } else {
@@ -462,17 +458,19 @@ export default function CompanyOnboardingDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCompanies.map((company) => (
+                {filteredCompanies.map(company => (
                   <tr key={company.uid} className="border-b hover:bg-gray-50">
                     <td className="p-2">
                       <input
                         type="checkbox"
                         checked={selectedCompanies.includes(company.uid)}
-                        onChange={(e) => {
+                        onChange={e => {
                           if (e.target.checked) {
                             setSelectedCompanies([...selectedCompanies, company.uid]);
                           } else {
-                            setSelectedCompanies(selectedCompanies.filter(id => id !== company.uid));
+                            setSelectedCompanies(
+                              selectedCompanies.filter(id => id !== company.uid)
+                            );
                           }
                         }}
                       />
@@ -486,9 +484,7 @@ export default function CompanyOnboardingDashboard() {
                     <td className="p-2 text-sm">
                       {format(company.registrationDate, 'dd.MM.yyyy', { locale: de })}
                     </td>
-                    <td className="p-2">
-                      {getStatusBadge(company.onboardingStatus)}
-                    </td>
+                    <td className="p-2">{getStatusBadge(company.onboardingStatus)}</td>
                     <td className="p-2">
                       <div className="flex items-center">
                         <div className="flex-1">
@@ -497,7 +493,7 @@ export default function CompanyOnboardingDashboard() {
                             <span className="font-medium">{company.completionPercentage}%</span>
                           </div>
                           <div className="mt-1 bg-gray-200 rounded-full h-2">
-                            <div 
+                            <div
                               className="bg-[#14ad9f] h-2 rounded-full transition-all duration-300"
                               style={{ width: `${company.completionPercentage}%` }}
                             />
@@ -515,15 +511,15 @@ export default function CompanyOnboardingDashboard() {
                         </Button>
                         {company.onboardingStatus === 'completed' && (
                           <>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               className="bg-green-600 hover:bg-green-700"
                               onClick={() => handleSingleApprove(company.uid)}
                             >
                               Genehmigen
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="destructive"
                               onClick={() => handleSingleReject(company.uid)}
                             >
@@ -537,11 +533,9 @@ export default function CompanyOnboardingDashboard() {
                 ))}
               </tbody>
             </table>
-            
+
             {filteredCompanies.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                Keine Unternehmen gefunden.
-              </div>
+              <div className="text-center py-8 text-gray-500">Keine Unternehmen gefunden.</div>
             )}
           </div>
         </CardContent>

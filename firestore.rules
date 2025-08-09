@@ -75,6 +75,9 @@ service cloud.firestore {
       match /onboarding/{document} {
         // Onboarding-Daten können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
         allow read, write: if (request.auth != null && request.auth.uid == userId) || isSupportStaff();
+        
+        // Support-Staff kann Onboarding-Status aller Companies auflisten (für Admin-Dashboard)
+        allow list: if isSupportStaff();
       }
     }
 
