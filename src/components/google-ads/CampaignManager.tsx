@@ -386,7 +386,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
                       </span>
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4" />
-                        Budget: {formatMetric(campaign.budget.amountMicros, 'currency')}/Tag
+                        Budget: {formatMetric(campaign.budget.amount, 'currency')}/Tag
                       </span>
                     </div>
                   </div>
@@ -449,7 +449,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
                       <span className="text-sm font-medium text-gray-600">CTR</span>
                     </div>
                     <p className="text-lg font-semibold">
-                      {formatMetric(campaign.metrics.clickThroughRate, 'percentage')}
+                      {formatMetric(campaign.metrics.ctr || 0, 'percentage')}
                     </p>
                   </div>
 
@@ -507,12 +507,14 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Tagesbudget</Label>
                     <p className="text-sm">
-                      {formatMetric(selectedCampaign.budget.amountMicros, 'currency')}
+                      {formatMetric(selectedCampaign.budget.amount, 'currency')}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Gebotsstrategie</Label>
-                    <p className="text-sm">{selectedCampaign.biddingStrategy.type}</p>
+                    <p className="text-sm">
+                      {selectedCampaign.biddingStrategy?.type || 'Nicht verfügbar'}
+                    </p>
                   </div>
                 </div>
               </TabsContent>
@@ -534,13 +536,13 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <Label className="text-sm font-medium text-gray-600">CTR</Label>
                     <p className="text-2xl font-bold text-[#14ad9f]">
-                      {formatMetric(selectedCampaign.metrics.clickThroughRate, 'percentage')}
+                      {formatMetric(selectedCampaign.metrics.ctr || 0, 'percentage')}
                     </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <Label className="text-sm font-medium text-gray-600">CPC</Label>
                     <p className="text-2xl font-bold text-[#14ad9f]">
-                      {formatMetric(selectedCampaign.metrics.costPerClick, 'currency')}
+                      {formatMetric(selectedCampaign.metrics.cpc || 0, 'currency')}
                     </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">

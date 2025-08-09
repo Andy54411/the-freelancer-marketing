@@ -182,6 +182,9 @@ importers:
       geofire-common:
         specifier: ^6.0.0
         version: 6.0.0
+      google-ads-api:
+        specifier: ^21.0.0
+        version: 21.0.0
       google-auth-library:
         specifier: ^10.1.0
         version: 10.2.1
@@ -956,6 +959,11 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  '@grpc/proto-loader@0.8.0':
+    resolution: {integrity: sha512-rc1hOQtjIWGxcxpb9aHAfLpIctjEnsDehj0DAiVfBlmT84uvR0uUtN2hEi/ecvWVjXUGf5qPF4qEgiLOx1YIMQ==}
+    engines: {node: '>=6'}
+    hasBin: true
+
   '@headlessui/react@2.2.7':
     resolution: {integrity: sha512-WKdTymY8Y49H8/gUc/lIyYK1M+/6dq0Iywh4zTZVAaiTDprRfioxSgD0wnXTQTBpjpGJuTL1NO/mqEvc//5SSg==}
     engines: {node: '>=10'}
@@ -1126,6 +1134,10 @@ packages:
   '@isaacs/fs-minipass@4.0.1':
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
+
+  '@isaacs/ttlcache@1.4.1':
+    resolution: {integrity: sha512-RQgQ4uQ+pLbqXfOmieB91ejmLwvSgv9nLx6sT6sD83s7umBypgg+OIBOBbEUiJXrfpnp9j0mRhYYdzp9uqq3lA==}
+    engines: {node: '>=12'}
 
   '@jridgewell/gen-mapping@0.3.12':
     resolution: {integrity: sha512-OuLGC46TjB5BbN1dH8JULVVZY4WTdkF7tV9Ys6wLL1rubZnCMstOhNHueU5bLCrnRuDhKPDM4g6sw4Bel5Gzqg==}
@@ -2890,6 +2902,9 @@ packages:
     peerDependencies:
       devtools-protocol: '*'
 
+  circ-json@1.0.4:
+    resolution: {integrity: sha512-/2NljkKlOCvNgs8jsIlJcCFhUfF6C1JJKM8PdJQ6HqIrqhJBouMcWFdeDJLNLZAadeTj0K9FMziH74hpEtAr1g==}
+
   cjs-module-lexer@1.2.3:
     resolution: {integrity: sha512-0TNiGstbQmCFwt4akjjBg5pLRTSyj/PkWQ1ZoO2zntmg9yLqSRxwEa4iCfQLGjqhiqBfOJa7W/E8wfGrTDmlZQ==}
 
@@ -3953,6 +3968,12 @@ packages:
     peerDependencies:
       csstype: ^3.0.10
 
+  google-ads-api@21.0.0:
+    resolution: {integrity: sha512-bw01qv6oA+0BaJy0g3Y6kmsrZ7v37a101cQv+VnX5Jh6CP7aR7ugk8TDtn19I/wueSaSF3K9DSPvivyVfP7+6A==}
+
+  google-ads-node@18.0.0:
+    resolution: {integrity: sha512-90k2Cu15RCP56kJdeKcyT2uZN2wyOQPOPmRFH4/aNjF+kwJwqS3JCrTUB+iZkJF41DQr9jibPkGEFEiTdttdOg==}
+
   google-auth-library@10.2.1:
     resolution: {integrity: sha512-HMxFl2NfeHYnaL1HoRIN1XgorKS+6CDaM+z9LSSN+i/nKDDL4KFFEWogMXu7jV4HZQy2MsxpY+wA5XIf3w410A==}
     engines: {node: '>=18'}
@@ -3964,6 +3985,10 @@ packages:
   google-gax@4.6.1:
     resolution: {integrity: sha512-V6eky/xz2mcKfAd1Ioxyd6nmA61gao3n01C+YeuIwu3vzM9EDR6wcVzMSIbLMDXWeoi9SHYctXuKYC5uJUT3eQ==}
     engines: {node: '>=14'}
+
+  google-gax@5.0.3:
+    resolution: {integrity: sha512-DkWybwgkV8HA9aIizNEHEUHd8ho1BzGGQ/YMGDsTt167dQ8pk/oMiwxpUFvh6Ta93m8ZN7KwdWmP3o46HWjV+A==}
+    engines: {node: '>=18'}
 
   google-logging-utils@0.0.2:
     resolution: {integrity: sha512-NEgUnEcBiP5HrPzufUkBzJOD/Sxsco3rLNo1F1TNf7ieU8ryUzBhqba8r756CjLX7rn3fHl6iLEwPYuqpoKgQQ==}
@@ -4561,6 +4586,9 @@ packages:
     resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
     engines: {node: '>=18'}
 
+  long@4.0.0:
+    resolution: {integrity: sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==}
+
   long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
@@ -4595,6 +4623,10 @@ packages:
 
   make-error@1.3.6:
     resolution: {integrity: sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==}
+
+  map-obj@4.3.0:
+    resolution: {integrity: sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==}
+    engines: {node: '>=8'}
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -5223,6 +5255,10 @@ packages:
     resolution: {integrity: sha512-SAzp/O4Yh02jGdRc+uIrGoe87dkN/XtwxfZ4ZyafJHymd79ozp5VG5nyZ7ygqPM5+cpLDjjGnYFUkngonyDPOQ==}
     engines: {node: '>=14.0.0'}
 
+  proto3-json-serializer@3.0.1:
+    resolution: {integrity: sha512-Rug90pDIefARAG9MgaFjd0yR/YP4bN3Fov00kckXMjTZa0x86c4WoWfCQFdSeWi9DvRXjhfLlPDIvODB5LOTfg==}
+    engines: {node: '>=18'}
+
   protobufjs@7.5.3:
     resolution: {integrity: sha512-sildjKwVqOI2kmFDiXQ6aEB0fjYTafpEvIBs8tOR8qI4spuL9OPROLVu2qZqi/xgCfsHIwVqlaF8JBjWFHnKbw==}
     engines: {node: '>=12.0.0'}
@@ -5495,6 +5531,10 @@ packages:
     resolution: {integrity: sha512-dUOvLMJ0/JJYEn8NrpOaGNE7X3vpI5XlZS/u0ANjqtcZVKnIxP7IgCFwrKTxENw29emmwug53awKtaMm4i9g5w==}
     engines: {node: '>=14'}
 
+  retry-request@8.0.2:
+    resolution: {integrity: sha512-JzFPAfklk1kjR1w76f0QOIhoDkNkSqW8wYKT08n9yysTmZfB+RQ2QoXoTAeOi1HD9ZipTyTAZg3c4pM/jeqgSw==}
+    engines: {node: '>=18'}
+
   retry@0.13.1:
     resolution: {integrity: sha512-XQBQ3I8W1Cge0Seh+6gjj03LbmRFWuoszgK9ooCpwYIrhhoO80pfq4cUkU5DkknwfOfFteRwlZ56PYOGYyFWdg==}
     engines: {node: '>= 4'}
@@ -5714,8 +5754,14 @@ packages:
     resolution: {integrity: sha512-I6GPS/E0zyieHehMRPQcqkiBMJKGgLta+1hREixhoLPqEA0AlVFiC43dl8uPpmkkeRdDMzYRWFWk5/l9x7nmNg==}
     engines: {node: '>=0.10.0'}
 
+  stream-chain@2.2.5:
+    resolution: {integrity: sha512-1TJmBx6aSWqZ4tx7aTpBDXK0/e2hhcNSTV8+CbFJtDjbb+I1mZ8lHit0Grw9GRT+6JbIrrDd8esncgBi8aBXGA==}
+
   stream-events@1.0.5:
     resolution: {integrity: sha512-E1GUzBSgvct8Jsb3v2X15pjzN1tYebtbLaMg+eBOUOAxgbLoSbT2NS91ckc5lJD1KfLjId+jXJRgo0qnV5Nerg==}
+
+  stream-json@1.9.1:
+    resolution: {integrity: sha512-uWkjJ+2Nt/LO9Z/JyKZbMusL8Dkh97uUBTv3AJQ74y07lVahLY4eEFsPsE97pxYBwr8nnjMAIch5eqI0gPShyw==}
 
   stream-shift@1.0.3:
     resolution: {integrity: sha512-76ORR0DO1o1hlKwTbi/DM3EXWGf3ZJYO8cXX5RJwnul2DEg2oyoZyjLNoQM8WsvZiFKCRfC1O0J7iCvie3RZmQ==}
@@ -5875,6 +5921,10 @@ packages:
 
   tar@7.4.3:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
+    engines: {node: '>=18'}
+
+  teeny-request@10.1.0:
+    resolution: {integrity: sha512-3ZnLvgWF29jikg1sAQ1g0o+lr5JX6sVgYvfUJazn7ZjJroDBUTWp44/+cFVX0bULjv4vci+rBD+oGVAkWqhUbw==}
     engines: {node: '>=18'}
 
   teeny-request@9.0.0:
@@ -7039,7 +7089,6 @@ snapshots:
     dependencies:
       '@grpc/proto-loader': 0.7.15
       '@js-sdsl/ordered-map': 4.4.2
-    optional: true
 
   '@grpc/grpc-js@1.9.15':
     dependencies:
@@ -7047,6 +7096,13 @@ snapshots:
       '@types/node': 18.19.121
 
   '@grpc/proto-loader@0.7.15':
+    dependencies:
+      lodash.camelcase: 4.3.0
+      long: 5.3.2
+      protobufjs: 7.5.3
+      yargs: 17.7.2
+
+  '@grpc/proto-loader@0.8.0':
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
@@ -7190,6 +7246,8 @@ snapshots:
     dependencies:
       minipass: 7.1.2
 
+  '@isaacs/ttlcache@1.4.1': {}
+
   '@jridgewell/gen-mapping@0.3.12':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.4
@@ -7209,8 +7267,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.4
 
-  '@js-sdsl/ordered-map@4.4.2':
-    optional: true
+  '@js-sdsl/ordered-map@4.4.2': {}
 
   '@mapbox/node-pre-gyp@2.0.0':
     dependencies:
@@ -9016,6 +9073,8 @@ snapshots:
       mitt: 3.0.1
       zod: 3.25.76
 
+  circ-json@1.0.4: {}
+
   cjs-module-lexer@1.2.3: {}
 
   class-variance-authority@0.7.1:
@@ -10442,6 +10501,29 @@ snapshots:
     dependencies:
       csstype: 3.1.3
 
+  google-ads-api@21.0.0:
+    dependencies:
+      '@isaacs/ttlcache': 1.4.1
+      axios: 1.11.0
+      circ-json: 1.0.4
+      google-ads-node: 18.0.0
+      google-auth-library: 9.15.1
+      google-gax: 5.0.3
+      long: 4.0.0
+      map-obj: 4.3.0
+      stream-json: 1.9.1
+    transitivePeerDependencies:
+      - debug
+      - encoding
+      - supports-color
+
+  google-ads-node@18.0.0:
+    dependencies:
+      google-gax: 5.0.3
+      lru-cache: 10.4.3
+    transitivePeerDependencies:
+      - supports-color
+
   google-auth-library@10.2.1:
     dependencies:
       base64-js: 1.5.1
@@ -10484,6 +10566,22 @@ snapshots:
       - encoding
       - supports-color
     optional: true
+
+  google-gax@5.0.3:
+    dependencies:
+      '@grpc/grpc-js': 1.13.4
+      '@grpc/proto-loader': 0.8.0
+      abort-controller: 3.0.0
+      duplexify: 4.1.3
+      google-auth-library: 10.2.1
+      google-logging-utils: 1.1.1
+      node-fetch: 3.3.2
+      object-hash: 3.0.0
+      proto3-json-serializer: 3.0.1
+      protobufjs: 7.5.3
+      retry-request: 8.0.2
+    transitivePeerDependencies:
+      - supports-color
 
   google-logging-utils@0.0.2: {}
 
@@ -11150,6 +11248,8 @@ snapshots:
       strip-ansi: 7.1.0
       wrap-ansi: 9.0.0
 
+  long@4.0.0: {}
+
   long@5.3.2: {}
 
   longest-streak@3.1.0: {}
@@ -11180,6 +11280,8 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.4
 
   make-error@1.3.6: {}
+
+  map-obj@4.3.0: {}
 
   math-intrinsics@1.1.0: {}
 
@@ -11632,8 +11734,7 @@ snapshots:
 
   object-assign@4.1.1: {}
 
-  object-hash@3.0.0:
-    optional: true
+  object-hash@3.0.0: {}
 
   object-inspect@1.13.4: {}
 
@@ -11906,6 +12007,10 @@ snapshots:
     dependencies:
       protobufjs: 7.5.3
     optional: true
+
+  proto3-json-serializer@3.0.1:
+    dependencies:
+      protobufjs: 7.5.3
 
   protobufjs@7.5.3:
     dependencies:
@@ -12273,6 +12378,13 @@ snapshots:
       - encoding
       - supports-color
 
+  retry-request@8.0.2:
+    dependencies:
+      extend: 3.0.2
+      teeny-request: 10.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   retry@0.13.1: {}
 
   reusify@1.1.0: {}
@@ -12530,9 +12642,15 @@ snapshots:
 
   stopwords-iso@1.1.0: {}
 
+  stream-chain@2.2.5: {}
+
   stream-events@1.0.5:
     dependencies:
       stubs: 3.0.0
+
+  stream-json@1.9.1:
+    dependencies:
+      stream-chain: 2.2.5
 
   stream-shift@1.0.3: {}
 
@@ -12723,6 +12841,15 @@ snapshots:
       minizlib: 3.0.2
       mkdirp: 3.0.1
       yallist: 5.0.0
+
+  teeny-request@10.1.0:
+    dependencies:
+      http-proxy-agent: 5.0.0
+      https-proxy-agent: 5.0.1
+      node-fetch: 3.3.2
+      stream-events: 1.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   teeny-request@9.0.0:
     dependencies:

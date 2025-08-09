@@ -1,6 +1,6 @@
 // Temporary test endpoint to debug Google Ads API calls
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
       hasDeveloperToken: !!testConfig.developerToken,
     });
 
-    // Test the getCustomers call
-    const customersResponse = await googleAdsService.getCustomers(testConfig);
+    // Test the getAccessibleCustomers call
+    const customersResponse =
+      await googleAdsClientService.getAccessibleCustomers('test-refresh-token');
 
     return NextResponse.json({
       success: true,
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest) {
       apiResponse: {
         success: customersResponse.success,
         error: customersResponse.error,
-        customerCount: customersResponse.data?.customers?.length || 0,
-        customers: customersResponse.data?.customers || [],
+        customerCount: customersResponse.data?.length || 0,
+        customers: customersResponse.data || [],
       },
     });
   } catch (error) {

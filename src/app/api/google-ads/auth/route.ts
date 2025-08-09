@@ -2,7 +2,7 @@
 // Startet den OAuth-Flow für Account-Verknüpfung
 
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/google-ads/callback`;
-    const authUrl = googleAdsService.generateAuthUrl(companyId, redirectUri);
+    const authUrl = googleAdsClientService.generateAuthUrl(companyId, redirectUri);
 
     return NextResponse.json({
       success: true,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     const redirectUri =
       customRedirectUri || `${process.env.NEXT_PUBLIC_BASE_URL}/api/google-ads/callback`;
-    const authUrl = googleAdsService.generateAuthUrl(companyId, redirectUri);
+    const authUrl = googleAdsClientService.generateAuthUrl(companyId, redirectUri);
 
     return NextResponse.json({
       success: true,

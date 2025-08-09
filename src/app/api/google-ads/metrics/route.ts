@@ -2,7 +2,7 @@
 // Metriken und Performance-Daten für Kampagnen
 
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 import { GoogleAdsSetupValidator } from '@/utils/googleAdsSetupValidator';
 import type { GoogleAdsOAuthConfig } from '@/types/googleAds';
 
@@ -52,7 +52,14 @@ export async function GET(request: NextRequest) {
     } as GoogleAdsOAuthConfig;
 
     // Kampagnen-Metriken abrufen - verwende getCampaigns vorerst
-    const result = await googleAdsService.getCampaigns(config, customerId);
+    if (!config.refreshToken) {
+      return NextResponse.json(
+        { error: 'No refresh token available for metrics' },
+        { status: 400 }
+      );
+    }
+
+    const result = await googleAdsClientService.getCampaigns(config.refreshToken, customerId);
 
     if (!result.success) {
       return NextResponse.json(
@@ -153,7 +160,17 @@ export async function POST(request: NextRequest) {
     };
 
     // Alle Kampagnen abrufen
-    const campaignsResult = await googleAdsService.getCampaigns(config, customerId);
+    if (!config.refreshToken) {
+      return NextResponse.json(
+        { error: 'No refresh token available for campaign metrics' },
+        { status: 400 }
+      );
+    }
+
+    const campaignsResult = await googleAdsClientService.getCampaigns(
+      config.refreshToken,
+      customerId
+    );
 
     if (!campaignsResult.success || !campaignsResult.data?.campaigns) {
       return NextResponse.json(

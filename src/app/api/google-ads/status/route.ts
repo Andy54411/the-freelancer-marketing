@@ -1,8 +1,8 @@
 // ✅ PHASE 1: Google Ads Connection Status & Validation
-// Prüft Verbindungsstatus und Account-Zugriff
+// Prüft Verbindungsstatus und Account-Zugriff mit Client Library
 
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
@@ -88,12 +88,16 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Check connection status
-      const connectionStatus = await googleAdsService.checkConnectionStatus(config);
+      // Check connection status with Client Library
+      const connectionStatus = await googleAdsClientService.checkConnectionStatus(config);
 
       // Get basic account info if connected
       let accountsInfo = [];
-      if (connectionStatus.status === 'CONNECTED' && googleAdsData.linkedAccounts) {
+      if (
+        connectionStatus.success &&
+        connectionStatus.data?.connected &&
+        googleAdsData.linkedAccounts
+      ) {
         accountsInfo = googleAdsData.linkedAccounts.map((account: any) => ({
           id: account.id,
           name: account.name,
@@ -106,13 +110,13 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        status: connectionStatus.status,
-        connected: connectionStatus.status === 'CONNECTED',
-        accountsConnected: connectionStatus.accountsConnected,
+        status: connectionStatus.data?.connected ? 'CONNECTED' : 'DISCONNECTED',
+        connected: connectionStatus.data?.connected,
+        accountsConnected: connectionStatus.data?.hasCustomerAccess,
         accounts: accountsInfo,
         lastSync: googleAdsData.lastSync?.toDate(),
-        quotaUsage: connectionStatus.quotaUsage,
-        error: connectionStatus.error,
+        lastChecked: connectionStatus.data?.lastChecked,
+        error: connectionStatus.data?.error,
         actualCompanyId, // Include the actual company ID that was found
         searchedCompanyId: companyId, // Include the original search ID
         integrationConfig: {
@@ -171,10 +175,10 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'test_connection':
-        const connectionStatus = await googleAdsService.checkConnectionStatus(config);
+        const connectionStatus = await googleAdsClientService.checkConnectionStatus(config);
         return NextResponse.json({
           success: true,
-          connectionStatus,
+          connectionStatus: connectionStatus.data,
           timestamp: new Date().toISOString(),
         });
 
@@ -187,7 +191,10 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        const testResponse = await googleAdsService.getCustomers(config);
+        const testResponse = await googleAdsClientService.getCustomerInfo(
+          config.refreshToken,
+          config.customerId || ''
+        );
 
         return NextResponse.json({
           success: true,

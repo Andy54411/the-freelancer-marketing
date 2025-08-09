@@ -1,8 +1,8 @@
 // 🚀 PHASE 2: Google Ads Campaign Management API
-// Campaign CRUD operations und Performance Analytics
+// Campaign CRUD operations und Performance Analytics mit Client Library
 
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 import { GoogleAdsSetupValidator } from '@/utils/googleAdsSetupValidator';
 import type { GoogleAdsOAuthConfig, CreateCampaignRequest } from '@/types/googleAds';
 
@@ -64,16 +64,23 @@ export async function GET(request: NextRequest) {
     let customerId = providedCustomerId;
     if (!customerId) {
       console.log('🔍 No customerId provided, fetching available customers...');
-      const customersResponse = await googleAdsService.getCustomers(config);
+
+      if (!config.refreshToken) {
+        return NextResponse.json({ error: 'No refresh token available' }, { status: 400 });
+      }
+
+      const customersResponse = await googleAdsClientService.getAccessibleCustomers(
+        config.refreshToken
+      );
 
       if (
         customersResponse.success &&
-        customersResponse.data?.customers &&
-        customersResponse.data.customers.length > 0
+        customersResponse.data &&
+        customersResponse.data.length > 0
       ) {
         // Use the first customer ID (excluding fallback)
-        const realCustomer = customersResponse.data.customers.find(c => c.id !== 'pending-setup');
-        customerId = realCustomer?.id || customersResponse.data.customers[0].id;
+        const realCustomer = customersResponse.data.find(c => c.id !== 'pending-setup');
+        customerId = realCustomer?.id || customersResponse.data[0].id;
         console.log('🎯 Using auto-detected customerId:', customerId);
       } else {
         return NextResponse.json(
@@ -87,7 +94,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Campaigns abrufen
-    const result = await googleAdsService.getCampaigns(config, customerId);
+    if (!config.refreshToken) {
+      return NextResponse.json(
+        { error: 'No refresh token available for campaigns' },
+        { status: 400 }
+      );
+    }
+
+    const result = await googleAdsClientService.getCampaigns(config.refreshToken, customerId);
 
     if (!result.success) {
       return NextResponse.json(
@@ -159,33 +173,14 @@ export async function POST(request: NextRequest) {
       developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
     } as GoogleAdsOAuthConfig;
 
-    // Kampagne erstellen
-    const result = await googleAdsService.createCampaign(config, customerId, {
-      name: campaignData.name,
-      budgetAmountMicros: campaignData.budgetAmountMicros,
-      advertisingChannelType: campaignData.advertisingChannelType || 'SEARCH',
-      startDate: campaignData.startDate || new Date().toISOString().split('T')[0],
-      endDate: campaignData.endDate,
-      geoTargets: campaignData.geoTargets,
-      languageTargets: campaignData.languageTargets,
-    });
-
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          error: 'Failed to create campaign',
-          details: result.error,
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-      message: 'Campaign created successfully',
-      timestamp: new Date().toISOString(),
-    });
+    // TODO: Campaign creation with Client Library not yet implemented
+    return NextResponse.json(
+      {
+        error: 'Campaign creation not yet implemented with Client Library',
+        message: 'Please use the legacy API for campaign creation until this is implemented',
+      },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('❌ Campaign creation error:', error);
     return NextResponse.json(
@@ -242,11 +237,18 @@ export async function PATCH(request: NextRequest) {
     } as GoogleAdsOAuthConfig;
 
     // Kampagne-Status aktualisieren
-    const result = await googleAdsService.updateCampaignStatus(
-      config,
+    if (!config.refreshToken) {
+      return NextResponse.json(
+        { error: 'No refresh token available for campaign update' },
+        { status: 400 }
+      );
+    }
+
+    const result = await googleAdsClientService.updateCampaign(
+      config.refreshToken,
       customerId,
       campaignId,
-      status
+      { status }
     );
 
     if (!result.success) {

@@ -1,6 +1,6 @@
 // Real Google Ads API Test with stored tokens
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
@@ -66,11 +66,15 @@ export async function GET(request: NextRequest) {
 
     // Test 1: List accessible customers
     console.log('📞 Testing listAccessibleCustomers...');
-    const customersResponse = await googleAdsService.getCustomers(realConfig);
+    const customersResponse = await googleAdsClientService.getAccessibleCustomers(
+      realConfig.refreshToken
+    );
 
     // Test 2: Check connection status
     console.log('📞 Testing checkConnectionStatus...');
-    const statusResponse = await googleAdsService.checkConnectionStatus(realConfig);
+    const statusResponse = await googleAdsClientService.checkConnectionStatus(
+      realConfig.refreshToken
+    );
 
     return NextResponse.json({
       success: true,
@@ -89,14 +93,18 @@ export async function GET(request: NextRequest) {
         getCustomers: {
           success: customersResponse.success,
           error: customersResponse.error,
-          customerCount: customersResponse.data?.customers?.length || 0,
-          customers: customersResponse.data?.customers || [],
+          customerCount: customersResponse.data?.length || 0,
+          customers: customersResponse.data || [],
         },
         checkConnectionStatus: {
-          status: statusResponse.status,
-          accountsConnected: statusResponse.accountsConnected,
+          success: statusResponse.success,
+          connected: statusResponse.data?.connected,
+          hasValidTokens: statusResponse.data?.hasValidTokens,
+          hasCustomerAccess: statusResponse.data?.hasCustomerAccess,
+          customerId: statusResponse.data?.customerId,
+          customerName: statusResponse.data?.customerName,
+          lastChecked: statusResponse.data?.lastChecked,
           error: statusResponse.error,
-          lastSync: statusResponse.lastSync,
         },
       },
     });

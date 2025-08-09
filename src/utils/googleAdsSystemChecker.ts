@@ -2,7 +2,7 @@
 // Prüft alle System-Komponenten und gibt detaillierte Status-Information
 
 import { GoogleAdsSetupValidator } from '@/utils/googleAdsSetupValidator';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 
 export interface SystemStatus {
   environment: {
@@ -32,11 +32,11 @@ export class GoogleAdsSystemChecker {
     // Service validation
     let serviceStatus: { available: boolean; error?: string } = { available: true };
     try {
-      const configValidation = googleAdsService.validateConfig();
-      if (!configValidation.valid) {
+      const serviceStatusResponse = await googleAdsClientService.getServiceStatus();
+      if (!serviceStatusResponse.success || !serviceStatusResponse.data?.configured) {
         serviceStatus = {
           available: false,
-          error: configValidation.errors.join(', '),
+          error: serviceStatusResponse.data?.errors?.join(', ') || 'Service not configured',
         };
       }
     } catch (error) {

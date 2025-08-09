@@ -24,6 +24,7 @@ import {
   BarChart3,
   Zap,
   FileText,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface GoogleAdsOverviewProps {
@@ -31,7 +32,7 @@ interface GoogleAdsOverviewProps {
 }
 
 export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
-  const [status, setStatus] = useState<GoogleAdsConnectionStatus | null>(null);
+  const [status, setStatus] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -164,7 +165,7 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
     }
   };
 
-  const getStatusColor = (status: GoogleAdsServiceStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'CONNECTED':
         return 'bg-green-100 text-green-800';
@@ -181,20 +182,20 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
     }
   };
 
-  const getStatusIcon = (status: GoogleAdsServiceStatus) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'CONNECTED':
-        return <CheckCircle2 className="h-4 w-4" />;
+        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
       case 'DISCONNECTED':
-        return <AlertCircle className="h-4 w-4" />;
+        return <XCircle className="h-5 w-5 text-red-500" />;
       case 'ERROR':
-        return <AlertCircle className="h-4 w-4" />;
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
       case 'SYNCING':
-        return <Loader2 className="h-4 w-4 animate-spin" />;
+        return <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />;
       case 'SETUP_REQUIRED':
-        return <Settings className="h-4 w-4" />;
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       default:
-        return <AlertCircle className="h-4 w-4" />;
+        return <AlertCircle className="h-5 w-5 text-gray-500" />;
     }
   };
 

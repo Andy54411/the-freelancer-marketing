@@ -2,7 +2,7 @@
 // Verarbeitet den OAuth-Callback und speichert Tokens
 
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsService } from '@/services/googleAdsService';
+import { googleAdsClientService } from '@/services/googleAdsClientService';
 import { db } from '@/firebase/server';
 import { GoogleAdsOAuthConfig } from '@/types/googleAds';
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     console.log('🔄 Exchanging code for tokens...');
     // Exchange authorization code for tokens
-    const tokenResponse = await googleAdsService.exchangeCodeForTokens(code, redirectUri);
+    const tokenResponse = await googleAdsClientService.exchangeCodeForTokens(code, redirectUri);
 
     if (!tokenResponse.success || !tokenResponse.data) {
       console.error('❌ Token exchange failed:', tokenResponse.error);
@@ -75,7 +75,9 @@ export async function GET(request: NextRequest) {
     };
 
     // Get accessible customers
-    const customersResponse = await googleAdsService.getCustomers(oauthConfig);
+    const customersResponse = await googleAdsClientService.getAccessibleCustomers(
+      tokens.refresh_token
+    );
 
     if (!customersResponse.success) {
       console.error('Failed to fetch customers:', customersResponse.error);
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
           connected: true,
           connectedAt: new Date(),
         },
-        linkedAccounts: customersResponse.data?.customers || [],
+        linkedAccounts: customersResponse.data || [],
         lastSync: new Date(),
         syncFrequency: 'DAILY' as const,
         billingIntegration: {
@@ -132,7 +134,7 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${companyId}/google-ads?success=connected&accounts=${customersResponse.data?.customers.length || 0}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${companyId}/google-ads?success=connected&accounts=${customersResponse.data?.length || 0}`
       );
     } catch (firestoreError) {
       console.error('❌ Firestore save error:', firestoreError);
