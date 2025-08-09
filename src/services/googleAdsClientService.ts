@@ -300,13 +300,13 @@ class GoogleAdsClientService {
    * ✅ Zugängliche Accounts abrufen
    */
   async getAccessibleCustomers(
-    accessToken: string,
+    refreshToken: string,
     managerCustomerId?: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsAccount[]>> {
     try {
       const customer = this.client.Customer({
         customer_id: managerCustomerId || 'customers',
-        refresh_token: accessToken,
+        refresh_token: refreshToken,
       });
 
       const accounts = await customer.query(`
@@ -338,11 +338,26 @@ class GoogleAdsClientService {
         data: formattedAccounts,
       };
     } catch (error: any) {
+      console.error('🔥 getAccessibleCustomers error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code,
+        response: error.response,
+        details: error.details,
+        fullError: error,
+      });
+
       return {
         success: false,
         error: {
-          code: 'API_ERROR',
+          code: error.code || 'API_ERROR',
           message: error.message || 'Failed to fetch accessible customers',
+          details: {
+            originalError: error.message,
+            stack: error.stack,
+            response: error.response,
+          },
         },
       };
     }
