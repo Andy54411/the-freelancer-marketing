@@ -191,6 +191,7 @@ applyTo: '**'
 - ❌ **COPILOT SPECIFIC: Suggesting complete file rewrites**
 - ❌ **COPILOT SPECIFIC: Ignoring existing project patterns**
 - ❌ **COPILOT SPECIFIC: Creating new files without workspace search**
+-  keine mock daten und keine test daten 
 - nutze niemals Emoji!!
 
 ## ✅ ALLOWED AND ENCOURAGED FOR COPILOT:
