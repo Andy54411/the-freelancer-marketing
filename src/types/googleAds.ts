@@ -23,6 +23,7 @@ export interface GoogleAdsOAuthConfig {
   tokenExpiry?: Date;
   developerToken: string;
   managerCustomerId?: string;
+  customerId?: string;
 }
 
 export interface GoogleAdsMetrics {

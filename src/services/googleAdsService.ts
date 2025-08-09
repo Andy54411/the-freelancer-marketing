@@ -698,25 +698,51 @@ class GoogleAdsService {
         };
       }
 
+      // For Google Ads API, we need to use the correct REST endpoint format
+      let apiUrl = '';
+
+      if (endpoint === '/customers:listAccessibleCustomers') {
+        // This is the correct endpoint for listing accessible customers
+        apiUrl = `${this.BASE_URL}/customers:listAccessibleCustomers`;
+      } else if (endpoint.includes('googleAds:searchStream')) {
+        // Extract customer ID and build the search stream endpoint
+        const customerId = endpoint.split('/')[2]; // Extract from "/customers/{customerId}/googleAds:searchStream"
+        apiUrl = `${this.BASE_URL}/customers/${customerId}/googleAds:searchStream`;
+      } else if (endpoint.includes('/campaigns')) {
+        // Extract customer ID from endpoint or use a default
+        const customerId = endpoint.split('/')[2] || config.customerId;
+        apiUrl = `${this.BASE_URL}/customers/${customerId}/campaigns`;
+      } else {
+        // Default behavior
+        apiUrl = `${this.BASE_URL}${endpoint}`;
+      }
+
       const headers: Record<string, string> = {
         Authorization: `Bearer ${config.accessToken}`,
         'developer-token': developerToken,
         'Content-Type': 'application/json',
       };
 
-      if (config.managerCustomerId) {
-        headers['login-customer-id'] = config.managerCustomerId;
+      if (config.customerId) {
+        headers['login-customer-id'] = config.customerId.replace(/-/g, '');
       }
 
-      const response = await fetch(`${this.BASE_URL}${endpoint}`, {
+      console.log('Making API request to:', apiUrl);
+      console.log('With headers:', { ...headers, Authorization: 'Bearer [REDACTED]' });
+
+      const response = await fetch(apiUrl, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+
         if (response.status === 401 && config.refreshToken) {
           const refreshResult = await this.refreshAccessToken(config.refreshToken);
           if (refreshResult.success && refreshResult.data) {
@@ -725,21 +751,32 @@ class GoogleAdsService {
           }
         }
 
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+
         return {
           success: false,
           error: {
-            code: data.error?.code || 'API_ERROR',
-            message: data.error?.message || 'API request failed',
-            details: data,
+            code: errorData.error?.code || `HTTP_${response.status}`,
+            message: errorData.error?.message || errorText || 'API request failed',
+            details: errorData,
           },
         };
       }
+
+      const data = await response.json();
+      console.log('API Response data:', data);
 
       return {
         success: true,
         data,
       };
     } catch (error) {
+      console.error('Network error in makeApiRequest:', error);
       return {
         success: false,
         error: {
