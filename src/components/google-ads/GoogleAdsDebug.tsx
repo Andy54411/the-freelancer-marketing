@@ -126,6 +126,91 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
 
       if (results.summary.failed > 0) {
         addLog(`❌ ${results.summary.failed} Tests fehlgeschlagen`);
+        addLog(`═══════════════════════════════════════════════════════════════════`);
+        addLog(`📋 DETAILLIERTE FEHLERANALYSE:`);
+        addLog(`═══════════════════════════════════════════════════════════════════`);
+
+        // Zeige EXTREM detaillierte Fehler-Infos für jeden fehlgeschlagenen Test
+        Object.entries(results.results || {}).forEach(([testName, result]: [string, any]) => {
+          if (!result.success) {
+            addLog(`🔴 FEHLER IN TEST: ${testName.toUpperCase()}`);
+            addLog(`─────────────────────────────────────────────────────────────────`);
+
+            // Hauptfehler
+            const errorDetails = result.error || 'Unbekannter Fehler';
+            addLog(`� FEHLERMELDUNG: ${errorDetails}`);
+
+            // HTTP Status wenn vorhanden
+            if (result.data?.statusCode) {
+              addLog(`📊 HTTP STATUS CODE: ${result.data.statusCode}`);
+            }
+
+            // Response Headers wenn vorhanden
+            if (result.data?.headers) {
+              addLog(`📧 RESPONSE HEADERS: ${JSON.stringify(result.data.headers, null, 2)}`);
+            }
+
+            // Vollständige API Response
+            if (result.data?.response) {
+              addLog(`📨 VOLLSTÄNDIGE API RESPONSE:`);
+              addLog(JSON.stringify(result.data.response, null, 2));
+            }
+
+            // Request Details wenn vorhanden
+            if (result.data?.request) {
+              addLog(`📤 REQUEST DETAILS:`);
+              addLog(JSON.stringify(result.data.request, null, 2));
+            }
+
+            // Stack Trace wenn vorhanden
+            if (result.data?.stack) {
+              addLog(`🔍 STACK TRACE:`);
+              addLog(result.data.stack);
+            }
+
+            // Zusätzliche Debugging-Infos
+            if (result.data?.debug) {
+              addLog(`🐛 DEBUG INFORMATIONEN:`);
+              addLog(JSON.stringify(result.data.debug, null, 2));
+            }
+
+            // OAuth/Auth spezifische Fehler
+            if (testName.includes('auth') || testName.includes('Auth')) {
+              addLog(`🔐 AUTH-SPEZIFISCHE DIAGNOSE:`);
+              addLog(`   - Prüfe Google Ads OAuth Tokens in Firebase`);
+              addLog(`   - Validiere Client ID und Client Secret`);
+              addLog(`   - Überprüfe Redirect URIs in Google Console`);
+              addLog(`   - Teste Refresh Token Validity`);
+            }
+
+            // Customer Access spezifische Fehler
+            if (testName.includes('customer') || testName.includes('Customer')) {
+              addLog(`👥 CUSTOMER-ACCESS DIAGNOSE:`);
+              addLog(`   - Prüfe Google Ads Account Verknüpfung`);
+              addLog(`   - Validiere Customer ID Format`);
+              addLog(`   - Überprüfe Account Permissions`);
+              addLog(`   - Teste Manager Account Zugriff`);
+            }
+
+            addLog(`═══════════════════════════════════════════════════════════════════`);
+          }
+        });
+
+        // Zeige allgemeine Fehler-Summary
+        if (results.summary?.errors && results.summary.errors.length > 0) {
+          addLog(`📋 ZUSÄTZLICHE SYSTEM-FEHLER:`);
+          results.summary.errors.forEach((error: string, index: number) => {
+            addLog(`   ${index + 1}. ⚠️ ${error}`);
+          });
+        }
+
+        // Zeige Lösungsvorschläge
+        addLog(`💡 LÖSUNGSVORSCHLÄGE:`);
+        addLog(`   1. Prüfe Google Ads OAuth Status in Settings Tab`);
+        addLog(`   2. Erneuere Tokens über Re-Authentication`);
+        addLog(`   3. Validiere Environment Variables`);
+        addLog(`   4. Teste mit neuer OAuth-Verbindung`);
+        addLog(`═══════════════════════════════════════════════════════════════════`);
       }
     } catch (error: any) {
       addLog(`🔥 Fehler beim Ausführen der Tests: ${error.message}`);
@@ -358,13 +443,133 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
                         </div>
                       )}
 
-                      {/* Error Details */}
+                      {/* Error Details - VIEL detaillierter */}
                       {result.error && (
-                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
-                          <h4 className="font-medium text-red-800 mb-1">Fehler:</h4>
-                          <p className="text-sm text-red-700">
-                            {typeof result.error === 'string' ? result.error : 'Unbekannter Fehler'}
-                          </p>
+                        <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded">
+                          <h4 className="font-bold text-red-800 mb-2 flex items-center">
+                            <XCircle className="w-4 h-4 mr-2" />
+                            DETAILLIERTE FEHLERANALYSE:
+                          </h4>
+
+                          {/* Hauptfehler */}
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-red-700 mb-1">
+                              💥 Fehlermeldung:
+                            </p>
+                            <p className="text-sm text-red-700 bg-red-100 p-2 rounded font-mono">
+                              {typeof result.error === 'string'
+                                ? result.error
+                                : JSON.stringify(result.error)}
+                            </p>
+                          </div>
+
+                          {/* HTTP Status wenn vorhanden */}
+                          {result.data?.statusCode && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-red-700 mb-1">
+                                📊 HTTP Status Code:
+                              </p>
+                              <p className="text-sm text-red-700 bg-red-100 p-2 rounded font-mono">
+                                {result.data.statusCode}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Response Headers */}
+                          {result.data?.headers && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-red-700 mb-1">
+                                📧 Response Headers:
+                              </p>
+                              <pre className="text-xs text-red-700 bg-red-100 p-2 rounded font-mono overflow-auto max-h-32">
+                                {JSON.stringify(result.data.headers, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* Vollständige API Response */}
+                          {result.data?.response && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-red-700 mb-1">
+                                📨 Vollständige API Response:
+                              </p>
+                              <pre className="text-xs text-red-700 bg-red-100 p-2 rounded font-mono overflow-auto max-h-40">
+                                {JSON.stringify(result.data.response, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* Request Details */}
+                          {result.data?.request && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-red-700 mb-1">
+                                📤 Request Details:
+                              </p>
+                              <pre className="text-xs text-red-700 bg-red-100 p-2 rounded font-mono overflow-auto max-h-32">
+                                {JSON.stringify(result.data.request, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* Stack Trace */}
+                          {result.data?.stack && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-red-700 mb-1">
+                                🔍 Stack Trace:
+                              </p>
+                              <pre className="text-xs text-red-700 bg-red-100 p-2 rounded font-mono overflow-auto max-h-32">
+                                {result.data.stack}
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* Debug Info */}
+                          {result.data?.debug && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-red-700 mb-1">
+                                🐛 Debug Informationen:
+                              </p>
+                              <pre className="text-xs text-red-700 bg-red-100 p-2 rounded font-mono overflow-auto max-h-32">
+                                {JSON.stringify(result.data.debug, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* Test-spezifische Lösungsvorschläge */}
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                            <p className="text-sm font-medium text-yellow-800 mb-2">
+                              💡 Lösungsvorschläge für {testName}:
+                            </p>
+                            <ul className="text-sm text-yellow-700 space-y-1">
+                              {testName.includes('auth') && (
+                                <>
+                                  <li>• Prüfe Google Ads OAuth Tokens in Firebase</li>
+                                  <li>• Validiere Client ID und Client Secret in Environment</li>
+                                  <li>• Überprüfe Redirect URIs in Google Console</li>
+                                  <li>• Teste Refresh Token Validity</li>
+                                </>
+                              )}
+                              {testName.includes('customer') && (
+                                <>
+                                  <li>• Prüfe Google Ads Account Verknüpfung</li>
+                                  <li>• Validiere Customer ID Format</li>
+                                  <li>• Überprüfe Account Permissions</li>
+                                  <li>• Teste Manager Account Zugriff</li>
+                                </>
+                              )}
+                              {testName.includes('campaign') && (
+                                <>
+                                  <li>• Überprüfe Campaign Access Rights</li>
+                                  <li>• Validiere Campaign IDs</li>
+                                  <li>• Teste Campaign Query Syntax</li>
+                                  <li>• Prüfe Account Status</li>
+                                </>
+                              )}
+                              <li>• Erneuere OAuth-Verbindung über Settings</li>
+                              <li>• Prüfe API Rate Limits</li>
+                              <li>• Kontaktiere Support mit diesen Details</li>
+                            </ul>
+                          </div>
                         </div>
                       )}
                     </div>

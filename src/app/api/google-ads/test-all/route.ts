@@ -42,14 +42,56 @@ export async function GET(request: NextRequest) {
         if (serviceStatus.success) results.summary.passed++;
         else results.summary.failed++;
       } catch (error: any) {
+        // EXTREM detaillierte Fehlererfassung
+        const errorDetails = {
+          message: error.message || 'Unknown error',
+          stack: error.stack,
+          name: error.name,
+          code: error.code,
+          statusCode: error.statusCode || error.status,
+          response: error.response?.data || error.response,
+          headers: error.response?.headers,
+          request: error.config
+            ? {
+                url: error.config.url,
+                method: error.config.method,
+                headers: error.config.headers,
+                data: error.config.data,
+              }
+            : undefined,
+          cause: error.cause,
+          errno: error.errno,
+          syscall: error.syscall,
+          hostname: error.hostname,
+          address: error.address,
+          port: error.port,
+          // Google Ads API spezifische Fehler
+          googleAdsFailure: error.googleAdsFailure,
+          errors: error.errors,
+          details: error.details,
+          // Vollständiges Error-Objekt für Debug
+          fullError: JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error))),
+        };
+
         results.results.serviceStatus = {
           test: 'Service Status Check',
           success: false,
           error: error.message,
+          data: {
+            errorDetails,
+            debug: {
+              errorType: typeof error,
+              errorConstructor: error.constructor?.name,
+              hasStack: !!error.stack,
+              timestamp: new Date().toISOString(),
+            },
+          },
         };
         results.summary.total++;
         results.summary.failed++;
-        results.summary.errors.push(`Service Status: ${error.message}`);
+        results.summary.errors.push(
+          `Service Status: ${error.message} (${error.name || 'Unknown Type'})`
+        );
       }
     }
 
@@ -77,14 +119,55 @@ export async function GET(request: NextRequest) {
         results.summary.total++;
         results.summary.passed++;
       } catch (error: any) {
+        // EXTREM detaillierte Fehlererfassung für Auth Flow
+        const errorDetails = {
+          message: error.message || 'Unknown error',
+          stack: error.stack,
+          name: error.name,
+          code: error.code,
+          statusCode: error.statusCode || error.status,
+          response: error.response?.data || error.response,
+          headers: error.response?.headers,
+          request: error.config
+            ? {
+                url: error.config.url,
+                method: error.config.method,
+                headers: error.config.headers,
+                data: error.config.data,
+              }
+            : undefined,
+          // OAuth spezifische Fehler
+          oauthError: error.oauth_error,
+          oauthErrorDescription: error.error_description,
+          // Vollständiges Error-Objekt
+          fullError: JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error))),
+        };
+
         results.results.authFlow = {
           test: 'OAuth URL Generation',
           success: false,
           error: error.message,
+          data: {
+            errorDetails,
+            debug: {
+              errorType: typeof error,
+              errorConstructor: error.constructor?.name,
+              hasStack: !!error.stack,
+              environmentCheck: {
+                hasClientId: !!process.env.GOOGLE_ADS_CLIENT_ID,
+                hasClientSecret: !!process.env.GOOGLE_ADS_CLIENT_SECRET,
+                hasDeveloperToken: !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+                baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+              },
+              timestamp: new Date().toISOString(),
+            },
+          },
         };
         results.summary.total++;
         results.summary.failed++;
-        results.summary.errors.push(`Auth Flow: ${error.message}`);
+        results.summary.errors.push(
+          `Auth Flow: ${error.message} (${error.name || 'Unknown Type'})`
+        );
       }
     }
 
@@ -129,14 +212,38 @@ export async function GET(request: NextRequest) {
       if (storedConfig) results.summary.passed++;
       else results.summary.failed++;
     } catch (error: any) {
+      // EXTREM detaillierte Fehlererfassung für Stored Config
+      const errorDetails = {
+        message: error.message || 'Unknown error',
+        stack: error.stack,
+        name: error.name,
+        code: error.code,
+        // Firebase spezifische Fehler
+        firebaseError: error.code,
+        firebaseMessage: error.message,
+        // Vollständiges Error-Objekt
+        fullError: JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error))),
+      };
+
       results.results.storedConfig = {
         test: 'Stored Configuration Check',
         success: false,
         error: error.message,
+        data: {
+          errorDetails,
+          debug: {
+            errorType: typeof error,
+            errorConstructor: error.constructor?.name,
+            companyId: companyId,
+            timestamp: new Date().toISOString(),
+          },
+        },
       };
       results.summary.total++;
       results.summary.failed++;
-      results.summary.errors.push(`Stored Config: ${error.message}`);
+      results.summary.errors.push(
+        `Stored Config: ${error.message} (${error.name || 'Unknown Type'})`
+      );
     }
 
     // 4. ✅ CUSTOMER ACCESS TEST (nur wenn Config vorhanden)
@@ -167,14 +274,58 @@ export async function GET(request: NextRequest) {
         if (customersResponse.success) results.summary.passed++;
         else results.summary.failed++;
       } catch (error: any) {
+        // EXTREM detaillierte Fehlererfassung für Customer Access
+        const errorDetails = {
+          message: error.message || 'Unknown error',
+          stack: error.stack,
+          name: error.name,
+          code: error.code,
+          statusCode: error.statusCode || error.status,
+          response: error.response?.data || error.response,
+          headers: error.response?.headers,
+          request: error.config
+            ? {
+                url: error.config.url,
+                method: error.config.method,
+                headers: error.config.headers,
+              }
+            : undefined,
+          // Google Ads API spezifische Fehler
+          googleAdsFailure: error.googleAdsFailure,
+          errors: error.errors,
+          details: error.details,
+          // OAuth Token spezifische Probleme
+          tokenInfo: {
+            hasRefreshToken: !!storedConfig?.refreshToken,
+            refreshTokenLength: storedConfig?.refreshToken?.length,
+            tokenExpiry: storedConfig?.tokenExpiry,
+            isExpired: storedConfig?.tokenExpiry
+              ? new Date(storedConfig.tokenExpiry.toDate()) < new Date()
+              : null,
+          },
+          // Vollständiges Error-Objekt
+          fullError: JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error))),
+        };
+
         results.results.customerAccess = {
           test: 'Accessible Customers',
           success: false,
           error: error.message,
+          data: {
+            errorDetails,
+            debug: {
+              errorType: typeof error,
+              errorConstructor: error.constructor?.name,
+              hasStoredConfig: !!storedConfig,
+              timestamp: new Date().toISOString(),
+            },
+          },
         };
         results.summary.total++;
         results.summary.failed++;
-        results.summary.errors.push(`Customer Access: ${error.message}`);
+        results.summary.errors.push(
+          `Customer Access: ${error.message} (${error.name || 'Unknown Type'})`
+        );
       }
     }
 
