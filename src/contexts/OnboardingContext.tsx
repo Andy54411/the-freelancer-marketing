@@ -10,6 +10,11 @@ import {
   stepValidationRules,
   onboardingSteps,
 } from '@/types/onboarding';
+import {
+  getOnboardingProgress as getProgressData,
+  updateOnboardingStep as updateStepProgress,
+  completeOnboarding as completeOnboardingProcess,
+} from '@/lib/onboarding-progress';
 
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
@@ -259,25 +264,29 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     setIsSaving(true);
     try {
-      const newStatus: CompanyOnboardingStatus['status'] =
-        getOverallCompletion() === 100 ? 'completed' : 'in_progress';
+      const completion = getOverallCompletion();
+      const isCompleted = completion === 100;
       const serializedStepData = serializeStepData(stepData);
+
+      // Nutze die neue Progress Library für Updates
+      await updateStepProgress(companyId, currentStep, {
+        data: serializedStepData[currentStep] || {},
+        isCompleted: validateStep(currentStep, stepData[currentStep] || {}),
+        completionPercentage: getStepCompletion(currentStep),
+      });
+
+      // Update local state
+      const newStatus: CompanyOnboardingStatus['status'] = isCompleted
+        ? 'completed'
+        : 'in_progress';
 
       const updatedStatus: CompanyOnboardingStatus = {
         ...onboardingStatus!,
         currentStep: currentStep.toString(),
-        stepData: serializedStepData, // Use serialized data for status
-        completionPercentage: getOverallCompletion(),
+        stepData: serializedStepData,
+        completionPercentage: completion,
         status: newStatus,
       };
-
-      await updateDoc(doc(db, 'companies', companyId, 'onboarding', 'status'), {
-        currentStep: currentStep.toString(),
-        stepData: serializedStepData, // Use only serialized data
-        completionPercentage: getOverallCompletion(),
-        status: newStatus,
-        lastUpdated: serverTimestamp(),
-      });
 
       setOnboardingStatus(updatedStatus);
       setLastSaved(new Date());
@@ -293,6 +302,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     stepData,
     onboardingStatus,
     getOverallCompletion,
+    getStepCompletion,
+    validateStep,
     serializeStepData,
   ]);
 
@@ -422,19 +433,34 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         selectedSubcategory: allOnboardingData.selectedSubcategory,
       });
 
-      // Serialize stepData for onboarding status document
+      // Serialize stepData for final save
       const serializedStepData = serializeStepData(stepData);
 
-      console.log('📊 Updating onboarding status document...');
-      // Update onboarding status document
-      await updateDoc(doc(db, 'companies', companyId, 'onboarding', 'status'), {
-        status: 'completed',
-        completedAt: serverTimestamp(),
-        completionPercentage: 100,
-        stepData: serializedStepData, // Save serialized step data for reference
+      console.log('💾 Saving allOnboardingData to users collection:', allOnboardingData);
+
+      // Update main user document with ALL onboarding data
+      await updateDoc(doc(db, 'users', user.uid), allOnboardingData);
+
+      console.log('🏢 Updating company document with profile data...');
+      // Update company document with onboarding completion AND profile data
+      await updateDoc(doc(db, 'companies', companyId), {
+        // Onboarding completion
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+        profileComplete: true,
+        // Key profile data for search/listing
+        companyName: allOnboardingData.companyName,
+        industry: allOnboardingData.industry,
+        city: allOnboardingData.city,
+        hourlyRate: allOnboardingData.hourlyRate,
+        selectedCategory: allOnboardingData.selectedCategory,
+        selectedSubcategory: allOnboardingData.selectedSubcategory,
       });
 
-      console.log('✅ Onboarding completed successfully - all data saved to users collection');
+      // Final completion mit neuer Progress Library
+      await completeOnboardingProcess(companyId);
+
+      console.log('✅ Onboarding completed successfully - all data saved');
     } catch (error) {
       console.error('Error submitting onboarding:', error);
       throw error;

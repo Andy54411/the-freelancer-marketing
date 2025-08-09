@@ -37,30 +37,49 @@ export default function middleware(request: NextRequest) {
   })(request);
 }
 
-function checkCompanyOnboardingStatus(request: NextRequest) {
+async function checkCompanyOnboardingStatus(request: NextRequest) {
   try {
     // Get user UID from path
     const pathSegments = request.nextUrl.pathname.split('/');
     const companyUid = pathSegments[3]; // /dashboard/company/[uid]/...
-    
+
     if (!companyUid) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
-    
+
     // Allow onboarding pages (nicht blockieren)
     if (pathSegments[4] === 'onboarding') {
       return null; // Continue to onboarding
     }
-    
-    // Check onboarding status via Firestore Admin SDK
-    // TODO: Implement Firestore Admin check für onboarding status
-    // For now, allow all access (wird in Phase 2 implementiert)
-    
-    return null; // Continue (no blocking for now)
-    
+
+    // Import onboarding check functions
+    const { canAccessDashboard, requiresOnboarding } = await import('@/lib/onboarding-progress');
+
+    // Check if onboarding is required
+    const needsOnboarding = await requiresOnboarding(companyUid);
+
+    if (needsOnboarding) {
+      // Redirect to onboarding welcome page
+      return NextResponse.redirect(
+        new URL(`/dashboard/company/${companyUid}/onboarding/welcome`, request.url)
+      );
+    }
+
+    // Check if company can access dashboard
+    const canAccess = await canAccessDashboard(companyUid);
+
+    if (!canAccess) {
+      // Redirect to onboarding or pending page
+      return NextResponse.redirect(
+        new URL(`/dashboard/company/${companyUid}/onboarding/welcome?status=pending`, request.url)
+      );
+    }
+
+    return null; // Continue to dashboard
   } catch (error) {
     console.error('Middleware onboarding check error:', error);
-    return null; // Continue on error
+    // Allow access on error (safe fallback)
+    return null;
   }
 }
 

@@ -985,7 +985,7 @@ export default function Step5CompanyPage() {
         await updateDoc(doc(db, 'users', currentAuthUserUID), { ...userUpdateAfterStripe });
 
         setCurrentStepMessage('Onboarding-System wird vorbereitet...');
-        
+
         // NEU: Onboarding Status in Firestore setzen (nach Dokumentation)
         await setDoc(doc(db, 'users', currentAuthUserUID, 'onboarding', 'progress'), {
           status: 'pending_onboarding',
@@ -1003,14 +1003,14 @@ export default function Step5CompanyPage() {
               addressComplete: false,
               phoneVerified: false,
               directorDataComplete: false,
-              tosAccepted: false
+              tosAccepted: false,
             },
             step2: {
               companyDataComplete: false,
               legalFormSet: false,
               websiteProvided: false,
               accountingSetup: false,
-              bankingComplete: false
+              bankingComplete: false,
             },
             step3: {
               profilePictureUploaded: false,
@@ -1019,28 +1019,32 @@ export default function Step5CompanyPage() {
               portfolioAdded: false,
               servicePackagesCreated: false,
               hourlyRateSet: false,
-              faqsCreated: false
+              faqsCreated: false,
             },
             step4: {
               categoriesSelected: false,
               workingHoursSet: false,
               instantBookingConfigured: false,
               responseTimeSet: false,
-              locationConfigured: false
+              locationConfigured: false,
             },
             step5: {
               allDataComplete: false,
               documentsUploaded: false,
               stripeAccountCreated: false,
               verificationSubmitted: false,
-              readyForApproval: false
-            }
+              readyForApproval: false,
+            },
           },
           stepsCompleted: [],
           stepValidations: {},
           lastAutoSave: serverTimestamp(),
-          stepCompletedAt: {}
+          stepCompletedAt: {},
         });
+
+        // NEU: Onboarding Progress initialisieren für neue Registration
+        const { initializeOnboardingProgress } = await import('@/lib/onboarding-progress');
+        await initializeOnboardingProgress(currentAuthUserUID, 'new_registration');
 
         setCurrentStepMessage('Weiterleitung zum Onboarding...');
         setIsRedirecting(true);
