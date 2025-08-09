@@ -531,12 +531,23 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
   onboardingProgress?: OnboardingProgress;
 }> {
   try {
-    // First check if they already have onboarding progress
-    const onboardingRef = doc(db, 'companies', companyUid, 'onboarding', 'progress');
+    // First check if they already have onboarding progress using the new system
+    const onboardingRef = doc(db, 'users', companyUid, 'onboarding', 'progress');
     const onboardingSnap = await getDoc(onboardingRef);
 
     if (onboardingSnap.exists()) {
       const onboardingData = onboardingSnap.data() as OnboardingProgress;
+
+      // Check if it's a grandfathered company (no onboarding needed)
+      if (onboardingData.status === 'grandfathered') {
+        return {
+          needsOnboarding: false,
+          completionPercentage: 100,
+          currentStep: 5,
+          onboardingProgress: onboardingData,
+        };
+      }
+
       return {
         needsOnboarding: onboardingData.completionPercentage < 100,
         completionPercentage: onboardingData.completionPercentage,
@@ -559,7 +570,83 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
 
     const userData = userSnap.data() as ExistingCompanyUser;
 
-    // Calculate completion based on existing data
+    // Prüfe ob es eine bestehende Company ist (vor dem neuen Onboarding-System)
+    const createdDate = userData.createdAt?.toDate?.() || new Date();
+    const isOldCompany = createdDate < new Date('2024-12-01'); // Companies vor December 2024
+
+    if (isOldCompany) {
+      // Markiere alte Companies als "grandfathered" - brauchen kein Onboarding
+      const grandfatheredProgress = {
+        uid: companyUid,
+        status: 'grandfathered' as const,
+        currentStep: 5,
+        completionPercentage: 100,
+        lastActivity: new Date(),
+        stepsCompleted: [1, 2, 3, 4, 5],
+        requiresApproval: false,
+        isLegacyCompany: true,
+        registrationMethod: 'existing_grandfathered' as const,
+        stepValidations: {},
+        stepCompletionData: {
+          step1: {
+            personalDataComplete: true,
+            addressComplete: true,
+            phoneVerified: true,
+            directorDataComplete: true,
+            tosAccepted: true,
+          },
+          step2: {
+            companyDataComplete: true,
+            legalFormSet: true,
+            websiteProvided: true,
+            accountingSetup: true,
+            bankingComplete: true,
+          },
+          step3: {
+            profilePictureUploaded: true,
+            publicDescriptionComplete: true,
+            skillsAdded: true,
+            portfolioAdded: true,
+            servicePackagesCreated: true,
+            hourlyRateSet: true,
+            faqsCreated: true,
+          },
+          step4: {
+            categoriesSelected: true,
+            workingHoursSet: true,
+            instantBookingConfigured: true,
+            responseTimeSet: true,
+            locationConfigured: true,
+          },
+          step5: {
+            allDataComplete: true,
+            documentsUploaded: true,
+            stripeAccountCreated: true,
+            verificationSubmitted: true,
+            readyForApproval: true,
+          },
+        },
+        startedAt: userData.createdAt || new Date(),
+        stepCompletedAt: {},
+        registrationCompletedAt: userData.createdAt || new Date(),
+        lastAutoSave: new Date(),
+      };
+
+      // Clean the progress object to remove undefined values before saving
+      const cleanedProgress = cleanForFirestore(grandfatheredProgress);
+
+      // Auto-create grandfathered onboarding progress
+      await setDoc(onboardingRef, cleanedProgress);
+
+      return {
+        needsOnboarding: false,
+        completionPercentage: 100,
+        currentStep: 5,
+        onboardingProgress: grandfatheredProgress,
+      };
+    }
+
+    // Calculate completion based on existing data for newer companies
     const calculatedProgress = calculateRealCompletion(userData);
 
     // Clean the progress object to remove undefined values before saving
