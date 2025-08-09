@@ -70,6 +70,12 @@ service cloud.firestore {
                      (request.auth != null && request.query.limit <= 100);
       
       allow write: if request.auth != null && request.auth.uid == userId;
+
+      // --- Onboarding Subcollection für Onboarding-Status ---
+      match /onboarding/{document} {
+        // Onboarding-Daten können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == userId) || isSupportStaff();
+      }
     }
 
     // --- companies Collection ---
@@ -94,12 +100,6 @@ service cloud.firestore {
       // --- DATEV Subcollection für Token-Storage ---
       match /datev/{document} {
         // DATEV tokens können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
-        allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
-      }
-
-      // --- Onboarding Subcollection für Onboarding-Status ---
-      match /onboarding/{document} {
-        // Onboarding-Daten können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
         allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
       }
     }
