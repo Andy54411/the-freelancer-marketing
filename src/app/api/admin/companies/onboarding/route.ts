@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { db } from '@/firebase/server';
 import { verifyAdminAuth } from '@/lib/admin-auth';
 
 /**
@@ -17,9 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     console.log('[Admin API] Loading companies with onboarding status...');
 
-    // Load all companies (same logic as dashboard component)
-    const usersQuery = query(collection(db, 'users'), where('user_type', '==', 'firma'));
-    const usersSnapshot = await getDocs(usersQuery);
+    // Load all companies using Firebase Admin SDK
+    const usersSnapshot = await db.collection('users').where('user_type', '==', 'firma').get();
 
     const companiesData: any[] = [];
 
@@ -29,8 +27,14 @@ export async function GET(request: NextRequest) {
       // Load onboarding status from sub-collection
       let onboardingData: any = null;
       try {
-        const onboardingDoc = await getDoc(doc(db, 'users', userDoc.id, 'onboarding', 'progress'));
-        if (onboardingDoc.exists()) {
+        const onboardingDoc = await db
+          .collection('users')
+          .doc(userDoc.id)
+          .collection('onboarding')
+          .doc('progress')
+          .get();
+
+        if (onboardingDoc.exists) {
           onboardingData = onboardingDoc.data();
         }
       } catch (error) {
