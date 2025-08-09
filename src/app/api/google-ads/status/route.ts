@@ -170,10 +170,10 @@ export async function GET(request: NextRequest) {
       }
 
       // Optional: Teste Google Ads API-Verbindung, aber verwende es nicht für Status
-      let connectionTest = null;
+      let connectionTest: any = null;
       try {
         connectionTest = await googleAdsClientService.checkConnectionStatus(currentConfig);
-      } catch (testError) {
+      } catch (testError: any) {
         console.log(
           '📋 Google Ads API Test fehlgeschlagen (ignoriert für Status):',
           testError.message
