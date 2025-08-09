@@ -1,5 +1,5 @@
 /**
- * VAT Number Validation Utilities
+ * VAT Number Validation Utiliti
  * Validates VAT numbers for EU countries
  */
 
