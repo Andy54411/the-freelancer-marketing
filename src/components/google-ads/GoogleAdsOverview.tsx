@@ -47,10 +47,32 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
     runSystemDiagnosis();
   }, [companyId]);
 
-  const validateSetup = () => {
-    const validation = GoogleAdsSetupValidator.validateSetup();
-    setSetupValidation(validation);
-    console.log('Google Ads Setup Validation:', validation);
+  const validateSetup = async () => {
+    try {
+      const response = await fetch('/api/google-ads/validate-setup');
+      const data = await response.json();
+
+      if (data.success) {
+        setSetupValidation(data.validation);
+        console.log('Google Ads Setup Validation:', data);
+      } else {
+        console.error('Setup validation failed:', data.error);
+        // Fallback für Client-side validation
+        setSetupValidation({
+          valid: false,
+          errors: ['Validation API nicht verfügbar'],
+          warnings: [],
+          configStatus: {
+            hasClientId: false,
+            hasClientSecret: false,
+            hasDeveloperToken: false,
+            hasBaseUrl: false,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Setup validation error:', error);
+    }
   };
 
   const runSystemDiagnosis = async () => {

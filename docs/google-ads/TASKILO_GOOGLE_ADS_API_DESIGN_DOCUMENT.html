@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskilo Google Ads API Integration - Design Document</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 25px;
+        }
+        h4 {
+            color: #7f8c8d;
+            margin-top: 20px;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        strong {
+            color: #2c3e50;
+        }
+        .company-info {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Taskilo Google Ads API Integration - Design Document</h1>
+
+<div class="company-info">
+<h2>Company Information</h2>
+<ul>
+<li><strong>Company Name:</strong> Taskilo</li>
+<li><strong>Website:</strong> https://taskilo.de</li>
+<li><strong>Contact:</strong> a.staudinger32@gmail.com / andy.staudinger@taskilo.de</li>
+<li><strong>MCC ID:</strong> 751-003-1211</li>
+</ul>
+</div>
+
+<h2>Executive Summary</h2>
+
+<p>Taskilo is a hybrid B2B/B2C service marketplace platform that integrates Google Ads API to provide comprehensive campaign management capabilities for business clients. Our platform allows businesses to manage their Google Ads campaigns directly from their Taskilo dashboard while accessing our marketplace services.</p>
+
+<h2>Platform Architecture</h2>
+
+<h3>1. Platform Overview</h3>
+<p>Taskilo combines elements of:</p>
+<ul>
+<li><strong>Taskrabbit:</strong> Local service bookings (handymen, cleaning, etc.)</li>
+<li><strong>Fiverr:</strong> Freelancer and digital service marketplace</li>
+<li><strong>Business Management Tools:</strong> Invoicing, analytics, campaign management</li>
+</ul>
+
+<h3>2. Business Model</h3>
+<ul>
+<li><strong>B2C Component:</strong> Individuals book local services</li>
+<li><strong>B2B Component:</strong> Businesses hire agencies, freelancers, and manage marketing</li>
+<li><strong>Revenue Model:</strong> Commission-based (percentage of transactions)</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>Google Ads API Integration</h2>
+
+<h3>3. API Usage Scope</h3>
+
+<h4>3.1 Account Management</h4>
+<ul>
+<li>Connect client Google Ads accounts via OAuth 2.0</li>
+<li>Manage account permissions and access levels</li>
+<li>Monitor account health and status</li>
+</ul>
+
+<h4>3.2 Campaign Management</h4>
+<ul>
+<li><strong>Campaign Creation:</strong> Create new campaigns across multiple types</li>
+<li><strong>Campaign Optimization:</strong> Automated bid adjustments and budget management</li>
+<li><strong>Campaign Monitoring:</strong> Real-time status tracking and alerts</li>
+</ul>
+
+<h4>3.3 Supported Campaign Types</h4>
+<ul>
+<li><strong>Search Campaigns:</strong> Text ads on Google Search</li>
+<li><strong>Display Campaigns:</strong> Visual ads across Google Display Network</li>
+<li><strong>Performance Max:</strong> AI-driven multi-channel campaigns</li>
+<li><strong>Shopping Campaigns:</strong> Product listings for e-commerce clients</li>
+<li><strong>Video Campaigns:</strong> YouTube advertising</li>
+</ul>
+
+<h4>3.4 Reporting & Analytics</h4>
+<ul>
+<li><strong>Performance Metrics:</strong> Impressions, clicks, conversions, ROI</li>
+<li><strong>Custom Dashboards:</strong> Client-specific reporting interfaces</li>
+<li><strong>Automated Reports:</strong> Scheduled performance summaries</li>
+<li><strong>Cross-Platform Analytics:</strong> Integration with other marketing channels</li>
+</ul>
+
+<h4>3.5 Keyword Planning</h4>
+<ul>
+<li><strong>Keyword Research:</strong> Integration with Keyword Planner API</li>
+<li><strong>Bid Suggestions:</strong> Automated bidding recommendations</li>
+<li><strong>Competitive Analysis:</strong> Market insights and competitor data</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h3>4. Technical Implementation</h3>
+
+<h4>4.1 Authentication Flow</h4>
+<div class="code-block">
+1. Client logs into Taskilo dashboard<br>
+2. Initiates Google Ads connection<br>
+3. OAuth 2.0 redirect to Google<br>
+4. Authorization grant returned to Taskilo<br>
+5. Access tokens stored securely<br>
+6. API calls made on behalf of client
+</div>
+
+<h4>4.2 Data Security</h4>
+<ul>
+<li><strong>OAuth 2.0:</strong> Secure authentication without storing passwords</li>
+<li><strong>Token Management:</strong> Encrypted storage of access/refresh tokens</li>
+<li><strong>Data Encryption:</strong> All API communications over HTTPS</li>
+<li><strong>Access Control:</strong> Role-based permissions per client account</li>
+</ul>
+
+<h4>4.3 API Rate Limiting</h4>
+<ul>
+<li><strong>Request Throttling:</strong> Respect Google Ads API rate limits</li>
+<li><strong>Batch Operations:</strong> Efficient bulk updates and reporting</li>
+<li><strong>Error Handling:</strong> Graceful degradation and retry logic</li>
+</ul>
+
+<h3>5. User Experience</h3>
+
+<h4>5.1 Dashboard Integration</h4>
+<ul>
+<li><strong>Unified Interface:</strong> Google Ads management within Taskilo dashboard</li>
+<li><strong>Multi-Account Support:</strong> Manage multiple Google Ads accounts</li>
+<li><strong>Real-Time Updates:</strong> Live campaign performance data</li>
+</ul>
+
+<h4>5.2 Client Benefits</h4>
+<ul>
+<li><strong>Centralized Management:</strong> All business tools in one platform</li>
+<li><strong>Simplified Workflow:</strong> Integrated campaign and business management</li>
+<li><strong>Professional Support:</strong> Expert guidance for campaign optimization</li>
+<li><strong>Cost Efficiency:</strong> Reduced need for multiple tools and platforms</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h3>6. Compliance & Best Practices</h3>
+
+<h4>6.1 Google Ads Policies</h4>
+<ul>
+<li><strong>Policy Compliance:</strong> Ensure all campaigns meet Google Ads guidelines</li>
+<li><strong>Quality Score Optimization:</strong> Focus on relevant, high-quality ads</li>
+<li><strong>Landing Page Quality:</strong> Monitor and improve destination experiences</li>
+</ul>
+
+<h4>6.2 Data Privacy</h4>
+<ul>
+<li><strong>GDPR Compliance:</strong> European data protection standards</li>
+<li><strong>Client Data Protection:</strong> Secure handling of sensitive business information</li>
+<li><strong>Audit Trail:</strong> Complete logging of all API interactions</li>
+</ul>
+
+<h3>7. Scalability & Future Development</h3>
+
+<h4>7.1 Current Capacity</h4>
+<ul>
+<li><strong>Multi-Tenant Architecture:</strong> Support for thousands of concurrent clients</li>
+<li><strong>Load Balancing:</strong> Distributed API request handling</li>
+<li><strong>Database Optimization:</strong> Efficient storage and retrieval of campaign data</li>
+</ul>
+
+<h4>7.2 Planned Enhancements</h4>
+<ul>
+<li><strong>AI-Powered Optimization:</strong> Machine learning for campaign performance</li>
+<li><strong>Advanced Analytics:</strong> Predictive modeling and insights</li>
+<li><strong>Cross-Platform Integration:</strong> Facebook Ads, LinkedIn Ads support</li>
+<li><strong>Mobile Application:</strong> Native mobile apps for campaign management</li>
+</ul>
+
+<h3>8. Support & Maintenance</h3>
+
+<h4>8.1 Customer Support</h4>
+<ul>
+<li><strong>24/7 Monitoring:</strong> Continuous system health monitoring</li>
+<li><strong>Expert Assistance:</strong> Google Ads certified specialists available</li>
+<li><strong>Documentation:</strong> Comprehensive guides and tutorials</li>
+</ul>
+
+<h4>8.2 System Maintenance</h4>
+<ul>
+<li><strong>Regular Updates:</strong> Keep pace with Google Ads API changes</li>
+<li><strong>Performance Optimization:</strong> Continuous system improvements</li>
+<li><strong>Backup & Recovery:</strong> Robust data protection measures</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>Conclusion</h2>
+
+<p>Taskilo's Google Ads API integration provides a comprehensive, secure, and user-friendly solution for businesses to manage their advertising campaigns within our broader service marketplace platform. Our implementation follows Google's best practices while delivering exceptional value to our clients through integrated business management tools.</p>
+
+<hr style="margin: 30px 0; border: 1px solid #bdc3c7;">
+
+<p><strong>Document Version:</strong> 1.0<br>
+<strong>Last Updated:</strong> August 9, 2025<br>
+<strong>Author:</strong> Taskilo Development Team</p>
+
+</body>
+</html>
