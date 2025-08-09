@@ -774,7 +774,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       {/* Modal für neuen Lieferschein */}
       {showCreateModal && (
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-          <DialogContent className="max-w-none w-95vw max-h-[80vh] overflow-auto">
+          <DialogContent className="max-w-none w-[98vw] max-h-[80vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Neuer Lieferschein</DialogTitle>
               <DialogDescription>
@@ -988,7 +988,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       {/* Modal für Bearbeitung */}
       {showEditModal && selectedNote && (
         <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-          <DialogContent className="max-w-none w-95vw max-h-[80vh] overflow-auto">
+          <DialogContent className="max-w-none w-[98vw] max-h-[80vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Lieferschein bearbeiten: {selectedNote.deliveryNoteNumber}</DialogTitle>
               <DialogDescription>Bearbeiten Sie die Lieferschein-Details</DialogDescription>
@@ -1022,7 +1022,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       {/* Detail-Ansicht Modal */}
       {selectedNote && !showEditModal && (
         <Dialog open={!!selectedNote} onOpenChange={() => setSelectedNote(null)}>
-          <DialogContent className="max-w-none w-95vw max-h-[80vh] overflow-auto">
+          <DialogContent className="max-w-none w-[98vw] max-h-[80vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Lieferschein: {selectedNote.deliveryNoteNumber}</DialogTitle>
               <DialogDescription>
