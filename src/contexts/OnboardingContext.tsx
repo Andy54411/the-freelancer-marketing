@@ -10,11 +10,6 @@ import {
   stepValidationRules,
   onboardingSteps,
 } from '@/types/onboarding';
-import {
-  getOnboardingProgress as getProgressData,
-  updateOnboardingStep as updateStepProgress,
-  completeOnboarding as completeOnboardingProcess,
-} from '@/lib/onboarding-progress';
 
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
@@ -52,15 +47,45 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (!companyId || !user) return;
 
       try {
-        const onboardingDoc = await getDoc(doc(db, 'companies', companyId, 'onboarding', 'status'));
-        if (onboardingDoc.exists()) {
-          const data = onboardingDoc.data() as CompanyOnboardingStatus;
-          setOnboardingStatus(data);
-          setStepData(data.stepData || {});
+        console.log('🔄 Loading onboarding status for company:', companyId);
+
+        // SIMPLIFIED: Use user document directly instead of subcollection
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+
+          // Check if onboarding is completed
+          const isCompleted = userData.onboardingCompleted === true;
+          const currentStepFromData = userData.onboardingCurrentStep || '1';
+          const stepDataFromUser = userData.onboardingStepData || {};
+
+          const status: CompanyOnboardingStatus = {
+            uid: companyId,
+            status: isCompleted ? 'completed' : 'pending_onboarding',
+            completedSteps: userData.onboardingCompletedSteps || [],
+            currentStep: currentStepFromData,
+            startedAt: userData.onboardingStartedAt || new Date(),
+            registrationCompletedAt: userData.createdAt || new Date(),
+            registrationMethod: 'new_registration',
+            stepData: stepDataFromUser,
+            completionPercentage: userData.onboardingCompletionPercentage || 0,
+          };
+
+          console.log('✅ Loaded onboarding status from user document:', {
+            isCompleted,
+            currentStep: currentStepFromData,
+            hasStepData: Object.keys(stepDataFromUser).length > 0,
+          });
+
+          setOnboardingStatus(status);
+          setStepData(stepDataFromUser);
+
           // Set current step based on saved progress or initialStep
-          const stepNumber = initialStep || parseInt(data.currentStep) || 1;
+          const stepNumber = initialStep || parseInt(currentStepFromData) || 1;
           setCurrentStep(stepNumber);
         } else {
+          console.log('⚠️ User document not found, creating initial onboarding status');
+
           // Create initial onboarding status for new companies
           const initialStatus: CompanyOnboardingStatus = {
             uid: companyId,
@@ -74,21 +99,36 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
             completionPercentage: 0,
           };
 
-          await setDoc(doc(db, 'companies', companyId, 'onboarding', 'status'), {
-            ...initialStatus,
-            startedAt: serverTimestamp(),
-            registrationCompletedAt: serverTimestamp(),
+          // Save initial status to user document
+          await updateDoc(doc(db, 'users', user.uid), {
+            onboardingStartedAt: serverTimestamp(),
+            onboardingCurrentStep: '1',
+            onboardingStepData: {},
+            onboardingCompletionPercentage: 0,
           });
 
           setOnboardingStatus(initialStatus);
         }
       } catch (error) {
         console.error('Error loading onboarding status:', error);
+        // Fallback: Set default status to prevent app crash
+        const fallbackStatus: CompanyOnboardingStatus = {
+          uid: companyId,
+          status: 'pending_onboarding',
+          completedSteps: [],
+          currentStep: '1',
+          startedAt: new Date(),
+          registrationCompletedAt: new Date(),
+          registrationMethod: 'new_registration',
+          stepData: {},
+          completionPercentage: 0,
+        };
+        setOnboardingStatus(fallbackStatus);
       }
     };
 
     loadOnboardingStatus();
-  }, [companyId, user]);
+  }, [companyId, user, initialStep]);
 
   // Auto-save functionality (Stripe-style)
   useEffect(() => {
@@ -268,11 +308,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       const isCompleted = completion === 100;
       const serializedStepData = serializeStepData(stepData);
 
-      // Nutze die neue Progress Library für Updates
-      await updateStepProgress(companyId, currentStep, {
-        data: serializedStepData[currentStep] || {},
-        isCompleted: validateStep(currentStep, stepData[currentStep] || {}),
-        completionPercentage: getStepCompletion(currentStep),
+      console.log('💾 Saving onboarding step to user document:', {
+        currentStep,
+        completion,
+        isCompleted,
+        stepDataKeys: Object.keys(serializedStepData),
+      });
+
+      // SIMPLIFIED: Save directly to user document instead of subcollection
+      await updateDoc(doc(db, 'users', user.uid), {
+        onboardingCurrentStep: currentStep.toString(),
+        onboardingStepData: serializedStepData,
+        onboardingCompletionPercentage: completion,
+        onboardingCompleted: isCompleted,
+        onboardingLastUpdated: serverTimestamp(),
       });
 
       // Update local state
@@ -290,6 +339,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       setOnboardingStatus(updatedStatus);
       setLastSaved(new Date());
+
+      console.log('✅ Onboarding step saved successfully');
     } catch (error) {
       console.error('Error saving onboarding step:', error);
     } finally {
@@ -504,8 +555,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       await updateDoc(doc(db, 'companies', companyId), companyUpdateData);
 
-      // Final completion mit neuer Progress Library
-      await completeOnboardingProcess(companyId);
+      // SIMPLIFIED: Mark onboarding as completed in user document (no external library needed)
+      await updateDoc(doc(db, 'users', user.uid), {
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+        onboardingCompletionPercentage: 100,
+        profileComplete: true,
+        profileStatus: 'pending_review',
+      });
 
       console.log(
         '✅ Onboarding completed successfully - registration data preserved, onboarding data added'

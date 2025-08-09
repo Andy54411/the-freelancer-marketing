@@ -105,6 +105,12 @@ service cloud.firestore {
         // DATEV tokens können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
         allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
       }
+
+      // --- ONBOARDING Subcollection für Onboarding-Status ---
+      match /onboarding/{document} {
+        // Onboarding-Status kann nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
+      }
     }
 
     // --- eInvoices Collection (E-Rechnungen) ---
