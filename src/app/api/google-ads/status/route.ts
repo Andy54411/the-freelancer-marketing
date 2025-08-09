@@ -78,18 +78,70 @@ export async function GET(request: NextRequest) {
       const googleAdsData = googleAdsSnap.data();
       const config = googleAdsData?.accountConfig;
 
-      if (!config || !config.accessToken) {
+      if (!config || !config.refreshToken) {
         return NextResponse.json({
           success: true,
           status: 'SETUP_REQUIRED',
           connected: false,
-          message: 'No access token found',
+          message: 'No refresh token found - reconnection required',
           actualCompanyId,
         });
       }
 
-      // Check connection status with Client Library
-      const connectionStatus = await googleAdsClientService.checkConnectionStatus(config);
+      // 🔄 AUTOMATISCHES TOKEN REFRESH wenn abgelaufen
+      let currentConfig = config;
+
+      // Prüfe ob Token abgelaufen ist
+      const now = new Date();
+      const tokenExpiry = config.tokenExpiry ? new Date(config.tokenExpiry) : new Date(0);
+      const isExpired = now >= tokenExpiry;
+
+      console.log('🔍 Token Status:', {
+        now: now.toISOString(),
+        tokenExpiry: tokenExpiry.toISOString(),
+        isExpired,
+        hasRefreshToken: !!config.refreshToken,
+      });
+
+      if (isExpired && config.refreshToken) {
+        console.log('🔄 Token ist abgelaufen - refreshing automatisch...');
+
+        const refreshResult = await googleAdsClientService.refreshAccessToken(config.refreshToken);
+
+        if (refreshResult.success && refreshResult.data) {
+          console.log('✅ Token erfolgreich refreshed');
+
+          // Aktualisiere Config mit neuen Token
+          currentConfig = {
+            ...config,
+            accessToken: refreshResult.data.access_token,
+            tokenExpiry: new Date(Date.now() + refreshResult.data.expires_in * 1000),
+          };
+
+          // Speichere neue Token in Firestore
+          await googleAdsDocRef.update({
+            'accountConfig.accessToken': currentConfig.accessToken,
+            'accountConfig.tokenExpiry': currentConfig.tokenExpiry,
+            lastSync: new Date(),
+            updatedAt: new Date(),
+          });
+
+          console.log('✅ Neue Token in Firestore gespeichert');
+        } else {
+          console.error('❌ Token refresh fehlgeschlagen:', refreshResult.error);
+          return NextResponse.json({
+            success: true,
+            status: 'RECONNECTION_REQUIRED',
+            connected: false,
+            message: 'Token refresh failed - reconnection required',
+            error: refreshResult.error?.message,
+            actualCompanyId,
+          });
+        }
+      }
+
+      // Check connection status with Client Library (mit aktuellen Token)
+      const connectionStatus = await googleAdsClientService.checkConnectionStatus(currentConfig);
 
       // Get basic account info if connected
       let accountsInfo = [];

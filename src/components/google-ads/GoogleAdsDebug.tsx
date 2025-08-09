@@ -447,6 +447,24 @@ export function GoogleAdsDebug({ companyId, initialTest, testMode }: GoogleAdsDe
                   {authDebugging ? 'Auth Debug läuft...' : 'AUTH PROBLEM DEBUGGEN!'}
                 </Button>
 
+                {/* FORCE REFRESH BUTTON - CLEAR CACHE */}
+                <Button
+                  onClick={() => {
+                    // Clear all state
+                    setAuthDebugResult(null);
+                    setTestResults(null);
+                    setLogs([]);
+                    // Force new auth debug
+                    debugAuthFlow();
+                  }}
+                  disabled={authDebugging}
+                  variant="outline"
+                  className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  FORCE REFRESH
+                </Button>
+
                 {testResults && (
                   <Button variant="outline" onClick={exportResults}>
                     <Download className="w-4 h-4 mr-2" />
