@@ -58,11 +58,85 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Firestore Debug Error:', error);
+    console.error('[Google Ads Firestore Debug] Error:', error);
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Failed to fetch Google Ads configurations',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE METHOD FOR RESET
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+
+    if (!companyId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Company ID is required for deletion',
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log(`[Google Ads Reset] Deleting configuration for company: ${companyId}`);
+
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('integrations')
+      .doc('googleAds');
+
+    // Check if exists first
+    const googleAdsSnap = await googleAdsDocRef.get();
+
+    if (!googleAdsSnap.exists) {
+      return NextResponse.json({
+        success: true,
+        message: 'No Google Ads configuration found to delete',
+        companyId,
+      });
+    }
+
+    const oldData = googleAdsSnap.data();
+    console.log(`[Google Ads Reset] Found configuration:`, {
+      hasLinkedAccounts: !!oldData?.linkedAccounts,
+      accountCount: oldData?.linkedAccounts?.length || 0,
+      lastSync: oldData?.lastSync,
+      status: oldData?.status,
+    });
+
+    // Delete the document
+    await googleAdsDocRef.delete();
+
+    console.log(`[Google Ads Reset] Successfully deleted configuration for company: ${companyId}`);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Google Ads configuration deleted successfully',
+      companyId,
+      deletedPath: `companies/${companyId}/integrations/googleAds`,
+      oldData: {
+        accountCount: oldData?.linkedAccounts?.length || 0,
+        lastSync: oldData?.lastSync,
+      },
+    });
+  } catch (error) {
+    console.error('[Google Ads Reset] Error deleting configuration:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete Google Ads configuration',
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );
