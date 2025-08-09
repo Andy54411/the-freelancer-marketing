@@ -55,27 +55,44 @@ async function getCompanyDetails(companyId: string): Promise<CompanyDetailData |
 }
 
 export default async function CompanyDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  if (!id) {
-    notFound();
-  }
+    if (!id) {
+      notFound();
+    }
 
-  const companyDetails = await getCompanyDetails(id);
-  if (!companyDetails) {
+    const companyDetails = await getCompanyDetails(id);
+    if (!companyDetails) {
+      return (
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            Fehler beim Laden der Firmendaten
+          </h1>
+          <p className="text-gray-600">
+            Firma mit ID {id} konnte nicht gefunden werden oder ein Server-Fehler ist aufgetreten.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Überprüfen Sie die Server-Logs für weitere Details oder kontaktieren Sie den
+            Administrator.
+          </p>
+        </div>
+      );
+    }
+
+    return <CompanyDetailClientPage data={companyDetails} />;
+  } catch (error) {
+    console.error('[CompanyDetailPage] Critical error:', error);
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Fehler beim Laden der Firmendaten</h1>
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Server-Fehler</h1>
         <p className="text-gray-600">
-          Firma mit ID {id} konnte nicht gefunden werden oder ein Server-Fehler ist aufgetreten.
+          Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.
         </p>
         <p className="text-sm text-gray-500 mt-2">
-          Überprüfen Sie die Server-Logs für weitere Details oder kontaktieren Sie den
-          Administrator.
+          {process.env.NODE_ENV === 'development' && `Error: ${error}`}
         </p>
       </div>
     );
   }
-
-  return <CompanyDetailClientPage data={companyDetails} />;
 }
