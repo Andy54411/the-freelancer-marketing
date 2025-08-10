@@ -25,6 +25,7 @@ import {
   Zap,
   FileText,
   AlertTriangle,
+  Users,
 } from 'lucide-react';
 
 interface GoogleAdsOverviewProps {
@@ -337,12 +338,15 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
                 </p>
               </div>
 
-              {/* Stats Grid */}
+              {/* Stats Grid mit echten Account-Daten */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg p-4">
                   <div className="text-sm text-[#14ad9f] font-medium">Verbundene Accounts</div>
                   <div className="text-2xl font-bold text-gray-900">
-                    {status.accountsConnected || 0}
+                    {status.accountsConnected || status.accounts?.length || 0}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {status.accounts?.length > 0 ? 'Echte Google Ads Accounts' : 'Keine Accounts'}
                   </div>
                 </div>
 
@@ -353,14 +357,17 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
                       ? new Date(status.lastSync).toLocaleString('de-DE')
                       : 'Gerade eben'}
                   </div>
+                  <div className="text-xs text-gray-500 mt-1">Automatische Synchronisation</div>
                 </div>
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-25 border border-purple-200 rounded-lg p-4">
-                  <div className="text-sm text-purple-600 font-medium">Tägliche Abfragen</div>
+                  <div className="text-sm text-purple-600 font-medium">API Status</div>
                   <div className="text-sm text-purple-900">
-                    {status.quotaUsage?.daily.used || 0} von{' '}
-                    {status.quotaUsage?.daily.limit || 'unlimitiert'}
+                    {status.quotaUsage?.daily
+                      ? `${status.quotaUsage.daily.used || 0} / ${status.quotaUsage.daily.limit || 'unlimited'}`
+                      : 'Client Library v17'}
                   </div>
+                  <div className="text-xs text-gray-500 mt-1">Google Ads API v17</div>
                 </div>
               </div>
 
@@ -488,25 +495,43 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
         </CardContent>
       </Card>
 
-      {/* Accounts List */}
+      {/* Echte Google Ads Accounts */}
       {status?.accounts && status.accounts.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Verbundene Accounts</CardTitle>
-            <CardDescription>Ihre mit Taskilo verknüpften Google Ads Accounts</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#14ad9f]" />
+              Verbundene Google Ads Accounts
+            </CardTitle>
+            <CardDescription>
+              Ihre echten Google Ads Accounts erfolgreich verknüpft und synchronisiert
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {status.accounts.map(account => (
+              {status.accounts.map((account, index) => (
                 <div
                   key={account.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#14ad9f]/30 transition-colors"
                 >
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">{account.name}</div>
-                    <div className="text-sm text-gray-500">
-                      ID: {account.id} • {account.currency}
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-gray-900">{account.name}</div>
+                      {index === 0 && (
+                        <Badge className="bg-[#14ad9f] text-white">Hauptaccount</Badge>
+                      )}
+                      {!account.testAccount && (
+                        <Badge variant="outline" className="text-green-600 border-green-200">
+                          Echter Account
+                        </Badge>
+                      )}
                     </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Customer ID: {account.id} • Währung: {account.currency || 'EUR'}
+                    </div>
+                    {account.timezone && (
+                      <div className="text-xs text-gray-400 mt-1">Zeitzone: {account.timezone}</div>
+                    )}
                     {account.linkedAt && (
                       <div className="text-xs text-gray-400">
                         Verbunden: {new Date(account.linkedAt).toLocaleDateString('de-DE')}
@@ -517,13 +542,56 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
                   <div className="flex items-center gap-2">
                     <Badge
                       variant={account.status === 'ENABLED' ? 'default' : 'secondary'}
-                      className={account.status === 'ENABLED' ? 'bg-green-100 text-green-800' : ''}
+                      className={
+                        account.status === 'ENABLED'
+                          ? 'bg-green-100 text-green-800'
+                          : account.status === 'UNKNOWN'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                      }
                     >
-                      {account.status}
+                      {account.status === 'ENABLED'
+                        ? 'AKTIV'
+                        : account.status === 'UNKNOWN'
+                          ? 'WIRD GEPRÜFT'
+                          : account.status}
                     </Badge>
+                    {!account.manager && (
+                      <Badge variant="outline" className="text-xs">
+                        Standard Account
+                      </Badge>
+                    )}
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Account Statistics */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-[#14ad9f]">{status.accounts.length}</div>
+                  <div className="text-sm text-gray-600">Gesamt Accounts</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {status.accounts.filter(acc => !acc.testAccount).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Echte Accounts</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {status.accounts.filter(acc => acc.status === 'ENABLED').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Aktive Accounts</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {new Set(status.accounts.map(acc => acc.currency)).size}
+                  </div>
+                  <div className="text-sm text-gray-600">Währungen</div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -186,14 +186,18 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-[#14ad9f]" />
-            Campaign Management
+            Kampagnen Management
           </CardTitle>
+          <CardDescription>
+            Echte Google Ads Kampagnen für Customer ID: {customerId}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-2"></div>
-              <p className="text-sm text-gray-600">Lade Kampagnen...</p>
+              <p className="text-sm text-gray-600">Lade echte Kampagnen-Daten...</p>
+              <p className="text-xs text-gray-400 mt-1">Google Ads Client Library v17</p>
             </div>
           </div>
         </CardContent>
