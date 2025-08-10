@@ -44,6 +44,7 @@ import type { GoogleAdsCampaign, GoogleAdsMetrics, CreateCampaignRequest } from 
 
 interface CampaignManagementProps {
   customerId: string;
+  companyId: string; // REQUIRED - nicht optional!
   onCampaignUpdate?: () => void;
 }
 
@@ -56,7 +57,11 @@ interface CampaignFormData {
   endDate?: string;
 }
 
-export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignManagementProps) {
+export function CampaignManagement({
+  customerId,
+  companyId,
+  onCampaignUpdate,
+}: CampaignManagementProps) {
   const [campaigns, setCampaigns] = useState<GoogleAdsCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +83,12 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/google-ads/campaigns?customerId=${customerId}`);
+      // ✅ EINFACHE LÖSUNG: Lasse die API automatisch den richtigen Account wählen
+      // companyId muss als Prop übergeben werden, nicht hardcodiert
+      if (!companyId) {
+        throw new Error('CompanyId ist erforderlich');
+      }
+      const response = await fetch(`/api/google-ads/campaigns?companyId=${companyId}`);
       const result = await response.json();
 
       if (result.success && result.data?.campaigns) {
@@ -111,7 +121,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
       const response = await fetch('/api/google-ads/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, campaignData }),
+        body: JSON.stringify({ companyId, campaignData }),
       });
 
       const result = await response.json();
@@ -146,7 +156,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
       const response = await fetch('/api/google-ads/campaigns', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, campaignId, status: newStatus }),
+        body: JSON.stringify({ companyId, campaignId, status: newStatus }),
       });
 
       const result = await response.json();
@@ -175,10 +185,10 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
   };
 
   useEffect(() => {
-    if (customerId) {
+    if (companyId) {
       fetchCampaigns();
     }
-  }, [customerId]);
+  }, [companyId]);
 
   if (loading) {
     return (
@@ -188,9 +198,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
             <BarChart3 className="h-5 w-5 text-[#14ad9f]" />
             Kampagnen Management
           </CardTitle>
-          <CardDescription>
-            Echte Google Ads Kampagnen für Customer ID: {customerId}
-          </CardDescription>
+          <CardDescription>Google Ads Kampagnen für Company: {companyId}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">

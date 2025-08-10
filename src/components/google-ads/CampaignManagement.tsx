@@ -85,11 +85,9 @@ export function CampaignManagement({
       setLastFetchTime(now);
       console.log('🔍 Fetching campaigns for:', { companyId, selectedAccountId, retryCount });
 
-      // Verwende den ausgewählten Account oder 'auto-detect' als Fallback
-      const finalCustomerId = selectedAccountId || 'auto-detect';
-
-      // API-URL mit companyId und finalCustomerId
-      const url = `/api/google-ads/campaigns?companyId=${companyId}&customerId=${finalCustomerId}`;
+      // ✅ EINFACHE LÖSUNG: Lasse die API automatisch den richtigen Account wählen
+      // Sende keine customerId mehr - die API verwendet denselben Algorithmus wie test-all
+      const url = `/api/google-ads/campaigns?companyId=${companyId}`;
 
       console.log('📊 Fetching from:', url);
       const response = await fetch(url);
@@ -148,14 +146,13 @@ export function CampaignManagement({
       const newStatus = currentStatus === 'ENABLED' ? 'PAUSED' : 'ENABLED';
       console.log('🔄 Toggling campaign status:', { campaignId, currentStatus, newStatus });
 
-      // Verwende den ausgewählten Account
-      const finalCustomerId = selectedAccountId || 'auto-detect';
+      // ✅ EINFACHE LÖSUNG: Lasse die API automatisch den richtigen Account wählen
+      // Sende companyId, aber keine customerId - die API wählt automatisch
 
       const response = await fetch('/api/google-ads/campaigns', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerId: finalCustomerId,
           campaignId,
           status: newStatus,
           companyId,
