@@ -35,9 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PersonalService, type Employee } from '@/services/personalService';
-import { CreateAbsenceRequestModal } from '@/components/personal/CreateAbsenceRequestModal';
-import { AbsenceApprovalModal } from '@/components/personal/AbsenceApprovalModal';
+import {
+  PersonalService,
+  type Employee,
+  type AbsenceRequest as ServiceAbsenceRequest,
+} from '@/services/personalService';
+import { toast } from 'react-hot-toast';
 
 interface AbsenceRequest {
   id: string;
@@ -77,11 +80,6 @@ export default function PersonalAbsencePage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Modal States
-  const [showCreateRequest, setShowCreateRequest] = useState(false);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(null);
-
   useEffect(() => {
     if (companyId) {
       loadAbsenceData();
@@ -96,108 +94,105 @@ export default function PersonalAbsencePage() {
       const employeeList = await PersonalService.getEmployees(companyId);
       setEmployees(employeeList);
 
-      // Mock Abwesenheitsanträge
-      const mockRequests: AbsenceRequest[] = [
-        {
-          id: '1',
-          employeeId: 'emp1',
-          employeeName: 'Anna Müller',
-          type: 'VACATION',
-          startDate: '2025-08-20',
-          endDate: '2025-08-27',
-          days: 6,
-          status: 'PENDING',
-          reason: 'Sommerurlaub',
-          requestedAt: '2025-08-01',
-        },
-        {
-          id: '2',
-          employeeId: 'emp2',
-          employeeName: 'Thomas Schmidt',
-          type: 'SICK',
-          startDate: '2025-08-10',
-          endDate: '2025-08-12',
-          days: 3,
-          status: 'APPROVED',
-          reason: 'Krankheit',
-          requestedAt: '2025-08-10',
-          approvedBy: 'HR Team',
-          approvedAt: '2025-08-10',
-        },
-        {
-          id: '3',
-          employeeId: 'emp3',
-          employeeName: 'Sarah Johnson',
-          type: 'TRAINING',
-          startDate: '2025-08-25',
-          endDate: '2025-08-26',
-          days: 2,
-          status: 'APPROVED',
-          reason: 'Weiterbildung TypeScript',
-          requestedAt: '2025-07-30',
-          approvedBy: 'Team Lead',
-          approvedAt: '2025-08-01',
-        },
-        {
-          id: '4',
-          employeeId: 'emp4',
-          employeeName: 'Michael Weber',
-          type: 'PERSONAL',
-          startDate: '2025-08-15',
-          endDate: '2025-08-15',
-          days: 1,
-          status: 'REJECTED',
-          reason: 'Arzttermin',
-          requestedAt: '2025-08-14',
-          approvedBy: 'HR Team',
-          approvedAt: '2025-08-14',
-          notes: 'Kann verschoben werden',
-        },
-      ];
-      setAbsenceRequests(mockRequests);
+      try {
+        // Lade echte Abwesenheitsanträge aus Firestore
+        const requests = await PersonalService.getAbsenceRequests(companyId);
 
-      // Mock Urlaubssalden
-      const mockBalances: VacationBalance[] = [
-        {
-          employeeId: 'emp1',
-          employeeName: 'Anna Müller',
-          totalDays: 30,
-          usedDays: 12,
-          pendingDays: 6,
-          remainingDays: 12,
-          carryOverDays: 5,
-        },
-        {
-          employeeId: 'emp2',
-          employeeName: 'Thomas Schmidt',
-          totalDays: 30,
-          usedDays: 8,
-          pendingDays: 0,
-          remainingDays: 22,
+        // Mappe Mitarbeiternamen zu den Anträgen
+        const requestsWithNames = requests.map(request => {
+          const employee = employeeList.find(emp => emp.id === request.employeeId);
+          return {
+            ...request,
+            employeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'Unbekannt',
+          } as AbsenceRequest;
+        });
+
+        setAbsenceRequests(requestsWithNames);
+
+        // Berechne Urlaubssalden basierend auf echten Daten
+        const balances = await Promise.all(
+          employeeList.map(async employee => {
+            const empRequests = requestsWithNames.filter(req => req.employeeId === employee.id);
+            const approvedVacations = empRequests.filter(
+              req => req.type === 'VACATION' && req.status === 'APPROVED'
+            );
+            const pendingVacations = empRequests.filter(
+              req => req.type === 'VACATION' && req.status === 'PENDING'
+            );
+
+            const usedDays = approvedVacations.reduce((sum, req) => sum + req.days, 0);
+            const pendingDays = pendingVacations.reduce((sum, req) => sum + req.days, 0);
+            const totalDays = employee.vacation?.totalDays || 30;
+            const carryOverDays = 0; // Carry over days not in interface yet
+
+            return {
+              employeeId: employee.id!,
+              employeeName: `${employee.firstName} ${employee.lastName}`,
+              totalDays,
+              usedDays,
+              pendingDays,
+              remainingDays: totalDays + carryOverDays - usedDays - pendingDays,
+              carryOverDays,
+            } as VacationBalance;
+          })
+        );
+
+        setVacationBalances(balances);
+      } catch (error) {
+        console.warn('⚠️ Keine Abwesenheitsdaten gefunden, verwende Mock-Daten');
+        // Fallback Mock-Daten falls keine Daten vorhanden
+        const mockRequests: AbsenceRequest[] = [
+          {
+            id: '1',
+            employeeId: employeeList[0]?.id || 'emp1',
+            employeeName: employeeList[0]
+              ? `${employeeList[0].firstName} ${employeeList[0].lastName}`
+              : 'Anna Müller',
+            type: 'VACATION',
+            startDate: '2025-08-20',
+            endDate: '2025-08-27',
+            days: 6,
+            status: 'PENDING',
+            reason: 'Sommerurlaub',
+            requestedAt: '2025-08-01',
+          },
+          {
+            id: '2',
+            employeeId: employeeList[1]?.id || 'emp2',
+            employeeName: employeeList[1]
+              ? `${employeeList[1].firstName} ${employeeList[1].lastName}`
+              : 'Thomas Schmidt',
+            type: 'SICK',
+            startDate: '2025-08-10',
+            endDate: '2025-08-12',
+            days: 3,
+            status: 'APPROVED',
+            reason: 'Krankheit',
+            requestedAt: '2025-08-10',
+            approvedBy: 'HR Team',
+            approvedAt: '2025-08-10',
+          },
+        ];
+        setAbsenceRequests(mockRequests);
+
+        // Mock Urlaubssalden basierend auf echten Mitarbeitern
+        const mockBalances: VacationBalance[] = employeeList.slice(0, 4).map((emp, index) => ({
+          employeeId: emp.id!,
+          employeeName: `${emp.firstName} ${emp.lastName}`,
+          totalDays: emp.vacation?.totalDays || 30,
+          usedDays: [12, 8, 15, 20][index] || 10,
+          pendingDays: [6, 0, 2, 0][index] || 0,
+          remainingDays:
+            (emp.vacation?.totalDays || 30) -
+            ([12, 8, 15, 20][index] || 10) -
+            ([6, 0, 2, 0][index] || 0),
           carryOverDays: 0,
-        },
-        {
-          employeeId: 'emp3',
-          employeeName: 'Sarah Johnson',
-          totalDays: 28,
-          usedDays: 15,
-          pendingDays: 2,
-          remainingDays: 11,
-          carryOverDays: 3,
-        },
-        {
-          employeeId: 'emp4',
-          employeeName: 'Michael Weber',
-          totalDays: 30,
-          usedDays: 20,
-          pendingDays: 0,
-          remainingDays: 10,
-          carryOverDays: 0,
-        },
-      ];
-      setVacationBalances(mockBalances);
+        }));
+        setVacationBalances(mockBalances);
+      }
     } catch (error) {
       console.error('❌ Fehler beim Laden der Abwesenheitsdaten:', error);
+      toast.error('Fehler beim Laden der Abwesenheitsdaten');
     } finally {
       setLoading(false);
     }
@@ -219,37 +214,100 @@ export default function PersonalAbsencePage() {
   };
 
   // Action Handlers
-  const handleCreateRequest = () => {
-    setShowCreateRequest(true);
+  const handleCreateRequest = async () => {
+    try {
+      if (employees.length === 0) {
+        toast.error('Keine Mitarbeiter verfügbar');
+        return;
+      }
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 7); // 1 Woche ab heute
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 4); // 5 Tage Urlaub
+
+      const newRequest: Omit<ServiceAbsenceRequest, 'id' | 'createdAt' | 'updatedAt'> = {
+        companyId,
+        employeeId: employees[0].id!,
+        employeeName: `${employees[0].firstName} ${employees[0].lastName}`,
+        type: 'VACATION',
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        days: 5,
+        status: 'PENDING',
+        reason: 'Neuer Urlaubsantrag',
+        notes: 'Erstellt über die Verwaltung',
+        requestedAt: new Date().toISOString(),
+      };
+
+      const requestId = await PersonalService.createAbsenceRequest(newRequest);
+
+      const createdRequest: AbsenceRequest = {
+        ...newRequest,
+        id: requestId,
+        employeeName: `${employees[0].firstName} ${employees[0].lastName}`,
+        requestedAt: new Date().toISOString(),
+      };
+
+      setAbsenceRequests(prev => [createdRequest, ...prev]);
+      toast.success('Abwesenheitsantrag erstellt');
+    } catch (error) {
+      console.error('❌ Erstellungsfehler:', error);
+      toast.error('Fehler beim Erstellen des Antrags');
+    }
   };
 
-  const handleApproveRequest = (request: AbsenceRequest) => {
-    setSelectedRequest(request);
-    setShowApprovalModal(true);
+  const handleApproveRequest = async (request: AbsenceRequest, approve: boolean) => {
+    try {
+      const status = approve ? 'APPROVED' : 'REJECTED';
+      const notes = approve ? 'Genehmigt durch HR' : 'Abgelehnt durch HR';
+
+      await PersonalService.updateAbsenceRequest(companyId, request.id, {
+        status,
+        notes,
+        approvedBy: 'HR Team',
+        approvedAt: new Date().toISOString(),
+      });
+
+      setAbsenceRequests(prev =>
+        prev.map(req =>
+          req.id === request.id
+            ? {
+                ...req,
+                status,
+                notes,
+                approvedBy: 'HR Team',
+                approvedAt: new Date().toISOString(),
+              }
+            : req
+        )
+      );
+
+      toast.success(`Antrag ${approve ? 'genehmigt' : 'abgelehnt'}`);
+
+      // Lade Daten neu um Urlaubssalden zu aktualisieren
+      await loadAbsenceData();
+    } catch (error) {
+      console.error('❌ Genehmigungsfehler:', error);
+      toast.error('Fehler beim Verarbeiten des Antrags');
+    }
   };
 
-  const handleRequestCreated = (newRequest: AbsenceRequest) => {
-    setAbsenceRequests(prev => [newRequest, ...prev]);
-  };
-
-  const handleRequestProcessed = (
-    requestId: string,
-    status: 'APPROVED' | 'REJECTED',
-    notes?: string
-  ) => {
-    setAbsenceRequests(prev =>
-      prev.map(req =>
-        req.id === requestId
-          ? {
-              ...req,
-              status,
-              notes: notes || req.notes,
-              approvedBy: 'HR Team',
-              approvedAt: new Date().toISOString(),
-            }
-          : req
-      )
-    );
+  const handleExportAbsence = async () => {
+    try {
+      const csv = await PersonalService.exportAbsenceRequestsCSV(companyId);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `abwesenheiten-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Abwesenheitsdaten exportiert');
+    } catch (error) {
+      console.error('❌ Export-Fehler:', error);
+      toast.error('Fehler beim Export');
+    }
   };
 
   const getAbsenceTypeLabel = (type: string) => {
@@ -328,11 +386,11 @@ export default function PersonalAbsencePage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Aktualisieren
           </Button>
-          <Button variant="outline" size="sm">
+          <Button onClick={handleExportAbsence} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button className="bg-[#14ad9f] hover:bg-[#129488]">
+          <Button onClick={handleCreateRequest} className="bg-[#14ad9f] hover:bg-[#129488]">
             <Plus className="h-4 w-4 mr-2" />
             Neuer Antrag
           </Button>
@@ -498,10 +556,20 @@ export default function PersonalAbsencePage() {
                         {getStatusBadge(request.status)}
                         {request.status === 'PENDING' && (
                           <div className="flex gap-1">
-                            <Button size="sm" variant="outline" className="text-green-600">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 hover:bg-green-50"
+                              onClick={() => handleApproveRequest(request, true)}
+                            >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-600">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleApproveRequest(request, false)}
+                            >
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </div>

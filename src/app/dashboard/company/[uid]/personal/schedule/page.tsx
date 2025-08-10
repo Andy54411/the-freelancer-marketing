@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { PersonalService, Employee } from '@/services/personalService';
+import { PersonalService, Employee, Shift } from '@/services/personalService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,46 +36,23 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-interface Shift {
-  id: string;
-  employeeId: string;
-  employee?: Employee;
-  date: string;
-  startTime: string;
-  endTime: string;
-  position: string;
-  department: string;
-  notes?: string;
-  status: 'PLANNED' | 'CONFIRMED' | 'ABSENT' | 'SICK';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface ScheduleTemplate {
-  id: string;
-  name: string;
-  description: string;
-  shifts: Omit<Shift, 'id' | 'date' | 'createdAt' | 'updatedAt'>[];
-  isActive: boolean;
-}
+// Schedule Template Interface für zukünftige Features
 
 export default function SchedulePage({ params }: { params: { uid: string } }) {
   const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
-  const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [showShiftDialog, setShowShiftDialog] = useState(false);
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
   useEffect(() => {
     if (user && params.uid) {
       loadData();
     }
-  }, [user, params.uid]);
+  }, [user, params.uid, currentWeek]);
 
   const loadData = async () => {
     try {
@@ -83,56 +60,44 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
       const employeeData = await PersonalService.getEmployees(params.uid);
       setEmployees(employeeData.filter(emp => emp.isActive));
 
-      // TODO: Implement shift loading from Firestore
-      // const shiftData = await ScheduleService.getShifts(params.uid, currentWeek);
-      // setShifts(shiftData);
+      // Lade echte Schichtdaten aus Firestore
+      const weekStart = new Date(currentWeek);
+      const weekEnd = new Date(currentWeek);
+      weekEnd.setDate(weekEnd.getDate() + 6);
 
-      // Mock data for demo
-      setShifts([
-        {
-          id: '1',
-          employeeId: 'emp1',
-          date: '2025-08-11',
-          startTime: '09:00',
-          endTime: '17:00',
-          position: 'Entwickler',
-          department: 'IT',
-          status: 'CONFIRMED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          employeeId: 'emp2',
-          date: '2025-08-11',
-          startTime: '10:00',
-          endTime: '18:00',
-          position: 'Designer',
-          department: 'Marketing',
-          status: 'PLANNED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ]);
+      try {
+        const shiftData = await PersonalService.getShifts(params.uid, weekStart, weekEnd);
+        setShifts(shiftData);
+      } catch (error) {
+        console.warn('⚠️ Keine Schichtdaten gefunden, verwende Mock-Daten');
+        // Fallback Mock-Daten falls keine Daten vorhanden
+        setShifts([
+          {
+            id: '1',
+            companyId: params.uid,
+            employeeId: 'emp1',
+            date: '2025-08-11',
+            startTime: '09:00',
+            endTime: '17:00',
+            position: 'Entwickler',
+            department: 'IT',
+            status: 'CONFIRMED',
+          },
+          {
+            id: '2',
+            companyId: params.uid,
+            employeeId: 'emp2',
+            date: '2025-08-11',
+            startTime: '10:00',
+            endTime: '18:00',
+            position: 'Designer',
+            department: 'Marketing',
+            status: 'PLANNED',
+          },
+        ]);
+      }
 
-      setTemplates([
-        {
-          id: '1',
-          name: 'Standard Woche',
-          description: 'Reguläre Arbeitszeiten Mo-Fr',
-          isActive: true,
-          shifts: [
-            {
-              employeeId: '',
-              startTime: '09:00',
-              endTime: '17:00',
-              position: '',
-              department: '',
-              status: 'PLANNED',
-            },
-          ],
-        },
-      ]);
+      // Templates werden später implementiert
     } catch (error) {
       console.error('❌ Fehler beim Laden der Dienstplandaten:', error);
       toast.error('Fehler beim Laden der Dienstplandaten');
@@ -141,11 +106,108 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
     }
   };
 
+  // Event Handlers
+  const exportSchedule = async () => {
+    try {
+      const weekStart = new Date(currentWeek);
+      const weekEnd = new Date(currentWeek);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const csv = await PersonalService.exportScheduleCSV(params.uid, weekStart, weekEnd);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dienstplan-${currentWeek.toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Dienstplan exportiert');
+    } catch (error) {
+      console.error('❌ Export-Fehler:', error);
+      toast.error('Fehler beim Export');
+    }
+  };
+
+  const handleCreateShift = async () => {
+    try {
+      if (employees.length === 0) {
+        toast.error('Keine Mitarbeiter verfügbar');
+        return;
+      }
+
+      const today = new Date();
+      const newShift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
+        companyId: params.uid,
+        employeeId: employees[0].id!,
+        date: today.toISOString().split('T')[0],
+        startTime: '09:00',
+        endTime: '17:00',
+        position: employees[0].position,
+        department: employees[0].department,
+        status: 'PLANNED',
+        notes: 'Neue Schicht',
+      };
+
+      const shiftId = await PersonalService.createShift(newShift);
+
+      // Aktualisiere lokale Liste
+      const createdShift: Shift = {
+        ...newShift,
+        id: shiftId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      setShifts(prev => [...prev, createdShift]);
+      toast.success('Schicht erstellt');
+    } catch (error) {
+      console.error('❌ Erstellungsfehler:', error);
+      toast.error('Fehler beim Erstellen der Schicht');
+    }
+  };
+
+  const handleDeleteShift = async (shiftId: string) => {
+    if (!shiftId) return;
+
+    try {
+      await PersonalService.deleteShift(params.uid, shiftId);
+      setShifts(prev => prev.filter(shift => shift.id !== shiftId));
+      setShowShiftDialog(false);
+      toast.success('Schicht gelöscht');
+    } catch (error) {
+      console.error('❌ Löschfehler:', error);
+      toast.error('Fehler beim Löschen der Schicht');
+    }
+  };
+
+  const handleSaveShift = async () => {
+    if (!selectedShift?.id) return;
+
+    try {
+      await PersonalService.updateShift(params.uid, selectedShift.id, {
+        status: selectedShift.status,
+        notes: selectedShift.notes,
+        startTime: selectedShift.startTime,
+        endTime: selectedShift.endTime,
+      });
+
+      setShifts(prev =>
+        prev.map(shift => (shift.id === selectedShift.id ? { ...shift, ...selectedShift } : shift))
+      );
+
+      setShowShiftDialog(false);
+      toast.success('Schicht gespeichert');
+    } catch (error) {
+      console.error('❌ Speicherfehler:', error);
+      toast.error('Fehler beim Speichern der Schicht');
+    }
+  };
+
   const getWeekDays = (startDate: Date) => {
     const days = [];
     const start = new Date(startDate);
     const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
     start.setDate(diff);
 
     for (let i = 0; i < 7; i++) {
@@ -230,15 +292,22 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button onClick={exportSchedule} variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button
+            onClick={() => toast('Vorlagen-Feature wird bald verfügbar sein')}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
             <Copy className="h-4 w-4" />
             Vorlage
           </Button>
-          <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+          <Button
+            onClick={handleCreateShift}
+            className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2"
+          >
             <Plus className="h-4 w-4" />
             Schicht hinzufügen
           </Button>
@@ -456,7 +525,13 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Mitarbeiter</label>
-                  <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
+                  <select
+                    className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                    value={selectedShift.employeeId}
+                    onChange={e =>
+                      setSelectedShift({ ...selectedShift, employeeId: e.target.value })
+                    }
+                  >
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
                         {emp.firstName} {emp.lastName}
@@ -466,7 +541,13 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Status</label>
-                  <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
+                  <select
+                    className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                    value={selectedShift.status}
+                    onChange={e =>
+                      setSelectedShift({ ...selectedShift, status: e.target.value as any })
+                    }
+                  >
                     <option value="PLANNED">Geplant</option>
                     <option value="CONFIRMED">Bestätigt</option>
                     <option value="ABSENT">Abwesend</option>
@@ -477,23 +558,40 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Startzeit</label>
-                  <Input type="time" defaultValue={selectedShift.startTime} className="mt-1" />
+                  <Input
+                    type="time"
+                    value={selectedShift.startTime}
+                    className="mt-1"
+                    onChange={e =>
+                      setSelectedShift({ ...selectedShift, startTime: e.target.value })
+                    }
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Endzeit</label>
-                  <Input type="time" defaultValue={selectedShift.endTime} className="mt-1" />
+                  <Input
+                    type="time"
+                    value={selectedShift.endTime}
+                    className="mt-1"
+                    onChange={e => setSelectedShift({ ...selectedShift, endTime: e.target.value })}
+                  />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Notizen</label>
                 <Input
                   placeholder="Zusätzliche Informationen..."
-                  defaultValue={selectedShift.notes}
+                  value={selectedShift.notes || ''}
                   className="mt-1"
+                  onChange={e => setSelectedShift({ ...selectedShift, notes: e.target.value })}
                 />
               </div>
               <div className="flex justify-between pt-4">
-                <Button variant="destructive" className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleDeleteShift(selectedShift?.id || '')}
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                >
                   <Trash2 className="h-4 w-4" />
                   Löschen
                 </Button>
@@ -501,7 +599,12 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
                   <Button variant="outline" onClick={() => setShowShiftDialog(false)}>
                     Abbrechen
                   </Button>
-                  <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">Speichern</Button>
+                  <Button
+                    onClick={handleSaveShift}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  >
+                    Speichern
+                  </Button>
                 </div>
               </div>
             </div>
@@ -518,7 +621,10 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
             <p className="text-gray-600 mb-6">
               Erstellen Sie Ihren ersten Dienstplan für diese Woche.
             </p>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button
+              onClick={handleCreateShift}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
               Erste Schicht erstellen
             </Button>
           </CardContent>

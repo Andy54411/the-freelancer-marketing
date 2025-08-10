@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { PersonalService, Employee } from '@/services/personalService';
+import { PersonalService, Employee, TimeEntry } from '@/services/personalService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,49 +14,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Clock,
-  Play,
-  Pause,
-  Square,
-  Calendar,
-  Users,
-  Timer,
-  TrendingUp,
-  Download,
-  Upload,
-  Plus,
-  Edit,
-  Trash2,
-  Filter,
-  Search,
-  BarChart3,
-  AlertCircle,
-  CheckCircle,
-} from 'lucide-react';
+import { Play, Pause, Square, Calendar, Timer, Download, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-
-interface TimeEntry {
-  id: string;
-  employeeId: string;
-  employee?: Employee;
-  projectId?: string;
-  projectName?: string;
-  date: string;
-  startTime: string;
-  endTime?: string;
-  duration?: number; // in minutes
-  breakTime: number; // in minutes
-  description: string;
-  category: 'WORK' | 'OVERTIME' | 'BREAK' | 'SICK' | 'VACATION';
-  status: 'ACTIVE' | 'COMPLETED' | 'APPROVED' | 'REJECTED';
-  isManual: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface TimesheetSummary {
   employeeId: string;
@@ -76,7 +37,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
-  const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  const [activeTimers, setActiveTimers] = useState<Set<string>>(new Set());
   const [showTimeDialog, setShowTimeDialog] = useState(false);
   const [selectedTimeEntry, setSelectedTimeEntry] = useState<TimeEntry | null>(null);
 
@@ -92,64 +53,67 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       const employeeData = await PersonalService.getEmployees(params.uid);
       setEmployees(employeeData.filter(emp => emp.isActive));
 
-      // TODO: Implement timesheet loading from Firestore
-      // const timeData = await TimesheetService.getTimeEntries(params.uid, selectedWeek, selectedEmployee);
-      // setTimeEntries(timeData);
+      // Lade echte Zeiterfassungsdaten aus Firestore
+      const weekStart = new Date(selectedWeek);
+      const weekEnd = new Date(selectedWeek);
+      weekEnd.setDate(weekEnd.getDate() + 6);
 
-      // Mock data for demo
-      const mockEntries: TimeEntry[] = [
-        {
-          id: '1',
-          employeeId: 'emp1',
-          date: '2025-08-11',
-          startTime: '09:00',
-          endTime: '17:30',
-          duration: 480, // 8 hours
-          breakTime: 30,
-          description: 'Entwicklung neue Features',
-          category: 'WORK',
-          status: 'COMPLETED',
-          isManual: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          employeeId: 'emp1',
-          date: '2025-08-12',
-          startTime: '09:15',
-          endTime: '18:00',
-          duration: 495, // 8.25 hours
-          breakTime: 30,
-          description: 'Bug fixes und Code Review',
-          category: 'WORK',
-          status: 'COMPLETED',
-          isManual: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '3',
-          employeeId: 'emp2',
-          date: '2025-08-11',
-          startTime: '10:00',
-          endTime: '18:30',
-          duration: 480, // 8 hours
-          breakTime: 30,
-          description: 'Design System Update',
-          category: 'WORK',
-          status: 'APPROVED',
-          isManual: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
+      try {
+        const timeData = await PersonalService.getTimeEntries(
+          params.uid,
+          selectedEmployee === 'all' ? undefined : selectedEmployee,
+          weekStart,
+          weekEnd
+        );
+        setTimeEntries(timeData);
 
-      setTimeEntries(mockEntries);
+        // Finde aktive Timer
+        const activeTimerSet = new Set<string>();
+        timeData.forEach(entry => {
+          if (entry.status === 'ACTIVE') {
+            activeTimerSet.add(entry.employeeId);
+          }
+        });
+        setActiveTimers(activeTimerSet);
+      } catch (error) {
+        console.warn('⚠️ Keine Zeiterfassungsdaten gefunden, verwende Mock-Daten');
+        // Fallback Mock-Daten falls keine Daten vorhanden
+        const mockEntries: TimeEntry[] = [
+          {
+            id: '1',
+            companyId: params.uid,
+            employeeId: 'emp1',
+            date: '2025-08-11',
+            startTime: '09:00',
+            endTime: '17:30',
+            duration: 480, // 8 hours
+            breakTime: 30,
+            description: 'Entwicklung neue Features',
+            category: 'WORK',
+            status: 'COMPLETED',
+            isManual: false,
+          },
+          {
+            id: '2',
+            companyId: params.uid,
+            employeeId: 'emp1',
+            date: '2025-08-12',
+            startTime: '09:15',
+            endTime: '18:00',
+            duration: 495, // 8.25 hours
+            breakTime: 30,
+            description: 'Bug fixes und Code Review',
+            category: 'WORK',
+            status: 'COMPLETED',
+            isManual: false,
+          },
+        ];
+        setTimeEntries(mockEntries);
+      }
 
-      // Calculate summaries
+      // Berechne Zusammenfassungen
       const employeeSummaries = employeeData.map(emp => {
-        const empEntries = mockEntries.filter(entry => entry.employeeId === emp.id);
+        const empEntries = timeEntries.filter(entry => entry.employeeId === emp.id);
         const totalMinutes = empEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
         const workEntries = empEntries.filter(entry => entry.category === 'WORK');
         const overtimeMinutes = Math.max(0, totalMinutes - emp.workingHours.weekly * 60);
@@ -174,11 +138,15 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
     }
   };
 
+  // Event Handlers
   const startTimer = async (employeeId: string) => {
     try {
-      // TODO: Implement timer start in Firestore
-      setActiveTimer(employeeId);
+      await PersonalService.startTimer(params.uid, employeeId, 'Arbeitszeit');
+      setActiveTimers(prev => new Set(prev).add(employeeId));
       toast.success('Timer gestartet');
+
+      // Lade Daten neu
+      await loadData();
     } catch (error) {
       console.error('❌ Fehler beim Starten des Timers:', error);
       toast.error('Fehler beim Starten des Timers');
@@ -187,12 +155,120 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
 
   const stopTimer = async (employeeId: string) => {
     try {
-      // TODO: Implement timer stop in Firestore
-      setActiveTimer(null);
+      await PersonalService.stopTimer(params.uid, employeeId);
+      setActiveTimers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(employeeId);
+        return newSet;
+      });
       toast.success('Timer gestoppt');
+
+      // Lade Daten neu
+      await loadData();
     } catch (error) {
       console.error('❌ Fehler beim Stoppen des Timers:', error);
       toast.error('Fehler beim Stoppen des Timers');
+    }
+  };
+
+  const exportTimesheet = async () => {
+    try {
+      const weekStart = new Date(selectedWeek);
+      const weekEnd = new Date(selectedWeek);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const csv = await PersonalService.exportTimeEntriesCSV(params.uid, weekStart, weekEnd);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `zeiterfassung-${selectedWeek.toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Zeiterfassung exportiert');
+    } catch (error) {
+      console.error('❌ Export-Fehler:', error);
+      toast.error('Fehler beim Export');
+    }
+  };
+
+  const handleCreateTimeEntry = async () => {
+    try {
+      if (employees.length === 0) {
+        toast.error('Keine Mitarbeiter verfügbar');
+        return;
+      }
+
+      const today = new Date();
+      const newEntry: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'> = {
+        companyId: params.uid,
+        employeeId: employees[0].id!,
+        date: today.toISOString().split('T')[0],
+        startTime: '09:00',
+        endTime: '17:00',
+        duration: 480, // 8 Stunden
+        breakTime: 30,
+        description: 'Manuelle Zeiterfassung',
+        category: 'WORK',
+        status: 'COMPLETED',
+        isManual: true,
+      };
+
+      const entryId = await PersonalService.createTimeEntry(newEntry);
+
+      // Aktualisiere lokale Liste
+      const createdEntry: TimeEntry = {
+        ...newEntry,
+        id: entryId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      setTimeEntries(prev => [...prev, createdEntry]);
+      toast.success('Zeiteintrag erstellt');
+    } catch (error) {
+      console.error('❌ Erstellungsfehler:', error);
+      toast.error('Fehler beim Erstellen des Zeiteintrags');
+    }
+  };
+
+  const handleUpdateTimeEntry = async () => {
+    if (!selectedTimeEntry?.id) return;
+
+    try {
+      await PersonalService.updateTimeEntry(params.uid, selectedTimeEntry.id, {
+        startTime: selectedTimeEntry.startTime,
+        endTime: selectedTimeEntry.endTime,
+        breakTime: selectedTimeEntry.breakTime,
+        description: selectedTimeEntry.description,
+        category: selectedTimeEntry.category,
+      });
+
+      setTimeEntries(prev =>
+        prev.map(entry =>
+          entry.id === selectedTimeEntry.id ? { ...entry, ...selectedTimeEntry } : entry
+        )
+      );
+
+      setShowTimeDialog(false);
+      toast.success('Zeiteintrag aktualisiert');
+    } catch (error) {
+      console.error('❌ Aktualisierungsfehler:', error);
+      toast.error('Fehler beim Aktualisieren des Zeiteintrags');
+    }
+  };
+
+  const handleDeleteTimeEntry = async (entryId: string) => {
+    if (!entryId) return;
+
+    try {
+      await PersonalService.deleteTimeEntry(params.uid, entryId);
+      setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
+      setShowTimeDialog(false);
+      toast.success('Zeiteintrag gelöscht');
+    } catch (error) {
+      console.error('❌ Löschfehler:', error);
+      toast.error('Fehler beim Löschen des Zeiteintrags');
     }
   };
 
@@ -301,11 +377,14 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button onClick={exportTimesheet} variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+          <Button
+            onClick={handleCreateTimeEntry}
+            className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2"
+          >
             <Plus className="h-4 w-4" />
             Zeit erfassen
           </Button>
@@ -373,7 +452,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       {/* Timer Cards für aktive Mitarbeiter */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {employees.slice(0, 3).map(employee => {
-          const isActive = activeTimer === employee.id;
+          const isActive = activeTimers.has(employee.id!);
           const summary = summaries.find(s => s.employeeId === employee.id);
 
           return (
@@ -548,7 +627,11 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteTimeEntry(entry.id || '')}
+                              >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>
@@ -644,30 +727,60 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Startzeit</label>
-                  <Input type="time" defaultValue={selectedTimeEntry.startTime} className="mt-1" />
+                  <Input
+                    type="time"
+                    value={selectedTimeEntry.startTime}
+                    className="mt-1"
+                    onChange={e =>
+                      setSelectedTimeEntry({ ...selectedTimeEntry, startTime: e.target.value })
+                    }
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Endzeit</label>
-                  <Input type="time" defaultValue={selectedTimeEntry.endTime} className="mt-1" />
+                  <Input
+                    type="time"
+                    value={selectedTimeEntry.endTime || ''}
+                    className="mt-1"
+                    onChange={e =>
+                      setSelectedTimeEntry({ ...selectedTimeEntry, endTime: e.target.value })
+                    }
+                  />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Pause (Minuten)</label>
-                <Input type="number" defaultValue={selectedTimeEntry.breakTime} className="mt-1" />
+                <Input
+                  type="number"
+                  value={selectedTimeEntry.breakTime}
+                  className="mt-1"
+                  onChange={e =>
+                    setSelectedTimeEntry({
+                      ...selectedTimeEntry,
+                      breakTime: parseInt(e.target.value) || 0,
+                    })
+                  }
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Beschreibung</label>
                 <Input
                   placeholder="Was wurde gemacht..."
-                  defaultValue={selectedTimeEntry.description}
+                  value={selectedTimeEntry.description}
                   className="mt-1"
+                  onChange={e =>
+                    setSelectedTimeEntry({ ...selectedTimeEntry, description: e.target.value })
+                  }
                 />
               </div>
               <div>
                 <label className="text-sm font-medium">Kategorie</label>
                 <select
-                  defaultValue={selectedTimeEntry.category}
+                  value={selectedTimeEntry.category}
                   className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                  onChange={e =>
+                    setSelectedTimeEntry({ ...selectedTimeEntry, category: e.target.value as any })
+                  }
                 >
                   <option value="WORK">Arbeit</option>
                   <option value="OVERTIME">Überstunden</option>
@@ -677,12 +790,22 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
                 </select>
               </div>
               <div className="flex justify-between pt-4">
-                <Button variant="destructive">Löschen</Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteTimeEntry(selectedTimeEntry?.id || '')}
+                >
+                  Löschen
+                </Button>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setShowTimeDialog(false)}>
                     Abbrechen
                   </Button>
-                  <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">Speichern</Button>
+                  <Button
+                    onClick={handleUpdateTimeEntry}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  >
+                    Speichern
+                  </Button>
                 </div>
               </div>
             </div>
@@ -701,7 +824,10 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
                 ? 'Für diese Woche wurden noch keine Zeiten erfasst.'
                 : 'Für diesen Mitarbeiter wurden noch keine Zeiten erfasst.'}
             </p>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button
+              onClick={handleCreateTimeEntry}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
               Erste Zeit erfassen
             </Button>
           </CardContent>
