@@ -8,14 +8,43 @@ import { db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
+    const inputCompanyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
 
-    console.log('🧪 Testing Google Ads Budget Creation...');
+    console.log('🧪 Testing Google Ads Budget Creation for:', inputCompanyId);
+
+    // Company ID lookup logic (wie in create-comprehensive)
+    let actualCompanyId = inputCompanyId;
+
+    // Wenn es aussieht wie eine User-ID (mietkoch-andy), suche die echte Company ID
+    if (inputCompanyId.includes('-') && !inputCompanyId.includes('_')) {
+      console.log('🔍 Looking up company ID for:', inputCompanyId);
+
+      const companiesSnapshot = await db.collection('companies').get();
+      const foundCompany = companiesSnapshot.docs.find(doc => {
+        const data = doc.data();
+        return (
+          data.id === inputCompanyId ||
+          data.name?.toLowerCase().includes(inputCompanyId.toLowerCase()) ||
+          data.slug === inputCompanyId
+        );
+      });
+
+      if (foundCompany) {
+        actualCompanyId = foundCompany.id;
+        console.log('✅ Found actual company ID:', actualCompanyId);
+      } else {
+        console.log('❌ Company not found for ID:', inputCompanyId);
+        return NextResponse.json(
+          { error: 'Company not found', searchedId: inputCompanyId },
+          { status: 404 }
+        );
+      }
+    }
 
     // Get stored config
     const googleAdsDocRef = db
       .collection('companies')
-      .doc(companyId)
+      .doc(actualCompanyId)
       .collection('integrations')
       .doc('googleAds');
 
@@ -23,7 +52,12 @@ export async function POST(request: NextRequest) {
 
     if (!googleAdsSnap.exists) {
       return NextResponse.json(
-        { error: 'No Google Ads configuration found', companyId },
+        {
+          error: 'No Google Ads configuration found',
+          inputCompanyId,
+          actualCompanyId,
+          searched: `companies/${actualCompanyId}/integrations/googleAds`,
+        },
         { status: 404 }
       );
     }
@@ -32,7 +66,14 @@ export async function POST(request: NextRequest) {
     const accountConfig = data?.accountConfig;
 
     if (!accountConfig?.refreshToken) {
-      return NextResponse.json({ error: 'No refresh token found', companyId }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'No refresh token found',
+          inputCompanyId,
+          actualCompanyId,
+        },
+        { status: 400 }
+      );
     }
 
     // Get first customer
@@ -89,6 +130,8 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Budget creation test passed',
         data: {
+          inputCompanyId,
+          actualCompanyId,
           customerId,
           budgetResourceName,
           budgetId: budgetResourceName.split('/')[3],
@@ -119,6 +162,8 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Budget creation test failed',
         data: {
+          inputCompanyId,
+          actualCompanyId,
           customerId,
           test: 'simple_budget_creation',
           errorInfo,
