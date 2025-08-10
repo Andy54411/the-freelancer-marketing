@@ -509,61 +509,74 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {status.accounts.map((account, index) => (
-                <div
-                  key={account.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#14ad9f]/30 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium text-gray-900">{account.name}</div>
-                      {index === 0 && (
-                        <Badge className="bg-[#14ad9f] text-white">Hauptaccount</Badge>
+              {status.accounts
+                .sort((a, b) => {
+                  // Sortiere: ENABLED zuerst, dann nach Namen
+                  if (a.status === 'ENABLED' && b.status !== 'ENABLED') return -1;
+                  if (b.status === 'ENABLED' && a.status !== 'ENABLED') return 1;
+                  return a.name.localeCompare(b.name);
+                })
+                .map((account, index) => (
+                  <div
+                    key={account.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#14ad9f]/30 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-gray-900">{account.name}</div>
+                        {index === 0 && (
+                          <Badge className="bg-[#14ad9f] text-white">Hauptaccount</Badge>
+                        )}
+                        {!account.testAccount && (
+                          <Badge variant="outline" className="text-green-600 border-green-200">
+                            Echter Account
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        Customer ID: {account.id} • Währung: {account.currency || 'EUR'}
+                      </div>
+                      {account.timezone && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          Zeitzone: {account.timezone}
+                        </div>
                       )}
-                      {!account.testAccount && (
-                        <Badge variant="outline" className="text-green-600 border-green-200">
-                          Echter Account
+                      {account.linkedAt && (
+                        <div className="text-xs text-gray-400">
+                          Verbunden: {new Date(account.linkedAt).toLocaleDateString('de-DE')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={account.status === 'ENABLED' ? 'default' : 'secondary'}
+                        className={
+                          account.status === 'ENABLED'
+                            ? 'bg-green-100 text-green-800'
+                            : account.status === 'UNKNOWN'
+                              ? 'bg-red-100 text-red-800'
+                              : account.status === 'SUSPENDED'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-gray-100 text-gray-800'
+                        }
+                      >
+                        {account.status === 'ENABLED'
+                          ? 'AKTIV'
+                          : account.status === 'UNKNOWN'
+                            ? 'AUFGELÖST'
+                            : account.status === 'SUSPENDED'
+                              ? 'GESPERRT'
+                              : account.status}
+                      </Badge>
+                      {!account.manager && (
+                        <Badge variant="outline" className="text-xs">
+                          Standard Account
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      Customer ID: {account.id} • Währung: {account.currency || 'EUR'}
-                    </div>
-                    {account.timezone && (
-                      <div className="text-xs text-gray-400 mt-1">Zeitzone: {account.timezone}</div>
-                    )}
-                    {account.linkedAt && (
-                      <div className="text-xs text-gray-400">
-                        Verbunden: {new Date(account.linkedAt).toLocaleDateString('de-DE')}
-                      </div>
-                    )}
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={account.status === 'ENABLED' ? 'default' : 'secondary'}
-                      className={
-                        account.status === 'ENABLED'
-                          ? 'bg-green-100 text-green-800'
-                          : account.status === 'UNKNOWN'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                      }
-                    >
-                      {account.status === 'ENABLED'
-                        ? 'AKTIV'
-                        : account.status === 'UNKNOWN'
-                          ? 'WIRD GEPRÜFT'
-                          : account.status}
-                    </Badge>
-                    {!account.manager && (
-                      <Badge variant="outline" className="text-xs">
-                        Standard Account
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             {/* Account Statistics */}

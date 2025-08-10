@@ -71,8 +71,8 @@ export function AccountSelector({
             status: account.status,
             testAccount: account.testAccount,
           });
-          // Akzeptiere ENABLED, AKTIV und UNKNOWN Status (UNKNOWN = verfügbar aber nicht getestet)
-          const isActive = ['ENABLED', 'AKTIV', 'UNKNOWN'].includes(account.status);
+          // Filtere nur aktive, echte Accounts
+          const isActive = ['ENABLED', 'AKTIV'].includes(account.status); // UNKNOWN = aufgelöst, nicht aktiv
           // Filtere keine Test-Accounts heraus wenn das Property nicht existiert
           const isReal = account.testAccount !== true; // undefined wird als true behandelt
           return isActive && isReal;
