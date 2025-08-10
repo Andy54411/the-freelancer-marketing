@@ -69,9 +69,6 @@ export async function POST(request: NextRequest) {
       companyId: string;
     };
 
-    console.log('🎯 Comprehensive campaign creation request:', { companyId });
-    console.log('📝 Campaign data:', JSON.stringify(campaignData, null, 2));
-
     if (!companyId || !campaignData) {
       return NextResponse.json(
         { error: 'Company ID and campaign data are required' },
@@ -107,29 +104,70 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get Firebase config
+    // Get Firebase config with company lookup
     const { db } = await import('@/firebase/server');
 
-    const googleAdsDocRef = db
+    let googleAdsDocRef = db
       .collection('companies')
       .doc(companyId)
       .collection('integrations')
       .doc('googleAds');
+    let googleAdsSnap = await googleAdsDocRef.get();
+    let actualCompanyId = companyId;
 
-    const googleAdsSnap = await googleAdsDocRef.get();
+    console.log('🔍 Debug Google Ads Campaign Creation:', {
+      companyId,
+      docExists: googleAdsSnap.exists,
+      docPath: `companies/${companyId}/integrations/googleAds`,
+      timestamp: new Date().toISOString(),
+    });
+
+    // If not found with provided companyId, search all companies for Google Ads config
+    if (!googleAdsSnap.exists) {
+      console.log(`🔍 Google Ads config not found for ${companyId}, searching all companies...`);
+
+      const companiesRef = db.collection('companies');
+      const companiesSnap = await companiesRef.get();
+
+      for (const companyDoc of companiesSnap.docs) {
+        const testGoogleAdsDocRef = companyDoc.ref.collection('integrations').doc('googleAds');
+        const testGoogleAdsSnap = await testGoogleAdsDocRef.get();
+
+        if (testGoogleAdsSnap.exists) {
+          console.log(`✅ Found Google Ads config for company: ${companyDoc.id}`);
+          googleAdsDocRef = testGoogleAdsDocRef;
+          googleAdsSnap = testGoogleAdsSnap;
+          actualCompanyId = companyDoc.id;
+          break;
+        }
+      }
+    }
 
     if (!googleAdsSnap.exists) {
       return NextResponse.json(
-        { error: 'No Google Ads configuration found', companyId },
+        { error: 'No Google Ads configuration found', companyId, actualCompanyId },
         { status: 404 }
       );
     }
+
+    console.log('🎯 Comprehensive campaign creation request:', {
+      originalCompanyId: companyId,
+      actualCompanyId: actualCompanyId,
+    });
+    console.log('📝 Campaign data:', JSON.stringify(campaignData, null, 2));
 
     const data = googleAdsSnap.data();
     const accountConfig = data?.accountConfig;
 
     if (!accountConfig?.refreshToken) {
-      return NextResponse.json({ error: 'No refresh token found', companyId }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'No refresh token found',
+          companyId,
+          actualCompanyId,
+        },
+        { status: 400 }
+      );
     }
 
     // ✅ AUTOMATISCHE CUSTOMER ID AUSWAHL (wie in main campaigns route)
