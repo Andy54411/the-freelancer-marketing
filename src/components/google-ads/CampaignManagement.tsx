@@ -43,7 +43,8 @@ import { Separator } from '@/components/ui/separator';
 import type { GoogleAdsCampaign, GoogleAdsMetrics, CreateCampaignRequest } from '@/types/googleAds';
 
 interface CampaignManagementProps {
-  customerId: string;
+  companyId: string;
+  customerId?: string;
   onCampaignUpdate?: () => void;
 }
 
@@ -56,7 +57,11 @@ interface CampaignFormData {
   endDate?: string;
 }
 
-export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignManagementProps) {
+export function CampaignManagement({
+  companyId,
+  customerId,
+  onCampaignUpdate,
+}: CampaignManagementProps) {
   const [campaigns, setCampaigns] = useState<GoogleAdsCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,8 +83,18 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/google-ads/campaigns?customerId=${customerId}`);
+      console.log('🔍 Fetching campaigns for:', { companyId, customerId });
+
+      // API-URL mit companyId, customerId optional
+      const url = `/api/google-ads/campaigns?companyId=${companyId}${
+        customerId ? `&customerId=${customerId}` : ''
+      }`;
+
+      console.log('📊 Fetching from:', url);
+      const response = await fetch(url);
       const result = await response.json();
+
+      console.log('✅ Campaign fetch result:', result);
 
       if (result.success && result.data?.campaigns) {
         setCampaigns(result.data.campaigns);
@@ -88,6 +103,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
         throw new Error(result.error || 'Failed to fetch campaigns');
       }
     } catch (err) {
+      console.error('❌ Campaign fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch campaigns');
       setCampaigns([]);
     } finally {
@@ -99,6 +115,8 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
   const createCampaign = async () => {
     try {
       setCreating(true);
+      console.log('🚀 Creating campaign with data:', formData);
+
       const campaignData: CreateCampaignRequest = {
         name: formData.name,
         budgetAmountMicros: formData.budgetAmount * 1000000, // Convert to micros
@@ -108,13 +126,21 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
         endDate: formData.endDate || undefined,
       };
 
+      // Ermittle customerId aus verfügbaren Daten oder verwende provided customerId
+      const finalCustomerId = customerId || 'auto-detect';
+
       const response = await fetch('/api/google-ads/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, campaignData }),
+        body: JSON.stringify({
+          customerId: finalCustomerId,
+          campaignData,
+          companyId,
+        }),
       });
 
       const result = await response.json();
+      console.log('✅ Campaign creation result:', result);
 
       if (result.success) {
         setShowCreateDialog(false);
@@ -132,6 +158,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
         throw new Error(result.error || 'Failed to create campaign');
       }
     } catch (err) {
+      console.error('❌ Campaign creation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create campaign');
     } finally {
       setCreating(false);
@@ -142,14 +169,24 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
   const toggleCampaignStatus = async (campaignId: string, currentStatus: string) => {
     try {
       const newStatus = currentStatus === 'ENABLED' ? 'PAUSED' : 'ENABLED';
+      console.log('🔄 Toggling campaign status:', { campaignId, currentStatus, newStatus });
+
+      // Ermittle customerId für Status-Update
+      const finalCustomerId = customerId || 'auto-detect';
 
       const response = await fetch('/api/google-ads/campaigns', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, campaignId, status: newStatus }),
+        body: JSON.stringify({
+          customerId: finalCustomerId,
+          campaignId,
+          status: newStatus,
+          companyId,
+        }),
       });
 
       const result = await response.json();
+      console.log('✅ Campaign status update result:', result);
 
       if (result.success) {
         await fetchCampaigns();
@@ -158,6 +195,7 @@ export function CampaignManagement({ customerId, onCampaignUpdate }: CampaignMan
         throw new Error(result.error || 'Failed to update campaign status');
       }
     } catch (err) {
+      console.error('❌ Campaign status update error:', err);
       setError(err instanceof Error ? err.message : 'Failed to update campaign');
     }
   };

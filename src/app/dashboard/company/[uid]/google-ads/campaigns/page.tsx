@@ -56,7 +56,7 @@ export default function GoogleAdsCampaignsPage() {
 
         {/* Campaign Management Component */}
         <CampaignManagement
-          customerId={companyId}
+          companyId={companyId}
           onCampaignUpdate={() => {
             // Optional: Refresh campaign data
             console.log('Campaign updated');

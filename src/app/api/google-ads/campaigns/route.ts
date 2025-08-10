@@ -233,11 +233,19 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customerId, campaignId, status } = body as {
+    const { customerId, campaignId, status, companyId } = body as {
       customerId: string;
       campaignId: string;
       status: 'ENABLED' | 'PAUSED';
+      companyId?: string;
     };
+
+    console.log('🔄 Campaign status update request:', {
+      customerId,
+      campaignId,
+      status,
+      companyId,
+    });
 
     if (!customerId || !campaignId || !status) {
       return NextResponse.json(
@@ -250,36 +258,45 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Status must be ENABLED or PAUSED' }, { status: 400 });
     }
 
-    // OAuth Config validieren
-    const configValidation = GoogleAdsSetupValidator.validateSetup();
-    if (!configValidation.valid) {
+    // Get real stored config from Firestore
+    const { db } = await import('@/firebase/server');
+    const finalCompanyId = companyId || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
+
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(finalCompanyId)
+      .collection('integrations')
+      .doc('googleAds');
+
+    const googleAdsSnap = await googleAdsDocRef.get();
+
+    if (!googleAdsSnap.exists) {
       return NextResponse.json(
         {
-          error: 'Google Ads configuration invalid',
-          details: configValidation.errors,
+          error: 'No Google Ads configuration found',
+          companyId: finalCompanyId,
+        },
+        { status: 404 }
+      );
+    }
+
+    const data = googleAdsSnap.data();
+    const accountConfig = data?.accountConfig;
+
+    if (!accountConfig?.refreshToken) {
+      return NextResponse.json(
+        {
+          error: 'No refresh token found in configuration',
+          companyId: finalCompanyId,
         },
         { status: 400 }
       );
     }
 
-    // Environment Config laden
-    const config = {
-      clientId: process.env.GOOGLE_ADS_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
-      refreshToken: '',
-      developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
-    } as GoogleAdsOAuthConfig;
-
-    // Kampagne-Status aktualisieren
-    if (!config.refreshToken) {
-      return NextResponse.json(
-        { error: 'No refresh token available for campaign update' },
-        { status: 400 }
-      );
-    }
-
+    // Kampagne-Status aktualisieren using Client Library
+    console.log('🔄 Updating campaign status with Client Library...');
     const result = await googleAdsClientService.updateCampaign(
-      config.refreshToken,
+      accountConfig.refreshToken,
       customerId,
       campaignId,
       { status }
@@ -302,7 +319,7 @@ export async function PATCH(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('❌ Campaign update error:', error);
+    console.error('❌ Campaign status update error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
