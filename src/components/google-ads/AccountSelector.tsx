@@ -23,7 +23,7 @@ interface GoogleAdsAccount {
   id: string;
   name: string;
   currency: string;
-  status: 'ENABLED' | 'PAUSED' | 'SUSPENDED' | 'UNKNOWN';
+  status: 'ENABLED' | 'PAUSED' | 'SUSPENDED' | 'UNKNOWN' | 'AKTIV';
   manager?: boolean;
   testAccount?: boolean;
   timezone?: string;
@@ -54,23 +54,39 @@ export function AccountSelector({
       setLoading(true);
       setError(null);
 
+      console.log('🔍 Loading accounts for companyId:', companyId);
       const response = await fetch(`/api/google-ads/status?companyId=${companyId}`);
       const result = await response.json();
 
-      if (result.success && result.data?.accounts) {
-        // Filtere nur aktive, echte Accounts
-        const activeAccounts = result.data.accounts.filter(
-          (account: GoogleAdsAccount) => account.status === 'ENABLED' && !account.testAccount
-        );
+      console.log('📊 Account loading result:', result);
 
+      if (result.success && result.data?.accounts) {
+        console.log('📋 Raw accounts:', result.data.accounts);
+
+        // Filtere nur aktive, echte Accounts
+        const activeAccounts = result.data.accounts.filter((account: GoogleAdsAccount) => {
+          console.log('🔍 Checking account:', {
+            id: account.id,
+            status: account.status,
+            testAccount: account.testAccount,
+          });
+          // Akzeptiere sowohl ENABLED als auch AKTIV Status
+          const isActive = account.status === 'ENABLED' || account.status === 'AKTIV';
+          const isReal = !account.testAccount;
+          return isActive && isReal;
+        });
+
+        console.log('✅ Active accounts found:', activeAccounts);
         setAccounts(activeAccounts);
 
         // Wähle automatisch den ersten aktiven Account, wenn keiner gewählt ist
         if (activeAccounts.length > 0 && !selectedAccountId) {
           const defaultAccount = activeAccounts[0];
+          console.log('🎯 Auto-selecting default account:', defaultAccount);
           onAccountSelect(defaultAccount.id, defaultAccount);
         }
       } else {
+        console.log('❌ No accounts in response:', result);
         throw new Error(result.error || 'Keine Google Ads Accounts gefunden');
       }
     } catch (err) {
