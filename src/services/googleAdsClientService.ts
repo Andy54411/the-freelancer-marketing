@@ -1108,24 +1108,27 @@ class GoogleAdsClientService {
                   `📝 Creating ad with ${validHeadlines.length} headlines and ${validDescriptions.length} descriptions`
                 );
 
-                const adResult = await customer.adGroupAds.create([
-                  {
-                    ad_group: adGroupResourceName,
-                    status: 'ENABLED',
-                    ad: {
-                      type: 'RESPONSIVE_SEARCH_AD',
-                      responsive_search_ad: {
-                        headlines: validHeadlines.slice(0, 15).map(headline => ({
-                          text: headline.substring(0, 30), // Max 30 characters per headline
-                        })),
-                        descriptions: validDescriptions.slice(0, 4).map(description => ({
-                          text: description.substring(0, 90), // Max 90 characters per description
-                        })),
-                      },
-                      final_urls: adData.finalUrls,
+                // Log the exact data being sent to Google Ads API
+                const adPayload = {
+                  ad_group: adGroupResourceName,
+                  status: 'ENABLED' as any,
+                  ad: {
+                    type: 'RESPONSIVE_SEARCH_AD' as any,
+                    responsive_search_ad: {
+                      headlines: validHeadlines.slice(0, 15).map(headline => ({
+                        text: headline.substring(0, 30), // Max 30 characters per headline
+                      })),
+                      descriptions: validDescriptions.slice(0, 4).map(description => ({
+                        text: description.substring(0, 90), // Max 90 characters per description
+                      })),
                     },
+                    final_urls: adData.finalUrls,
                   },
-                ]);
+                };
+
+                console.log('📤 Ad payload being sent:', JSON.stringify(adPayload, null, 2));
+
+                const adResult = await customer.adGroupAds.create([adPayload]);
                 console.log('✅ Ad created successfully');
               } catch (adError: any) {
                 console.error(`❌ Failed to create ad:`, adError);
@@ -1170,6 +1173,14 @@ class GoogleAdsClientService {
       let errorMessage = 'Failed to create comprehensive campaign';
       let errorCode = 'COMPREHENSIVE_CAMPAIGN_CREATION_ERROR';
 
+      // Google Ads API Fehler-Details extrahieren
+      if (error.failures && error.failures.length > 0) {
+        const firstFailure = error.failures[0];
+        console.error('📋 Google Ads API failure:', firstFailure);
+        errorMessage = firstFailure.message || firstFailure.error_code?.message || errorMessage;
+        errorCode = firstFailure.error_code?.error_code || errorCode;
+      }
+
       if (error.details) {
         console.error('📋 Error details:', error.details);
         errorMessage = error.details;
@@ -1190,7 +1201,14 @@ class GoogleAdsClientService {
       }
 
       // Log vollständiges Error-Objekt für Debugging
-      console.error('🔍 Full error object:', JSON.stringify(error, null, 2));
+      console.error('🔍 Full error object:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        failures: error.failures,
+        stack: error.stack?.substring(0, 500), // Begrenzte Stack Trace
+      });
 
       return {
         success: false,
