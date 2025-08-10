@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CampaignManagement } from '@/components/google-ads/CampaignManager';
+import { CampaignManagement } from '@/components/google-ads/CampaignManagement';
 import {
   Loader2,
   ExternalLink,
@@ -734,7 +734,7 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
 
               <TabsContent value="campaigns" className="mt-6">
                 <CampaignManagement
-                  customerId={status.accounts?.[0]?.customerId || ''}
+                  companyId={companyId}
                   onCampaignUpdate={() => loadConnectionStatus()}
                 />
               </TabsContent>

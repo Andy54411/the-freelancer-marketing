@@ -48,16 +48,14 @@ export function CampaignManagement({
   onCampaignUpdate,
 }: CampaignManagementProps) {
   const [campaigns, setCampaigns] = useState<GoogleAdsCampaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start ohne Loading
   const [error, setError] = useState<string | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<GoogleAdsCampaign | null>(null);
   const [showAdvancedCreator, setShowAdvancedCreator] = useState(false);
 
   // Account Selection State
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(customerId);
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
-
-  // Kampagnen laden
+  const [selectedAccount, setSelectedAccount] = useState<any>(null); // Kampagnen laden
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
@@ -106,9 +104,8 @@ export function CampaignManagement({
     console.log('🎯 Account selected:', { accountId, account });
     setSelectedAccountId(accountId);
     setSelectedAccount(account);
-    // Lade Kampagnen für den neuen Account
+    // Setze Loading - useEffect wird fetchCampaigns() aufrufen
     setLoading(true);
-    fetchCampaigns();
   };
 
   // Kampagne-Status ändern
@@ -162,6 +159,9 @@ export function CampaignManagement({
     // Lade Kampagnen beim Mounten oder wenn companyId/selectedAccountId sich ändert
     if (companyId && selectedAccountId) {
       fetchCampaigns();
+    } else {
+      // Stoppe Loading wenn kein Account ausgewählt ist
+      setLoading(false);
     }
   }, [companyId, selectedAccountId]);
 
