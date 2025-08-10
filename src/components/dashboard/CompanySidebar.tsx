@@ -22,6 +22,7 @@ import {
   Clock as FiClock,
   Calculator as FiCalculator,
   BarChart3 as FiBarChart3,
+  CalendarDays as FiCalendarDays,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -120,6 +121,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Übersicht', value: 'personal-overview', href: 'personal' },
       { label: 'Mitarbeiter', value: 'personal-employees', href: 'personal/employees' },
       { label: 'Neuer Mitarbeiter', value: 'personal-add', href: 'personal/add' },
+      { label: 'Dienstplan', value: 'personal-schedule', href: 'personal/schedule' },
       { label: 'Gehaltsabrechnung', value: 'personal-payroll', href: 'personal/payroll' },
       { label: 'Arbeitszeit', value: 'personal-timesheet', href: 'personal/timesheet' },
       { label: 'Kostenkalkulation', value: 'personal-costs', href: 'personal/costs' },

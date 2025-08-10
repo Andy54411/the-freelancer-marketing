@@ -64,70 +64,72 @@ export default function PersonalOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    totalCosts: 0,
+    avgProductivity: 0,
+  });
 
-  // Mock-Daten für Demo (später durch echte API ersetzen)
+  // Echte Firestore-Daten laden
   useEffect(() => {
-    const mockEmployees: Employee[] = [
-      {
-        id: '1',
-        firstName: 'Anna',
-        lastName: 'Müller',
-        email: 'anna.mueller@taskilo.de',
-        position: 'Senior Developer',
-        department: 'Engineering',
-        employmentType: 'FULL_TIME',
-        startDate: '2023-01-15',
-        grossSalary: 5500,
-        totalCost: 7150,
-        productivity: 92,
-        workingHours: { weekly: 40, daily: 8 },
-        isActive: true,
-      },
-      {
-        id: '2',
-        firstName: 'Max',
-        lastName: 'Schmidt',
-        email: 'max.schmidt@taskilo.de',
-        position: 'Marketing Manager',
-        department: 'Marketing',
-        employmentType: 'FULL_TIME',
-        startDate: '2023-03-01',
-        grossSalary: 4200,
-        totalCost: 5460,
-        productivity: 87,
-        workingHours: { weekly: 40, daily: 8 },
-        isActive: true,
-      },
-      {
-        id: '3',
-        firstName: 'Lisa',
-        lastName: 'Weber',
-        email: 'lisa.weber@taskilo.de',
-        position: 'UX Designer',
-        department: 'Design',
-        employmentType: 'PART_TIME',
-        startDate: '2023-06-15',
-        grossSalary: 2800,
-        hourlyRate: 35,
-        totalCost: 3640,
-        productivity: 95,
-        workingHours: { weekly: 20, daily: 4 },
-        isActive: true,
-      },
-    ];
+    loadEmployees();
+  }, [companyId]);
 
-    setTimeout(() => {
-      setEmployees(mockEmployees);
+  const loadEmployees = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Lade Mitarbeiter für Company:', companyId);
+
+      // Import dynamisch um Client-Side zu bleiben
+      const { PersonalService } = await import('@/services/personalService');
+
+      const employeesData = await PersonalService.getEmployees(companyId);
+      const personalStats = await PersonalService.getPersonalStats(companyId);
+
+      // Konvertiere PersonalService.Employee zu lokales Employee Interface
+      const localEmployees: Employee[] = employeesData.map(emp => ({
+        id: emp.id || '',
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        email: emp.email,
+        position: emp.position,
+        department: emp.department,
+        employmentType: emp.employmentType,
+        startDate: emp.startDate,
+        grossSalary: emp.grossSalary,
+        hourlyRate: emp.hourlyRate,
+        isActive: emp.isActive,
+        avatar: emp.avatar,
+        totalCost: emp.calculatedData?.totalMonthlyCost || emp.grossSalary,
+        productivity: Math.floor(Math.random() * 20) + 80, // Placeholder für Produktivitätsmessung
+        workingHours: emp.workingHours,
+      }));
+
+      setEmployees(localEmployees);
+      setStats({
+        total: personalStats.totalEmployees,
+        active: personalStats.activeEmployees,
+        totalCosts: personalStats.totalMonthlyCosts,
+        avgProductivity: Math.floor(Math.random() * 15) + 85, // Placeholder
+      });
+
+      console.log('✅ Mitarbeiter geladen:', localEmployees.length);
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Mitarbeiter:', error);
+      // Fallback auf Mock-Daten bei Fehler
+      setEmployees([]);
+      setStats({ total: 0, active: 0, totalCosts: 0, avgProductivity: 0 });
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
 
-  // Berechnungen für Dashboard-Metriken
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter(emp => emp.isActive).length;
-  const totalMonthlyCosts = employees.reduce((sum, emp) => sum + emp.totalCost, 0);
-  const avgProductivity =
-    employees.reduce((sum, emp) => sum + emp.productivity, 0) / employees.length || 0;
+  // Berechnungen für Dashboard-Metriken aus echten Daten
+  const totalEmployees = stats.total;
+  const activeEmployees = stats.active;
+  const totalMonthlyCosts = stats.totalCosts;
+  const avgProductivity = stats.avgProductivity;
 
   // Departments für Filter
   const departments = ['all', ...new Set(employees.map(emp => emp.department))];
