@@ -78,10 +78,14 @@ export async function GET(request: NextRequest) {
         customersResponse.data &&
         customersResponse.data.length > 0
       ) {
-        // ✅ EINFACHE LÖSUNG: Verwende denselben Algorithmus wie test-all
-        // Nimm einfach den ersten verfügbaren Account
-        customerId = customersResponse.data[0].id;
-        console.log('🎯 Using first available account (same as test-all):', customerId);
+        // ✅ WICHTIG: Verwende ersten AKTIVEN Account, nicht einfach den ersten
+        const enabledCustomer = customersResponse.data.find(c => c.status === 'ENABLED');
+        customerId = enabledCustomer?.id || customersResponse.data[0].id;
+        console.log(
+          '🎯 Using first ENABLED customer ID:',
+          customerId,
+          enabledCustomer ? '(ENABLED)' : '(FALLBACK - CHECK ACCOUNT STATUS)'
+        );
 
         // Optional: Log alle verfügbaren Accounts für Debug
         console.log(
@@ -219,10 +223,16 @@ export async function POST(request: NextRequest) {
         customersResponse.data &&
         customersResponse.data.length > 0
       ) {
-        // Use the first real customer ID (excluding fallback)
-        const realCustomer = customersResponse.data.find(c => c.id !== 'pending-setup');
-        finalCustomerId = realCustomer?.id || customersResponse.data[0].id;
-        console.log('🎯 Resolved customer ID:', finalCustomerId);
+        // ✅ WICHTIG: Verwende ersten AKTIVEN Account, nicht einfach den ersten
+        const enabledCustomer = customersResponse.data.find(
+          c => c.status === 'ENABLED' && c.id !== 'pending-setup'
+        );
+        finalCustomerId = enabledCustomer?.id || customersResponse.data[0].id;
+        console.log(
+          '🎯 Using first ENABLED customer ID:',
+          finalCustomerId,
+          enabledCustomer ? '(ENABLED)' : '(FALLBACK - CHECK ACCOUNT STATUS)'
+        );
       } else {
         return NextResponse.json(
           {

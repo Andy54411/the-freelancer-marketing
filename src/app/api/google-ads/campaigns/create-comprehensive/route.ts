@@ -184,9 +184,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verwende dieselbe Logik wie campaigns route: erste verfügbare Customer ID
-    const finalCustomerId = customersResponse.data[0].id;
-    console.log('🎯 Using first available customer ID (same as campaigns route):', finalCustomerId);
+    // ✅ WICHTIG: Verwende ersten AKTIVEN Account, nicht einfach den ersten
+    const enabledCustomer = customersResponse.data.find(c => c.status === 'ENABLED');
+    const finalCustomerId = enabledCustomer?.id || customersResponse.data[0].id;
+    console.log(
+      '🎯 Using first ENABLED customer ID:',
+      finalCustomerId,
+      enabledCustomer ? '(ENABLED)' : '(FALLBACK - CHECK ACCOUNT STATUS)'
+    );
 
     // Optional: Log alle verfügbaren Accounts für Debug
     console.log(
