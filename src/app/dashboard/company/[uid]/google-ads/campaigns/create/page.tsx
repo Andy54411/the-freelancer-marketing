@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ArrowLeft, Plus, Trash2, Save, TestTube, AlertTriangle, Info } from 'lucide-react';
 
 interface AdGroup {
   id: string;
@@ -45,6 +46,20 @@ interface CampaignFormData {
   adGroups: AdGroup[];
 }
 
+interface GoogleAdsStatus {
+  connected: boolean;
+  accounts: Array<{
+    id: string;
+    name: string;
+    testAccount: boolean;
+    status: string;
+  }>;
+  tokenStatus: {
+    hasRefreshToken: boolean;
+    isExpired: boolean;
+  };
+}
+
 export default function CreateCampaignPage() {
   const params = useParams();
   const router = useRouter();
@@ -53,6 +68,8 @@ export default function CreateCampaignPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleAdsStatus, setGoogleAdsStatus] = useState<GoogleAdsStatus | null>(null);
+  const [isTestMode, setIsTestMode] = useState(false);
 
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
@@ -82,6 +99,41 @@ export default function CreateCampaignPage() {
 
   const [newKeyword, setNewKeyword] = useState('');
   const [newKeywordMatch, setNewKeywordMatch] = useState('BROAD');
+
+  // Load Google Ads status on component mount
+  useEffect(() => {
+    const loadGoogleAdsStatus = async () => {
+      try {
+        const response = await fetch(`/api/google-ads/status?companyId=${companyId}`);
+        const data = await response.json();
+
+        if (data.success !== false) {
+          setGoogleAdsStatus(data);
+
+          // Check if any account is a test account
+          const hasTestAccounts = data.accounts?.some((acc: any) => acc.testAccount === true);
+          const hasProductionAccounts = data.accounts?.some(
+            (acc: any) => acc.testAccount === false
+          );
+
+          // If only test accounts or mixed, enable test mode
+          setIsTestMode(hasTestAccounts && !hasProductionAccounts);
+
+          console.log('🎯 Google Ads Status:', {
+            connected: data.connected,
+            accounts: data.accounts?.length || 0,
+            hasTestAccounts,
+            hasProductionAccounts,
+            testModeEnabled: hasTestAccounts && !hasProductionAccounts,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load Google Ads status:', error);
+      }
+    };
+
+    loadGoogleAdsStatus();
+  }, [companyId]);
 
   // Keyword-Management
   const addKeyword = (adGroupId: string) => {
@@ -187,30 +239,50 @@ export default function CreateCampaignPage() {
         throw new Error('Mindestens eine Anzeigengruppe ist erforderlich');
       }
 
+      // Test Account Warning
+      if (!isTestMode && googleAdsStatus?.accounts?.some(acc => !acc.testAccount)) {
+        const confirmProduction = window.confirm(
+          '⚠️ WARNUNG: Sie verwenden Produktionskonten!\n\n' +
+            'Ihr Google Ads Developer Token ist nur für Testkonten zugelassen.\n' +
+            'Die Kampagne wird wahrscheinlich fehlschlagen.\n\n' +
+            'Möchten Sie trotzdem fortfahren?'
+        );
+
+        if (!confirmProduction) {
+          setCreating(false);
+          return;
+        }
+      }
+
+      const requestData = {
+        companyId,
+        testMode: isTestMode,
+        campaignData: {
+          name: `${isTestMode ? '[TEST] ' : ''}${formData.name}`,
+          budgetAmountMicros: formData.budgetAmount * 1000000,
+          advertisingChannelType: formData.advertisingChannelType,
+          biddingStrategyType: formData.biddingStrategyType,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          adGroups: formData.adGroups.map(ag => ({
+            name: ag.name,
+            cpcBidMicros: ag.cpcBidMicros,
+            keywords: ag.keywords,
+            ads: ag.ads.map(ad => ({
+              headlines: ad.headlines,
+              descriptions: ad.descriptions,
+              finalUrls: ad.finalUrls,
+            })),
+          })),
+        },
+      };
+
+      console.log('🚀 Creating campaign:', { isTestMode, data: requestData });
+
       const response = await fetch('/api/google-ads/campaigns/create-comprehensive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId,
-          campaignData: {
-            name: formData.name,
-            budgetAmountMicros: formData.budgetAmount * 1000000,
-            advertisingChannelType: formData.advertisingChannelType,
-            biddingStrategyType: formData.biddingStrategyType,
-            startDate: formData.startDate,
-            endDate: formData.endDate,
-            adGroups: formData.adGroups.map(ag => ({
-              name: ag.name,
-              cpcBidMicros: ag.cpcBidMicros,
-              keywords: ag.keywords,
-              ads: ag.ads.map(ad => ({
-                headlines: ad.headlines,
-                descriptions: ad.descriptions,
-                finalUrls: ad.finalUrls,
-              })),
-            })),
-          },
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
@@ -246,6 +318,73 @@ export default function CreateCampaignPage() {
           </p>
         </div>
       </div>
+
+      {/* Test Account Detection */}
+      {googleAdsStatus && (
+        <div className="mb-6">
+          {isTestMode ? (
+            <Alert className="border-blue-200 bg-blue-50">
+              <TestTube className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-800">Test Modus aktiv</AlertTitle>
+              <AlertDescription className="text-blue-700">
+                Diese Kampagne wird in Ihren Test Accounts erstellt. Keine echten Kosten entstehen.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-800">Developer Token Limitation</AlertTitle>
+              <AlertDescription className="text-yellow-700">
+                Ihr Google Ads Developer Token ist nur für Test Accounts zugelassen. Campaign
+                Creation in Produktions-Accounts wird fehlschlagen.
+                <br />
+                <strong>Empfehlung:</strong> Beantragen Sie Basic Access für echte Kampagnen.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
+
+      {/* Google Ads Account Status */}
+      {googleAdsStatus?.accounts && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="w-5 h-5" />
+              Verbundene Google Ads Accounts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2">
+              {googleAdsStatus.accounts.map(account => (
+                <div
+                  key={account.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div>
+                    <span className="font-medium">{account.name || `Account ${account.id}`}</span>
+                    <span className="text-sm text-gray-500 ml-2">ID: {account.id}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={account.testAccount ? 'secondary' : 'default'}
+                      className={account.testAccount ? 'bg-blue-100 text-blue-800' : ''}
+                    >
+                      {account.testAccount ? 'Test Account' : 'Produktions Account'}
+                    </Badge>
+                    <Badge
+                      variant={account.status === 'ENABLED' ? 'default' : 'secondary'}
+                      className={account.status === 'ENABLED' ? 'bg-green-100 text-green-800' : ''}
+                    >
+                      {account.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error Display */}
       {error && (

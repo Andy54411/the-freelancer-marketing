@@ -64,10 +64,21 @@ interface ComprehensiveCampaignRequest {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { campaignData, companyId } = body as {
+    const {
+      campaignData,
+      companyId,
+      testMode = false,
+    } = body as {
       campaignData: ComprehensiveCampaignRequest;
       companyId: string;
+      testMode?: boolean;
     };
+
+    console.log('🚀 Creating comprehensive campaign:', {
+      companyId,
+      testMode,
+      campaignName: campaignData?.name,
+    });
 
     if (!companyId || !campaignData) {
       return NextResponse.json(
@@ -170,7 +181,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ AUTOMATISCHE CUSTOMER ID AUSWAHL (wie in main campaigns route)
+    // ✅ AUTOMATISCHE CUSTOMER ID AUSWAHL mit Test Account Support
     console.log('🔍 Fetching available customers...');
 
     const customersResponse = await googleAdsClientService.getAccessibleCustomers(
@@ -184,14 +195,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ WICHTIG: Verwende ersten AKTIVEN Account, nicht einfach den ersten
-    const enabledCustomer = customersResponse.data.find(c => c.status === 'ENABLED');
-    const finalCustomerId = enabledCustomer?.id || customersResponse.data[0].id;
-    console.log(
-      '🎯 Using first ENABLED customer ID:',
-      finalCustomerId,
-      enabledCustomer ? '(ENABLED)' : '(FALLBACK - CHECK ACCOUNT STATUS)'
-    );
+    // Test Account Detection und Selection
+    let finalCustomerId: string;
+    let selectedAccount;
+
+    if (testMode) {
+      // In Test Mode: Bevorzuge Test Accounts
+      console.log('🧪 Test mode enabled - looking for test accounts...');
+      const testAccounts = customersResponse.data.filter(c => c.testAccount === true);
+      const enabledTestAccount = testAccounts.find(c => c.status === 'ENABLED');
+
+      if (enabledTestAccount) {
+        finalCustomerId = enabledTestAccount.id;
+        selectedAccount = enabledTestAccount;
+        console.log('✅ Using test account:', finalCustomerId);
+      } else {
+        // Fallback zu erstem verfügbaren Account
+        const enabledCustomer = customersResponse.data.find(c => c.status === 'ENABLED');
+        finalCustomerId = enabledCustomer?.id || customersResponse.data[0].id;
+        selectedAccount = enabledCustomer || customersResponse.data[0];
+        console.log('⚠️ No test account found, using fallback:', finalCustomerId);
+      }
+    } else {
+      // Normal Mode: Verwende ersten AKTIVEN Account
+      const enabledCustomer = customersResponse.data.find(c => c.status === 'ENABLED');
+      finalCustomerId = enabledCustomer?.id || customersResponse.data[0].id;
+      selectedAccount = enabledCustomer || customersResponse.data[0];
+      console.log('🎯 Using first ENABLED customer:', finalCustomerId);
+    }
+
+    console.log('📊 Selected account details:', {
+      id: finalCustomerId,
+      name: selectedAccount?.name,
+      testAccount: selectedAccount?.testAccount,
+      status: selectedAccount?.status,
+      testMode,
+    });
 
     // Optional: Log alle verfügbaren Accounts für Debug
     console.log(
@@ -200,8 +239,17 @@ export async function POST(request: NextRequest) {
         id: c.id,
         name: c.name,
         manager: c.manager,
+        testAccount: c.testAccount,
+        status: c.status,
       }))
     );
+
+    // Developer Token Warning für Production Accounts
+    if (!testMode && !selectedAccount?.testAccount) {
+      console.log(
+        '⚠️ WARNING: Using production account with developer token - this will likely fail'
+      );
+    }
 
     // Create simple campaign using the basic service (not comprehensive)
     console.log('🚀 Creating simple campaign...');
@@ -237,7 +285,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result.data,
-      message: 'Campaign created successfully',
+      message: `Campaign ${testMode ? '(Test Mode) ' : ''}created successfully`,
+      testMode,
+      accountInfo: {
+        customerId: finalCustomerId,
+        accountName: selectedAccount?.name,
+        isTestAccount: selectedAccount?.testAccount,
+        status: selectedAccount?.status,
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
