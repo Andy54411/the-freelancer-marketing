@@ -701,6 +701,11 @@ class GoogleAdsClientService {
         name: camp.campaign?.name || '',
         status: this.mapCampaignStatus(camp.campaign?.status),
         type: camp.campaign?.advertising_channel_type || 'SEARCH',
+        advertisingChannelType: camp.campaign?.advertising_channel_type || 'SEARCH',
+        biddingStrategy: camp.campaign?.bidding_strategy_type || 'MANUAL_CPC',
+        geoTargets: [],
+        languageTargets: [],
+        deviceTargets: [],
         startDate: new Date().toISOString().split('T')[0],
         endDate: undefined,
         budget: {
@@ -1955,3 +1960,6 @@ class GoogleAdsClientService {
 
 // Singleton-Instanz exportieren
 export const googleAdsClientService = new GoogleAdsClientService();
+
+// Class export for multi-platform service
+export { GoogleAdsClientService };
