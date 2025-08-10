@@ -281,8 +281,7 @@ export function CampaignCreator({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyId,
-          customerId: customerId || 'auto-detect',
+          companyId, // ✅ Nur noch companyId - API wählt automatisch Customer ID
           campaignData: {
             name: formData.name,
             budgetAmountMicros: formData.budgetAmount * 1000000,
