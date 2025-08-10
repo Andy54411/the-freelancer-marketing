@@ -490,9 +490,9 @@ export default function MultiPlatformAdvertisingDashboard({
             {platformConnections.map(connection => (
               <div
                 key={connection.platform}
-                className="flex items-center justify-between p-4 border rounded-lg"
+                className="flex flex-col items-center p-4 border rounded-lg"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 mb-3">
                   <PlatformIcon platform={connection.platform} />
                   <div>
                     <p className="font-medium text-sm capitalize">
@@ -509,7 +509,7 @@ export default function MultiPlatformAdvertisingDashboard({
                     size="sm"
                     variant="outline"
                     onClick={() => connectPlatform(connection.platform)}
-                    className="text-xs"
+                    className="text-xs w-full"
                   >
                     Verbinden
                   </Button>
