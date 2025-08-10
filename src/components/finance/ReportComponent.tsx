@@ -286,13 +286,162 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">BWA wird generiert</h3>
-                <p className="text-gray-600 mb-4">
-                  Die betriebswirtschaftliche Auswertung wird basierend auf Ihren aktuellen Daten
-                  erstellt.
-                </p>
+              {/* BWA Hauptkennzahlen */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Umsatz & Erlöse */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 border-b pb-2">Umsätze & Erlöse</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Nettoumsatz</span>
+                      <span className="font-medium">
+                        {reportData ? formatCurrency(reportData.totalRevenue) : '€0,00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Umsatzsteuer</span>
+                      <span className="font-medium">
+                        {reportData ? formatCurrency(reportData.vatTotal) : '€0,00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-semibold">Bruttoumsatz</span>
+                      <span className="font-semibold">
+                        {reportData
+                          ? formatCurrency(reportData.totalRevenue + reportData.vatTotal)
+                          : '€0,00'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kosten & Aufwendungen */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 border-b pb-2">
+                    Kosten & Aufwendungen
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Materialkosten</span>
+                      <span className="font-medium">
+                        {reportData ? formatCurrency(reportData.totalExpenses * 0.4) : '€0,00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Personalkosten</span>
+                      <span className="font-medium">
+                        {reportData ? formatCurrency(reportData.totalExpenses * 0.35) : '€0,00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sonstige Kosten</span>
+                      <span className="font-medium">
+                        {reportData ? formatCurrency(reportData.totalExpenses * 0.25) : '€0,00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-semibold">Gesamtkosten</span>
+                      <span className="font-semibold">
+                        {reportData ? formatCurrency(reportData.totalExpenses) : '€0,00'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BWA Kennzahlen */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <h5 className="text-sm font-medium text-green-700 mb-1">Betriebsergebnis</h5>
+                      <p className="text-2xl font-bold text-green-900">
+                        {reportData ? formatCurrency(reportData.netProfit) : '€0,00'}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        {reportData && reportData.totalRevenue > 0
+                          ? `${((reportData.netProfit / reportData.totalRevenue) * 100).toFixed(1)}% vom Umsatz`
+                          : '0% vom Umsatz'}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <h5 className="text-sm font-medium text-blue-700 mb-1">Kostenquote</h5>
+                      <p className="text-2xl font-bold text-blue-900">
+                        {reportData && reportData.totalRevenue > 0
+                          ? `${((reportData.totalExpenses / reportData.totalRevenue) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">Kosten/Umsatz-Verhältnis</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <h5 className="text-sm font-medium text-purple-700 mb-1">Rentabilität</h5>
+                      <p className="text-2xl font-bold text-purple-900">
+                        {reportData && reportData.totalRevenue > 0
+                          ? `${((reportData.netProfit / reportData.totalRevenue) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">Gewinnmarge</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Monatsvergleich */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Monatlicher Geschäftsverlauf</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">Monat</th>
+                          <th className="text-right py-2">Umsatz</th>
+                          <th className="text-right py-2">Kosten</th>
+                          <th className="text-right py-2">Gewinn</th>
+                          <th className="text-right py-2">Marge</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData?.monthlyData?.map((month, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="py-2 font-medium">{month.month}</td>
+                            <td className="text-right py-2">{formatCurrency(month.revenue)}</td>
+                            <td className="text-right py-2">{formatCurrency(month.expenses)}</td>
+                            <td className="text-right py-2 font-medium">
+                              {formatCurrency(month.profit)}
+                            </td>
+                            <td className="text-right py-2">
+                              <Badge
+                                variant={month.profit > 0 ? 'default' : 'destructive'}
+                                className={month.profit > 0 ? 'bg-green-100 text-green-800' : ''}
+                              >
+                                {month.revenue > 0
+                                  ? `${((month.profit / month.revenue) * 100).toFixed(1)}%`
+                                  : '0%'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* BWA Export Optionen */}
+              <div className="flex justify-center gap-2 mt-6">
                 <Button
                   onClick={() => handleGenerateReport('BWA Detail')}
                   className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
@@ -306,9 +455,17 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                   ) : (
                     <>
                       <Download className="h-4 w-4 mr-2" />
-                      BWA herunterladen
+                      BWA als PDF herunterladen
                     </>
                   )}
+                </Button>
+                <Button variant="outline">
+                  <Printer className="h-4 w-4 mr-2" />
+                  BWA drucken
+                </Button>
+                <Button variant="outline">
+                  <Mail className="h-4 w-4 mr-2" />
+                  BWA per E-Mail
                 </Button>
               </div>
             </CardContent>

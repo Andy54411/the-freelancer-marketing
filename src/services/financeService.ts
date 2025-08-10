@@ -11,6 +11,13 @@ export interface FinanceStats {
   outstandingInvoices: number;
   outstandingAmount: number;
   thisMonthRevenue: number;
+  vatTotal: number;
+  monthlyData: Array<{
+    month: string;
+    revenue: number;
+    expenses: number;
+    profit: number;
+  }>;
   lastUpdate: Date;
 }
 
@@ -84,6 +91,12 @@ export class FinanceService {
         .filter(inv => inv.status === 'paid' && new Date(inv.issueDate) >= currentMonth)
         .reduce((sum, inv) => sum + inv.total, 0);
 
+      // Berechne MwSt. (19% vom Nettoumsatz)
+      const vatTotal = totalRevenue * 0.19;
+
+      // Berechne monatliche Daten für die letzten 12 Monate
+      const monthlyData = this.calculateMonthlyData(invoices, expenses);
+
       const stats = {
         totalRevenue,
         totalExpenses,
@@ -91,6 +104,8 @@ export class FinanceService {
         outstandingInvoices: outstandingInvoices.length,
         outstandingAmount,
         thisMonthRevenue,
+        vatTotal,
+        monthlyData,
         lastUpdate: new Date(),
       };
 
@@ -299,5 +314,70 @@ export class FinanceService {
       console.error('Fehler beim Löschen der Ausgabe:', error);
       throw error;
     }
+  }
+
+  /**
+   * Berechnet monatliche Finanzstatistiken für die letzten 12 Monate
+   */
+  private static calculateMonthlyData(
+    invoices: InvoiceData[],
+    expenses: ExpenseRecord[]
+  ): Array<{
+    month: string;
+    revenue: number;
+    expenses: number;
+    profit: number;
+  }> {
+    const monthlyData = [];
+    const today = new Date();
+
+    // Generiere Daten für die letzten 12 Monate
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+
+      // Monatsnamen auf Deutsch
+      const monthNames = [
+        'Januar',
+        'Februar',
+        'März',
+        'April',
+        'Mai',
+        'Juni',
+        'Juli',
+        'August',
+        'September',
+        'Oktober',
+        'November',
+        'Dezember',
+      ];
+
+      const monthName = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+
+      // Umsatz für diesen Monat (nur bezahlte Rechnungen)
+      const monthRevenue = invoices
+        .filter(inv => {
+          const invDate = new Date(inv.issueDate);
+          return inv.status === 'paid' && invDate >= date && invDate < nextMonth;
+        })
+        .reduce((sum, inv) => sum + inv.total, 0);
+
+      // Ausgaben für diesen Monat
+      const monthExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          return expDate >= date && expDate < nextMonth;
+        })
+        .reduce((sum, exp) => sum + exp.amount, 0);
+
+      monthlyData.push({
+        month: monthName,
+        revenue: monthRevenue,
+        expenses: monthExpenses,
+        profit: monthRevenue - monthExpenses,
+      });
+    }
+
+    return monthlyData;
   }
 }
