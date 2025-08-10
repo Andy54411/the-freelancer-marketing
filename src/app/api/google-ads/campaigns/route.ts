@@ -193,17 +193,34 @@ export async function POST(request: NextRequest) {
 
     // Create campaign using Client Library
     console.log('🚀 Creating campaign with Client Library...');
+    console.log('📝 Campaign data details:', {
+      refreshToken: !!accountConfig.refreshToken,
+      customerId,
+      campaignData: {
+        ...campaignData,
+        budgetAmountMicros: `${campaignData.budgetAmountMicros} (${campaignData.budgetAmountMicros / 1000000} EUR)`,
+      },
+    });
+
     const result = await googleAdsClientService.createCampaign(
       accountConfig.refreshToken,
       customerId,
       campaignData
     );
 
+    console.log('🔍 Campaign creation result:', result);
+
     if (!result.success) {
+      console.error('❌ Campaign creation failed:', result.error);
       return NextResponse.json(
         {
           error: 'Failed to create campaign',
           details: result.error,
+          debugInfo: {
+            customerId,
+            campaignName: campaignData.name,
+            budget: campaignData.budgetAmountMicros,
+          },
         },
         { status: 500 }
       );

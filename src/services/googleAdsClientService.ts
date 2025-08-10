@@ -818,11 +818,42 @@ class GoogleAdsClientService {
       };
     } catch (error: any) {
       console.error('❌ Campaign creation error:', error);
+
+      // Detaillierte Fehleranalyse
+      let errorMessage = 'Failed to create campaign';
+      let errorCode = 'CAMPAIGN_CREATION_ERROR';
+
+      if (error.details) {
+        console.error('📋 Error details:', error.details);
+        errorMessage = error.details;
+      }
+
+      if (error.message) {
+        console.error('💬 Error message:', error.message);
+        errorMessage = error.message;
+      }
+
+      if (error.code) {
+        console.error('🔢 Error code:', error.code);
+        errorCode = error.code;
+      }
+
+      if (error.status) {
+        console.error('📊 Error status:', error.status);
+      }
+
+      // Log vollständiges Error-Objekt für Debugging
+      console.error('🔍 Full error object:', JSON.stringify(error, null, 2));
+
       return {
         success: false,
         error: {
-          code: 'CAMPAIGN_CREATION_ERROR',
-          message: error.message || 'Failed to create campaign',
+          code: errorCode,
+          message: errorMessage,
+          details: {
+            originalMessage: error.message || error.toString(),
+            errorObject: error,
+          },
         },
       };
     }
