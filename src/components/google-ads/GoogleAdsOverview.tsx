@@ -652,64 +652,6 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
         </Card>
       )}
 
-      {/* Next Steps */}
-      {status?.status === 'CONNECTED' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-[#14ad9f]" />
-              Nächste Schritte
-            </CardTitle>
-            <CardDescription>
-              Nutzen Sie das volle Potenzial Ihrer Google Ads Integration
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Kampagnen verwalten</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Erstellen und verwalten Sie Ihre Google Ads Kampagnen direkt aus Taskilo.
-                </p>
-                <Button variant="outline" size="sm" disabled>
-                  Bald verfügbar
-                </Button>
-              </div>
-
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Performance Analytics</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Analysieren Sie die Performance Ihrer Kampagnen mit detaillierten Berichten.
-                </p>
-                <Button variant="outline" size="sm" disabled>
-                  Bald verfügbar
-                </Button>
-              </div>
-
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Automatisierung</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Richten Sie automatische Regeln für Budget und Gebote ein.
-                </p>
-                <Button variant="outline" size="sm" disabled>
-                  Bald verfügbar
-                </Button>
-              </div>
-
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">DATEV Integration</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Automatische Übertragung der Werbekosten in Ihre Buchhaltung.
-                </p>
-                <Button variant="outline" size="sm" disabled>
-                  Bald verfügbar
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Marketing Benefits Overview - Only show when not connected */}
       {(!status || status?.status !== 'CONNECTED') && (
         <div className="grid md:grid-cols-3 gap-6 mb-8">
