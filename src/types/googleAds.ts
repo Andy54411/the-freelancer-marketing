@@ -1,5 +1,5 @@
-// ✅ PHASE 1: Google Ads TypeScript Types
-// Umfassende Typen-Definitionen für Google Ads API Integration
+// ✅ ERWEITERTE WHITE-LABEL GOOGLE ADS TYPES
+// Umfassende Typen für vollständige Google Ads White-Label Integration
 
 export interface GoogleAdsAccount {
   id: string;
@@ -13,6 +13,17 @@ export interface GoogleAdsAccount {
   linked?: boolean;
   linkedAt?: Date;
   accessLevel?: 'READ_ONLY' | 'STANDARD' | 'ADMIN';
+  // 🎯 ERWEITERTE WHITE-LABEL FELDER
+  descriptiveName?: string;
+  finalUrlSuffix?: string;
+  trackingUrlTemplate?: string;
+  autoTaggingEnabled?: boolean;
+  payPerConversionEligibilityFailureReasons?: string[];
+  conversionTrackingId?: string;
+  remarketing?: {
+    googleAdsConversionCustomer?: string;
+    googleAnalyticsProperty?: string;
+  };
 }
 
 export interface GoogleAdsOAuthConfig {
@@ -24,11 +35,79 @@ export interface GoogleAdsOAuthConfig {
   developerToken: string;
   managerCustomerId?: string;
   customerId?: string;
+  // 🎯 ERWEITERTE SCOPES für White-Label
+  scopes?: string[];
+  userEmail?: string;
+  userProfile?: {
+    id: string;
+    name: string;
+    email: string;
+    picture?: string;
+  };
   // Legacy für Backward Compatibility
   client_id?: string;
   client_secret?: string;
   refresh_token?: string;
   developer_token?: string;
+}
+
+// 🎯 WHITE-LABEL KEYWORD MANAGEMENT
+export interface TaskiloKeyword {
+  id: string;
+  text: string;
+  matchType: 'EXACT' | 'PHRASE' | 'BROAD';
+  status: 'ENABLED' | 'PAUSED' | 'REMOVED';
+  cpc?: number;
+  finalUrl?: string;
+  adGroupId: string;
+  campaignId: string;
+  metrics: GoogleAdsMetrics;
+  qualityScore?: number;
+  firstPageCpc?: number;
+  topOfPageCpc?: number;
+  searchVolume?: number;
+  competition?: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+// 🎯 WHITE-LABEL AD GROUP MANAGEMENT
+export interface TaskiloAdGroup {
+  id: string;
+  name: string;
+  status: 'ENABLED' | 'PAUSED' | 'REMOVED';
+  campaignId: string;
+  type: 'SEARCH_STANDARD' | 'DISPLAY_STANDARD' | 'SHOPPING_PRODUCT_ADS' | 'VIDEO_TRUE_VIEW';
+  cpcBid?: number;
+  cpaBid?: number;
+  targetCpm?: number;
+  metrics: GoogleAdsMetrics;
+  keywords: TaskiloKeyword[];
+  ads: TaskiloAd[];
+}
+
+// 🎯 WHITE-LABEL AD MANAGEMENT
+export interface TaskiloAd {
+  id: string;
+  adGroupId: string;
+  campaignId: string;
+  status: 'ENABLED' | 'PAUSED' | 'REMOVED';
+  type: 'TEXT_AD' | 'EXPANDED_TEXT_AD' | 'RESPONSIVE_SEARCH_AD' | 'IMAGE_AD' | 'VIDEO_AD';
+  finalUrls: string[];
+  displayUrl?: string;
+  headlines: string[];
+  descriptions: string[];
+  path1?: string;
+  path2?: string;
+  images?: {
+    asset: string;
+    width: number;
+    height: number;
+  }[];
+  metrics: GoogleAdsMetrics;
+  strength?: 'POOR' | 'AVERAGE' | 'GOOD' | 'EXCELLENT';
+  responsiveSearchAd?: {
+    headlines: { text: string; pinned_field?: string }[];
+    descriptions: { text: string; pinned_field?: string }[];
+  };
 }
 
 export interface GoogleAdsMetrics {
@@ -67,10 +146,14 @@ export interface GoogleAdsCampaign {
     amount: number; // in currency units
     currency: string;
     deliveryMethod: string;
+    budgetId?: string;
+    totalAmount?: number;
+    period?: 'DAILY' | 'CUSTOM';
   };
   metrics: GoogleAdsMetrics;
-  // Legacy fields for backward compatibility
-  advertisingChannelType?:
+  // 🎯 ERWEITERTE KAMPAGNEN-FEATURES für White-Label
+  adGroups?: TaskiloAdGroup[];
+  advertisingChannelType:
     | 'SEARCH'
     | 'DISPLAY'
     | 'SHOPPING'
@@ -78,20 +161,82 @@ export interface GoogleAdsCampaign {
     | 'LOCAL'
     | 'SMART'
     | 'PERFORMANCE_MAX';
-  biddingStrategy?: {
+  biddingStrategy: {
     type:
       | 'MANUAL_CPC'
       | 'ENHANCED_CPC'
       | 'TARGET_CPA'
       | 'TARGET_ROAS'
       | 'MAXIMIZE_CLICKS'
-      | 'MAXIMIZE_CONVERSIONS';
+      | 'MAXIMIZE_CONVERSIONS'
+      | 'TARGET_IMPRESSION_SHARE'
+      | 'TARGET_CPM';
     targetCpaMicros?: number;
     targetRoas?: number;
+    targetImpressionShare?: number;
+    targetCpmMicros?: number;
   };
-  geoTargets?: string[];
-  languageTargets?: string[];
-  deviceTargets?: ('DESKTOP' | 'MOBILE' | 'TABLET')[];
+  geoTargets: string[];
+  languageTargets: string[];
+  deviceTargets: ('DESKTOP' | 'MOBILE' | 'TABLET')[];
+  // Targeting Optionen
+  locationTargeting?: {
+    included: string[];
+    excluded: string[];
+    radiusTargeting?: {
+      latitude: number;
+      longitude: number;
+      radiusKm: number;
+    }[];
+  };
+  demographicTargeting?: {
+    ageRanges?: string[];
+    genders?: string[];
+    parentalStatus?: string[];
+    householdIncome?: string[];
+  };
+  keywordThemes?: string[];
+  negativeKeywords?: string[];
+  // Performance Max specific
+  assetGroups?: {
+    id: string;
+    name: string;
+    headlines: string[];
+    descriptions: string[];
+    images: string[];
+    videos?: string[];
+    finalUrl: string;
+  }[];
+}
+
+// 🎯 WHITE-LABEL BUDGET MANAGEMENT
+export interface TaskiloBudget {
+  id: string;
+  name: string;
+  amount: number;
+  currency: string;
+  deliveryMethod: 'STANDARD' | 'ACCELERATED';
+  period: 'DAILY' | 'MONTHLY' | 'TOTAL';
+  status: 'ENABLED' | 'REMOVED';
+  totalAmount?: number;
+  sharedBudgets?: string[];
+  campaigns: string[]; // Campaign IDs using this budget
+}
+
+// 🎯 WHITE-LABEL AUDIENCE MANAGEMENT
+export interface TaskiloAudience {
+  id: string;
+  name: string;
+  type: 'CUSTOM' | 'AFFINITY' | 'IN_MARKET' | 'SIMILAR' | 'REMARKETING';
+  size?: number;
+  description?: string;
+  membershipDurationDays?: number;
+  rules?: {
+    url?: string;
+    parameter?: string;
+    operator?: string;
+    value?: string;
+  }[];
 }
 
 export interface GoogleAdsApiResponse<T = any> {

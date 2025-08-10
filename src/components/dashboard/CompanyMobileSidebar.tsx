@@ -215,16 +215,10 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Google Ads',
+    label: 'Taskilo Advertising',
     icon: FiTrendingUp,
-    value: 'google-ads',
-    subItems: [
-      { label: 'Übersicht', value: 'google-ads-overview', href: 'google-ads' },
-      { label: 'Kampagnen', value: 'google-ads-campaigns', href: 'google-ads/campaigns' },
-      { label: 'Analytics', value: 'google-ads-analytics', href: 'google-ads/analytics' },
-      { label: 'Einstellungen', value: 'google-ads-settings', href: 'google-ads/settings' },
-      { label: 'Debug & Test', value: 'google-ads-debug', href: 'google-ads/debug' },
-    ],
+    value: 'taskilo-advertising',
+    href: 'taskilo-advertising',
   },
   {
     label: 'Steuerportal',
@@ -343,6 +337,9 @@ export default function CompanyMobileSidebar({
                 if (item.value === 'steuerportal') {
                   return pathname?.includes('/steuerportal');
                 }
+                if (item.value === 'taskilo-advertising') {
+                  return pathname?.includes('/taskilo-advertising');
+                }
                 if (item.value === 'dashboard') {
                   // Dashboard ist nur aktiv wenn KEIN anderer spezifischer Pfad aktiv ist
                   return (
@@ -355,7 +352,8 @@ export default function CompanyMobileSidebar({
                     !pathname?.includes('/ai-assistant') &&
                     !pathname?.includes('/calendar') &&
                     !pathname?.includes('/reviews') &&
-                    !pathname?.includes('/steuerportal')
+                    !pathname?.includes('/steuerportal') &&
+                    !pathname?.includes('/taskilo-advertising')
                   );
                 }
                 // Fallback für currentView

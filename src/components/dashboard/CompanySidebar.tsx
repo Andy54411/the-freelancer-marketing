@@ -131,16 +131,10 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Google Ads',
+    label: 'Taskilo Advertising',
     icon: FiTrendingUp,
-    value: 'google-ads',
-    subItems: [
-      { label: 'Übersicht', value: 'google-ads-overview', href: 'google-ads' },
-      { label: 'Kampagnen', value: 'google-ads-campaigns', href: 'google-ads/campaigns' },
-      { label: 'Analytics', value: 'google-ads-analytics', href: 'google-ads/analytics' },
-      { label: 'Einstellungen', value: 'google-ads-settings', href: 'google-ads/settings' },
-      { label: 'Debug & Test', value: 'google-ads-debug', href: 'google-ads/debug' },
-    ],
+    value: 'taskilo-advertising',
+    href: 'taskilo-advertising',
   },
   {
     label: 'DATEV Integration',
@@ -217,9 +211,9 @@ export default function CompanySidebar({
       return pathname?.includes('/personal');
     }
 
-    // Google Ads aktiv wenn Google Ads-Pfad
-    if (item.value === 'google-ads') {
-      return pathname?.includes('/google-ads');
+    // Taskilo Advertising aktiv wenn Taskilo Advertising-Pfad
+    if (item.value === 'taskilo-advertising') {
+      return pathname?.includes('/taskilo-advertising');
     }
 
     // DATEV aktiv wenn DATEV-Pfad
@@ -240,7 +234,7 @@ export default function CompanySidebar({
           !pathname.includes('/ai-assistant') &&
           !pathname.includes('/calendar') &&
           !pathname.includes('/reviews') &&
-          !pathname.includes('/google-ads') &&
+          !pathname.includes('/taskilo-advertising') &&
           !pathname.includes('/steuerportal') &&
           !pathname.includes('/datev'))
       );

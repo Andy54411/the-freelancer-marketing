@@ -56,8 +56,11 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     if (pathname?.includes('/personal') && !expandedItems.includes('personal')) {
       setExpandedItems(prev => [...prev, 'personal']);
     }
-    if (pathname?.includes('/google-ads') && !expandedItems.includes('google-ads')) {
-      setExpandedItems(prev => [...prev, 'google-ads']);
+    if (
+      pathname?.includes('/taskilo-advertising') &&
+      !expandedItems.includes('taskilo-advertising')
+    ) {
+      setExpandedItems(prev => [...prev, 'taskilo-advertising']);
     }
   }, [pathname, expandedItems]);
 
@@ -74,6 +77,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     if (pathname?.includes('/profile')) return 'profile';
     if (pathname?.includes('/calendar')) return 'calendar';
     if (pathname?.includes('/reviews')) return 'reviews';
+    if (pathname?.includes('/taskilo-advertising')) return 'taskilo-advertising';
     return view;
   }, [pathname, view]);
 
@@ -149,6 +153,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return FiUser;
       case 'settings':
         return FiSettings;
+      case 'taskilo-advertising':
+        return FiUsers;
       default:
         return FiGrid;
     }
@@ -173,6 +179,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return 'Profil';
       case 'settings':
         return 'Einstellungen';
+      case 'taskilo-advertising':
+        return 'Taskilo Advertising';
       default:
         return 'Übersicht';
     }

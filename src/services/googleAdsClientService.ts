@@ -108,17 +108,25 @@ class GoogleAdsClientService {
   }
 
   /**
-   * ✅ OAuth2 URL generieren
+   * ✅ OAuth2 URL generieren - ERWEITERTE SCOPES FÜR WHITE-LABEL
    */
   generateAuthUrl(companyId: string, redirectUri: string): string {
+    // 🎯 VOLLSTÄNDIGE GOOGLE ADS SCOPES für White-Label Platform
+    const scopes = [
+      'https://www.googleapis.com/auth/adwords', // Full Google Ads access
+      'https://www.googleapis.com/auth/userinfo.email', // User email (für Account-Info)
+      'https://www.googleapis.com/auth/userinfo.profile', // User profile (für Account-Info)
+    ].join(' ');
+
     const params = new URLSearchParams({
       client_id: this.config.client_id || '',
       redirect_uri: redirectUri,
-      scope: 'https://www.googleapis.com/auth/adwords',
+      scope: scopes,
       response_type: 'code',
       access_type: 'offline',
       prompt: 'consent',
       state: companyId,
+      include_granted_scopes: 'true', // Incremental authorization
     });
 
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -1476,6 +1484,473 @@ class GoogleAdsClientService {
       };
     }
   }
+
+  // 🎯 ===== WHITE-LABEL EXTENSIONS START =====
+
+  /**
+   * 🎯 KEYWORD MANAGEMENT - White-Label Feature
+   */
+  async getKeywords(
+    refreshToken: string,
+    customerId: string,
+    adGroupId?: string
+  ): Promise<GoogleAdsApiResponse<any[]>> {
+    try {
+      console.log('🔍 Getting keywords for White-Label interface...');
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      let query = `
+        SELECT
+          ad_group_criterion.criterion_id,
+          ad_group_criterion.keyword.text,
+          ad_group_criterion.keyword.match_type,
+          ad_group_criterion.status,
+          ad_group_criterion.final_urls,
+          ad_group_criterion.cpc_bid_micros,
+          ad_group.id,
+          ad_group.name,
+          campaign.id,
+          campaign.name,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.ctr,
+          metrics.average_cpc
+        FROM keyword_view
+        WHERE ad_group_criterion.type = KEYWORD
+        AND ad_group_criterion.status != REMOVED
+      `;
+
+      if (adGroupId) {
+        query += ` AND ad_group.id = ${adGroupId}`;
+      }
+
+      const result = await customer.query(query);
+
+      const keywords = result.map((row: any) => ({
+        id: String(row.ad_group_criterion?.criterion_id || ''),
+        text: row.ad_group_criterion?.keyword?.text || '',
+        matchType: row.ad_group_criterion?.keyword?.match_type || 'BROAD',
+        status: row.ad_group_criterion?.status || 'UNKNOWN',
+        finalUrl: row.ad_group_criterion?.final_urls?.[0] || '',
+        cpc: (row.ad_group_criterion?.cpc_bid_micros || 0) / 1000000,
+        adGroupId: String(row.ad_group?.id || ''),
+        adGroupName: row.ad_group?.name || '',
+        campaignId: String(row.campaign?.id || ''),
+        campaignName: row.campaign?.name || '',
+        metrics: {
+          impressions: row.metrics?.impressions || 0,
+          clicks: row.metrics?.clicks || 0,
+          cost: (row.metrics?.cost_micros || 0) / 1000000,
+          conversions: row.metrics?.conversions || 0,
+          ctr: row.metrics?.ctr || 0,
+          cpc: (row.metrics?.average_cpc || 0) / 1000000,
+        },
+      }));
+
+      return {
+        success: true,
+        data: keywords,
+      };
+    } catch (error: any) {
+      console.error('❌ Keywords fetch error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error.message || 'Failed to fetch keywords',
+        },
+      };
+    }
+  }
+
+  /**
+   * 🎯 AD MANAGEMENT - White-Label Feature
+   */
+  async getAds(
+    refreshToken: string,
+    customerId: string,
+    adGroupId?: string
+  ): Promise<GoogleAdsApiResponse<any[]>> {
+    try {
+      console.log('🎨 Getting ads for White-Label interface...');
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      let query = `
+        SELECT
+          ad_group_ad.ad.id,
+          ad_group_ad.ad.type,
+          ad_group_ad.status,
+          ad_group_ad.ad.final_urls,
+          ad_group_ad.ad.display_url,
+          ad_group_ad.ad.text_ad.headline,
+          ad_group_ad.ad.text_ad.description1,
+          ad_group_ad.ad.text_ad.description2,
+          ad_group_ad.ad.responsive_search_ad.headlines,
+          ad_group_ad.ad.responsive_search_ad.descriptions,
+          ad_group.id,
+          ad_group.name,
+          campaign.id,
+          campaign.name,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.ctr
+        FROM ad_group_ad
+        WHERE ad_group_ad.status != REMOVED
+      `;
+
+      if (adGroupId) {
+        query += ` AND ad_group.id = ${adGroupId}`;
+      }
+
+      const result = await customer.query(query);
+
+      const ads = result.map((row: any) => ({
+        id: String(row.ad_group_ad?.ad?.id || ''),
+        type: row.ad_group_ad?.ad?.type || 'TEXT_AD',
+        status: row.ad_group_ad?.status || 'UNKNOWN',
+        finalUrls: row.ad_group_ad?.ad?.final_urls || [],
+        displayUrl: row.ad_group_ad?.ad?.display_url || '',
+        headline: row.ad_group_ad?.ad?.text_ad?.headline || '',
+        description1: row.ad_group_ad?.ad?.text_ad?.description1 || '',
+        description2: row.ad_group_ad?.ad?.text_ad?.description2 || '',
+        responsiveSearchAd: {
+          headlines:
+            row.ad_group_ad?.ad?.responsive_search_ad?.headlines?.map((h: any) => ({
+              text: h.text,
+              pinned_field: h.pinned_field,
+            })) || [],
+          descriptions:
+            row.ad_group_ad?.ad?.responsive_search_ad?.descriptions?.map((d: any) => ({
+              text: d.text,
+              pinned_field: d.pinned_field,
+            })) || [],
+        },
+        adGroupId: String(row.ad_group?.id || ''),
+        adGroupName: row.ad_group?.name || '',
+        campaignId: String(row.campaign?.id || ''),
+        campaignName: row.campaign?.name || '',
+        metrics: {
+          impressions: row.metrics?.impressions || 0,
+          clicks: row.metrics?.clicks || 0,
+          cost: (row.metrics?.cost_micros || 0) / 1000000,
+          conversions: row.metrics?.conversions || 0,
+          ctr: row.metrics?.ctr || 0,
+        },
+      }));
+
+      return {
+        success: true,
+        data: ads,
+      };
+    } catch (error: any) {
+      console.error('❌ Ads fetch error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error.message || 'Failed to fetch ads',
+        },
+      };
+    }
+  }
+
+  /**
+   * 🎯 AD GROUP MANAGEMENT - White-Label Feature
+   */
+  async getAdGroups(
+    refreshToken: string,
+    customerId: string,
+    campaignId?: string
+  ): Promise<GoogleAdsApiResponse<any[]>> {
+    try {
+      console.log('📊 Getting ad groups for White-Label interface...');
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      let query = `
+        SELECT
+          ad_group.id,
+          ad_group.name,
+          ad_group.status,
+          ad_group.type,
+          ad_group.cpc_bid_micros,
+          ad_group.cpa_bid_micros,
+          ad_group.target_cpm_micros,
+          campaign.id,
+          campaign.name,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.ctr,
+          metrics.average_cpc
+        FROM ad_group
+        WHERE ad_group.status != REMOVED
+      `;
+
+      if (campaignId) {
+        query += ` AND campaign.id = ${campaignId}`;
+      }
+
+      const result = await customer.query(query);
+
+      const adGroups = result.map((row: any) => ({
+        id: String(row.ad_group?.id || ''),
+        name: row.ad_group?.name || '',
+        status: row.ad_group?.status || 'UNKNOWN',
+        type: row.ad_group?.type || 'SEARCH_STANDARD',
+        cpcBid: (row.ad_group?.cpc_bid_micros || 0) / 1000000,
+        cpaBid: (row.ad_group?.cpa_bid_micros || 0) / 1000000,
+        targetCpm: (row.ad_group?.target_cpm_micros || 0) / 1000000,
+        campaignId: String(row.campaign?.id || ''),
+        campaignName: row.campaign?.name || '',
+        metrics: {
+          impressions: row.metrics?.impressions || 0,
+          clicks: row.metrics?.clicks || 0,
+          cost: (row.metrics?.cost_micros || 0) / 1000000,
+          conversions: row.metrics?.conversions || 0,
+          ctr: row.metrics?.ctr || 0,
+          cpc: (row.metrics?.average_cpc || 0) / 1000000,
+        },
+      }));
+
+      return {
+        success: true,
+        data: adGroups,
+      };
+    } catch (error: any) {
+      console.error('❌ Ad groups fetch error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error.message || 'Failed to fetch ad groups',
+        },
+      };
+    }
+  }
+
+  /**
+   * 🎯 BUDGET MANAGEMENT - White-Label Feature
+   */
+  async getBudgets(refreshToken: string, customerId: string): Promise<GoogleAdsApiResponse<any[]>> {
+    try {
+      console.log('💰 Getting budgets for White-Label interface...');
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      const query = `
+        SELECT
+          campaign_budget.id,
+          campaign_budget.name,
+          campaign_budget.amount_micros,
+          campaign_budget.delivery_method,
+          campaign_budget.period,
+          campaign_budget.status,
+          campaign_budget.total_amount_micros
+        FROM campaign_budget
+        WHERE campaign_budget.status != REMOVED
+      `;
+
+      const result = await customer.query(query);
+
+      const budgets = result.map((row: any) => ({
+        id: String(row.campaign_budget?.id || ''),
+        name: row.campaign_budget?.name || '',
+        amount: (row.campaign_budget?.amount_micros || 0) / 1000000,
+        currency: 'EUR', // Default, should be fetched from account
+        deliveryMethod: row.campaign_budget?.delivery_method || 'STANDARD',
+        period: row.campaign_budget?.period || 'DAILY',
+        status: row.campaign_budget?.status || 'ENABLED',
+        totalAmount: (row.campaign_budget?.total_amount_micros || 0) / 1000000,
+      }));
+
+      return {
+        success: true,
+        data: budgets,
+      };
+    } catch (error: any) {
+      console.error('❌ Budgets fetch error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error.message || 'Failed to fetch budgets',
+        },
+      };
+    }
+  }
+
+  /**
+   * 🎯 PERFORMANCE ANALYTICS - White-Label Feature
+   */
+  async getPerformanceAnalytics(
+    refreshToken: string,
+    customerId: string,
+    dateRange?: { startDate: string; endDate: string }
+  ): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      console.log('📈 Getting performance analytics for White-Label interface...');
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      const startDate = dateRange?.startDate || '2024-01-01';
+      const endDate = dateRange?.endDate || new Date().toISOString().split('T')[0];
+
+      const query = `
+        SELECT
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.conversion_value,
+          metrics.ctr,
+          metrics.average_cpc,
+          metrics.average_cpa,
+          metrics.value_per_conversion,
+          segments.date
+        FROM customer
+        WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
+      `;
+
+      const result = await customer.query(query);
+
+      const totalMetrics = {
+        impressions: 0,
+        clicks: 0,
+        cost: 0,
+        conversions: 0,
+        conversionValue: 0,
+        ctr: 0,
+        cpc: 0,
+        cpa: 0,
+        roas: 0,
+      };
+
+      const dailyData: any[] = [];
+
+      result.forEach((row: any) => {
+        const metrics = row.metrics || {};
+        const cost = (metrics.cost_micros || 0) / 1000000;
+        const conversions = metrics.conversions || 0;
+        const conversionValue = metrics.conversion_value || 0;
+
+        totalMetrics.impressions += metrics.impressions || 0;
+        totalMetrics.clicks += metrics.clicks || 0;
+        totalMetrics.cost += cost;
+        totalMetrics.conversions += conversions;
+        totalMetrics.conversionValue += conversionValue;
+
+        dailyData.push({
+          date: row.segments?.date || '',
+          impressions: metrics.impressions || 0,
+          clicks: metrics.clicks || 0,
+          cost: cost,
+          conversions: conversions,
+          conversionValue: conversionValue,
+          ctr: metrics.ctr || 0,
+          cpc: (metrics.average_cpc || 0) / 1000000,
+        });
+      });
+
+      // Calculate averages
+      if (totalMetrics.impressions > 0) {
+        totalMetrics.ctr = (totalMetrics.clicks / totalMetrics.impressions) * 100;
+      }
+      if (totalMetrics.clicks > 0) {
+        totalMetrics.cpc = totalMetrics.cost / totalMetrics.clicks;
+      }
+      if (totalMetrics.conversions > 0) {
+        totalMetrics.cpa = totalMetrics.cost / totalMetrics.conversions;
+      }
+      if (totalMetrics.cost > 0) {
+        totalMetrics.roas = totalMetrics.conversionValue / totalMetrics.cost;
+      }
+
+      return {
+        success: true,
+        data: {
+          summary: totalMetrics,
+          daily: dailyData,
+          dateRange: { startDate, endDate },
+        },
+      };
+    } catch (error: any) {
+      console.error('❌ Performance analytics fetch error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error.message || 'Failed to fetch performance analytics',
+        },
+      };
+    }
+  }
+
+  /**
+   * 🎯 USER PROFILE - Get Google Account Info for White-Label
+   */
+  async getUserProfile(accessToken: string): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      console.log('👤 Getting user profile for White-Label interface...');
+
+      const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user profile: ${response.status}`);
+      }
+
+      const userInfo = await response.json();
+
+      return {
+        success: true,
+        data: {
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
+          locale: userInfo.locale,
+          verified: userInfo.verified_email,
+        },
+      };
+    } catch (error: any) {
+      console.error('❌ User profile fetch error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error.message || 'Failed to fetch user profile',
+        },
+      };
+    }
+  }
+
+  // 🎯 ===== WHITE-LABEL EXTENSIONS END =====
 }
 
 // Singleton-Instanz exportieren
