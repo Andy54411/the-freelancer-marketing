@@ -78,20 +78,20 @@ export async function GET(request: NextRequest) {
         customersResponse.data &&
         customersResponse.data.length > 0
       ) {
-        // Filter out MCC (Manager) accounts - they don't have campaigns
-        const normalAccounts = customersResponse.data.filter(
-          c => c.id !== 'pending-setup' && !c.manager
-        );
+        // ✅ EINFACHE LÖSUNG: Verwende denselben Algorithmus wie test-all
+        // Nimm einfach den ersten verfügbaren Account
+        customerId = customersResponse.data[0].id;
+        console.log('🎯 Using first available account (same as test-all):', customerId);
 
-        if (normalAccounts.length > 0) {
-          customerId = normalAccounts[0].id;
-          console.log('🎯 Using first normal (non-MCC) account:', customerId);
-        } else {
-          // Fallback: use any account if no normal accounts found
-          const realCustomer = customersResponse.data.find(c => c.id !== 'pending-setup');
-          customerId = realCustomer?.id || customersResponse.data[0].id;
-          console.log('⚠️ Only MCC accounts found, using first available:', customerId);
-        }
+        // Optional: Log alle verfügbaren Accounts für Debug
+        console.log(
+          '📋 Available accounts:',
+          customersResponse.data.map(c => ({
+            id: c.id,
+            name: c.name,
+            manager: c.manager,
+          }))
+        );
       } else {
         return NextResponse.json(
           {
@@ -103,35 +103,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Validate if the selected customerId is an MCC account
-    if (customerId && config.refreshToken) {
-      try {
-        const customersResponse = await googleAdsClientService.getAccessibleCustomers(
-          config.refreshToken
-        );
-
-        if (customersResponse.success && customersResponse.data) {
-          const selectedAccount = customersResponse.data.find(c => c.id === customerId);
-          if (selectedAccount?.manager) {
-            console.log(
-              `⚠️ Account ${customerId} is an MCC (Manager) account - it may not have campaigns`
-            );
-
-            // Try to find an alternative normal account
-            const normalAccounts = customersResponse.data.filter(
-              c => !c.manager && c.id !== 'pending-setup'
-            );
-            if (normalAccounts.length > 0 && !providedCustomerId) {
-              const alternativeId = normalAccounts[0].id;
-              console.log(`🔄 Switching from MCC ${customerId} to normal account ${alternativeId}`);
-              customerId = alternativeId;
-            }
-          }
-        }
-      } catch (error) {
-        console.log('⚠️ Could not validate account type, proceeding with provided customerId');
-      }
-    }
+    // ✅ DIREKT ZU CAMPAIGNS - Keine weitere Account-Validierung
+    // Verwende den ausgewählten customerId direkt, genau wie test-all
 
     // Campaigns abrufen
     if (!config.refreshToken) {
@@ -141,6 +114,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('📊 Fetching campaigns for customerId:', customerId);
     const result = await googleAdsClientService.getCampaigns(config.refreshToken, customerId);
 
     if (!result.success) {
