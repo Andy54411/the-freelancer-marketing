@@ -764,23 +764,49 @@ class GoogleAdsClientService {
       console.log('🎯 Creating campaign for customer:', customerId);
       console.log('📝 Campaign data:', campaignData);
 
+      // Validiere Customer ID Format
+      if (!customerId || customerId === 'auto-detect') {
+        throw new Error('Invalid customer ID provided');
+      }
+
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
       });
 
+      // Test Customer Access zuerst
+      console.log('🔍 Testing customer access...');
+      try {
+        const testQuery = await customer.query(`
+          SELECT customer.id, customer.descriptive_name
+          FROM customer
+          LIMIT 1
+        `);
+        console.log('✅ Customer access confirmed:', testQuery[0]?.customer);
+      } catch (accessError: any) {
+        console.error('❌ Customer access failed:', accessError);
+        throw new Error(`Customer access failed: ${accessError.message}`);
+      }
+
       // 1. Erstelle Campaign Budget
       console.log('💰 Creating campaign budget...');
-      const budgetResult = await customer.campaignBudgets.create([
-        {
-          name: `Budget für ${campaignData.name}`,
-          amount_micros: campaignData.budgetAmountMicros,
-          delivery_method: 'STANDARD',
-        },
-      ]);
+      let budgetResourceName: string;
 
-      const budgetResourceName = budgetResult.results[0].resource_name;
-      console.log('✅ Budget created:', budgetResourceName);
+      try {
+        const budgetResult = await customer.campaignBudgets.create([
+          {
+            name: `Budget für ${campaignData.name}`,
+            amount_micros: campaignData.budgetAmountMicros,
+            delivery_method: 'STANDARD',
+          },
+        ]);
+
+        budgetResourceName = budgetResult.results[0].resource_name;
+        console.log('✅ Budget created:', budgetResourceName);
+      } catch (budgetError: any) {
+        console.error('❌ Budget creation failed:', budgetError);
+        throw new Error(`Budget creation failed: ${budgetError.message || 'Unknown budget error'}`);
+      }
 
       // 2. Erstelle Campaign
       console.log('🚀 Creating campaign...');
@@ -789,33 +815,40 @@ class GoogleAdsClientService {
       const today = new Date();
       const defaultStartDate = today.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
 
-      const campaignResult = await customer.campaigns.create([
-        {
-          name: campaignData.name,
-          advertising_channel_type: campaignData.advertisingChannelType as any,
-          status: 'PAUSED', // Start mit PAUSED für Review
-          campaign_budget: budgetResourceName,
-          bidding_strategy_type: campaignData.biddingStrategyType as any,
-          start_date: campaignData.startDate?.replace(/-/g, '') || defaultStartDate, // YYYYMMDD Format
-          end_date: campaignData.endDate?.replace(/-/g, '') || undefined,
-          network_settings: {
-            target_google_search: true,
-            target_search_network: true,
-            target_content_network: false,
-            target_partner_search_network: false,
+      try {
+        const campaignResult = await customer.campaigns.create([
+          {
+            name: campaignData.name,
+            advertising_channel_type: campaignData.advertisingChannelType as any,
+            status: 'PAUSED', // Start mit PAUSED für Review
+            campaign_budget: budgetResourceName,
+            bidding_strategy_type: campaignData.biddingStrategyType as any,
+            start_date: campaignData.startDate?.replace(/-/g, '') || defaultStartDate, // YYYYMMDD Format
+            end_date: campaignData.endDate?.replace(/-/g, '') || undefined,
+            network_settings: {
+              target_google_search: true,
+              target_search_network: true,
+              target_content_network: false,
+              target_partner_search_network: false,
+            },
           },
-        },
-      ]);
+        ]);
 
-      const campaignResourceName = campaignResult.results[0].resource_name;
-      const campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
+        const campaignResourceName = campaignResult.results[0].resource_name;
+        const campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
 
-      console.log('✅ Campaign created successfully:', campaignId);
+        console.log('✅ Campaign created successfully:', campaignId);
 
-      return {
-        success: true,
-        data: { campaignId },
-      };
+        return {
+          success: true,
+          data: { campaignId },
+        };
+      } catch (campaignError: any) {
+        console.error('❌ Campaign creation failed:', campaignError);
+        throw new Error(
+          `Campaign creation failed: ${campaignError.message || 'Unknown campaign error'}`
+        );
+      }
     } catch (error: any) {
       console.error('❌ Campaign creation error:', error);
 

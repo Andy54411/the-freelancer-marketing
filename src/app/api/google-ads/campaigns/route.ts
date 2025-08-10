@@ -191,11 +191,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve customer ID if 'auto-detect' was provided
+    let finalCustomerId = customerId;
+    if (customerId === 'auto-detect') {
+      console.log('🔍 Resolving auto-detect customer ID...');
+
+      const customersResponse = await googleAdsClientService.getAccessibleCustomers(
+        accountConfig.refreshToken
+      );
+
+      if (
+        customersResponse.success &&
+        customersResponse.data &&
+        customersResponse.data.length > 0
+      ) {
+        // Use the first real customer ID (excluding fallback)
+        const realCustomer = customersResponse.data.find(c => c.id !== 'pending-setup');
+        finalCustomerId = realCustomer?.id || customersResponse.data[0].id;
+        console.log('🎯 Resolved customer ID:', finalCustomerId);
+      } else {
+        return NextResponse.json(
+          {
+            error: 'No customers found or failed to fetch customers',
+            details: customersResponse.error,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate resolved customer ID
+    if (!finalCustomerId || finalCustomerId === 'auto-detect') {
+      return NextResponse.json(
+        {
+          error: 'Invalid customer ID resolved',
+          providedCustomerId: customerId,
+          resolvedCustomerId: finalCustomerId,
+        },
+        { status: 400 }
+      );
+    }
+
     // Create campaign using Client Library
     console.log('🚀 Creating campaign with Client Library...');
     console.log('📝 Campaign data details:', {
       refreshToken: !!accountConfig.refreshToken,
-      customerId,
+      originalCustomerId: customerId,
+      resolvedCustomerId: finalCustomerId,
       campaignData: {
         ...campaignData,
         budgetAmountMicros: `${campaignData.budgetAmountMicros} (${campaignData.budgetAmountMicros / 1000000} EUR)`,
@@ -204,7 +246,7 @@ export async function POST(request: NextRequest) {
 
     const result = await googleAdsClientService.createCampaign(
       accountConfig.refreshToken,
-      customerId,
+      finalCustomerId, // Use the resolved customer ID!
       campaignData
     );
 
@@ -217,7 +259,8 @@ export async function POST(request: NextRequest) {
           error: 'Failed to create campaign',
           details: result.error,
           debugInfo: {
-            customerId,
+            originalCustomerId: customerId,
+            resolvedCustomerId: finalCustomerId,
             campaignName: campaignData.name,
             budget: campaignData.budgetAmountMicros,
           },
