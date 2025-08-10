@@ -163,6 +163,39 @@ export default function MultiPlatformAdvertisingDashboard({
         }
       }
 
+      // Fallback: Mock Platform-Verbindungen für Demo
+      if (platformConnections.length === 0) {
+        setPlatformConnections([
+          {
+            platform: 'google-ads',
+            status: 'connected',
+            lastConnected: new Date().toISOString(),
+            accountInfo: {
+              id: 'demo-google-account',
+              name: 'Taskilo Demo Account',
+              currency: 'EUR',
+              timezone: 'Europe/Berlin',
+            },
+          },
+          {
+            platform: 'linkedin',
+            status: 'disconnected',
+          },
+          {
+            platform: 'meta',
+            status: 'disconnected',
+          },
+          {
+            platform: 'taboola',
+            status: 'disconnected',
+          },
+          {
+            platform: 'outbrain',
+            status: 'disconnected',
+          },
+        ]);
+      }
+
       // Load campaigns
       const campaignsResponse = await fetch(
         `/api/multi-platform-advertising/campaigns?companyId=${companyId}`
