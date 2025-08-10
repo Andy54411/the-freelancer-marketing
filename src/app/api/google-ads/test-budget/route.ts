@@ -47,8 +47,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const customerId = customersResponse.data[0].id;
-    console.log('🎯 Testing budget creation for customer:', customerId);
+    // ✅ WICHTIG: Verwende ersten AKTIVEN Account, nicht einfach den ersten
+    const enabledCustomer = customersResponse.data.find(c => c.status === 'ENABLED');
+    const customerId = enabledCustomer?.id || customersResponse.data[0].id;
+    console.log(
+      '🎯 Testing budget creation for customer:',
+      customerId,
+      enabledCustomer ? '(ENABLED)' : '(FALLBACK - CHECK ACCOUNT STATUS)'
+    );
 
     // Test direct budget creation with Google Ads API
     const { GoogleAdsApi } = await import('google-ads-api');
