@@ -8,58 +8,61 @@ import { db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const inputCompanyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
+    const companyId = searchParams.get('companyId');
 
-    console.log('🧪 Testing Google Ads Budget Creation for:', inputCompanyId);
+    if (!companyId) {
+      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
+    }
 
-    // Company ID lookup logic (wie in create-comprehensive)
-    let actualCompanyId = inputCompanyId;
+    console.log('🧪 Testing Google Ads Budget Creation for:', companyId);
 
-    // Wenn es aussieht wie eine User-ID (mietkoch-andy), suche die echte Company ID
-    if (inputCompanyId.includes('-') && !inputCompanyId.includes('_')) {
-      console.log('🔍 Looking up company ID for:', inputCompanyId);
+    // Try to get Google Ads configuration using same logic as status API
+    let googleAdsDocRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('integrations')
+      .doc('googleAds');
+    let googleAdsSnap = await googleAdsDocRef.get();
+    let actualCompanyId = companyId;
 
-      const companiesSnapshot = await db.collection('companies').get();
-      const foundCompany = companiesSnapshot.docs.find(doc => {
-        const data = doc.data();
-        return (
-          data.id === inputCompanyId ||
-          data.name?.toLowerCase().includes(inputCompanyId.toLowerCase()) ||
-          data.slug === inputCompanyId
-        );
-      });
+    console.log('🔍 Debug Google Ads test-budget Check:', {
+      companyId,
+      docExists: googleAdsSnap.exists,
+      docPath: `companies/${companyId}/integrations/googleAds`,
+      timestamp: new Date().toISOString(),
+    });
 
-      if (foundCompany) {
-        actualCompanyId = foundCompany.id;
-        console.log('✅ Found actual company ID:', actualCompanyId);
-      } else {
-        console.log('❌ Company not found for ID:', inputCompanyId);
+    // If not found with provided companyId, search all companies for Google Ads config
+    if (!googleAdsSnap.exists) {
+      console.log(`🔍 Google Ads config not found for ${companyId}, searching all companies...`);
+
+      const companiesRef = db.collection('companies');
+      const companiesSnap = await companiesRef.get();
+
+      for (const companyDoc of companiesSnap.docs) {
+        const testGoogleAdsDocRef = companyDoc.ref.collection('integrations').doc('googleAds');
+        const testGoogleAdsSnap = await testGoogleAdsDocRef.get();
+
+        if (testGoogleAdsSnap.exists) {
+          console.log(`✅ Found Google Ads config for company: ${companyDoc.id}`);
+          googleAdsDocRef = testGoogleAdsDocRef;
+          googleAdsSnap = testGoogleAdsSnap;
+          actualCompanyId = companyDoc.id;
+          break;
+        }
+      }
+
+      if (!googleAdsSnap.exists) {
+        console.log('❌ No Google Ads configuration found in any company');
         return NextResponse.json(
-          { error: 'Company not found', searchedId: inputCompanyId },
+          {
+            error: 'No Google Ads configuration found',
+            searchedCompanyId: companyId,
+            message: 'No company has Google Ads integration set up',
+          },
           { status: 404 }
         );
       }
-    }
-
-    // Get stored config
-    const googleAdsDocRef = db
-      .collection('companies')
-      .doc(actualCompanyId)
-      .collection('integrations')
-      .doc('googleAds');
-
-    const googleAdsSnap = await googleAdsDocRef.get();
-
-    if (!googleAdsSnap.exists) {
-      return NextResponse.json(
-        {
-          error: 'No Google Ads configuration found',
-          inputCompanyId,
-          actualCompanyId,
-          searched: `companies/${actualCompanyId}/integrations/googleAds`,
-        },
-        { status: 404 }
-      );
     }
 
     const data = googleAdsSnap.data();
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'No refresh token found',
-          inputCompanyId,
+          searchedCompanyId: companyId,
           actualCompanyId,
         },
         { status: 400 }
@@ -130,7 +133,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Budget creation test passed',
         data: {
-          inputCompanyId,
+          searchedCompanyId: companyId,
           actualCompanyId,
           customerId,
           budgetResourceName,
@@ -162,7 +165,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Budget creation test failed',
         data: {
-          inputCompanyId,
+          searchedCompanyId: companyId,
           actualCompanyId,
           customerId,
           test: 'simple_budget_creation',
