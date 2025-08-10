@@ -406,6 +406,9 @@ export function CampaignCreator({
       setCreating(true);
       setError(null);
 
+      console.log('🚀 Starting campaign creation for companyId:', companyId);
+      console.log('📝 Form data:', JSON.stringify(formData, null, 2));
+
       // Validierung
       if (!formData.name.trim()) {
         throw new Error('Kampagnenname ist erforderlich');
@@ -459,6 +462,11 @@ export function CampaignCreator({
             biddingStrategyType: formData.biddingStrategyType,
             startDate: formData.startDate,
             endDate: formData.endDate,
+
+            // 🚧 Assets und Extensions vorerst deaktiviert für Debugging
+            // assets: formData.assets,
+            // extensions: formData.extensions,
+
             adGroups: formData.adGroups.map(ag => ({
               name: ag.name,
               cpcBidMicros: ag.cpcBidMicros,

@@ -12,6 +12,27 @@ interface ComprehensiveCampaignRequest {
   startDate?: string;
   endDate?: string;
 
+  // ✅ Assets und Extensions hinzufügen
+  assets?: Array<{
+    id: string;
+    type: 'IMAGE' | 'VIDEO' | 'TEXT' | 'LOGO';
+    assetType:
+      | 'MARKETING_IMAGE'
+      | 'SQUARE_MARKETING_IMAGE'
+      | 'LOGO'
+      | 'BUSINESS_NAME'
+      | 'CALL_TO_ACTION_SELECTION';
+    name: string;
+    url?: string;
+    text?: string;
+  }>;
+
+  extensions?: Array<{
+    id: string;
+    type: 'SITELINK' | 'CALLOUT' | 'STRUCTURED_SNIPPET' | 'CALL' | 'PRICE';
+    data: any;
+  }>;
+
   // Ad Groups
   adGroups: Array<{
     name: string;
