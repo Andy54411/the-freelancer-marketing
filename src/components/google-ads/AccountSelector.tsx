@@ -60,19 +60,21 @@ export function AccountSelector({
 
       console.log('📊 Account loading result:', result);
 
-      if (result.success && result.data?.accounts) {
-        console.log('📋 Raw accounts:', result.data.accounts);
+      if (result.success && result.accounts) {
+        console.log('📋 Raw accounts:', result.accounts);
 
         // Filtere nur aktive, echte Accounts
-        const activeAccounts = result.data.accounts.filter((account: GoogleAdsAccount) => {
+        const activeAccounts = result.accounts.filter((account: GoogleAdsAccount) => {
           console.log('🔍 Checking account:', {
             id: account.id,
+            name: account.name,
             status: account.status,
             testAccount: account.testAccount,
           });
-          // Akzeptiere sowohl ENABLED als auch AKTIV Status
-          const isActive = account.status === 'ENABLED' || account.status === 'AKTIV';
-          const isReal = !account.testAccount;
+          // Akzeptiere ENABLED, AKTIV und UNKNOWN Status (UNKNOWN = verfügbar aber nicht getestet)
+          const isActive = ['ENABLED', 'AKTIV', 'UNKNOWN'].includes(account.status);
+          // Filtere keine Test-Accounts heraus wenn das Property nicht existiert
+          const isReal = account.testAccount !== true; // undefined wird als true behandelt
           return isActive && isReal;
         });
 
