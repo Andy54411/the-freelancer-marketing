@@ -796,8 +796,9 @@ class GoogleAdsClientService {
         const budgetResult = await customer.campaignBudgets.create([
           {
             name: `Budget für ${campaignData.name}`,
-            amount_micros: campaignData.budgetAmountMicros,
+            amount_micros: Number(campaignData.budgetAmountMicros),
             delivery_method: 'STANDARD',
+            explicitly_shared: false,
           },
         ]);
 
@@ -805,7 +806,18 @@ class GoogleAdsClientService {
         console.log('✅ Budget created:', budgetResourceName);
       } catch (budgetError: any) {
         console.error('❌ Budget creation failed:', budgetError);
-        throw new Error(`Budget creation failed: ${budgetError.message || 'Unknown budget error'}`);
+        console.error('❌ Budget error details:', {
+          name: budgetError.name,
+          message: budgetError.message,
+          code: budgetError.code,
+          status: budgetError.status,
+          details: budgetError.details,
+          failures: budgetError.failures,
+          stack: budgetError.stack?.substring(0, 500),
+        });
+        throw new Error(
+          `Budget creation failed: ${budgetError.message || budgetError.details || 'Unknown budget error'}`
+        );
       }
 
       // 2. Erstelle Campaign
@@ -964,8 +976,9 @@ class GoogleAdsClientService {
         const budgetResult = await customer.campaignBudgets.create([
           {
             name: `Budget für ${campaignData.name}`,
-            amount_micros: campaignData.budgetAmountMicros,
+            amount_micros: Number(campaignData.budgetAmountMicros),
             delivery_method: 'STANDARD',
+            explicitly_shared: false,
           },
         ]);
 
@@ -973,7 +986,18 @@ class GoogleAdsClientService {
         console.log('✅ Budget created:', budgetResourceName);
       } catch (budgetError: any) {
         console.error('❌ Budget creation failed:', budgetError);
-        throw new Error(`Budget creation failed: ${budgetError.message || 'Unknown budget error'}`);
+        console.error('❌ Budget error details:', {
+          name: budgetError.name,
+          message: budgetError.message,
+          code: budgetError.code,
+          status: budgetError.status,
+          details: budgetError.details,
+          failures: budgetError.failures,
+          stack: budgetError.stack?.substring(0, 500),
+        });
+        throw new Error(
+          `Budget creation failed: ${budgetError.message || budgetError.details || 'Unknown budget error'}`
+        );
       }
 
       // 2. Erstelle Campaign
