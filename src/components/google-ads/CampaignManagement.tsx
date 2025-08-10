@@ -47,19 +47,43 @@ export function CampaignManagement({
   customerId,
   onCampaignUpdate,
 }: CampaignManagementProps) {
+  // Campaign Loading State
   const [campaigns, setCampaigns] = useState<GoogleAdsCampaign[]>([]);
-  const [loading, setLoading] = useState(false); // Start ohne Loading
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+
+  // Campaign Management State
   const [selectedCampaign, setSelectedCampaign] = useState<GoogleAdsCampaign | null>(null);
   const [showAdvancedCreator, setShowAdvancedCreator] = useState(false);
 
   // Account Selection State
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(customerId);
-  const [selectedAccount, setSelectedAccount] = useState<any>(null); // Kampagnen laden
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+
+  // Kampagnen laden mit Retry-Limitierung
   const fetchCampaigns = async () => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchTime;
+
+    // Verhindere zu häufige API-Calls (mindestens 5 Sekunden zwischen Calls)
+    if (timeSinceLastFetch < 5000 && lastFetchTime > 0) {
+      console.log('⏳ Skipping fetch - too soon since last attempt');
+      return;
+    }
+
+    // Verhindere mehr als 3 Retry-Versuche
+    if (retryCount >= 3) {
+      console.log('🛑 Max retry attempts reached, stopping');
+      setError('Max retry attempts reached. Please check your Google Ads configuration.');
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log('🔍 Fetching campaigns for:', { companyId, selectedAccountId });
+      setLastFetchTime(now);
+      console.log('🔍 Fetching campaigns for:', { companyId, selectedAccountId, retryCount });
 
       // Verwende den ausgewählten Account oder 'auto-detect' als Fallback
       const finalCustomerId = selectedAccountId || 'auto-detect';
@@ -78,17 +102,27 @@ export function CampaignManagement({
         const campaigns = result.data.campaigns || [];
         setCampaigns(campaigns);
         setError(null);
+        setRetryCount(0); // Reset retry count on success
         console.log('📊 Loaded campaigns:', campaigns.length);
       } else {
+        setRetryCount(prev => prev + 1);
         throw new Error(result.error || 'Failed to fetch campaigns');
       }
     } catch (err) {
       console.error('❌ Campaign fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch campaigns');
       setCampaigns([]);
+      setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reset retry count für manuelle Wiederholung
+  const resetRetryAndFetch = () => {
+    setRetryCount(0);
+    setError(null);
+    fetchCampaigns();
   };
 
   // Erweiterte Kampagnen-Erstellung erfolgreich
@@ -197,13 +231,24 @@ export function CampaignManagement({
         </CardHeader>
         <CardContent>
           <Alert>
-            <AlertDescription>Fehler beim Laden der Kampagnen: {error}</AlertDescription>
+            <AlertDescription>
+              Fehler beim Laden der Kampagnen: {error}
+              {retryCount >= 3 && (
+                <div className="mt-2">
+                  <span className="text-sm text-gray-500">
+                    Max. Wiederholungsversuche erreicht ({retryCount}/3). Bitte überprüfen Sie Ihre
+                    Google Ads Konfiguration.
+                  </span>
+                </div>
+              )}
+            </AlertDescription>
           </Alert>
           <Button
-            onClick={fetchCampaigns}
+            onClick={resetRetryAndFetch}
             className="mt-4 bg-[#14ad9f] hover:bg-[#129488] text-white"
+            disabled={loading}
           >
-            Erneut versuchen
+            {retryCount >= 3 ? 'Konfiguration zurücksetzen & erneut versuchen' : 'Erneut versuchen'}
           </Button>
         </CardContent>
       </Card>
