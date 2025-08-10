@@ -34,6 +34,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { PersonalActions } from '@/components/personal/PersonalActions';
+import { EmployeeTable } from '@/components/personal/EmployeeTable';
+import { type Employee as ServiceEmployee } from '@/services/personalService';
 
 interface Employee {
   id: string;
@@ -55,6 +58,58 @@ interface Employee {
     daily: number;
   };
 }
+
+// Type adapter function
+const convertToServiceEmployee = (employee: Employee): ServiceEmployee => {
+  return {
+    id: employee.id,
+    companyId: '', // Will be set by service
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+    email: employee.email,
+    position: employee.position,
+    department: employee.department,
+    employmentType: employee.employmentType,
+    contractType: 'PERMANENT',
+    startDate: employee.startDate,
+    grossSalary: employee.grossSalary,
+    hourlyRate: employee.hourlyRate,
+    workingHours: employee.workingHours,
+    socialSecurity: {
+      employerContribution: 0,
+      employeeContribution: 0,
+    },
+    additionalCosts: {
+      healthInsurance: 0,
+      benefits: 0,
+      training: 0,
+      equipment: 0,
+    },
+    isActive: employee.isActive,
+    avatar: employee.avatar,
+  };
+};
+
+const convertFromServiceEmployee = (serviceEmployee: ServiceEmployee): Employee => {
+  return {
+    id: serviceEmployee.id || '',
+    firstName: serviceEmployee.firstName,
+    lastName: serviceEmployee.lastName,
+    email: serviceEmployee.email,
+    position: serviceEmployee.position,
+    department: serviceEmployee.department,
+    employmentType: serviceEmployee.employmentType,
+    startDate: serviceEmployee.startDate,
+    grossSalary: serviceEmployee.grossSalary,
+    hourlyRate: serviceEmployee.hourlyRate,
+    isActive: serviceEmployee.isActive,
+    avatar: serviceEmployee.avatar,
+    totalCost:
+      serviceEmployee.calculatedData?.totalMonthlyCost || serviceEmployee.grossSalary * 1.3,
+    productivity: 85, // Default productivity
+    workingHours: serviceEmployee.workingHours,
+  };
+};
 
 export default function PersonalOverviewPage() {
   const params = useParams();
@@ -193,20 +248,27 @@ export default function PersonalOverviewPage() {
                 Verwalten Sie Ihre Mitarbeiter, Kosten und Personal-Analytics
               </p>
             </div>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" className="flex items-center">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-              <Button variant="outline" className="flex items-center">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white flex items-center">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Mitarbeiter hinzufügen
-              </Button>
-            </div>
+
+            <PersonalActions
+              companyId={companyId}
+              employees={employees.map(convertToServiceEmployee)}
+              onEmployeeAdded={serviceEmployee => {
+                const localEmployee = convertFromServiceEmployee(serviceEmployee);
+                setEmployees(prev => [...prev, localEmployee]);
+                // loadPersonalData(); // Aktualisiere Statistiken
+              }}
+              onEmployeeUpdated={serviceEmployee => {
+                const localEmployee = convertFromServiceEmployee(serviceEmployee);
+                setEmployees(prev =>
+                  prev.map(emp => (emp.id === localEmployee.id ? localEmployee : emp))
+                );
+                // loadPersonalData(); // Aktualisiere Statistiken
+              }}
+              onEmployeeDeleted={employeeId => {
+                setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+                // loadPersonalData(); // Aktualisiere Statistiken
+              }}
+            />
           </div>
         </div>
 
@@ -322,93 +384,32 @@ export default function PersonalOverviewPage() {
             </Card>
 
             {/* Mitarbeiterliste */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Mitarbeiter ({filteredEmployees.length})</CardTitle>
-                <CardDescription>
-                  Übersicht aller Mitarbeiter mit wichtigen Kennzahlen
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredEmployees.map(employee => (
-                    <div
-                      key={employee.id}
-                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={employee.avatar} />
-                          <AvatarFallback className="bg-[#14ad9f] text-white">
-                            {employee.firstName[0]}
-                            {employee.lastName[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">
-                            {employee.firstName} {employee.lastName}
-                          </h3>
-                          <p className="text-sm text-gray-600">{employee.position}</p>
-                          <p className="text-xs text-gray-500">{employee.email}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-6">
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">{employee.department}</p>
-                          <Badge variant={getEmploymentTypeBadge(employee.employmentType) as any}>
-                            {getEmploymentTypeLabel(employee.employmentType)}
-                          </Badge>
-                        </div>
-
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">
-                            {formatCurrency(employee.grossSalary)}
-                          </p>
-                          <p className="text-xs text-gray-500">Brutto/Monat</p>
-                        </div>
-
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">
-                            {employee.productivity}%
-                          </p>
-                          <p className="text-xs text-gray-500">Produktivität</p>
-                        </div>
-
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">
-                            {employee.workingHours.weekly}h
-                          </p>
-                          <p className="text-xs text-gray-500">Pro Woche</p>
-                        </div>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Details anzeigen
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Bearbeiten
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Deaktivieren
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <EmployeeTable
+              employees={employees.map(convertToServiceEmployee)}
+              companyId={companyId}
+              onEmployeeUpdated={serviceEmployee => {
+                const localEmployee = convertFromServiceEmployee(serviceEmployee);
+                setEmployees(prev =>
+                  prev.map(emp =>
+                    emp.id === localEmployee.id
+                      ? {
+                          ...emp,
+                          ...localEmployee,
+                          // Behalte lokale Eigenschaften bei
+                          totalCost: emp.totalCost,
+                          productivity: emp.productivity,
+                          workingHours: emp.workingHours || { weekly: 40, daily: 8 },
+                        }
+                      : emp
+                  )
+                );
+                // loadPersonalData(); // Aktualisiere Statistiken bei Bedarf
+              }}
+              onEmployeeDeleted={employeeId => {
+                setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+                // loadPersonalData(); // Aktualisiere Statistiken bei Bedarf
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="departments">

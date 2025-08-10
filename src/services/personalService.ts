@@ -54,6 +54,18 @@ export interface Employee {
     postalCode: string;
     country: string;
   };
+  benefits?: string[];
+  skills?: string[];
+  performance?: {
+    rating: number;
+    goals: string[];
+    lastReview: string;
+  };
+  vacation?: {
+    totalDays: number;
+    usedDays: number;
+    remainingDays: number;
+  };
   notes?: string;
   isActive: boolean;
   avatar?: string;
@@ -145,6 +157,65 @@ export class PersonalService {
       return docRef.id;
     } catch (error) {
       console.error('❌ PersonalService: Fehler beim Erstellen des Mitarbeiters:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fügt einen neuen Mitarbeiter hinzu (Alias für createEmployee mit besserer Rückgabe)
+   */
+  static async addEmployee(
+    companyId: string,
+    employeeData: Omit<Employee, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>
+  ): Promise<Employee> {
+    try {
+      const employee: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'> = {
+        ...employeeData,
+        companyId,
+        contractType: employeeData.contractType || 'PERMANENT',
+        workingHours: employeeData.workingHours || { weekly: 40, daily: 8 },
+        socialSecurity: employeeData.socialSecurity || {
+          employerContribution: 0,
+          employeeContribution: 0,
+        },
+        additionalCosts: employeeData.additionalCosts || {
+          healthInsurance: 0,
+          benefits: 0,
+          training: 0,
+          equipment: 0,
+        },
+      };
+
+      const employeeId = await this.createEmployee(employee);
+
+      // Lade den erstellten Mitarbeiter zurück
+      const employees = await this.getEmployees(companyId);
+      const newEmployee = employees.find(emp => emp.id === employeeId);
+
+      if (!newEmployee) {
+        throw new Error('Mitarbeiter konnte nicht gefunden werden');
+      }
+
+      return newEmployee;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Hinzufügen des Mitarbeiters:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Löscht einen Mitarbeiter
+   */
+  static async deleteEmployee(companyId: string, employeeId: string): Promise<void> {
+    try {
+      console.log('🔄 PersonalService: Lösche Mitarbeiter:', employeeId);
+
+      const employeeRef = doc(db, 'companies', companyId, 'employees', employeeId);
+      await deleteDoc(employeeRef);
+
+      console.log('✅ PersonalService: Mitarbeiter gelöscht:', employeeId);
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Löschen des Mitarbeiters:', error);
       throw error;
     }
   }

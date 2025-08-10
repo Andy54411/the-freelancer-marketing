@@ -36,6 +36,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PersonalService, type Employee } from '@/services/personalService';
+import { CreateAbsenceRequestModal } from '@/components/personal/CreateAbsenceRequestModal';
+import { AbsenceApprovalModal } from '@/components/personal/AbsenceApprovalModal';
 
 interface AbsenceRequest {
   id: string;
@@ -74,6 +76,11 @@ export default function PersonalAbsencePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // Modal States
+  const [showCreateRequest, setShowCreateRequest] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -209,6 +216,40 @@ export default function PersonalAbsencePage() {
       default:
         return <Clock className="h-4 w-4" />;
     }
+  };
+
+  // Action Handlers
+  const handleCreateRequest = () => {
+    setShowCreateRequest(true);
+  };
+
+  const handleApproveRequest = (request: AbsenceRequest) => {
+    setSelectedRequest(request);
+    setShowApprovalModal(true);
+  };
+
+  const handleRequestCreated = (newRequest: AbsenceRequest) => {
+    setAbsenceRequests(prev => [newRequest, ...prev]);
+  };
+
+  const handleRequestProcessed = (
+    requestId: string,
+    status: 'APPROVED' | 'REJECTED',
+    notes?: string
+  ) => {
+    setAbsenceRequests(prev =>
+      prev.map(req =>
+        req.id === requestId
+          ? {
+              ...req,
+              status,
+              notes: notes || req.notes,
+              approvedBy: 'HR Team',
+              approvedAt: new Date().toISOString(),
+            }
+          : req
+      )
+    );
   };
 
   const getAbsenceTypeLabel = (type: string) => {
