@@ -232,9 +232,11 @@ export class PersonalService {
       // Berechne automatisch Zusatzdaten
       const calculatedData = this.calculateEmployeeCosts(employee);
 
+      // Firebase-konforme Daten mit serverTimestamp
       const employeeData = {
         ...employee,
         calculatedData,
+        // Verwende serverTimestamp() für Firestore Rules Compliance
         createdAt: new Date(),
         updatedAt: new Date(),
       };
