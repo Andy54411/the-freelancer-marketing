@@ -221,28 +221,38 @@ export default function AddEmployeePage() {
     try {
       console.log('🔄 Speichere Mitarbeiter:', employee);
 
-      // Verwende PersonalService für echte Datenbankoperationen
-      const newEmployee = await PersonalService.addEmployee(companyId, {
+      // Bereinige undefined Werte für Firebase
+      const cleanEmployeeData = {
         firstName: employee.firstName!,
         lastName: employee.lastName!,
         email: employee.email!,
-        phone: employee.phone,
+        ...(employee.phone && { phone: employee.phone }),
         position: employee.position!,
         department: employee.department!,
         employmentType: employee.employmentType!,
         contractType: employee.contractType!,
         startDate: employee.startDate!,
-        endDate: employee.endDate,
+        ...(employee.endDate && { endDate: employee.endDate }),
         grossSalary: employee.grossSalary!,
-        hourlyRate: employee.hourlyRate,
+        ...(employee.hourlyRate && { hourlyRate: employee.hourlyRate }),
         workingHours: employee.workingHours!,
         socialSecurity: employee.socialSecurity!,
         additionalCosts: employee.additionalCosts!,
-        address: employee.address,
-        notes: employee.notes,
+        ...(employee.address && {
+          address: {
+            ...(employee.address.street && { street: employee.address.street }),
+            ...(employee.address.city && { city: employee.address.city }),
+            ...(employee.address.postalCode && { postalCode: employee.address.postalCode }),
+            country: employee.address.country || 'Deutschland',
+          },
+        }),
+        ...(employee.notes && { notes: employee.notes }),
         isActive: employee.isActive!,
-        avatar: employee.avatar,
-      });
+        ...(employee.avatar && { avatar: employee.avatar }),
+      };
+
+      // Verwende PersonalService für echte Datenbankoperationen
+      const newEmployee = await PersonalService.addEmployee(companyId, cleanEmployeeData);
 
       console.log('✅ Mitarbeiter erfolgreich gespeichert:', newEmployee);
       toast.success(`${employee.firstName} ${employee.lastName} wurde erfolgreich hinzugefügt!`);
