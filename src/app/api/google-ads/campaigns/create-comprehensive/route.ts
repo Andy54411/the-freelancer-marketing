@@ -198,35 +198,41 @@ export async function POST(request: NextRequest) {
       }))
     );
 
-    // Create comprehensive campaign using the service
-    console.log('🚀 Creating comprehensive campaign...');
-    const result = await googleAdsClientService.createComprehensiveCampaign(
+    // Create simple campaign using the basic service (not comprehensive)
+    console.log('🚀 Creating simple campaign...');
+    const result = await googleAdsClientService.createCampaign(
       accountConfig.refreshToken,
       finalCustomerId,
-      campaignData
+      {
+        name: campaignData.name,
+        budgetAmountMicros: campaignData.budgetAmountMicros,
+        advertisingChannelType: campaignData.advertisingChannelType,
+        biddingStrategyType: campaignData.biddingStrategyType,
+        startDate: campaignData.startDate,
+        endDate: campaignData.endDate,
+      }
     );
 
     if (!result.success) {
       console.error('❌ Campaign creation failed:', result.error);
       return NextResponse.json(
         {
-          error: 'Failed to create comprehensive campaign',
+          error: 'Failed to create campaign',
           details: result.error,
           debugInfo: {
             customerId: finalCustomerId,
             campaignName: campaignData.name,
-            adGroupsCount: campaignData.adGroups.length,
           },
         },
         { status: 500 }
       );
     }
 
-    console.log('✅ Comprehensive campaign created successfully');
+    console.log('✅ Campaign created successfully');
     return NextResponse.json({
       success: true,
       data: result.data,
-      message: 'Comprehensive campaign created successfully',
+      message: 'Campaign created successfully',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
