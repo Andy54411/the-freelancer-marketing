@@ -10,11 +10,41 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
-    }
+    console.log(
+      '🧪 Testing Google Ads Budget Creation for:',
+      companyId || 'NO COMPANY ID - SEARCHING ALL'
+    );
 
-    console.log('🧪 Testing Google Ads Budget Creation for:', companyId);
+    // If no companyId provided, search all companies and list them
+    if (!companyId) {
+      console.log('🔍 No Company ID provided, searching all companies for Google Ads configs...');
+
+      const companiesRef = db.collection('companies');
+      const companiesSnap = await companiesRef.get();
+      const foundCompanies = [];
+
+      for (const companyDoc of companiesSnap.docs) {
+        const testGoogleAdsDocRef = companyDoc.ref.collection('integrations').doc('googleAds');
+        const testGoogleAdsSnap = await testGoogleAdsDocRef.get();
+
+        if (testGoogleAdsSnap.exists) {
+          const data = testGoogleAdsSnap.data();
+          foundCompanies.push({
+            companyId: companyDoc.id,
+            companyData: companyDoc.data(),
+            hasRefreshToken: !!data?.accountConfig?.refreshToken,
+            lastSync: data?.lastSync,
+          });
+        }
+      }
+
+      return NextResponse.json({
+        message: 'Found companies with Google Ads configurations',
+        companies: foundCompanies,
+        count: foundCompanies.length,
+        usage: 'Use ?companyId=COMPANY_ID to test specific company',
+      });
+    }
 
     // Try to get Google Ads configuration using same logic as status API
     let googleAdsDocRef = db
