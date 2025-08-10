@@ -53,6 +53,7 @@ export function GoogleAdsSettings({ companyId, activeTab }: GoogleAdsSettingsPro
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentTab, setCurrentTab] = useState(activeTab || 'connection');
 
   // Lade Verbindungsstatus
   const loadConnectionStatus = async () => {
@@ -81,7 +82,19 @@ export function GoogleAdsSettings({ companyId, activeTab }: GoogleAdsSettingsPro
 
       setConnectionStatus(connectionData);
 
-      // Lade Account-Informationen wenn verbunden
+      // Account-Informationen aus der Status-API extrahieren
+      if (data.accounts && data.accounts.length > 0) {
+        const firstAccount = data.accounts[0];
+        setAccountInfo({
+          customerId: firstAccount.id,
+          accountName: firstAccount.name,
+          currency: firstAccount.currency,
+          timezone: 'Europe/Berlin', // Default
+          managerAccount: false, // TODO: Detect from API
+        });
+      }
+
+      // Lade zusätzliche Account-Informationen wenn verbunden
       if (data.connected) {
         await loadAccountInfo();
       }
@@ -96,14 +109,26 @@ export function GoogleAdsSettings({ companyId, activeTab }: GoogleAdsSettingsPro
   // Lade Account-Informationen
   const loadAccountInfo = async () => {
     try {
-      const response = await fetch(`/api/google-ads/status?companyId=${companyId}&details=true`);
+      // Versuche zusätzliche Account-Details von der Test-API zu holen
+      const response = await fetch(`/api/google-ads/test-api?companyId=${companyId}`);
 
       if (response.ok) {
         const data = await response.json();
-        setAccountInfo(data.accountInfo || {});
+
+        if (data.success && data.customerInfo) {
+          setAccountInfo(prev => ({
+            ...prev,
+            customerId: data.customerInfo.customerId || prev.customerId,
+            accountName: data.customerInfo.descriptiveName || prev.accountName,
+            currency: data.customerInfo.currencyCode || prev.currency,
+            timezone: data.customerInfo.timeZone || prev.timezone,
+            managerAccount: data.customerInfo.isManagerAccount || false,
+          }));
+        }
       }
     } catch (err) {
       console.error('Account info loading error:', err);
+      // Fallback zu bereits geladenen Daten von der Status-API
     }
   };
 
@@ -209,9 +234,15 @@ export function GoogleAdsSettings({ companyId, activeTab }: GoogleAdsSettingsPro
     }
   }, [companyId]);
 
+  useEffect(() => {
+    if (activeTab) {
+      setCurrentTab(activeTab);
+    }
+  }, [activeTab]);
+
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} className="w-full">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="connection">Verbindung</TabsTrigger>
           <TabsTrigger value="account">Konto</TabsTrigger>
