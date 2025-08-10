@@ -12,17 +12,13 @@ import type { GoogleAdsOAuthConfig } from '@/types/googleAds';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
     const customerId = searchParams.get('customerId');
     const campaignId = searchParams.get('campaignId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    if (!customerId || !campaignId) {
-      return NextResponse.json(
-        { error: 'Customer ID and Campaign ID are required' },
-        { status: 400 }
-      );
-    }
+    console.log('🎯 Metrics API called with:', { companyId, customerId, campaignId });
 
     // Datumsbereich validieren
     const dateRange = {
@@ -31,35 +27,73 @@ export async function GET(request: NextRequest) {
       endDate: endDate || new Date().toISOString().split('T')[0],
     };
 
-    // OAuth Config validieren
-    const configValidation = GoogleAdsSetupValidator.validateSetup();
-    if (!configValidation.valid) {
+    // Get real stored config from Firestore
+    const { db } = await import('@/firebase/server');
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('integrations')
+      .doc('googleAds');
+
+    const googleAdsSnap = await googleAdsDocRef.get();
+
+    if (!googleAdsSnap.exists) {
       return NextResponse.json(
         {
-          error: 'Google Ads configuration invalid',
-          details: configValidation.errors,
+          error: 'No Google Ads configuration found',
+          companyId,
+        },
+        { status: 404 }
+      );
+    }
+
+    const data = googleAdsSnap.data();
+    const accountConfig = data?.accountConfig;
+
+    if (!accountConfig?.refreshToken) {
+      return NextResponse.json(
+        {
+          error: 'No refresh token found in configuration',
+          companyId,
         },
         { status: 400 }
       );
     }
 
-    // Environment Config laden
-    const config = {
-      clientId: process.env.GOOGLE_ADS_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
-      refreshToken: '',
-      developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
-    } as GoogleAdsOAuthConfig;
+    // If no customerId provided, get the first available customer
+    let finalCustomerId = customerId;
+    if (!finalCustomerId) {
+      console.log('🔍 No customerId provided, fetching available customers...');
 
-    // Kampagnen-Metriken abrufen - verwende getCampaigns vorerst
-    if (!config.refreshToken) {
-      return NextResponse.json(
-        { error: 'No refresh token available for metrics' },
-        { status: 400 }
+      const customersResponse = await googleAdsClientService.getAccessibleCustomers(
+        accountConfig.refreshToken
       );
+
+      if (
+        customersResponse.success &&
+        customersResponse.data &&
+        customersResponse.data.length > 0
+      ) {
+        // Use the first customer ID (excluding fallback)
+        const realCustomer = customersResponse.data.find(c => c.id !== 'pending-setup');
+        finalCustomerId = realCustomer?.id || customersResponse.data[0].id;
+        console.log('🎯 Using auto-detected customerId:', finalCustomerId);
+      } else {
+        return NextResponse.json(
+          {
+            error: 'No customers found or failed to fetch customers',
+            details: customersResponse.error,
+          },
+          { status: 400 }
+        );
+      }
     }
 
-    const result = await googleAdsClientService.getCampaigns(config.refreshToken, customerId);
+    // Kampagnen-Metriken abrufen
+    const result = await googleAdsClientService.getCampaigns(
+      accountConfig.refreshToken,
+      finalCustomerId
+    );
 
     if (!result.success) {
       return NextResponse.json(
@@ -71,21 +105,45 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Finde die spezifische Kampagne
-    const campaign = result.data?.campaigns?.find(c => c.id === campaignId);
+    // Wenn spezifische Kampagne angefragt, finde sie
+    if (campaignId) {
+      const campaign = result.data?.campaigns?.find(c => c.id === campaignId);
 
-    if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      if (!campaign) {
+        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          metrics: campaign.metrics,
+          dateRange,
+          campaignId,
+          customerId: finalCustomerId,
+          campaignName: campaign.name,
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
 
+    // Sonst alle Kampagnen-Metriken zurückgeben
     return NextResponse.json({
       success: true,
       data: {
-        metrics: campaign.metrics,
+        campaigns: result.data?.campaigns || [],
+        metrics: {
+          totalImpressions:
+            result.data?.campaigns?.reduce((sum, c) => sum + (c.metrics?.impressions || 0), 0) || 0,
+          totalClicks:
+            result.data?.campaigns?.reduce((sum, c) => sum + (c.metrics?.clicks || 0), 0) || 0,
+          totalCost:
+            result.data?.campaigns?.reduce((sum, c) => sum + (c.metrics?.cost || 0), 0) || 0,
+          totalConversions:
+            result.data?.campaigns?.reduce((sum, c) => sum + (c.metrics?.conversions || 0), 0) || 0,
+        },
         dateRange,
-        campaignId,
-        customerId,
-        campaignName: campaign.name,
+        customerId: finalCustomerId,
+        companyId,
       },
       timestamp: new Date().toISOString(),
     });

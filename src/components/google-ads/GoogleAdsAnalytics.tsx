@@ -68,31 +68,49 @@ export function GoogleAdsAnalytics({
     setError(null);
 
     try {
-      // Lade Gesamtmetriken
-      const metricsResponse = await fetch(
-        `/api/google-ads/metrics?companyId=${companyId}&period=${selectedPeriod}${
-          selectedCampaignId ? `&campaignId=${selectedCampaignId}` : ''
-        }`
-      );
+      console.log('🔍 Loading analytics for:', { companyId, selectedPeriod, selectedCampaignId });
+
+      // Lade Gesamtmetriken über die Metrics API
+      const metricsUrl = `/api/google-ads/metrics?companyId=${companyId}${
+        selectedCampaignId ? `&campaignId=${selectedCampaignId}` : ''
+      }`;
+
+      console.log('📊 Fetching metrics from:', metricsUrl);
+      const metricsResponse = await fetch(metricsUrl);
 
       if (!metricsResponse.ok) {
-        throw new Error('Failed to load metrics');
+        const errorData = await metricsResponse.json();
+        throw new Error(errorData.error || 'Failed to load metrics');
       }
 
       const metricsData = await metricsResponse.json();
-      setMetrics(metricsData.data);
+      console.log('✅ Metrics loaded:', metricsData);
 
-      // Lade Kampagnen-Metriken
-      const campaignsResponse = await fetch(
-        `/api/google-ads/campaigns?companyId=${companyId}&includeMetrics=true&period=${selectedPeriod}`
-      );
+      if (metricsData.success) {
+        setMetrics(metricsData.data.metrics || metricsData.data);
 
-      if (campaignsResponse.ok) {
-        const campaignsData = await campaignsResponse.json();
-        setCampaignMetrics(campaignsData.data || []);
+        // Wenn auch campaigns in der response sind, setze sie
+        if (metricsData.data.campaigns) {
+          setCampaignMetrics(metricsData.data.campaigns);
+        }
+      } else {
+        throw new Error(metricsData.error || 'Failed to load metrics');
+      }
+
+      // Lade Kampagnen falls nicht schon in metrics enthalten
+      if (!metricsData.data.campaigns) {
+        console.log('🔍 Loading additional campaign data...');
+        const campaignsResponse = await fetch(`/api/google-ads/campaigns?companyId=${companyId}`);
+
+        if (campaignsResponse.ok) {
+          const campaignsData = await campaignsResponse.json();
+          if (campaignsData.success && campaignsData.data?.campaigns) {
+            setCampaignMetrics(campaignsData.data.campaigns);
+          }
+        }
       }
     } catch (err: any) {
-      console.error('Analytics loading error:', err);
+      console.error('❌ Analytics loading error:', err);
       setError(err.message || 'Fehler beim Laden der Analytics-Daten');
     } finally {
       setLoading(false);
