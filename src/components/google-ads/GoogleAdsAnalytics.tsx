@@ -87,10 +87,29 @@ export function GoogleAdsAnalytics({
       console.log('✅ Metrics loaded:', metricsData);
 
       if (metricsData.success) {
-        setMetrics(metricsData.data.metrics || metricsData.data);
+        // Sichere Verarbeitung der Metriken-Daten
+        const metricsResult = metricsData.data?.metrics || metricsData.data || {};
+
+        // Validiere dass es sich um ein Objekt mit erwarteten Eigenschaften handelt
+        if (typeof metricsResult === 'object' && metricsResult !== null) {
+          setMetrics(metricsResult);
+        } else {
+          console.warn('⚠️ Invalid metrics data structure:', metricsResult);
+          // Sichere Fallback-Struktur für MetricsData
+          setMetrics({
+            clicks: 0,
+            impressions: 0,
+            cost: 0,
+            conversions: 0,
+            ctr: 0,
+            cpc: 0,
+            conversionRate: 0,
+            costPerConversion: 0,
+          });
+        }
 
         // Wenn auch campaigns in der response sind, setze sie
-        if (metricsData.data.campaigns) {
+        if (metricsData.data?.campaigns) {
           setCampaignMetrics(metricsData.data.campaigns);
         }
       } else {
@@ -112,6 +131,19 @@ export function GoogleAdsAnalytics({
     } catch (err: any) {
       console.error('❌ Analytics loading error:', err);
       setError(err.message || 'Fehler beim Laden der Analytics-Daten');
+
+      // Setze sichere Fallback-Werte für Metriken
+      setMetrics({
+        clicks: 0,
+        impressions: 0,
+        cost: 0,
+        conversions: 0,
+        ctr: 0,
+        cpc: 0,
+        conversionRate: 0,
+        costPerConversion: 0,
+      });
+      setCampaignMetrics([]);
     } finally {
       setLoading(false);
     }
@@ -124,18 +156,21 @@ export function GoogleAdsAnalytics({
   }, [companyId, selectedPeriod, selectedCampaignId]);
 
   // Formatierungs-Hilfsfunktionen
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount == null || isNaN(amount)) return '€0,00';
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | undefined | null) => {
+    if (num == null || isNaN(num)) return '0';
     return new Intl.NumberFormat('de-DE').format(num);
   };
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined | null) => {
+    if (value == null || isNaN(value)) return '0,00%';
     return `${value.toFixed(2)}%`;
   };
 
