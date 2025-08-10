@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PersonalService, Employee as EmployeeType } from '@/services/personalService';
+import { toast } from 'react-hot-toast';
 import {
   ArrowLeft,
   User,
@@ -217,16 +219,39 @@ export default function AddEmployeePage() {
 
     setLoading(true);
     try {
-      // Hier würde der API-Call zur Speicherung kommen
-      console.log('Speichere Mitarbeiter:', employee);
+      console.log('🔄 Speichere Mitarbeiter:', employee);
 
-      // Simuliere API-Call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Verwende PersonalService für echte Datenbankoperationen
+      const newEmployee = await PersonalService.addEmployee(companyId, {
+        firstName: employee.firstName!,
+        lastName: employee.lastName!,
+        email: employee.email!,
+        phone: employee.phone,
+        position: employee.position!,
+        department: employee.department!,
+        employmentType: employee.employmentType!,
+        contractType: employee.contractType!,
+        startDate: employee.startDate!,
+        endDate: employee.endDate,
+        grossSalary: employee.grossSalary!,
+        hourlyRate: employee.hourlyRate,
+        workingHours: employee.workingHours!,
+        socialSecurity: employee.socialSecurity!,
+        additionalCosts: employee.additionalCosts!,
+        address: employee.address,
+        notes: employee.notes,
+        isActive: employee.isActive!,
+        avatar: employee.avatar,
+      });
+
+      console.log('✅ Mitarbeiter erfolgreich gespeichert:', newEmployee);
+      toast.success(`${employee.firstName} ${employee.lastName} wurde erfolgreich hinzugefügt!`);
 
       // Zurück zur Übersicht
-      router.push(`/dashboard/company/${companyId}/personal`);
+      router.push(`/dashboard/company/${companyId}/personal/employees`);
     } catch (error) {
-      console.error('Fehler beim Speichern:', error);
+      console.error('❌ Fehler beim Speichern:', error);
+      toast.error('Fehler beim Speichern des Mitarbeiters');
     } finally {
       setLoading(false);
     }
