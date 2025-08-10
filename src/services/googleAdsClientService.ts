@@ -297,14 +297,69 @@ class GoogleAdsClientService {
   }
 
   /**
-   * ✅ Zugängliche Accounts abrufen (mit Fallback für normale Accounts)
+   * ✅ Zugängliche Accounts abrufen (echte Accounts zuerst!)
    */
   async getAccessibleCustomers(
     refreshToken: string,
     managerCustomerId?: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsAccount[]>> {
     try {
-      // Versuche zuerst, die Liste der zugänglichen Kunden direkt von Google zu bekommen
+      console.log('🔍 Getting accessible customers for REAL Google Ads account...');
+
+      // STRATEGIE 1: Direkt mit Google Ads Client Library - für echte Accounts
+      try {
+        // Versuche mit aktueller Customer ID oder '0' für Haupt-Account
+        const customerId = managerCustomerId || '0';
+        const customer = this.client.Customer({
+          customer_id: customerId,
+          refresh_token: refreshToken,
+        });
+
+        console.log('🔍 Trying Google Ads Client Library with customer:', customerId);
+
+        // Versuche customer info für aktuellen Account zu bekommen
+        const customerInfo = await customer.query(`
+          SELECT
+            customer.id,
+            customer.descriptive_name,
+            customer.currency_code,
+            customer.time_zone,
+            customer.status,
+            customer.manager,
+            customer.test_account
+          FROM customer
+          LIMIT 1
+        `);
+
+        if (customerInfo && customerInfo.length > 0) {
+          const info = customerInfo[0];
+          console.log('✅ Found REAL customer info:', info.customer);
+
+          const formattedAccount: GoogleAdsAccount = {
+            id: String(info.customer?.id || 'main-account'),
+            name: info.customer?.descriptive_name || 'Google Ads Account',
+            currency: info.customer?.currency_code || 'EUR',
+            timezone: info.customer?.time_zone || 'Europe/Berlin',
+            status: this.mapCustomerStatus(info.customer?.status) || 'ENABLED',
+            manager: info.customer?.manager || false,
+            testAccount: info.customer?.test_account || false,
+            level: 0,
+          };
+
+          return {
+            success: true,
+            data: [formattedAccount],
+          };
+        }
+      } catch (clientLibraryError) {
+        console.log(
+          '⚠️ Google Ads Client Library failed, trying REST API...',
+          clientLibraryError.message
+        );
+      }
+
+      // STRATEGIE 2: REST API als Fallback
+      console.log('🔍 Trying REST API listAccessibleCustomers...');
       let accessToken;
       try {
         accessToken = await this.getValidAccessToken(refreshToken);
