@@ -296,7 +296,7 @@ export default function MultiPlatformAdvertisingDashboard({
                 <div>
                   <p className="text-sm font-medium text-gray-600">Gesamtausgaben</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(analytics.summary.cost)}
+                    {formatCurrency(analytics.summary.cost || 0)}
                   </p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full">
@@ -317,7 +317,7 @@ export default function MultiPlatformAdvertisingDashboard({
                 <div>
                   <p className="text-sm font-medium text-gray-600">Impressions</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatNumber(analytics.summary.impressions)}
+                    {formatNumber(analytics.summary.impressions || 0)}
                   </p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-full">
@@ -338,7 +338,7 @@ export default function MultiPlatformAdvertisingDashboard({
                 <div>
                   <p className="text-sm font-medium text-gray-600">Klicks</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatNumber(analytics.summary.clicks)}
+                    {formatNumber(analytics.summary.clicks || 0)}
                   </p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-full">
@@ -347,7 +347,7 @@ export default function MultiPlatformAdvertisingDashboard({
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-gray-600">
-                  CTR: {formatPercentage(analytics.summary.ctr)}
+                  CTR: {formatPercentage(analytics.summary.ctr || 0)}
                 </span>
               </div>
             </CardContent>
@@ -359,7 +359,7 @@ export default function MultiPlatformAdvertisingDashboard({
                 <div>
                   <p className="text-sm font-medium text-gray-600">ROAS</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {analytics.summary.roas.toFixed(2)}x
+                    {(analytics.summary.roas || 0).toFixed(2)}x
                   </p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-full">
@@ -367,7 +367,7 @@ export default function MultiPlatformAdvertisingDashboard({
                 </div>
               </div>
               <div className="mt-4 flex items-center text-sm">
-                {analytics.summary.roas > 2 ? (
+                {(analytics.summary.roas || 0) > 2 ? (
                   <>
                     <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
                     <span className="text-green-600">Excellent</span>
@@ -420,11 +420,13 @@ export default function MultiPlatformAdvertisingDashboard({
                       </div>
                       <div className="flex items-center space-x-6">
                         <div className="text-right">
-                          <p className="font-medium">{formatCurrency(platform.metrics.cost)}</p>
+                          <p className="font-medium">
+                            {formatCurrency(platform.metrics.cost || 0)}
+                          </p>
                           <p className="text-sm text-gray-500">Ausgaben</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{platform.metrics.roas.toFixed(2)}x</p>
+                          <p className="font-medium">{(platform.metrics.roas || 0).toFixed(2)}x</p>
                           <p className="text-sm text-gray-500">ROAS</p>
                         </div>
                         <Badge variant={platform.isActive ? 'default' : 'secondary'}>
@@ -537,16 +539,18 @@ export default function MultiPlatformAdvertisingDashboard({
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <p className="font-medium">
-                              {formatCurrency(campaign.budget.amount * 100)}
+                              {formatCurrency((campaign.budget.amount || 0) * 100)}
                             </p>
                             <p className="text-sm text-gray-500">{campaign.budget.period}</p>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <p className="text-sm">ROAS: {campaign.metrics.roas.toFixed(2)}x</p>
+                            <p className="text-sm">
+                              ROAS: {(campaign.metrics.roas || 0).toFixed(2)}x
+                            </p>
                             <p className="text-sm text-gray-500">
-                              {formatNumber(campaign.metrics.clicks)} Klicks
+                              {formatNumber(campaign.metrics.clicks || 0)} Klicks
                             </p>
                           </div>
                         </td>
