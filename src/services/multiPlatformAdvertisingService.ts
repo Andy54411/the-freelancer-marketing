@@ -17,6 +17,7 @@ import { LinkedInAdsService } from './platform-services/linkedinAdsService';
 import { MetaAdsService } from './platform-services/metaAdsService';
 import { TaboolaService } from './platform-services/taboolaService';
 import { OutbrainService } from './platform-services/outbrainService';
+import { advertisingFirebaseService } from './firebase/advertisingService';
 
 export class MultiPlatformAdvertisingService {
   private googleAdsService: GoogleAdsClientService;
@@ -82,6 +83,10 @@ export class MultiPlatformAdvertisingService {
     companyId: string
   ): Promise<MultiPlatformApiResponse<PlatformConnection[]>> {
     try {
+      // Zuerst cached connections aus Firestore laden
+      const cachedConnections =
+        await advertisingFirebaseService.getAllPlatformConnections(companyId);
+
       const platforms: AdvertisingPlatform[] = [
         'google-ads',
         'linkedin',
@@ -93,14 +98,29 @@ export class MultiPlatformAdvertisingService {
 
       for (const platform of platforms) {
         try {
-          const status = await this.checkPlatformConnection(companyId, platform);
-          connections.push(status);
+          // Schaue zuerst in cached connections
+          const cached = cachedConnections.find(c => c.platform === platform);
+
+          if (cached && cached.status !== 'error') {
+            connections.push(cached);
+          } else {
+            // Fallback: Status real-time prüfen
+            const status = await this.checkPlatformConnection(companyId, platform);
+            connections.push(status);
+
+            // Status in Firestore speichern
+            await advertisingFirebaseService.savePlatformConnection(companyId, status);
+          }
         } catch (error) {
-          connections.push({
+          const errorConnection: PlatformConnection = {
             platform,
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
-          });
+          };
+          connections.push(errorConnection);
+
+          // Error state auch speichern
+          await advertisingFirebaseService.savePlatformConnection(companyId, errorConnection);
         }
       }
 
@@ -135,18 +155,62 @@ export class MultiPlatformAdvertisingService {
 
       for (const platform of platforms) {
         try {
-          const platformCampaigns = await this.getCampaignsByPlatform(companyId, platform);
-          if (platformCampaigns.success && platformCampaigns.data) {
-            allCampaigns.push(...platformCampaigns.data);
+          // Prüfe Cache-Validität (15 Minuten)
+          const cacheValid = await advertisingFirebaseService.isCacheValid(
+            companyId,
+            platform,
+            15 * 60 * 1000
+          );
+
+          let platformCampaigns: UnifiedCampaign[] = [];
+
+          if (cacheValid) {
+            // Verwende cached Daten
+            platformCampaigns = await advertisingFirebaseService.getCachedCampaigns(
+              companyId,
+              platform
+            );
+            console.log(`📦 Using cached campaigns for ${platform}: ${platformCampaigns.length}`);
+          } else {
+            // Lade frische Daten von API
+            const apiResult = await this.getCampaignsByPlatform(companyId, platform);
+            if (apiResult.success && apiResult.data) {
+              platformCampaigns = apiResult.data;
+
+              // Speichere in Cache
+              await advertisingFirebaseService.saveCampaigns(
+                companyId,
+                platform,
+                platformCampaigns
+              );
+              console.log(`🔄 Refreshed campaigns for ${platform}: ${platformCampaigns.length}`);
+            }
           }
+
+          allCampaigns.push(...platformCampaigns);
         } catch (error) {
           console.warn(`Failed to fetch campaigns from ${platform}:`, error);
-          // Continue mit anderen Plattformen
+
+          // Fallback zu cached Daten auch bei Fehlern
+          try {
+            const fallbackCampaigns = await advertisingFirebaseService.getCachedCampaigns(
+              companyId,
+              platform
+            );
+            if (fallbackCampaigns.length > 0) {
+              allCampaigns.push(...fallbackCampaigns);
+              console.log(
+                `🔄 Using fallback cached campaigns for ${platform}: ${fallbackCampaigns.length}`
+              );
+            }
+          } catch (cacheError) {
+            console.warn(`No fallback data available for ${platform}`, cacheError);
+          }
         }
       }
 
       // Sortiere nach Performance (ROAS)
-      allCampaigns.sort((a, b) => b.metrics.roas - a.metrics.roas);
+      allCampaigns.sort((a, b) => (b.metrics.roas || 0) - (a.metrics.roas || 0));
 
       return {
         success: true,
