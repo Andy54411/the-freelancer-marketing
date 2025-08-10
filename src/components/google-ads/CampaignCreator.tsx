@@ -356,7 +356,7 @@ export function CampaignCreator({
       <DialogTrigger asChild>
         <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
           <Plus className="w-4 h-4 mr-2" />
-          Erweiterte Kampagne erstellen
+          Kampagne erstellen
         </Button>
       </DialogTrigger>
 
