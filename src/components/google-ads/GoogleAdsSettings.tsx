@@ -67,10 +67,22 @@ export function GoogleAdsSettings({ companyId, activeTab }: GoogleAdsSettingsPro
       }
 
       const data = await response.json();
-      setConnectionStatus(data.data);
+
+      // Die API gibt direkt die Connection-Daten zurück, nicht unter data.data
+      const connectionData = {
+        connected: data.connected || false,
+        hasValidTokens:
+          (data.tokenStatus?.hasRefreshToken && data.tokenStatus?.hasAccessToken) || false,
+        hasCustomerAccess: data.accountsConnected || false,
+        customerCount: data.accounts?.length || 0,
+        lastChecked: data.lastChecked || new Date().toISOString(),
+        error: data.error,
+      };
+
+      setConnectionStatus(connectionData);
 
       // Lade Account-Informationen wenn verbunden
-      if (data.data?.connected) {
+      if (data.connected) {
         await loadAccountInfo();
       }
     } catch (err: any) {
