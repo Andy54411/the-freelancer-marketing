@@ -190,14 +190,26 @@ export function CampaignManagement({
   };
 
   useEffect(() => {
-    // Lade Kampagnen beim Mounten oder wenn companyId/selectedAccountId sich ändert
+    // Verhindere useEffect-basierte Fetches wenn bereits retries stattgefunden haben
+    if (retryCount >= 3) {
+      console.warn('🛑 useEffect: Max retries reached, skipping fetch');
+      setLoading(false);
+      return;
+    }
+
+    // Lade Kampagnen nur wenn companyId und selectedAccountId vorhanden sind
     if (companyId && selectedAccountId) {
+      console.log('� useEffect triggering fetchCampaigns:', {
+        companyId,
+        selectedAccountId,
+        retryCount,
+      });
       fetchCampaigns();
     } else {
       // Stoppe Loading wenn kein Account ausgewählt ist
       setLoading(false);
     }
-  }, [companyId, selectedAccountId]);
+  }, [companyId, selectedAccountId]); // WICHTIG: retryCount NICHT in Dependencies!
 
   if (loading) {
     return (
