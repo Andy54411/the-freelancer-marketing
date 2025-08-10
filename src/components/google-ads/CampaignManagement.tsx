@@ -72,7 +72,7 @@ export function CampaignManagement({
   // Campaign Form State
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
-    budgetAmount: 1000,
+    budgetAmount: 50, // Besserer Standardwert: 50€ täglich
     advertisingChannelType: 'SEARCH',
     biddingStrategyType: 'MANUAL_CPC',
     startDate: new Date().toISOString().split('T')[0],
@@ -96,9 +96,12 @@ export function CampaignManagement({
 
       console.log('✅ Campaign fetch result:', result);
 
-      if (result.success && result.data?.campaigns) {
-        setCampaigns(result.data.campaigns);
+      if (result.success && result.data) {
+        // result.data enthält bereits die campaigns structure
+        const campaigns = result.data.campaigns || [];
+        setCampaigns(campaigns);
         setError(null);
+        console.log('📊 Loaded campaigns:', campaigns.length);
       } else {
         throw new Error(result.error || 'Failed to fetch campaigns');
       }
@@ -213,10 +216,11 @@ export function CampaignManagement({
   };
 
   useEffect(() => {
-    if (customerId) {
+    // Lade Kampagnen beim Mounten oder wenn companyId/customerId sich ändert
+    if (companyId) {
       fetchCampaigns();
     }
-  }, [customerId]);
+  }, [companyId, customerId]);
 
   if (loading) {
     return (
@@ -312,8 +316,12 @@ export function CampaignManagement({
                       onChange={e =>
                         setFormData(prev => ({ ...prev, budgetAmount: Number(e.target.value) }))
                       }
-                      min="1"
+                      min="10"
+                      placeholder="z.B. 50"
                     />
+                    <p className="text-sm text-gray-500">
+                      Empfohlen: Mindestens 10€ täglich für optimale Ergebnisse
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -386,20 +394,32 @@ export function CampaignManagement({
       {/* Kampagnen Übersicht */}
       {campaigns.length === 0 ? (
         <Card>
-          <CardContent className="py-8">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kampagnen gefunden</h3>
-              <p className="text-gray-600 mb-4">
-                Erstelle deine erste Google Ads Kampagne um loszulegen.
+          <CardContent className="py-12">
+            <div className="text-center max-w-md mx-auto">
+              <div className="bg-[#14ad9f]/10 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <BarChart3 className="h-12 w-12 text-[#14ad9f]" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Noch keine Kampagnen vorhanden
+              </h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                Starte deine erste Google Ads Kampagne und erreiche neue Kunden. Mit unserem
+                einfachen Setup bist du in wenigen Minuten bereit.
               </p>
-              <Button
-                onClick={() => setShowCreateDialog(true)}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Erste Kampagne erstellen
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setShowCreateDialog(true)}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white w-full sm:w-auto"
+                  size="lg"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Erste Kampagne erstellen
+                </Button>
+                <div className="text-sm text-gray-500 flex items-center justify-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Beginne mit einem Tagesbudget ab 10€
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
