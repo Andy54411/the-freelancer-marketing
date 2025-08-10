@@ -126,15 +126,25 @@ export default function PersonalOverviewPage() {
     avgProductivity: 0,
   });
 
-  // Echte Firestore-Daten laden
+  // Retry-Limiter für Firebase Calls (verhindert endlose Loops)
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
+  // Echte Firestore-Daten laden mit Retry-Limitierung
   useEffect(() => {
-    loadEmployees();
-  }, [companyId]);
+    if (retryCount < maxRetries) {
+      loadEmployees();
+    } else {
+      console.warn('❌ Max Retries erreicht für Employee loading');
+    }
+  }, [companyId, retryCount]);
 
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Lade Mitarbeiter für Company:', companyId);
+      console.log(
+        `🔄 Lade Mitarbeiter für Company: ${companyId} (Versuch ${retryCount + 1}/${maxRetries})`
+      );
 
       // Import dynamisch um Client-Side zu bleiben
       const { PersonalService } = await import('@/services/personalService');
@@ -169,15 +179,33 @@ export default function PersonalOverviewPage() {
         avgProductivity: Math.floor(Math.random() * 15) + 85, // Placeholder
       });
 
+      // Reset retry count on success
+      setRetryCount(0);
       console.log('✅ Mitarbeiter geladen:', localEmployees.length);
     } catch (error) {
       console.error('❌ Fehler beim Laden der Mitarbeiter:', error);
+
+      // Increment retry count and retry after delay if under limit
+      if (retryCount < maxRetries - 1) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+        }, 5000); // 5 Sekunden Wartezeit
+      } else {
+        console.warn('❌ Max Retries erreicht - verwende Fallback-Daten');
+      }
+
       // Fallback auf Mock-Daten bei Fehler
       setEmployees([]);
       setStats({ total: 0, active: 0, totalCosts: 0, avgProductivity: 0 });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reset Retry Counter und versuche erneut
+  const resetRetryAndLoad = () => {
+    setRetryCount(0);
+    loadEmployees();
   };
 
   // Berechnungen für Dashboard-Metriken aus echten Daten
@@ -255,18 +283,18 @@ export default function PersonalOverviewPage() {
               onEmployeeAdded={serviceEmployee => {
                 const localEmployee = convertFromServiceEmployee(serviceEmployee);
                 setEmployees(prev => [...prev, localEmployee]);
-                // loadPersonalData(); // Aktualisiere Statistiken
+                resetRetryAndLoad(); // Aktualisiere Statistiken
               }}
               onEmployeeUpdated={serviceEmployee => {
                 const localEmployee = convertFromServiceEmployee(serviceEmployee);
                 setEmployees(prev =>
                   prev.map(emp => (emp.id === localEmployee.id ? localEmployee : emp))
                 );
-                // loadPersonalData(); // Aktualisiere Statistiken
+                resetRetryAndLoad(); // Aktualisiere Statistiken
               }}
               onEmployeeDeleted={employeeId => {
                 setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-                // loadPersonalData(); // Aktualisiere Statistiken
+                resetRetryAndLoad(); // Aktualisiere Statistiken
               }}
             />
           </div>
@@ -403,11 +431,11 @@ export default function PersonalOverviewPage() {
                       : emp
                   )
                 );
-                // loadPersonalData(); // Aktualisiere Statistiken bei Bedarf
+                resetRetryAndLoad(); // Aktualisiere Statistiken bei Bedarf
               }}
               onEmployeeDeleted={employeeId => {
                 setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-                // loadPersonalData(); // Aktualisiere Statistiken bei Bedarf
+                resetRetryAndLoad(); // Aktualisiere Statistiken bei Bedarf
               }}
             />
           </TabsContent>

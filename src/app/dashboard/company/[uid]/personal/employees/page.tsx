@@ -50,11 +50,17 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  // Retry-Limiter für Firebase Calls (verhindert endlose Loops)
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
   useEffect(() => {
-    if (user && params.uid) {
+    if (user && params.uid && retryCount < maxRetries) {
       loadEmployees();
+    } else if (retryCount >= maxRetries) {
+      console.warn('❌ Max Retries erreicht für Employee loading');
     }
-  }, [user, params.uid]);
+  }, [user, params.uid, retryCount]);
 
   useEffect(() => {
     filterEmployees();
@@ -63,11 +69,25 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
   const loadEmployees = async () => {
     try {
       setLoading(true);
+      console.log(
+        `🔄 Lade Mitarbeiter für Company: ${params.uid} (Versuch ${retryCount + 1}/${maxRetries})`
+      );
       const data = await PersonalService.getEmployees(params.uid);
       setEmployees(data);
+      // Reset retry count on success
+      setRetryCount(0);
     } catch (error) {
       console.error('❌ Fehler beim Laden der Mitarbeiter:', error);
-      toast.error('Fehler beim Laden der Mitarbeiter');
+
+      // Increment retry count and retry after delay if under limit
+      if (retryCount < maxRetries - 1) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+        }, 5000); // 5 Sekunden Wartezeit
+      } else {
+        console.warn('❌ Max Retries erreicht - verwende Fallback-Daten');
+        toast.error('Mitarbeiter konnten nicht geladen werden');
+      }
     } finally {
       setLoading(false);
     }
