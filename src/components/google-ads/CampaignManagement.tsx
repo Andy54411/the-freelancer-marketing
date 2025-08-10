@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { CampaignCreator } from './CampaignCreator';
 import type { GoogleAdsCampaign, GoogleAdsMetrics, CreateCampaignRequest } from '@/types/googleAds';
 
 interface CampaignManagementProps {
@@ -67,6 +68,7 @@ export function CampaignManagement({
   const [error, setError] = useState<string | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<GoogleAdsCampaign | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAdvancedCreator, setShowAdvancedCreator] = useState(false);
   const [creating, setCreating] = useState(false);
 
   // Campaign Form State
@@ -166,6 +168,14 @@ export function CampaignManagement({
     } finally {
       setCreating(false);
     }
+  };
+
+  // Erweiterte Kampagnen-Erstellung erfolgreich
+  const handleAdvancedCampaignSuccess = (campaignId: string) => {
+    console.log('✅ Advanced campaign created successfully:', campaignId);
+    setShowAdvancedCreator(false);
+    fetchCampaigns(); // Refresh campaign list
+    onCampaignUpdate?.();
   };
 
   // Kampagne-Status ändern
@@ -282,111 +292,126 @@ export function CampaignManagement({
                 Verwalte deine Google Ads Kampagnen und überwache deren Performance
               </CardDescription>
             </div>
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Neue Kampagne
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Neue Kampagne erstellen</DialogTitle>
-                  <DialogDescription>
-                    Erstelle eine neue Google Ads Kampagne mit grundlegenden Einstellungen.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="campaign-name">Kampagnenname</Label>
-                    <Input
-                      id="campaign-name"
-                      value={formData.name}
-                      onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="z.B. Sommeraktion 2024"
-                    />
-                  </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowAdvancedCreator(true)}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Erweiterte Kampagne
+              </Button>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="budget">Tagesbudget (€)</Label>
-                    <Input
-                      id="budget"
-                      type="number"
-                      value={formData.budgetAmount}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, budgetAmount: Number(e.target.value) }))
-                      }
-                      min="10"
-                      placeholder="z.B. 50"
-                    />
-                    <p className="text-sm text-gray-500">
-                      Empfohlen: Mindestens 10€ täglich für optimale Ergebnisse
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="channel-type">Kampagnentyp</Label>
-                    <Select
-                      value={formData.advertisingChannelType}
-                      onValueChange={value =>
-                        setFormData(prev => ({ ...prev, advertisingChannelType: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SEARCH">Suche</SelectItem>
-                        <SelectItem value="DISPLAY">Display</SelectItem>
-                        <SelectItem value="SHOPPING">Shopping</SelectItem>
-                        <SelectItem value="VIDEO">Video</SelectItem>
-                        <SelectItem value="PERFORMANCE_MAX">Performance Max</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+              <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Einfach
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Neue Kampagne erstellen</DialogTitle>
+                    <DialogDescription>
+                      Erstelle eine neue Google Ads Kampagne mit grundlegenden Einstellungen.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="start-date">Startdatum</Label>
+                      <Label htmlFor="campaign-name">Kampagnenname</Label>
                       <Input
-                        id="start-date"
-                        type="date"
-                        value={formData.startDate}
+                        id="campaign-name"
+                        value={formData.name}
+                        onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="z.B. Sommeraktion 2024"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="budget">Tagesbudget (€)</Label>
+                      <Input
+                        id="budget"
+                        type="number"
+                        value={formData.budgetAmount}
                         onChange={e =>
-                          setFormData(prev => ({ ...prev, startDate: e.target.value }))
+                          setFormData(prev => ({ ...prev, budgetAmount: Number(e.target.value) }))
                         }
+                        min="10"
+                        placeholder="z.B. 50"
                       />
+                      <p className="text-sm text-gray-500">
+                        Empfohlen: Mindestens 10€ täglich für optimale Ergebnisse
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="end-date">Enddatum (optional)</Label>
-                      <Input
-                        id="end-date"
-                        type="date"
-                        value={formData.endDate}
-                        onChange={e => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowCreateDialog(false)}
-                      disabled={creating}
-                    >
-                      Abbrechen
-                    </Button>
-                    <Button
-                      onClick={createCampaign}
-                      disabled={creating || !formData.name}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                    >
-                      {creating ? 'Erstelle...' : 'Erstellen'}
-                    </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="channel-type">Kampagnentyp</Label>
+                      <Select
+                        value={formData.advertisingChannelType}
+                        onValueChange={value =>
+                          setFormData(prev => ({ ...prev, advertisingChannelType: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SEARCH">Suche</SelectItem>
+                          <SelectItem value="DISPLAY">Display</SelectItem>
+                          <SelectItem value="SHOPPING">Shopping</SelectItem>
+                          <SelectItem value="VIDEO">Video</SelectItem>
+                          <SelectItem value="PERFORMANCE_MAX">Performance Max</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="start-date">Startdatum</Label>
+                        <Input
+                          id="start-date"
+                          type="date"
+                          value={formData.startDate}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, startDate: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="end-date">Enddatum (optional)</Label>
+                        <Input
+                          id="end-date"
+                          type="date"
+                          value={formData.endDate}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, endDate: e.target.value }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowCreateDialog(false)}
+                        disabled={creating}
+                      >
+                        Abbrechen
+                      </Button>
+                      <Button
+                        onClick={createCampaign}
+                        disabled={creating || !formData.name}
+                        className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      >
+                        {creating ? 'Erstelle...' : 'Erstellen'}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -620,6 +645,15 @@ export function CampaignManagement({
             </Tabs>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Advanced Campaign Creator */}
+      {showAdvancedCreator && (
+        <CampaignCreator
+          companyId={companyId}
+          customerId={customerId}
+          onCampaignCreated={handleAdvancedCampaignSuccess}
+        />
       )}
     </div>
   );

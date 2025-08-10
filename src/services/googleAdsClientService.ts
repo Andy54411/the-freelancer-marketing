@@ -893,6 +893,289 @@ class GoogleAdsClientService {
   }
 
   /**
+   * ✅ Comprehensive Campaign mit Ad Groups, Keywords und Ads erstellen
+   */
+  async createComprehensiveCampaign(
+    refreshToken: string,
+    customerId: string,
+    campaignData: {
+      name: string;
+      budgetAmountMicros: number;
+      advertisingChannelType: string;
+      biddingStrategyType: string;
+      startDate?: string;
+      endDate?: string;
+      adGroups: Array<{
+        name: string;
+        cpcBidMicros: number;
+        keywords: Array<{
+          text: string;
+          matchType: string;
+        }>;
+        ads: Array<{
+          headlines: string[];
+          descriptions: string[];
+          finalUrls: string[];
+        }>;
+      }>;
+      targetingOptions?: {
+        locations?: string[];
+        languages?: string[];
+        demographics?: {
+          ages?: string[];
+          genders?: string[];
+        };
+      };
+    }
+  ): Promise<GoogleAdsApiResponse<{ campaignId: string; adGroupIds: string[] }>> {
+    try {
+      console.log('🎯 Creating comprehensive campaign for customer:', customerId);
+      console.log('📝 Campaign data:', JSON.stringify(campaignData, null, 2));
+
+      // Validiere Customer ID Format
+      if (!customerId || customerId === 'auto-detect') {
+        throw new Error('Invalid customer ID provided');
+      }
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      // Test Customer Access zuerst
+      console.log('🔍 Testing customer access...');
+      try {
+        const testQuery = await customer.query(`
+          SELECT customer.id, customer.descriptive_name
+          FROM customer
+          LIMIT 1
+        `);
+        console.log('✅ Customer access confirmed:', testQuery[0]?.customer);
+      } catch (accessError: any) {
+        console.error('❌ Customer access failed:', accessError);
+        throw new Error(`Customer access failed: ${accessError.message}`);
+      }
+
+      // 1. Erstelle Campaign Budget
+      console.log('💰 Creating campaign budget...');
+      let budgetResourceName: string;
+
+      try {
+        const budgetResult = await customer.campaignBudgets.create([
+          {
+            name: `Budget für ${campaignData.name}`,
+            amount_micros: campaignData.budgetAmountMicros,
+            delivery_method: 'STANDARD',
+          },
+        ]);
+
+        budgetResourceName = budgetResult.results[0].resource_name;
+        console.log('✅ Budget created:', budgetResourceName);
+      } catch (budgetError: any) {
+        console.error('❌ Budget creation failed:', budgetError);
+        throw new Error(`Budget creation failed: ${budgetError.message || 'Unknown budget error'}`);
+      }
+
+      // 2. Erstelle Campaign
+      console.log('🚀 Creating campaign...');
+
+      // Standard-Datum: heute
+      const today = new Date();
+      const defaultStartDate = today.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+
+      let campaignResourceName: string;
+      let campaignId: string;
+
+      try {
+        const campaignResult = await customer.campaigns.create([
+          {
+            name: campaignData.name,
+            advertising_channel_type: campaignData.advertisingChannelType as any,
+            status: 'PAUSED', // Start mit PAUSED für Review
+            campaign_budget: budgetResourceName,
+            bidding_strategy_type: campaignData.biddingStrategyType as any,
+            start_date: campaignData.startDate?.replace(/-/g, '') || defaultStartDate, // YYYYMMDD Format
+            end_date: campaignData.endDate?.replace(/-/g, '') || undefined,
+            network_settings: {
+              target_google_search: true,
+              target_search_network: true,
+              target_content_network: false,
+              target_partner_search_network: false,
+            },
+          },
+        ]);
+
+        campaignResourceName = campaignResult.results[0].resource_name;
+        campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
+
+        console.log('✅ Campaign created successfully:', campaignId);
+      } catch (campaignError: any) {
+        console.error('❌ Campaign creation failed:', campaignError);
+        throw new Error(
+          `Campaign creation failed: ${campaignError.message || 'Unknown campaign error'}`
+        );
+      }
+
+      // 3. Erstelle Ad Groups mit Keywords und Ads
+      console.log('📁 Creating ad groups with keywords and ads...');
+      const adGroupIds: string[] = [];
+
+      for (let i = 0; i < campaignData.adGroups.length; i++) {
+        const adGroupData = campaignData.adGroups[i];
+        console.log(
+          `🎯 Creating ad group ${i + 1}/${campaignData.adGroups.length}: ${adGroupData.name}`
+        );
+
+        try {
+          // Erstelle Ad Group
+          const adGroupResult = await customer.adGroups.create([
+            {
+              name: adGroupData.name,
+              campaign: campaignResourceName,
+              status: 'ENABLED',
+              type: 'SEARCH_STANDARD',
+              cpc_bid_micros: adGroupData.cpcBidMicros,
+            },
+          ]);
+
+          const adGroupResourceName = adGroupResult.results[0].resource_name;
+          const adGroupId = adGroupResourceName.split('/')[5]; // Extract ID from resource name
+          adGroupIds.push(adGroupId);
+
+          console.log(`✅ Ad group created: ${adGroupId}`);
+
+          // Erstelle Keywords für diese Ad Group
+          if (adGroupData.keywords && adGroupData.keywords.length > 0) {
+            console.log(
+              `🔑 Creating ${adGroupData.keywords.length} keywords for ad group ${adGroupId}`
+            );
+
+            const keywordOperations = adGroupData.keywords.map(keyword => ({
+              ad_group: adGroupResourceName,
+              status: 'ENABLED' as any,
+              type: 'KEYWORD' as any,
+              keyword: {
+                text: keyword.text,
+                match_type: keyword.matchType.toUpperCase() as any,
+              },
+            }));
+
+            try {
+              const keywordResult = await customer.adGroupCriteria.create(keywordOperations);
+              console.log(`✅ Created ${keywordResult.results.length} keywords`);
+            } catch (keywordError: any) {
+              console.error(`❌ Failed to create keywords:`, keywordError);
+            }
+          }
+
+          // Erstelle Ads für diese Ad Group
+          if (adGroupData.ads && adGroupData.ads.length > 0) {
+            console.log(`📝 Creating ${adGroupData.ads.length} ads for ad group ${adGroupId}`);
+
+            for (const adData of adGroupData.ads) {
+              try {
+                const adResult = await customer.adGroupAds.create([
+                  {
+                    ad_group: adGroupResourceName,
+                    status: 'ENABLED',
+                    ad: {
+                      type: 'RESPONSIVE_SEARCH_AD',
+                      responsive_search_ad: {
+                        headlines: adData.headlines.slice(0, 15).map((headline, index) => ({
+                          text: headline.substring(0, 30), // Max 30 characters per headline
+                          pinned_field:
+                            index < 3 ? (('HEADLINE_' + (index + 1)) as any) : undefined,
+                        })),
+                        descriptions: adData.descriptions.slice(0, 4).map(description => ({
+                          text: description.substring(0, 90), // Max 90 characters per description
+                        })),
+                      },
+                      final_urls: adData.finalUrls,
+                    },
+                  },
+                ]);
+
+                console.log('✅ Ad created successfully');
+              } catch (adError: any) {
+                console.error(`❌ Failed to create ad:`, adError);
+                // Continue mit anderen Ads
+              }
+            }
+          }
+        } catch (adGroupError: any) {
+          console.error(`❌ Failed to create ad group ${adGroupData.name}:`, adGroupError);
+          // Continue mit anderen Ad Groups
+        }
+      }
+
+      // 4. Füge Targeting hinzu (optional)
+      if (campaignData.targetingOptions) {
+        console.log('🎯 Adding targeting options...');
+
+        // TODO: Implement targeting options
+        // - Locations
+        // - Languages
+        // - Demographics
+        // Dies würde weitere campaignCriteria und adGroupCriteria operations benötigen
+      }
+
+      console.log('✅ Comprehensive campaign created successfully:', {
+        campaignId,
+        adGroupIds,
+        totalAdGroups: adGroupIds.length,
+      });
+
+      return {
+        success: true,
+        data: {
+          campaignId,
+          adGroupIds,
+        },
+      };
+    } catch (error: any) {
+      console.error('❌ Comprehensive campaign creation error:', error);
+
+      // Detaillierte Fehleranalyse
+      let errorMessage = 'Failed to create comprehensive campaign';
+      let errorCode = 'COMPREHENSIVE_CAMPAIGN_CREATION_ERROR';
+
+      if (error.details) {
+        console.error('📋 Error details:', error.details);
+        errorMessage = error.details;
+      }
+
+      if (error.message) {
+        console.error('💬 Error message:', error.message);
+        errorMessage = error.message;
+      }
+
+      if (error.code) {
+        console.error('🔢 Error code:', error.code);
+        errorCode = error.code;
+      }
+
+      if (error.status) {
+        console.error('📊 Error status:', error.status);
+      }
+
+      // Log vollständiges Error-Objekt für Debugging
+      console.error('🔍 Full error object:', JSON.stringify(error, null, 2));
+
+      return {
+        success: false,
+        error: {
+          code: errorCode,
+          message: errorMessage,
+          details: {
+            originalMessage: error.message || error.toString(),
+            errorObject: error,
+          },
+        },
+      };
+    }
+  }
+
+  /**
    * ✅ Account Performance Metrics abrufen
    */
   async getAccountMetrics(
