@@ -37,6 +37,7 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const [setupValidation, setSetupValidation] = useState<ReturnType<
     typeof GoogleAdsSetupValidator.validateSetup
   > | null>(null);
@@ -96,6 +97,39 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
 
       if (data.success) {
         setStatus(data);
+
+        // ⚠️ WICHTIG: Überprüfe Token-Verfügbarkeit
+        const hasTokens = data.tokenStatus?.hasRefreshToken && data.tokenStatus?.hasAccessToken;
+
+        if (data.connected && !hasTokens) {
+          console.warn('🚨 Google Ads ist als verbunden markiert, aber Tokens fehlen!');
+          console.log('Token Status:', data.tokenStatus);
+
+          // Zeige Warnung für fehlende Tokens mit automatischer Weiterleitung
+          setStatus({
+            ...data,
+            connected: false,
+            status: 'TOKEN_EXPIRED',
+            needsReauth: true,
+            tokenError: 'Tokens abgelaufen - Automatische Weiterleitung...',
+          });
+
+          // Starte 5-Sekunden Countdown
+          setRedirectCountdown(5);
+          const countdownInterval = setInterval(() => {
+            setRedirectCountdown(prev => {
+              if (prev === null || prev <= 1) {
+                clearInterval(countdownInterval);
+                console.log('🔄 Automatische Weiterleitung zur Google Ads OAuth...');
+                window.location.href = `/api/google-ads/auth?companyId=${companyId}`;
+                return null;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+
+          return;
+        }
       } else {
         console.error('Failed to load status:', data.error);
       }
@@ -174,6 +208,8 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
         return 'bg-red-100 text-red-800';
       case 'ERROR':
         return 'bg-red-100 text-red-800';
+      case 'TOKEN_EXPIRED':
+        return 'bg-orange-100 text-orange-800';
       case 'SYNCING':
         return 'bg-blue-100 text-blue-800';
       case 'SETUP_REQUIRED':
@@ -191,6 +227,8 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'ERROR':
         return <AlertCircle className="h-5 w-5 text-red-500" />;
+      case 'TOKEN_EXPIRED':
+        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
       case 'SYNCING':
         return <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />;
       case 'SETUP_REQUIRED':
@@ -279,7 +317,11 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
                       ? 'VERBINDUNG ERFORDERLICH'
                       : status?.status === 'DISCONNECTED'
                         ? 'GETRENNT'
-                        : 'UNBEKANNT'}
+                        : status?.status === 'TOKEN_EXPIRED'
+                          ? redirectCountdown !== null
+                            ? `WEITERLEITUNG IN ${redirectCountdown}S`
+                            : 'NEUAUTORISIERUNG ERFORDERLICH'
+                          : 'UNBEKANNT'}
               </Badge>
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
