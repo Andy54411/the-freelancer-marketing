@@ -542,7 +542,10 @@ export function CampaignCreator({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="w-[90vw] max-w-none max-h-[95vh] overflow-y-auto">
+      <DialogContent
+        className="w-[90vw] max-w-none max-h-[95vh] overflow-y-auto"
+        style={{ width: '90vw !important', maxWidth: 'none !important' }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="w-5 h-5 text-[#14ad9f]" />

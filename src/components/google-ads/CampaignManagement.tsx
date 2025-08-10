@@ -4,6 +4,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Plus,
   Play,
@@ -32,7 +33,6 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { CampaignCreator } from './CampaignCreator';
 import { AccountSelector } from './AccountSelector';
 import type { GoogleAdsCampaign, GoogleAdsMetrics } from '@/types/googleAds';
 
@@ -56,7 +56,6 @@ export function CampaignManagement({
 
   // Campaign Management State
   const [selectedCampaign, setSelectedCampaign] = useState<GoogleAdsCampaign | null>(null);
-  const [showAdvancedCreator, setShowAdvancedCreator] = useState(false);
 
   // Account Selection State
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(customerId);
@@ -121,14 +120,6 @@ export function CampaignManagement({
     setRetryCount(0);
     setError(null);
     fetchCampaigns();
-  };
-
-  // Erweiterte Kampagnen-Erstellung erfolgreich
-  const handleAdvancedCampaignSuccess = (campaignId: string) => {
-    console.log('✅ Advanced campaign created successfully:', campaignId);
-    setShowAdvancedCreator(false);
-    fetchCampaigns(); // Refresh campaign list
-    onCampaignUpdate?.();
   };
 
   // Account-Auswahl Handler
@@ -287,14 +278,15 @@ export function CampaignManagement({
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={() => setShowAdvancedCreator(true)}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                disabled={!selectedAccountId}
+              <Link
+                href={`/dashboard/company/${companyId}/google-ads/campaigns/create`}
+                className={`inline-flex items-center px-4 py-2 bg-[#14ad9f] hover:bg-[#129488] text-white rounded-lg transition-colors ${
+                  !selectedAccountId ? 'opacity-50 pointer-events-none' : ''
+                }`}
               >
                 <Target className="h-4 w-4 mr-2" />
                 Kampagne erstellen
-              </Button>
+              </Link>
             </div>
           </div>
         </CardHeader>
@@ -333,14 +325,13 @@ export function CampaignManagement({
                 einfachen Setup bist du in wenigen Minuten bereit.
               </p>
               <div className="space-y-3">
-                <Button
-                  onClick={() => setShowAdvancedCreator(true)}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white w-full sm:w-auto"
-                  size="lg"
+                <Link
+                  href={`/dashboard/company/${companyId}/google-ads/campaigns/create`}
+                  className="inline-flex items-center justify-center px-6 py-3 bg-[#14ad9f] hover:bg-[#129488] text-white rounded-lg transition-colors w-full sm:w-auto text-lg font-medium"
                 >
                   <Plus className="h-5 w-5 mr-2" />
                   Erste Kampagne erstellen
-                </Button>
+                </Link>
                 <div className="text-sm text-gray-500 flex items-center justify-center gap-2">
                   <Target className="h-4 w-4" />
                   Beginne mit einem Tagesbudget ab 10€
@@ -546,15 +537,6 @@ export function CampaignManagement({
             </Tabs>
           </DialogContent>
         </Dialog>
-      )}
-
-      {/* Advanced Campaign Creator */}
-      {showAdvancedCreator && (
-        <CampaignCreator
-          companyId={companyId}
-          customerId={selectedAccountId}
-          onCampaignCreated={handleAdvancedCampaignSuccess}
-        />
       )}
     </div>
   );
