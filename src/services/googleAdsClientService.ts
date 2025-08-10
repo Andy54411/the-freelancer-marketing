@@ -1074,6 +1074,40 @@ class GoogleAdsClientService {
 
             for (const adData of adGroupData.ads) {
               try {
+                // Validiere Ad-Daten
+                if (!adData.headlines || adData.headlines.length === 0) {
+                  console.warn('⚠️ Ad has no headlines, skipping');
+                  continue;
+                }
+
+                if (!adData.descriptions || adData.descriptions.length === 0) {
+                  console.warn('⚠️ Ad has no descriptions, skipping');
+                  continue;
+                }
+
+                if (!adData.finalUrls || adData.finalUrls.length === 0) {
+                  console.warn('⚠️ Ad has no final URLs, skipping');
+                  continue;
+                }
+
+                // Filter leere Headlines und Descriptions
+                const validHeadlines = adData.headlines.filter(h => h && h.trim().length > 0);
+                const validDescriptions = adData.descriptions.filter(d => d && d.trim().length > 0);
+
+                if (validHeadlines.length < 3) {
+                  console.warn('⚠️ Ad needs at least 3 headlines, skipping');
+                  continue;
+                }
+
+                if (validDescriptions.length < 2) {
+                  console.warn('⚠️ Ad needs at least 2 descriptions, skipping');
+                  continue;
+                }
+
+                console.log(
+                  `📝 Creating ad with ${validHeadlines.length} headlines and ${validDescriptions.length} descriptions`
+                );
+
                 const adResult = await customer.adGroupAds.create([
                   {
                     ad_group: adGroupResourceName,
@@ -1081,12 +1115,10 @@ class GoogleAdsClientService {
                     ad: {
                       type: 'RESPONSIVE_SEARCH_AD',
                       responsive_search_ad: {
-                        headlines: adData.headlines.slice(0, 15).map((headline, index) => ({
+                        headlines: validHeadlines.slice(0, 15).map(headline => ({
                           text: headline.substring(0, 30), // Max 30 characters per headline
-                          pinned_field:
-                            index < 3 ? (('HEADLINE_' + (index + 1)) as any) : undefined,
                         })),
-                        descriptions: adData.descriptions.slice(0, 4).map(description => ({
+                        descriptions: validDescriptions.slice(0, 4).map(description => ({
                           text: description.substring(0, 90), // Max 90 characters per description
                         })),
                       },
@@ -1094,7 +1126,6 @@ class GoogleAdsClientService {
                     },
                   },
                 ]);
-
                 console.log('✅ Ad created successfully');
               } catch (adError: any) {
                 console.error(`❌ Failed to create ad:`, adError);

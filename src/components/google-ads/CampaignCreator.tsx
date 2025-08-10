@@ -169,9 +169,9 @@ export function CampaignCreator({
   const addAd = (adGroupId: string) => {
     const newAd: Advertisement = {
       id: Date.now().toString(),
-      headlines: ['', '', ''],
-      descriptions: ['', ''],
-      finalUrls: [formData.finalUrl || 'https://example.com'],
+      headlines: ['Ihre Überschrift 1', 'Ihre Überschrift 2', 'Ihre Überschrift 3'],
+      descriptions: ['Ihre Beschreibung 1', 'Ihre Beschreibung 2'],
+      finalUrls: [formData.finalUrl || 'https://taskilo.de'],
     };
 
     setFormData(prev => ({
@@ -257,6 +257,24 @@ export function CampaignCreator({
         if (adGroup.ads.length === 0) {
           throw new Error(`Anzeigengruppe "${adGroup.name}" benötigt mindestens eine Anzeige`);
         }
+
+        // Validiere jede Anzeige
+        for (const ad of adGroup.ads) {
+          const validHeadlines = ad.headlines.filter(h => h && h.trim().length > 0);
+          const validDescriptions = ad.descriptions.filter(d => d && d.trim().length > 0);
+
+          if (validHeadlines.length < 3) {
+            throw new Error(`Anzeige in "${adGroup.name}" benötigt mindestens 3 Überschriften`);
+          }
+
+          if (validDescriptions.length < 2) {
+            throw new Error(`Anzeige in "${adGroup.name}" benötigt mindestens 2 Beschreibungen`);
+          }
+
+          if (!ad.finalUrls || ad.finalUrls.length === 0 || !ad.finalUrls[0]) {
+            throw new Error(`Anzeige in "${adGroup.name}" benötigt mindestens eine Ziel-URL`);
+          }
+        }
       }
 
       const response = await fetch('/api/google-ads/campaigns/create-comprehensive', {
@@ -266,8 +284,22 @@ export function CampaignCreator({
           companyId,
           customerId: customerId || 'auto-detect',
           campaignData: {
-            ...formData,
+            name: formData.name,
             budgetAmountMicros: formData.budgetAmount * 1000000,
+            advertisingChannelType: formData.advertisingChannelType,
+            biddingStrategyType: formData.biddingStrategyType,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            adGroups: formData.adGroups.map(ag => ({
+              name: ag.name,
+              cpcBidMicros: ag.cpcBidMicros,
+              keywords: ag.keywords,
+              ads: ag.ads.map(ad => ({
+                headlines: ad.headlines,
+                descriptions: ad.descriptions,
+                finalUrls: ad.finalUrls,
+              })),
+            })),
           },
         }),
       });
