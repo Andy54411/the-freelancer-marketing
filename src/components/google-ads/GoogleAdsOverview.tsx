@@ -592,26 +592,52 @@ export function GoogleAdsOverview({ companyId }: GoogleAdsOverviewProps) {
 
                     <div className="flex items-center gap-2">
                       <Badge
-                        variant={account.status === 'ENABLED' ? 'default' : 'secondary'}
+                        variant={
+                          account.status === 'ENABLED'
+                            ? 'default'
+                            : account.testAccount
+                              ? 'default'
+                              : 'secondary'
+                        }
                         className={
                           account.status === 'ENABLED'
                             ? 'bg-green-100 text-green-800'
-                            : account.status === 'UNKNOWN'
-                              ? 'bg-red-100 text-red-800'
-                              : account.status === 'SUSPENDED'
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-gray-100 text-gray-800'
+                            : account.testAccount
+                              ? 'bg-blue-100 text-blue-800' // Test Account styling
+                              : account.status === 'UNKNOWN'
+                                ? 'bg-red-100 text-red-800'
+                                : account.status === 'SUSPENDED'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-gray-100 text-gray-800'
                         }
                       >
                         {account.status === 'ENABLED'
                           ? 'AKTIV'
-                          : account.status === 'UNKNOWN'
-                            ? 'AUFGELÖST'
-                            : account.status === 'SUSPENDED'
-                              ? 'GESPERRT'
-                              : account.status}
+                          : account.testAccount && account.status === 'UNKNOWN'
+                            ? 'TEST AKTIV' // Special label for test accounts
+                            : account.status === 'UNKNOWN'
+                              ? 'AUFGELÖST'
+                              : account.status === 'SUSPENDED'
+                                ? 'GESPERRT'
+                                : account.status}
                       </Badge>
-                      {!account.manager && (
+                      {account.testAccount && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                        >
+                          Test Account
+                        </Badge>
+                      )}
+                      {account.manager && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-purple-50 text-purple-700 border-purple-200"
+                        >
+                          Manager Account
+                        </Badge>
+                      )}
+                      {!account.manager && !account.testAccount && (
                         <Badge variant="outline" className="text-xs">
                           Standard Account
                         </Badge>
