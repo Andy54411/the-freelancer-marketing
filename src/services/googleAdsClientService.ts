@@ -653,18 +653,21 @@ class GoogleAdsClientService {
   }
 
   /**
-   * ✅ Campaigns abrufen
+   * ✅ Campaigns abrufen (Client Library)
    */
   async getCampaigns(
-    accessToken: string,
+    refreshToken: string,
     customerId: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsCampaignResponse>> {
     try {
+      console.log('🎯 Fetching campaigns for customer:', customerId);
+
       const customer = this.client.Customer({
         customer_id: customerId,
-        refresh_token: accessToken,
+        refresh_token: refreshToken,
       });
 
+      console.log('📊 Querying campaign data...');
       const campaigns = await customer.query(`
         SELECT
           campaign.id,
@@ -683,13 +686,15 @@ class GoogleAdsClientService {
         ORDER BY campaign.name
       `);
 
+      console.log(`✅ Found ${campaigns.length} campaigns`);
+
       const formattedCampaigns: GoogleAdsCampaign[] = campaigns.map((camp: any) => ({
         id: camp.campaign?.id || '',
         name: camp.campaign?.name || '',
         status: this.mapCampaignStatus(camp.campaign?.status),
         type: camp.campaign?.advertising_channel_type || 'SEARCH',
-        startDate: new Date().toISOString().split('T')[0], // Add missing startDate
-        endDate: undefined, // Add missing endDate
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: undefined,
         budget: {
           amount: Math.round((camp.campaign_budget?.amount_micros || 0) / 1000000),
           currency: 'EUR',
@@ -729,11 +734,95 @@ class GoogleAdsClientService {
         },
       };
     } catch (error: any) {
+      console.error('❌ Campaign fetch error:', error);
       return {
         success: false,
         error: {
           code: 'API_ERROR',
           message: error.message || 'Failed to fetch campaigns',
+        },
+      };
+    }
+  }
+
+  /**
+   * ✅ Neue Kampagne erstellen (Client Library)
+   */
+  async createCampaign(
+    refreshToken: string,
+    customerId: string,
+    campaignData: {
+      name: string;
+      budgetAmountMicros: number;
+      advertisingChannelType: string;
+      biddingStrategyType: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<GoogleAdsApiResponse<{ campaignId: string }>> {
+    try {
+      console.log('🎯 Creating campaign for customer:', customerId);
+      console.log('📝 Campaign data:', campaignData);
+
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      // 1. Erstelle Campaign Budget
+      console.log('💰 Creating campaign budget...');
+      const budgetResult = await customer.campaignBudgets.create([
+        {
+          name: `Budget für ${campaignData.name}`,
+          amount_micros: campaignData.budgetAmountMicros,
+          delivery_method: 'STANDARD',
+        },
+      ]);
+
+      const budgetResourceName = budgetResult.results[0].resource_name;
+      console.log('✅ Budget created:', budgetResourceName);
+
+      // 2. Erstelle Campaign
+      console.log('🚀 Creating campaign...');
+
+      // Standard-Datum: heute
+      const today = new Date();
+      const defaultStartDate = today.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+
+      const campaignResult = await customer.campaigns.create([
+        {
+          name: campaignData.name,
+          advertising_channel_type: campaignData.advertisingChannelType as any,
+          status: 'PAUSED', // Start mit PAUSED für Review
+          campaign_budget: budgetResourceName,
+          bidding_strategy_type: campaignData.biddingStrategyType as any,
+          start_date: campaignData.startDate?.replace(/-/g, '') || defaultStartDate, // YYYYMMDD Format
+          end_date: campaignData.endDate?.replace(/-/g, '') || undefined,
+          network_settings: {
+            target_google_search: true,
+            target_search_network: true,
+            target_content_network: false,
+            target_partner_search_network: false,
+          },
+        },
+      ]);
+
+      const campaignResourceName = campaignResult.results[0].resource_name;
+      const campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
+
+      console.log('✅ Campaign created successfully:', campaignId);
+
+      return {
+        success: true,
+        data: { campaignId },
+      };
+    } catch (error: any) {
+      console.error('❌ Campaign creation error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'CAMPAIGN_CREATION_ERROR',
+          message: error.message || 'Failed to create campaign',
         },
       };
     }
@@ -902,87 +991,23 @@ class GoogleAdsClientService {
   }
 
   /**
-   * ✅ Campaign erstellen
-   */
-  async createCampaign(
-    accessToken: string,
-    customerId: string,
-    campaignData: {
-      name: string;
-      status?: string;
-      advertisingChannelType?: string;
-      targetCpa?: number;
-      manualCpc?: boolean;
-      enhancedCpcEnabled?: boolean;
-    }
-  ): Promise<GoogleAdsApiResponse<{ campaignId: string; resourceName: string }>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: accessToken,
-      });
-
-      const operations = [
-        {
-          create: {
-            name: campaignData.name,
-            status: campaignData.status || 'ENABLED',
-            advertising_channel_type: campaignData.advertisingChannelType || 'SEARCH',
-            target_cpa: campaignData.targetCpa
-              ? {
-                  target_cpa_micros: Math.round(campaignData.targetCpa * 1000000),
-                }
-              : undefined,
-            manual_cpc: campaignData.manualCpc
-              ? {
-                  enhanced_cpc_enabled: campaignData.enhancedCpcEnabled || false,
-                }
-              : undefined,
-          },
-        },
-      ];
-
-      // TODO: Campaign creation needs proper implementation with Google Ads Client Library
-      // const response = await customer.campaigns.create(operations);
-
-      // const resourceName = response.results?.[0]?.resource_name;
-      // const campaignId = resourceName?.split('/')[3];
-
-      return {
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Campaign creation not yet implemented with Client Library',
-        },
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to create campaign',
-        },
-      };
-    }
-  }
-
-  /**
    * ✅ Campaign aktualisieren
    */
   async updateCampaign(
-    accessToken: string,
+    refreshToken: string,
     customerId: string,
     campaignId: string,
     campaignData: {
       name?: string;
       status?: string;
-      targetCpa?: number;
     }
   ): Promise<GoogleAdsApiResponse<any>> {
     try {
+      console.log('🔄 Updating campaign:', { customerId, campaignId, campaignData });
+
       const customer = this.client.Customer({
         customer_id: customerId,
-        refresh_token: accessToken,
+        refresh_token: refreshToken,
       });
 
       const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
@@ -1002,13 +1027,6 @@ class GoogleAdsClientService {
         updateMask.push('status');
       }
 
-      if (campaignData.targetCpa) {
-        campaign.target_cpa = {
-          target_cpa_micros: Math.round(campaignData.targetCpa * 1000000),
-        };
-        updateMask.push('target_cpa');
-      }
-
       const operations = [
         {
           update: campaign,
@@ -1016,66 +1034,24 @@ class GoogleAdsClientService {
         },
       ];
 
-      // TODO: Campaign update needs proper implementation with Google Ads Client Library
-      // const response = await customer.campaigns.update(operations);
+      console.log('🔄 Campaign update operations:', operations);
 
+      // TODO: Correct implementation needed for Google Ads Client Library update
+      // For now, return a success response indicating the method needs implementation
       return {
         success: false,
         error: {
           code: 'NOT_IMPLEMENTED',
-          message: 'Campaign update not yet implemented with Client Library',
+          message: 'Campaign update not yet fully implemented with Client Library',
         },
       };
     } catch (error: any) {
+      console.error('❌ Campaign update error:', error);
       return {
         success: false,
         error: {
           code: 'API_ERROR',
           message: error.message || 'Failed to update campaign',
-        },
-      };
-    }
-  }
-
-  /**
-   * ✅ Campaign pausieren
-   */
-  async pauseCampaign(
-    accessToken: string,
-    customerId: string,
-    campaignId: string
-  ): Promise<GoogleAdsApiResponse<any>> {
-    return await this.updateCampaign(accessToken, customerId, campaignId, { status: 'PAUSED' });
-  }
-
-  /**
-   * ✅ Campaign löschen
-   */
-  async deleteCampaign(
-    accessToken: string,
-    customerId: string,
-    campaignId: string
-  ): Promise<GoogleAdsApiResponse<any>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: accessToken,
-      });
-
-      const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
-
-      const response = await customer.campaigns.remove([resourceName]);
-
-      return {
-        success: true,
-        data: response.results,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to delete campaign',
         },
       };
     }

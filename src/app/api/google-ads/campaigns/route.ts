@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
     const data = googleAdsSnap.data();
     const accountConfig = data?.accountConfig;
 
-    if (!accountConfig?.accessToken) {
+    if (!accountConfig?.refreshToken) {
       return NextResponse.json(
         {
-          error: 'No access token found in configuration',
+          error: 'No refresh token found in configuration',
           companyId,
         },
         { status: 400 }
@@ -136,10 +136,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customerId, campaignData } = body as {
+    const { customerId, campaignData, companyId } = body as {
       customerId: string;
       campaignData: CreateCampaignRequest;
+      companyId?: string;
     };
+
+    console.log('🎯 Campaign creation request:', { customerId, campaignData, companyId });
 
     if (!customerId || !campaignData) {
       return NextResponse.json(
@@ -153,34 +156,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Campaign name and budget are required' }, { status: 400 });
     }
 
-    // OAuth Config validieren
-    const configValidation = GoogleAdsSetupValidator.validateSetup();
-    if (!configValidation.valid) {
+    // Get real stored config from Firestore
+    const { db } = await import('@/firebase/server');
+    const finalCompanyId = companyId || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
+
+    const googleAdsDocRef = db
+      .collection('companies')
+      .doc(finalCompanyId)
+      .collection('integrations')
+      .doc('googleAds');
+
+    const googleAdsSnap = await googleAdsDocRef.get();
+
+    if (!googleAdsSnap.exists) {
       return NextResponse.json(
         {
-          error: 'Google Ads configuration invalid',
-          details: configValidation.errors,
+          error: 'No Google Ads configuration found',
+          companyId: finalCompanyId,
+        },
+        { status: 404 }
+      );
+    }
+
+    const data = googleAdsSnap.data();
+    const accountConfig = data?.accountConfig;
+
+    if (!accountConfig?.refreshToken) {
+      return NextResponse.json(
+        {
+          error: 'No refresh token found in configuration',
+          companyId: finalCompanyId,
         },
         { status: 400 }
       );
     }
 
-    // Environment Config laden
-    const config = {
-      clientId: process.env.GOOGLE_ADS_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
-      refreshToken: '',
-      developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
-    } as GoogleAdsOAuthConfig;
-
-    // TODO: Campaign creation with Client Library not yet implemented
-    return NextResponse.json(
-      {
-        error: 'Campaign creation not yet implemented with Client Library',
-        message: 'Please use the legacy API for campaign creation until this is implemented',
-      },
-      { status: 501 }
+    // Create campaign using Client Library
+    console.log('🚀 Creating campaign with Client Library...');
+    const result = await googleAdsClientService.createCampaign(
+      accountConfig.refreshToken,
+      customerId,
+      campaignData
     );
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          error: 'Failed to create campaign',
+          details: result.error,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+      message: 'Campaign created successfully',
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
     console.error('❌ Campaign creation error:', error);
     return NextResponse.json(
