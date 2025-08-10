@@ -1,13 +1,16 @@
 {
-  "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' pnpm build",
-  "framework": "nextjs", 
+  "buildCommand": "NODE_OPTIONS='--max-old-space-size=8192' pnpm build --experimental-build-mode=compile",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install --frozen-lockfile --prod=false", 
   "regions": [
     "fra1"
   ],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30,
-      "memory": 1024
+      "memory": 1024,
+      "runtime": "nodejs20.x"
     }
   },
   "headers": [

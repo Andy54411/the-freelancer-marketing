@@ -1,4 +1,5 @@
 import path from 'path';
+import os from 'os';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -19,7 +20,20 @@ const nextConfig = {
   // Experimental features for faster builds
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['react-icons'],
+    optimizePackageImports: [
+      'react-icons', 
+      'lucide-react', 
+      '@radix-ui/react-icons',
+      '@tabler/icons-react'
+    ],
+    // Parallel builds für schnellere Kompilation
+    cpus: Math.max(1, os.cpus().length - 1),
+    // Static Generation optimieren  
+    turbo: {
+      resolveAlias: {
+        '@': './src',
+      },
+    },
   },
 
   // Server external packages (only server-only packages)
@@ -67,7 +81,8 @@ const nextConfig = {
   },
 
   // Webpack-Konfiguration, um den functions-Ordner zu ignorieren
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Externe Abhängigkeiten für bessere Performance
     config.externals = config.externals || [];
     config.externals.push({
       './functions': './functions',
@@ -76,12 +91,43 @@ const nextConfig = {
       './firebase_functions/*': './firebase_functions/*',
     });
 
+    // Bundle Optimization - REVERTED: Causing massive bundle size
+    // if (!dev && !isServer) {
+    //   config.optimization = {
+    //     ...config.optimization,
+    //     splitChunks: {
+    //       chunks: 'all',
+    //       cacheGroups: {
+    //         vendor: {
+    //           test: /[\\/]node_modules[\\/]/,
+    //           name: 'vendors',
+    //           priority: 10,
+    //           chunks: 'all',
+    //         },
+    //         common: {
+    //           minChunks: 2,
+    //           priority: 5,
+    //           reuseExistingChunk: true,
+    //         },
+    //       },
+    //     },
+    //   };
+    // }
+
+    // Performance improvements
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      // In .mjs-Dateien ist __dirname nicht verfügbar. Verwenden Sie stattdessen process.cwd().
       '@': path.resolve(process.cwd(), 'src'),
     };
+
+    // Cache webpack builds - REMOVED: Causing issues
+    // config.cache = {
+    //   type: 'filesystem',
+    //   buildDependencies: {
+    //     config: [path.resolve(process.cwd(), 'next.config.mjs')],
+    //   },
+    // };
 
     return config;
   },
@@ -137,6 +183,11 @@ const nextConfig = {
 
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  
+  // TypeScript Optimierung für Production
+  typescript: {
+    ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
 };
 

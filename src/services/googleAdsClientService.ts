@@ -306,54 +306,95 @@ class GoogleAdsClientService {
     try {
       console.log('🔍 Getting accessible customers for REAL Google Ads account...');
 
-      // STRATEGIE 1: Direkt mit Google Ads Client Library - für echte Accounts
+      // STRATEGIE 1: Client Library listAccessibleCustomers - für echte Accounts
       try {
-        // Versuche mit aktueller Customer ID oder '0' für Haupt-Account
-        const customerId = managerCustomerId || '0';
-        const customer = this.client.Customer({
-          customer_id: customerId,
-          refresh_token: refreshToken,
-        });
+        console.log('🔍 Using Client Library listAccessibleCustomers...');
 
-        console.log('🔍 Trying Google Ads Client Library with customer:', customerId);
+        // Nutze die offizielle listAccessibleCustomers Methode der Client Library
+        const accessibleCustomersResponse = await this.client.listAccessibleCustomers(refreshToken);
 
-        // Versuche customer info für aktuellen Account zu bekommen
-        const customerInfo = await customer.query(`
-          SELECT
-            customer.id,
-            customer.descriptive_name,
-            customer.currency_code,
-            customer.time_zone,
-            customer.status,
-            customer.manager,
-            customer.test_account
-          FROM customer
-          LIMIT 1
-        `);
+        if (
+          accessibleCustomersResponse &&
+          accessibleCustomersResponse.resource_names &&
+          accessibleCustomersResponse.resource_names.length > 0
+        ) {
+          console.log(
+            '✅ Found accessible customers with Client Library:',
+            accessibleCustomersResponse.resource_names
+          );
 
-        if (customerInfo && customerInfo.length > 0) {
-          const info = customerInfo[0];
-          console.log('✅ Found REAL customer info:', info.customer);
+          // Konvertiere resource names zu customer IDs und hole Details
+          const customerAccounts: GoogleAdsAccount[] = [];
 
-          const formattedAccount: GoogleAdsAccount = {
-            id: String(info.customer?.id || 'main-account'),
-            name: info.customer?.descriptive_name || 'Google Ads Account',
-            currency: info.customer?.currency_code || 'EUR',
-            timezone: info.customer?.time_zone || 'Europe/Berlin',
-            status: this.mapCustomerStatus(info.customer?.status) || 'ENABLED',
-            manager: info.customer?.manager || false,
-            testAccount: info.customer?.test_account || false,
-            level: 0,
-          };
+          for (const resourceName of accessibleCustomersResponse.resource_names) {
+            // Resource name format: "customers/1234567890"
+            const customerId = resourceName.split('/')[1];
 
-          return {
-            success: true,
-            data: [formattedAccount],
-          };
+            if (customerId && customerId !== '0') {
+              try {
+                // Hole Details für jeden Customer
+                const customer = this.client.Customer({
+                  customer_id: customerId,
+                  refresh_token: refreshToken,
+                });
+
+                const customerInfo = await customer.query(`
+                  SELECT
+                    customer.id,
+                    customer.descriptive_name,
+                    customer.currency_code,
+                    customer.time_zone,
+                    customer.status,
+                    customer.manager,
+                    customer.test_account
+                  FROM customer
+                  LIMIT 1
+                `);
+
+                if (customerInfo && customerInfo.length > 0) {
+                  const info = customerInfo[0];
+                  customerAccounts.push({
+                    id: String(info.customer?.id || customerId),
+                    name: info.customer?.descriptive_name || `Account ${customerId}`,
+                    currency: info.customer?.currency_code || 'EUR',
+                    timezone: info.customer?.time_zone || 'Europe/Berlin',
+                    status: this.mapCustomerStatus(info.customer?.status) || 'ENABLED',
+                    manager: info.customer?.manager || false,
+                    testAccount: info.customer?.test_account || false,
+                    level: 0,
+                  });
+                }
+              } catch (customerError) {
+                console.log(
+                  `⚠️ Failed to get details for customer ${customerId}:`,
+                  customerError.message
+                );
+                // Füge Account trotzdem hinzu, auch ohne Details
+                customerAccounts.push({
+                  id: customerId,
+                  name: `Account ${customerId}`,
+                  currency: 'EUR',
+                  timezone: 'Europe/Berlin',
+                  status: 'ENABLED',
+                  manager: false,
+                  testAccount: false,
+                  level: 0,
+                });
+              }
+            }
+          }
+
+          if (customerAccounts.length > 0) {
+            console.log('✅ Successfully processed accessible customers:', customerAccounts);
+            return {
+              success: true,
+              data: customerAccounts,
+            };
+          }
         }
       } catch (clientLibraryError) {
         console.log(
-          '⚠️ Google Ads Client Library failed, trying REST API...',
+          '⚠️ Client Library listAccessibleCustomers failed, trying REST API...',
           clientLibraryError.message
         );
       }
