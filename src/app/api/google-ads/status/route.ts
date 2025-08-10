@@ -164,6 +164,8 @@ export async function GET(request: NextRequest) {
           name: account.name,
           currency: account.currency,
           status: account.status,
+          manager: account.manager || false, // MCC (Manager) Account flag
+          testAccount: account.testAccount || false,
           linked: account.linked,
           linkedAt: account.linkedAt,
         }));
