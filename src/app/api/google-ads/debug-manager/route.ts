@@ -27,8 +27,34 @@ export async function GET(request: NextRequest) {
     const googleAdsData = googleAdsSnap.data();
     const refreshToken = googleAdsData?.refreshToken;
 
+    console.log('🔍 Debug Firestore Data:', {
+      docExists: googleAdsSnap.exists,
+      hasData: !!googleAdsData,
+      dataKeys: googleAdsData ? Object.keys(googleAdsData) : [],
+      hasRefreshToken: !!refreshToken,
+      refreshTokenLength: refreshToken ? refreshToken.length : 0,
+    });
+
     if (!refreshToken) {
-      return NextResponse.json({ error: 'No refresh token found' }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'No refresh token found',
+          debug: {
+            docExists: googleAdsSnap.exists,
+            hasData: !!googleAdsData,
+            dataKeys: googleAdsData ? Object.keys(googleAdsData) : [],
+            sampleData: googleAdsData
+              ? {
+                  status: googleAdsData.status,
+                  hasRefreshToken: !!googleAdsData.refreshToken,
+                  hasAccessToken: !!googleAdsData.accessToken,
+                  linkedAccountsCount: googleAdsData.linkedAccounts?.length || 0,
+                }
+              : null,
+          },
+        },
+        { status: 400 }
+      );
     }
 
     // Test 1: Customer Info direkt abrufen
