@@ -19,6 +19,7 @@ import {
   Mail as FiMail,
   ClipboardList as FiClipboardList,
   Banknote as FiBanknote,
+  Users as FiUsers,
 } from 'lucide-react';
 
 const isNonEmptyString = (val: unknown): val is string =>
@@ -42,11 +43,21 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // Auto-expand Finance section when on finance pages
   useEffect(() => {
-    if (pathname?.includes('/finance') && !pathname?.includes('/banking') && !expandedItems.includes('finance')) {
+    if (
+      pathname?.includes('/finance') &&
+      !pathname?.includes('/banking') &&
+      !expandedItems.includes('finance')
+    ) {
       setExpandedItems(prev => [...prev, 'finance']);
     }
     if (pathname?.includes('/finance/banking') && !expandedItems.includes('banking')) {
       setExpandedItems(prev => [...prev, 'banking']);
+    }
+    if (pathname?.includes('/personal') && !expandedItems.includes('personal')) {
+      setExpandedItems(prev => [...prev, 'personal']);
+    }
+    if (pathname?.includes('/google-ads') && !expandedItems.includes('google-ads')) {
+      setExpandedItems(prev => [...prev, 'google-ads']);
     }
   }, [pathname, expandedItems]);
 

@@ -17,6 +17,11 @@ import {
   TrendingUp as FiTrendingUp,
   Shield as FiShield,
   Banknote as FiBanknote,
+  Users as FiUsers,
+  UserPlus as FiUserPlus,
+  Clock as FiClock,
+  Calculator as FiCalculator,
+  BarChart3 as FiBarChart3,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -108,6 +113,22 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'Personal',
+    icon: FiUsers,
+    value: 'personal',
+    subItems: [
+      { label: 'Übersicht', value: 'personal-overview', href: 'personal' },
+      { label: 'Mitarbeiter', value: 'personal-employees', href: 'personal/employees' },
+      { label: 'Neuer Mitarbeiter', value: 'personal-add', href: 'personal/add' },
+      { label: 'Gehaltsabrechnung', value: 'personal-payroll', href: 'personal/payroll' },
+      { label: 'Arbeitszeit', value: 'personal-timesheet', href: 'personal/timesheet' },
+      { label: 'Kostenkalkulation', value: 'personal-costs', href: 'personal/costs' },
+      { label: 'Personal-Analytics', value: 'personal-analytics', href: 'personal/analytics' },
+      { label: 'Urlaub & Abwesenheit', value: 'personal-absence', href: 'personal/absence' },
+      { label: 'Dokumente', value: 'personal-documents', href: 'personal/documents' },
+    ],
+  },
+  {
     label: 'Google Ads',
     icon: FiTrendingUp,
     value: 'google-ads',
@@ -187,6 +208,16 @@ export default function CompanySidebar({
     // Orders aktiv wenn Orders-Pfad
     if (item.value === 'orders') {
       return pathname?.includes('/orders');
+    }
+
+    // Personal aktiv wenn Personal-Pfad
+    if (item.value === 'personal') {
+      return pathname?.includes('/personal');
+    }
+
+    // Google Ads aktiv wenn Google Ads-Pfad
+    if (item.value === 'google-ads') {
+      return pathname?.includes('/google-ads');
     }
 
     // DATEV aktiv wenn DATEV-Pfad
