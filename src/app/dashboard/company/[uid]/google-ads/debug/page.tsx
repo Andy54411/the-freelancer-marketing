@@ -1,9 +1,12 @@
-// ✅ Google Ads Debug & Test Page
+// ✅ Google Ads Debug & Test Page (Development Only)
 
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
 import { GoogleAdsDebug } from '@/components/google-ads/GoogleAdsDebug';
+import { GoogleAdsLayout } from '@/components/google-ads/GoogleAdsLayout';
+import { DebugIcon } from '@/components/google-ads/GoogleAdsIcons';
+import { redirect } from 'next/navigation';
 
 export default function GoogleAdsDebugPage() {
   const params = useParams();
@@ -13,41 +16,30 @@ export default function GoogleAdsDebugPage() {
   const test = searchParams.get('test') || undefined;
   const mode = searchParams.get('mode') || 'all';
 
+  // Debug page only available in development
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (!isDevelopment) {
+    redirect(`/dashboard/company/${companyId}/google-ads`);
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Google Ads Debug & Test</h1>
-              <p className="mt-2 text-gray-600">
-                Umfassende Test-Suite und Debug-Tools für die Google Ads Client Library
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              {/* Debug Badge */}
-              <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"
-                    stroke="#14ad9f"
-                    strokeWidth="2"
-                    fill="none"
-                  />
-                  <path d="M16 20v-6a4 4 0 00-8 0v6" stroke="#14ad9f" strokeWidth="2" fill="none" />
-                  <path d="M9 9l4.5 4.5L18 9" stroke="#14ad9f" strokeWidth="2" fill="none" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Debug Console</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Debug Component */}
-        <GoogleAdsDebug companyId={companyId} initialTest={test} testMode={mode} />
+    <GoogleAdsLayout
+      title="Google Ads Debug & Test"
+      description="Umfassende Test-Suite und Debug-Tools für die Google Ads Client Library (Development Only)"
+      badge={{
+        icon: <DebugIcon />,
+        text: 'Debug Console',
+      }}
+      showStatusMessages={false}
+    >
+      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-sm text-yellow-800">
+          🚧 <strong>Development Mode:</strong> Diese Debug-Seite ist nur in der
+          Entwicklungsumgebung verfügbar.
+        </p>
       </div>
-    </div>
+
+      <GoogleAdsDebug companyId={companyId} initialTest={test} testMode={mode} />
+    </GoogleAdsLayout>
   );
 }
