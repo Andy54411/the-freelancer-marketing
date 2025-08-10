@@ -16,6 +16,7 @@ import {
   DollarSign,
   MousePointer,
   Target,
+  Users,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { CampaignCreator } from './CampaignCreator';
+import { AccountSelector } from './AccountSelector';
 import type { GoogleAdsCampaign, GoogleAdsMetrics } from '@/types/googleAds';
 
 interface CampaignManagementProps {
@@ -51,16 +53,21 @@ export function CampaignManagement({
   const [selectedCampaign, setSelectedCampaign] = useState<GoogleAdsCampaign | null>(null);
   const [showAdvancedCreator, setShowAdvancedCreator] = useState(false);
 
+  // Account Selection State
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(customerId);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+
   // Kampagnen laden
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching campaigns for:', { companyId, customerId });
+      console.log('🔍 Fetching campaigns for:', { companyId, selectedAccountId });
 
-      // API-URL mit companyId, customerId optional
-      const url = `/api/google-ads/campaigns?companyId=${companyId}${
-        customerId ? `&customerId=${customerId}` : ''
-      }`;
+      // Verwende den ausgewählten Account oder 'auto-detect' als Fallback
+      const finalCustomerId = selectedAccountId || 'auto-detect';
+
+      // API-URL mit companyId und finalCustomerId
+      const url = `/api/google-ads/campaigns?companyId=${companyId}&customerId=${finalCustomerId}`;
 
       console.log('📊 Fetching from:', url);
       const response = await fetch(url);
@@ -94,14 +101,24 @@ export function CampaignManagement({
     onCampaignUpdate?.();
   };
 
+  // Account-Auswahl Handler
+  const handleAccountSelect = (accountId: string, account: any) => {
+    console.log('🎯 Account selected:', { accountId, account });
+    setSelectedAccountId(accountId);
+    setSelectedAccount(account);
+    // Lade Kampagnen für den neuen Account
+    setLoading(true);
+    fetchCampaigns();
+  };
+
   // Kampagne-Status ändern
   const toggleCampaignStatus = async (campaignId: string, currentStatus: string) => {
     try {
       const newStatus = currentStatus === 'ENABLED' ? 'PAUSED' : 'ENABLED';
       console.log('🔄 Toggling campaign status:', { campaignId, currentStatus, newStatus });
 
-      // Ermittle customerId für Status-Update
-      const finalCustomerId = customerId || 'auto-detect';
+      // Verwende den ausgewählten Account
+      const finalCustomerId = selectedAccountId || 'auto-detect';
 
       const response = await fetch('/api/google-ads/campaigns', {
         method: 'PATCH',
@@ -142,11 +159,11 @@ export function CampaignManagement({
   };
 
   useEffect(() => {
-    // Lade Kampagnen beim Mounten oder wenn companyId/customerId sich ändert
-    if (companyId) {
+    // Lade Kampagnen beim Mounten oder wenn companyId/selectedAccountId sich ändert
+    if (companyId && selectedAccountId) {
       fetchCampaigns();
     }
-  }, [companyId, customerId]);
+  }, [companyId, selectedAccountId]);
 
   if (loading) {
     return (
@@ -195,6 +212,13 @@ export function CampaignManagement({
 
   return (
     <div className="space-y-6">
+      {/* Account Selector */}
+      <AccountSelector
+        companyId={companyId}
+        selectedAccountId={selectedAccountId}
+        onAccountSelect={handleAccountSelect}
+      />
+
       {/* Header mit Create Button */}
       <Card>
         <CardHeader>
@@ -212,6 +236,7 @@ export function CampaignManagement({
               <Button
                 onClick={() => setShowAdvancedCreator(true)}
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                disabled={!selectedAccountId}
               >
                 <Target className="h-4 w-4 mr-2" />
                 Kampagne erstellen
@@ -222,7 +247,24 @@ export function CampaignManagement({
       </Card>
 
       {/* Kampagnen Übersicht */}
-      {campaigns.length === 0 ? (
+      {!selectedAccountId ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center max-w-md mx-auto">
+              <div className="bg-[#14ad9f]/10 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Users className="h-12 w-12 text-[#14ad9f]" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Google Ads Account auswählen
+              </h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                Wählen Sie zuerst einen Google Ads Account aus, um Kampagnen anzuzeigen und zu
+                erstellen.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : campaigns.length === 0 ? (
         <Card>
           <CardContent className="py-12">
             <div className="text-center max-w-md mx-auto">
@@ -456,7 +498,7 @@ export function CampaignManagement({
       {showAdvancedCreator && (
         <CampaignCreator
           companyId={companyId}
-          customerId={customerId}
+          customerId={selectedAccountId}
           onCampaignCreated={handleAdvancedCampaignSuccess}
         />
       )}
