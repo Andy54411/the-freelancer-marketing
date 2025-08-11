@@ -126,6 +126,50 @@ export default function SchedulePage({ params }: { params: Promise<{ uid: string
     }
   }, [user, resolvedParams.uid, currentWeek]);
 
+  // Synchronisiert genehmigte Urlaubsanträge mit dem Dienstplan
+  const syncAbsenceRequestsToSchedule = async () => {
+    try {
+      const absenceRequests = await PersonalService.getAbsenceRequests(resolvedParams.uid);
+      const approvedRequests = absenceRequests.filter(req => req.status === 'APPROVED');
+
+      for (const request of approvedRequests) {
+        const startDate = new Date(request.startDate);
+        const endDate = new Date(request.endDate);
+        
+        // Alle Tage zwischen Start- und Enddatum durchgehen
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          const dateStr = date.toISOString().split('T')[0];
+          
+          // Prüfen ob bereits eine Abwesenheits-Schicht existiert
+          const existingShifts = await PersonalService.getShifts(resolvedParams.uid, date, date);
+          const existingAbsenceShift = existingShifts.find(shift => 
+            shift.employeeId === request.employeeId && 
+            shift.date === dateStr &&
+            (shift.status === 'ABSENT' || shift.status === 'SICK')
+          );
+
+          if (!existingAbsenceShift) {
+            // Neue Abwesenheits-Schicht erstellen
+            await PersonalService.createShift({
+              companyId: resolvedParams.uid,
+              employeeId: request.employeeId,
+              date: dateStr,
+              startTime: '00:00',
+              endTime: '23:59',
+              position: 'Abwesend',
+              department: request.type === 'VACATION' ? 'Urlaub' : 
+                         request.type === 'SICK' ? 'Krankheit' : 'Abwesend',
+              status: request.type === 'SICK' ? 'SICK' : 'ABSENT',
+              notes: `${request.type}: ${request.reason || ''}`,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Fehler bei Urlaubsanträge-Synchronisation:', error);
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -139,6 +183,10 @@ export default function SchedulePage({ params }: { params: Promise<{ uid: string
 
       try {
         const shiftData = await PersonalService.getShifts(resolvedParams.uid, weekStart, weekEnd);
+        
+        // Zusätzlich: Automatisch Abwesenheitsschichten für genehmigte Urlaubsanträge erstellen
+        await syncAbsenceRequestsToSchedule();
+        
         setShifts(shiftData);
       } catch (error) {
         console.warn('⚠️ Keine Schichtdaten gefunden, verwende Mock-Daten');

@@ -67,11 +67,33 @@ export default function VacationSettingsTab({
   };
 
   const handleSaveSettings = async () => {
+    // In Add-Mode (kein employee.id): Nur lokalen State updaten
     if (!employee.id) {
-      toast.error('Mitarbeiter-ID fehlt');
+      console.log('📝 Add-Modus: Speichere Urlaubseinstellungen nur lokal');
+      
+      // Update das Employee-Objekt lokal
+      const updatedVacation = {
+        ...employee.vacation,
+        settings,
+        totalDays: settings.annualVacationDays,
+        remainingDays: PersonalService.calculateAvailableVacationDays({
+          ...employee,
+          vacation: {
+            ...employee.vacation,
+            settings,
+          },
+        }),
+      };
+
+      onUpdate({ vacation: updatedVacation });
+      setHasChanges(false);
+      toast.success('Urlaubseinstellungen werden beim Speichern des Mitarbeiters mit gespeichert');
+      
+      console.log('✅ Urlaubseinstellungen lokal gespeichert für späteren DB-Speichervorgang');
       return;
     }
 
+    // Edit-Mode (mit employee.id): Direkt in Firebase speichern
     setIsLoading(true);
     try {
       // Direkt Firebase-Speicherung für Urlaubseinstellungen

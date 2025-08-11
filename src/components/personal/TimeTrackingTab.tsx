@@ -6,8 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Coffee, Plane, Plus, Edit2, Trash2 } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  Coffee, 
+  Plane, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  CalendarDays, 
+  AlertCircle,
+  CheckCircle,
+  ArrowRight 
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { PersonalService, TimeTracking, Shift } from '@/services/personalService';
 
 interface TimeEntry {
   id: string;
@@ -26,7 +39,9 @@ interface TimeTrackingTabProps {
 }
 
 const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId }) => {
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeTracking[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [todaysShift, setTodaysShift] = useState<Shift | null>(null);
   const [newEntry, setNewEntry] = useState<{
     date: string;
     type: 'work' | 'break' | 'vacation' | 'sick' | 'overtime';
@@ -43,40 +58,53 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
   const [loading, setLoading] = useState(false);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
 
-  // Mock Daten - würde normalerweise aus Firebase geladen
+  // Daten laden
   useEffect(() => {
-    const mockEntries: TimeEntry[] = [
-      {
-        id: '1',
-        date: '2025-08-10',
-        type: 'work',
-        startTime: '09:00',
-        endTime: '17:00',
-        hours: 8,
-        description: 'Reguläre Arbeitszeit',
-        approved: true,
-      },
-      {
-        id: '2',
-        date: '2025-08-09',
-        type: 'work',
-        startTime: '09:00',
-        endTime: '19:00',
-        hours: 10,
-        description: 'Überstunden für Projektabschluss',
-        approved: true,
-      },
-      {
-        id: '3',
-        date: '2025-08-08',
-        type: 'vacation',
-        hours: 8,
-        description: 'Jahresurlaub',
-        approved: true,
-      },
-    ];
-    setTimeEntries(mockEntries);
-  }, []);
+    loadTimeTrackingData();
+    loadShiftData();
+  }, [employeeId, companyId]);
+
+  const loadTimeTrackingData = async () => {
+    try {
+      setLoading(true);
+      const entries = await PersonalService.getEmployeeTimeTracking(companyId, employeeId);
+      setTimeEntries(entries);
+    } catch (error) {
+      console.error('Fehler beim Laden der Zeiterfassung:', error);
+      toast.error('Fehler beim Laden der Zeiteinträge');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadShiftData = async () => {
+    try {
+      const today = new Date();
+      const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+      const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
+      
+      const shiftsData = await PersonalService.getShifts(companyId, startOfWeek, endOfWeek);
+      const employeeShifts = shiftsData.filter(shift => shift.employeeId === employeeId);
+      setShifts(employeeShifts);
+
+      // Heutige Schicht finden
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayShift = employeeShifts.find(shift => shift.date === todayStr);
+      setTodaysShift(todayShift || null);
+
+      // Vorschlag für heutige Arbeitszeit basierend auf Schichtplan
+      if (todayShift && !newEntry.startTime) {
+        setNewEntry(prev => ({
+          ...prev,
+          startTime: todayShift.startTime,
+          endTime: todayShift.endTime,
+          description: `${todayShift.position} - ${todayShift.department}`,
+        }));
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Schichten:', error);
+    }
+  };
 
   const calculateHours = (startTime: string, endTime: string) => {
     if (!startTime || !endTime) return 0;
@@ -96,6 +124,9 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       }
 
       let hours = 0;
+      let clockIn = newEntry.startTime;
+      let clockOut = newEntry.endTime;
+
       if (newEntry.type === 'work' || newEntry.type === 'overtime') {
         if (!newEntry.startTime || !newEntry.endTime) {
           toast.error('Bitte Start- und Endzeit eingeben');
@@ -108,20 +139,29 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
         }
       } else {
         hours = 8; // Standard für Urlaub/Krankheit
+        clockIn = '08:00';
+        clockOut = '16:00';
       }
 
-      const entry: TimeEntry = {
-        id: Date.now().toString(),
+      // Überstunden berechnen (über 8 Stunden)
+      const overtimeHours = newEntry.type === 'work' && hours > 8 ? hours - 8 : 0;
+
+      const timeEntry: Omit<TimeTracking, 'id' | 'createdAt' | 'updatedAt'> = {
+        companyId,
+        employeeId,
         date: newEntry.date,
-        type: newEntry.type,
-        startTime: newEntry.startTime || undefined,
-        endTime: newEntry.endTime || undefined,
-        hours,
-        description: newEntry.description,
-        approved: false,
+        clockIn,
+        clockOut,
+        totalHours: hours,
+        overtimeHours,
+        project: newEntry.description,
+        notes: newEntry.description,
+        status: 'COMPLETED',
       };
 
-      setTimeEntries(prev => [entry, ...prev]);
+      await PersonalService.addTimeTracking(companyId, timeEntry);
+      await loadTimeTrackingData(); // Neu laden
+
       setNewEntry({
         date: new Date().toISOString().split('T')[0],
         type: 'work',
@@ -141,6 +181,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
 
   const handleDeleteEntry = async (entryId: string) => {
     try {
+      await PersonalService.deleteTimeTracking(companyId, entryId);
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
       toast.success('Zeiteintrag gelöscht');
     } catch (error) {
@@ -149,54 +190,118 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    const labels = {
-      work: 'Arbeitszeit',
-      break: 'Pause',
-      vacation: 'Urlaub',
-      sick: 'Krankheit',
-      overtime: 'Überstunden',
-    };
-    return labels[type as keyof typeof labels] || type;
+  const getTypeLabel = (status: string) => {
+    if (status === 'ACTIVE') return 'Aktiv';
+    if (status === 'COMPLETED') return 'Arbeitszeit';
+    if (status === 'REVIEWED') return 'Überprüft';
+    return status;
   };
 
-  const getTypeColor = (type: string) => {
-    const colors = {
-      work: 'bg-blue-100 text-blue-800',
-      break: 'bg-yellow-100 text-yellow-800',
-      vacation: 'bg-green-100 text-green-800',
-      sick: 'bg-red-100 text-red-800',
-      overtime: 'bg-purple-100 text-purple-800',
-    };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  const getTypeColor = (status: string) => {
+    if (status === 'ACTIVE') return 'bg-yellow-100 text-yellow-800';
+    if (status === 'COMPLETED') return 'bg-blue-100 text-blue-800';
+    if (status === 'REVIEWED') return 'bg-green-100 text-green-800';
+    return 'bg-gray-100 text-gray-800';
   };
 
-  const getTypeIcon = (type: string) => {
-    const icons = {
-      work: Clock,
-      break: Coffee,
-      vacation: Plane,
-      sick: Clock,
-      overtime: Clock,
-    };
-    const Icon = icons[type as keyof typeof icons] || Clock;
-    return <Icon className="h-4 w-4" />;
+  const getTypeIcon = (status: string) => {
+    if (status === 'ACTIVE') return <Clock className="h-4 w-4" />;
+    if (status === 'COMPLETED') return <CheckCircle className="h-4 w-4" />;
+    if (status === 'REVIEWED') return <CheckCircle className="h-4 w-4" />;
+    return <Clock className="h-4 w-4" />;
+  };
+
+  const formatTime = (time: string) => {
+    return time ? time.slice(0, 5) : '--:--';
   };
 
   // Statistiken berechnen
   const currentMonth = new Date().toISOString().slice(0, 7);
   const monthlyEntries = timeEntries.filter(entry => entry.date.startsWith(currentMonth));
-  const totalHours = monthlyEntries.reduce((sum, entry) => sum + entry.hours, 0);
+  const totalHours = monthlyEntries.reduce((sum, entry) => sum + (entry.totalHours || 0), 0);
   const workHours = monthlyEntries
-    .filter(e => e.type === 'work')
-    .reduce((sum, entry) => sum + entry.hours, 0);
+    .filter(e => e.status === 'COMPLETED')
+    .reduce((sum, entry) => sum + (entry.totalHours || 0), 0);
   const overtimeHours = monthlyEntries
-    .filter(e => e.type === 'overtime')
-    .reduce((sum, entry) => sum + entry.hours, 0);
-  const vacationDays = monthlyEntries.filter(e => e.type === 'vacation').length;
+    .reduce((sum, entry) => sum + (entry.overtimeHours || 0), 0);
+  const vacationDays = 0; // TODO: Aus separater Vacation-Tabelle berechnen
+
+  const useShiftTime = () => {
+    if (todaysShift) {
+      setNewEntry(prev => ({
+        ...prev,
+        startTime: todaysShift.startTime,
+        endTime: todaysShift.endTime,
+        description: `${todaysShift.position} - ${todaysShift.department}`,
+      }));
+      toast.success('Schichtzeiten übernommen');
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Heutige Schicht Info */}
+      {todaysShift && (
+        <Card className="border-[#14ad9f] bg-gradient-to-r from-[#14ad9f]/5 to-transparent">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CalendarDays className="h-5 w-5 text-[#14ad9f]" />
+                <div>
+                  <h4 className="font-medium text-gray-900">Heutige Schicht</h4>
+                  <p className="text-sm text-gray-600">
+                    {formatTime(todaysShift.startTime)} - {formatTime(todaysShift.endTime)} • {todaysShift.position} ({todaysShift.department})
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={useShiftTime}
+                className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Schichtzeit übernehmen
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Kommende Schichten */}
+      {shifts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-[#14ad9f]" />
+              Kommende Schichten (diese Woche)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {shifts.slice(0, 5).map(shift => (
+                <div key={shift.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{new Date(shift.date).toLocaleDateString('de-DE')}</p>
+                    <p className="text-sm text-gray-600">
+                      {formatTime(shift.startTime)} - {formatTime(shift.endTime)} • {shift.position}
+                    </p>
+                  </div>
+                  <Badge 
+                    variant={shift.status === 'CONFIRMED' ? 'default' : 'secondary'}
+                    className={shift.status === 'CONFIRMED' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                  >
+                    {shift.status === 'PLANNED' ? 'Geplant' : 
+                     shift.status === 'CONFIRMED' ? 'Bestätigt' : 
+                     shift.status === 'ABSENT' ? 'Abwesend' : 'Krank'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Statistiken */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -205,7 +310,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
               <Clock className="h-5 w-5 text-[#14ad9f]" />
               <div>
                 <p className="text-sm text-muted-foreground">Arbeitsstunden</p>
-                <p className="text-2xl font-bold">{workHours}h</p>
+                <p className="text-2xl font-bold">{workHours.toFixed(1)}h</p>
               </div>
             </div>
           </CardContent>
@@ -216,7 +321,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
               <Clock className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Überstunden</p>
-                <p className="text-2xl font-bold">{overtimeHours}h</p>
+                <p className="text-2xl font-bold">{overtimeHours.toFixed(1)}h</p>
               </div>
             </div>
           </CardContent>
@@ -238,7 +343,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
               <Calendar className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Gesamt Stunden</p>
-                <p className="text-2xl font-bold">{totalHours}h</p>
+                <p className="text-2xl font-bold">{totalHours.toFixed(1)}h</p>
               </div>
             </div>
           </CardContent>
@@ -324,7 +429,11 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
           <CardTitle>Zeiteinträge</CardTitle>
         </CardHeader>
         <CardContent>
-          {timeEntries.length === 0 ? (
+          {loading ? (
+            <p className="text-muted-foreground text-center py-8">
+              Lade Zeiteinträge...
+            </p>
+          ) : timeEntries.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
               Noch keine Zeiteinträge vorhanden
             </p>
@@ -337,35 +446,38 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      {getTypeIcon(entry.type)}
-                      <Badge className={getTypeColor(entry.type)}>{getTypeLabel(entry.type)}</Badge>
+                      {getTypeIcon(entry.status)}
+                      <Badge className={getTypeColor(entry.status)}>{getTypeLabel(entry.status)}</Badge>
                     </div>
                     <div>
                       <p className="font-medium">
                         {new Date(entry.date).toLocaleDateString('de-DE')}
                       </p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {entry.startTime && entry.endTime && (
+                        {entry.clockIn && entry.clockOut && (
                           <span>
-                            {entry.startTime} - {entry.endTime}
+                            {formatTime(entry.clockIn)} - {formatTime(entry.clockOut)}
                           </span>
                         )}
-                        <span>{entry.hours}h</span>
-                        {entry.description && <span>• {entry.description}</span>}
+                        <span>{(entry.totalHours || 0).toFixed(1)}h</span>
+                        {entry.overtimeHours && entry.overtimeHours > 0 && (
+                          <span className="text-purple-600">+{entry.overtimeHours.toFixed(1)}h Überstunden</span>
+                        )}
+                        {entry.notes && <span>• {entry.notes}</span>}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={entry.approved ? 'default' : 'secondary'}>
-                      {entry.approved ? 'Genehmigt' : 'Ausstehend'}
+                    <Badge variant={entry.approvedBy ? 'default' : 'secondary'}>
+                      {entry.approvedBy ? 'Genehmigt' : 'Ausstehend'}
                     </Badge>
-                    <Button variant="outline" size="sm" onClick={() => setEditingEntry(entry.id)}>
+                    <Button variant="outline" size="sm" onClick={() => setEditingEntry(entry.id || '')}>
                       <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteEntry(entry.id)}
+                      onClick={() => handleDeleteEntry(entry.id || '')}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />

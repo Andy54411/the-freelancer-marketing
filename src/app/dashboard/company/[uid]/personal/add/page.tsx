@@ -46,7 +46,7 @@ import ContractsTab from '@/components/personal/ContractsTab';
 import DisciplinaryTab from '@/components/personal/DisciplinaryTab';
 import FeedbackTab from '@/components/personal/FeedbackTab';
 import TimeTrackingTab from '@/components/personal/TimeTrackingTab';
-import VacationTab from '@/components/personal/tabs/VacationTab';
+import VacationContainer from '@/components/personal/tabs/VacationContainer';
 
 export default function AddEmployeePage() {
   const params = useParams();
@@ -207,7 +207,7 @@ export default function AddEmployeePage() {
 
     setLoading(true);
     try {
-      console.log('🔄 Speichere Mitarbeiter:', employee);
+      console.log('🔄 Speichere Mitarbeiter mit allen Tab-Daten:', employee);
 
       // Bereinige undefined Werte für Firebase und füge erweiterte Daten hinzu
       const cleanEmployeeData = {
@@ -254,6 +254,12 @@ export default function AddEmployeePage() {
         ...(employee.contracts && { contracts: employee.contracts }),
         ...(employee.disciplinary && { disciplinary: employee.disciplinary }),
         ...(employee.notes && { notes: employee.notes }),
+        
+        // **WICHTIG: Alle Tab-Daten mit einbeziehen**
+        // Urlaubsdaten
+        ...(employee.vacation && { vacation: employee.vacation }),
+        
+        // Status-Felder
         isActive: employee.isActive!,
         status: employee.isActive ? ('ACTIVE' as const) : ('INACTIVE' as const),
         ...(employee.avatar && { avatar: employee.avatar }),
@@ -261,9 +267,31 @@ export default function AddEmployeePage() {
 
       // Verwende PersonalService für echte Datenbankoperationen
       const newEmployee = await PersonalService.addEmployee(companyId, cleanEmployeeData);
+      
+      console.log('✅ Mitarbeiter mit ID erstellt:', newEmployee.id);
 
-      console.log('✅ Mitarbeiter erfolgreich gespeichert:', newEmployee);
-      toast.success(`${employee.firstName} ${employee.lastName} wurde erfolgreich hinzugefügt!`);
+      // **PHASE 2: Tab-spezifische Daten speichern (falls vorhanden)**
+      if (newEmployee.id) {
+        console.log('🔄 Speichere Tab-spezifische Daten...');
+        
+        // Urlaubseinstellungen speichern (falls konfiguriert)
+        if (employee.vacation?.settings) {
+          try {
+            await PersonalService.updateVacationSettings(companyId, newEmployee.id, employee.vacation.settings);
+            console.log('✅ Urlaubseinstellungen gespeichert');
+          } catch (error) {
+            console.warn('⚠️ Urlaubseinstellungen konnten nicht gespeichert werden:', error);
+          }
+        }
+        
+        // Hier können weitere Tab-spezifische Speichervorgänge hinzugefügt werden
+        // z.B. Dokumente, Qualifikationen, etc.
+        
+        console.log('✅ Alle Tab-Daten erfolgreich gespeichert');
+      }
+
+      console.log('✅ Mitarbeiter vollständig gespeichert:', newEmployee);
+      toast.success(`${employee.firstName} ${employee.lastName} wurde erfolgreich mit allen Daten hinzugefügt!`);
 
       // Zurück zur Übersicht
       router.push(`/dashboard/company/${companyId}/personal/employees`);
@@ -394,7 +422,15 @@ export default function AddEmployeePage() {
               </TabsContent>
 
               <TabsContent value="vacation" className="mt-6">
-                <VacationTab employee={employee as EmployeeType} companyId={companyId} />
+                <VacationContainer
+                  employee={employee as EmployeeType}
+                  companyId={companyId}
+                  isEditing={isEditing}
+                  onUpdate={handleUpdate}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                  onEdit={() => setIsEditing(true)}
+                />
               </TabsContent>
 
               <TabsContent value="qualifications" className="mt-6">

@@ -1321,6 +1321,80 @@ export class PersonalService {
     }
   }
 
+  /**
+   * Prüft ob ein Mitarbeiter an einem bestimmten Datum verfügbar ist
+   * (nicht im Urlaub, krank oder anderweitig abwesend)
+   */
+  static async isEmployeeAvailable(
+    companyId: string, 
+    employeeId: string, 
+    date: string
+  ): Promise<boolean> {
+    try {
+      console.log('🔍 PersonalService: Prüfe Verfügbarkeit für Mitarbeiter:', employeeId, 'am', date);
+
+      // Prüfe genehmigte Abwesenheitsanträge
+      const absenceRequests = await this.getAbsenceRequests(companyId);
+      const employeeAbsences = absenceRequests.filter(req => 
+        req.employeeId === employeeId && 
+        req.status === 'APPROVED' &&
+        date >= req.startDate && 
+        date <= req.endDate
+      );
+
+      if (employeeAbsences.length > 0) {
+        console.log('❌ PersonalService: Mitarbeiter ist abwesend:', employeeAbsences[0].type);
+        return false;
+      }
+
+      // Prüfe Schichten mit ABSENT oder SICK Status
+      const shifts = await this.getShifts(companyId, new Date(date), new Date(date));
+      const employeeShift = shifts.find(shift => 
+        shift.employeeId === employeeId && 
+        shift.date === date &&
+        (shift.status === 'ABSENT' || shift.status === 'SICK')
+      );
+
+      if (employeeShift) {
+        console.log('❌ PersonalService: Mitarbeiter hat Abwesenheits-Schicht:', employeeShift.status);
+        return false;
+      }
+
+      console.log('✅ PersonalService: Mitarbeiter ist verfügbar');
+      return true;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler bei Verfügbarkeitsprüfung:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Holt alle verfügbaren Mitarbeiter für einen bestimmten Tag
+   */
+  static async getAvailableEmployees(
+    companyId: string, 
+    date: string
+  ): Promise<Employee[]> {
+    try {
+      console.log('🔍 PersonalService: Lade verfügbare Mitarbeiter für:', date);
+
+      const allEmployees = await this.getEmployees(companyId);
+      const availableEmployees: Employee[] = [];
+
+      for (const employee of allEmployees) {
+        if (employee.id && await this.isEmployeeAvailable(companyId, employee.id, date)) {
+          availableEmployees.push(employee);
+        }
+      }
+
+      console.log(`✅ PersonalService: ${availableEmployees.length} verfügbare Mitarbeiter gefunden`);
+      return availableEmployees;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden verfügbarer Mitarbeiter:', error);
+      throw error;
+    }
+  }
+
   // ===== ZEITERFASSUNG / TIMESHEET SERVICES =====
 
   /**
@@ -2305,6 +2379,20 @@ export class PersonalService {
       return timeEntries;
     } catch (error) {
       console.error('❌ PersonalService: Fehler beim Laden der Zeiterfassungen:', error);
+      throw error;
+    }
+  }
+
+  // Zeiterfassung löschen
+  static async deleteTimeTracking(companyId: string, timeTrackingId: string): Promise<void> {
+    try {
+      console.log('🗑️ PersonalService: Lösche Zeiterfassung:', timeTrackingId);
+
+      await deleteDoc(doc(db, `companies/${companyId}/time_tracking`, timeTrackingId));
+
+      console.log('✅ PersonalService: Zeiterfassung gelöscht');
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Löschen der Zeiterfassung:', error);
       throw error;
     }
   }

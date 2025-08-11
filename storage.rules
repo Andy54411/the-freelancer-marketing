@@ -32,6 +32,29 @@ service firebase.storage {
       return request.resource == null && resource != null;
     }
 
+    // Helper-Funktion für erlaubte Dokumenttypen
+    function isValidDocumentType() {
+      return request.resource != null &&
+             request.resource.contentType != null &&
+             (
+               request.resource.contentType.matches('application/pdf') ||
+               request.resource.contentType.matches('application/msword') ||
+               request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+               request.resource.contentType.matches('image/jpeg') ||
+               request.resource.contentType.matches('image/jpg') ||
+               request.resource.contentType.matches('image/png') ||
+               request.resource.contentType.matches('image/gif')
+             );
+    }
+
+    // Helper-Funktion für Firmen-Berechtigungen
+    function isCompany() {
+      return request.auth != null && 
+             request.auth.token != null &&
+             ('role' in request.auth.token) &&
+             request.auth.token.role == 'firma';
+    }
+
     // Admins können jede Datei lesen. Dies ist entscheidend, damit das Admin-Dashboard Benutzerdokumente anzeigen kann.
     match /{allPaths=**} {
       allow read: if isSupportStaff();
@@ -60,6 +83,18 @@ service firebase.storage {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId && 
                    (isDelete() || (isUpload() && isValidImageType()));
+    }
+
+    // Mitarbeiter-Dokumente - Firmen können Dokumente ihrer Mitarbeiter verwalten
+    // Pfad: employee_documents/{companyId}/{employeeId}/{category}/{fileName}
+    match /employee_documents/{companyId}/{employeeId}/{category}/{fileName} {
+      allow read: if request.auth != null && 
+                     (isSupportStaff() || 
+                      (isCompany() && request.auth.uid == companyId));
+      allow write: if request.auth != null && 
+                      (isSupportStaff() || 
+                       (isCompany() && request.auth.uid == companyId)) &&
+                      (isDelete() || (isUpload() && isValidDocumentType()));
     }
 
     // Fallback: Authentifizierte Benutzer können ihre eigenen Dateien in allen Pfaden lesen

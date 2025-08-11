@@ -81,11 +81,26 @@ export function MonthlyScheduleView({
       case 'PLANNED':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'ABSENT':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 text-red-800 border-red-200 border-l-4 border-l-red-500';
       case 'SICK':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200 border-l-4 border-l-yellow-500';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ABSENT':
+        return '🏖️'; // Urlaub
+      case 'SICK':
+        return '🤒'; // Krank
+      case 'CONFIRMED':
+        return '✅';
+      case 'PLANNED':
+        return '📅';
+      default:
+        return '';
     }
   };
 
@@ -202,12 +217,21 @@ export function MonthlyScheduleView({
                           className={`text-xs p-1 rounded border-l-2 cursor-pointer hover:shadow-sm transition-shadow ${getStatusColor(shift.status)} ${getShiftTypeColor(shift.startTime)}`}
                           onClick={() => onShiftClick(shift)}
                         >
-                          <div className="font-medium truncate">
+                          <div className="font-medium truncate flex items-center gap-1">
+                            <span>{getStatusIcon(shift.status)}</span>
                             {employee ? `${employee.firstName} ${employee.lastName}` : 'Unbekannt'}
                           </div>
                           <div className="text-gray-600 truncate">
-                            {shift.startTime} - {shift.endTime}
+                            {shift.status === 'ABSENT' || shift.status === 'SICK' 
+                              ? (shift.department || 'Abwesend')
+                              : `${shift.startTime} - ${shift.endTime}`
+                            }
                           </div>
+                          {shift.notes && (
+                            <div className="text-gray-500 truncate text-xs">
+                              {shift.notes}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

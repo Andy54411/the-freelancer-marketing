@@ -74,7 +74,15 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
 
   // Lade Dokumente beim Component Mount
   useEffect(() => {
-    loadDocuments();
+    // Nur laden wenn employeeId vorhanden (Edit-Mode)
+    if (employeeId && employeeId.trim() !== '') {
+      loadDocuments();
+    } else {
+      // Add-Mode: Zeige leere Liste
+      setDocuments([]);
+      setLoading(false);
+      console.log('📝 DocumentsTab: Add-Mode erkannt - keine Dokumente zu laden');
+    }
   }, [employeeId, companyId]);
 
   const loadDocuments = async () => {
@@ -122,89 +130,70 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    if (!selectedCategory) {
-      toast.error('Bitte wählen Sie eine Kategorie aus');
+    // Add-Mode Prüfung
+    if (!employeeId || employeeId.trim() === '') {
+      toast.error('Dokumente können erst nach dem Anlegen des Mitarbeiters hochgeladen werden');
+      console.log('📝 DocumentsTab: Add-Mode - Dokument-Upload nicht möglich ohne Mitarbeiter-ID');
       return;
     }
 
-    setUploading(true);
+    const file = files[0];
+    const category = selectedCategory || 'other';
 
     try {
-      for (const file of Array.from(files)) {
-        // Dateivalidierung
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        if (file.size > maxSize) {
-          toast.error(`Datei ${file.name} ist zu groß (max. 10MB)`);
-          continue;
-        }
+      setUploading(true);
+      console.log('🔄 DocumentsTab: Uploading file:', file.name);
 
-        const allowedTypes = [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-        ];
+      // 1. Datei zu Firebase Storage hochladen
+      const downloadURL = await uploadFileToFirebaseStorage(
+        file,
+        employeeId,
+        category,
+        file.name
+      );
 
-        if (!allowedTypes.includes(file.type)) {
-          toast.error(`Dateityp von ${file.name} wird nicht unterstützt`);
-          continue;
-        }
+      // 2. Dokument-Metadaten in Firestore speichern
+      const documentData: Omit<EmployeeDocument, 'id'> = {
+        companyId,
+        employeeId,
+        title: file.name.replace(/\.[^/.]+$/, ''), // Entferne Dateiendung
+        category: categoryToFirestoreCategory(category),
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || 'application/octet-stream',
+        downloadURL,
+        storagePath: `employee_documents/${companyId}/${employeeId}/${category}/${file.name}`,
+        uploadDate: new Date().toISOString(),
+        uploadedBy: 'current-user', // TODO: Aus Auth Context holen
+        version: 1,
+        isConfidential: false,
+        accessLevel: 'HR_ONLY',
+      };
 
-        // Firebase Storage Upload
-        const fileName = `${Date.now()}_${file.name}`;
-        const downloadURL = await uploadFileToFirebaseStorage(
-          file,
-          employeeId,
-          selectedCategory,
-          fileName
-        );
+      const savedDocumentId = await PersonalService.addEmployeeDocument(companyId, documentData);
 
-        // Dokument in Firestore speichern
-        const documentData: Omit<EmployeeDocument, 'id' | 'createdAt' | 'updatedAt'> = {
-          companyId,
-          employeeId,
-          category: categoryToFirestoreCategory(selectedCategory),
-          title: file.name,
-          fileName: fileName,
-          fileSize: file.size,
-          mimeType: file.type,
-          uploadDate: new Date().toISOString(),
-          isConfidential: false,
-          accessLevel: 'HR_ONLY',
-          version: 1,
-          uploadedBy: 'current_user', // TODO: Get from auth context
-          downloadURL: downloadURL,
-          storagePath: `employee_documents/${companyId}/${employeeId}/${selectedCategory}/${fileName}`,
-        };
+      // 3. Erstelle ein vollständiges EmployeeDocument Objekt für den lokalen State
+      const newDocument: EmployeeDocument = {
+        id: savedDocumentId,
+        ...documentData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-        const documentId = await PersonalService.addEmployeeDocument(companyId, documentData);
+      // 4. Local state aktualisieren
+      setDocuments(prev => [...prev, newDocument]);
+      toast.success(`Dokument "${file.name}" erfolgreich hochgeladen`);
 
-        // Local state aktualisieren
-        const newDocument: EmployeeDocument = {
-          id: documentId,
-          ...documentData,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      // 5. Reset form
+      setSelectedCategory('');
+      event.target.value = '';
 
-        setDocuments(prev => [...prev, newDocument]);
-        toast.success(`${file.name} erfolgreich hochgeladen und in Datenbank gespeichert`);
-
-        console.log(
-          '✅ DocumentsTab: Dokument gespeichert in Firebase unter:',
-          `companies/${companyId}/employee_documents/${documentId}`
-        );
-      }
+      console.log('✅ DocumentsTab: Document uploaded successfully:', newDocument);
     } catch (error) {
       console.error('❌ DocumentsTab: Upload error:', error);
-      toast.error('Fehler beim Hochladen der Dateien');
+      toast.error('Fehler beim Hochladen des Dokuments');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
