@@ -35,11 +35,65 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { MonthlyScheduleView } from '@/components/schedule/MonthlyScheduleView';
+
+// Schichttypen Definition für 24-Stunden-Betrieb
+const SHIFT_TYPES = [
+  {
+    id: 'EARLY',
+    name: 'Frühschicht',
+    defaultStart: '06:00',
+    defaultEnd: '14:00',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    badgeColor: 'bg-orange-500 text-white',
+  },
+  {
+    id: 'MIDDLE',
+    name: 'Mittelschicht',
+    defaultStart: '10:00',
+    defaultEnd: '18:00',
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    badgeColor: 'bg-blue-500 text-white',
+  },
+  {
+    id: 'LATE',
+    name: 'Spätschicht',
+    defaultStart: '14:00',
+    defaultEnd: '22:00',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    badgeColor: 'bg-purple-500 text-white',
+  },
+  {
+    id: 'NIGHT',
+    name: 'Nachtschicht',
+    defaultStart: '22:00',
+    defaultEnd: '06:00',
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    badgeColor: 'bg-indigo-500 text-white',
+  },
+  {
+    id: 'SPLIT',
+    name: 'Geteilte Schicht',
+    defaultStart: '08:00',
+    defaultEnd: '12:00',
+    color: 'bg-green-100 text-green-800 border-green-200',
+    badgeColor: 'bg-green-500 text-white',
+  },
+  {
+    id: 'CUSTOM',
+    name: 'Benutzerdefiniert',
+    defaultStart: '09:00',
+    defaultEnd: '17:00',
+    color: 'bg-gray-100 text-gray-800 border-gray-200',
+    badgeColor: 'bg-gray-500 text-white',
+  },
+];
 
 // Schedule Template Interface für zukünftige Features
 
-export default function SchedulePage({ params }: { params: { uid: string } }) {
+export default function SchedulePage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
+  const resolvedParams = React.use(params);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,16 +102,34 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
   const [showShiftDialog, setShowShiftDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
+  // Drag & Drop State
+  const [draggedShift, setDraggedShift] = useState<Shift | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+
+  // Neue Schicht Modal State
+  const [showCreateShiftDialog, setShowCreateShiftDialog] = useState(false);
+  const [newShiftForm, setNewShiftForm] = useState({
+    employeeId: '',
+    date: new Date().toISOString().split('T')[0],
+    shiftType: 'MIDDLE',
+    startTime: '10:00',
+    endTime: '18:00',
+    position: '',
+    department: '',
+    notes: '',
+    status: 'PLANNED' as 'PLANNED' | 'CONFIRMED' | 'ABSENT' | 'SICK',
+  });
+
   useEffect(() => {
-    if (user && params.uid) {
+    if (user && resolvedParams.uid) {
       loadData();
     }
-  }, [user, params.uid, currentWeek]);
+  }, [user, resolvedParams.uid, currentWeek]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const employeeData = await PersonalService.getEmployees(params.uid);
+      const employeeData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeeData.filter(emp => emp.isActive));
 
       // Lade echte Schichtdaten aus Firestore
@@ -66,32 +138,54 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
       weekEnd.setDate(weekEnd.getDate() + 6);
 
       try {
-        const shiftData = await PersonalService.getShifts(params.uid, weekStart, weekEnd);
+        const shiftData = await PersonalService.getShifts(resolvedParams.uid, weekStart, weekEnd);
         setShifts(shiftData);
       } catch (error) {
         console.warn('⚠️ Keine Schichtdaten gefunden, verwende Mock-Daten');
-        // Fallback Mock-Daten falls keine Daten vorhanden
+        // Fallback Mock-Daten für 24-Stunden-Betrieb
         setShifts([
           {
             id: '1',
-            companyId: params.uid,
+            companyId: resolvedParams.uid,
             employeeId: 'emp1',
             date: '2025-08-11',
-            startTime: '09:00',
-            endTime: '17:00',
-            position: 'Entwickler',
-            department: 'IT',
+            startTime: '06:00',
+            endTime: '14:00',
+            position: 'Frühschicht Koch',
+            department: 'Küche',
             status: 'CONFIRMED',
           },
           {
             id: '2',
-            companyId: params.uid,
+            companyId: resolvedParams.uid,
             employeeId: 'emp2',
             date: '2025-08-11',
+            startTime: '14:00',
+            endTime: '22:00',
+            position: 'Spätschicht Kellner',
+            department: 'Service',
+            status: 'PLANNED',
+          },
+          {
+            id: '3',
+            companyId: resolvedParams.uid,
+            employeeId: 'emp1',
+            date: '2025-08-11',
+            startTime: '22:00',
+            endTime: '06:00',
+            position: 'Nachtschicht Security',
+            department: 'Sicherheit',
+            status: 'CONFIRMED',
+          },
+          {
+            id: '4',
+            companyId: resolvedParams.uid,
+            employeeId: 'emp2',
+            date: '2025-08-12',
             startTime: '10:00',
             endTime: '18:00',
-            position: 'Designer',
-            department: 'Marketing',
+            position: 'Mittelschicht Manager',
+            department: 'Management',
             status: 'PLANNED',
           },
         ]);
@@ -113,7 +207,7 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
       const weekEnd = new Date(currentWeek);
       weekEnd.setDate(weekEnd.getDate() + 6);
 
-      const csv = await PersonalService.exportScheduleCSV(params.uid, weekStart, weekEnd);
+      const csv = await PersonalService.exportScheduleCSV(resolvedParams.uid, weekStart, weekEnd);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -128,47 +222,63 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
     }
   };
 
-  const handleCreateShift = async () => {
-    console.log('🔥 Button geklickt! handleCreateShift wird ausgeführt');
-    console.log('📊 Anzahl Mitarbeiter:', employees.length);
-    console.log('👥 Mitarbeiter:', employees);
+  // Funktion um Zeiten basierend auf Schichttyp zu setzen
+  const handleShiftTypeChange = (shiftType: string) => {
+    const selectedShift = SHIFT_TYPES.find(shift => shift.id === shiftType);
+    if (selectedShift) {
+      setNewShiftForm(prev => ({
+        ...prev,
+        shiftType,
+        startTime: selectedShift.defaultStart,
+        endTime: selectedShift.defaultEnd,
+      }));
+    }
+  };
 
+  const handleCreateShift = () => {
+    if (employees.length === 0) {
+      toast.error('Keine Mitarbeiter verfügbar. Bitte fügen Sie zuerst Mitarbeiter hinzu.');
+      return;
+    }
+
+    // Reset form mit erstem Mitarbeiter vorausgefüllt
+    const firstEmployee = employees[0];
+    setNewShiftForm({
+      employeeId: firstEmployee.id || '',
+      date: new Date().toISOString().split('T')[0],
+      shiftType: 'MIDDLE',
+      startTime: '10:00',
+      endTime: '18:00',
+      position: firstEmployee.position || '',
+      department: firstEmployee.department || '',
+      notes: '',
+      status: 'PLANNED',
+    });
+
+    setShowCreateShiftDialog(true);
+  };
+
+  const handleSaveNewShift = async () => {
     try {
-      if (employees.length === 0) {
-        console.log('❌ Keine Mitarbeiter verfügbar - zeige Fehlermeldung');
-        toast.error('Keine Mitarbeiter verfügbar. Bitte fügen Sie zuerst Mitarbeiter hinzu.');
-        return;
-      }
-
-      console.log('✅ Mitarbeiter gefunden, erstelle Schicht...');
-      const today = new Date();
-      const selectedEmployee = employees[0];
-
-      console.log('🧑‍💼 Ausgewählter Mitarbeiter:', selectedEmployee);
-
-      if (!selectedEmployee.id) {
-        console.log('❌ Mitarbeiter-ID fehlt');
-        toast.error('Fehler: Mitarbeiter-ID nicht verfügbar');
+      if (!newShiftForm.employeeId) {
+        toast.error('Bitte wählen Sie einen Mitarbeiter aus');
         return;
       }
 
       const newShift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
-        companyId: params.uid,
-        employeeId: selectedEmployee.id,
-        date: today.toISOString().split('T')[0],
-        startTime: '09:00',
-        endTime: '17:00',
-        position: selectedEmployee.position || 'Mitarbeiter',
-        department: selectedEmployee.department || 'Allgemein',
-        status: 'PLANNED',
-        notes: 'Neue Schicht',
+        companyId: resolvedParams.uid,
+        employeeId: newShiftForm.employeeId,
+        date: newShiftForm.date,
+        startTime: newShiftForm.startTime,
+        endTime: newShiftForm.endTime,
+        position: newShiftForm.position,
+        department: newShiftForm.department,
+        status: newShiftForm.status,
+        notes: newShiftForm.notes,
       };
-
-      console.log('📋 Neue Schicht Daten:', newShift);
 
       toast.loading('Erstelle Schicht...');
       const shiftId = await PersonalService.createShift(newShift);
-      console.log('✅ Schicht erstellt mit ID:', shiftId);
 
       // Aktualisiere lokale Liste
       const createdShift: Shift = {
@@ -179,20 +289,23 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
       };
 
       setShifts(prev => [...prev, createdShift]);
+      setShowCreateShiftDialog(false);
       toast.success('Schicht erfolgreich erstellt!');
     } catch (error) {
       console.error('❌ Erstellungsfehler:', error);
-      toast.error(
-        `Fehler beim Erstellen der Schicht: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
-      );
+      toast.error('Fehler beim Erstellen der Schicht');
     }
+  };
+
+  const handleCreateShift_OLD = async () => {
+    // Old implementation moved for reference
   };
 
   const handleDeleteShift = async (shiftId: string) => {
     if (!shiftId) return;
 
     try {
-      await PersonalService.deleteShift(params.uid, shiftId);
+      await PersonalService.deleteShift(resolvedParams.uid, shiftId);
       setShifts(prev => prev.filter(shift => shift.id !== shiftId));
       setShowShiftDialog(false);
       toast.success('Schicht gelöscht');
@@ -206,7 +319,7 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
     if (!selectedShift?.id) return;
 
     try {
-      await PersonalService.updateShift(params.uid, selectedShift.id, {
+      await PersonalService.updateShift(resolvedParams.uid, selectedShift.id, {
         status: selectedShift.status,
         notes: selectedShift.notes,
         startTime: selectedShift.startTime,
@@ -222,6 +335,57 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
     } catch (error) {
       console.error('❌ Speicherfehler:', error);
       toast.error('Fehler beim Speichern der Schicht');
+    }
+  };
+
+  // Drag & Drop Handler
+  const handleDragStart = (e: React.DragEvent, shift: Shift) => {
+    setDraggedShift(shift);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', '');
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDate(date);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Nur den dragOverDate zurücksetzen wenn wir wirklich das Element verlassen
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverDate(null);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, newDate: string) => {
+    e.preventDefault();
+    setDragOverDate(null);
+
+    if (!draggedShift) return;
+
+    try {
+      // Schicht auf neues Datum verschieben
+      const updatedShift = { ...draggedShift, date: newDate };
+
+      await PersonalService.updateShift(resolvedParams.uid, draggedShift.id, {
+        date: newDate,
+      });
+
+      setShifts(prev =>
+        prev.map(shift => (shift.id === draggedShift.id ? { ...shift, date: newDate } : shift))
+      );
+
+      setDraggedShift(null);
+      toast.success(`Schicht zu ${new Date(newDate).toLocaleDateString('de-DE')} verschoben`);
+    } catch (error) {
+      console.error('❌ Fehler beim Verschieben der Schicht:', error);
+      toast.error('Fehler beim Verschieben der Schicht');
+      setDraggedShift(null);
     }
   };
 
@@ -415,8 +579,8 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
               </div>
             ))}
 
-            {/* Time Slots */}
-            {Array.from({ length: 12 }, (_, hour) => hour + 8).map(hour => (
+            {/* Time Slots - 24 Stunden */}
+            {Array.from({ length: 24 }, (_, hour) => hour).map(hour => (
               <React.Fragment key={hour}>
                 <div className="text-sm text-gray-600 p-2 border-r">
                   {hour.toString().padStart(2, '0')}:00
@@ -426,23 +590,56 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
                   const hourShifts = dayShifts.filter(shift => {
                     const startHour = parseInt(shift.startTime.split(':')[0]);
                     const endHour = parseInt(shift.endTime.split(':')[0]);
-                    return startHour <= hour && hour < endHour;
+
+                    // Handle overnight shifts (e.g., 22:00 - 06:00)
+                    if (endHour < startHour) {
+                      // Overnight shift: show from start hour until 24h, then from 0h to end hour
+                      return startHour <= hour || hour < endHour;
+                    } else {
+                      // Regular shift: show between start and end hour
+                      return startHour <= hour && hour < endHour;
+                    }
                   });
 
                   return (
                     <div
                       key={`${hour}-${dayIndex}`}
-                      className="min-h-[60px] border border-gray-200 p-1"
+                      className={`min-h-[60px] border border-gray-200 p-1 transition-colors ${
+                        dragOverDate === day.toISOString().split('T')[0]
+                          ? 'bg-[#14ad9f] bg-opacity-10 border-[#14ad9f]'
+                          : ''
+                      }`}
+                      onDragOver={e => handleDragOver(e, day.toISOString().split('T')[0])}
+                      onDragLeave={handleDragLeave}
+                      onDrop={e => handleDrop(e, day.toISOString().split('T')[0])}
                     >
                       {hourShifts.map(shift => {
                         const employee = employees.find(emp => emp.id === shift.employeeId);
                         return (
                           <div
                             key={shift.id}
-                            className="bg-[#14ad9f] bg-opacity-20 border-l-4 border-[#14ad9f] p-2 rounded text-xs cursor-pointer hover:bg-opacity-30 transition-colors"
+                            draggable
+                            onDragStart={e => handleDragStart(e, shift)}
+                            className={`border-l-4 p-2 rounded text-xs cursor-move hover:bg-opacity-30 transition-colors ${
+                              draggedShift?.id === shift.id ? 'opacity-50' : ''
+                            } ${
+                              // Schichttyp-basierte Farben
+                              shift.startTime === '06:00'
+                                ? 'bg-orange-100 border-orange-500 text-orange-800'
+                                : shift.startTime === '14:00'
+                                  ? 'bg-purple-100 border-purple-500 text-purple-800'
+                                  : shift.startTime === '22:00'
+                                    ? 'bg-indigo-100 border-indigo-500 text-indigo-800'
+                                    : shift.startTime === '10:00'
+                                      ? 'bg-blue-100 border-blue-500 text-blue-800'
+                                      : 'bg-[#14ad9f] bg-opacity-20 border-[#14ad9f]'
+                            }`}
                             onClick={() => {
-                              setSelectedShift(shift);
-                              setShowShiftDialog(true);
+                              if (!draggedShift) {
+                                // Nur klicken wenn nicht gedraggt wird
+                                setSelectedShift(shift);
+                                setShowShiftDialog(true);
+                              }
                             }}
                           >
                             <div className="font-medium truncate">
@@ -468,13 +665,17 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
         </TabsContent>
 
         <TabsContent value="month" className="space-y-4">
-          <Card>
-            <CardContent className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Monatsansicht</h3>
-              <p className="text-gray-600">Die Monatsansicht wird bald verfügbar sein.</p>
-            </CardContent>
-          </Card>
+          <MonthlyScheduleView
+            employees={employees}
+            shifts={shifts}
+            currentDate={currentWeek}
+            onDateChange={setCurrentWeek}
+            onShiftClick={shift => {
+              setSelectedShift(shift);
+              setShowShiftDialog(true);
+            }}
+            onCreateShift={handleCreateShift}
+          />
         </TabsContent>
       </Tabs>
 
@@ -631,6 +832,170 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create New Shift Dialog */}
+      <Dialog open={showCreateShiftDialog} onOpenChange={setShowCreateShiftDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Neue Schicht erstellen</DialogTitle>
+            <DialogDescription>
+              Erstellen Sie eine neue Arbeitsschicht für einen Mitarbeiter
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 pb-6">
+            {/* Mitarbeiter Auswahl */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Mitarbeiter *</label>
+              <select
+                value={newShiftForm.employeeId}
+                onChange={e => {
+                  const employee = employees.find(emp => emp.id === e.target.value);
+                  setNewShiftForm(prev => ({
+                    ...prev,
+                    employeeId: e.target.value,
+                    position: employee?.position || '',
+                    department: employee?.department || '',
+                  }));
+                }}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              >
+                <option value="">Mitarbeiter auswählen</option>
+                {employees.map(employee => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.firstName} {employee.lastName} - {employee.position}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Schichttyp Auswahl */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Schichttyp *</label>
+              <div className="grid grid-cols-2 gap-3">
+                {SHIFT_TYPES.map(shiftType => (
+                  <button
+                    key={shiftType.id}
+                    type="button"
+                    onClick={() => handleShiftTypeChange(shiftType.id)}
+                    className={`p-3 border-2 rounded-lg text-left transition-all ${
+                      newShiftForm.shiftType === shiftType.id
+                        ? `border-[#14ad9f] ${shiftType.color}`
+                        : 'border-gray-200 hover:border-gray-300 bg-white text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium">{shiftType.name}</span>
+                      <span className={`px-2 py-1 rounded text-xs ${shiftType.badgeColor}`}>
+                        {shiftType.id}
+                      </span>
+                    </div>
+                    <div className="text-sm opacity-75">
+                      {shiftType.defaultStart} - {shiftType.defaultEnd}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Datum und Zeiten */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Datum *</label>
+                <Input
+                  type="date"
+                  value={newShiftForm.date}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, date: e.target.value }))}
+                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Startzeit *</label>
+                <Input
+                  type="time"
+                  value={newShiftForm.startTime}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, startTime: e.target.value }))}
+                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Endzeit *</label>
+                <Input
+                  type="time"
+                  value={newShiftForm.endTime}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, endTime: e.target.value }))}
+                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                />
+              </div>
+            </div>
+
+            {/* Position und Abteilung */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Position</label>
+                <Input
+                  value={newShiftForm.position}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, position: e.target.value }))}
+                  placeholder="z.B. Kellner, Koch..."
+                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Abteilung</label>
+                <Input
+                  value={newShiftForm.department}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, department: e.target.value }))}
+                  placeholder="z.B. Küche, Service..."
+                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Status</label>
+              <select
+                value={newShiftForm.status}
+                onChange={e =>
+                  setNewShiftForm(prev => ({ ...prev, status: e.target.value as any }))
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              >
+                <option value="PLANNED">Geplant</option>
+                <option value="CONFIRMED">Bestätigt</option>
+                <option value="ABSENT">Abwesend</option>
+                <option value="SICK">Krank</option>
+              </select>
+            </div>
+
+            {/* Notizen */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Notizen</label>
+              <textarea
+                value={newShiftForm.notes}
+                onChange={e => setNewShiftForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Zusätzliche Informationen zur Schicht..."
+                rows={3}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] resize-none"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowCreateShiftDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleSaveNewShift}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Schicht erstellen
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

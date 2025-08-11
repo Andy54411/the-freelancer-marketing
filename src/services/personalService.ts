@@ -1332,4 +1332,21 @@ export class PersonalService {
       throw error;
     }
   }
+
+  // Einzelnen Mitarbeiter abrufen
+  static async getEmployee(companyId: string, employeeId: string): Promise<Employee> {
+    try {
+      const employees = await this.getEmployees(companyId);
+      const employee = employees.find(emp => emp.id === employeeId);
+
+      if (!employee) {
+        throw new Error(`Mitarbeiter mit ID ${employeeId} nicht gefunden`);
+      }
+
+      return employee;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden des Mitarbeiters:', error);
+      throw error;
+    }
+  }
 }

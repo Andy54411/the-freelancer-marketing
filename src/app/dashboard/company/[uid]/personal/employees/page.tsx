@@ -35,6 +35,7 @@ import {
   Plus,
   Download,
   Upload,
+  Eye,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -281,12 +282,24 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {employee.firstName} {employee.lastName}
-                    </h3>
+                    <Link
+                      href={`/dashboard/company/${params.uid}/personal/employees/${employee.id}`}
+                      className="hover:text-[#14ad9f] transition-colors"
+                    >
+                      <h3 className="font-semibold text-gray-900">
+                        {employee.firstName} {employee.lastName}
+                      </h3>
+                    </Link>
                     <p className="text-sm text-gray-600">{employee.position}</p>
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href={`/dashboard/company/${params.uid}/personal/employees/${employee.id}`}>
+                  <Button variant="ghost" size="sm" className="text-[#14ad9f] hover:text-[#129488]">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="sm">
