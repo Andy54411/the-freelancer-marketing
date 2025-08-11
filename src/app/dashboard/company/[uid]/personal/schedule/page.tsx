@@ -129,26 +129,46 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
   };
 
   const handleCreateShift = async () => {
+    console.log('🔥 Button geklickt! handleCreateShift wird ausgeführt');
+    console.log('📊 Anzahl Mitarbeiter:', employees.length);
+    console.log('👥 Mitarbeiter:', employees);
+
     try {
       if (employees.length === 0) {
-        toast.error('Keine Mitarbeiter verfügbar');
+        console.log('❌ Keine Mitarbeiter verfügbar - zeige Fehlermeldung');
+        toast.error('Keine Mitarbeiter verfügbar. Bitte fügen Sie zuerst Mitarbeiter hinzu.');
         return;
       }
 
+      console.log('✅ Mitarbeiter gefunden, erstelle Schicht...');
       const today = new Date();
+      const selectedEmployee = employees[0];
+
+      console.log('🧑‍💼 Ausgewählter Mitarbeiter:', selectedEmployee);
+
+      if (!selectedEmployee.id) {
+        console.log('❌ Mitarbeiter-ID fehlt');
+        toast.error('Fehler: Mitarbeiter-ID nicht verfügbar');
+        return;
+      }
+
       const newShift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
         companyId: params.uid,
-        employeeId: employees[0].id!,
+        employeeId: selectedEmployee.id,
         date: today.toISOString().split('T')[0],
         startTime: '09:00',
         endTime: '17:00',
-        position: employees[0].position,
-        department: employees[0].department,
+        position: selectedEmployee.position || 'Mitarbeiter',
+        department: selectedEmployee.department || 'Allgemein',
         status: 'PLANNED',
         notes: 'Neue Schicht',
       };
 
+      console.log('📋 Neue Schicht Daten:', newShift);
+
+      toast.loading('Erstelle Schicht...');
       const shiftId = await PersonalService.createShift(newShift);
+      console.log('✅ Schicht erstellt mit ID:', shiftId);
 
       // Aktualisiere lokale Liste
       const createdShift: Shift = {
@@ -159,10 +179,12 @@ export default function SchedulePage({ params }: { params: { uid: string } }) {
       };
 
       setShifts(prev => [...prev, createdShift]);
-      toast.success('Schicht erstellt');
+      toast.success('Schicht erfolgreich erstellt!');
     } catch (error) {
       console.error('❌ Erstellungsfehler:', error);
-      toast.error('Fehler beim Erstellen der Schicht');
+      toast.error(
+        `Fehler beim Erstellen der Schicht: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     }
   };
 
